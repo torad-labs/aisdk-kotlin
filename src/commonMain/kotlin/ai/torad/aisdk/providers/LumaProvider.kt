@@ -322,14 +322,18 @@ private class LumaImageModel(
     private suspend fun getJson(
         url: String,
         headers: Map<String, String>,
+        abortSignal: AbortSignal,
     ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = ::lumaErrorMessage,
-        )
+        AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = headers,
+                errorMessage = ::lumaErrorMessage,
+                abortSignal = abortSignal,
+            )
+        }
 
     private suspend fun pollImageUrl(
         generationId: String,
@@ -341,7 +345,7 @@ private class LumaImageModel(
         val baseURL = settings.baseURL.trimEnd('/')
         repeat(maxPollAttempts.coerceAtLeast(1)) { attempt ->
             abortSignal.throwIfAborted()
-            val status = getJson("$baseURL/dream-machine/v1/generations/$generationId", headers)
+            val status = getJson("$baseURL/dream-machine/v1/generations/$generationId", headers, abortSignal)
             val body = status.value.jsonObject
             when ((body["state"] as? JsonPrimitive)?.contentOrNull) {
                 "completed" -> {
@@ -361,13 +365,24 @@ private class LumaImageModel(
         abortSignal: AbortSignal,
     ): GeneratedFile {
         abortSignal.throwIfAborted()
-        val (statusCode, responseHeaders, bytes) = HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
-            val response = client.request(url) { method = HttpMethod.Get }
-            Triple(
-                response.status.value,
-                with(HttpTransport) { response.flattenedHeaders() },
-                with(HttpTransport) { response.bodyAsBytesCapped(url) },
-            )
+        val (statusCode, responseHeaders, bytes) = AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+                val abortRegistrations = mutableListOf<AbortSignal.AbortRegistration>()
+                try {
+                    val response = client.request(url) {
+                        abortSignal.throwIfAborted()
+                        abortRegistrations += abortSignal.register { executionContext.cancel(AbortError()) }
+                        method = HttpMethod.Get
+                    }
+                    Triple(
+                        response.status.value,
+                        with(HttpTransport) { response.flattenedHeaders() },
+                        with(HttpTransport) { response.bodyAsBytesCapped(url) },
+                    )
+                } finally {
+                    abortRegistrations.forEach { it.cancel() }
+                }
+            }
         }
         if (statusCode !in 200..299) {
             val raw = bytes.decodeToString()

@@ -199,8 +199,12 @@ internal class GoogleGenerativeAIVideoModel(
         val maxAttempts = ((options["maxPollAttempts"] as? JsonPrimitive)?.intOrNull ?: settings.videoMaxPollAttempts)
             .coerceAtLeast(1)
         var headers = emptyMap<String, String>()
-        repeat(maxAttempts) {
-            if ((current["done"] as? JsonPrimitive)?.booleanOrNull == true) return@repeat
+        for (attempt in 0 until maxAttempts) {
+            if ((current["done"] as? JsonPrimitive)?.booleanOrNull == true) break
+            (JsonAccess.obj(current, "error"))?.let { error ->
+                val message = (error["message"] as? JsonPrimitive)?.contentOrNull ?: error
+                throw NoVideoGeneratedError("Google video generation failed: $message")
+            }
             if (pollInterval > 0) delay(pollInterval)
             val poll = googleGetJsonWithRetry(
                 client = client,
@@ -211,13 +215,18 @@ internal class GoogleGenerativeAIVideoModel(
             )
             current = WireDecoder.objectValue(poll.value, provider, "video poll response")
             headers = poll.headers
-        }
-        if ((current["done"] as? JsonPrimitive)?.booleanOrNull != true) {
-            throw NoVideoGeneratedError("Google video generation timed out after $maxAttempts poll attempts.")
+            (JsonAccess.obj(current, "error"))?.let { error ->
+                val message = (error["message"] as? JsonPrimitive)?.contentOrNull ?: error
+                throw NoVideoGeneratedError("Google video generation failed: $message")
+            }
+            if ((current["done"] as? JsonPrimitive)?.booleanOrNull == true) break
         }
         (JsonAccess.obj(current, "error"))?.let { error ->
             val message = (error["message"] as? JsonPrimitive)?.contentOrNull ?: error
             throw NoVideoGeneratedError("Google video generation failed: $message")
+        }
+        if ((current["done"] as? JsonPrimitive)?.booleanOrNull != true) {
+            throw NoVideoGeneratedError("Google video generation timed out after $maxAttempts poll attempts.")
         }
         val responseObject = WireDecoder.objectValue(
             WireDecoder.required(current, "response", provider, "video poll response"),
@@ -269,16 +278,25 @@ internal class GoogleGenerativeAIVideoModel(
         var attempt = 0
         while (true) {
             abortSignal.throwIfAborted()
-            val parsed = HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
-                val response = client.request(url) {
-                    method = HttpMethod.Get
-                    headers.forEach { (name, value) -> header(name, value) }
-                }
-                if (response.status.value !in 500..599 || attempt >= maxRetries) {
-                    with(GoogleHttp) { response.parseGoogleResponse(url, parseJson = parseJson) }
-                } else {
-                    with(HttpTransport) { response.bodyAsTextCapped(url) }
-                    null
+            val parsed = AbortSignalRuntime.withAbortCancellation(abortSignal) {
+                HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+                    val abortRegistrations = mutableListOf<AbortSignal.AbortRegistration>()
+                    try {
+                        val response = client.request(url) {
+                            abortSignal.throwIfAborted()
+                            abortRegistrations += abortSignal.register { executionContext.cancel(AbortError()) }
+                            method = HttpMethod.Get
+                            headers.forEach { (name, value) -> header(name, value) }
+                        }
+                        if (response.status.value !in 500..599 || attempt >= maxRetries) {
+                            with(GoogleHttp) { response.parseGoogleResponse(url, parseJson = parseJson) }
+                        } else {
+                            with(HttpTransport) { response.bodyAsTextCapped(url) }
+                            null
+                        }
+                    } finally {
+                        abortRegistrations.forEach { it.cancel() }
+                    }
                 }
             }
             if (parsed != null) return parsed

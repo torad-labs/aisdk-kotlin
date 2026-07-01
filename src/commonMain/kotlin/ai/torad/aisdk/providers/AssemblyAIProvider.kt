@@ -622,14 +622,18 @@ private class AssemblyAITranscriptionModel(
     private suspend fun getJson(
         url: String,
         headers: Map<String, String>,
+        abortSignal: AbortSignal,
     ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = ::errorMessage,
-        )
+        AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = headers,
+                errorMessage = ::errorMessage,
+                abortSignal = abortSignal,
+            )
+        }
 
     private suspend fun pollTranscript(
         transcriptId: String,
@@ -643,6 +647,7 @@ private class AssemblyAITranscriptionModel(
             val response = getJson(
                 url = "$ASSEMBLYAI_BASE_URL/v2/transcript/$transcriptId",
                 headers = settings.requestHeaders(headers),
+                abortSignal = abortSignal,
             )
             val body = response.value.jsonObject
             when ((body["status"] as? JsonPrimitive)?.contentOrNull) {

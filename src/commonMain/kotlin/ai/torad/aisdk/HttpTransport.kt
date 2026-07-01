@@ -142,27 +142,35 @@ internal object HttpTransport {
         requestBodyValues: JsonElement? = body,
         errorMessage: ErrorMessageExtractor = ::defaultErrorMessage,
         errorFromResponse: ResponseErrorFactory? = null,
+        abortSignal: AbortSignal = AbortSignalNever,
     ): HttpJsonResponse =
         // Bound the whole non-streaming round-trip (connect + send + read body) so a
         // stalled server can't hang the caller forever. Real-time so runTest mocks,
         // which respond promptly, never trip it.
         withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
-            val response = client.request(url) {
-                this.method = method
-                if (body != null) {
-                    contentType(ContentType.Application.Json)
-                    setBody(json.encodeToString(JsonElement.serializer(), body))
+            val abortRegistrations = mutableListOf<AbortSignal.AbortRegistration>()
+            try {
+                val response = client.request(url) {
+                    abortSignal.throwIfAborted()
+                    abortRegistrations += abortSignal.register { executionContext.cancel(AbortError()) }
+                    this.method = method
+                    if (body != null) {
+                        contentType(ContentType.Application.Json)
+                        setBody(json.encodeToString(JsonElement.serializer(), body))
+                    }
+                    headers.forEach { (name, value) -> header(name, value) }
                 }
-                headers.forEach { (name, value) -> header(name, value) }
+                response.toJsonResponse(
+                    url = url,
+                    json = json,
+                    parseJson = parseJson,
+                    requestBodyValues = requestBodyValues,
+                    errorMessage = errorMessage,
+                    errorFromResponse = errorFromResponse,
+                )
+            } finally {
+                abortRegistrations.forEach { it.cancel() }
             }
-            response.toJsonResponse(
-                url = url,
-                json = json,
-                parseJson = parseJson,
-                requestBodyValues = requestBodyValues,
-                errorMessage = errorMessage,
-                errorFromResponse = errorFromResponse,
-            )
         }
 
     /**
