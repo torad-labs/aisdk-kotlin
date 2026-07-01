@@ -5,8 +5,8 @@ public feature areas. It is not an official Vercel package and not a
 TypeScript source translation.
 
 Repository: https://github.com/torad-labs/aisdk-kotlin
-Group/artifact: ai.torad:aisdk-kotlin
-Current snapshot version: 0.1.0-SNAPSHOT
+Group/artifact: ai.torad:torad-aisdk
+Current version: 0.3.0-beta01
 Primary package: ai.torad.aisdk
 
 ## What To Read First
@@ -28,7 +28,7 @@ Primary package: ai.torad.aisdk
   streaming typed data, and object helper migration.
 - docs/wiki/tools.md: typed tools, streaming tools, approval, toModelOutput,
   dynamic tools, provider-executed tools, and input hooks.
-- docs/wiki/streaming.md: Flow<StreamEvent>, streamTextResult, adapters,
+- docs/wiki/streaming.md: Flow<StreamEvent>, streamResult, adapters,
   server responses, cancellation, tool streams, and errors.
 - docs/wiki/advanced-streaming.md: stopping, resume tradeoffs, backpressure,
   fanout, replay, caching, and cleanup.

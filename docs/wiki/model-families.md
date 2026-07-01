@@ -5,10 +5,10 @@ helpers for embeddings, reranking, images, speech, transcription, and video.
 
 ## Embeddings
 
-Use `embed` for one value:
+Use `Embedding.embed` for one value:
 
 ```kotlin
-val result = embed(
+val result = Embedding.embed(
     model = provider.embeddingModel("text-embedding-3-small"),
     value = "AI SDK Kotlin streams UI messages.",
 )
@@ -16,10 +16,10 @@ val result = embed(
 vectorStore.insert(id = "doc-1", vector = result.embedding)
 ```
 
-Use `embedMany` for batches:
+Use `Embedding.embedMany` for batches:
 
 ```kotlin
-val result = embedMany(
+val result = Embedding.embedMany(
     model = embeddingModel,
     values = chunks.map { it.text },
     maxParallelCalls = 4,
@@ -37,7 +37,7 @@ batch concurrency defaults to 8; pass `maxParallelCalls` to raise or lower it.
 ## Reranking
 
 ```kotlin
-val reranked = rerank(
+val reranked = Reranking.rerank(
     model = provider.rerankingModel("rerank-v3.5"),
     query = "How do I resume streams?",
     documents = candidateDocs.map { it.text },
@@ -54,7 +54,7 @@ Use reranking after retrieval and before answer generation.
 ## Image Generation
 
 ```kotlin
-val result = generateImage(
+val result = ImageGeneration.generateImage(
     model = provider.imageModel("image-model"),
     prompt = "A clean diagram of Kotlin Flow streaming into UI messages.",
     n = 2,
@@ -68,18 +68,18 @@ val firstImage = result.image
 For image edits, pass `files` and an optional `mask`:
 
 ```kotlin
-val result = generateImage(
+val result = ImageGeneration.generateImage(
     model = imageModel,
     prompt = "Replace the background with a simple studio surface.",
-    files = listOf(imageGenerationFile(FileData.Bytes(inputBytes, "image/png"))),
-    mask = imageGenerationFile(FileData.Bytes(maskBytes, "image/png")),
+    files = listOf(ImageGenerationFile(FileData.Bytes(inputBytes, "image/png"))),
+    mask = ImageGenerationFile(FileData.Bytes(maskBytes, "image/png")),
 )
 ```
 
 ## Speech
 
 ```kotlin
-val speech = generateSpeech(
+val speech = SpeechGeneration.generateSpeech(
     model = provider.speechModel("tts-model"),
     text = "Your report is ready.",
     voice = "alloy",
@@ -92,7 +92,7 @@ val audio: GeneratedFile = speech.audio
 ## Transcription
 
 ```kotlin
-val transcript = transcribe(
+val transcript = Transcription.transcribe(
     model = provider.transcriptionModel("transcribe-model"),
     audio = AudioSource(
         mediaType = "audio/mpeg",
@@ -111,7 +111,7 @@ response metadata, and provider metadata when the provider supplies them.
 ## Video
 
 ```kotlin
-val result = generateVideo(
+val result = VideoGeneration.generateVideo(
     model = provider.videoModel("video-model"),
     prompt = "A calm product walkthrough animation.",
     durationSeconds = 5f,
@@ -128,9 +128,10 @@ Video support depends heavily on the provider. Keep provider-specific knobs in
 ## Files
 
 Generated media uses `GeneratedFile`. Inputs can be built from `FileData`:
+import `ai.torad.aisdk.GeneratedFiles.fileData` when calling `fileData()`.
 
 ```kotlin
-val generated = generatedFile(
+val generated = GeneratedFile(
     FileData.Url(
         value = "https://example.com/source.png",
         mediaType = "image/png",
