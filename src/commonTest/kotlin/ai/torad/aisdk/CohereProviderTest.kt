@@ -174,7 +174,7 @@ class CohereProviderTest {
         assertEquals("lookup", result.toolCalls.single().toolName)
         assertEquals("Paris", result.toolCalls.single().input.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
         assertEquals(
-            listOf("Checking the supplied document.", "Need one lookup."),
+            listOf("Checking the supplied document."),
             result.content.filterIsInstance<ContentPart.Reasoning>().map { it.text },
         )
         assertEquals("Notes", result.content.filterIsInstance<ContentPart.Source>().single().title)

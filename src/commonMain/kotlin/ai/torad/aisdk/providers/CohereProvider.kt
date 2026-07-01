@@ -636,9 +636,6 @@ private class CohereChatLanguageModel(
                 }
             }
         }
-        (message["tool_plan"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
-            content += ContentPart.Reasoning(it)
-        }
         val toolCalls = (JsonAccess.arr(message, "tool_calls")).orEmpty().mapNotNull(::cohereToolCallPart)
         content += toolCalls
         content += (JsonAccess.arr(message, "citations")).orEmpty().mapNotNull(::cohereCitationPart)

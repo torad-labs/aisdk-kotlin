@@ -24,6 +24,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -67,7 +68,11 @@ class OpenAICompatibleProviderTest {
                             "prompt_tokens":5,
                             "completion_tokens":7,
                             "prompt_tokens_details":{"cached_tokens":2},
-                            "completion_tokens_details":{"reasoning_tokens":3}
+                            "completion_tokens_details":{
+                              "reasoning_tokens":3,
+                              "accepted_prediction_tokens":4,
+                              "rejected_prediction_tokens":1
+                            }
                           }
                         }
                     """.trimIndent(),
@@ -128,6 +133,9 @@ class OpenAICompatibleProviderTest {
         assertEquals(7, result.usage.completionTokens)
         assertEquals(2, result.usage.inputTokens.cacheRead)
         assertEquals(3, result.usage.outputTokens.reasoning)
+        val providerMetadata = result.providerMetadata.toMap()["openaiCompatible"]?.jsonObject
+        assertEquals(4, providerMetadata?.get("acceptedPredictionTokens")?.jsonPrimitive?.intOrNull)
+        assertEquals(1, providerMetadata?.get("rejectedPredictionTokens")?.jsonPrimitive?.intOrNull)
         assertEquals("chatcmpl_1", result.response.id)
         assertEquals("gpt-test", result.response.modelId)
     }
@@ -281,7 +289,7 @@ class OpenAICompatibleProviderTest {
 
                         data: {"id":"1","choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":":\"docs\"}"}}]}}]}
 
-                        data: {"id":"1","choices":[{"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":1,"completion_tokens":2}}
+                        data: {"id":"1","choices":[{"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":1,"completion_tokens":2,"completion_tokens_details":{"accepted_prediction_tokens":4,"rejected_prediction_tokens":1}}}
 
                         data: [DONE]
 
@@ -316,6 +324,9 @@ class OpenAICompatibleProviderTest {
         assertEquals(FinishReason.ToolCalls, finish.finishReason)
         assertEquals(1, finish.usage.promptTokens)
         assertEquals(2, finish.usage.completionTokens)
+        val finishMetadata = finish.providerMetadata.toMap()["openai"]?.jsonObject
+        assertEquals(4, finishMetadata?.get("acceptedPredictionTokens")?.jsonPrimitive?.intOrNull)
+        assertEquals(1, finishMetadata?.get("rejectedPredictionTokens")?.jsonPrimitive?.intOrNull)
     }
 
     @Test

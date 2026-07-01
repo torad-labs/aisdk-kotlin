@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 
 internal class OpenAIChatStreamState(
@@ -13,6 +14,7 @@ internal class OpenAIChatStreamState(
     private val convertUsage: ((JsonElement?) -> Usage)? = null,
 ) {
     private val toolCalls = linkedMapOf<Int, StreamingToolCall>()
+    private val providerMetadata = mutableMapOf<String, JsonElement>()
     private var finishReason = FinishReason.Other
     private var rawFinishReason: String? = null
     private var usage = Usage()
@@ -46,7 +48,26 @@ internal class OpenAIChatStreamState(
             finishReason = FinishReason.Error
             return events
         }
-        obj["usage"]?.let { usage = convertUsage?.invoke(it) ?: Usage.fromOpenAI(it) }
+        obj["usage"]?.let {
+            usage = convertUsage?.invoke(it) ?: Usage.fromOpenAI(it)
+            val details = JsonAccess.obj(it as? JsonObject, "completion_tokens_details")
+            val tokenMetadata = buildJsonObject {
+                details?.get("accepted_prediction_tokens")?.takeUnless { value -> value is JsonNull }?.let { value ->
+                    put("acceptedPredictionTokens", value)
+                }
+                details?.get("rejected_prediction_tokens")?.takeUnless { value -> value is JsonNull }?.let { value ->
+                    put("rejectedPredictionTokens", value)
+                }
+            }
+            if (tokenMetadata.isNotEmpty()) {
+                val prior = providerMetadata[providerKey]
+                providerMetadata[providerKey] = if (prior is JsonObject) {
+                    JsonObject(prior + tokenMetadata)
+                } else {
+                    tokenMetadata
+                }
+            }
+        }
         val choice = ((JsonAccess.arr(obj, "choices"))?.firstOrNull() as? JsonObject) ?: return events
         (choice["finish_reason"] as? JsonPrimitive)?.contentOrNull?.let {
             finishReason = FinishReason.fromOpenAI(it)
@@ -105,6 +126,11 @@ internal class OpenAIChatStreamState(
                 totalSteps = 1,
                 finishReason = finishReason,
                 usage = usage,
+                providerMetadata = if (providerMetadata.isEmpty()) {
+                    ProviderMetadata.None
+                } else {
+                    ProviderMetadata.Raw(JsonObject(providerMetadata))
+                },
                 rawFinishReason = rawFinishReason,
             ),
         )
