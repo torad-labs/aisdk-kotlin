@@ -33,34 +33,39 @@ public class TogetherAIImageModelOptions internal constructor(
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-public class TogetherAIImageModelOptionsBuilder internal constructor() {
+public class TogetherAIImageModelOptionsBuilder {
     private var steps: Int? = null
     private var guidance: Float? = null
     private var negativePrompt: String? = null
     private var disableSafetyChecker: Boolean? = null
     private var raw: Map<String, JsonElement> = emptyMap()
 
-    public fun steps(value: Int?) {
+    public fun steps(value: Int?): TogetherAIImageModelOptionsBuilder {
         steps = value
+        return this
     }
 
-    public fun guidance(value: Float?) {
+    public fun guidance(value: Float?): TogetherAIImageModelOptionsBuilder {
         guidance = value
+        return this
     }
 
-    public fun negativePrompt(value: String?) {
+    public fun negativePrompt(value: String?): TogetherAIImageModelOptionsBuilder {
         negativePrompt = value
+        return this
     }
 
-    public fun disableSafetyChecker(value: Boolean?) {
+    public fun disableSafetyChecker(value: Boolean?): TogetherAIImageModelOptionsBuilder {
         disableSafetyChecker = value
+        return this
     }
 
-    public fun raw(value: Map<String, JsonElement>) {
+    public fun raw(value: Map<String, JsonElement>): TogetherAIImageModelOptionsBuilder {
         raw = value
+        return this
     }
 
-    internal fun build(): TogetherAIImageModelOptions =
+    public fun build(): TogetherAIImageModelOptions =
         TogetherAIImageModelOptions(
             steps = steps,
             guidance = guidance,
@@ -83,14 +88,15 @@ public class TogetherAIRerankingModelOptions internal constructor(
     public val rankFields: List<String>? = null,
 )
 
-public class TogetherAIRerankingModelOptionsBuilder internal constructor() {
+public class TogetherAIRerankingModelOptionsBuilder {
     private var rankFields: List<String>? = null
 
-    public fun rankFields(value: List<String>?) {
+    public fun rankFields(value: List<String>?): TogetherAIRerankingModelOptionsBuilder {
         rankFields = value
+        return this
     }
 
-    internal fun build(): TogetherAIRerankingModelOptions =
+    public fun build(): TogetherAIRerankingModelOptions =
         TogetherAIRerankingModelOptions(rankFields = rankFields)
 }
 
@@ -116,24 +122,27 @@ public class TogetherAIProviderSettings internal constructor(
         OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
-public class TogetherAIProviderSettingsBuilder internal constructor() {
+public class TogetherAIProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.together.xyz/v1"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): TogetherAIProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): TogetherAIProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): TogetherAIProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): TogetherAIProviderSettings =
+    public fun build(): TogetherAIProviderSettings =
         TogetherAIProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

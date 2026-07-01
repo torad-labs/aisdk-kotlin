@@ -42,7 +42,7 @@ public class LMNTSpeechModelOptions internal constructor(
     public val temperature: Float? = null,
 )
 
-public class LMNTSpeechModelOptionsBuilder internal constructor() {
+public class LMNTSpeechModelOptionsBuilder {
     private var model: String? = null
     private var format: String? = null
     private var sampleRate: Int? = null
@@ -53,43 +53,52 @@ public class LMNTSpeechModelOptionsBuilder internal constructor() {
     private var topP: Float? = null
     private var temperature: Float? = null
 
-    public fun model(value: String?) {
+    public fun model(value: String?): LMNTSpeechModelOptionsBuilder {
         model = value
+        return this
     }
 
-    public fun format(value: String?) {
+    public fun format(value: String?): LMNTSpeechModelOptionsBuilder {
         format = value
+        return this
     }
 
-    public fun sampleRate(value: Int?) {
+    public fun sampleRate(value: Int?): LMNTSpeechModelOptionsBuilder {
         sampleRate = value
+        return this
     }
 
-    public fun speed(value: Float?) {
+    public fun speed(value: Float?): LMNTSpeechModelOptionsBuilder {
         speed = value
+        return this
     }
 
-    public fun seed(value: Int?) {
+    public fun seed(value: Int?): LMNTSpeechModelOptionsBuilder {
         seed = value
+        return this
     }
 
-    public fun conversational(value: Boolean?) {
+    public fun conversational(value: Boolean?): LMNTSpeechModelOptionsBuilder {
         conversational = value
+        return this
     }
 
-    public fun length(value: Float?) {
+    public fun length(value: Float?): LMNTSpeechModelOptionsBuilder {
         length = value
+        return this
     }
 
-    public fun topP(value: Float?) {
+    public fun topP(value: Float?): LMNTSpeechModelOptionsBuilder {
         topP = value
+        return this
     }
 
-    public fun temperature(value: Float?) {
+    public fun temperature(value: Float?): LMNTSpeechModelOptionsBuilder {
         temperature = value
+        return this
     }
 
-    internal fun build(): LMNTSpeechModelOptions =
+    public fun build(): LMNTSpeechModelOptions =
         LMNTSpeechModelOptions(
             model = model,
             format = format,
@@ -123,19 +132,21 @@ public class LMNTProviderSettings internal constructor(
     }
 }
 
-public class LMNTProviderSettingsBuilder internal constructor() {
+public class LMNTProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): LMNTProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): LMNTProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): LMNTProviderSettings =
+    public fun build(): LMNTProviderSettings =
         LMNTProviderSettings(
             apiKey = apiKey,
             headers = headers,

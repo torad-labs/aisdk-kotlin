@@ -25,24 +25,27 @@ public class VercelProviderSettings internal constructor(
         OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
-public class VercelProviderSettingsBuilder internal constructor() {
+public class VercelProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.v0.dev/v1"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): VercelProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): VercelProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): VercelProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): VercelProviderSettings =
+    public fun build(): VercelProviderSettings =
         VercelProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

@@ -58,7 +58,7 @@ public class RevaiTranscriptionModelOptions internal constructor(
     public val forced_alignment: Boolean? = null,
 )
 
-public class RevaiTranscriptionModelOptionsBuilder internal constructor() {
+public class RevaiTranscriptionModelOptionsBuilder {
     private var metadata: String? = null
     private var notification_config: JsonObject? = null
     private var delete_after_seconds: Int? = null
@@ -84,103 +84,127 @@ public class RevaiTranscriptionModelOptionsBuilder internal constructor() {
     private var language: String? = null
     private var forced_alignment: Boolean? = null
 
-    public fun metadata(value: String?) {
+    public fun metadata(value: String?): RevaiTranscriptionModelOptionsBuilder {
         metadata = value
+        return this
     }
 
-    public fun notification_config(value: JsonObject?) {
+    public fun notification_config(value: JsonObject?): RevaiTranscriptionModelOptionsBuilder {
         notification_config = value
+        return this
     }
 
-    public fun delete_after_seconds(value: Int?) {
+    public fun delete_after_seconds(value: Int?): RevaiTranscriptionModelOptionsBuilder {
         delete_after_seconds = value
+        return this
     }
 
-    public fun verbatim(value: Boolean?) {
+    public fun verbatim(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         verbatim = value
+        return this
     }
 
-    public fun rush(value: Boolean?) {
+    public fun rush(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         rush = value
+        return this
     }
 
-    public fun test_mode(value: Boolean?) {
+    public fun test_mode(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         test_mode = value
+        return this
     }
 
-    public fun segments_to_transcribe(value: JsonElement?) {
+    public fun segments_to_transcribe(value: JsonElement?): RevaiTranscriptionModelOptionsBuilder {
         segments_to_transcribe = value
+        return this
     }
 
-    public fun speaker_names(value: JsonElement?) {
+    public fun speaker_names(value: JsonElement?): RevaiTranscriptionModelOptionsBuilder {
         speaker_names = value
+        return this
     }
 
-    public fun skip_diarization(value: Boolean?) {
+    public fun skip_diarization(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         skip_diarization = value
+        return this
     }
 
-    public fun skip_postprocessing(value: Boolean?) {
+    public fun skip_postprocessing(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         skip_postprocessing = value
+        return this
     }
 
-    public fun skip_punctuation(value: Boolean?) {
+    public fun skip_punctuation(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         skip_punctuation = value
+        return this
     }
 
-    public fun remove_disfluencies(value: Boolean?) {
+    public fun remove_disfluencies(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         remove_disfluencies = value
+        return this
     }
 
-    public fun remove_atmospherics(value: Boolean?) {
+    public fun remove_atmospherics(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         remove_atmospherics = value
+        return this
     }
 
-    public fun filter_profanity(value: Boolean?) {
+    public fun filter_profanity(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         filter_profanity = value
+        return this
     }
 
-    public fun speaker_channels_count(value: Int?) {
+    public fun speaker_channels_count(value: Int?): RevaiTranscriptionModelOptionsBuilder {
         speaker_channels_count = value
+        return this
     }
 
-    public fun speakers_count(value: Int?) {
+    public fun speakers_count(value: Int?): RevaiTranscriptionModelOptionsBuilder {
         speakers_count = value
+        return this
     }
 
-    public fun diarization_type(value: String?) {
+    public fun diarization_type(value: String?): RevaiTranscriptionModelOptionsBuilder {
         diarization_type = value
+        return this
     }
 
-    public fun custom_vocabulary_id(value: String?) {
+    public fun custom_vocabulary_id(value: String?): RevaiTranscriptionModelOptionsBuilder {
         custom_vocabulary_id = value
+        return this
     }
 
-    public fun custom_vocabularies(value: JsonElement?) {
+    public fun custom_vocabularies(value: JsonElement?): RevaiTranscriptionModelOptionsBuilder {
         custom_vocabularies = value
+        return this
     }
 
-    public fun strict_custom_vocabulary(value: Boolean?) {
+    public fun strict_custom_vocabulary(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         strict_custom_vocabulary = value
+        return this
     }
 
-    public fun summarization_config(value: JsonObject?) {
+    public fun summarization_config(value: JsonObject?): RevaiTranscriptionModelOptionsBuilder {
         summarization_config = value
+        return this
     }
 
-    public fun translation_config(value: JsonObject?) {
+    public fun translation_config(value: JsonObject?): RevaiTranscriptionModelOptionsBuilder {
         translation_config = value
+        return this
     }
 
-    public fun language(value: String?) {
+    public fun language(value: String?): RevaiTranscriptionModelOptionsBuilder {
         language = value
+        return this
     }
 
-    public fun forced_alignment(value: Boolean?) {
+    public fun forced_alignment(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         forced_alignment = value
+        return this
     }
 
-    internal fun build(): RevaiTranscriptionModelOptions =
+    public fun build(): RevaiTranscriptionModelOptions =
         RevaiTranscriptionModelOptions(
             metadata = metadata,
             notification_config = notification_config,
@@ -231,29 +255,33 @@ public class RevaiProviderSettings internal constructor(
     }
 }
 
-public class RevaiProviderSettingsBuilder internal constructor() {
+public class RevaiProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
     private var pollingIntervalMillis: Long = 1_000L
     private var maxPollAttempts: Int = 60
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): RevaiProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): RevaiProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun pollingIntervalMillis(value: Long) {
+    public fun pollingIntervalMillis(value: Long): RevaiProviderSettingsBuilder {
         pollingIntervalMillis = value
+        return this
     }
 
-    public fun maxPollAttempts(value: Int) {
+    public fun maxPollAttempts(value: Int): RevaiProviderSettingsBuilder {
         maxPollAttempts = value
+        return this
     }
 
-    internal fun build(): RevaiProviderSettings =
+    public fun build(): RevaiProviderSettings =
         RevaiProviderSettings(
             apiKey = apiKey,
             headers = headers,

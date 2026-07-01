@@ -35,29 +35,33 @@ public class LumaImageModelOptions internal constructor(
     public val maxPollAttempts: Int? = null,
 )
 
-public class LumaImageModelOptionsBuilder internal constructor() {
+public class LumaImageModelOptionsBuilder {
     private var referenceType: String? = null
     private var images: JsonArray? = null
     private var pollIntervalMillis: Long? = null
     private var maxPollAttempts: Int? = null
 
-    public fun referenceType(value: String?) {
+    public fun referenceType(value: String?): LumaImageModelOptionsBuilder {
         referenceType = value
+        return this
     }
 
-    public fun images(value: JsonArray?) {
+    public fun images(value: JsonArray?): LumaImageModelOptionsBuilder {
         images = value
+        return this
     }
 
-    public fun pollIntervalMillis(value: Long?) {
+    public fun pollIntervalMillis(value: Long?): LumaImageModelOptionsBuilder {
         pollIntervalMillis = value
+        return this
     }
 
-    public fun maxPollAttempts(value: Int?) {
+    public fun maxPollAttempts(value: Int?): LumaImageModelOptionsBuilder {
         maxPollAttempts = value
+        return this
     }
 
-    internal fun build(): LumaImageModelOptions =
+    public fun build(): LumaImageModelOptions =
         LumaImageModelOptions(
             referenceType = referenceType,
             images = images,
@@ -79,24 +83,27 @@ public class LumaProviderSettings internal constructor(
     public val headers: Map<String, String> = emptyMap(),
 )
 
-public class LumaProviderSettingsBuilder internal constructor() {
+public class LumaProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.lumalabs.ai"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): LumaProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): LumaProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): LumaProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): LumaProviderSettings =
+    public fun build(): LumaProviderSettings =
         LumaProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

@@ -37,7 +37,7 @@ public class QuiverAIImageModelOptions internal constructor(
     public val targetSize: Int? = null,
 )
 
-public class QuiverAIImageModelOptionsBuilder internal constructor() {
+public class QuiverAIImageModelOptionsBuilder {
     private var operation: String? = null
     private var instructions: String? = null
     private var temperature: Double? = null
@@ -47,39 +47,47 @@ public class QuiverAIImageModelOptionsBuilder internal constructor() {
     private var autoCrop: Boolean? = null
     private var targetSize: Int? = null
 
-    public fun operation(value: String?) {
+    public fun operation(value: String?): QuiverAIImageModelOptionsBuilder {
         operation = value
+        return this
     }
 
-    public fun instructions(value: String?) {
+    public fun instructions(value: String?): QuiverAIImageModelOptionsBuilder {
         instructions = value
+        return this
     }
 
-    public fun temperature(value: Double?) {
+    public fun temperature(value: Double?): QuiverAIImageModelOptionsBuilder {
         temperature = value
+        return this
     }
 
-    public fun topP(value: Double?) {
+    public fun topP(value: Double?): QuiverAIImageModelOptionsBuilder {
         topP = value
+        return this
     }
 
-    public fun presencePenalty(value: Double?) {
+    public fun presencePenalty(value: Double?): QuiverAIImageModelOptionsBuilder {
         presencePenalty = value
+        return this
     }
 
-    public fun maxOutputTokens(value: Int?) {
+    public fun maxOutputTokens(value: Int?): QuiverAIImageModelOptionsBuilder {
         maxOutputTokens = value
+        return this
     }
 
-    public fun autoCrop(value: Boolean?) {
+    public fun autoCrop(value: Boolean?): QuiverAIImageModelOptionsBuilder {
         autoCrop = value
+        return this
     }
 
-    public fun targetSize(value: Int?) {
+    public fun targetSize(value: Int?): QuiverAIImageModelOptionsBuilder {
         targetSize = value
+        return this
     }
 
-    internal fun build(): QuiverAIImageModelOptions =
+    public fun build(): QuiverAIImageModelOptions =
         QuiverAIImageModelOptions(
             operation = operation,
             instructions = instructions,
@@ -138,24 +146,27 @@ public class QuiverAIProviderSettings internal constructor(
     }
 }
 
-public class QuiverAIProviderSettingsBuilder internal constructor() {
+public class QuiverAIProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.quiver.ai/v1"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): QuiverAIProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): QuiverAIProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): QuiverAIProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): QuiverAIProviderSettings =
+    public fun build(): QuiverAIProviderSettings =
         QuiverAIProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

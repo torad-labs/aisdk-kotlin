@@ -50,7 +50,7 @@ public class OpenResponsesProviderSettings internal constructor(
     public val fileIdPrefixes: List<String> = emptyList(),
 )
 
-public class OpenResponsesProviderSettingsBuilder internal constructor() {
+public class OpenResponsesProviderSettingsBuilder {
     private var url: String? = null
     private var name: String? = null
     private var apiKey: String? = null
@@ -61,43 +61,52 @@ public class OpenResponsesProviderSettingsBuilder internal constructor() {
     private var supportedUrls: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS
     private var fileIdPrefixes: List<String> = emptyList()
 
-    public fun url(value: String) {
+    public fun url(value: String): OpenResponsesProviderSettingsBuilder {
         url = value
+        return this
     }
 
-    public fun name(value: String) {
+    public fun name(value: String): OpenResponsesProviderSettingsBuilder {
         name = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): OpenResponsesProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): OpenResponsesProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun authHeadersProvider(value: (suspend () -> Map<String, String>)?) {
+    public fun authHeadersProvider(value: (suspend () -> Map<String, String>)?): OpenResponsesProviderSettingsBuilder {
         authHeadersProvider = value
+        return this
     }
 
-    public fun userAgentSuffix(value: String?) {
+    public fun userAgentSuffix(value: String?): OpenResponsesProviderSettingsBuilder {
         userAgentSuffix = value
+        return this
     }
 
-    public fun providerOptionsName(value: String?) {
+    public fun providerOptionsName(value: String?): OpenResponsesProviderSettingsBuilder {
         providerOptionsName = value
+        return this
     }
 
-    public fun supportedUrls(value: Map<String, List<String>>) {
+    public fun supportedUrls(value: Map<String, List<String>>): OpenResponsesProviderSettingsBuilder {
         supportedUrls = value
+        return this
     }
 
-    public fun fileIdPrefixes(value: List<String>) {
+    public fun fileIdPrefixes(value: List<String>): OpenResponsesProviderSettingsBuilder {
         fileIdPrefixes = value
+        return this
     }
 
-    internal fun build(): OpenResponsesProviderSettings =
+    public fun build(): OpenResponsesProviderSettings =
         OpenResponsesProviderSettings(
             url = requireNotNull(url) { "OpenResponsesProviderSettings.url is required" },
             name = requireNotNull(name) { "OpenResponsesProviderSettings.name is required" },
@@ -144,7 +153,7 @@ public class OpenResponsesOptions internal constructor(
     public val allowedTools: OpenResponsesAllowedTools? = null,
 )
 
-public class OpenResponsesOptionsBuilder internal constructor() {
+public class OpenResponsesOptionsBuilder {
     private var conversation: String? = null
     private var include: List<String>? = null
     private var instructions: String? = null
@@ -169,99 +178,122 @@ public class OpenResponsesOptionsBuilder internal constructor() {
     private var forceReasoning: Boolean? = null
     private var allowedTools: OpenResponsesAllowedTools? = null
 
-    public fun conversation(value: String?) {
+    public fun conversation(value: String?): OpenResponsesOptionsBuilder {
         conversation = value
+        return this
     }
 
-    public fun include(value: List<String>?) {
+    public fun include(value: List<String>?): OpenResponsesOptionsBuilder {
         include = value
+        return this
     }
 
-    public fun instructions(value: String?) {
+    public fun instructions(value: String?): OpenResponsesOptionsBuilder {
         instructions = value
+        return this
     }
 
-    public fun logprobs(value: JsonElement?) {
+    public fun logprobs(value: JsonElement?): OpenResponsesOptionsBuilder {
         logprobs = value
+        return this
     }
 
-    public fun maxToolCalls(value: Int?) {
+    public fun maxToolCalls(value: Int?): OpenResponsesOptionsBuilder {
         maxToolCalls = value
+        return this
     }
 
-    public fun metadata(value: JsonElement?) {
+    public fun metadata(value: JsonElement?): OpenResponsesOptionsBuilder {
         metadata = value
+        return this
     }
 
-    public fun parallelToolCalls(value: Boolean?) {
+    public fun parallelToolCalls(value: Boolean?): OpenResponsesOptionsBuilder {
         parallelToolCalls = value
+        return this
     }
 
-    public fun previousResponseId(value: String?) {
+    public fun previousResponseId(value: String?): OpenResponsesOptionsBuilder {
         previousResponseId = value
+        return this
     }
 
-    public fun promptCacheKey(value: String?) {
+    public fun promptCacheKey(value: String?): OpenResponsesOptionsBuilder {
         promptCacheKey = value
+        return this
     }
 
-    public fun promptCacheRetention(value: String?) {
+    public fun promptCacheRetention(value: String?): OpenResponsesOptionsBuilder {
         promptCacheRetention = value
+        return this
     }
 
-    public fun reasoningEffort(value: String?) {
+    public fun reasoningEffort(value: String?): OpenResponsesOptionsBuilder {
         reasoningEffort = value
+        return this
     }
 
-    public fun reasoningSummary(value: String?) {
+    public fun reasoningSummary(value: String?): OpenResponsesOptionsBuilder {
         reasoningSummary = value
+        return this
     }
 
-    public fun safetyIdentifier(value: String?) {
+    public fun safetyIdentifier(value: String?): OpenResponsesOptionsBuilder {
         safetyIdentifier = value
+        return this
     }
 
-    public fun serviceTier(value: String?) {
+    public fun serviceTier(value: String?): OpenResponsesOptionsBuilder {
         serviceTier = value
+        return this
     }
 
-    public fun store(value: Boolean?) {
+    public fun store(value: Boolean?): OpenResponsesOptionsBuilder {
         store = value
+        return this
     }
 
-    public fun passThroughUnsupportedFiles(value: Boolean?) {
+    public fun passThroughUnsupportedFiles(value: Boolean?): OpenResponsesOptionsBuilder {
         passThroughUnsupportedFiles = value
+        return this
     }
 
-    public fun strictJsonSchema(value: Boolean?) {
+    public fun strictJsonSchema(value: Boolean?): OpenResponsesOptionsBuilder {
         strictJsonSchema = value
+        return this
     }
 
-    public fun textVerbosity(value: String?) {
+    public fun textVerbosity(value: String?): OpenResponsesOptionsBuilder {
         textVerbosity = value
+        return this
     }
 
-    public fun truncation(value: String?) {
+    public fun truncation(value: String?): OpenResponsesOptionsBuilder {
         truncation = value
+        return this
     }
 
-    public fun user(value: String?) {
+    public fun user(value: String?): OpenResponsesOptionsBuilder {
         user = value
+        return this
     }
 
-    public fun systemMessageMode(value: String?) {
+    public fun systemMessageMode(value: String?): OpenResponsesOptionsBuilder {
         systemMessageMode = value
+        return this
     }
 
-    public fun forceReasoning(value: Boolean?) {
+    public fun forceReasoning(value: Boolean?): OpenResponsesOptionsBuilder {
         forceReasoning = value
+        return this
     }
 
-    public fun allowedTools(value: OpenResponsesAllowedTools?) {
+    public fun allowedTools(value: OpenResponsesAllowedTools?): OpenResponsesOptionsBuilder {
         allowedTools = value
+        return this
     }
 
-    internal fun build(): OpenResponsesOptions =
+    public fun build(): OpenResponsesOptions =
         OpenResponsesOptions(
             conversation = conversation,
             include = include,
@@ -301,19 +333,21 @@ public class OpenResponsesAllowedTools internal constructor(
     public val mode: String? = null,
 )
 
-public class OpenResponsesAllowedToolsBuilder internal constructor() {
+public class OpenResponsesAllowedToolsBuilder {
     private var toolNames: List<String> = emptyList()
     private var mode: String? = null
 
-    public fun toolNames(value: List<String>) {
+    public fun toolNames(value: List<String>): OpenResponsesAllowedToolsBuilder {
         toolNames = value
+        return this
     }
 
-    public fun mode(value: String?) {
+    public fun mode(value: String?): OpenResponsesAllowedToolsBuilder {
         mode = value
+        return this
     }
 
-    internal fun build(): OpenResponsesAllowedTools =
+    public fun build(): OpenResponsesAllowedTools =
         OpenResponsesAllowedTools(
             toolNames = toolNames,
             mode = mode,

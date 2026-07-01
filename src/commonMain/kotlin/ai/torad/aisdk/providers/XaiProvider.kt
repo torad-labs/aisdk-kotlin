@@ -166,24 +166,27 @@ public class XaiProviderSettings internal constructor(
     }
 }
 
-public class XaiProviderSettingsBuilder internal constructor() {
+public class XaiProviderSettingsBuilder {
     private var baseURL: String = "https://api.x.ai/v1"
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): XaiProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): XaiProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): XaiProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): XaiProviderSettings =
+    public fun build(): XaiProviderSettings =
         XaiProviderSettings(
             baseURL = baseURL,
             apiKey = apiKey,
@@ -206,34 +209,39 @@ public class XaiLanguageModelChatOptions internal constructor(
     public val searchParameters: JsonElement? = null,
 )
 
-public class XaiLanguageModelChatOptionsBuilder internal constructor() {
+public class XaiLanguageModelChatOptionsBuilder {
     private var reasoningEffort: String? = null
     private var logprobs: Boolean? = null
     private var topLogprobs: Int? = null
     private var parallelFunctionCalling: Boolean? = null
     private var searchParameters: JsonElement? = null
 
-    public fun reasoningEffort(value: String?) {
+    public fun reasoningEffort(value: String?): XaiLanguageModelChatOptionsBuilder {
         reasoningEffort = value
+        return this
     }
 
-    public fun logprobs(value: Boolean?) {
+    public fun logprobs(value: Boolean?): XaiLanguageModelChatOptionsBuilder {
         logprobs = value
+        return this
     }
 
-    public fun topLogprobs(value: Int?) {
+    public fun topLogprobs(value: Int?): XaiLanguageModelChatOptionsBuilder {
         topLogprobs = value
+        return this
     }
 
-    public fun parallel_function_calling(value: Boolean?) {
+    public fun parallel_function_calling(value: Boolean?): XaiLanguageModelChatOptionsBuilder {
         parallelFunctionCalling = value
+        return this
     }
 
-    public fun searchParameters(value: JsonElement?) {
+    public fun searchParameters(value: JsonElement?): XaiLanguageModelChatOptionsBuilder {
         searchParameters = value
+        return this
     }
 
-    internal fun build(): XaiLanguageModelChatOptions =
+    public fun build(): XaiLanguageModelChatOptions =
         XaiLanguageModelChatOptions(
             reasoningEffort = reasoningEffort,
             logprobs = logprobs,
@@ -255,19 +263,21 @@ public class XaiLanguageModelResponsesOptions internal constructor(
     public val reasoningSummary: String? = null,
 )
 
-public class XaiLanguageModelResponsesOptionsBuilder internal constructor() {
+public class XaiLanguageModelResponsesOptionsBuilder {
     private var reasoningEffort: String? = null
     private var reasoningSummary: String? = null
 
-    public fun reasoningEffort(value: String?) {
+    public fun reasoningEffort(value: String?): XaiLanguageModelResponsesOptionsBuilder {
         reasoningEffort = value
+        return this
     }
 
-    public fun reasoningSummary(value: String?) {
+    public fun reasoningSummary(value: String?): XaiLanguageModelResponsesOptionsBuilder {
         reasoningSummary = value
+        return this
     }
 
-    internal fun build(): XaiLanguageModelResponsesOptions =
+    public fun build(): XaiLanguageModelResponsesOptions =
         XaiLanguageModelResponsesOptions(
             reasoningEffort = reasoningEffort,
             reasoningSummary = reasoningSummary,
@@ -290,7 +300,7 @@ public class XaiImageModelOptions internal constructor(
     public val user: String? = null,
 )
 
-public class XaiImageModelOptionsBuilder internal constructor() {
+public class XaiImageModelOptionsBuilder {
     private var aspect_ratio: String? = null
     private var output_format: String? = null
     private var sync_mode: Boolean? = null
@@ -298,31 +308,37 @@ public class XaiImageModelOptionsBuilder internal constructor() {
     private var quality: String? = null
     private var user: String? = null
 
-    public fun aspect_ratio(value: String?) {
+    public fun aspect_ratio(value: String?): XaiImageModelOptionsBuilder {
         aspect_ratio = value
+        return this
     }
 
-    public fun output_format(value: String?) {
+    public fun output_format(value: String?): XaiImageModelOptionsBuilder {
         output_format = value
+        return this
     }
 
-    public fun sync_mode(value: Boolean?) {
+    public fun sync_mode(value: Boolean?): XaiImageModelOptionsBuilder {
         sync_mode = value
+        return this
     }
 
-    public fun resolution(value: String?) {
+    public fun resolution(value: String?): XaiImageModelOptionsBuilder {
         resolution = value
+        return this
     }
 
-    public fun quality(value: String?) {
+    public fun quality(value: String?): XaiImageModelOptionsBuilder {
         quality = value
+        return this
     }
 
-    public fun user(value: String?) {
+    public fun user(value: String?): XaiImageModelOptionsBuilder {
         user = value
+        return this
     }
 
-    internal fun build(): XaiImageModelOptions =
+    public fun build(): XaiImageModelOptions =
         XaiImageModelOptions(
             aspect_ratio = aspect_ratio,
             output_format = output_format,
@@ -349,7 +365,7 @@ public class XaiVideoModelOptions internal constructor(
     public val resolution: String? = null,
 )
 
-public class XaiVideoModelOptionsBuilder internal constructor() {
+public class XaiVideoModelOptionsBuilder {
     private var mode: String? = null
     private var videoUrl: String? = null
     private var referenceImageUrls: List<String>? = null
@@ -357,31 +373,37 @@ public class XaiVideoModelOptionsBuilder internal constructor() {
     private var pollTimeoutMs: Long? = null
     private var resolution: String? = null
 
-    public fun mode(value: String?) {
+    public fun mode(value: String?): XaiVideoModelOptionsBuilder {
         mode = value
+        return this
     }
 
-    public fun videoUrl(value: String?) {
+    public fun videoUrl(value: String?): XaiVideoModelOptionsBuilder {
         videoUrl = value
+        return this
     }
 
-    public fun referenceImageUrls(value: List<String>?) {
+    public fun referenceImageUrls(value: List<String>?): XaiVideoModelOptionsBuilder {
         referenceImageUrls = value
+        return this
     }
 
-    public fun pollIntervalMs(value: Long?) {
+    public fun pollIntervalMs(value: Long?): XaiVideoModelOptionsBuilder {
         pollIntervalMs = value
+        return this
     }
 
-    public fun pollTimeoutMs(value: Long?) {
+    public fun pollTimeoutMs(value: Long?): XaiVideoModelOptionsBuilder {
         pollTimeoutMs = value
+        return this
     }
 
-    public fun resolution(value: String?) {
+    public fun resolution(value: String?): XaiVideoModelOptionsBuilder {
         resolution = value
+        return this
     }
 
-    internal fun build(): XaiVideoModelOptions =
+    public fun build(): XaiVideoModelOptions =
         XaiVideoModelOptions(
             mode = mode,
             videoUrl = videoUrl,

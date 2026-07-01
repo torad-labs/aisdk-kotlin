@@ -89,24 +89,27 @@ public class PerplexityProviderSettings internal constructor(
     }
 }
 
-public class PerplexityProviderSettingsBuilder internal constructor() {
+public class PerplexityProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.perplexity.ai"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): PerplexityProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): PerplexityProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): PerplexityProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): PerplexityProviderSettings =
+    public fun build(): PerplexityProviderSettings =
         PerplexityProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

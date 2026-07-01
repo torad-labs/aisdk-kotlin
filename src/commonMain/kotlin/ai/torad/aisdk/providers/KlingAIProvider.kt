@@ -66,29 +66,33 @@ public class KlingAIProviderSettings internal constructor(
         Base64Codec.encode(bytes).replace('+', '-').replace('/', '_').trimEnd('=')
 }
 
-public class KlingAIProviderSettingsBuilder internal constructor() {
+public class KlingAIProviderSettingsBuilder {
     private var accessKey: String? = null
     private var secretKey: String? = null
     private var baseURL: String = "https://api-singapore.klingai.com"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun accessKey(value: String?) {
+    public fun accessKey(value: String?): KlingAIProviderSettingsBuilder {
         accessKey = value
+        return this
     }
 
-    public fun secretKey(value: String?) {
+    public fun secretKey(value: String?): KlingAIProviderSettingsBuilder {
         secretKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): KlingAIProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): KlingAIProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): KlingAIProviderSettings =
+    public fun build(): KlingAIProviderSettings =
         KlingAIProviderSettings(
             accessKey = accessKey,
             secretKey = secretKey,
@@ -126,7 +130,7 @@ public class KlingAIVideoModelOptions internal constructor(
     public val keepOriginalSound: String? = null,
 )
 
-public class KlingAIVideoModelOptionsBuilder internal constructor() {
+public class KlingAIVideoModelOptionsBuilder {
     private var mode: String? = null
     private var pollIntervalMs: Long? = null
     private var pollTimeoutMs: Long? = null
@@ -147,83 +151,102 @@ public class KlingAIVideoModelOptionsBuilder internal constructor() {
     private var characterOrientation: String? = null
     private var keepOriginalSound: String? = null
 
-    public fun mode(value: String?) {
+    public fun mode(value: String?): KlingAIVideoModelOptionsBuilder {
         mode = value
+        return this
     }
 
-    public fun pollIntervalMs(value: Long?) {
+    public fun pollIntervalMs(value: Long?): KlingAIVideoModelOptionsBuilder {
         pollIntervalMs = value
+        return this
     }
 
-    public fun pollTimeoutMs(value: Long?) {
+    public fun pollTimeoutMs(value: Long?): KlingAIVideoModelOptionsBuilder {
         pollTimeoutMs = value
+        return this
     }
 
-    public fun negativePrompt(value: String?) {
+    public fun negativePrompt(value: String?): KlingAIVideoModelOptionsBuilder {
         negativePrompt = value
+        return this
     }
 
-    public fun sound(value: String?) {
+    public fun sound(value: String?): KlingAIVideoModelOptionsBuilder {
         sound = value
+        return this
     }
 
-    public fun cfgScale(value: Float?) {
+    public fun cfgScale(value: Float?): KlingAIVideoModelOptionsBuilder {
         cfgScale = value
+        return this
     }
 
-    public fun cameraControl(value: JsonObject?) {
+    public fun cameraControl(value: JsonObject?): KlingAIVideoModelOptionsBuilder {
         cameraControl = value
+        return this
     }
 
-    public fun imageTail(value: String?) {
+    public fun imageTail(value: String?): KlingAIVideoModelOptionsBuilder {
         imageTail = value
+        return this
     }
 
-    public fun staticMask(value: String?) {
+    public fun staticMask(value: String?): KlingAIVideoModelOptionsBuilder {
         staticMask = value
+        return this
     }
 
-    public fun dynamicMasks(value: JsonArray?) {
+    public fun dynamicMasks(value: JsonArray?): KlingAIVideoModelOptionsBuilder {
         dynamicMasks = value
+        return this
     }
 
-    public fun multiShot(value: Boolean?) {
+    public fun multiShot(value: Boolean?): KlingAIVideoModelOptionsBuilder {
         multiShot = value
+        return this
     }
 
-    public fun shotType(value: String?) {
+    public fun shotType(value: String?): KlingAIVideoModelOptionsBuilder {
         shotType = value
+        return this
     }
 
-    public fun multiPrompt(value: JsonArray?) {
+    public fun multiPrompt(value: JsonArray?): KlingAIVideoModelOptionsBuilder {
         multiPrompt = value
+        return this
     }
 
-    public fun elementList(value: JsonArray?) {
+    public fun elementList(value: JsonArray?): KlingAIVideoModelOptionsBuilder {
         elementList = value
+        return this
     }
 
-    public fun voiceList(value: JsonArray?) {
+    public fun voiceList(value: JsonArray?): KlingAIVideoModelOptionsBuilder {
         voiceList = value
+        return this
     }
 
-    public fun watermarkEnabled(value: Boolean?) {
+    public fun watermarkEnabled(value: Boolean?): KlingAIVideoModelOptionsBuilder {
         watermarkEnabled = value
+        return this
     }
 
-    public fun videoUrl(value: String?) {
+    public fun videoUrl(value: String?): KlingAIVideoModelOptionsBuilder {
         videoUrl = value
+        return this
     }
 
-    public fun characterOrientation(value: String?) {
+    public fun characterOrientation(value: String?): KlingAIVideoModelOptionsBuilder {
         characterOrientation = value
+        return this
     }
 
-    public fun keepOriginalSound(value: String?) {
+    public fun keepOriginalSound(value: String?): KlingAIVideoModelOptionsBuilder {
         keepOriginalSound = value
+        return this
     }
 
-    internal fun build(): KlingAIVideoModelOptions =
+    public fun build(): KlingAIVideoModelOptions =
         KlingAIVideoModelOptions(
             mode = mode,
             pollIntervalMs = pollIntervalMs,

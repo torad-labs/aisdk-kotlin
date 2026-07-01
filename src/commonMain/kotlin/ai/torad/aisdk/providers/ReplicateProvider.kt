@@ -43,7 +43,7 @@ public class ReplicateImageModelOptions internal constructor(
     public val strength: Double? = null,
 )
 
-public class ReplicateImageModelOptionsBuilder internal constructor() {
+public class ReplicateImageModelOptionsBuilder {
     private var maxWaitTimeInSeconds: Double? = null
     private var guidance_scale: Double? = null
     private var num_inference_steps: Double? = null
@@ -52,35 +52,42 @@ public class ReplicateImageModelOptionsBuilder internal constructor() {
     private var output_quality: Int? = null
     private var strength: Double? = null
 
-    public fun maxWaitTimeInSeconds(value: Double?) {
+    public fun maxWaitTimeInSeconds(value: Double?): ReplicateImageModelOptionsBuilder {
         maxWaitTimeInSeconds = value
+        return this
     }
 
-    public fun guidance_scale(value: Double?) {
+    public fun guidance_scale(value: Double?): ReplicateImageModelOptionsBuilder {
         guidance_scale = value
+        return this
     }
 
-    public fun num_inference_steps(value: Double?) {
+    public fun num_inference_steps(value: Double?): ReplicateImageModelOptionsBuilder {
         num_inference_steps = value
+        return this
     }
 
-    public fun negative_prompt(value: String?) {
+    public fun negative_prompt(value: String?): ReplicateImageModelOptionsBuilder {
         negative_prompt = value
+        return this
     }
 
-    public fun output_format(value: String?) {
+    public fun output_format(value: String?): ReplicateImageModelOptionsBuilder {
         output_format = value
+        return this
     }
 
-    public fun output_quality(value: Int?) {
+    public fun output_quality(value: Int?): ReplicateImageModelOptionsBuilder {
         output_quality = value
+        return this
     }
 
-    public fun strength(value: Double?) {
+    public fun strength(value: Double?): ReplicateImageModelOptionsBuilder {
         strength = value
+        return this
     }
 
-    internal fun build(): ReplicateImageModelOptions =
+    public fun build(): ReplicateImageModelOptions =
         ReplicateImageModelOptions(
             maxWaitTimeInSeconds = maxWaitTimeInSeconds,
             guidance_scale = guidance_scale,
@@ -114,7 +121,7 @@ public class ReplicateVideoModelOptions internal constructor(
     public val prompt_optimizer: Boolean? = null,
 )
 
-public class ReplicateVideoModelOptionsBuilder internal constructor() {
+public class ReplicateVideoModelOptionsBuilder {
     private var pollIntervalMs: Long? = null
     private var pollTimeoutMs: Long? = null
     private var maxWaitTimeInSeconds: Double? = null
@@ -128,55 +135,67 @@ public class ReplicateVideoModelOptionsBuilder internal constructor() {
     private var frames_per_second: Double? = null
     private var prompt_optimizer: Boolean? = null
 
-    public fun pollIntervalMs(value: Long?) {
+    public fun pollIntervalMs(value: Long?): ReplicateVideoModelOptionsBuilder {
         pollIntervalMs = value
+        return this
     }
 
-    public fun pollTimeoutMs(value: Long?) {
+    public fun pollTimeoutMs(value: Long?): ReplicateVideoModelOptionsBuilder {
         pollTimeoutMs = value
+        return this
     }
 
-    public fun maxWaitTimeInSeconds(value: Double?) {
+    public fun maxWaitTimeInSeconds(value: Double?): ReplicateVideoModelOptionsBuilder {
         maxWaitTimeInSeconds = value
+        return this
     }
 
-    public fun guidance_scale(value: Double?) {
+    public fun guidance_scale(value: Double?): ReplicateVideoModelOptionsBuilder {
         guidance_scale = value
+        return this
     }
 
-    public fun num_inference_steps(value: Double?) {
+    public fun num_inference_steps(value: Double?): ReplicateVideoModelOptionsBuilder {
         num_inference_steps = value
+        return this
     }
 
-    public fun motion_bucket_id(value: Double?) {
+    public fun motion_bucket_id(value: Double?): ReplicateVideoModelOptionsBuilder {
         motion_bucket_id = value
+        return this
     }
 
-    public fun cond_aug(value: Double?) {
+    public fun cond_aug(value: Double?): ReplicateVideoModelOptionsBuilder {
         cond_aug = value
+        return this
     }
 
-    public fun decoding_t(value: Double?) {
+    public fun decoding_t(value: Double?): ReplicateVideoModelOptionsBuilder {
         decoding_t = value
+        return this
     }
 
-    public fun video_length(value: String?) {
+    public fun video_length(value: String?): ReplicateVideoModelOptionsBuilder {
         video_length = value
+        return this
     }
 
-    public fun sizing_strategy(value: String?) {
+    public fun sizing_strategy(value: String?): ReplicateVideoModelOptionsBuilder {
         sizing_strategy = value
+        return this
     }
 
-    public fun frames_per_second(value: Double?) {
+    public fun frames_per_second(value: Double?): ReplicateVideoModelOptionsBuilder {
         frames_per_second = value
+        return this
     }
 
-    public fun prompt_optimizer(value: Boolean?) {
+    public fun prompt_optimizer(value: Boolean?): ReplicateVideoModelOptionsBuilder {
         prompt_optimizer = value
+        return this
     }
 
-    internal fun build(): ReplicateVideoModelOptions =
+    public fun build(): ReplicateVideoModelOptions =
         ReplicateVideoModelOptions(
             pollIntervalMs = pollIntervalMs,
             pollTimeoutMs = pollTimeoutMs,
@@ -272,24 +291,27 @@ public class ReplicateProviderSettings internal constructor(
     }
 }
 
-public class ReplicateProviderSettingsBuilder internal constructor() {
+public class ReplicateProviderSettingsBuilder {
     private var apiToken: String? = null
     private var baseURL: String = "https://api.replicate.com/v1"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiToken(value: String?) {
+    public fun apiToken(value: String?): ReplicateProviderSettingsBuilder {
         apiToken = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): ReplicateProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): ReplicateProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): ReplicateProviderSettings =
+    public fun build(): ReplicateProviderSettings =
         ReplicateProviderSettings(
             apiToken = apiToken,
             baseURL = baseURL,

@@ -4783,10 +4783,13 @@ final class ai.torad.aisdk.providers/HuggingFaceProviderSettings { // ai.torad.a
 }
 
 final class ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder { // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun generateId(kotlin/Function0<kotlin/String>) // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder.generateId|generateId(kotlin.Function0<kotlin.String>){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/HuggingFaceProviderSettings // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder.build|build(){}[0]
+    final fun generateId(kotlin/Function0<kotlin/String>): ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder.generateId|generateId(kotlin.Function0<kotlin.String>){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder // ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/HuggingFaceResponsesSettings { // ai.torad.aisdk.providers/HuggingFaceResponsesSettings|null[0]
@@ -4820,10 +4823,13 @@ final class ai.torad.aisdk.providers/HuggingFaceResponsesSettings { // ai.torad.
 }
 
 final class ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder { // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder|null[0]
-    final fun instructions(kotlin/String?) // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder.instructions|instructions(kotlin.String?){}[0]
-    final fun metadata(kotlin.collections/Map<kotlin/String, kotlin/String>?) // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder.metadata|metadata(kotlin.collections.Map<kotlin.String,kotlin.String>?){}[0]
-    final fun reasoningEffort(kotlin/String?) // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
-    final fun strictJsonSchema(kotlin/Boolean?) // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder.strictJsonSchema|strictJsonSchema(kotlin.Boolean?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/HuggingFaceResponsesSettings // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder.build|build(){}[0]
+    final fun instructions(kotlin/String?): ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder.instructions|instructions(kotlin.String?){}[0]
+    final fun metadata(kotlin.collections/Map<kotlin/String, kotlin/String>?): ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder.metadata|metadata(kotlin.collections.Map<kotlin.String,kotlin.String>?){}[0]
+    final fun reasoningEffort(kotlin/String?): ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
+    final fun strictJsonSchema(kotlin/Boolean?): ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder // ai.torad.aisdk.providers/HuggingFaceResponsesSettingsBuilder.strictJsonSchema|strictJsonSchema(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/HumeProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/HumeProvider|null[0]
@@ -4869,8 +4875,11 @@ final class ai.torad.aisdk.providers/HumeProviderSettings { // ai.torad.aisdk.pr
 }
 
 final class ai.torad.aisdk.providers/HumeProviderSettingsBuilder { // ai.torad.aisdk.providers/HumeProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/HumeProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/HumeProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/HumeProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/HumeProviderSettingsBuilder // ai.torad.aisdk.providers/HumeProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun build(): ai.torad.aisdk.providers/HumeProviderSettings // ai.torad.aisdk.providers/HumeProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/HumeProviderSettingsBuilder // ai.torad.aisdk.providers/HumeProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/HumeSpeechModelOptions { // ai.torad.aisdk.providers/HumeSpeechModelOptions|null[0]
@@ -4896,7 +4905,10 @@ final class ai.torad.aisdk.providers/HumeSpeechModelOptions { // ai.torad.aisdk.
 }
 
 final class ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder { // ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder|null[0]
-    final fun context(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder.context|context(kotlinx.serialization.json.JsonObject?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/HumeSpeechModelOptions // ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder.build|build(){}[0]
+    final fun context(kotlinx.serialization.json/JsonObject?): ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder // ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder.context|context(kotlinx.serialization.json.JsonObject?){}[0]
 }
 
 final class ai.torad.aisdk.providers/KlingAIProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/KlingAIProvider|null[0]
@@ -4945,10 +4957,13 @@ final class ai.torad.aisdk.providers/KlingAIProviderSettings { // ai.torad.aisdk
 }
 
 final class ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder { // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder|null[0]
-    final fun accessKey(kotlin/String?) // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder.accessKey|accessKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-    final fun secretKey(kotlin/String?) // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder.secretKey|secretKey(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun accessKey(kotlin/String?): ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder.accessKey|accessKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/KlingAIProviderSettings // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun secretKey(kotlin/String?): ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder // ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder.secretKey|secretKey(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/KlingAIVideoModelOptions { // ai.torad.aisdk.providers/KlingAIVideoModelOptions|null[0]
@@ -5010,25 +5025,28 @@ final class ai.torad.aisdk.providers/KlingAIVideoModelOptions { // ai.torad.aisd
 }
 
 final class ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder { // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder|null[0]
-    final fun cameraControl(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.cameraControl|cameraControl(kotlinx.serialization.json.JsonObject?){}[0]
-    final fun cfgScale(kotlin/Float?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.cfgScale|cfgScale(kotlin.Float?){}[0]
-    final fun characterOrientation(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.characterOrientation|characterOrientation(kotlin.String?){}[0]
-    final fun dynamicMasks(kotlinx.serialization.json/JsonArray?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.dynamicMasks|dynamicMasks(kotlinx.serialization.json.JsonArray?){}[0]
-    final fun elementList(kotlinx.serialization.json/JsonArray?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.elementList|elementList(kotlinx.serialization.json.JsonArray?){}[0]
-    final fun imageTail(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.imageTail|imageTail(kotlin.String?){}[0]
-    final fun keepOriginalSound(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.keepOriginalSound|keepOriginalSound(kotlin.String?){}[0]
-    final fun mode(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.mode|mode(kotlin.String?){}[0]
-    final fun multiPrompt(kotlinx.serialization.json/JsonArray?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.multiPrompt|multiPrompt(kotlinx.serialization.json.JsonArray?){}[0]
-    final fun multiShot(kotlin/Boolean?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.multiShot|multiShot(kotlin.Boolean?){}[0]
-    final fun negativePrompt(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.negativePrompt|negativePrompt(kotlin.String?){}[0]
-    final fun pollIntervalMs(kotlin/Long?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.pollIntervalMs|pollIntervalMs(kotlin.Long?){}[0]
-    final fun pollTimeoutMs(kotlin/Long?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.pollTimeoutMs|pollTimeoutMs(kotlin.Long?){}[0]
-    final fun shotType(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.shotType|shotType(kotlin.String?){}[0]
-    final fun sound(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.sound|sound(kotlin.String?){}[0]
-    final fun staticMask(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.staticMask|staticMask(kotlin.String?){}[0]
-    final fun videoUrl(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.videoUrl|videoUrl(kotlin.String?){}[0]
-    final fun voiceList(kotlinx.serialization.json/JsonArray?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.voiceList|voiceList(kotlinx.serialization.json.JsonArray?){}[0]
-    final fun watermarkEnabled(kotlin/Boolean?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.watermarkEnabled|watermarkEnabled(kotlin.Boolean?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/KlingAIVideoModelOptions // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.build|build(){}[0]
+    final fun cameraControl(kotlinx.serialization.json/JsonObject?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.cameraControl|cameraControl(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun cfgScale(kotlin/Float?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.cfgScale|cfgScale(kotlin.Float?){}[0]
+    final fun characterOrientation(kotlin/String?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.characterOrientation|characterOrientation(kotlin.String?){}[0]
+    final fun dynamicMasks(kotlinx.serialization.json/JsonArray?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.dynamicMasks|dynamicMasks(kotlinx.serialization.json.JsonArray?){}[0]
+    final fun elementList(kotlinx.serialization.json/JsonArray?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.elementList|elementList(kotlinx.serialization.json.JsonArray?){}[0]
+    final fun imageTail(kotlin/String?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.imageTail|imageTail(kotlin.String?){}[0]
+    final fun keepOriginalSound(kotlin/String?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.keepOriginalSound|keepOriginalSound(kotlin.String?){}[0]
+    final fun mode(kotlin/String?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.mode|mode(kotlin.String?){}[0]
+    final fun multiPrompt(kotlinx.serialization.json/JsonArray?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.multiPrompt|multiPrompt(kotlinx.serialization.json.JsonArray?){}[0]
+    final fun multiShot(kotlin/Boolean?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.multiShot|multiShot(kotlin.Boolean?){}[0]
+    final fun negativePrompt(kotlin/String?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.negativePrompt|negativePrompt(kotlin.String?){}[0]
+    final fun pollIntervalMs(kotlin/Long?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.pollIntervalMs|pollIntervalMs(kotlin.Long?){}[0]
+    final fun pollTimeoutMs(kotlin/Long?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.pollTimeoutMs|pollTimeoutMs(kotlin.Long?){}[0]
+    final fun shotType(kotlin/String?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.shotType|shotType(kotlin.String?){}[0]
+    final fun sound(kotlin/String?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.sound|sound(kotlin.String?){}[0]
+    final fun staticMask(kotlin/String?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.staticMask|staticMask(kotlin.String?){}[0]
+    final fun videoUrl(kotlin/String?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.videoUrl|videoUrl(kotlin.String?){}[0]
+    final fun voiceList(kotlinx.serialization.json/JsonArray?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.voiceList|voiceList(kotlinx.serialization.json.JsonArray?){}[0]
+    final fun watermarkEnabled(kotlin/Boolean?): ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.watermarkEnabled|watermarkEnabled(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/LMNTProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/LMNTProvider|null[0]
@@ -5074,8 +5092,11 @@ final class ai.torad.aisdk.providers/LMNTProviderSettings { // ai.torad.aisdk.pr
 }
 
 final class ai.torad.aisdk.providers/LMNTProviderSettingsBuilder { // ai.torad.aisdk.providers/LMNTProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/LMNTProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/LMNTProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/LMNTProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/LMNTProviderSettingsBuilder // ai.torad.aisdk.providers/LMNTProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun build(): ai.torad.aisdk.providers/LMNTProviderSettings // ai.torad.aisdk.providers/LMNTProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/LMNTProviderSettingsBuilder // ai.torad.aisdk.providers/LMNTProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/LMNTSpeechModelOptions { // ai.torad.aisdk.providers/LMNTSpeechModelOptions|null[0]
@@ -5117,15 +5138,18 @@ final class ai.torad.aisdk.providers/LMNTSpeechModelOptions { // ai.torad.aisdk.
 }
 
 final class ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder { // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder|null[0]
-    final fun conversational(kotlin/Boolean?) // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.conversational|conversational(kotlin.Boolean?){}[0]
-    final fun format(kotlin/String?) // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.format|format(kotlin.String?){}[0]
-    final fun length(kotlin/Float?) // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.length|length(kotlin.Float?){}[0]
-    final fun model(kotlin/String?) // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.model|model(kotlin.String?){}[0]
-    final fun sampleRate(kotlin/Int?) // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.sampleRate|sampleRate(kotlin.Int?){}[0]
-    final fun seed(kotlin/Int?) // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.seed|seed(kotlin.Int?){}[0]
-    final fun speed(kotlin/Float?) // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.speed|speed(kotlin.Float?){}[0]
-    final fun temperature(kotlin/Float?) // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.temperature|temperature(kotlin.Float?){}[0]
-    final fun topP(kotlin/Float?) // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.topP|topP(kotlin.Float?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/LMNTSpeechModelOptions // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.build|build(){}[0]
+    final fun conversational(kotlin/Boolean?): ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.conversational|conversational(kotlin.Boolean?){}[0]
+    final fun format(kotlin/String?): ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.format|format(kotlin.String?){}[0]
+    final fun length(kotlin/Float?): ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.length|length(kotlin.Float?){}[0]
+    final fun model(kotlin/String?): ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.model|model(kotlin.String?){}[0]
+    final fun sampleRate(kotlin/Int?): ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.sampleRate|sampleRate(kotlin.Int?){}[0]
+    final fun seed(kotlin/Int?): ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.seed|seed(kotlin.Int?){}[0]
+    final fun speed(kotlin/Float?): ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.speed|speed(kotlin.Float?){}[0]
+    final fun temperature(kotlin/Float?): ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.temperature|temperature(kotlin.Float?){}[0]
+    final fun topP(kotlin/Float?): ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder // ai.torad.aisdk.providers/LMNTSpeechModelOptionsBuilder.topP|topP(kotlin.Float?){}[0]
 }
 
 final class ai.torad.aisdk.providers/LiteRTBytes { // ai.torad.aisdk.providers/LiteRTBytes|null[0]
@@ -5177,16 +5201,19 @@ final class ai.torad.aisdk.providers/LiteRTConversationRequest { // ai.torad.ais
 }
 
 final class ai.torad.aisdk.providers/LiteRTConversationRequestBuilder { // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder|null[0]
-    final fun automaticToolCalling(kotlin/Boolean) // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.automaticToolCalling|automaticToolCalling(kotlin.Boolean){}[0]
-    final fun callParams(ai.torad.aisdk/LanguageModelCallParams) // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.callParams|callParams(ai.torad.aisdk.LanguageModelCallParams){}[0]
-    final fun channels(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTChannel>?) // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.channels|channels(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTChannel>?){}[0]
-    final fun extraContext(kotlin.collections/Map<kotlin/String, kotlin/Any?>) // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.extraContext|extraContext(kotlin.collections.Map<kotlin.String,kotlin.Any?>){}[0]
-    final fun initialMessages(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTMessage>) // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.initialMessages|initialMessages(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTMessage>){}[0]
-    final fun message(ai.torad.aisdk.providers/LiteRTMessage) // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.message|message(ai.torad.aisdk.providers.LiteRTMessage){}[0]
-    final fun samplerConfig(ai.torad.aisdk.providers/LiteRTSamplerConfig?) // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.samplerConfig|samplerConfig(ai.torad.aisdk.providers.LiteRTSamplerConfig?){}[0]
-    final fun systemInstruction(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTContent>) // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.systemInstruction|systemInstruction(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTContent>){}[0]
-    final fun tools(kotlin.collections/List<ai.torad.aisdk/LanguageModelTool>) // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.tools|tools(kotlin.collections.List<ai.torad.aisdk.LanguageModelTool>){}[0]
-    final fun warnings(kotlin.collections/List<ai.torad.aisdk/CallWarning>) // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.warnings|warnings(kotlin.collections.List<ai.torad.aisdk.CallWarning>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.<init>|<init>(){}[0]
+
+    final fun automaticToolCalling(kotlin/Boolean): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.automaticToolCalling|automaticToolCalling(kotlin.Boolean){}[0]
+    final fun build(): ai.torad.aisdk.providers/LiteRTConversationRequest // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.build|build(){}[0]
+    final fun callParams(ai.torad.aisdk/LanguageModelCallParams): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.callParams|callParams(ai.torad.aisdk.LanguageModelCallParams){}[0]
+    final fun channels(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTChannel>?): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.channels|channels(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTChannel>?){}[0]
+    final fun extraContext(kotlin.collections/Map<kotlin/String, kotlin/Any?>): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.extraContext|extraContext(kotlin.collections.Map<kotlin.String,kotlin.Any?>){}[0]
+    final fun initialMessages(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTMessage>): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.initialMessages|initialMessages(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTMessage>){}[0]
+    final fun message(ai.torad.aisdk.providers/LiteRTMessage): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.message|message(ai.torad.aisdk.providers.LiteRTMessage){}[0]
+    final fun samplerConfig(ai.torad.aisdk.providers/LiteRTSamplerConfig?): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.samplerConfig|samplerConfig(ai.torad.aisdk.providers.LiteRTSamplerConfig?){}[0]
+    final fun systemInstruction(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTContent>): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.systemInstruction|systemInstruction(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTContent>){}[0]
+    final fun tools(kotlin.collections/List<ai.torad.aisdk/LanguageModelTool>): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.tools|tools(kotlin.collections.List<ai.torad.aisdk.LanguageModelTool>){}[0]
+    final fun warnings(kotlin.collections/List<ai.torad.aisdk/CallWarning>): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.warnings|warnings(kotlin.collections.List<ai.torad.aisdk.CallWarning>){}[0]
 }
 
 final class ai.torad.aisdk.providers/LiteRTLanguageModel : ai.torad.aisdk/LanguageModel { // ai.torad.aisdk.providers/LiteRTLanguageModel|null[0]
@@ -5226,15 +5253,18 @@ final class ai.torad.aisdk.providers/LiteRTLanguageModelSettings { // ai.torad.a
 }
 
 final class ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder { // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder|null[0]
-    final fun assistantReasoningChannelName(kotlin/String) // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.assistantReasoningChannelName|assistantReasoningChannelName(kotlin.String){}[0]
-    final fun channels(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTChannel>?) // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.channels|channels(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTChannel>?){}[0]
-    final fun defaultSamplerConfig(ai.torad.aisdk.providers/LiteRTSamplerConfig?) // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.defaultSamplerConfig|defaultSamplerConfig(ai.torad.aisdk.providers.LiteRTSamplerConfig?){}[0]
-    final fun extraContext(kotlin.collections/Map<kotlin/String, kotlin/Any?>) // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.extraContext|extraContext(kotlin.collections.Map<kotlin.String,kotlin.Any?>){}[0]
-    final fun provider(kotlin/String) // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.provider|provider(kotlin.String){}[0]
-    final fun reasoningChannelNames(kotlin.collections/Set<kotlin/String>) // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.reasoningChannelNames|reasoningChannelNames(kotlin.collections.Set<kotlin.String>){}[0]
-    final fun streamTextMode(ai.torad.aisdk.providers/LiteRTStreamTextMode) // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.streamTextMode|streamTextMode(ai.torad.aisdk.providers.LiteRTStreamTextMode){}[0]
-    final fun supportedUrls(kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>>) // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.supportedUrls|supportedUrls(kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>){}[0]
-    final fun toolCallIdGenerator(kotlin/Function0<kotlin/String>) // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.toolCallIdGenerator|toolCallIdGenerator(kotlin.Function0<kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun assistantReasoningChannelName(kotlin/String): ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.assistantReasoningChannelName|assistantReasoningChannelName(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/LiteRTLanguageModelSettings // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.build|build(){}[0]
+    final fun channels(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTChannel>?): ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.channels|channels(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTChannel>?){}[0]
+    final fun defaultSamplerConfig(ai.torad.aisdk.providers/LiteRTSamplerConfig?): ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.defaultSamplerConfig|defaultSamplerConfig(ai.torad.aisdk.providers.LiteRTSamplerConfig?){}[0]
+    final fun extraContext(kotlin.collections/Map<kotlin/String, kotlin/Any?>): ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.extraContext|extraContext(kotlin.collections.Map<kotlin.String,kotlin.Any?>){}[0]
+    final fun provider(kotlin/String): ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.provider|provider(kotlin.String){}[0]
+    final fun reasoningChannelNames(kotlin.collections/Set<kotlin/String>): ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.reasoningChannelNames|reasoningChannelNames(kotlin.collections.Set<kotlin.String>){}[0]
+    final fun streamTextMode(ai.torad.aisdk.providers/LiteRTStreamTextMode): ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.streamTextMode|streamTextMode(ai.torad.aisdk.providers.LiteRTStreamTextMode){}[0]
+    final fun supportedUrls(kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>>): ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.supportedUrls|supportedUrls(kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>){}[0]
+    final fun toolCallIdGenerator(kotlin/Function0<kotlin/String>): ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder // ai.torad.aisdk.providers/LiteRTLanguageModelSettingsBuilder.toolCallIdGenerator|toolCallIdGenerator(kotlin.Function0<kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/LiteRTMessage { // ai.torad.aisdk.providers/LiteRTMessage|null[0]
@@ -5283,10 +5313,13 @@ final class ai.torad.aisdk.providers/LiteRTSamplerConfig { // ai.torad.aisdk.pro
 }
 
 final class ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder { // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder|null[0]
-    final fun seed(kotlin/Int) // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.seed|seed(kotlin.Int){}[0]
-    final fun temperature(kotlin/Double) // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.temperature|temperature(kotlin.Double){}[0]
-    final fun topK(kotlin/Int) // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.topK|topK(kotlin.Int){}[0]
-    final fun topP(kotlin/Double) // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.topP|topP(kotlin.Double){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/LiteRTSamplerConfig // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.build|build(){}[0]
+    final fun seed(kotlin/Int): ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.seed|seed(kotlin.Int){}[0]
+    final fun temperature(kotlin/Double): ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.temperature|temperature(kotlin.Double){}[0]
+    final fun topK(kotlin/Int): ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.topK|topK(kotlin.Int){}[0]
+    final fun topP(kotlin/Double): ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.topP|topP(kotlin.Double){}[0]
 }
 
 final class ai.torad.aisdk.providers/LiteRTToolCall { // ai.torad.aisdk.providers/LiteRTToolCall|null[0]
@@ -5340,10 +5373,13 @@ final class ai.torad.aisdk.providers/LumaImageModelOptions { // ai.torad.aisdk.p
 }
 
 final class ai.torad.aisdk.providers/LumaImageModelOptionsBuilder { // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder|null[0]
-    final fun images(kotlinx.serialization.json/JsonArray?) // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.images|images(kotlinx.serialization.json.JsonArray?){}[0]
-    final fun maxPollAttempts(kotlin/Int?) // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.maxPollAttempts|maxPollAttempts(kotlin.Int?){}[0]
-    final fun pollIntervalMillis(kotlin/Long?) // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.pollIntervalMillis|pollIntervalMillis(kotlin.Long?){}[0]
-    final fun referenceType(kotlin/String?) // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.referenceType|referenceType(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/LumaImageModelOptions // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.build|build(){}[0]
+    final fun images(kotlinx.serialization.json/JsonArray?): ai.torad.aisdk.providers/LumaImageModelOptionsBuilder // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.images|images(kotlinx.serialization.json.JsonArray?){}[0]
+    final fun maxPollAttempts(kotlin/Int?): ai.torad.aisdk.providers/LumaImageModelOptionsBuilder // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.maxPollAttempts|maxPollAttempts(kotlin.Int?){}[0]
+    final fun pollIntervalMillis(kotlin/Long?): ai.torad.aisdk.providers/LumaImageModelOptionsBuilder // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.pollIntervalMillis|pollIntervalMillis(kotlin.Long?){}[0]
+    final fun referenceType(kotlin/String?): ai.torad.aisdk.providers/LumaImageModelOptionsBuilder // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.referenceType|referenceType(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/LumaProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/LumaProvider|null[0]
@@ -5390,9 +5426,12 @@ final class ai.torad.aisdk.providers/LumaProviderSettings { // ai.torad.aisdk.pr
 }
 
 final class ai.torad.aisdk.providers/LumaProviderSettingsBuilder { // ai.torad.aisdk.providers/LumaProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/LumaProviderSettingsBuilder // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/LumaProviderSettingsBuilder // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/LumaProviderSettings // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/LumaProviderSettingsBuilder // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/MistralLanguageModelOptions { // ai.torad.aisdk.providers/MistralLanguageModelOptions|null[0]
@@ -5430,13 +5469,16 @@ final class ai.torad.aisdk.providers/MistralLanguageModelOptions { // ai.torad.a
 }
 
 final class ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder { // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder|null[0]
-    final fun documentImageLimit(kotlin/Int?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.documentImageLimit|documentImageLimit(kotlin.Int?){}[0]
-    final fun documentPageLimit(kotlin/Int?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.documentPageLimit|documentPageLimit(kotlin.Int?){}[0]
-    final fun parallelToolCalls(kotlin/Boolean?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.parallelToolCalls|parallelToolCalls(kotlin.Boolean?){}[0]
-    final fun reasoningEffort(kotlin/String?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
-    final fun safePrompt(kotlin/Boolean?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.safePrompt|safePrompt(kotlin.Boolean?){}[0]
-    final fun strictJsonSchema(kotlin/Boolean?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.strictJsonSchema|strictJsonSchema(kotlin.Boolean?){}[0]
-    final fun structuredOutputs(kotlin/Boolean?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.structuredOutputs|structuredOutputs(kotlin.Boolean?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/MistralLanguageModelOptions // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.build|build(){}[0]
+    final fun documentImageLimit(kotlin/Int?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.documentImageLimit|documentImageLimit(kotlin.Int?){}[0]
+    final fun documentPageLimit(kotlin/Int?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.documentPageLimit|documentPageLimit(kotlin.Int?){}[0]
+    final fun parallelToolCalls(kotlin/Boolean?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.parallelToolCalls|parallelToolCalls(kotlin.Boolean?){}[0]
+    final fun reasoningEffort(kotlin/String?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
+    final fun safePrompt(kotlin/Boolean?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.safePrompt|safePrompt(kotlin.Boolean?){}[0]
+    final fun strictJsonSchema(kotlin/Boolean?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.strictJsonSchema|strictJsonSchema(kotlin.Boolean?){}[0]
+    final fun structuredOutputs(kotlin/Boolean?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.structuredOutputs|structuredOutputs(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/MistralProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/MistralProvider|null[0]
@@ -5486,9 +5528,12 @@ final class ai.torad.aisdk.providers/MistralProviderSettings { // ai.torad.aisdk
 }
 
 final class ai.torad.aisdk.providers/MistralProviderSettingsBuilder { // ai.torad.aisdk.providers/MistralProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/MistralProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/MistralProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/MistralProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/MistralProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/MistralProviderSettingsBuilder // ai.torad.aisdk.providers/MistralProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/MistralProviderSettingsBuilder // ai.torad.aisdk.providers/MistralProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/MistralProviderSettings // ai.torad.aisdk.providers/MistralProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/MistralProviderSettingsBuilder // ai.torad.aisdk.providers/MistralProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/MockEmbeddingModel : ai.torad.aisdk/EmbeddingModel { // ai.torad.aisdk.providers/MockEmbeddingModel|null[0]
@@ -5606,7 +5651,10 @@ final class ai.torad.aisdk.providers/MoonshotAILanguageModelOptions { // ai.tora
 }
 
 final class ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder { // ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder|null[0]
-    final fun raw(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder.raw|raw(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/MoonshotAILanguageModelOptions // ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder.build|build(){}[0]
+    final fun raw(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>): ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder // ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder.raw|raw(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
 }
 
 final class ai.torad.aisdk.providers/MoonshotAIProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/MoonshotAIProvider|null[0]
@@ -5651,9 +5699,12 @@ final class ai.torad.aisdk.providers/MoonshotAIProviderSettings { // ai.torad.ai
 }
 
 final class ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder { // ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder // ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder // ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/MoonshotAIProviderSettings // ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder // ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/OpenAICompatibleProviderSettings { // ai.torad.aisdk.providers/OpenAICompatibleProviderSettings|null[0]
@@ -5696,24 +5747,27 @@ final class ai.torad.aisdk.providers/OpenAICompatibleProviderSettings { // ai.to
 }
 
 final class ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder { // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun authHeadersProvider(kotlin.coroutines/SuspendFunction0<kotlin.collections/Map<kotlin/String, kotlin/String>>?) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.authHeadersProvider|authHeadersProvider(kotlin.coroutines.SuspendFunction0<kotlin.collections.Map<kotlin.String,kotlin.String>>?){}[0]
-    final fun baseUrl(kotlin/String) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.baseUrl|baseUrl(kotlin.String){}[0]
-    final fun chatMaxOutputTokensKey(kotlin/String) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.chatMaxOutputTokensKey|chatMaxOutputTokensKey(kotlin.String){}[0]
-    final fun chatSeedKey(kotlin/String) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.chatSeedKey|chatSeedKey(kotlin.String){}[0]
-    final fun convertUsage(kotlin/Function1<kotlinx.serialization.json/JsonElement?, ai.torad.aisdk/Usage>?) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.convertUsage|convertUsage(kotlin.Function1<kotlinx.serialization.json.JsonElement?,ai.torad.aisdk.Usage>?){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-    final fun includeUsage(kotlin/Boolean) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.includeUsage|includeUsage(kotlin.Boolean){}[0]
-    final fun maxEmbeddingsPerCall(kotlin/Int) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.maxEmbeddingsPerCall|maxEmbeddingsPerCall(kotlin.Int){}[0]
-    final fun name(kotlin/String) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.name|name(kotlin.String){}[0]
-    final fun providerOptionsName(kotlin/String?) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.providerOptionsName|providerOptionsName(kotlin.String?){}[0]
-    final fun queryParams(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.queryParams|queryParams(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-    final fun supportedUrls(kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>>) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.supportedUrls|supportedUrls(kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>){}[0]
-    final fun supportsStructuredOutputs(kotlin/Boolean) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.supportsStructuredOutputs|supportsStructuredOutputs(kotlin.Boolean){}[0]
-    final fun transformChatRequestBody(kotlin/Function1<kotlinx.serialization.json/JsonObject, kotlinx.serialization.json/JsonObject>?) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.transformChatRequestBody|transformChatRequestBody(kotlin.Function1<kotlinx.serialization.json.JsonObject,kotlinx.serialization.json.JsonObject>?){}[0]
-    final fun transformChatResponse(kotlin/Function1<kotlinx.serialization.json/JsonObject, kotlinx.serialization.json/JsonObject>?) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.transformChatResponse|transformChatResponse(kotlin.Function1<kotlinx.serialization.json.JsonObject,kotlinx.serialization.json.JsonObject>?){}[0]
-    final fun urlBuilder(kotlin/Function2<kotlin/String, kotlin/String, kotlin/String>?) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.urlBuilder|urlBuilder(kotlin.Function2<kotlin.String,kotlin.String,kotlin.String>?){}[0]
-    final fun userAgentSuffix(kotlin/String?) // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.userAgentSuffix|userAgentSuffix(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun authHeadersProvider(kotlin.coroutines/SuspendFunction0<kotlin.collections/Map<kotlin/String, kotlin/String>>?): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.authHeadersProvider|authHeadersProvider(kotlin.coroutines.SuspendFunction0<kotlin.collections.Map<kotlin.String,kotlin.String>>?){}[0]
+    final fun baseUrl(kotlin/String): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.baseUrl|baseUrl(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/OpenAICompatibleProviderSettings // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.build|build(){}[0]
+    final fun chatMaxOutputTokensKey(kotlin/String): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.chatMaxOutputTokensKey|chatMaxOutputTokensKey(kotlin.String){}[0]
+    final fun chatSeedKey(kotlin/String): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.chatSeedKey|chatSeedKey(kotlin.String){}[0]
+    final fun convertUsage(kotlin/Function1<kotlinx.serialization.json/JsonElement?, ai.torad.aisdk/Usage>?): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.convertUsage|convertUsage(kotlin.Function1<kotlinx.serialization.json.JsonElement?,ai.torad.aisdk.Usage>?){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun includeUsage(kotlin/Boolean): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.includeUsage|includeUsage(kotlin.Boolean){}[0]
+    final fun maxEmbeddingsPerCall(kotlin/Int): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.maxEmbeddingsPerCall|maxEmbeddingsPerCall(kotlin.Int){}[0]
+    final fun name(kotlin/String): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.name|name(kotlin.String){}[0]
+    final fun providerOptionsName(kotlin/String?): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.providerOptionsName|providerOptionsName(kotlin.String?){}[0]
+    final fun queryParams(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.queryParams|queryParams(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun supportedUrls(kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>>): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.supportedUrls|supportedUrls(kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>){}[0]
+    final fun supportsStructuredOutputs(kotlin/Boolean): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.supportsStructuredOutputs|supportsStructuredOutputs(kotlin.Boolean){}[0]
+    final fun transformChatRequestBody(kotlin/Function1<kotlinx.serialization.json/JsonObject, kotlinx.serialization.json/JsonObject>?): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.transformChatRequestBody|transformChatRequestBody(kotlin.Function1<kotlinx.serialization.json.JsonObject,kotlinx.serialization.json.JsonObject>?){}[0]
+    final fun transformChatResponse(kotlin/Function1<kotlinx.serialization.json/JsonObject, kotlinx.serialization.json/JsonObject>?): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.transformChatResponse|transformChatResponse(kotlin.Function1<kotlinx.serialization.json.JsonObject,kotlinx.serialization.json.JsonObject>?){}[0]
+    final fun urlBuilder(kotlin/Function2<kotlin/String, kotlin/String, kotlin/String>?): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.urlBuilder|urlBuilder(kotlin.Function2<kotlin.String,kotlin.String,kotlin.String>?){}[0]
+    final fun userAgentSuffix(kotlin/String?): ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAICompatibleProviderSettingsBuilder.userAgentSuffix|userAgentSuffix(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/OpenAIProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/OpenAIProvider|null[0]
@@ -5767,14 +5821,17 @@ final class ai.torad.aisdk.providers/OpenAIProviderSettings { // ai.torad.aisdk.
 }
 
 final class ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder { // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-    final fun includeUsage(kotlin/Boolean) // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.includeUsage|includeUsage(kotlin.Boolean){}[0]
-    final fun name(kotlin/String) // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.name|name(kotlin.String){}[0]
-    final fun organization(kotlin/String?) // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.organization|organization(kotlin.String?){}[0]
-    final fun project(kotlin/String?) // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.project|project(kotlin.String?){}[0]
-    final fun queryParams(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.queryParams|queryParams(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/OpenAIProviderSettings // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun includeUsage(kotlin/Boolean): ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.includeUsage|includeUsage(kotlin.Boolean){}[0]
+    final fun name(kotlin/String): ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.name|name(kotlin.String){}[0]
+    final fun organization(kotlin/String?): ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.organization|organization(kotlin.String?){}[0]
+    final fun project(kotlin/String?): ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.project|project(kotlin.String?){}[0]
+    final fun queryParams(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder // ai.torad.aisdk.providers/OpenAIProviderSettingsBuilder.queryParams|queryParams(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/OpenAITools { // ai.torad.aisdk.providers/OpenAITools|null[0]
@@ -5833,8 +5890,11 @@ final class ai.torad.aisdk.providers/OpenResponsesAllowedTools { // ai.torad.ais
 }
 
 final class ai.torad.aisdk.providers/OpenResponsesAllowedToolsBuilder { // ai.torad.aisdk.providers/OpenResponsesAllowedToolsBuilder|null[0]
-    final fun mode(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesAllowedToolsBuilder.mode|mode(kotlin.String?){}[0]
-    final fun toolNames(kotlin.collections/List<kotlin/String>) // ai.torad.aisdk.providers/OpenResponsesAllowedToolsBuilder.toolNames|toolNames(kotlin.collections.List<kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/OpenResponsesAllowedToolsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/OpenResponsesAllowedTools // ai.torad.aisdk.providers/OpenResponsesAllowedToolsBuilder.build|build(){}[0]
+    final fun mode(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesAllowedToolsBuilder // ai.torad.aisdk.providers/OpenResponsesAllowedToolsBuilder.mode|mode(kotlin.String?){}[0]
+    final fun toolNames(kotlin.collections/List<kotlin/String>): ai.torad.aisdk.providers/OpenResponsesAllowedToolsBuilder // ai.torad.aisdk.providers/OpenResponsesAllowedToolsBuilder.toolNames|toolNames(kotlin.collections.List<kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/OpenResponsesOptions { // ai.torad.aisdk.providers/OpenResponsesOptions|null[0]
@@ -5906,29 +5966,32 @@ final class ai.torad.aisdk.providers/OpenResponsesOptions { // ai.torad.aisdk.pr
 }
 
 final class ai.torad.aisdk.providers/OpenResponsesOptionsBuilder { // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder|null[0]
-    final fun allowedTools(ai.torad.aisdk.providers/OpenResponsesAllowedTools?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.allowedTools|allowedTools(ai.torad.aisdk.providers.OpenResponsesAllowedTools?){}[0]
-    final fun conversation(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.conversation|conversation(kotlin.String?){}[0]
-    final fun forceReasoning(kotlin/Boolean?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.forceReasoning|forceReasoning(kotlin.Boolean?){}[0]
-    final fun include(kotlin.collections/List<kotlin/String>?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.include|include(kotlin.collections.List<kotlin.String>?){}[0]
-    final fun instructions(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.instructions|instructions(kotlin.String?){}[0]
-    final fun logprobs(kotlinx.serialization.json/JsonElement?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.logprobs|logprobs(kotlinx.serialization.json.JsonElement?){}[0]
-    final fun maxToolCalls(kotlin/Int?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.maxToolCalls|maxToolCalls(kotlin.Int?){}[0]
-    final fun metadata(kotlinx.serialization.json/JsonElement?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.metadata|metadata(kotlinx.serialization.json.JsonElement?){}[0]
-    final fun parallelToolCalls(kotlin/Boolean?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.parallelToolCalls|parallelToolCalls(kotlin.Boolean?){}[0]
-    final fun passThroughUnsupportedFiles(kotlin/Boolean?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.passThroughUnsupportedFiles|passThroughUnsupportedFiles(kotlin.Boolean?){}[0]
-    final fun previousResponseId(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.previousResponseId|previousResponseId(kotlin.String?){}[0]
-    final fun promptCacheKey(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.promptCacheKey|promptCacheKey(kotlin.String?){}[0]
-    final fun promptCacheRetention(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.promptCacheRetention|promptCacheRetention(kotlin.String?){}[0]
-    final fun reasoningEffort(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
-    final fun reasoningSummary(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.reasoningSummary|reasoningSummary(kotlin.String?){}[0]
-    final fun safetyIdentifier(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.safetyIdentifier|safetyIdentifier(kotlin.String?){}[0]
-    final fun serviceTier(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.serviceTier|serviceTier(kotlin.String?){}[0]
-    final fun store(kotlin/Boolean?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.store|store(kotlin.Boolean?){}[0]
-    final fun strictJsonSchema(kotlin/Boolean?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.strictJsonSchema|strictJsonSchema(kotlin.Boolean?){}[0]
-    final fun systemMessageMode(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.systemMessageMode|systemMessageMode(kotlin.String?){}[0]
-    final fun textVerbosity(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.textVerbosity|textVerbosity(kotlin.String?){}[0]
-    final fun truncation(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.truncation|truncation(kotlin.String?){}[0]
-    final fun user(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.user|user(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun allowedTools(ai.torad.aisdk.providers/OpenResponsesAllowedTools?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.allowedTools|allowedTools(ai.torad.aisdk.providers.OpenResponsesAllowedTools?){}[0]
+    final fun build(): ai.torad.aisdk.providers/OpenResponsesOptions // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.build|build(){}[0]
+    final fun conversation(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.conversation|conversation(kotlin.String?){}[0]
+    final fun forceReasoning(kotlin/Boolean?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.forceReasoning|forceReasoning(kotlin.Boolean?){}[0]
+    final fun include(kotlin.collections/List<kotlin/String>?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.include|include(kotlin.collections.List<kotlin.String>?){}[0]
+    final fun instructions(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.instructions|instructions(kotlin.String?){}[0]
+    final fun logprobs(kotlinx.serialization.json/JsonElement?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.logprobs|logprobs(kotlinx.serialization.json.JsonElement?){}[0]
+    final fun maxToolCalls(kotlin/Int?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.maxToolCalls|maxToolCalls(kotlin.Int?){}[0]
+    final fun metadata(kotlinx.serialization.json/JsonElement?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.metadata|metadata(kotlinx.serialization.json.JsonElement?){}[0]
+    final fun parallelToolCalls(kotlin/Boolean?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.parallelToolCalls|parallelToolCalls(kotlin.Boolean?){}[0]
+    final fun passThroughUnsupportedFiles(kotlin/Boolean?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.passThroughUnsupportedFiles|passThroughUnsupportedFiles(kotlin.Boolean?){}[0]
+    final fun previousResponseId(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.previousResponseId|previousResponseId(kotlin.String?){}[0]
+    final fun promptCacheKey(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.promptCacheKey|promptCacheKey(kotlin.String?){}[0]
+    final fun promptCacheRetention(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.promptCacheRetention|promptCacheRetention(kotlin.String?){}[0]
+    final fun reasoningEffort(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
+    final fun reasoningSummary(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.reasoningSummary|reasoningSummary(kotlin.String?){}[0]
+    final fun safetyIdentifier(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.safetyIdentifier|safetyIdentifier(kotlin.String?){}[0]
+    final fun serviceTier(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.serviceTier|serviceTier(kotlin.String?){}[0]
+    final fun store(kotlin/Boolean?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.store|store(kotlin.Boolean?){}[0]
+    final fun strictJsonSchema(kotlin/Boolean?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.strictJsonSchema|strictJsonSchema(kotlin.Boolean?){}[0]
+    final fun systemMessageMode(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.systemMessageMode|systemMessageMode(kotlin.String?){}[0]
+    final fun textVerbosity(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.textVerbosity|textVerbosity(kotlin.String?){}[0]
+    final fun truncation(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.truncation|truncation(kotlin.String?){}[0]
+    final fun user(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesOptionsBuilder // ai.torad.aisdk.providers/OpenResponsesOptionsBuilder.user|user(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/OpenResponsesProviderSettings { // ai.torad.aisdk.providers/OpenResponsesProviderSettings|null[0]
@@ -5953,15 +6016,18 @@ final class ai.torad.aisdk.providers/OpenResponsesProviderSettings { // ai.torad
 }
 
 final class ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder { // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun authHeadersProvider(kotlin.coroutines/SuspendFunction0<kotlin.collections/Map<kotlin/String, kotlin/String>>?) // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.authHeadersProvider|authHeadersProvider(kotlin.coroutines.SuspendFunction0<kotlin.collections.Map<kotlin.String,kotlin.String>>?){}[0]
-    final fun fileIdPrefixes(kotlin.collections/List<kotlin/String>) // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.fileIdPrefixes|fileIdPrefixes(kotlin.collections.List<kotlin.String>){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-    final fun name(kotlin/String) // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.name|name(kotlin.String){}[0]
-    final fun providerOptionsName(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.providerOptionsName|providerOptionsName(kotlin.String?){}[0]
-    final fun supportedUrls(kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>>) // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.supportedUrls|supportedUrls(kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>){}[0]
-    final fun url(kotlin/String) // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.url|url(kotlin.String){}[0]
-    final fun userAgentSuffix(kotlin/String?) // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.userAgentSuffix|userAgentSuffix(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun authHeadersProvider(kotlin.coroutines/SuspendFunction0<kotlin.collections/Map<kotlin/String, kotlin/String>>?): ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.authHeadersProvider|authHeadersProvider(kotlin.coroutines.SuspendFunction0<kotlin.collections.Map<kotlin.String,kotlin.String>>?){}[0]
+    final fun build(): ai.torad.aisdk.providers/OpenResponsesProviderSettings // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.build|build(){}[0]
+    final fun fileIdPrefixes(kotlin.collections/List<kotlin/String>): ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.fileIdPrefixes|fileIdPrefixes(kotlin.collections.List<kotlin.String>){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun name(kotlin/String): ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.name|name(kotlin.String){}[0]
+    final fun providerOptionsName(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.providerOptionsName|providerOptionsName(kotlin.String?){}[0]
+    final fun supportedUrls(kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>>): ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.supportedUrls|supportedUrls(kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>){}[0]
+    final fun url(kotlin/String): ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.url|url(kotlin.String){}[0]
+    final fun userAgentSuffix(kotlin/String?): ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder // ai.torad.aisdk.providers/OpenResponsesProviderSettingsBuilder.userAgentSuffix|userAgentSuffix(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/PerplexityProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/PerplexityProvider|null[0]
@@ -6006,9 +6072,12 @@ final class ai.torad.aisdk.providers/PerplexityProviderSettings { // ai.torad.ai
 }
 
 final class ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder { // ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder // ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder // ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/PerplexityProviderSettings // ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder // ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/ProdiaImageModelOptions { // ai.torad.aisdk.providers/ProdiaImageModelOptions|null[0]
@@ -6046,12 +6115,15 @@ final class ai.torad.aisdk.providers/ProdiaImageModelOptions { // ai.torad.aisdk
 }
 
 final class ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder { // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder|null[0]
-    final fun height(kotlin/Int?) // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.height|height(kotlin.Int?){}[0]
-    final fun loras(kotlin.collections/List<kotlin/String>?) // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.loras|loras(kotlin.collections.List<kotlin.String>?){}[0]
-    final fun progressive(kotlin/Boolean?) // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.progressive|progressive(kotlin.Boolean?){}[0]
-    final fun steps(kotlin/Int?) // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.steps|steps(kotlin.Int?){}[0]
-    final fun stylePreset(kotlin/String?) // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.stylePreset|stylePreset(kotlin.String?){}[0]
-    final fun width(kotlin/Int?) // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.width|width(kotlin.Int?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/ProdiaImageModelOptions // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.build|build(){}[0]
+    final fun height(kotlin/Int?): ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.height|height(kotlin.Int?){}[0]
+    final fun loras(kotlin.collections/List<kotlin/String>?): ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.loras|loras(kotlin.collections.List<kotlin.String>?){}[0]
+    final fun progressive(kotlin/Boolean?): ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.progressive|progressive(kotlin.Boolean?){}[0]
+    final fun steps(kotlin/Int?): ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.steps|steps(kotlin.Int?){}[0]
+    final fun stylePreset(kotlin/String?): ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.stylePreset|stylePreset(kotlin.String?){}[0]
+    final fun width(kotlin/Int?): ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder // ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder.width|width(kotlin.Int?){}[0]
 }
 
 final class ai.torad.aisdk.providers/ProdiaLanguageModelOptions { // ai.torad.aisdk.providers/ProdiaLanguageModelOptions|null[0]
@@ -6077,7 +6149,10 @@ final class ai.torad.aisdk.providers/ProdiaLanguageModelOptions { // ai.torad.ai
 }
 
 final class ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder { // ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder|null[0]
-    final fun aspectRatio(kotlin/String?) // ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder.aspectRatio|aspectRatio(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun aspectRatio(kotlin/String?): ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder // ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder.aspectRatio|aspectRatio(kotlin.String?){}[0]
+    final fun build(): ai.torad.aisdk.providers/ProdiaLanguageModelOptions // ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder.build|build(){}[0]
 }
 
 final class ai.torad.aisdk.providers/ProdiaProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/ProdiaProvider|null[0]
@@ -6127,9 +6202,12 @@ final class ai.torad.aisdk.providers/ProdiaProviderSettings { // ai.torad.aisdk.
 }
 
 final class ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder { // ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder // ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder // ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/ProdiaProviderSettings // ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder // ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/ProdiaVideoModelOptions { // ai.torad.aisdk.providers/ProdiaVideoModelOptions|null[0]
@@ -6155,7 +6233,10 @@ final class ai.torad.aisdk.providers/ProdiaVideoModelOptions { // ai.torad.aisdk
 }
 
 final class ai.torad.aisdk.providers/ProdiaVideoModelOptionsBuilder { // ai.torad.aisdk.providers/ProdiaVideoModelOptionsBuilder|null[0]
-    final fun resolution(kotlin/String?) // ai.torad.aisdk.providers/ProdiaVideoModelOptionsBuilder.resolution|resolution(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/ProdiaVideoModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/ProdiaVideoModelOptions // ai.torad.aisdk.providers/ProdiaVideoModelOptionsBuilder.build|build(){}[0]
+    final fun resolution(kotlin/String?): ai.torad.aisdk.providers/ProdiaVideoModelOptionsBuilder // ai.torad.aisdk.providers/ProdiaVideoModelOptionsBuilder.resolution|resolution(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/QuiverAIImageModelOptions { // ai.torad.aisdk.providers/QuiverAIImageModelOptions|null[0]
@@ -6195,14 +6276,17 @@ final class ai.torad.aisdk.providers/QuiverAIImageModelOptions { // ai.torad.ais
 }
 
 final class ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder { // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder|null[0]
-    final fun autoCrop(kotlin/Boolean?) // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.autoCrop|autoCrop(kotlin.Boolean?){}[0]
-    final fun instructions(kotlin/String?) // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.instructions|instructions(kotlin.String?){}[0]
-    final fun maxOutputTokens(kotlin/Int?) // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.maxOutputTokens|maxOutputTokens(kotlin.Int?){}[0]
-    final fun operation(kotlin/String?) // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.operation|operation(kotlin.String?){}[0]
-    final fun presencePenalty(kotlin/Double?) // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.presencePenalty|presencePenalty(kotlin.Double?){}[0]
-    final fun targetSize(kotlin/Int?) // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.targetSize|targetSize(kotlin.Int?){}[0]
-    final fun temperature(kotlin/Double?) // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.temperature|temperature(kotlin.Double?){}[0]
-    final fun topP(kotlin/Double?) // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.topP|topP(kotlin.Double?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun autoCrop(kotlin/Boolean?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.autoCrop|autoCrop(kotlin.Boolean?){}[0]
+    final fun build(): ai.torad.aisdk.providers/QuiverAIImageModelOptions // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.build|build(){}[0]
+    final fun instructions(kotlin/String?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.instructions|instructions(kotlin.String?){}[0]
+    final fun maxOutputTokens(kotlin/Int?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.maxOutputTokens|maxOutputTokens(kotlin.Int?){}[0]
+    final fun operation(kotlin/String?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.operation|operation(kotlin.String?){}[0]
+    final fun presencePenalty(kotlin/Double?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.presencePenalty|presencePenalty(kotlin.Double?){}[0]
+    final fun targetSize(kotlin/Int?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.targetSize|targetSize(kotlin.Int?){}[0]
+    final fun temperature(kotlin/Double?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.temperature|temperature(kotlin.Double?){}[0]
+    final fun topP(kotlin/Double?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.topP|topP(kotlin.Double?){}[0]
 }
 
 final class ai.torad.aisdk.providers/QuiverAIProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/QuiverAIProvider|null[0]
@@ -6249,9 +6333,12 @@ final class ai.torad.aisdk.providers/QuiverAIProviderSettings { // ai.torad.aisd
 }
 
 final class ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder { // ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder // ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder // ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/QuiverAIProviderSettings // ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder // ai.torad.aisdk.providers/QuiverAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/ReplicateImageModelOptions { // ai.torad.aisdk.providers/ReplicateImageModelOptions|null[0]
@@ -6289,13 +6376,16 @@ final class ai.torad.aisdk.providers/ReplicateImageModelOptions { // ai.torad.ai
 }
 
 final class ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder { // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder|null[0]
-    final fun guidance_scale(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.guidance_scale|guidance_scale(kotlin.Double?){}[0]
-    final fun maxWaitTimeInSeconds(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.maxWaitTimeInSeconds|maxWaitTimeInSeconds(kotlin.Double?){}[0]
-    final fun negative_prompt(kotlin/String?) // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.negative_prompt|negative_prompt(kotlin.String?){}[0]
-    final fun num_inference_steps(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.num_inference_steps|num_inference_steps(kotlin.Double?){}[0]
-    final fun output_format(kotlin/String?) // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.output_format|output_format(kotlin.String?){}[0]
-    final fun output_quality(kotlin/Int?) // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.output_quality|output_quality(kotlin.Int?){}[0]
-    final fun strength(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.strength|strength(kotlin.Double?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/ReplicateImageModelOptions // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.build|build(){}[0]
+    final fun guidance_scale(kotlin/Double?): ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.guidance_scale|guidance_scale(kotlin.Double?){}[0]
+    final fun maxWaitTimeInSeconds(kotlin/Double?): ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.maxWaitTimeInSeconds|maxWaitTimeInSeconds(kotlin.Double?){}[0]
+    final fun negative_prompt(kotlin/String?): ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.negative_prompt|negative_prompt(kotlin.String?){}[0]
+    final fun num_inference_steps(kotlin/Double?): ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.num_inference_steps|num_inference_steps(kotlin.Double?){}[0]
+    final fun output_format(kotlin/String?): ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.output_format|output_format(kotlin.String?){}[0]
+    final fun output_quality(kotlin/Int?): ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.output_quality|output_quality(kotlin.Int?){}[0]
+    final fun strength(kotlin/Double?): ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateImageModelOptionsBuilder.strength|strength(kotlin.Double?){}[0]
 }
 
 final class ai.torad.aisdk.providers/ReplicateProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/ReplicateProvider|null[0]
@@ -6342,9 +6432,12 @@ final class ai.torad.aisdk.providers/ReplicateProviderSettings { // ai.torad.ais
 }
 
 final class ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder { // ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder|null[0]
-    final fun apiToken(kotlin/String?) // ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder.apiToken|apiToken(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiToken(kotlin/String?): ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder // ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder.apiToken|apiToken(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder // ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/ReplicateProviderSettings // ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder // ai.torad.aisdk.providers/ReplicateProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/ReplicateVideoModelOptions { // ai.torad.aisdk.providers/ReplicateVideoModelOptions|null[0]
@@ -6392,18 +6485,21 @@ final class ai.torad.aisdk.providers/ReplicateVideoModelOptions { // ai.torad.ai
 }
 
 final class ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder { // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder|null[0]
-    final fun cond_aug(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.cond_aug|cond_aug(kotlin.Double?){}[0]
-    final fun decoding_t(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.decoding_t|decoding_t(kotlin.Double?){}[0]
-    final fun frames_per_second(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.frames_per_second|frames_per_second(kotlin.Double?){}[0]
-    final fun guidance_scale(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.guidance_scale|guidance_scale(kotlin.Double?){}[0]
-    final fun maxWaitTimeInSeconds(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.maxWaitTimeInSeconds|maxWaitTimeInSeconds(kotlin.Double?){}[0]
-    final fun motion_bucket_id(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.motion_bucket_id|motion_bucket_id(kotlin.Double?){}[0]
-    final fun num_inference_steps(kotlin/Double?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.num_inference_steps|num_inference_steps(kotlin.Double?){}[0]
-    final fun pollIntervalMs(kotlin/Long?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.pollIntervalMs|pollIntervalMs(kotlin.Long?){}[0]
-    final fun pollTimeoutMs(kotlin/Long?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.pollTimeoutMs|pollTimeoutMs(kotlin.Long?){}[0]
-    final fun prompt_optimizer(kotlin/Boolean?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.prompt_optimizer|prompt_optimizer(kotlin.Boolean?){}[0]
-    final fun sizing_strategy(kotlin/String?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.sizing_strategy|sizing_strategy(kotlin.String?){}[0]
-    final fun video_length(kotlin/String?) // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.video_length|video_length(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/ReplicateVideoModelOptions // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.build|build(){}[0]
+    final fun cond_aug(kotlin/Double?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.cond_aug|cond_aug(kotlin.Double?){}[0]
+    final fun decoding_t(kotlin/Double?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.decoding_t|decoding_t(kotlin.Double?){}[0]
+    final fun frames_per_second(kotlin/Double?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.frames_per_second|frames_per_second(kotlin.Double?){}[0]
+    final fun guidance_scale(kotlin/Double?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.guidance_scale|guidance_scale(kotlin.Double?){}[0]
+    final fun maxWaitTimeInSeconds(kotlin/Double?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.maxWaitTimeInSeconds|maxWaitTimeInSeconds(kotlin.Double?){}[0]
+    final fun motion_bucket_id(kotlin/Double?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.motion_bucket_id|motion_bucket_id(kotlin.Double?){}[0]
+    final fun num_inference_steps(kotlin/Double?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.num_inference_steps|num_inference_steps(kotlin.Double?){}[0]
+    final fun pollIntervalMs(kotlin/Long?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.pollIntervalMs|pollIntervalMs(kotlin.Long?){}[0]
+    final fun pollTimeoutMs(kotlin/Long?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.pollTimeoutMs|pollTimeoutMs(kotlin.Long?){}[0]
+    final fun prompt_optimizer(kotlin/Boolean?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.prompt_optimizer|prompt_optimizer(kotlin.Boolean?){}[0]
+    final fun sizing_strategy(kotlin/String?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.sizing_strategy|sizing_strategy(kotlin.String?){}[0]
+    final fun video_length(kotlin/String?): ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder // ai.torad.aisdk.providers/ReplicateVideoModelOptionsBuilder.video_length|video_length(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/RevaiProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/RevaiProvider|null[0]
@@ -6454,10 +6550,13 @@ final class ai.torad.aisdk.providers/RevaiProviderSettings { // ai.torad.aisdk.p
 }
 
 final class ai.torad.aisdk.providers/RevaiProviderSettingsBuilder { // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-    final fun maxPollAttempts(kotlin/Int) // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.maxPollAttempts|maxPollAttempts(kotlin.Int){}[0]
-    final fun pollingIntervalMillis(kotlin/Long) // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.pollingIntervalMillis|pollingIntervalMillis(kotlin.Long){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/RevaiProviderSettingsBuilder // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun build(): ai.torad.aisdk.providers/RevaiProviderSettings // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/RevaiProviderSettingsBuilder // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun maxPollAttempts(kotlin/Int): ai.torad.aisdk.providers/RevaiProviderSettingsBuilder // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.maxPollAttempts|maxPollAttempts(kotlin.Int){}[0]
+    final fun pollingIntervalMillis(kotlin/Long): ai.torad.aisdk.providers/RevaiProviderSettingsBuilder // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.pollingIntervalMillis|pollingIntervalMillis(kotlin.Long){}[0]
 }
 
 final class ai.torad.aisdk.providers/RevaiTranscriptionModelOptions { // ai.torad.aisdk.providers/RevaiTranscriptionModelOptions|null[0]
@@ -6529,30 +6628,33 @@ final class ai.torad.aisdk.providers/RevaiTranscriptionModelOptions { // ai.tora
 }
 
 final class ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder { // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder|null[0]
-    final fun custom_vocabularies(kotlinx.serialization.json/JsonElement?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.custom_vocabularies|custom_vocabularies(kotlinx.serialization.json.JsonElement?){}[0]
-    final fun custom_vocabulary_id(kotlin/String?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.custom_vocabulary_id|custom_vocabulary_id(kotlin.String?){}[0]
-    final fun delete_after_seconds(kotlin/Int?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.delete_after_seconds|delete_after_seconds(kotlin.Int?){}[0]
-    final fun diarization_type(kotlin/String?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.diarization_type|diarization_type(kotlin.String?){}[0]
-    final fun filter_profanity(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.filter_profanity|filter_profanity(kotlin.Boolean?){}[0]
-    final fun forced_alignment(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.forced_alignment|forced_alignment(kotlin.Boolean?){}[0]
-    final fun language(kotlin/String?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.language|language(kotlin.String?){}[0]
-    final fun metadata(kotlin/String?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.metadata|metadata(kotlin.String?){}[0]
-    final fun notification_config(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.notification_config|notification_config(kotlinx.serialization.json.JsonObject?){}[0]
-    final fun remove_atmospherics(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.remove_atmospherics|remove_atmospherics(kotlin.Boolean?){}[0]
-    final fun remove_disfluencies(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.remove_disfluencies|remove_disfluencies(kotlin.Boolean?){}[0]
-    final fun rush(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.rush|rush(kotlin.Boolean?){}[0]
-    final fun segments_to_transcribe(kotlinx.serialization.json/JsonElement?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.segments_to_transcribe|segments_to_transcribe(kotlinx.serialization.json.JsonElement?){}[0]
-    final fun skip_diarization(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.skip_diarization|skip_diarization(kotlin.Boolean?){}[0]
-    final fun skip_postprocessing(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.skip_postprocessing|skip_postprocessing(kotlin.Boolean?){}[0]
-    final fun skip_punctuation(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.skip_punctuation|skip_punctuation(kotlin.Boolean?){}[0]
-    final fun speaker_channels_count(kotlin/Int?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.speaker_channels_count|speaker_channels_count(kotlin.Int?){}[0]
-    final fun speaker_names(kotlinx.serialization.json/JsonElement?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.speaker_names|speaker_names(kotlinx.serialization.json.JsonElement?){}[0]
-    final fun speakers_count(kotlin/Int?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.speakers_count|speakers_count(kotlin.Int?){}[0]
-    final fun strict_custom_vocabulary(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.strict_custom_vocabulary|strict_custom_vocabulary(kotlin.Boolean?){}[0]
-    final fun summarization_config(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.summarization_config|summarization_config(kotlinx.serialization.json.JsonObject?){}[0]
-    final fun test_mode(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.test_mode|test_mode(kotlin.Boolean?){}[0]
-    final fun translation_config(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.translation_config|translation_config(kotlinx.serialization.json.JsonObject?){}[0]
-    final fun verbatim(kotlin/Boolean?) // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.verbatim|verbatim(kotlin.Boolean?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/RevaiTranscriptionModelOptions // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.build|build(){}[0]
+    final fun custom_vocabularies(kotlinx.serialization.json/JsonElement?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.custom_vocabularies|custom_vocabularies(kotlinx.serialization.json.JsonElement?){}[0]
+    final fun custom_vocabulary_id(kotlin/String?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.custom_vocabulary_id|custom_vocabulary_id(kotlin.String?){}[0]
+    final fun delete_after_seconds(kotlin/Int?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.delete_after_seconds|delete_after_seconds(kotlin.Int?){}[0]
+    final fun diarization_type(kotlin/String?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.diarization_type|diarization_type(kotlin.String?){}[0]
+    final fun filter_profanity(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.filter_profanity|filter_profanity(kotlin.Boolean?){}[0]
+    final fun forced_alignment(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.forced_alignment|forced_alignment(kotlin.Boolean?){}[0]
+    final fun language(kotlin/String?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.language|language(kotlin.String?){}[0]
+    final fun metadata(kotlin/String?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.metadata|metadata(kotlin.String?){}[0]
+    final fun notification_config(kotlinx.serialization.json/JsonObject?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.notification_config|notification_config(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun remove_atmospherics(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.remove_atmospherics|remove_atmospherics(kotlin.Boolean?){}[0]
+    final fun remove_disfluencies(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.remove_disfluencies|remove_disfluencies(kotlin.Boolean?){}[0]
+    final fun rush(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.rush|rush(kotlin.Boolean?){}[0]
+    final fun segments_to_transcribe(kotlinx.serialization.json/JsonElement?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.segments_to_transcribe|segments_to_transcribe(kotlinx.serialization.json.JsonElement?){}[0]
+    final fun skip_diarization(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.skip_diarization|skip_diarization(kotlin.Boolean?){}[0]
+    final fun skip_postprocessing(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.skip_postprocessing|skip_postprocessing(kotlin.Boolean?){}[0]
+    final fun skip_punctuation(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.skip_punctuation|skip_punctuation(kotlin.Boolean?){}[0]
+    final fun speaker_channels_count(kotlin/Int?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.speaker_channels_count|speaker_channels_count(kotlin.Int?){}[0]
+    final fun speaker_names(kotlinx.serialization.json/JsonElement?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.speaker_names|speaker_names(kotlinx.serialization.json.JsonElement?){}[0]
+    final fun speakers_count(kotlin/Int?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.speakers_count|speakers_count(kotlin.Int?){}[0]
+    final fun strict_custom_vocabulary(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.strict_custom_vocabulary|strict_custom_vocabulary(kotlin.Boolean?){}[0]
+    final fun summarization_config(kotlinx.serialization.json/JsonObject?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.summarization_config|summarization_config(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun test_mode(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.test_mode|test_mode(kotlin.Boolean?){}[0]
+    final fun translation_config(kotlinx.serialization.json/JsonObject?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.translation_config|translation_config(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun verbatim(kotlin/Boolean?): ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder // ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder.verbatim|verbatim(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/ScriptedResponse { // ai.torad.aisdk.providers/ScriptedResponse|null[0]
@@ -6622,11 +6724,14 @@ final class ai.torad.aisdk.providers/TogetherAIImageModelOptions { // ai.torad.a
 }
 
 final class ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder { // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder|null[0]
-    final fun disableSafetyChecker(kotlin/Boolean?) // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.disableSafetyChecker|disableSafetyChecker(kotlin.Boolean?){}[0]
-    final fun guidance(kotlin/Float?) // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.guidance|guidance(kotlin.Float?){}[0]
-    final fun negativePrompt(kotlin/String?) // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.negativePrompt|negativePrompt(kotlin.String?){}[0]
-    final fun raw(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.raw|raw(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
-    final fun steps(kotlin/Int?) // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.steps|steps(kotlin.Int?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/TogetherAIImageModelOptions // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.build|build(){}[0]
+    final fun disableSafetyChecker(kotlin/Boolean?): ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.disableSafetyChecker|disableSafetyChecker(kotlin.Boolean?){}[0]
+    final fun guidance(kotlin/Float?): ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.guidance|guidance(kotlin.Float?){}[0]
+    final fun negativePrompt(kotlin/String?): ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.negativePrompt|negativePrompt(kotlin.String?){}[0]
+    final fun raw(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>): ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.raw|raw(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
+    final fun steps(kotlin/Int?): ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder // ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder.steps|steps(kotlin.Int?){}[0]
 }
 
 final class ai.torad.aisdk.providers/TogetherAIProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/TogetherAIProvider|null[0]
@@ -6676,9 +6781,12 @@ final class ai.torad.aisdk.providers/TogetherAIProviderSettings { // ai.torad.ai
 }
 
 final class ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder { // ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder // ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder // ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/TogetherAIProviderSettings // ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder // ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/TogetherAIRerankingModel : ai.torad.aisdk/RerankingModel { // ai.torad.aisdk.providers/TogetherAIRerankingModel|null[0]
@@ -6717,7 +6825,10 @@ final class ai.torad.aisdk.providers/TogetherAIRerankingModelOptions { // ai.tor
 }
 
 final class ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder { // ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder|null[0]
-    final fun rankFields(kotlin.collections/List<kotlin/String>?) // ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder.rankFields|rankFields(kotlin.collections.List<kotlin.String>?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/TogetherAIRerankingModelOptions // ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder.build|build(){}[0]
+    final fun rankFields(kotlin.collections/List<kotlin/String>?): ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder // ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder.rankFields|rankFields(kotlin.collections.List<kotlin.String>?){}[0]
 }
 
 final class ai.torad.aisdk.providers/VercelProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/VercelProvider|null[0]
@@ -6762,9 +6873,12 @@ final class ai.torad.aisdk.providers/VercelProviderSettings { // ai.torad.aisdk.
 }
 
 final class ai.torad.aisdk.providers/VercelProviderSettingsBuilder { // ai.torad.aisdk.providers/VercelProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/VercelProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/VercelProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/VercelProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/VercelProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/VercelProviderSettingsBuilder // ai.torad.aisdk.providers/VercelProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/VercelProviderSettingsBuilder // ai.torad.aisdk.providers/VercelProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/VercelProviderSettings // ai.torad.aisdk.providers/VercelProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/VercelProviderSettingsBuilder // ai.torad.aisdk.providers/VercelProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/VoyageEmbeddingModelOptions { // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions|null[0]
@@ -6796,10 +6910,13 @@ final class ai.torad.aisdk.providers/VoyageEmbeddingModelOptions { // ai.torad.a
 }
 
 final class ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder { // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder|null[0]
-    final fun inputType(kotlin/String?) // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.inputType|inputType(kotlin.String?){}[0]
-    final fun outputDimension(kotlin/Int?) // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.outputDimension|outputDimension(kotlin.Int?){}[0]
-    final fun outputDtype(kotlin/String?) // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.outputDtype|outputDtype(kotlin.String?){}[0]
-    final fun truncation(kotlin/Boolean?) // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.truncation|truncation(kotlin.Boolean?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/VoyageEmbeddingModelOptions // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.build|build(){}[0]
+    final fun inputType(kotlin/String?): ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.inputType|inputType(kotlin.String?){}[0]
+    final fun outputDimension(kotlin/Int?): ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.outputDimension|outputDimension(kotlin.Int?){}[0]
+    final fun outputDtype(kotlin/String?): ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.outputDtype|outputDtype(kotlin.String?){}[0]
+    final fun truncation(kotlin/Boolean?): ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.truncation|truncation(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/VoyageProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/VoyageProvider|null[0]
@@ -6847,9 +6964,12 @@ final class ai.torad.aisdk.providers/VoyageProviderSettings { // ai.torad.aisdk.
 }
 
 final class ai.torad.aisdk.providers/VoyageProviderSettingsBuilder { // ai.torad.aisdk.providers/VoyageProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/VoyageProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/VoyageProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/VoyageProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/VoyageProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/VoyageProviderSettingsBuilder // ai.torad.aisdk.providers/VoyageProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/VoyageProviderSettingsBuilder // ai.torad.aisdk.providers/VoyageProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/VoyageProviderSettings // ai.torad.aisdk.providers/VoyageProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/VoyageProviderSettingsBuilder // ai.torad.aisdk.providers/VoyageProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/VoyageRerankingModelOptions { // ai.torad.aisdk.providers/VoyageRerankingModelOptions|null[0]
@@ -6877,8 +6997,11 @@ final class ai.torad.aisdk.providers/VoyageRerankingModelOptions { // ai.torad.a
 }
 
 final class ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder { // ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder|null[0]
-    final fun returnDocuments(kotlin/Boolean?) // ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder.returnDocuments|returnDocuments(kotlin.Boolean?){}[0]
-    final fun truncation(kotlin/Boolean?) // ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder.truncation|truncation(kotlin.Boolean?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/VoyageRerankingModelOptions // ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder.build|build(){}[0]
+    final fun returnDocuments(kotlin/Boolean?): ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder // ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder.returnDocuments|returnDocuments(kotlin.Boolean?){}[0]
+    final fun truncation(kotlin/Boolean?): ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder // ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder.truncation|truncation(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/XaiImageModelOptions { // ai.torad.aisdk.providers/XaiImageModelOptions|null[0]
@@ -6914,12 +7037,15 @@ final class ai.torad.aisdk.providers/XaiImageModelOptions { // ai.torad.aisdk.pr
 }
 
 final class ai.torad.aisdk.providers/XaiImageModelOptionsBuilder { // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder|null[0]
-    final fun aspect_ratio(kotlin/String?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.aspect_ratio|aspect_ratio(kotlin.String?){}[0]
-    final fun output_format(kotlin/String?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.output_format|output_format(kotlin.String?){}[0]
-    final fun quality(kotlin/String?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.quality|quality(kotlin.String?){}[0]
-    final fun resolution(kotlin/String?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.resolution|resolution(kotlin.String?){}[0]
-    final fun sync_mode(kotlin/Boolean?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.sync_mode|sync_mode(kotlin.Boolean?){}[0]
-    final fun user(kotlin/String?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.user|user(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun aspect_ratio(kotlin/String?): ai.torad.aisdk.providers/XaiImageModelOptionsBuilder // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.aspect_ratio|aspect_ratio(kotlin.String?){}[0]
+    final fun build(): ai.torad.aisdk.providers/XaiImageModelOptions // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.build|build(){}[0]
+    final fun output_format(kotlin/String?): ai.torad.aisdk.providers/XaiImageModelOptionsBuilder // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.output_format|output_format(kotlin.String?){}[0]
+    final fun quality(kotlin/String?): ai.torad.aisdk.providers/XaiImageModelOptionsBuilder // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.quality|quality(kotlin.String?){}[0]
+    final fun resolution(kotlin/String?): ai.torad.aisdk.providers/XaiImageModelOptionsBuilder // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.resolution|resolution(kotlin.String?){}[0]
+    final fun sync_mode(kotlin/Boolean?): ai.torad.aisdk.providers/XaiImageModelOptionsBuilder // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.sync_mode|sync_mode(kotlin.Boolean?){}[0]
+    final fun user(kotlin/String?): ai.torad.aisdk.providers/XaiImageModelOptionsBuilder // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.user|user(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/XaiLanguageModelChatOptions { // ai.torad.aisdk.providers/XaiLanguageModelChatOptions|null[0]
@@ -6953,11 +7079,14 @@ final class ai.torad.aisdk.providers/XaiLanguageModelChatOptions { // ai.torad.a
 }
 
 final class ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder { // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder|null[0]
-    final fun logprobs(kotlin/Boolean?) // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.logprobs|logprobs(kotlin.Boolean?){}[0]
-    final fun parallel_function_calling(kotlin/Boolean?) // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.parallel_function_calling|parallel_function_calling(kotlin.Boolean?){}[0]
-    final fun reasoningEffort(kotlin/String?) // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
-    final fun searchParameters(kotlinx.serialization.json/JsonElement?) // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.searchParameters|searchParameters(kotlinx.serialization.json.JsonElement?){}[0]
-    final fun topLogprobs(kotlin/Int?) // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.topLogprobs|topLogprobs(kotlin.Int?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/XaiLanguageModelChatOptions // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.build|build(){}[0]
+    final fun logprobs(kotlin/Boolean?): ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.logprobs|logprobs(kotlin.Boolean?){}[0]
+    final fun parallel_function_calling(kotlin/Boolean?): ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.parallel_function_calling|parallel_function_calling(kotlin.Boolean?){}[0]
+    final fun reasoningEffort(kotlin/String?): ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
+    final fun searchParameters(kotlinx.serialization.json/JsonElement?): ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.searchParameters|searchParameters(kotlinx.serialization.json.JsonElement?){}[0]
+    final fun topLogprobs(kotlin/Int?): ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder // ai.torad.aisdk.providers/XaiLanguageModelChatOptionsBuilder.topLogprobs|topLogprobs(kotlin.Int?){}[0]
 }
 
 final class ai.torad.aisdk.providers/XaiLanguageModelResponsesOptions { // ai.torad.aisdk.providers/XaiLanguageModelResponsesOptions|null[0]
@@ -6985,8 +7114,11 @@ final class ai.torad.aisdk.providers/XaiLanguageModelResponsesOptions { // ai.to
 }
 
 final class ai.torad.aisdk.providers/XaiLanguageModelResponsesOptionsBuilder { // ai.torad.aisdk.providers/XaiLanguageModelResponsesOptionsBuilder|null[0]
-    final fun reasoningEffort(kotlin/String?) // ai.torad.aisdk.providers/XaiLanguageModelResponsesOptionsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
-    final fun reasoningSummary(kotlin/String?) // ai.torad.aisdk.providers/XaiLanguageModelResponsesOptionsBuilder.reasoningSummary|reasoningSummary(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/XaiLanguageModelResponsesOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/XaiLanguageModelResponsesOptions // ai.torad.aisdk.providers/XaiLanguageModelResponsesOptionsBuilder.build|build(){}[0]
+    final fun reasoningEffort(kotlin/String?): ai.torad.aisdk.providers/XaiLanguageModelResponsesOptionsBuilder // ai.torad.aisdk.providers/XaiLanguageModelResponsesOptionsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
+    final fun reasoningSummary(kotlin/String?): ai.torad.aisdk.providers/XaiLanguageModelResponsesOptionsBuilder // ai.torad.aisdk.providers/XaiLanguageModelResponsesOptionsBuilder.reasoningSummary|reasoningSummary(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/XaiProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/XaiProvider|null[0]
@@ -7034,9 +7166,12 @@ final class ai.torad.aisdk.providers/XaiProviderSettings { // ai.torad.aisdk.pro
 }
 
 final class ai.torad.aisdk.providers/XaiProviderSettingsBuilder { // ai.torad.aisdk.providers/XaiProviderSettingsBuilder|null[0]
-    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/XaiProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
-    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/XaiProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
-    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/XaiProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/XaiProviderSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun apiKey(kotlin/String?): ai.torad.aisdk.providers/XaiProviderSettingsBuilder // ai.torad.aisdk.providers/XaiProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String): ai.torad.aisdk.providers/XaiProviderSettingsBuilder // ai.torad.aisdk.providers/XaiProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun build(): ai.torad.aisdk.providers/XaiProviderSettings // ai.torad.aisdk.providers/XaiProviderSettingsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/XaiProviderSettingsBuilder // ai.torad.aisdk.providers/XaiProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/XaiTools { // ai.torad.aisdk.providers/XaiTools|null[0]
@@ -7097,12 +7232,15 @@ final class ai.torad.aisdk.providers/XaiVideoModelOptions { // ai.torad.aisdk.pr
 }
 
 final class ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder { // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder|null[0]
-    final fun mode(kotlin/String?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.mode|mode(kotlin.String?){}[0]
-    final fun pollIntervalMs(kotlin/Long?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.pollIntervalMs|pollIntervalMs(kotlin.Long?){}[0]
-    final fun pollTimeoutMs(kotlin/Long?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.pollTimeoutMs|pollTimeoutMs(kotlin.Long?){}[0]
-    final fun referenceImageUrls(kotlin.collections/List<kotlin/String>?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.referenceImageUrls|referenceImageUrls(kotlin.collections.List<kotlin.String>?){}[0]
-    final fun resolution(kotlin/String?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.resolution|resolution(kotlin.String?){}[0]
-    final fun videoUrl(kotlin/String?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.videoUrl|videoUrl(kotlin.String?){}[0]
+    constructor <init>() // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk.providers/XaiVideoModelOptions // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.build|build(){}[0]
+    final fun mode(kotlin/String?): ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.mode|mode(kotlin.String?){}[0]
+    final fun pollIntervalMs(kotlin/Long?): ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.pollIntervalMs|pollIntervalMs(kotlin.Long?){}[0]
+    final fun pollTimeoutMs(kotlin/Long?): ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.pollTimeoutMs|pollTimeoutMs(kotlin.Long?){}[0]
+    final fun referenceImageUrls(kotlin.collections/List<kotlin/String>?): ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.referenceImageUrls|referenceImageUrls(kotlin.collections.List<kotlin.String>?){}[0]
+    final fun resolution(kotlin/String?): ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.resolution|resolution(kotlin.String?){}[0]
+    final fun videoUrl(kotlin/String?): ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.videoUrl|videoUrl(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.ui/Chat { // ai.torad.aisdk.ui/Chat|null[0]

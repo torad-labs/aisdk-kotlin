@@ -246,24 +246,27 @@ public class ProdiaProviderSettings internal constructor(
     }
 }
 
-public class ProdiaProviderSettingsBuilder internal constructor() {
+public class ProdiaProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://inference.prodia.com/v2"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): ProdiaProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): ProdiaProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): ProdiaProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): ProdiaProviderSettings =
+    public fun build(): ProdiaProviderSettings =
         ProdiaProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,
@@ -282,14 +285,15 @@ public class ProdiaLanguageModelOptions internal constructor(
     public val aspectRatio: String? = null,
 )
 
-public class ProdiaLanguageModelOptionsBuilder internal constructor() {
+public class ProdiaLanguageModelOptionsBuilder {
     private var aspectRatio: String? = null
 
-    public fun aspectRatio(value: String?) {
+    public fun aspectRatio(value: String?): ProdiaLanguageModelOptionsBuilder {
         aspectRatio = value
+        return this
     }
 
-    internal fun build(): ProdiaLanguageModelOptions =
+    public fun build(): ProdiaLanguageModelOptions =
         ProdiaLanguageModelOptions(aspectRatio = aspectRatio)
 }
 
@@ -309,7 +313,7 @@ public class ProdiaImageModelOptions internal constructor(
     public val progressive: Boolean? = null,
 )
 
-public class ProdiaImageModelOptionsBuilder internal constructor() {
+public class ProdiaImageModelOptionsBuilder {
     private var steps: Int? = null
     private var width: Int? = null
     private var height: Int? = null
@@ -317,31 +321,37 @@ public class ProdiaImageModelOptionsBuilder internal constructor() {
     private var loras: List<String>? = null
     private var progressive: Boolean? = null
 
-    public fun steps(value: Int?) {
+    public fun steps(value: Int?): ProdiaImageModelOptionsBuilder {
         steps = value
+        return this
     }
 
-    public fun width(value: Int?) {
+    public fun width(value: Int?): ProdiaImageModelOptionsBuilder {
         width = value
+        return this
     }
 
-    public fun height(value: Int?) {
+    public fun height(value: Int?): ProdiaImageModelOptionsBuilder {
         height = value
+        return this
     }
 
-    public fun stylePreset(value: String?) {
+    public fun stylePreset(value: String?): ProdiaImageModelOptionsBuilder {
         stylePreset = value
+        return this
     }
 
-    public fun loras(value: List<String>?) {
+    public fun loras(value: List<String>?): ProdiaImageModelOptionsBuilder {
         loras = value
+        return this
     }
 
-    public fun progressive(value: Boolean?) {
+    public fun progressive(value: Boolean?): ProdiaImageModelOptionsBuilder {
         progressive = value
+        return this
     }
 
-    internal fun build(): ProdiaImageModelOptions =
+    public fun build(): ProdiaImageModelOptions =
         ProdiaImageModelOptions(
             steps = steps,
             width = width,
@@ -363,14 +373,15 @@ public class ProdiaVideoModelOptions internal constructor(
     public val resolution: String? = null,
 )
 
-public class ProdiaVideoModelOptionsBuilder internal constructor() {
+public class ProdiaVideoModelOptionsBuilder {
     private var resolution: String? = null
 
-    public fun resolution(value: String?) {
+    public fun resolution(value: String?): ProdiaVideoModelOptionsBuilder {
         resolution = value
+        return this
     }
 
-    internal fun build(): ProdiaVideoModelOptions =
+    public fun build(): ProdiaVideoModelOptions =
         ProdiaVideoModelOptions(resolution = resolution)
 }
 

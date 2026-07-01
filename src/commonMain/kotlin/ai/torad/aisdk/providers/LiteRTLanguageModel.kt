@@ -56,29 +56,33 @@ public class LiteRTSamplerConfig internal constructor(
     }
 }
 
-public class LiteRTSamplerConfigBuilder internal constructor() {
+public class LiteRTSamplerConfigBuilder {
     private var topK: Int? = null
     private var topP: Double? = null
     private var temperature: Double? = null
     private var seed: Int = 0
 
-    public fun topK(value: Int) {
+    public fun topK(value: Int): LiteRTSamplerConfigBuilder {
         topK = value
+        return this
     }
 
-    public fun topP(value: Double) {
+    public fun topP(value: Double): LiteRTSamplerConfigBuilder {
         topP = value
+        return this
     }
 
-    public fun temperature(value: Double) {
+    public fun temperature(value: Double): LiteRTSamplerConfigBuilder {
         temperature = value
+        return this
     }
 
-    public fun seed(value: Int) {
+    public fun seed(value: Int): LiteRTSamplerConfigBuilder {
         seed = value
+        return this
     }
 
-    internal fun build(): LiteRTSamplerConfig =
+    public fun build(): LiteRTSamplerConfig =
         LiteRTSamplerConfig(
             topK = requireNotNull(topK) { "LiteRTSamplerConfig.topK is required" },
             topP = requireNotNull(topP) { "LiteRTSamplerConfig.topP is required" },
@@ -135,7 +139,7 @@ public class LiteRTConversationRequest internal constructor(
     public val callParams: LanguageModelCallParams,
 )
 
-public class LiteRTConversationRequestBuilder internal constructor() {
+public class LiteRTConversationRequestBuilder {
     private var systemInstruction: List<LiteRTContent> = emptyList()
     private var initialMessages: List<LiteRTMessage> = emptyList()
     private var message: LiteRTMessage? = null
@@ -147,47 +151,57 @@ public class LiteRTConversationRequestBuilder internal constructor() {
     private var warnings: List<CallWarning> = emptyList()
     private var callParams: LanguageModelCallParams? = null
 
-    public fun systemInstruction(value: List<LiteRTContent>) {
+    public fun systemInstruction(value: List<LiteRTContent>): LiteRTConversationRequestBuilder {
         systemInstruction = value
+        return this
     }
 
-    public fun initialMessages(value: List<LiteRTMessage>) {
+    public fun initialMessages(value: List<LiteRTMessage>): LiteRTConversationRequestBuilder {
         initialMessages = value
+        return this
     }
 
-    public fun message(value: LiteRTMessage) {
+    public fun message(value: LiteRTMessage): LiteRTConversationRequestBuilder {
         message = value
+        return this
     }
 
-    public fun tools(value: List<LanguageModelTool>) {
+    public fun tools(value: List<LanguageModelTool>): LiteRTConversationRequestBuilder {
         tools = value
+        return this
     }
 
-    public fun samplerConfig(value: LiteRTSamplerConfig?) {
+    public fun samplerConfig(value: LiteRTSamplerConfig?): LiteRTConversationRequestBuilder {
         samplerConfig = value
+        return this
     }
 
-    public fun automaticToolCalling(value: Boolean) {
+    public fun automaticToolCalling(value: Boolean): LiteRTConversationRequestBuilder {
         automaticToolCalling = value
+        return this
     }
 
-    public fun channels(value: List<LiteRTChannel>?) {
+    public fun channels(value: List<LiteRTChannel>?): LiteRTConversationRequestBuilder {
         channels = value
+        return this
     }
 
-    public fun extraContext(value: Map<String, Any?>) {
+    public fun extraContext(value: Map<String, Any?>): LiteRTConversationRequestBuilder {
         extraContext = value
+        return this
     }
 
-    public fun warnings(value: List<CallWarning>) {
+    public fun warnings(value: List<CallWarning>): LiteRTConversationRequestBuilder {
         warnings = value
+        return this
     }
 
-    public fun callParams(value: LanguageModelCallParams) {
+    public fun callParams(value: LanguageModelCallParams): LiteRTConversationRequestBuilder {
         callParams = value
+        return this
     }
 
-    internal fun build(): LiteRTConversationRequest =
+    public fun build(): LiteRTConversationRequest =
         LiteRTConversationRequest(
             systemInstruction = systemInstruction,
             initialMessages = initialMessages,
@@ -233,7 +247,7 @@ public class LiteRTLanguageModelSettings internal constructor(
     public val toolCallIdGenerator: () -> String = { IdGenerator.generate("call") },
 )
 
-public class LiteRTLanguageModelSettingsBuilder internal constructor() {
+public class LiteRTLanguageModelSettingsBuilder {
     private var provider: String = "litert-lm"
     private var supportedUrls: Map<String, List<String>> = emptyMap()
     private var defaultSamplerConfig: LiteRTSamplerConfig? = null
@@ -244,43 +258,52 @@ public class LiteRTLanguageModelSettingsBuilder internal constructor() {
     private var extraContext: Map<String, Any?> = emptyMap()
     private var toolCallIdGenerator: () -> String = { IdGenerator.generate("call") }
 
-    public fun provider(value: String) {
+    public fun provider(value: String): LiteRTLanguageModelSettingsBuilder {
         provider = value
+        return this
     }
 
-    public fun supportedUrls(value: Map<String, List<String>>) {
+    public fun supportedUrls(value: Map<String, List<String>>): LiteRTLanguageModelSettingsBuilder {
         supportedUrls = value
+        return this
     }
 
-    public fun defaultSamplerConfig(value: LiteRTSamplerConfig?) {
+    public fun defaultSamplerConfig(value: LiteRTSamplerConfig?): LiteRTLanguageModelSettingsBuilder {
         defaultSamplerConfig = value
+        return this
     }
 
-    public fun streamTextMode(value: LiteRTStreamTextMode) {
+    public fun streamTextMode(value: LiteRTStreamTextMode): LiteRTLanguageModelSettingsBuilder {
         streamTextMode = value
+        return this
     }
 
-    public fun reasoningChannelNames(value: Set<String>) {
+    public fun reasoningChannelNames(value: Set<String>): LiteRTLanguageModelSettingsBuilder {
         reasoningChannelNames = value
+        return this
     }
 
-    public fun assistantReasoningChannelName(value: String) {
+    public fun assistantReasoningChannelName(value: String): LiteRTLanguageModelSettingsBuilder {
         assistantReasoningChannelName = value
+        return this
     }
 
-    public fun channels(value: List<LiteRTChannel>?) {
+    public fun channels(value: List<LiteRTChannel>?): LiteRTLanguageModelSettingsBuilder {
         channels = value
+        return this
     }
 
-    public fun extraContext(value: Map<String, Any?>) {
+    public fun extraContext(value: Map<String, Any?>): LiteRTLanguageModelSettingsBuilder {
         extraContext = value
+        return this
     }
 
-    public fun toolCallIdGenerator(value: () -> String) {
+    public fun toolCallIdGenerator(value: () -> String): LiteRTLanguageModelSettingsBuilder {
         toolCallIdGenerator = value
+        return this
     }
 
-    internal fun build(): LiteRTLanguageModelSettings =
+    public fun build(): LiteRTLanguageModelSettings =
         LiteRTLanguageModelSettings(
             provider = provider,
             supportedUrls = supportedUrls,

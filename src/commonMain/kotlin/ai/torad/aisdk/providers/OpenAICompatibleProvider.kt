@@ -57,7 +57,7 @@ public class OpenAICompatibleProviderSettings internal constructor(
     }
 }
 
-public class OpenAICompatibleProviderSettingsBuilder internal constructor() {
+public class OpenAICompatibleProviderSettingsBuilder {
     private var name: String? = null
     private var baseUrl: String? = null
     private var apiKey: String? = null
@@ -77,79 +77,97 @@ public class OpenAICompatibleProviderSettingsBuilder internal constructor() {
     private var convertUsage: ((JsonElement?) -> Usage)? = null
     private var transformChatResponse: ((JsonObject) -> JsonObject)? = null
 
-    public fun name(value: String) {
+    public fun name(value: String): OpenAICompatibleProviderSettingsBuilder {
         name = value
+        return this
     }
 
-    public fun baseUrl(value: String) {
+    public fun baseUrl(value: String): OpenAICompatibleProviderSettingsBuilder {
         baseUrl = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): OpenAICompatibleProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): OpenAICompatibleProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun queryParams(value: Map<String, String>) {
+    public fun queryParams(value: Map<String, String>): OpenAICompatibleProviderSettingsBuilder {
         queryParams = value
+        return this
     }
 
-    public fun includeUsage(value: Boolean) {
+    public fun includeUsage(value: Boolean): OpenAICompatibleProviderSettingsBuilder {
         includeUsage = value
+        return this
     }
 
-    public fun supportsStructuredOutputs(value: Boolean) {
+    public fun supportsStructuredOutputs(value: Boolean): OpenAICompatibleProviderSettingsBuilder {
         supportsStructuredOutputs = value
+        return this
     }
 
-    public fun supportedUrls(value: Map<String, List<String>>) {
+    public fun supportedUrls(value: Map<String, List<String>>): OpenAICompatibleProviderSettingsBuilder {
         supportedUrls = value
+        return this
     }
 
-    public fun maxEmbeddingsPerCall(value: Int) {
+    public fun maxEmbeddingsPerCall(value: Int): OpenAICompatibleProviderSettingsBuilder {
         maxEmbeddingsPerCall = value
+        return this
     }
 
-    public fun authHeadersProvider(value: (suspend () -> Map<String, String>)?) {
+    public fun authHeadersProvider(value: (suspend () -> Map<String, String>)?): OpenAICompatibleProviderSettingsBuilder {
         authHeadersProvider = value
+        return this
     }
 
-    public fun urlBuilder(value: ((path: String, modelId: String) -> String)?) {
+    public fun urlBuilder(value: ((path: String, modelId: String) -> String)?): OpenAICompatibleProviderSettingsBuilder {
         urlBuilder = value
+        return this
     }
 
-    public fun userAgentSuffix(value: String?) {
+    public fun userAgentSuffix(value: String?): OpenAICompatibleProviderSettingsBuilder {
         userAgentSuffix = value
+        return this
     }
 
-    public fun providerOptionsName(value: String?) {
+    public fun providerOptionsName(value: String?): OpenAICompatibleProviderSettingsBuilder {
         providerOptionsName = value
+        return this
     }
 
-    public fun chatMaxOutputTokensKey(value: String) {
+    public fun chatMaxOutputTokensKey(value: String): OpenAICompatibleProviderSettingsBuilder {
         chatMaxOutputTokensKey = value
+        return this
     }
 
-    public fun chatSeedKey(value: String) {
+    public fun chatSeedKey(value: String): OpenAICompatibleProviderSettingsBuilder {
         chatSeedKey = value
+        return this
     }
 
-    public fun transformChatRequestBody(value: ((JsonObject) -> JsonObject)?) {
+    public fun transformChatRequestBody(value: ((JsonObject) -> JsonObject)?): OpenAICompatibleProviderSettingsBuilder {
         transformChatRequestBody = value
+        return this
     }
 
-    public fun convertUsage(value: ((JsonElement?) -> Usage)?) {
+    public fun convertUsage(value: ((JsonElement?) -> Usage)?): OpenAICompatibleProviderSettingsBuilder {
         convertUsage = value
+        return this
     }
 
-    public fun transformChatResponse(value: ((JsonObject) -> JsonObject)?) {
+    public fun transformChatResponse(value: ((JsonObject) -> JsonObject)?): OpenAICompatibleProviderSettingsBuilder {
         transformChatResponse = value
+        return this
     }
 
-    internal fun build(): OpenAICompatibleProviderSettings =
+    public fun build(): OpenAICompatibleProviderSettings =
         OpenAICompatibleProviderSettings(
             name = requireNotNull(name) { "OpenAICompatibleProviderSettings.name is required" },
             baseUrl = requireNotNull(baseUrl) { "OpenAICompatibleProviderSettings.baseUrl is required" },

@@ -28,29 +28,33 @@ public class VoyageEmbeddingModelOptions internal constructor(
     public val outputDtype: String? = null,
 )
 
-public class VoyageEmbeddingModelOptionsBuilder internal constructor() {
+public class VoyageEmbeddingModelOptionsBuilder {
     private var inputType: String? = null
     private var truncation: Boolean? = null
     private var outputDimension: Int? = null
     private var outputDtype: String? = null
 
-    public fun inputType(value: String?) {
+    public fun inputType(value: String?): VoyageEmbeddingModelOptionsBuilder {
         inputType = value
+        return this
     }
 
-    public fun truncation(value: Boolean?) {
+    public fun truncation(value: Boolean?): VoyageEmbeddingModelOptionsBuilder {
         truncation = value
+        return this
     }
 
-    public fun outputDimension(value: Int?) {
+    public fun outputDimension(value: Int?): VoyageEmbeddingModelOptionsBuilder {
         outputDimension = value
+        return this
     }
 
-    public fun outputDtype(value: String?) {
+    public fun outputDtype(value: String?): VoyageEmbeddingModelOptionsBuilder {
         outputDtype = value
+        return this
     }
 
-    internal fun build(): VoyageEmbeddingModelOptions =
+    public fun build(): VoyageEmbeddingModelOptions =
         VoyageEmbeddingModelOptions(
             inputType = inputType,
             truncation = truncation,
@@ -71,19 +75,21 @@ public class VoyageRerankingModelOptions internal constructor(
     public val truncation: Boolean? = null,
 )
 
-public class VoyageRerankingModelOptionsBuilder internal constructor() {
+public class VoyageRerankingModelOptionsBuilder {
     private var returnDocuments: Boolean? = null
     private var truncation: Boolean? = null
 
-    public fun returnDocuments(value: Boolean?) {
+    public fun returnDocuments(value: Boolean?): VoyageRerankingModelOptionsBuilder {
         returnDocuments = value
+        return this
     }
 
-    public fun truncation(value: Boolean?) {
+    public fun truncation(value: Boolean?): VoyageRerankingModelOptionsBuilder {
         truncation = value
+        return this
     }
 
-    internal fun build(): VoyageRerankingModelOptions =
+    public fun build(): VoyageRerankingModelOptions =
         VoyageRerankingModelOptions(
             returnDocuments = returnDocuments,
             truncation = truncation,
@@ -140,24 +146,27 @@ public class VoyageProviderSettings internal constructor(
     }
 }
 
-public class VoyageProviderSettingsBuilder internal constructor() {
+public class VoyageProviderSettingsBuilder {
     private var baseURL: String = "https://api.voyageai.com/v1"
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): VoyageProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): VoyageProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): VoyageProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): VoyageProviderSettings =
+    public fun build(): VoyageProviderSettings =
         VoyageProviderSettings(
             baseURL = baseURL,
             apiKey = apiKey,

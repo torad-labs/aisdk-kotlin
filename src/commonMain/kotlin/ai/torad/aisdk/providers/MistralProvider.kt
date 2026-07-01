@@ -204,24 +204,27 @@ public class MistralProviderSettings internal constructor(
     }
 }
 
-public class MistralProviderSettingsBuilder internal constructor() {
+public class MistralProviderSettingsBuilder {
     private var baseURL: String = "https://api.mistral.ai/v1"
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): MistralProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): MistralProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): MistralProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): MistralProviderSettings =
+    public fun build(): MistralProviderSettings =
         MistralProviderSettings(
             baseURL = baseURL,
             apiKey = apiKey,
@@ -246,7 +249,7 @@ public class MistralLanguageModelOptions internal constructor(
     public val reasoningEffort: String? = null,
 )
 
-public class MistralLanguageModelOptionsBuilder internal constructor() {
+public class MistralLanguageModelOptionsBuilder {
     private var safePrompt: Boolean? = null
     private var documentImageLimit: Int? = null
     private var documentPageLimit: Int? = null
@@ -255,35 +258,42 @@ public class MistralLanguageModelOptionsBuilder internal constructor() {
     private var parallelToolCalls: Boolean? = null
     private var reasoningEffort: String? = null
 
-    public fun safePrompt(value: Boolean?) {
+    public fun safePrompt(value: Boolean?): MistralLanguageModelOptionsBuilder {
         safePrompt = value
+        return this
     }
 
-    public fun documentImageLimit(value: Int?) {
+    public fun documentImageLimit(value: Int?): MistralLanguageModelOptionsBuilder {
         documentImageLimit = value
+        return this
     }
 
-    public fun documentPageLimit(value: Int?) {
+    public fun documentPageLimit(value: Int?): MistralLanguageModelOptionsBuilder {
         documentPageLimit = value
+        return this
     }
 
-    public fun structuredOutputs(value: Boolean?) {
+    public fun structuredOutputs(value: Boolean?): MistralLanguageModelOptionsBuilder {
         structuredOutputs = value
+        return this
     }
 
-    public fun strictJsonSchema(value: Boolean?) {
+    public fun strictJsonSchema(value: Boolean?): MistralLanguageModelOptionsBuilder {
         strictJsonSchema = value
+        return this
     }
 
-    public fun parallelToolCalls(value: Boolean?) {
+    public fun parallelToolCalls(value: Boolean?): MistralLanguageModelOptionsBuilder {
         parallelToolCalls = value
+        return this
     }
 
-    public fun reasoningEffort(value: String?) {
+    public fun reasoningEffort(value: String?): MistralLanguageModelOptionsBuilder {
         reasoningEffort = value
+        return this
     }
 
-    internal fun build(): MistralLanguageModelOptions =
+    public fun build(): MistralLanguageModelOptions =
         MistralLanguageModelOptions(
             safePrompt = safePrompt,
             documentImageLimit = documentImageLimit,

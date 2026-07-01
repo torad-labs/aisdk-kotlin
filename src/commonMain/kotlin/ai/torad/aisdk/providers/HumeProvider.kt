@@ -32,14 +32,15 @@ public class HumeSpeechModelOptions internal constructor(
     public val context: JsonObject? = null,
 )
 
-public class HumeSpeechModelOptionsBuilder internal constructor() {
+public class HumeSpeechModelOptionsBuilder {
     private var context: JsonObject? = null
 
-    public fun context(value: JsonObject?) {
+    public fun context(value: JsonObject?): HumeSpeechModelOptionsBuilder {
         context = value
+        return this
     }
 
-    internal fun build(): HumeSpeechModelOptions =
+    public fun build(): HumeSpeechModelOptions =
         HumeSpeechModelOptions(context = context)
 }
 
@@ -63,19 +64,21 @@ public class HumeProviderSettings internal constructor(
     }
 }
 
-public class HumeProviderSettingsBuilder internal constructor() {
+public class HumeProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): HumeProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): HumeProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): HumeProviderSettings =
+    public fun build(): HumeProviderSettings =
         HumeProviderSettings(
             apiKey = apiKey,
             headers = headers,
