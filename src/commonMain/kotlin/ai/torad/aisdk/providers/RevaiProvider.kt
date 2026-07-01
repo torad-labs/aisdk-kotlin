@@ -420,6 +420,7 @@ private class RevaiTranscriptionModel(
                 val poll = revaiGetJson(
                     url = "$REVAI_BASE_URL/speechtotext/v1/jobs/$jobId",
                     headers = settings.revaiHeaders(params.headers),
+                    abortSignal = params.abortSignal,
                 )
                 job = poll.value.jsonObject
                 when ((job["status"] as? JsonPrimitive)?.contentOrNull) {
@@ -438,6 +439,7 @@ private class RevaiTranscriptionModel(
         val transcript = revaiGetJson(
             url = "$REVAI_BASE_URL/speechtotext/v1/jobs/$jobId/transcript",
             headers = settings.revaiHeaders(params.headers),
+            abortSignal = params.abortSignal,
         )
         val mapped = mapRevaiTranscript(transcript.value)
         return TranscriptionModelResult(
@@ -486,14 +488,18 @@ private class RevaiTranscriptionModel(
     private suspend fun revaiGetJson(
         url: String,
         headers: Map<String, String>,
+        abortSignal: AbortSignal,
     ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = ::revaiErrorMessage,
-        )
+        AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = headers,
+                errorMessage = ::revaiErrorMessage,
+                abortSignal = abortSignal,
+            )
+        }
 
     private fun revaiConfigBody(params: TranscriptionParams): JsonObject {
         val options = revaiOptions(params.providerOptions)

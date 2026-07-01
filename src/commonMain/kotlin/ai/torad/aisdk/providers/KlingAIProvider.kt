@@ -17,6 +17,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlin.math.ceil
 import kotlin.time.Clock
 
 public const val KLINGAI_VERSION: String = "3.0.18"
@@ -387,16 +388,20 @@ private class KlingAIVideoModel(
             url = "${settings.baseURL.trimEnd('/')}$endpoint",
             headers = settings.klingAIHeaders(params.headers, clock),
             body = body,
+            abortSignal = params.abortSignal,
         )
         val data = JsonAccess.obj(create.value.jsonObject, "data")
         val taskId = (data?.get("task_id") as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(create.value, "No task_id returned from KlingAI API. Response: ${create.value}")
 
         val pollIntervalMs = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 5_000L
-        val pollTimeoutMs = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 600_000L
+        val pollTimeoutMs = ((options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 600_000L)
+            .coerceAtLeast(1L)
+        val maxPollAttempts = (options["maxPollAttempts"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull()
+            ?: ceil(pollTimeoutMs.toDouble() / pollIntervalMs.coerceAtLeast(1L).toDouble()).toInt().coerceAtLeast(1)
         val started = clock.now().toEpochMilliseconds()
         var headers = create.headers
-        while (true) {
+        repeat(maxPollAttempts.coerceAtLeast(1)) {
             params.abortSignal.throwIfAborted()
             if (pollIntervalMs > 0) delay(pollIntervalMs)
             if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
@@ -407,6 +412,7 @@ private class KlingAIVideoModel(
                 method = HttpMethod.Get,
                 url = "${settings.baseURL.trimEnd('/')}$endpoint/$taskId",
                 headers = settings.klingAIHeaders(params.headers, clock),
+                abortSignal = params.abortSignal,
             )
             headers = status.headers
             val data = (JsonAccess.obj(status.value.jsonObject, "data")) ?: JsonObject(emptyMap())
@@ -420,6 +426,7 @@ private class KlingAIVideoModel(
                 else -> throw InvalidResponseDataError(data, "Unknown KlingAI task status: $taskStatus")
             }
         }
+        throw NoVideoGeneratedError("Video generation timed out after $maxPollAttempts poll attempts")
     }
 
     private fun klingAISuccessResult(
@@ -587,16 +594,20 @@ private class KlingAIVideoModel(
         url: String,
         headers: Map<String, String>,
         body: JsonObject? = null,
+        abortSignal: AbortSignal,
     ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = method,
-            headers = headers,
-            body = body,
-            requestBodyValues = body,
-            errorMessage = ::klingAIErrorMessage,
-        )
+        AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = method,
+                headers = headers,
+                body = body,
+                requestBodyValues = body,
+                errorMessage = ::klingAIErrorMessage,
+                abortSignal = abortSignal,
+            )
+        }
 
     private fun klingAIVideoMetadata(value: JsonObject): JsonObject = buildJsonObject {
         (value["id"] as? JsonPrimitive)?.contentOrNull?.let { put("id", JsonPrimitive(it)) }
@@ -627,6 +638,7 @@ private val klingAIHandledProviderOptions = setOf(
     "mode",
     "pollIntervalMs",
     "pollTimeoutMs",
+    "maxPollAttempts",
     "negativePrompt",
     "sound",
     "cfgScale",

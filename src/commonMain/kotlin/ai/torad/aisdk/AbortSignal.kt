@@ -6,6 +6,8 @@ import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.coroutineScope
+import kotlin.coroutines.coroutineContext
 
 /**
  * Cancellation primitive matching the Vercel AI SDK v6 `AbortSignal` shape.
@@ -141,6 +143,19 @@ public class AbortController {
  * @since 0.3.0-beta01
  */
 public class AbortError(message: String = "operation aborted") : kotlin.coroutines.cancellation.CancellationException(message)
+
+internal object AbortSignalRuntime {
+    suspend fun <T> withAbortCancellation(signal: AbortSignal, block: suspend () -> T): T = coroutineScope {
+        signal.throwIfAborted()
+        val job = coroutineContext[Job]
+        val registration = signal.register { job?.cancel(AbortError()) }
+        try {
+            block()
+        } finally {
+            registration.cancel()
+        }
+    }
+}
 
 /**
  * Bind an abort signal to a [Job] so the signal fires when the job

@@ -65,6 +65,7 @@ internal object FacadeHttp {
         url: String,
         body: JsonElement,
         headers: Map<String, String>,
+        abortSignal: AbortSignal = AbortSignalNever,
     ): HttpJsonResponse =
         HttpTransport.requestJson(
             client = client,
@@ -74,6 +75,7 @@ internal object FacadeHttp {
             body = body,
             requestBodyValues = body,
             errorMessage = ::providerFacadeErrorMessage,
+            abortSignal = abortSignal,
         )
 
     suspend fun postFacadeBinary(
@@ -95,12 +97,20 @@ internal object FacadeHttp {
         client: HttpClient,
         url: String,
         headers: Map<String, String>,
+        abortSignal: AbortSignal = AbortSignalNever,
     ): ProviderFacadeBinaryResponse {
-        val response = client.request(url) {
-            method = HttpMethod.Get
-            headers.forEach { (name, value) -> header(name, value) }
+        val abortRegistrations = mutableListOf<AbortSignal.AbortRegistration>()
+        try {
+            val response = client.request(url) {
+                abortSignal.throwIfAborted()
+                abortRegistrations += abortSignal.register { executionContext.cancel(AbortError()) }
+                method = HttpMethod.Get
+                headers.forEach { (name, value) -> header(name, value) }
+            }
+            return response.parseFacadeBinary(url)
+        } finally {
+            abortRegistrations.forEach { it.cancel() }
         }
-        return response.parseFacadeBinary(url)
     }
 
     suspend fun HttpResponse.parseFacadeBinary(url: String): ProviderFacadeBinaryResponse {

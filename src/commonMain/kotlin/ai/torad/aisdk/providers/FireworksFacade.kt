@@ -315,7 +315,7 @@ public class FireworksImageModel(
             userAgent = "ai-sdk/fireworks/$FIREWORKS_VERSION",
         )
         return if (backend.urlFormat == FireworksImageUrlFormat.WorkflowsAsync) {
-            generateAsync(body, requestHeaders, warnings)
+            generateAsync(body, requestHeaders, warnings, params.abortSignal)
         } else {
             val response = postFacadeBinary(
                 client = client,
@@ -335,20 +335,26 @@ public class FireworksImageModel(
         body: JsonObject,
         requestHeaders: Map<String, String>,
         warnings: List<CallWarning>,
+        abortSignal: AbortSignal,
     ): ImageModelResult {
-        val submitResponse = postFacadeJson(
-            client = client,
-            url = fireworksImageUrl(settings.baseURL, modelId, fireworksImageBackend(modelId)),
-            body = body,
-            headers = requestHeaders,
-        )
+        val submitResponse = AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            postFacadeJson(
+                client = client,
+                url = fireworksImageUrl(settings.baseURL, modelId, fireworksImageBackend(modelId)),
+                body = body,
+                headers = requestHeaders,
+                abortSignal = abortSignal,
+            )
+        }
         val requestId = (submitResponse.value.jsonObject["request_id"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(
                 submitResponse.value,
                 "Fireworks image generation response is missing request_id",
             )
-        val imageUrl = pollForImageUrl(requestId, requestHeaders)
-        val imageResponse = getFacadeBinary(client, imageUrl, requestHeaders)
+        val imageUrl = pollForImageUrl(requestId, requestHeaders, abortSignal)
+        val imageResponse = AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            getFacadeBinary(client, imageUrl, requestHeaders, abortSignal = abortSignal)
+        }
         return ImageModelResult(
             images = listOf(imageResponse.toGeneratedFile(modelId)),
             warnings = warnings,
@@ -356,15 +362,24 @@ public class FireworksImageModel(
         )
     }
 
-    private suspend fun pollForImageUrl(requestId: String, requestHeaders: Map<String, String>): String {
+    private suspend fun pollForImageUrl(
+        requestId: String,
+        requestHeaders: Map<String, String>,
+        abortSignal: AbortSignal,
+    ): String {
         val pollUrl = "${settings.baseURL.trimEnd('/')}/workflows/$modelId/get_result"
+        var pollDelayMillis = FIREWORKS_POLL_INTERVAL_MILLIS
         repeat(FIREWORKS_MAX_POLL_ATTEMPTS) { attempt ->
-            val response = postFacadeJson(
-                client = client,
-                url = pollUrl,
-                body = buildJsonObject { put("id", JsonPrimitive(requestId)) },
-                headers = requestHeaders,
-            )
+            abortSignal.throwIfAborted()
+            val response = AbortSignalRuntime.withAbortCancellation(abortSignal) {
+                postFacadeJson(
+                    client = client,
+                    url = pollUrl,
+                    body = buildJsonObject { put("id", JsonPrimitive(requestId)) },
+                    headers = requestHeaders,
+                    abortSignal = abortSignal,
+                )
+            }
             val status = (response.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull
             when (status) {
                 "Ready" -> {
@@ -380,7 +395,10 @@ public class FireworksImageModel(
                     url = pollUrl,
                 )
             }
-            if (attempt < FIREWORKS_MAX_POLL_ATTEMPTS - 1) delay(FIREWORKS_POLL_INTERVAL_MILLIS)
+            if (attempt < FIREWORKS_MAX_POLL_ATTEMPTS - 1) {
+                delay(pollDelayMillis)
+                pollDelayMillis = ((pollDelayMillis * 3) / 2).coerceAtMost(FIREWORKS_MAX_POLL_INTERVAL_MILLIS)
+            }
         }
         throw APICallError(
             message = "Fireworks image generation timed out after polling",
@@ -434,4 +452,5 @@ internal data class FireworksImageBackend(
 )
 
 private const val FIREWORKS_POLL_INTERVAL_MILLIS: Long = 500
+private const val FIREWORKS_MAX_POLL_INTERVAL_MILLIS: Long = 30_000
 private const val FIREWORKS_MAX_POLL_ATTEMPTS: Int = 240

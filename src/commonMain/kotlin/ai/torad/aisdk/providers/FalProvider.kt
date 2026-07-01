@@ -84,15 +84,19 @@ public class FalProviderSettings internal constructor(
         client: HttpClient,
         url: String,
         headers: Map<String, String>,
+        abortSignal: AbortSignal,
     ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = falErrorMessage,
-            errorFromResponse = falInProgressSignal,
-        )
+        AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = headers,
+                errorMessage = falErrorMessage,
+                errorFromResponse = falInProgressSignal,
+                abortSignal = abortSignal,
+            )
+        }
 
     internal suspend fun falPollJson(
         client: HttpClient,
@@ -106,7 +110,7 @@ public class FalProviderSettings internal constructor(
         repeat(maxPollAttempts.coerceAtLeast(1)) { attempt ->
             abortSignal.throwIfAborted()
             val response = try {
-                falGetJson(client, url, headers)
+                falGetJson(client, url, headers, abortSignal)
             } catch (error: InvalidResponseDataError) {
                 if (error.message == "Request is still in progress") null else throw error
             }
@@ -123,16 +127,25 @@ public class FalProviderSettings internal constructor(
         abortSignal: AbortSignal,
     ): FalBinaryResponse {
         abortSignal.throwIfAborted()
-        val (statusCode, flattened, bytes) = HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
-            val response = client.request(url) {
-                method = HttpMethod.Get
-                headers.forEach { (name, value) -> header(name, value) }
+        val (statusCode, flattened, bytes) = AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+                val abortRegistrations = mutableListOf<AbortSignal.AbortRegistration>()
+                try {
+                    val response = client.request(url) {
+                        abortSignal.throwIfAborted()
+                        abortRegistrations += abortSignal.register { executionContext.cancel(AbortError()) }
+                        method = HttpMethod.Get
+                        headers.forEach { (name, value) -> header(name, value) }
+                    }
+                    Triple(
+                        response.status.value,
+                        with(HttpTransport) { response.flattenedHeaders() },
+                        with(HttpTransport) { response.bodyAsBytesCapped(url) },
+                    )
+                } finally {
+                    abortRegistrations.forEach { it.cancel() }
+                }
             }
-            Triple(
-                response.status.value,
-                with(HttpTransport) { response.flattenedHeaders() },
-                with(HttpTransport) { response.bodyAsBytesCapped(url) },
-            )
         }
         if (statusCode !in 200..299) {
             val raw = bytes.decodeToString()
