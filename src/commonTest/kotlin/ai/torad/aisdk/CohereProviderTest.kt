@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
@@ -344,30 +345,70 @@ class CohereProviderTest {
     }
 
     @Test
+    fun `stream sends Cohere SSE request and emits incremental text deltas`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://cohere.test/v2/chat" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """{"id":"gen-stream","type":"message-start","delta":{"message":{"role":"assistant","content":[],"tool_plan":"","tool_calls":[],"citations":[]}}}""",
+                            """{"type":"content-start","index":0,"delta":{"message":{"content":{"type":"text","text":""}}}}""",
+                            """{"type":"content-delta","index":0,"delta":{"message":{"content":{"text":"Hel"}}}}""",
+                            """{"type":"content-delta","index":0,"delta":{"message":{"content":{"text":"lo"}}}}""",
+                            """{"type":"content-end","index":0}""",
+                            """{"type":"message-end","delta":{"finish_reason":"COMPLETE","usage":{"tokens":{"input_tokens":3,"output_tokens":2}}}}""",
+                        ).map { "data: $it\n\n" },
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Cohere(
+            fixture.httpClient(),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
+        ).languageModel("command-r-plus")
+
+        val streamResult = model.streamResult(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+            },
+        )
+        val events = streamResult.stream.toList()
+
+        assertEquals(true, streamResult.request.body?.jsonObject?.get("stream")?.jsonPrimitive?.booleanOrNull)
+        assertEquals(
+            listOf("Hel", "lo"),
+            events.filterIsInstance<StreamEvent.TextDelta>().map { it.text },
+        )
+        assertEquals("gen-stream", events.filterIsInstance<StreamEvent.ResponseMetadata>().last { it.id != null }.id)
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(FinishReason.Stop, finish.finishReason)
+        assertEquals("COMPLETE", finish.rawFinishReason)
+        assertEquals(3, finish.usage.promptTokens)
+        assertEquals(2, finish.usage.completionTokens)
+
+        val request = fixture.calls.single()
+        assertEquals("text/event-stream", request.requestHeaders.headerValue(HttpHeaders.Accept))
+        val body = request.requestBodyJson.jsonObject
+        assertEquals(true, body["stream"]?.jsonPrimitive?.booleanOrNull)
+    }
+
+    @Test
     fun `stream emits tool input lifecycle before final tool call`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://cohere.test/v2/chat" to UrlHandler(
-                    UrlResponse.JsonValue(
-                        Json.parseToJsonElement(
-                            """
-                            {
-                              "generation_id":"gen-1",
-                              "message":{
-                                "role":"assistant",
-                                "tool_calls":[
-                                  {
-                                    "id":"call-1",
-                                    "type":"function",
-                                    "function":{"name":"lookup","arguments":"{\"city\":\"Paris\"}"}
-                                  }
-                                ]
-                              },
-                              "finish_reason":"TOOL_CALL",
-                              "usage":{"tokens":{"input_tokens":1,"output_tokens":1}}
-                            }
-                            """.trimIndent(),
-                        ),
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """{"id":"gen-1","type":"message-start","delta":{"message":{"role":"assistant","content":[],"tool_plan":"","tool_calls":[],"citations":[]}}}""",
+                            """{"type":"tool-call-start","index":0,"delta":{"message":{"tool_calls":{"id":"call-1","type":"function","function":{"name":"lookup","arguments":""}}}}}""",
+                            """{"type":"tool-call-delta","index":0,"delta":{"message":{"tool_calls":{"function":{"arguments":"{\"city\":\"Paris\"}"}}}}}""",
+                            """{"type":"tool-call-end","index":0}""",
+                            """{"type":"message-end","delta":{"finish_reason":"TOOL_CALL","usage":{"tokens":{"input_tokens":1,"output_tokens":1}}}}""",
+                        ).map { "data: $it\n\n" },
                     ),
                 ),
             ),
@@ -397,6 +438,8 @@ class CohereProviderTest {
         assertEquals(
             listOf(
                 StreamEvent.StreamStart::class,
+                StreamEvent.ResponseMetadata::class,
+                StreamEvent.ResponseMetadata::class,
                 StreamEvent.ToolInputStart::class,
                 StreamEvent.ToolInputDelta::class,
                 StreamEvent.ToolInputEnd::class,
@@ -405,9 +448,9 @@ class CohereProviderTest {
             ),
             events.map { it::class },
         )
-        val start = events[1] as StreamEvent.ToolInputStart
-        val delta = events[2] as StreamEvent.ToolInputDelta
-        val toolCall = events[4] as StreamEvent.ToolCall
+        val start = events[3] as StreamEvent.ToolInputStart
+        val delta = events[4] as StreamEvent.ToolInputDelta
+        val toolCall = events[6] as StreamEvent.ToolCall
         assertEquals("call-1", start.id)
         assertEquals("lookup", start.toolName)
         assertEquals("call-1", delta.id)

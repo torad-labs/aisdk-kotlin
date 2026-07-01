@@ -60,7 +60,7 @@ public class CohereProviderSettings internal constructor(
     internal fun cohereOptions(providerOptions: ProviderOptions): JsonObject =
         JsonAccess.obj(providerOptions.toMap(), "cohere") ?: JsonObject(emptyMap())
 
-    private fun cohereErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    internal fun cohereErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
         val detail = (obj?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
@@ -285,42 +285,64 @@ private class CohereChatLanguageModel(
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        val result = generate(params)
-        emit(StreamEvent.StreamStart(result.warnings))
-        if (result.text.isNotEmpty()) {
-            emit(StreamEvent.TextStart("txt-0"))
-            emit(StreamEvent.TextDelta("txt-0", result.text))
-            emit(StreamEvent.TextEnd("txt-0"))
-        }
-        result.content.filterIsInstance<ContentPart.Reasoning>().forEachIndexed { index, reasoning ->
-            val id = "rsn-$index"
-            emit(StreamEvent.ReasoningStart(id, reasoning.providerMetadata))
-            emit(StreamEvent.ReasoningDelta(id, reasoning.text, reasoning.providerMetadata))
-            emit(StreamEvent.ReasoningEnd(id, reasoning.providerMetadata))
-        }
-        result.toolCalls.forEach {
-            emit(StreamEvent.ToolInputStart(it.toolCallId, it.toolName, it.providerMetadata))
-            emit(StreamEvent.ToolInputDelta(it.toolCallId, it.input.toString(), it.providerMetadata))
-            emit(StreamEvent.ToolInputEnd(it.toolCallId, it.providerMetadata))
-            emit(StreamEvent.ToolCall(it.toolCallId, it.toolName, it.input, it.providerMetadata))
-        }
-        emit(
-            StreamEvent.Finish(
-                totalSteps = 1,
-                finishReason = result.finishReason,
-                usage = result.usage,
-                rawFinishReason = result.rawFinishReason,
-            ),
+        val request = cohereChatRequest(modelId, params, stream = true)
+        val state = CohereChatStreamState(::cohereToolInput, ::cohereUsage, ::cohereFinishReason)
+        var sseHeaders: Map<String, String> = emptyMap()
+        val rawLines = HttpTransport.streamSse(
+            client = client,
+            url = "${settings.baseURL.trimEnd('/')}/chat",
+            method = HttpMethod.Post,
+            headers = settings.cohereHeaders(params.headers) + (HttpHeaders.Accept to "text/event-stream"),
+            body = request.body,
+            requestBodyValues = request.body,
+            errorMessage = settings::cohereErrorMessage,
+            onResponse = { sseHeaders = it },
         )
+        val parsedEvents = EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)
+        var streamStartEmitted = false
+        var responseMetadataEmitted = false
+        suspend fun emitStartAndMetadata() {
+            if (!streamStartEmitted) {
+                emit(StreamEvent.StreamStart(request.warnings))
+                streamStartEmitted = true
+            }
+            if (!responseMetadataEmitted) {
+                emit(StreamEvent.ResponseMetadata(headers = sseHeaders))
+                responseMetadataEmitted = true
+            }
+        }
+
+        parsedEvents.collect { event ->
+            emitStartAndMetadata()
+            when (event) {
+                is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
+                is ParseResult.Failure -> {
+                    state.markError()
+                    emit(StreamEvent.Error("Failed to parse Cohere stream event: ${event.error.message}", event.error))
+                }
+            }
+        }
+        emitStartAndMetadata()
+        state.finish().forEach { emit(it) }
     }
 
-    private fun cohereChatRequest(modelId: String, params: LanguageModelCallParams): CohereChatRequest {
+    override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult {
+        val request = cohereChatRequest(modelId, params, stream = true)
+        return LanguageModelStreamResult(stream = stream(params), request = LanguageModelRequestMetadata(request.body))
+    }
+
+    private fun cohereChatRequest(
+        modelId: String,
+        params: LanguageModelCallParams,
+        stream: Boolean = false,
+    ): CohereChatRequest {
         val options = settings.cohereOptions(params.providerOptions)
         val prompt = coherePrompt(params.messages)
         val toolConfig = cohereTools(params.tools, params.toolChoice)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("messages", JsonArray(prompt.messages))
+            if (stream) put("stream", JsonPrimitive(true))
             params.maxOutputTokens?.let { put("max_tokens", JsonPrimitive(it)) }
             params.temperature?.let { put("temperature", JsonPrimitive(it)) }
             params.topP?.let { put("p", JsonPrimitive(it)) }
@@ -671,6 +693,148 @@ private class CohereChatLanguageModel(
 
     private fun List<ContentPart>.textContent(): String =
         filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
+}
+
+private class CohereChatStreamState(
+    private val parseToolInput: (String?) -> JsonElement,
+    private val parseUsage: (JsonObject?) -> Usage,
+    private val parseFinishReason: (String?) -> FinishReason,
+) {
+    private enum class ContentKind { Text, Reasoning }
+
+    private class PendingToolCall(
+        val id: String,
+        val name: String,
+        var arguments: String,
+    )
+
+    private val contentKinds = mutableMapOf<Int, ContentKind>()
+    private val pendingToolCallOccurrences = mutableMapOf<Int, PendingToolCall>()
+    private var finishReason: FinishReason = FinishReason.Other
+    private var rawFinishReason: String? = null
+    private var usage: Usage = Usage()
+
+    fun accept(value: JsonObject): List<StreamEvent> =
+        when ((value["type"] as? JsonPrimitive)?.contentOrNull) {
+            "message-start" -> acceptMessageStart(value)
+            "content-start" -> acceptContentStart(value)
+            "content-delta" -> acceptContentDelta(value)
+            "content-end" -> acceptContentEnd(value)
+            "tool-call-start" -> acceptToolCallStart(value)
+            "tool-call-delta" -> acceptToolCallDelta(value)
+            "tool-call-end" -> acceptToolCallEnd(value)
+            "message-end" -> acceptMessageEnd(value)
+            else -> emptyList()
+        }
+
+    fun markError() {
+        finishReason = FinishReason.Error
+    }
+
+    fun finish(): List<StreamEvent> = listOf(
+        StreamEvent.Finish(
+            totalSteps = 1,
+            finishReason = finishReason,
+            usage = usage,
+            rawFinishReason = rawFinishReason,
+        ),
+    )
+
+    private fun acceptMessageStart(value: JsonObject): List<StreamEvent> {
+        val id = (value["id"] as? JsonPrimitive)?.contentOrNull ?: return emptyList()
+        return listOf(StreamEvent.ResponseMetadata(id = id))
+    }
+
+    private fun acceptContentStart(value: JsonObject): List<StreamEvent> {
+        val index = streamIndex(value)
+        val content = streamContent(value) ?: return emptyList()
+        val id = index.toString()
+        return if ((content["type"] as? JsonPrimitive)?.contentOrNull == "thinking") {
+            contentKinds[index] = ContentKind.Reasoning
+            listOf(StreamEvent.ReasoningStart(id))
+        } else {
+            contentKinds[index] = ContentKind.Text
+            listOf(StreamEvent.TextStart(id))
+        }
+    }
+
+    private fun acceptContentDelta(value: JsonObject): List<StreamEvent> {
+        val index = streamIndex(value)
+        val content = streamContent(value) ?: return emptyList()
+        val id = index.toString()
+        val thinking = (content["thinking"] as? JsonPrimitive)?.contentOrNull
+        if (thinking != null) return listOf(StreamEvent.ReasoningDelta(id, thinking))
+        val text = (content["text"] as? JsonPrimitive)?.contentOrNull ?: return emptyList()
+        return listOf(StreamEvent.TextDelta(id, text))
+    }
+
+    private fun acceptContentEnd(value: JsonObject): List<StreamEvent> {
+        val index = streamIndex(value)
+        val id = index.toString()
+        return when (contentKinds.remove(index)) {
+            ContentKind.Reasoning -> listOf(StreamEvent.ReasoningEnd(id))
+            ContentKind.Text,
+            null,
+            -> listOf(StreamEvent.TextEnd(id))
+        }
+    }
+
+    private fun acceptToolCallStart(value: JsonObject): List<StreamEvent> {
+        val index = streamIndex(value)
+        val toolCall = streamToolCall(value) ?: return emptyList()
+        val function = JsonAccess.obj(toolCall, "function") ?: JsonObject(emptyMap())
+        val id = (toolCall["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call")
+        val name = (function["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+        val arguments = (function["arguments"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+        pendingToolCallOccurrences[index] = PendingToolCall(id = id, name = name, arguments = arguments)
+        return buildList {
+            add(StreamEvent.ToolInputStart(id, name))
+            if (arguments.isNotEmpty()) add(StreamEvent.ToolInputDelta(id, arguments))
+        }
+    }
+
+    private fun acceptToolCallDelta(value: JsonObject): List<StreamEvent> {
+        val pending = pendingToolCallOccurrences[streamIndex(value)] ?: return emptyList()
+        val function = JsonAccess.obj(streamToolCall(value), "function") ?: return emptyList()
+        val delta = (function["arguments"] as? JsonPrimitive)?.contentOrNull ?: return emptyList()
+        pending.arguments += delta
+        return listOf(StreamEvent.ToolInputDelta(pending.id, delta))
+    }
+
+    private fun acceptToolCallEnd(value: JsonObject): List<StreamEvent> {
+        val pending = pendingToolCallOccurrences.remove(streamIndex(value)) ?: return emptyList()
+        return listOf(
+            StreamEvent.ToolInputEnd(pending.id),
+            StreamEvent.ToolCall(
+                toolCallId = pending.id,
+                toolName = pending.name,
+                inputJson = parseToolInput(pending.arguments.trim().ifBlank { "{}" }),
+            ),
+        )
+    }
+
+    private fun acceptMessageEnd(value: JsonObject): List<StreamEvent> {
+        val delta = JsonAccess.obj(value, "delta") ?: JsonObject(emptyMap())
+        rawFinishReason = (delta["finish_reason"] as? JsonPrimitive)?.contentOrNull
+        finishReason = parseFinishReason(rawFinishReason)
+        usage = parseUsage(JsonAccess.obj(delta, "usage"))
+        return emptyList()
+    }
+
+    private fun streamIndex(value: JsonObject): Int =
+        (value["index"] as? JsonPrimitive)?.intOrNull ?: 0
+
+    private fun streamContent(value: JsonObject): JsonObject? {
+        val delta = JsonAccess.obj(value, "delta")
+        val message = JsonAccess.obj(delta, "message")
+        return JsonAccess.obj(message, "content")
+    }
+
+    private fun streamToolCall(value: JsonObject): JsonObject? {
+        val delta = JsonAccess.obj(value, "delta")
+        val message = JsonAccess.obj(delta, "message")
+        return JsonAccess.obj(message, "tool_calls")
+    }
 }
 
 private class CohereEmbeddingModel(
