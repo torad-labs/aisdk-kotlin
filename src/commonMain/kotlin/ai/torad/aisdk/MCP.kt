@@ -1,4 +1,5 @@
 @file:Suppress("FunctionName", "PropertyName")
+@file:OptIn(kotlin.concurrent.atomics.ExperimentalAtomicApi::class)
 
 package ai.torad.aisdk
 
@@ -1286,15 +1287,15 @@ public class HttpMCPTransport(
     private var onClose: (() -> Unit)? = null
     private var onError: ((Throwable) -> Unit)? = null
     private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
-    private var protocolVersion: String? = null
+    private val protocolVersion = AtomicReference<String?>(null)
 
     override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
     override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
     override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
-    override fun setProtocolVersion(version: String?) { protocolVersion = version }
+    override fun setProtocolVersion(version: String?) { protocolVersion.store(version) }
 
     private val lifecycle = McpConnectionLifecycle()
-    private var sessionId: String? = null
+    private val sessionId = AtomicReference<String?>(null)
     private var inboundJob: Job? = null
     private var inboundRetryRequested: Boolean = false
     private val inboundReconnectAttempts = intArrayOf(0)
@@ -1321,7 +1322,7 @@ public class HttpMCPTransport(
         val (connectionScope, _) = lifecycle.close() ?: return
         var cancellation: CancellationException? = null
         try {
-            sessionId?.let { session ->
+            sessionId.load()?.let { session ->
                 withTimeoutOrNull(MCP_CLOSE_DELETE_TIMEOUT_MS) {
                     client.request(url) {
                         method = HttpMethod.Delete
@@ -1366,7 +1367,7 @@ public class HttpMCPTransport(
             requestHeaders.forEach { (name, value) -> header(name, value) }
             setBody(message.toJsonString())
         }
-        mcpSessionId(response)?.let { sessionId = it }
+        mcpSessionId(response)?.let { sessionId.store(it) }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
             if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
@@ -1483,7 +1484,7 @@ public class HttpMCPTransport(
             } else {
                 firstResponse
             }
-            mcpSessionId(response)?.let { sessionId = it }
+            mcpSessionId(response)?.let { sessionId.store(it) }
             if (response.status.value == 405) return
             if (response.status.value !in 200..299) {
                 val error =
@@ -1593,8 +1594,8 @@ public class HttpMCPTransport(
         val values = linkedMapOf<String, String?>()
         headers.forEach { (key, value) -> values[key] = value }
         base.forEach { (key, value) -> values[key] = value }
-        values["mcp-protocol-version"] = protocolVersion ?: LATEST_PROTOCOL_VERSION
-        sessionId?.let { values["mcp-session-id"] = it }
+        values["mcp-protocol-version"] = protocolVersion.load() ?: LATEST_PROTOCOL_VERSION
+        sessionId.load()?.let { values["mcp-session-id"] = it }
         authProvider?.tokens()?.accessToken?.takeIf {
             it.isNotBlank()
         }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }
@@ -1616,15 +1617,15 @@ public class SseMCPTransport(
     private var onClose: (() -> Unit)? = null
     private var onError: ((Throwable) -> Unit)? = null
     private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
-    private var protocolVersion: String? = null
+    private val protocolVersion = AtomicReference<String?>(null)
 
     override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
     override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
     override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
-    override fun setProtocolVersion(version: String?) { protocolVersion = version }
+    override fun setProtocolVersion(version: String?) { protocolVersion.store(version) }
 
     private val lifecycle = McpConnectionLifecycle()
-    private var endpoint: String? = null
+    private val endpoint = AtomicReference<String?>(null)
     private val oauthReauthorizer = McpOAuthReauthorizer(authProvider, url, client)
 
     // SSE handshake + per-event dispatch + reader teardown; the branchiness is
@@ -1655,14 +1656,14 @@ public class SseMCPTransport(
                 McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
                     when (event.event) {
                         "endpoint" -> {
-                            endpoint = McpUrl.resolve(event.data, url).also { resolved ->
-                                if (McpUrl.origin(resolved) != McpUrl.origin(url)) {
-                                    throw MCPClientError(
-                                        "MCP SSE Transport Error: Endpoint origin does not " +
-                                            "match connection origin: ${McpUrl.origin(resolved)}",
-                                    )
-                                }
+                            val resolvedEndpoint = McpUrl.resolve(event.data, url)
+                            if (McpUrl.origin(resolvedEndpoint) != McpUrl.origin(url)) {
+                                throw MCPClientError(
+                                    "MCP SSE Transport Error: Endpoint origin does not " +
+                                        "match connection origin: ${McpUrl.origin(resolvedEndpoint)}",
+                                )
                             }
+                            endpoint.store(resolvedEndpoint)
                             established = true
                             if (!ready.isCompleted) ready.complete(Unit)
                         }
@@ -1733,7 +1734,7 @@ public class SseMCPTransport(
     // returning 401 after a successful auth() must not recurse until stack overflow.
     @Suppress("ThrowsCount")
     private suspend fun sendInternal(message: JSONRPCMessage, triedAuth: Boolean) {
-        val destination = endpoint ?: throw MCPClientError("MCP SSE Transport Error: Not connected")
+        val destination = endpoint.load() ?: throw MCPClientError("MCP SSE Transport Error: Not connected")
         val requestHeaders = mcpCommonHeaders(
             mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString())
         )
@@ -1764,7 +1765,7 @@ public class SseMCPTransport(
     }
 
     override suspend fun close() {
-        endpoint = null
+        endpoint.store(null)
         // close() wins Active→Closed and owns the teardown; if the reader already
         // died (Idle) this is a no-op and the reader fired onClose.
         val (scope, reader) = lifecycle.close() ?: return
@@ -1777,7 +1778,7 @@ public class SseMCPTransport(
         val values = linkedMapOf<String, String?>()
         headers.forEach { (key, value) -> values[key] = value }
         base.forEach { (key, value) -> values[key] = value }
-        values["mcp-protocol-version"] = protocolVersion ?: LATEST_PROTOCOL_VERSION
+        values["mcp-protocol-version"] = protocolVersion.load() ?: LATEST_PROTOCOL_VERSION
         authProvider?.tokens()?.accessToken?.takeIf {
             it.isNotBlank()
         }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }
@@ -1936,12 +1937,12 @@ public class Experimental_StdioMCPTransport(
     private var onClose: (() -> Unit)? = null
     private var onError: ((Throwable) -> Unit)? = null
     private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
-    private var protocolVersion: String? = null
+    private val protocolVersion = AtomicReference<String?>(null)
 
     override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
     override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
     override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
-    override fun setProtocolVersion(version: String?) { protocolVersion = version }
+    override fun setProtocolVersion(version: String?) { protocolVersion.store(version) }
 
     private val lifecycle = McpConnectionLifecycle()
     private var process: MCPStdioProcess? = null

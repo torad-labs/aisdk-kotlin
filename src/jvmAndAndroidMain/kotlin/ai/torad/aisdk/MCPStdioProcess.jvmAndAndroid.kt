@@ -8,6 +8,7 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.util.concurrent.TimeUnit
 
 // Shared by the JVM and Android targets (both java.io / ProcessBuilder backed) via the
 // jvmAndAndroidMain intermediate source set — one source of truth for the stdio transport.
@@ -15,6 +16,8 @@ internal actual fun CreateMCPStdioProcess(config: StdioConfig): MCPStdioProcess 
     JvmMCPStdioProcess(config)
 
 private const val STDERR_DRAIN_BUFFER = 8192
+private const val STDIO_MAX_LINE_CHARS = 1_048_576
+private const val STDIO_CLOSE_GRACE_TIMEOUT_MS = 250L
 
 private class JvmMCPStdioProcess(config: StdioConfig) : MCPStdioProcess {
     private val process = ProcessBuilder(listOf(config.command) + config.args).apply {
@@ -42,7 +45,23 @@ private class JvmMCPStdioProcess(config: StdioConfig) : MCPStdioProcess {
     }
 
     override suspend fun readLine(): String? = withContext(Dispatchers.IO) {
-        reader.readLine()
+        val line = StringBuilder()
+        while (true) {
+            val next = reader.read()
+            when {
+                next == -1 -> return@withContext if (line.isEmpty()) null else line.toString()
+                next == '\n'.code -> {
+                    if (line.isNotEmpty() && line[line.lastIndex] == '\r') {
+                        line.deleteAt(line.lastIndex)
+                    }
+                    return@withContext line.toString()
+                }
+                line.length >= STDIO_MAX_LINE_CHARS ->
+                    throw MCPClientError("MCP stdio line exceeded $STDIO_MAX_LINE_CHARS characters.")
+                else -> line.append(next.toChar())
+            }
+        }
+        null
     }
 
     override suspend fun writeLine(line: String) = withContext(Dispatchers.IO) {
@@ -57,6 +76,10 @@ private class JvmMCPStdioProcess(config: StdioConfig) : MCPStdioProcess {
         } catch (_: IOException) {
             // Best-effort stdio cleanup.
         }
+        process.destroy()
+        if (!process.waitFor(STDIO_CLOSE_GRACE_TIMEOUT_MS, TimeUnit.MILLISECONDS) && process.isAlive) {
+            process.destroyForcibly()
+        }
         try {
             reader.close()
         } catch (_: IOException) {
@@ -70,8 +93,6 @@ private class JvmMCPStdioProcess(config: StdioConfig) : MCPStdioProcess {
             // Best-effort stdio cleanup.
         }
         stderrDrain.interrupt()
-        process.destroy()
-        if (process.isAlive) process.destroyForcibly()
         Unit
     }
 }

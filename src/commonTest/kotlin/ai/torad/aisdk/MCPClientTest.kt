@@ -34,6 +34,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.TimeSource
 
 @OptIn(ExperimentalAiSdkApi::class, ExperimentalCoroutinesApi::class, InternalAiSdkApi::class)
 class MCPClientTest {
@@ -1588,6 +1589,71 @@ class MCPClientTest {
 
         assertEquals("notifications/ready", assertIs<JSONRPCNotification>(received).method)
         transport.close()
+    }
+
+    @Test
+    fun `stdio close gives the child a graceful termination window`() = runTest {
+        val transport = Experimental_StdioMCPTransport(
+            StdioConfig {
+                command("/bin/sh")
+                args(
+                    listOf(
+                        "-c",
+                        "trap 'sleep 0.08; exit 0' TERM; " +
+                            "printf '%s\\n' '{\"jsonrpc\":\"2.0\",\"method\":\"notifications/ready\"}'; " +
+                            "while true; do sleep 1; done",
+                    ),
+                )
+            },
+        )
+        var received: JSONRPCMessage? = null
+        var closed = false
+        transport.setOnMessage { received = it }
+        try {
+            transport.start()
+        } catch (ignoredOnUnsupportedPlatform: UnsupportedOperationException) {
+            return@runTest
+        }
+        try {
+            waitForRealTime { received != null }
+            val mark = TimeSource.Monotonic.markNow()
+            transport.close()
+            val elapsed = mark.elapsedNow()
+            closed = true
+            assertTrue(
+                elapsed.inWholeMilliseconds >= 50,
+                "close returned before the SIGTERM handler had a graceful window: $elapsed",
+            )
+        } finally {
+            if (!closed) transport.close()
+        }
+    }
+
+    @Test
+    fun `stdio reader rejects an over-limit line with a typed error`() = runTest {
+        val transport = Experimental_StdioMCPTransport(
+            StdioConfig {
+                command("/bin/sh")
+                args(listOf("-c", "head -c 1048577 /dev/zero | tr '\\000' x; sleep 1"))
+            },
+        )
+        var errored: Throwable? = null
+        transport.setOnError { errored = it }
+        try {
+            transport.start()
+        } catch (ignoredOnUnsupportedPlatform: UnsupportedOperationException) {
+            return@runTest
+        }
+        try {
+            waitForRealTime { errored != null }
+            val error = assertIs<MCPClientError>(errored)
+            assertTrue(
+                error.message?.contains("stdio line exceeded") == true,
+                "over-limit line should surface the typed stdio cap error, got: ${error.message}",
+            )
+        } finally {
+            transport.close()
+        }
     }
 
     @Test
