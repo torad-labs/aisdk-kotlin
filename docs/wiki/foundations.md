@@ -22,11 +22,10 @@ This page is the map. Use the linked pages for deeper examples.
 ## The Smallest Path
 
 ```kotlin
-val result = generateText(
-    model = provider.languageModel("anthropic/claude-sonnet-4.5"),
-    system = "Answer in one paragraph.",
-    prompt = "What is AI SDK Kotlin?",
-)
+val model = provider.languageModel("anthropic/claude-sonnet-4.5")
+val result = TextGenerator(model)
+    .generate(GenerationInput.Prompt("What is AI SDK Kotlin?"))
+    .first()
 
 println(result.text)
 ```
@@ -34,11 +33,12 @@ println(result.text)
 Add structured output when the model should return typed data:
 
 ```kotlin
-val result = streamTextResult(
-    model = model,
-    messages = savedMessages,
-    output = outputObj(serializer<Answer>()),
-)
+val result = TextGenerator(model)
+    .generate(
+        GenerationInput.Messages(GenerationInput.NonEmptyMessages.from(savedMessages)),
+        Output.obj(serializer<Answer>()),
+    )
+    .first()
 ```
 
 Use an agent when the model should call tools:
@@ -49,7 +49,7 @@ class AnswerAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
         model = model,
         instructions = "Search docs before answering.",
         tools = tools,
-        output = outputObj(serializer<Answer>()),
+        output = Output.obj(serializer<Answer>()),
         stopWhen = StepCountIs(6),
     )
 
@@ -94,10 +94,10 @@ For a UI:
 
 ## Tips
 
-- Start with `generateText` until the app needs visible progress. Move to `streamTextResult` when you need adapters or replayable streams.
-- Keep prompts on `Agent.generate` / `Agent.stream` or `generateText` / `streamText`. Direct `LanguageModel.generate`, `LanguageModel.stream`, and `LanguageModel.streamResult` calls are low-level provider APIs and require `@OptIn(LowLevelLanguageModelApi::class)`.
+- Start with `TextGenerator.generate` until the app needs visible progress. Move to `TextGenerator.streamResult` when you need adapters or replayable streams.
+- Keep prompts on `Agent.generate` / `Agent.stream` or `TextGenerator`. Direct `LanguageModel.generate`, `LanguageModel.stream`, and `LanguageModel.streamResult` calls are low-level provider APIs and require `@OptIn(LowLevelLanguageModelApi::class)`.
 - Persist messages at boundaries. Approval state, tool results, files, and sources all belong in the message log.
-- Use `Output` instead of parsing text. The old object helpers remain for compatibility, but `generateText(output = ...)` and `streamText(output = ...)` match v6.
+- Use `Output` instead of parsing text. `TextGenerator.generate(input, output)` returns a typed final value; `StructuredObjectGenerator` handles typed partial streaming.
 - Keep provider differences in provider options or middleware. Agent code should not branch on model ids.
 
 ## Related

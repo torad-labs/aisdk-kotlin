@@ -1,8 +1,9 @@
 # Structured Output
 
 Use structured output when the model must return typed data instead of prose.
-AI SDK Kotlin mirrors v6 by putting structured generation on `generateText`
-and `streamText` through the `output` option.
+AI SDK Kotlin puts final typed text generation on `TextGenerator.generate`
+through an `Output` value, and typed partial streaming on
+`StructuredObjectGenerator`.
 
 ## Provider Strategy And Native Json Schema
 
@@ -38,11 +39,12 @@ data class Recipe(
     val steps: List<String>,
 )
 
-val result = generateText(
-    model = model,
-    prompt = "Generate a simple soup recipe.",
-    output = Output.obj(serializer<Recipe>(), name = "Recipe"),
-)
+val result = TextGenerator(model)
+    .generate(
+        GenerationInput.Prompt("Generate a simple soup recipe."),
+        Output.obj(serializer<Recipe>(), name = "Recipe"),
+    )
+    .first()
 
 val recipe: Recipe = result.output
 ```
@@ -53,11 +55,13 @@ val recipe: Recipe = result.output
 @Serializable
 data class Finding(val title: String, val severity: String)
 
-val findings = generateText(
-    model = model,
-    prompt = "List likely issues in this bug report.",
-    output = outputArray(serializer<Finding>(), name = "FindingList"),
-).output
+val findings = TextGenerator(model)
+    .generate(
+        GenerationInput.Prompt("List likely issues in this bug report."),
+        Output.array(serializer<Finding>(), name = "FindingList"),
+    )
+    .first()
+    .output
 ```
 
 `Output.array(...)` accepts either a JSON array or an object with an
@@ -66,11 +70,13 @@ val findings = generateText(
 ## Choice Output
 
 ```kotlin
-val priority = generateText(
-    model = model,
-    prompt = "Classify this ticket: production checkout is down.",
-    output = outputChoice("low", "medium", "high", name = "Priority"),
-).output
+val priority = TextGenerator(model)
+    .generate(
+        GenerationInput.Prompt("Classify this ticket: production checkout is down."),
+        Output.choice("low", "medium", "high", name = "Priority"),
+    )
+    .first()
+    .output
 ```
 
 Use choices for routing, labels, and simple classifiers.
@@ -78,14 +84,16 @@ Use choices for routing, labels, and simple classifiers.
 ## JSON Tree Output
 
 ```kotlin
-val json = generateText(
-    model = model,
-    prompt = "Return a small JSON object with the issue summary.",
-    output = outputJson(name = "IssueSummary"),
-).output
+val json = TextGenerator(model)
+    .generate(
+        GenerationInput.Prompt("Return a small JSON object with the issue summary."),
+        Output.json(name = "IssueSummary"),
+    )
+    .first()
+    .output
 ```
 
-Use `outputJson` at system boundaries where the schema is not known at compile
+Use `Output.json` at system boundaries where the schema is not known at compile
 time. Prefer typed serializers inside application code.
 
 ## Structured Output With Tools
@@ -99,12 +107,12 @@ class AnswerAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
         model = model,
         instructions = "Search docs before answering.",
         tools = tools,
-        output = outputObj(serializer<Answer>()),
+        output = Output.obj(serializer<Answer>()),
         stopWhen = StepCountIs(6),
     )
 
 val agent = AnswerAgent(model, ToolSet(searchDocs))
-val result = agent.generate(messages = messages, options = context)
+val result = agent.generate(messages = messages, options = context).first()
 ```
 
 When tools and structured output are combined, budget for both the tool steps
@@ -113,38 +121,45 @@ and the final structured response step.
 ## Streaming Structured Output
 
 ```kotlin
-val result = streamObjectResult(
-    model = model,
-    prompt = "Create a release checklist.",
-    output = outputArray(serializer<ChecklistItem>()),
+val schema = Schemas.jsonSchema(
+    schema = Output.array(serializer<ChecklistItem>()).schema,
+    validate = { element ->
+        aiSdkOutputJson.decodeFromJsonElement(
+            ListSerializer(serializer<ChecklistItem>()),
+            element,
+        )
+    },
 )
 
-result.partialObjectStream.collect { draft ->
-    renderDraft(draft)
+val phases = StructuredObjectGenerator(model, schema)
+    .stream(GenerationInput.Prompt("Create a release checklist."))
+
+phases.collect { phase ->
+    if (phase is StructuredObjectPhase.Streaming) {
+        phase.partial?.let(::renderDraft)
+    }
 }
 ```
 
-For only the final value, call `result.objectValue()` instead of collecting
-`partialObjectStream`. Pick one consumer for a `StreamObjectResult`; streams are
-cold and collection drives the model call.
+For only the final value, call `StructuredObjectGenerator.generate(...)` instead
+of collecting `stream(...)`. Streams are cold and collection drives the model
+call.
 
 ## Compatibility Helpers
 
-`generateObject` and `streamObject` still exist for older call sites, but new
-code should use:
+New code should use:
 
-- `generateText(output = ...)`
-- `streamText(output = ...)`
-- `streamObjectResult(...)` when typed partial or final stream values are
-  needed.
+- `TextGenerator(model).generate(input, output)` for final typed values.
+- `StructuredObjectGenerator(model, schema).stream(input)` when typed partial or
+  final stream phases are needed.
 - `Output.obj`, `Output.array`, `Output.choice`, `Output.json`
-- `outputObj`, `outputArray`, `outputChoice`, `outputJson`
+- `OutputObj`, `OutputArray`, `OutputChoice`, `OutputJson`
 
 ## Tips
 
 - Name schemas when logs, provider traces, or prompt inspection matter.
 - Use typed serializers for app-owned contracts.
-- Use `extractJsonMiddleware` for models that wrap JSON in markdown fences.
+- Use `ExtractJsonMiddleware` for models that wrap JSON in markdown fences.
 - Keep prose instructions out of the schema. Put behavior in `system` or
   `prompt`, then let `Output` describe the shape.
 

@@ -11,12 +11,12 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
- * Structured output for `generateText` / `streamText` / [Agent].
+ * Structured output for [TextGenerator], [StructuredObjectGenerator], and [Agent].
  *
- * Per invariant I-3 / I-6, structured output goes through `Output`.
- * Prefer `generateText(output = ...)` / `streamText(output = ...)`.
- * `generateObject()` and `streamObject()` are compatibility shims for
- * v6 call sites that still use the deprecated object helpers.
+ * Per invariant I-3 / I-6, high-level typed text generation goes through `Output`.
+ * Use [TextGenerator.generate] with an `Output` value when you only need the final
+ * typed result, or [StructuredObjectGenerator] with a [Schema] when you need
+ * streaming partial object phases.
  *
  * Four variants:
  *   - [Obj]    — single typed object (Kotlin-keyword-safe rename of v6's `object`).
@@ -26,11 +26,13 @@ import kotlinx.serialization.json.decodeFromJsonElement
  *
  * Idiomatic use:
  * ```
- * val recipe = generateText(
- *     model = ...,
- *     prompt = "Generate a chocolate cake recipe",
- *     output = Output.obj(serializer<Recipe>()),
- * ).output
+ * val recipe = TextGenerator(model)
+ *     .generate(
+ *         GenerationInput.Prompt("Generate a chocolate cake recipe"),
+ *         Output.obj(serializer<Recipe>()),
+ *     )
+ *     .first()
+ *     .output
  * ```
  */
 /** @since 0.3.0-beta01 */
@@ -216,7 +218,7 @@ public sealed class Output<T> {
 }
 
 // Top-level constructors + codec.
-// Naming: `output<Variant>(...)` so call sites read as `outputObj(...)`
+// Naming: `Output<Variant>(...)` so call sites read as `OutputObj(...)`
 // while `Output.obj(...)` also works for v6-shaped call sites.
 
 public fun <T> OutputObj(
