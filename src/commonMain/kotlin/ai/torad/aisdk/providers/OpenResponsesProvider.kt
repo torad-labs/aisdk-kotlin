@@ -617,6 +617,60 @@ private class OpenResponsesLanguageModel(
                     toolCalls += toolCall
                     content += toolCall
                 }
+                "web_search_call" -> {
+                    val toolCallId = WireDecoder.requiredString(obj, "id", "Open Responses", "response output", path)
+                    if (toolCallId.isBlank()) {
+                        WireDecoder.fail(
+                            "Open Responses",
+                            "response output",
+                            WireDecoder.child(path, "id"),
+                            "expected non-blank string",
+                            obj["id"],
+                        )
+                    }
+                    val action = obj["action"] as? JsonObject
+                    val output = when ((action?.get("type") as? JsonPrimitive)?.contentOrNull) {
+                        "search" -> buildJsonObject {
+                            put("action", buildJsonObject {
+                                put("type", JsonPrimitive("search"))
+                                action["query"]?.let { put("query", it) }
+                                action["queries"]?.let { put("queries", it) }
+                            })
+                            action["sources"]?.let { put("sources", it) }
+                        }
+                        "open_page" -> buildJsonObject {
+                            put("action", buildJsonObject {
+                                put("type", JsonPrimitive("openPage"))
+                                action["url"]?.let { put("url", it) }
+                            })
+                        }
+                        "find_in_page" -> buildJsonObject {
+                            put("action", buildJsonObject {
+                                put("type", JsonPrimitive("findInPage"))
+                                action["url"]?.let { put("url", it) }
+                                action["pattern"]?.let { put("pattern", it) }
+                            })
+                        }
+                        else -> action?.let { buildJsonObject { put("action", it) } } ?: JsonObject(emptyMap())
+                    }
+                    val metadata = openResponsesPartMetadata(providerMetadataKey, toolCallId, obj)
+                    val toolCall = ContentPart.ToolCall(
+                        toolCallId = toolCallId,
+                        toolName = "web_search",
+                        input = JsonObject(emptyMap()),
+                        providerExecuted = true,
+                        providerMetadata = metadata,
+                    )
+                    toolCalls += toolCall
+                    content += toolCall
+                    content += ContentPart.ToolResult(
+                        toolCallId = toolCallId,
+                        toolName = "web_search",
+                        output = output,
+                        providerExecuted = true,
+                        providerMetadata = metadata,
+                    )
+                }
             }
         }
 
@@ -728,6 +782,15 @@ private class OpenResponsesLanguageModel(
                                 arguments = (item["arguments"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                             )
                         }
+                        "web_search_call" -> {
+                            val itemId = itemIdFromItem(item, obj) ?: return listOf(missingIdentityError(type, "item_id"))
+                            events += StreamEvent.ToolCall(
+                                toolCallId = itemId,
+                                toolName = "web_search",
+                                inputJson = JsonObject(emptyMap()),
+                                providerMetadata = openResponsesPartMetadata(settings.providerOptionsName ?: settings.name, itemId, item),
+                            )
+                        }
                         "reasoning" -> {
                             val itemId = (item["id"] as? JsonPrimitive)?.contentOrNull
                                 ?: (obj["item_id"] as? JsonPrimitive)?.contentOrNull.orEmpty()
@@ -768,6 +831,40 @@ private class OpenResponsesLanguageModel(
                             val arguments = (item["arguments"] as? JsonPrimitive)?.contentOrNull ?: pending?.arguments
                             events += StreamEvent.ToolCall(toolCallId, toolName, parseToolInput(arguments, json))
                             hasToolCalls = true
+                        }
+                        "web_search_call" -> {
+                            val itemId = itemIdFromItem(item, obj) ?: return listOf(missingIdentityError(type, "item_id"))
+                            val action = item["action"] as? JsonObject
+                            val output = when ((action?.get("type") as? JsonPrimitive)?.contentOrNull) {
+                                "search" -> buildJsonObject {
+                                    put("action", buildJsonObject {
+                                        put("type", JsonPrimitive("search"))
+                                        action["query"]?.let { put("query", it) }
+                                        action["queries"]?.let { put("queries", it) }
+                                    })
+                                    action["sources"]?.let { put("sources", it) }
+                                }
+                                "open_page" -> buildJsonObject {
+                                    put("action", buildJsonObject {
+                                        put("type", JsonPrimitive("openPage"))
+                                        action["url"]?.let { put("url", it) }
+                                    })
+                                }
+                                "find_in_page" -> buildJsonObject {
+                                    put("action", buildJsonObject {
+                                        put("type", JsonPrimitive("findInPage"))
+                                        action["url"]?.let { put("url", it) }
+                                        action["pattern"]?.let { put("pattern", it) }
+                                    })
+                                }
+                                else -> action?.let { buildJsonObject { put("action", it) } } ?: JsonObject(emptyMap())
+                            }
+                            events += StreamEvent.ToolResult(
+                                toolCallId = itemId,
+                                toolName = "web_search",
+                                outputJson = output,
+                                providerMetadata = openResponsesPartMetadata(settings.providerOptionsName ?: settings.name, itemId, item),
+                            )
                         }
                         "reasoning" -> {
                             val itemId = (item["id"] as? JsonPrimitive)?.contentOrNull

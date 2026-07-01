@@ -606,7 +606,7 @@ public class AnthropicTools(
 
             for (tool in tools) {
                 if (tool.providerExecuted) {
-                    val mapped = anthropicProviderExecutedTool(tool.name, betas)
+                    val mapped = anthropicProviderExecutedTool(tool, betas)
                     if (mapped == null) {
                         warnings += CallWarning("unsupported", "provider-defined tool ${tool.name}")
                     } else {
@@ -658,39 +658,156 @@ public class AnthropicTools(
             )
         }
 
-        internal fun anthropicProviderExecutedTool(name: String, betas: MutableSet<String>): JsonObject? = when (name) {
-            "code_execution" -> buildJsonObject { put("type", JsonPrimitive("code_execution_20260120")); put("name", JsonPrimitive("code_execution")) }
-            "bash" -> {
-                betas += "computer-use-2025-01-24"
-                buildJsonObject { put("type", JsonPrimitive("bash_20250124")); put("name", JsonPrimitive("bash")) }
+        internal fun anthropicProviderExecutedTool(tool: LanguageModelTool, betas: MutableSet<String>): JsonObject? {
+            val providerToolId = (tool.metadata["providerToolId"] as? JsonPrimitive)?.contentOrNull
+                ?: when (tool.name) {
+                    "code_execution" -> "anthropic.code_execution_20260120"
+                    "bash" -> "anthropic.bash_20250124"
+                    "computer" -> "anthropic.computer_20251124"
+                    "memory" -> "anthropic.memory_20250818"
+                    "web_search" -> "anthropic.web_search_20260209"
+                    "web_fetch" -> "anthropic.web_fetch_20260209"
+                    "str_replace_editor", "str_replace_based_edit_tool" -> "anthropic.text_editor_20250728"
+                    "tool_search_tool_regex" -> "anthropic.tool_search_regex_20251119"
+                    "tool_search_tool_bm25" -> "anthropic.tool_search_bm25_20251119"
+                    "advisor" -> "anthropic.advisor_20260301"
+                    else -> tool.name
+                }
+            val args = tool.metadata["args"] as? JsonObject ?: JsonObject(emptyMap())
+            fun JsonObjectBuilder.putArg(wireName: String, vararg names: String) {
+                names.firstNotNullOfOrNull { args[it] }?.let { put(wireName, it) }
             }
-            "computer" -> {
-                betas += "computer-use-2025-11-24"
-                buildJsonObject { put("type", JsonPrimitive("computer_20251124")); put("name", JsonPrimitive("computer")) }
+
+            return when (providerToolId) {
+                "anthropic.code_execution_20250522" -> {
+                    betas += "code-execution-2025-05-22"
+                    buildJsonObject { put("type", JsonPrimitive("code_execution_20250522")); put("name", JsonPrimitive("code_execution")) }
+                }
+                "anthropic.code_execution_20250825" -> {
+                    betas += "code-execution-2025-08-25"
+                    buildJsonObject { put("type", JsonPrimitive("code_execution_20250825")); put("name", JsonPrimitive("code_execution")) }
+                }
+                "anthropic.code_execution_20260120" ->
+                    buildJsonObject { put("type", JsonPrimitive("code_execution_20260120")); put("name", JsonPrimitive("code_execution")) }
+                "anthropic.bash_20241022" -> {
+                    betas += "computer-use-2024-10-22"
+                    buildJsonObject { put("type", JsonPrimitive("bash_20241022")); put("name", JsonPrimitive("bash")) }
+                }
+                "anthropic.bash_20250124" -> {
+                    betas += "computer-use-2025-01-24"
+                    buildJsonObject { put("type", JsonPrimitive("bash_20250124")); put("name", JsonPrimitive("bash")) }
+                }
+                "anthropic.computer_20241022" -> {
+                    betas += "computer-use-2024-10-22"
+                    buildJsonObject {
+                        put("type", JsonPrimitive("computer_20241022"))
+                        put("name", JsonPrimitive("computer"))
+                        putArg("display_width_px", "displayWidthPx", "display_width_px")
+                        putArg("display_height_px", "displayHeightPx", "display_height_px")
+                        putArg("display_number", "displayNumber", "display_number")
+                    }
+                }
+                "anthropic.computer_20250124" -> {
+                    betas += "computer-use-2025-01-24"
+                    buildJsonObject {
+                        put("type", JsonPrimitive("computer_20250124"))
+                        put("name", JsonPrimitive("computer"))
+                        putArg("display_width_px", "displayWidthPx", "display_width_px")
+                        putArg("display_height_px", "displayHeightPx", "display_height_px")
+                        putArg("display_number", "displayNumber", "display_number")
+                    }
+                }
+                "anthropic.computer_20251124" -> {
+                    betas += "computer-use-2025-11-24"
+                    buildJsonObject {
+                        put("type", JsonPrimitive("computer_20251124"))
+                        put("name", JsonPrimitive("computer"))
+                        putArg("display_width_px", "displayWidthPx", "display_width_px")
+                        putArg("display_height_px", "displayHeightPx", "display_height_px")
+                        putArg("display_number", "displayNumber", "display_number")
+                        putArg("enable_zoom", "enableZoom", "enable_zoom")
+                    }
+                }
+                "anthropic.memory_20250818" -> {
+                    betas += "context-management-2025-06-27"
+                    buildJsonObject { put("type", JsonPrimitive("memory_20250818")); put("name", JsonPrimitive("memory")) }
+                }
+                "anthropic.text_editor_20241022" -> {
+                    betas += "computer-use-2024-10-22"
+                    buildJsonObject { put("type", JsonPrimitive("text_editor_20241022")); put("name", JsonPrimitive("str_replace_editor")) }
+                }
+                "anthropic.text_editor_20250124" -> {
+                    betas += "computer-use-2025-01-24"
+                    buildJsonObject { put("type", JsonPrimitive("text_editor_20250124")); put("name", JsonPrimitive("str_replace_editor")) }
+                }
+                "anthropic.text_editor_20250429" -> {
+                    betas += "computer-use-2025-01-24"
+                    buildJsonObject { put("type", JsonPrimitive("text_editor_20250429")); put("name", JsonPrimitive("str_replace_based_edit_tool")) }
+                }
+                "anthropic.text_editor_20250728" -> buildJsonObject {
+                    put("type", JsonPrimitive("text_editor_20250728"))
+                    put("name", JsonPrimitive("str_replace_based_edit_tool"))
+                    putArg("max_characters", "maxCharacters", "max_characters")
+                }
+                "anthropic.web_fetch_20250910" -> {
+                    betas += "web-fetch-2025-09-10"
+                    buildJsonObject {
+                        put("type", JsonPrimitive("web_fetch_20250910"))
+                        put("name", JsonPrimitive("web_fetch"))
+                        putArg("max_uses", "maxUses", "max_uses")
+                        putArg("allowed_domains", "allowedDomains", "allowed_domains")
+                        putArg("blocked_domains", "blockedDomains", "blocked_domains")
+                        putArg("citations", "citations")
+                        putArg("max_content_tokens", "maxContentTokens", "max_content_tokens")
+                    }
+                }
+                "anthropic.web_fetch_20260209" -> {
+                    betas += "code-execution-web-tools-2026-02-09"
+                    buildJsonObject {
+                        put("type", JsonPrimitive("web_fetch_20260209"))
+                        put("name", JsonPrimitive("web_fetch"))
+                        putArg("max_uses", "maxUses", "max_uses")
+                        putArg("allowed_domains", "allowedDomains", "allowed_domains")
+                        putArg("blocked_domains", "blockedDomains", "blocked_domains")
+                        putArg("citations", "citations")
+                        putArg("max_content_tokens", "maxContentTokens", "max_content_tokens")
+                    }
+                }
+                "anthropic.web_search_20250305" -> buildJsonObject {
+                    put("type", JsonPrimitive("web_search_20250305"))
+                    put("name", JsonPrimitive("web_search"))
+                    putArg("max_uses", "maxUses", "max_uses")
+                    putArg("allowed_domains", "allowedDomains", "allowed_domains")
+                    putArg("blocked_domains", "blockedDomains", "blocked_domains")
+                    putArg("user_location", "userLocation", "user_location")
+                }
+                "anthropic.web_search_20260209" -> {
+                    betas += "code-execution-web-tools-2026-02-09"
+                    buildJsonObject {
+                        put("type", JsonPrimitive("web_search_20260209"))
+                        put("name", JsonPrimitive("web_search"))
+                        putArg("max_uses", "maxUses", "max_uses")
+                        putArg("allowed_domains", "allowedDomains", "allowed_domains")
+                        putArg("blocked_domains", "blockedDomains", "blocked_domains")
+                        putArg("user_location", "userLocation", "user_location")
+                    }
+                }
+                "anthropic.tool_search_regex_20251119" ->
+                    buildJsonObject { put("type", JsonPrimitive("tool_search_tool_regex_20251119")); put("name", JsonPrimitive("tool_search_tool_regex")) }
+                "anthropic.tool_search_bm25_20251119" ->
+                    buildJsonObject { put("type", JsonPrimitive("tool_search_tool_bm25_20251119")); put("name", JsonPrimitive("tool_search_tool_bm25")) }
+                "anthropic.advisor_20260301" -> {
+                    betas += "advisor-tool-2026-03-01"
+                    buildJsonObject {
+                        put("type", JsonPrimitive("advisor_20260301"))
+                        put("name", JsonPrimitive("advisor"))
+                        putArg("model", "model")
+                        putArg("max_uses", "maxUses", "max_uses")
+                        putArg("caching", "caching")
+                    }
+                }
+                else -> null
             }
-            "memory" -> {
-                betas += "context-management-2025-06-27"
-                buildJsonObject { put("type", JsonPrimitive("memory_20250818")); put("name", JsonPrimitive("memory")) }
-            }
-            "web_search" -> {
-                betas += "code-execution-web-tools-2026-02-09"
-                buildJsonObject { put("type", JsonPrimitive("web_search_20260209")); put("name", JsonPrimitive("web_search")) }
-            }
-            "web_fetch" -> {
-                betas += "code-execution-web-tools-2026-02-09"
-                buildJsonObject { put("type", JsonPrimitive("web_fetch_20260209")); put("name", JsonPrimitive("web_fetch")) }
-            }
-            "str_replace_editor", "str_replace_based_edit_tool" -> buildJsonObject {
-                put("type", JsonPrimitive("text_editor_20250728"))
-                put("name", JsonPrimitive("str_replace_based_edit_tool"))
-            }
-            "tool_search_tool_regex" -> buildJsonObject { put("type", JsonPrimitive("tool_search_tool_regex_20251119")); put("name", JsonPrimitive("tool_search_tool_regex")) }
-            "tool_search_tool_bm25" -> buildJsonObject { put("type", JsonPrimitive("tool_search_tool_bm25_20251119")); put("name", JsonPrimitive("tool_search_tool_bm25")) }
-            "advisor" -> {
-                betas += "advisor-tool-2026-03-01"
-                buildJsonObject { put("type", JsonPrimitive("advisor_20260301")); put("name", JsonPrimitive("advisor")) }
-            }
-            else -> null
         }
 
         internal fun anthropicProviderTool(
