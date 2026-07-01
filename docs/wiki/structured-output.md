@@ -4,6 +4,30 @@ Use structured output when the model must return typed data instead of prose.
 AI SDK Kotlin mirrors v6 by putting structured generation on `generateText`
 and `streamText` through the `output` option.
 
+## Provider Strategy And Native Json Schema
+
+Structured object generation in AI SDK Kotlin is SDK-managed. The high-level
+object paths build tool-call or JSON-oriented instructions, then validate,
+repair, and decode the returned JSON with the SDK `Output`/`Schema` surfaces.
+They do not currently enable provider-native constrained decoding modes such as
+OpenAI `response_format: { "type": "json_schema" }` or Google native response
+schema enforcement for object generation.
+
+In the provider capability matrix, `partial` for structured output means the SDK
+can request, validate, decode, and stream typed output for that provider, not
+that the provider is enforcing the JSON schema token-by-token. This can affect
+reliability: native constrained decoding can reject invalid tokens earlier than
+post-generation validation and repair.
+
+Native `json_schema` support for OpenAI/OpenAI-compatible and Google providers
+is tracked as a separate future backlog item. Acceptance for that item should
+include provider golden tests proving:
+
+- OpenAI/OpenAI-compatible requests send native `response_format` JSON schema.
+- Google requests send the native response schema shape.
+- Invalid output or provider schema errors are surfaced without being silently
+  repaired into a successful result.
+
 ## Object Output
 
 ```kotlin

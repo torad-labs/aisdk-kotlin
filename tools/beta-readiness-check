@@ -241,6 +241,7 @@ def check_additional_gates(reporter: Reporter) -> None:
         ("architecture file-size budget", ["node", "tools/check-architecture-budget.mjs"]),
         ("provider golden coverage", ["node", "tools/check-provider-golden-coverage.mjs"]),
         ("provider capability matrix", ["node", "tools/check-provider-capabilities.mjs"]),
+        ("parity ledger claims", ["node", "tools/check-parity-claims.mjs"]),
         ("API review/error taxonomy", ["node", "tools/check-api-review.mjs"]),
     ]
     for label, command in gates:

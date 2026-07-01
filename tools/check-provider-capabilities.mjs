@@ -43,7 +43,7 @@ function main() {
 
   for (const row of matrix.rows) {
     for (const column of capabilityColumns) {
-      const value = (row[column] ?? '').trim();
+      const value = capabilityValue(row[column] ?? '');
       if (!allowedCapabilityValues.has(value)) {
         failures.push(`${row['Provider class'] || '<unknown>'}: ${column} must be one of ${[...allowedCapabilityValues].join(', ')} (got ${JSON.stringify(value)})`);
       }
@@ -101,6 +101,12 @@ function readMatrix() {
 
 function parseTableLine(line) {
   return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
+}
+
+function capabilityValue(cell) {
+  const value = cell.trim();
+  const markdownLink = value.match(/^\[([^\]]+)]\([^)]+\)$/);
+  return (markdownLink?.[1] ?? value).trim();
 }
 
 function fail(message) {

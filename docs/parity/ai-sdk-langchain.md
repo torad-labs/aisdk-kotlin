@@ -3,7 +3,7 @@
 - Version: 2.0.216
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/langchain`
 - Kotlin parity area: `:aisdk-langchain`
-- Current parity status: ported: toBaseMessages, convertModelMessages, toUIMessageStream, StreamCallbacks, and LangSmithDeploymentTransport are represented as Kotlin-native UI/Flow adapters folded into the root module
+- Current parity status: not-ported: the LangChain JS bridge symbols toBaseMessages, convertModelMessages, StreamCallbacks, and LangSmithDeploymentTransport are not shipped in the KMP runtime; Kotlin callers use framework-neutral ModelMessage/UIMessage/Flow APIs instead
 
 ## Entrypoints
 
