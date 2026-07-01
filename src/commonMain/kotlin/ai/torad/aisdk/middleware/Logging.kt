@@ -198,6 +198,7 @@ public fun LoggingMiddleware(
             is StreamEvent.ReasoningEnd,
             is StreamEvent.SourcePart,
             is StreamEvent.FilePart,
+            is StreamEvent.Data,
             is StreamEvent.ToolInputDelta,
             is StreamEvent.ToolInputEnd,
             is StreamEvent.ToolApprovalRequest,

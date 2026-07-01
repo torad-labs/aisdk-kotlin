@@ -505,6 +505,23 @@ public fun StreamToUiMessages(
                 parts.add(UIMessagePart.Error(event.message))
                 emit(snapshot())
             }
+            is StreamEvent.Data -> {
+                val part = UIMessagePart.Data(
+                    type = "data-${event.name}",
+                    data = event.data,
+                    id = event.id,
+                    transient = event.transient,
+                )
+                // Keyed data parts upsert in place; unkeyed ones append.
+                val existingIdx = event.id?.let { dataPartIndexById[it] }
+                if (existingIdx != null && existingIdx in parts.indices) {
+                    parts[existingIdx] = part
+                } else {
+                    parts.add(part)
+                    if (event.id != null) dataPartIndexById[event.id] = parts.size - 1
+                }
+                emit(snapshot())
+            }
             is StreamEvent.Raw -> {
                 val rawObject = runCatching { event.rawValue.jsonObject }.getOrNull()
                 val type = (rawObject?.get("type") as? JsonPrimitive)?.contentOrNull

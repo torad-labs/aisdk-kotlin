@@ -1,6 +1,8 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.ToUIMessageStream
+import ai.torad.aisdk.ui.UIMessagePart
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -126,6 +128,35 @@ class ToUIMessageStreamTest {
         assertEquals("text/plain", chunk["mediaType"]?.jsonPrimitive?.content)
         assertEquals("aGk=", chunk["data"]?.jsonPrimitive?.content)
         assertEquals("data:text/plain;base64,aGk=", chunk["url"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `data stream event encodes to data chunk and decodes to UI data part`() = runTest {
+        val chunk = ToUIMessageStream(
+            flowOf(
+                StreamEvent.Data(
+                    name = "progress",
+                    data = JsonPrimitive("50%"),
+                    id = "p1",
+                    transient = true,
+                ),
+            ),
+        ).toList().single()
+
+        assertEquals("data-progress", chunk["type"]?.jsonPrimitive?.content)
+        assertEquals("p1", chunk["id"]?.jsonPrimitive?.content)
+        assertEquals(JsonPrimitive("50%"), chunk["data"])
+        assertEquals("true", chunk["transient"]?.jsonPrimitive?.content)
+
+        val message = StreamToUiMessages(flowOf(StreamEvent.Raw(chunk)), assistantMessageId = "a1")
+            .toList()
+            .single()
+        val part = message.parts.single() as UIMessagePart.Data
+
+        assertEquals("data-progress", part.type)
+        assertEquals("p1", part.id)
+        assertEquals(JsonPrimitive("50%"), part.data)
+        assertEquals(true, part.transient)
     }
 
     @Test

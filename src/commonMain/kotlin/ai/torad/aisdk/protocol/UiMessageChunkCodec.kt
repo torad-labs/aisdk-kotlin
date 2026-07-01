@@ -6,13 +6,43 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.put
 
 internal object UiMessageChunkCodec {
-    fun chunk(event: StreamEvent): JsonObject? =
-        lifecycle(event)
+    fun chunk(event: StreamEvent): JsonObject? = when (event) {
+        is StreamEvent.Data -> jsonChunk("data-${event.name}") {
+            event.id?.let { put("id", it) }
+            put("data", event.data)
+            if (event.transient) put("transient", true)
+        }
+        is StreamEvent.StreamStart,
+        is StreamEvent.ResponseMetadata,
+        is StreamEvent.StepStart,
+        is StreamEvent.TextStart,
+        is StreamEvent.TextDelta,
+        is StreamEvent.TextEnd,
+        is StreamEvent.ReasoningStart,
+        is StreamEvent.ReasoningDelta,
+        is StreamEvent.ReasoningEnd,
+        is StreamEvent.SourcePart,
+        is StreamEvent.FilePart,
+        is StreamEvent.ToolInputStart,
+        is StreamEvent.ToolInputDelta,
+        is StreamEvent.ToolInputEnd,
+        is StreamEvent.ToolCall,
+        is StreamEvent.ToolResult,
+        is StreamEvent.ToolError,
+        is StreamEvent.ToolApprovalRequest,
+        is StreamEvent.ToolOutputDenied,
+        is StreamEvent.StepFinish,
+        is StreamEvent.Finish,
+        StreamEvent.Abort,
+        is StreamEvent.Error,
+        is StreamEvent.Raw,
+        -> lifecycle(event)
             ?: text(event)
             ?: reasoning(event)
             ?: UiMediaMessageChunkCodec.chunk(event)
             ?: UiToolMessageChunkCodec.chunk(event)
             ?: UiTerminalMessageChunkCodec.chunk(event)
+    }
 
     private fun lifecycle(event: StreamEvent): JsonObject? = when (event) {
         is StreamEvent.StreamStart -> jsonChunk("start")
@@ -28,6 +58,7 @@ internal object UiMessageChunkCodec {
         is StreamEvent.ReasoningEnd,
         is StreamEvent.SourcePart,
         is StreamEvent.FilePart,
+        is StreamEvent.Data,
         is StreamEvent.ToolInputStart,
         is StreamEvent.ToolInputDelta,
         is StreamEvent.ToolInputEnd,
@@ -59,6 +90,7 @@ internal object UiMessageChunkCodec {
         is StreamEvent.ReasoningEnd,
         is StreamEvent.SourcePart,
         is StreamEvent.FilePart,
+        is StreamEvent.Data,
         is StreamEvent.ToolInputStart,
         is StreamEvent.ToolInputDelta,
         is StreamEvent.ToolInputEnd,
@@ -90,6 +122,7 @@ internal object UiMessageChunkCodec {
         is StreamEvent.TextEnd,
         is StreamEvent.SourcePart,
         is StreamEvent.FilePart,
+        is StreamEvent.Data,
         is StreamEvent.ToolInputStart,
         is StreamEvent.ToolInputDelta,
         is StreamEvent.ToolInputEnd,

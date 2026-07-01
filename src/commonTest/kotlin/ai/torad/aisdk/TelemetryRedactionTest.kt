@@ -297,6 +297,7 @@ class TelemetryRedactionTest {
                 is StreamEvent.ResponseMetadata,
                 is StreamEvent.FilePart,
                 is StreamEvent.SourcePart,
+                is StreamEvent.Data,
                 is StreamEvent.ToolResult,
                 is StreamEvent.ToolApprovalRequest,
                 is StreamEvent.Error,

@@ -63,6 +63,16 @@ internal object StreamEventTelemetryRedaction {
                 base64 = "",
                 providerMetadata = ProviderMetadata.None,
             )
+            is StreamEvent.Data -> StreamEvent.Data(
+                name = event.name,
+                data = if (settings.recordOutputs) {
+                    redactor.redactJson(event.data)
+                } else {
+                    JsonObject(emptyMap())
+                },
+                id = event.id,
+                transient = event.transient,
+            )
             is StreamEvent.ResponseMetadata -> responseMetadata(event, settings, redactor)
             is StreamEvent.SourcePart -> sourcePart(event, settings, redactor)
             is StreamEvent.ToolInputDelta -> toolInputDelta(event, settings, redactor)

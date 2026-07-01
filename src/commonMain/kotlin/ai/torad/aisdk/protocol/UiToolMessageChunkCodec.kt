@@ -34,6 +34,7 @@ internal object UiToolMessageChunkCodec {
         is StreamEvent.ReasoningEnd,
         is StreamEvent.SourcePart,
         is StreamEvent.FilePart,
+        is StreamEvent.Data,
         is StreamEvent.ToolInputEnd,
         is StreamEvent.StepFinish,
         is StreamEvent.Finish,
