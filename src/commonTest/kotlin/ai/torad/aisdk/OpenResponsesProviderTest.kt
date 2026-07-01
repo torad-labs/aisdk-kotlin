@@ -281,7 +281,7 @@ class OpenResponsesProviderTest {
 
                         data: {"type":"response.function_call_arguments.done","item_id":"fc_1","arguments":"{\"q\":\"docs\"}"}
 
-                        data: {"type":"response.output_item.done","item":{"type":"function_call","id":"fc_1","call_id":"call_1","name":"search","arguments":"{\"q\":\"docs\"}"}}
+                        data: {"type":"response.output_item.done","item":{"type":"function_call","id":"fc_1","call_id":"call_1","name":"search","arguments":""}}
 
                         data: {"type":"response.completed","response":{"usage":{"input_tokens":1,"output_tokens":2,"total_tokens":3,"input_tokens_details":{"cached_tokens":0},"output_tokens_details":{"reasoning_tokens":1}}}}
 

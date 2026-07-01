@@ -828,7 +828,9 @@ private class OpenResponsesLanguageModel(
                             val toolCallId = pending?.toolCallId?.takeIf { it.isNotBlank() }
                                 ?: (item["call_id"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
                                 ?: return listOf(missingIdentityError(type, "call_id"))
-                            val arguments = (item["arguments"] as? JsonPrimitive)?.contentOrNull ?: pending?.arguments
+                            val arguments = pending?.arguments?.takeIf { it.isNotEmpty() }
+                                ?: (item["arguments"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotEmpty() }
+                                ?: pending?.arguments
                             events += StreamEvent.ToolCall(toolCallId, toolName, parseToolInput(arguments, json))
                             hasToolCalls = true
                         }

@@ -242,12 +242,29 @@ internal abstract class OpenAICompatibleHttpModel(
         }
         content += toolCalls
         val finishReason = FinishReason.fromOpenAI((choice["finish_reason"] as? JsonPrimitive)?.contentOrNull)
+        val providerMetadata = JsonObject(openAIProviderMetadata(obj["providerMetadata"], "openaiCompatible"))
+            .let { metadata ->
+                val details = JsonAccess.obj(obj, "usage")?.let { JsonAccess.obj(it, "completion_tokens_details") }
+                val tokenMetadata = buildJsonObject {
+                    details?.get("accepted_prediction_tokens")?.takeUnless { it is JsonNull }?.let {
+                        put("acceptedPredictionTokens", it)
+                    }
+                    details?.get("rejected_prediction_tokens")?.takeUnless { it is JsonNull }?.let {
+                        put("rejectedPredictionTokens", it)
+                    }
+                }
+                if (tokenMetadata.isEmpty()) {
+                    metadata
+                } else {
+                    metadata.deepMergedWith(JsonObject(mapOf("openaiCompatible" to tokenMetadata)))
+                }
+            }
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
             finishReason = finishReason,
             usage = (convertUsage ?: Usage.Companion::fromOpenAI).invoke(obj["usage"]),
-            providerMetadata = openAIProviderMetadata(obj["providerMetadata"], "openaiCompatible").let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
+            providerMetadata = if (providerMetadata.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(providerMetadata),
             content = content,
             rawFinishReason = (choice["finish_reason"] as? JsonPrimitive)?.contentOrNull,
             warnings = warnings,

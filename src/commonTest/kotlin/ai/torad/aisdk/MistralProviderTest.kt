@@ -11,6 +11,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -58,6 +59,8 @@ class MistralProviderTest {
             LanguageModelCallParams {
                 messages(listOf(UserMessage("Hello")))
                 maxOutputTokens(256)
+                frequencyPenalty(0.2f)
+                presencePenalty(0.1f)
                 seed(77)
                 providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "mistral" to buildJsonObject {
@@ -86,6 +89,8 @@ class MistralProviderTest {
         val body = call.requestBodyJson.jsonObject
         assertEquals("mistral-small-latest", body["model"]?.jsonPrimitive?.contentOrNull)
         assertEquals(256, body["max_tokens"]?.jsonPrimitive?.intOrNull)
+        assertEquals(0.2f, body["frequency_penalty"]?.jsonPrimitive?.floatOrNull)
+        assertEquals(0.1f, body["presence_penalty"]?.jsonPrimitive?.floatOrNull)
         assertEquals(77, body["random_seed"]?.jsonPrimitive?.intOrNull)
         assertEquals(true, body["safe_prompt"]?.jsonPrimitive?.booleanOrNull)
         assertEquals(2, body["document_image_limit"]?.jsonPrimitive?.intOrNull)
