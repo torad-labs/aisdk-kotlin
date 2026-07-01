@@ -8,39 +8,52 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
+/** @since 0.3.0-beta01 */
 public interface Redactor {
+    /** @since 0.3.0-beta01 */
     public fun redactText(value: String): String
+    /** @since 0.3.0-beta01 */
     public fun redactHeaders(headers: Map<String, String>): Map<String, String>
+    /** @since 0.3.0-beta01 */
     public fun redactJson(value: JsonElement): JsonElement
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class RedactionOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val replacement: String = "[REDACTED]",
+    /** @since 0.3.0-beta01 */
     public val maxStringLength: Int = 256,
+    /** @since 0.3.0-beta01 */
     public val minBase64Length: Int = 64,
 )
 
+/** @since 0.3.0-beta01 */
 public class RedactionOptionsBuilder {
     private var replacement: String = "[REDACTED]"
     private var maxStringLength: Int = 256
     private var minBase64Length: Int = 64
 
+    /** @since 0.3.0-beta01 */
     public fun replacement(value: String): RedactionOptionsBuilder {
         replacement = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxStringLength(value: Int): RedactionOptionsBuilder {
         maxStringLength = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun minBase64Length(value: Int): RedactionOptionsBuilder {
         minBase64Length = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): RedactionOptions =
         RedactionOptions(
             replacement = replacement,
@@ -49,11 +62,13 @@ public class RedactionOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun RedactionOptions(
     block: RedactionOptionsBuilder.() -> Unit = {},
 ): RedactionOptions =
     RedactionOptionsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class DefaultRedactor(
     private val options: RedactionOptions = RedactionOptions {},
 ) : Redactor {
@@ -119,6 +134,7 @@ public class DefaultRedactor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public val AiSdkDefaultRedactor: Redactor = DefaultRedactor()
 
 internal object RedactionPredicates {

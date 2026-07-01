@@ -14,11 +14,16 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 
+/** @since 0.3.0-beta01 */
 public class WireDecodeException(
+    /** @since 0.3.0-beta01 */
     public val provider: String,
+    /** @since 0.3.0-beta01 */
     public val operation: String,
+    /** @since 0.3.0-beta01 */
     public val path: String,
     message: String,
+    /** @since 0.3.0-beta01 */
     public val value: JsonElement? = null,
     cause: Throwable? = null,
 ) : AiSdkException(

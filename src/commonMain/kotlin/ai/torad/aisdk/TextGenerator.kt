@@ -6,10 +6,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlin.jvm.JvmOverloads
 
+/** @since 0.3.0-beta01 */
 public class TextGenerator @JvmOverloads constructor(
     private val model: LanguageModel,
     private val config: CallConfig = CallConfig(),
 ) {
+    /** @since 0.3.0-beta01 */
     public fun generate(input: GenerationInput): Flow<GenerateTextResult<String>> = flow {
         emit(doGenerate(input, null) { it })
     }
@@ -18,6 +20,7 @@ public class TextGenerator @JvmOverloads constructor(
         emit(doGenerate(input, output, output::decode))
     }
 
+    /** @since 0.3.0-beta01 */
     public fun stream(input: GenerationInput): Flow<StreamEvent> =
         buildParams(input, null).let { params ->
             StreamOpenRetry.wrap(config.maxRetries) {
@@ -25,6 +28,7 @@ public class TextGenerator @JvmOverloads constructor(
             }
         }
 
+    /** @since 0.3.0-beta01 */
     public fun streamResult(input: GenerationInput): StreamTextResult {
         val params = buildParams(input, null)
         val result = model.streamResult(params)

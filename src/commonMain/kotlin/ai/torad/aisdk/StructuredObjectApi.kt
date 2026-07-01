@@ -25,16 +25,24 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class DeepPartial<T>(public val value: T?)
 
+/** @since 0.3.0-beta01 */
 public class StructuredObjectRequest<INPUT> internal constructor(
+    /** @since 0.3.0-beta01 */
     public val api: String,
+    /** @since 0.3.0-beta01 */
     public val id: String,
+    /** @since 0.3.0-beta01 */
     public val input: INPUT,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val abortSignal: AbortSignal = AbortSignalNever,
 )
 
+/** @since 0.3.0-beta01 */
 public class StructuredObjectRequestBuilder<INPUT> {
     private var api: String? = null
     private var id: String? = null
@@ -43,32 +51,38 @@ public class StructuredObjectRequestBuilder<INPUT> {
     private var headers: Map<String, String> = emptyMap()
     private var abortSignal: AbortSignal = AbortSignalNever
 
+    /** @since 0.3.0-beta01 */
     public fun api(value: String): StructuredObjectRequestBuilder<INPUT> {
         api = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun id(value: String): StructuredObjectRequestBuilder<INPUT> {
         id = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun input(value: INPUT): StructuredObjectRequestBuilder<INPUT> {
         input = value
         inputSet = true
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): StructuredObjectRequestBuilder<INPUT> {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun abortSignal(value: AbortSignal): StructuredObjectRequestBuilder<INPUT> {
         abortSignal = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): StructuredObjectRequest<INPUT> {
         check(inputSet) { "StructuredObjectRequest.input is required" }
         @Suppress("UNCHECKED_CAST")
@@ -87,7 +101,9 @@ public fun <INPUT> StructuredObjectRequest(
 ): StructuredObjectRequest<INPUT> =
     StructuredObjectRequestBuilder<INPUT>().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public interface StructuredObjectTransport<INPUT> {
+    /** @since 0.3.0-beta01 */
     public fun submit(request: StructuredObjectRequest<INPUT>): Flow<String>
 }
 
@@ -98,23 +114,37 @@ internal class DirectStructuredObjectTransport<INPUT>(
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class StructuredObjectFinish<RESULT>(
+    /** @since 0.3.0-beta01 */
     public val value: RESULT?,
+    /** @since 0.3.0-beta01 */
     public val error: Throwable?,
+    /** @since 0.3.0-beta01 */
     public val rawValue: JsonElement?,
 )
 
+/** @since 0.3.0-beta01 */
 public class StructuredObjectOptions<RESULT, INPUT> internal constructor(
+    /** @since 0.3.0-beta01 */
     public val api: String,
+    /** @since 0.3.0-beta01 */
     public val schema: Schema<RESULT>,
+    /** @since 0.3.0-beta01 */
     public val id: String = IdGenerator.generate("object"),
+    /** @since 0.3.0-beta01 */
     public val initialValue: RESULT? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val transport: StructuredObjectTransport<INPUT> = DirectStructuredObjectTransport { emptyFlow() },
+    /** @since 0.3.0-beta01 */
     public val onFinish: suspend (StructuredObjectFinish<RESULT>) -> Unit = {},
+    /** @since 0.3.0-beta01 */
     public val onError: suspend (Throwable) -> Unit = {},
 )
 
+/** @since 0.3.0-beta01 */
 public class StructuredObjectOptionsBuilder<RESULT, INPUT> {
     private var api: String? = null
     private var schema: Schema<RESULT>? = null
@@ -125,46 +155,55 @@ public class StructuredObjectOptionsBuilder<RESULT, INPUT> {
     private var onFinish: suspend (StructuredObjectFinish<RESULT>) -> Unit = {}
     private var onError: suspend (Throwable) -> Unit = {}
 
+    /** @since 0.3.0-beta01 */
     public fun api(value: String): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         api = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun schema(value: Schema<RESULT>): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         schema = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun id(value: String): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         id = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun initialValue(value: RESULT?): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         initialValue = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transport(value: StructuredObjectTransport<INPUT>): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         transport = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun onFinish(value: suspend (StructuredObjectFinish<RESULT>) -> Unit): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         onFinish = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun onError(value: suspend (Throwable) -> Unit): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         onError = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): StructuredObjectOptions<RESULT, INPUT> =
         StructuredObjectOptions(
             api = requireNotNull(api) { "StructuredObjectOptions.api is required" },
@@ -183,27 +222,40 @@ public fun <RESULT, INPUT> StructuredObjectOptions(
 ): StructuredObjectOptions<RESULT, INPUT> =
     StructuredObjectOptionsBuilder<RESULT, INPUT>().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public sealed class StructuredObjectPhase<out RESULT> {
+    /** @since 0.3.0-beta01 */
     public data object Idle : StructuredObjectPhase<Nothing>()
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Streaming<out RESULT>(
+        /** @since 0.3.0-beta01 */
         public val partial: RESULT?,
+        /** @since 0.3.0-beta01 */
         public val raw: JsonElement?,
+        /** @since 0.3.0-beta01 */
         public val error: Throwable?,
     ) : StructuredObjectPhase<RESULT>()
 
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Done<out RESULT>(
+        /** @since 0.3.0-beta01 */
         public val value: RESULT?,
+        /** @since 0.3.0-beta01 */
         public val raw: JsonElement?,
+        /** @since 0.3.0-beta01 */
         public val error: Throwable?,
     ) : StructuredObjectPhase<RESULT>()
 }
 
+/** @since 0.3.0-beta01 */
 public class StructuredObject<RESULT, INPUT>(
     private val options: StructuredObjectOptions<RESULT, INPUT>,
 ) {
+    /** @since 0.3.0-beta01 */
     public val id: String = options.id
+    /** @since 0.3.0-beta01 */
     public val api: String = options.api
 
     private val mutableState = MutableStateFlow<StructuredObjectPhase<RESULT>>(
@@ -214,8 +266,10 @@ public class StructuredObject<RESULT, INPUT>(
         },
     )
 
+    /** @since 0.3.0-beta01 */
     public val state: StateFlow<StructuredObjectPhase<RESULT>> = mutableState.asStateFlow()
 
+    /** @since 0.3.0-beta01 */
     public val value: RESULT?
         get() = when (val p = mutableState.value) {
             is StructuredObjectPhase.Streaming -> p.partial
@@ -223,9 +277,11 @@ public class StructuredObject<RESULT, INPUT>(
             StructuredObjectPhase.Idle -> null
         }
 
+    /** @since 0.3.0-beta01 */
     public val objectValue: RESULT?
         get() = value
 
+    /** @since 0.3.0-beta01 */
     public val rawValue: JsonElement?
         get() = when (val p = mutableState.value) {
             is StructuredObjectPhase.Streaming -> p.raw
@@ -233,6 +289,7 @@ public class StructuredObject<RESULT, INPUT>(
             StructuredObjectPhase.Idle -> null
         }
 
+    /** @since 0.3.0-beta01 */
     public val error: Throwable?
         get() = when (val p = mutableState.value) {
             is StructuredObjectPhase.Streaming -> p.error
@@ -240,6 +297,7 @@ public class StructuredObject<RESULT, INPUT>(
             StructuredObjectPhase.Idle -> null
         }
 
+    /** @since 0.3.0-beta01 */
     public val loading: Boolean
         get() = mutableState.value is StructuredObjectPhase.Streaming
 
@@ -290,6 +348,7 @@ public class StructuredObject<RESULT, INPUT>(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun stop() {
         abortController?.abort()
         abortController = null
@@ -302,6 +361,7 @@ public class StructuredObject<RESULT, INPUT>(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clear() {
         stop()
         clearObject()
@@ -411,6 +471,7 @@ public class StructuredObject<RESULT, INPUT>(
  * for [schema], streams its text deltas into [StructuredObject.phases] (the shared parse/validate
  * loop), and surfaces typed partials/value. Mirrors [TextGenerator] — a PascalCase class, not a
  * camelCase top-level `generateObject`/`streamObject`.
+  * @since 0.3.0-beta01
  */
 public class StructuredObjectGenerator<RESULT>(
     private val model: LanguageModel,
@@ -423,6 +484,7 @@ public class StructuredObjectGenerator<RESULT>(
      * Cold stream of phases: accumulating [StructuredObjectPhase.Streaming] partials terminating in
      * a single [StructuredObjectPhase.Done]. An in-band [StreamEvent.Error] from the model is
      * surfaced (not silently dropped) so a provider failure can't masquerade as an empty object.
+      * @since 0.3.0-beta01
      */
     public fun stream(input: GenerationInput): Flow<StructuredObjectPhase<RESULT>> =
         StructuredObject.phases(

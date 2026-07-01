@@ -22,6 +22,7 @@ import kotlin.jvm.JvmOverloads
  * channels.
  */
 @JvmOverloads
+/** @since 0.3.0-beta01 */
 public fun ExtractReasoningMiddleware(
     tagName: String = "reasoning",
     separator: String = "\n",

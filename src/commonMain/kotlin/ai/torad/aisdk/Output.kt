@@ -33,23 +33,35 @@ import kotlinx.serialization.json.decodeFromJsonElement
  * ).output
  * ```
  */
+/** @since 0.3.0-beta01 */
 public sealed class Output<T> {
 
+    /** @since 0.3.0-beta01 */
     public abstract val schemaName: String
+    /** @since 0.3.0-beta01 */
     public open val schemaDescription: String? = null
+    /** @since 0.3.0-beta01 */
     public abstract val schemaJson: String
+    /** @since 0.3.0-beta01 */
     public open val schema: JsonElement by lazy { aiSdkOutputJson.parseToJsonElement(schemaJson) }
+    /** @since 0.3.0-beta01 */
     public abstract fun decode(text: String): T
 
+    /** @since 0.3.0-beta01 */
     public fun toResponseFormat(): ResponseFormat = ResponseFormat.Json(
         schemaName = schemaName,
         schemaDescription = schemaDescription,
         schemaJson = runCatching { schema }.getOrNull(),
     )
 
-    /** `Output.object()` in v6, renamed to `obj` because `object` is a Kotlin keyword. */
+    /**
+     * `Output.object()` in v6, renamed to `obj` because `object` is a Kotlin keyword.
+     * @since 0.3.0-beta01
+     */
     public class Obj<T>(
+        /** @since 0.3.0-beta01 */
         public val serializer: KSerializer<T>,
+        /** @since 0.3.0-beta01 */
         public val name: String = serializer.descriptor.serialName.substringAfterLast('.'),
         override val schemaDescription: String? = null,
     ) : Output<T>() {
@@ -62,8 +74,11 @@ public sealed class Output<T> {
         override fun decode(text: String): T = aiSdkOutputJson.decodeFromString(serializer, text)
     }
 
+    /** @since 0.3.0-beta01 */
     public class Arr<T>(
+        /** @since 0.3.0-beta01 */
         public val elementSerializer: KSerializer<T>,
+        /** @since 0.3.0-beta01 */
         public val name: String = elementSerializer.descriptor.serialName.substringAfterLast('.') + "[]",
         override val schemaDescription: String? = null,
     ) : Output<List<T>>() {
@@ -101,10 +116,15 @@ public sealed class Output<T> {
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public class Choice<T>(
+        /** @since 0.3.0-beta01 */
         public val options: List<T>,
+        /** @since 0.3.0-beta01 */
         public val encode: (T) -> String,
+        /** @since 0.3.0-beta01 */
         public val decodeChoice: (String) -> T,
+        /** @since 0.3.0-beta01 */
         public val name: String = "choice",
         override val schemaDescription: String? = null,
     ) : Output<T>() {
@@ -139,7 +159,9 @@ public sealed class Output<T> {
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public class JsonTree(
+        /** @since 0.3.0-beta01 */
         public val name: String = "json",
         override val schemaDescription: String? = null,
     ) : Output<JsonElement>() {
@@ -161,18 +183,21 @@ public sealed class Output<T> {
             description: String? = null,
         ): Output<List<T>> = Arr(elementSerializer, name, description)
 
+        /** @since 0.3.0-beta01 */
         public fun choice(
             options: Iterable<String>,
             name: String = "choice",
             description: String? = null,
         ): Output<String> = Choice(options.toList(), encode = { it }, decodeChoice = { it }, name, description)
 
+        /** @since 0.3.0-beta01 */
         public fun choice(
             vararg options: String,
             name: String = "choice",
             description: String? = null,
         ): Output<String> = choice(options.asIterable(), name, description)
 
+        /** @since 0.3.0-beta01 */
         public fun json(
             name: String = "json",
             description: String? = null,
@@ -206,12 +231,14 @@ public fun <T> OutputArray(
     description: String? = null,
 ): Output<List<T>> = Output.Arr(elementSerializer, name, description)
 
+/** @since 0.3.0-beta01 */
 public fun OutputChoice(
     options: Iterable<String>,
     name: String = "choice",
     description: String? = null,
 ): Output<String> = Output.choice(options, name, description)
 
+/** @since 0.3.0-beta01 */
 public fun OutputChoice(
     vararg options: String,
     name: String = "choice",
@@ -226,6 +253,7 @@ public fun <T> OutputChoice(
     description: String? = null,
 ): Output<T> = Output.Choice(options.toList(), encode, decodeChoice, name, description)
 
+/** @since 0.3.0-beta01 */
 public fun OutputJson(
     name: String = "json",
     description: String? = null,

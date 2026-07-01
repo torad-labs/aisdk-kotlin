@@ -48,43 +48,63 @@ import dev.drewhamilton.poko.Poko
 /**
  * Typed invocation handle — what a per-tool renderer receives. Carries
  * the typed input + output via the tool's own serializers.
+  * @since 0.3.0-beta01
  */
 @Poko
 public class UIToolInvocationPayload<TInput, TOutput>(
+    /** @since 0.3.0-beta01 */
     public val input: TInput?,
+    /** @since 0.3.0-beta01 */
     public val output: TOutput?,
+    /** @since 0.3.0-beta01 */
     public val error: String?,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class UIToolInvocationMetadata(
+    /** @since 0.3.0-beta01 */
     public val preliminary: Boolean = false,
+    /** @since 0.3.0-beta01 */
     public val approvalId: String? = null,
+    /** @since 0.3.0-beta01 */
     public val signature: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class UIToolInvocation<TInput, TOutput> constructor(
+    /** @since 0.3.0-beta01 */
     public val toolCallId: String,
+    /** @since 0.3.0-beta01 */
     public val toolName: String,
+    /** @since 0.3.0-beta01 */
     public val state: ToolCallState,
+    /** @since 0.3.0-beta01 */
     public val payload: UIToolInvocationPayload<TInput, TOutput>,
+    /** @since 0.3.0-beta01 */
     public val metadata: UIToolInvocationMetadata = UIToolInvocationMetadata(),
 ) {
+    /** @since 0.3.0-beta01 */
     public val input: TInput?
         get() = payload.input
 
+    /** @since 0.3.0-beta01 */
     public val output: TOutput?
         get() = payload.output
 
+    /** @since 0.3.0-beta01 */
     public val error: String?
         get() = payload.error
 
+    /** @since 0.3.0-beta01 */
     public val preliminary: Boolean
         get() = metadata.preliminary
 
+    /** @since 0.3.0-beta01 */
     public val approvalId: String?
         get() = metadata.approvalId
 
+    /** @since 0.3.0-beta01 */
     public val signature: String?
         get() = metadata.signature
 }
@@ -96,15 +116,18 @@ public class UIToolInvocation<TInput, TOutput> constructor(
  * server-rendered nodes, or any other renderer value.
  *
  * Stays out of `Compose` imports so the SDK remains platform-agnostic.
+  * @since 0.3.0-beta01
  */
 public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
     private val handlers: Map<String, (UIMessagePart.ToolUI) -> TRenderResult>,
     private val fallback: (UIMessagePart.ToolUI) -> TRenderResult,
 ) {
+    /** @since 0.3.0-beta01 */
     public fun render(part: UIMessagePart.ToolUI): TRenderResult =
         handlers[part.toolName]?.invoke(part) ?: fallback(part)
 
     @AiSdkDsl
+    /** @since 0.3.0-beta01 */
     public class Builder<TRenderResult> {
         internal val handlers: MutableMap<String, (UIMessagePart.ToolUI) -> TRenderResult> = mutableMapOf()
 
@@ -138,6 +161,7 @@ public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
             return this
         }
 
+        /** @since 0.3.0-beta01 */
         public fun build(
             fallback: (UIMessagePart.ToolUI) -> TRenderResult,
         ): ToolPartHandlerRegistry<TRenderResult> =

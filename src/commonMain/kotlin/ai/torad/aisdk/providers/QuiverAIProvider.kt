@@ -26,17 +26,27 @@ private const val QUIVERAI_MAX_IMAGES_PER_CALL: Int = 16
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class QuiverAIImageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val operation: String? = null,
+    /** @since 0.3.0-beta01 */
     public val instructions: String? = null,
+    /** @since 0.3.0-beta01 */
     public val temperature: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val topP: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val presencePenalty: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val maxOutputTokens: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val autoCrop: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val targetSize: Int? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class QuiverAIImageModelOptionsBuilder {
     private var operation: String? = null
     private var instructions: String? = null
@@ -47,46 +57,55 @@ public class QuiverAIImageModelOptionsBuilder {
     private var autoCrop: Boolean? = null
     private var targetSize: Int? = null
 
+    /** @since 0.3.0-beta01 */
     public fun operation(value: String?): QuiverAIImageModelOptionsBuilder {
         operation = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun instructions(value: String?): QuiverAIImageModelOptionsBuilder {
         instructions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun temperature(value: Double?): QuiverAIImageModelOptionsBuilder {
         temperature = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun topP(value: Double?): QuiverAIImageModelOptionsBuilder {
         topP = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun presencePenalty(value: Double?): QuiverAIImageModelOptionsBuilder {
         presencePenalty = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxOutputTokens(value: Int?): QuiverAIImageModelOptionsBuilder {
         maxOutputTokens = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun autoCrop(value: Boolean?): QuiverAIImageModelOptionsBuilder {
         autoCrop = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun targetSize(value: Int?): QuiverAIImageModelOptionsBuilder {
         targetSize = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): QuiverAIImageModelOptions =
         QuiverAIImageModelOptions(
             operation = operation,
@@ -100,6 +119,7 @@ public class QuiverAIImageModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun QuiverAIImageModelOptions(
     block: QuiverAIImageModelOptionsBuilder.() -> Unit = {},
 ): QuiverAIImageModelOptions =
@@ -107,9 +127,13 @@ public fun QuiverAIImageModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class QuiverAIProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.quiver.ai/v1",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun quiverAIOptions(providerOptions: ProviderOptions): JsonObject =
@@ -146,26 +170,31 @@ public class QuiverAIProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class QuiverAIProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.quiver.ai/v1"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): QuiverAIProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): QuiverAIProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): QuiverAIProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): QuiverAIProviderSettings =
         QuiverAIProviderSettings(
             apiKey = apiKey,
@@ -174,25 +203,33 @@ public class QuiverAIProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun QuiverAIProviderSettings(
     block: QuiverAIProviderSettingsBuilder.() -> Unit = {},
 ): QuiverAIProviderSettings =
     QuiverAIProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class QuiverAIProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: QuiverAIProviderSettings,
 ) : Provider {
     override val providerId: String = "quiverai"
 
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = QuiverAIImageModel(client, settings, modelId.value)
     override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-/** PascalCase factory — mirrors `OpenAI(...)`. */
+/**
+ * PascalCase factory — mirrors `OpenAI(...)`.
+ * @since 0.3.0-beta01
+ */
 public fun QuiverAI(
     client: HttpClient,
     settings: QuiverAIProviderSettings = QuiverAIProviderSettings(),

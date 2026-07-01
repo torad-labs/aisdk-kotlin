@@ -30,33 +30,59 @@ public typealias BlackForestLabsImageProviderOptions = BlackForestLabsImageModel
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class BlackForestLabsImageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val imagePrompt: String? = null,
+    /** @since 0.3.0-beta01 */
     public val imagePromptStrength: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val inputImage: String? = null,
+    /** @since 0.3.0-beta01 */
     public val inputImage2: String? = null,
+    /** @since 0.3.0-beta01 */
     public val inputImage3: String? = null,
+    /** @since 0.3.0-beta01 */
     public val inputImage4: String? = null,
+    /** @since 0.3.0-beta01 */
     public val inputImage5: String? = null,
+    /** @since 0.3.0-beta01 */
     public val inputImage6: String? = null,
+    /** @since 0.3.0-beta01 */
     public val inputImage7: String? = null,
+    /** @since 0.3.0-beta01 */
     public val inputImage8: String? = null,
+    /** @since 0.3.0-beta01 */
     public val inputImage9: String? = null,
+    /** @since 0.3.0-beta01 */
     public val inputImage10: String? = null,
+    /** @since 0.3.0-beta01 */
     public val steps: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val guidance: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val width: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val height: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val outputFormat: String? = null,
+    /** @since 0.3.0-beta01 */
     public val promptUpsampling: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val raw: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val safetyTolerance: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val webhookSecret: String? = null,
+    /** @since 0.3.0-beta01 */
     public val webhookUrl: String? = null,
+    /** @since 0.3.0-beta01 */
     public val pollIntervalMillis: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val pollTimeoutMillis: Long? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class BlackForestLabsImageModelOptionsBuilder {
     private var imagePrompt: String? = null
     private var imagePromptStrength: Double? = null
@@ -83,126 +109,151 @@ public class BlackForestLabsImageModelOptionsBuilder {
     private var pollIntervalMillis: Long? = null
     private var pollTimeoutMillis: Long? = null
 
+    /** @since 0.3.0-beta01 */
     public fun imagePrompt(value: String?): BlackForestLabsImageModelOptionsBuilder {
         imagePrompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun imagePromptStrength(value: Double?): BlackForestLabsImageModelOptionsBuilder {
         imagePromptStrength = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun inputImage(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun inputImage2(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage2 = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun inputImage3(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage3 = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun inputImage4(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage4 = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun inputImage5(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage5 = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun inputImage6(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage6 = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun inputImage7(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage7 = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun inputImage8(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage8 = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun inputImage9(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage9 = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun inputImage10(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage10 = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun steps(value: Int?): BlackForestLabsImageModelOptionsBuilder {
         steps = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun guidance(value: Double?): BlackForestLabsImageModelOptionsBuilder {
         guidance = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun width(value: Int?): BlackForestLabsImageModelOptionsBuilder {
         width = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun height(value: Int?): BlackForestLabsImageModelOptionsBuilder {
         height = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun outputFormat(value: String?): BlackForestLabsImageModelOptionsBuilder {
         outputFormat = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun promptUpsampling(value: Boolean?): BlackForestLabsImageModelOptionsBuilder {
         promptUpsampling = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun raw(value: Boolean?): BlackForestLabsImageModelOptionsBuilder {
         raw = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun safetyTolerance(value: Int?): BlackForestLabsImageModelOptionsBuilder {
         safetyTolerance = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun webhookSecret(value: String?): BlackForestLabsImageModelOptionsBuilder {
         webhookSecret = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun webhookUrl(value: String?): BlackForestLabsImageModelOptionsBuilder {
         webhookUrl = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollIntervalMillis(value: Long?): BlackForestLabsImageModelOptionsBuilder {
         pollIntervalMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollTimeoutMillis(value: Long?): BlackForestLabsImageModelOptionsBuilder {
         pollTimeoutMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): BlackForestLabsImageModelOptions =
         BlackForestLabsImageModelOptions(
             imagePrompt = imagePrompt,
@@ -232,6 +283,7 @@ public class BlackForestLabsImageModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun BlackForestLabsImageModelOptions(
     block: BlackForestLabsImageModelOptionsBuilder.() -> Unit = {},
 ): BlackForestLabsImageModelOptions =
@@ -239,11 +291,17 @@ public fun BlackForestLabsImageModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class BlackForestLabsProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.bfl.ai/v1",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val pollIntervalMillis: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val pollTimeoutMillis: Long? = null,
 ) {
     internal fun bflHeaders(callHeaders: Map<String, String>): Map<String, String> {
@@ -255,6 +313,7 @@ public class BlackForestLabsProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class BlackForestLabsProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.bfl.ai/v1"
@@ -262,31 +321,37 @@ public class BlackForestLabsProviderSettingsBuilder {
     private var pollIntervalMillis: Long? = null
     private var pollTimeoutMillis: Long? = null
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): BlackForestLabsProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): BlackForestLabsProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): BlackForestLabsProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollIntervalMillis(value: Long?): BlackForestLabsProviderSettingsBuilder {
         pollIntervalMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollTimeoutMillis(value: Long?): BlackForestLabsProviderSettingsBuilder {
         pollTimeoutMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): BlackForestLabsProviderSettings =
         BlackForestLabsProviderSettings(
             apiKey = apiKey,
@@ -297,22 +362,28 @@ public class BlackForestLabsProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun BlackForestLabsProviderSettings(
     block: BlackForestLabsProviderSettingsBuilder.() -> Unit = {},
 ): BlackForestLabsProviderSettings =
     BlackForestLabsProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public interface BlackForestLabsProvider : Provider {
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel
     override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun BlackForestLabs(
     client: HttpClient,
     settings: BlackForestLabsProviderSettings = BlackForestLabsProviderSettings(),
 ): BlackForestLabsProvider = DefaultBlackForestLabsProvider(client, settings)
 
+/** @since 0.3.0-beta01 */
 public val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsProvider {
     override val providerId: String = "black-forest-labs"
     override fun image(modelId: ModelId): ImageModel =

@@ -20,11 +20,13 @@ public const val AI_GATEWAY_PROTOCOL_VERSION: String = "0.0.1"
 public const val AI_GATEWAY_DEFAULT_BASE_URL: String = "https://ai-gateway.vercel.sh/v3/ai"
 public const val GATEWAY_AUTH_METHOD_HEADER: String = "ai-gateway-auth-method"
 
+/** @since 0.3.0-beta01 */
 public enum class GatewayAuthMethod(public val wireValue: String) {
     ApiKey("api-key"),
     Oidc("oidc"),
 }
 
+/** @since 0.3.0-beta01 */
 public data class GatewayAuthToken(
     val token: String,
     val authMethod: GatewayAuthMethod,
@@ -41,18 +43,27 @@ public data class GatewayAuthToken(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class GatewayProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val baseUrl: String = AI_GATEWAY_DEFAULT_BASE_URL,
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val transport: GatewayTransport = GatewayTransportNotConfigured,
+    /** @since 0.3.0-beta01 */
     public val metadataCacheRefreshMillis: Long = 5 * 60 * 1000L,
+    /** @since 0.3.0-beta01 */
     public val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+    /** @since 0.3.0-beta01 */
     public val authTokenProvider: (suspend () -> GatewayAuthToken?)? = null,
     /**
      * Host-supplied environment. When [apiKey] is null, `AI_GATEWAY_API_KEY` here
      * is used — the KMP-idiomatic equivalent of upstream's process.env lookup
      * (commonMain has no platform `getenv`; the host passes the map).
+      * @since 0.3.0-beta01
      */
     public val environment: Map<String, String> = emptyMap(),
 ) {
@@ -80,6 +91,7 @@ public class GatewayProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class GatewayProviderSettingsBuilder {
     private var baseUrl: String = AI_GATEWAY_DEFAULT_BASE_URL
     private var apiKey: String? = null
@@ -90,46 +102,55 @@ public class GatewayProviderSettingsBuilder {
     private var authTokenProvider: (suspend () -> GatewayAuthToken?)? = null
     private var environment: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun baseUrl(value: String): GatewayProviderSettingsBuilder {
         baseUrl = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): GatewayProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): GatewayProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transport(value: GatewayTransport): GatewayProviderSettingsBuilder {
         transport = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun metadataCacheRefreshMillis(value: Long): GatewayProviderSettingsBuilder {
         metadataCacheRefreshMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun nowMillis(value: () -> Long): GatewayProviderSettingsBuilder {
         nowMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun authTokenProvider(value: (suspend () -> GatewayAuthToken?)?): GatewayProviderSettingsBuilder {
         authTokenProvider = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun environment(value: Map<String, String>): GatewayProviderSettingsBuilder {
         environment = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): GatewayProviderSettings =
         GatewayProviderSettings(
             baseUrl = baseUrl,
@@ -143,32 +164,46 @@ public class GatewayProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun GatewayProviderSettings(
     block: GatewayProviderSettingsBuilder.() -> Unit = {},
 ): GatewayProviderSettings =
     GatewayProviderSettingsBuilder().apply(block).build()
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewayRequestContext(
+    /** @since 0.3.0-beta01 */
     public val baseUrl: String,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String>,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewayPricing(
+    /** @since 0.3.0-beta01 */
     public val input: String,
+    /** @since 0.3.0-beta01 */
     public val output: String,
+    /** @since 0.3.0-beta01 */
     public val cachedInputTokens: String? = null,
+    /** @since 0.3.0-beta01 */
     public val cacheCreationInputTokens: String? = null,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewayLanguageModelSpecification(
+    /** @since 0.3.0-beta01 */
     public val specificationVersion: String = "v3",
+    /** @since 0.3.0-beta01 */
     public val provider: String,
+    /** @since 0.3.0-beta01 */
     public val modelId: String,
 )
 
+/** @since 0.3.0-beta01 */
 public enum class GatewayModelType {
     Embedding,
     Image,
@@ -190,28 +225,41 @@ public enum class GatewayModelType {
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewayLanguageModelEntry(
+    /** @since 0.3.0-beta01 */
     public val id: String,
+    /** @since 0.3.0-beta01 */
     public val name: String,
+    /** @since 0.3.0-beta01 */
     public val description: String? = null,
+    /** @since 0.3.0-beta01 */
     public val pricing: GatewayPricing? = null,
+    /** @since 0.3.0-beta01 */
     public val specification: GatewayLanguageModelSpecification,
+    /** @since 0.3.0-beta01 */
     public val modelType: GatewayModelType? = null,
 )
 
 public typealias GatewayModelEntry = GatewayLanguageModelEntry
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewayFetchMetadataResponse(
+    /** @since 0.3.0-beta01 */
     public val models: List<GatewayLanguageModelEntry>,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewayCreditsResponse(
+    /** @since 0.3.0-beta01 */
     public val balance: String,
+    /** @since 0.3.0-beta01 */
     public val totalUsed: String,
 )
 
+/** @since 0.3.0-beta01 */
 public enum class GatewaySpendReportGroupBy(public val wireValue: String) {
     Day("day"),
     User("user"),
@@ -221,11 +269,13 @@ public enum class GatewaySpendReportGroupBy(public val wireValue: String) {
     CredentialType("credential_type"),
 }
 
+/** @since 0.3.0-beta01 */
 public enum class GatewaySpendReportDatePart(public val wireValue: String) {
     Day("day"),
     Hour("hour"),
 }
 
+/** @since 0.3.0-beta01 */
 public enum class GatewayCredentialType(public val wireValue: String) {
     Byok("byok"),
     System("system"),
@@ -241,18 +291,29 @@ public enum class GatewayCredentialType(public val wireValue: String) {
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewaySpendReportParams internal constructor(
+    /** @since 0.3.0-beta01 */
     public val startDate: String,
+    /** @since 0.3.0-beta01 */
     public val endDate: String,
+    /** @since 0.3.0-beta01 */
     public val groupBy: GatewaySpendReportGroupBy? = null,
+    /** @since 0.3.0-beta01 */
     public val datePart: GatewaySpendReportDatePart? = null,
+    /** @since 0.3.0-beta01 */
     public val userId: String? = null,
+    /** @since 0.3.0-beta01 */
     public val model: String? = null,
+    /** @since 0.3.0-beta01 */
     public val provider: String? = null,
+    /** @since 0.3.0-beta01 */
     public val credentialType: GatewayCredentialType? = null,
+    /** @since 0.3.0-beta01 */
     public val tags: List<String> = emptyList(),
 )
 
+/** @since 0.3.0-beta01 */
 public class GatewaySpendReportParamsBuilder {
     private var startDate: String? = null
     private var endDate: String? = null
@@ -264,51 +325,61 @@ public class GatewaySpendReportParamsBuilder {
     private var credentialType: GatewayCredentialType? = null
     private var tags: List<String> = emptyList()
 
+    /** @since 0.3.0-beta01 */
     public fun startDate(value: String): GatewaySpendReportParamsBuilder {
         startDate = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun endDate(value: String): GatewaySpendReportParamsBuilder {
         endDate = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun groupBy(value: GatewaySpendReportGroupBy?): GatewaySpendReportParamsBuilder {
         groupBy = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun datePart(value: GatewaySpendReportDatePart?): GatewaySpendReportParamsBuilder {
         datePart = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun userId(value: String?): GatewaySpendReportParamsBuilder {
         userId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun model(value: String?): GatewaySpendReportParamsBuilder {
         model = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun provider(value: String?): GatewaySpendReportParamsBuilder {
         provider = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun credentialType(value: GatewayCredentialType?): GatewaySpendReportParamsBuilder {
         credentialType = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun tags(value: List<String>): GatewaySpendReportParamsBuilder {
         tags = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): GatewaySpendReportParams =
         GatewaySpendReportParams(
             startDate = requireNotNull(startDate) { "GatewaySpendReportParams.startDate is required" },
@@ -323,81 +394,126 @@ public class GatewaySpendReportParamsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun GatewaySpendReportParams(
     block: GatewaySpendReportParamsBuilder.() -> Unit = {},
 ): GatewaySpendReportParams =
     GatewaySpendReportParamsBuilder().apply(block).build()
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewaySpendReportRow(
+    /** @since 0.3.0-beta01 */
     public val day: String? = null,
+    /** @since 0.3.0-beta01 */
     public val hour: String? = null,
+    /** @since 0.3.0-beta01 */
     public val user: String? = null,
+    /** @since 0.3.0-beta01 */
     public val model: String? = null,
+    /** @since 0.3.0-beta01 */
     public val tag: String? = null,
+    /** @since 0.3.0-beta01 */
     public val provider: String? = null,
+    /** @since 0.3.0-beta01 */
     public val credentialType: GatewayCredentialType? = null,
+    /** @since 0.3.0-beta01 */
     public val totalCost: Double,
+    /** @since 0.3.0-beta01 */
     public val marketCost: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val inputTokens: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val outputTokens: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val cachedInputTokens: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val cacheCreationInputTokens: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val reasoningTokens: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val requestCount: Int? = null,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewaySpendReportResponse(
+    /** @since 0.3.0-beta01 */
     public val results: List<GatewaySpendReportRow>,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewayGenerationInfoParams internal constructor(
+    /** @since 0.3.0-beta01 */
     public val id: String,
 )
 
+/** @since 0.3.0-beta01 */
 public class GatewayGenerationInfoParamsBuilder {
     private var id: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun id(value: String): GatewayGenerationInfoParamsBuilder {
         id = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): GatewayGenerationInfoParams =
         GatewayGenerationInfoParams(
             id = requireNotNull(id) { "GatewayGenerationInfoParams.id is required" },
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun GatewayGenerationInfoParams(
     block: GatewayGenerationInfoParamsBuilder.() -> Unit = {},
 ): GatewayGenerationInfoParams =
     GatewayGenerationInfoParamsBuilder().apply(block).build()
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewayGenerationInfo(
+    /** @since 0.3.0-beta01 */
     public val id: String,
+    /** @since 0.3.0-beta01 */
     public val totalCost: Double,
+    /** @since 0.3.0-beta01 */
     public val upstreamInferenceCost: Double,
+    /** @since 0.3.0-beta01 */
     public val usage: Double,
+    /** @since 0.3.0-beta01 */
     public val createdAt: String,
+    /** @since 0.3.0-beta01 */
     public val model: String,
+    /** @since 0.3.0-beta01 */
     public val isByok: Boolean,
+    /** @since 0.3.0-beta01 */
     public val providerName: String,
+    /** @since 0.3.0-beta01 */
     public val streamed: Boolean,
+    /** @since 0.3.0-beta01 */
     public val finishReason: String,
+    /** @since 0.3.0-beta01 */
     public val latency: Int,
+    /** @since 0.3.0-beta01 */
     public val generationTime: Int,
+    /** @since 0.3.0-beta01 */
     public val promptTokens: Int,
+    /** @since 0.3.0-beta01 */
     public val completionTokens: Int,
+    /** @since 0.3.0-beta01 */
     public val reasoningTokens: Int,
+    /** @since 0.3.0-beta01 */
     public val cachedTokens: Int,
+    /** @since 0.3.0-beta01 */
     public val cacheCreationTokens: Int,
+    /** @since 0.3.0-beta01 */
     public val billableWebSearchCalls: Int,
 )
 
+/** @since 0.3.0-beta01 */
 public interface GatewayTransport {
     public suspend fun generateText(
         context: GatewayRequestContext,
@@ -405,6 +521,7 @@ public interface GatewayTransport {
         params: LanguageModelCallParams,
     ): LanguageModelResult = gatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
     public fun streamText(
         context: GatewayRequestContext,
         modelId: ModelId,
@@ -456,21 +573,32 @@ public interface GatewayTransport {
     }
 }
 
+/** @since 0.3.0-beta01 */
 public data object GatewayTransportNotConfigured : GatewayTransport
 
+/** @since 0.3.0-beta01 */
 public class GatewayTransportNotConfiguredError :
     AiSdkException("Gateway transport is not configured. Provide GatewayProviderSettings.transport.")
 
+/** @since 0.3.0-beta01 */
 public interface GatewayProvider : Provider {
+    /** @since 0.3.0-beta01 */
     public val settings: GatewayProviderSettings
+    /** @since 0.3.0-beta01 */
     public val tools: GatewayTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun embedding(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun reranking(modelId: ModelId): RerankingModel = rerankingModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
 
     public suspend fun getAvailableModels(): GatewayFetchMetadataResponse
@@ -479,12 +607,15 @@ public interface GatewayProvider : Provider {
     public suspend fun getGenerationInfo(params: GatewayGenerationInfoParams): GatewayGenerationInfo
 }
 
+/** @since 0.3.0-beta01 */
 public fun GatewayProvider(settings: GatewayProviderSettings = GatewayProviderSettings()): GatewayProvider =
     DefaultGatewayProvider(settings)
 
+/** @since 0.3.0-beta01 */
 public fun Gateway(settings: GatewayProviderSettings = GatewayProviderSettings()): GatewayProvider =
     GatewayProvider(settings)
 
+/** @since 0.3.0-beta01 */
 public val gateway: GatewayProvider = GatewayProvider()
 
 private class DefaultGatewayProvider(
@@ -597,13 +728,16 @@ private class GatewayRerankingModel(
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GatewayTools(
+    /** @since 0.3.0-beta01 */
     public val parallelSearch: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
         name = "parallelSearch",
         description = "Search the web using Parallel AI's Search API for LLM-optimized excerpts.",
         inputSerializer = JsonElement.serializer(),
         outputSerializer = JsonElement.serializer(),
     ),
+    /** @since 0.3.0-beta01 */
     public val perplexitySearch: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
         name = "perplexitySearch",
         description = "Search the web using Perplexity's Search API for real-time information.",
@@ -612,12 +746,17 @@ public class GatewayTools(
     ),
 )
 
+/** @since 0.3.0-beta01 */
 public open class GatewayError(
     message: String,
+    /** @since 0.3.0-beta01 */
     public val statusCode: Int = 500,
+    /** @since 0.3.0-beta01 */
     public val type: String = "gateway_error",
+    /** @since 0.3.0-beta01 */
     public val generationId: String? = null,
     cause: Throwable? = null,
+    /** @since 0.3.0-beta01 */
     public val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500,
 ) : AiSdkException(if (generationId == null) message else "$message [$generationId]", cause) {
     internal companion object {
@@ -645,6 +784,7 @@ public open class GatewayError(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class GatewayAuthenticationError(
     message: String = "Authentication failed",
     statusCode: Int = 401,
@@ -652,6 +792,7 @@ public class GatewayAuthenticationError(
     cause: Throwable? = null,
 ) : GatewayError(message, statusCode, "authentication_error", generationId, cause)
 
+/** @since 0.3.0-beta01 */
 public class GatewayInvalidRequestError(
     message: String = "Invalid request",
     statusCode: Int = 400,
@@ -659,6 +800,7 @@ public class GatewayInvalidRequestError(
     cause: Throwable? = null,
 ) : GatewayError(message, statusCode, "invalid_request_error", generationId, cause)
 
+/** @since 0.3.0-beta01 */
 public class GatewayRateLimitError(
     message: String = "Rate limit exceeded",
     statusCode: Int = 429,
@@ -666,14 +808,17 @@ public class GatewayRateLimitError(
     cause: Throwable? = null,
 ) : GatewayError(message, statusCode, "rate_limit_exceeded", generationId, cause)
 
+/** @since 0.3.0-beta01 */
 public class GatewayModelNotFoundError(
     message: String = "Model not found",
     statusCode: Int = 404,
+    /** @since 0.3.0-beta01 */
     public val modelId: String? = null,
     generationId: String? = null,
     cause: Throwable? = null,
 ) : GatewayError(message, statusCode, "model_not_found", generationId, cause)
 
+/** @since 0.3.0-beta01 */
 public class GatewayInternalServerError(
     message: String = "Internal server error",
     statusCode: Int = 500,
@@ -681,14 +826,17 @@ public class GatewayInternalServerError(
     cause: Throwable? = null,
 ) : GatewayError(message, statusCode, "internal_server_error", generationId, cause)
 
+/** @since 0.3.0-beta01 */
 public class GatewayResponseError(
     message: String = "Invalid response from Gateway",
     statusCode: Int = 502,
+    /** @since 0.3.0-beta01 */
     public val response: JsonElement? = null,
     generationId: String? = null,
     cause: Throwable? = null,
 ) : GatewayError(message, statusCode, "response_error", generationId, cause)
 
+/** @since 0.3.0-beta01 */
 public class GatewayTimeoutError(
     message: String = "Gateway request timed out",
     statusCode: Int = 408,

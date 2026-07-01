@@ -2,31 +2,41 @@ package ai.torad.aisdk
 
 import kotlin.jvm.JvmOverloads
 
+/** @since 0.3.0-beta01 */
 public interface Provider {
+    /** @since 0.3.0-beta01 */
     public val providerId: String
 
+    /** @since 0.3.0-beta01 */
     public fun languageModel(modelId: String): LanguageModel =
         throw NoSuchModelError(providerId, "language", modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun embeddingModel(modelId: String): EmbeddingModel =
         throw NoSuchModelError(providerId, "embedding", modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun imageModel(modelId: String): ImageModel =
         throw NoSuchModelError(providerId, "image", modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun speechModel(modelId: String): SpeechModel =
         throw NoSuchModelError(providerId, "speech", modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun transcriptionModel(modelId: String): TranscriptionModel =
         throw NoSuchModelError(providerId, "transcription", modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun rerankingModel(modelId: String): RerankingModel =
         throw NoSuchModelError(providerId, "reranking", modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun videoModel(modelId: String): VideoModel =
         throw NoSuchModelError(providerId, "video", modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public class CustomProvider internal constructor(
     override val providerId: String,
     private val languageModels: Map<String, LanguageModel> = emptyMap(),
@@ -62,6 +72,7 @@ public class CustomProvider internal constructor(
         videoModels[modelId] ?: fallbackProvider?.videoModel(modelId) ?: super.videoModel(modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public class CustomProviderBuilder {
     private var providerId: String? = null
     private var languageModels: Map<String, LanguageModel> = emptyMap()
@@ -73,86 +84,103 @@ public class CustomProviderBuilder {
     private var videoModels: Map<String, VideoModel> = emptyMap()
     private var fallbackProvider: Provider? = null
 
+    /** @since 0.3.0-beta01 */
     public fun providerId(value: String): CustomProviderBuilder {
         providerId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun languageModels(value: Map<String, LanguageModel>): CustomProviderBuilder {
         languageModels = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun languageModel(id: String, model: LanguageModel): CustomProviderBuilder {
         languageModels = languageModels + (id to model)
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun embeddingModels(value: Map<String, EmbeddingModel>): CustomProviderBuilder {
         embeddingModels = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun embeddingModel(id: String, model: EmbeddingModel): CustomProviderBuilder {
         embeddingModels = embeddingModels + (id to model)
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun imageModels(value: Map<String, ImageModel>): CustomProviderBuilder {
         imageModels = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun imageModel(id: String, model: ImageModel): CustomProviderBuilder {
         imageModels = imageModels + (id to model)
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun speechModels(value: Map<String, SpeechModel>): CustomProviderBuilder {
         speechModels = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun speechModel(id: String, model: SpeechModel): CustomProviderBuilder {
         speechModels = speechModels + (id to model)
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transcriptionModels(value: Map<String, TranscriptionModel>): CustomProviderBuilder {
         transcriptionModels = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transcriptionModel(id: String, model: TranscriptionModel): CustomProviderBuilder {
         transcriptionModels = transcriptionModels + (id to model)
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun rerankingModels(value: Map<String, RerankingModel>): CustomProviderBuilder {
         rerankingModels = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun rerankingModel(id: String, model: RerankingModel): CustomProviderBuilder {
         rerankingModels = rerankingModels + (id to model)
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun videoModels(value: Map<String, VideoModel>): CustomProviderBuilder {
         videoModels = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun videoModel(id: String, model: VideoModel): CustomProviderBuilder {
         videoModels = videoModels + (id to model)
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun fallbackProvider(value: Provider?): CustomProviderBuilder {
         fallbackProvider = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): CustomProvider =
         CustomProvider(
             providerId = requireNotNull(providerId) { "CustomProvider.providerId is required" },
@@ -167,10 +195,12 @@ public class CustomProviderBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun CustomProvider(block: CustomProviderBuilder.() -> Unit): CustomProvider =
     CustomProviderBuilder().apply(block).build()
 
 @JvmOverloads
+/** @since 0.3.0-beta01 */
 public fun Provider(
     providerId: String,
     languageModels: Map<String, LanguageModel> = emptyMap(),
@@ -193,6 +223,7 @@ public fun Provider(
     fallbackProvider(fallbackProvider)
 }
 
+/** @since 0.3.0-beta01 */
 public class ProviderRegistry(
     private val providers: Map<String, Provider>,
     private val defaultProviderId: String? = null,
@@ -202,6 +233,7 @@ public class ProviderRegistry(
 ) : Provider {
     override val providerId: String = "registry"
 
+    /** @since 0.3.0-beta01 */
     public fun provider(providerId: String): Provider =
         providers[providerId]
             ?: throw NoSuchProviderError(providerId, availableProviders = providers.keys.sorted())
@@ -242,6 +274,7 @@ public class ProviderRegistry(
     }
 
     public companion object {
+        /** @since 0.3.0-beta01 */
         public fun createProviderRegistry(
             providers: Map<String, Provider>,
             defaultProviderId: String? = null,
@@ -249,6 +282,7 @@ public class ProviderRegistry(
             languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
         ): ProviderRegistry = ProviderRegistry(providers, defaultProviderId, separator, languageModelMiddleware)
 
+        /** @since 0.3.0-beta01 */
         public fun createProviderRegistry(
             vararg providers: Pair<String, Provider>,
             defaultProviderId: String? = null,
@@ -256,6 +290,7 @@ public class ProviderRegistry(
             languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
         ): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId, separator, languageModelMiddleware)
 
+        /** @since 0.3.0-beta01 */
         public fun splitProviderModelId(modelId: String, separator: String = ":"): Pair<String?, String> {
             val colon = modelId.indexOf(separator)
             if (colon <= 0) return null to modelId
@@ -264,32 +299,41 @@ public class ProviderRegistry(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class ProviderMiddleware internal constructor(
+    /** @since 0.3.0-beta01 */
     public val languageModelMiddlewares: List<LanguageModelMiddleware> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val embeddingModelMiddlewares: List<EmbeddingModelMiddleware> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val imageModelMiddlewares: List<ImageModelMiddleware> = emptyList(),
 )
 
+/** @since 0.3.0-beta01 */
 public class ProviderMiddlewareBuilder {
     private var languageModelMiddlewares: List<LanguageModelMiddleware> = emptyList()
     private var embeddingModelMiddlewares: List<EmbeddingModelMiddleware> = emptyList()
     private var imageModelMiddlewares: List<ImageModelMiddleware> = emptyList()
 
+    /** @since 0.3.0-beta01 */
     public fun languageModelMiddlewares(value: List<LanguageModelMiddleware>): ProviderMiddlewareBuilder {
         languageModelMiddlewares = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun embeddingModelMiddlewares(value: List<EmbeddingModelMiddleware>): ProviderMiddlewareBuilder {
         embeddingModelMiddlewares = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun imageModelMiddlewares(value: List<ImageModelMiddleware>): ProviderMiddlewareBuilder {
         imageModelMiddlewares = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ProviderMiddleware =
         ProviderMiddleware(
             languageModelMiddlewares = languageModelMiddlewares,
@@ -298,11 +342,13 @@ public class ProviderMiddlewareBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ProviderMiddleware(
     block: ProviderMiddlewareBuilder.() -> Unit = {},
 ): ProviderMiddleware =
     ProviderMiddlewareBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public fun WrapProvider(provider: Provider, middleware: ProviderMiddleware): Provider =
     object : Provider {
         override val providerId: String = provider.providerId

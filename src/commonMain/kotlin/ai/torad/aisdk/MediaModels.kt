@@ -8,31 +8,44 @@ import kotlinx.serialization.json.intOrNull
 import kotlin.jvm.JvmOverloads
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GeneratedFile(
+    /** @since 0.3.0-beta01 */
     public val mediaType: String,
+    /** @since 0.3.0-beta01 */
     public val base64: String,
+    /** @since 0.3.0-beta01 */
     public val filename: String? = null,
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    /** @since 0.3.0-beta01 */
     public val url: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public sealed class FileData {
+    /** @since 0.3.0-beta01 */
     public abstract val mediaType: String?
+    /** @since 0.3.0-beta01 */
     public abstract val filename: String?
 
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Base64(
+        /** @since 0.3.0-beta01 */
         public val value: String,
         override val mediaType: String? = null,
         override val filename: String? = null,
     ) : FileData()
 
+    /** @since 0.3.0-beta01 */
     public class Bytes(
         bytes: ByteArray,
         override val mediaType: String? = null,
         override val filename: String? = null,
     ) : FileData() {
         private val bytesData: ByteArray = bytes.copyOf()
+        /** @since 0.3.0-beta01 */
         public fun toByteArray(): ByteArray = bytesData.copyOf()
 
         override fun equals(other: Any?): Boolean =
@@ -53,7 +66,9 @@ public sealed class FileData {
     }
 
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Url(
+        /** @since 0.3.0-beta01 */
         public val value: String,
         override val mediaType: String? = null,
         override val filename: String? = null,
@@ -61,6 +76,7 @@ public sealed class FileData {
 }
 
 @JvmOverloads
+/** @since 0.3.0-beta01 */
 public fun GeneratedFile(
     data: FileData,
     mediaType: String = data.mediaType ?: "application/octet-stream",
@@ -88,6 +104,7 @@ public fun GeneratedFile(
     )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ImageGenerationFile(data: FileData): ImageGenerationFile = when (data) {
     is FileData.Base64 -> ImageGenerationFile(
         mediaType = data.mediaType,
@@ -109,8 +126,10 @@ public fun ImageGenerationFile(data: FileData): ImageGenerationFile = when (data
 /**
  * GeneratedFile read accessors as member-extensions. Use via member-import
  * (`import ai.torad.aisdk.GeneratedFiles.bytes`) or `with(GeneratedFiles) { ... }`.
+  * @since 0.3.0-beta01
  */
 public object GeneratedFiles {
+    /** @since 0.3.0-beta01 */
     public fun GeneratedFile.fileData(): FileData =
         url?.let { FileData.Url(it, mediaType = mediaType, filename = filename) }
             ?: FileData.Base64(base64, mediaType = mediaType, filename = filename)
@@ -122,6 +141,7 @@ public object GeneratedFiles {
      * bytes) — fetch [GeneratedFile.url] to obtain the data. Without this guard a
      * URL-backed file (whose `base64` is `""`) silently decoded to an empty
      * `ByteArray`, a wrong answer indistinguishable from a genuinely empty file.
+      * @since 0.3.0-beta01
      */
     public fun GeneratedFile.bytes(): ByteArray {
         if (base64.isEmpty()) {
@@ -134,7 +154,10 @@ public object GeneratedFiles {
         return Base64Codec.decode(base64)
     }
 
-    /** Like [bytes] but returns null for a URL-backed file instead of throwing. */
+    /**
+     * Like [bytes] but returns null for a URL-backed file instead of throwing.
+     * @since 0.3.0-beta01
+     */
     public fun GeneratedFile.bytesOrNull(): ByteArray? =
         if (base64.isEmpty() && url != null) null else bytes()
 }
@@ -153,19 +176,24 @@ public typealias Experimental_SpeechResult = GenerateSpeechResult
 @ExperimentalAiSdkApi
 public typealias Experimental_TranscriptionResult = TranscribeResult
 
+/** @since 0.3.0-beta01 */
 public class DefaultGeneratedFile private constructor(
     private var base64Data: String?,
     private var byteArrayData: ByteArray?,
+    /** @since 0.3.0-beta01 */
     public val mediaType: String,
 ) {
     public companion object {
+        /** @since 0.3.0-beta01 */
         public fun fromBase64(data: String, mediaType: String): DefaultGeneratedFile =
             DefaultGeneratedFile(base64Data = data, byteArrayData = null, mediaType = mediaType)
 
+        /** @since 0.3.0-beta01 */
         public fun fromBytes(data: ByteArray, mediaType: String): DefaultGeneratedFile =
             DefaultGeneratedFile(base64Data = null, byteArrayData = data.copyOf(), mediaType = mediaType)
     }
 
+    /** @since 0.3.0-beta01 */
     public val base64: String
         get() {
             if (base64Data == null) {
@@ -174,6 +202,7 @@ public class DefaultGeneratedFile private constructor(
             return base64Data.orEmpty()
         }
 
+    /** @since 0.3.0-beta01 */
     public val byteArray: ByteArray
         get() {
             if (byteArrayData == null) {
@@ -182,12 +211,16 @@ public class DefaultGeneratedFile private constructor(
             return byteArrayData?.copyOf() ?: ByteArray(0)
         }
 
+    /** @since 0.3.0-beta01 */
     public fun toGeneratedFile(filename: String? = null, providerMetadata: ProviderMetadata = ProviderMetadata.None): GeneratedFile =
         GeneratedFile(mediaType = mediaType, base64 = base64, filename = filename, providerMetadata = providerMetadata)
 }
 
+/** @since 0.3.0-beta01 */
 public interface ImageModel {
+    /** @since 0.3.0-beta01 */
     public val modelId: String
+    /** @since 0.3.0-beta01 */
     public val provider: String
         get() = "unknown"
 
@@ -196,6 +229,7 @@ public interface ImageModel {
      * splits a request for more than this into ceil(n / limit) concurrent calls
      * (was: passing n straight through, so a model capped at 1 returned 1 of n).
      * Null = no limit.
+      * @since 0.3.0-beta01
      */
     public val maxImagesPerCall: Int?
         get() = null
@@ -203,19 +237,31 @@ public interface ImageModel {
     public suspend fun generate(params: ImageGenerationParams): ImageModelResult
 }
 
+/** @since 0.3.0-beta01 */
 public class ImageGenerationParams internal constructor(
+    /** @since 0.3.0-beta01 */
     public val prompt: String,
+    /** @since 0.3.0-beta01 */
     public val n: Int = 1,
+    /** @since 0.3.0-beta01 */
     public val size: String? = null,
+    /** @since 0.3.0-beta01 */
     public val aspectRatio: String? = null,
+    /** @since 0.3.0-beta01 */
     public val seed: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions = ProviderOptions.None,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val abortSignal: AbortSignal = AbortSignalNever,
+    /** @since 0.3.0-beta01 */
     public val files: List<ImageGenerationFile> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val mask: ImageGenerationFile? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class ImageGenerationParamsBuilder {
     private var prompt: String? = null
     private var n: Int = 1
@@ -228,56 +274,67 @@ public class ImageGenerationParamsBuilder {
     private var files: List<ImageGenerationFile> = emptyList()
     private var mask: ImageGenerationFile? = null
 
+    /** @since 0.3.0-beta01 */
     public fun prompt(value: String): ImageGenerationParamsBuilder {
         prompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun n(value: Int): ImageGenerationParamsBuilder {
         n = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun size(value: String?): ImageGenerationParamsBuilder {
         size = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun aspectRatio(value: String?): ImageGenerationParamsBuilder {
         aspectRatio = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun seed(value: Int?): ImageGenerationParamsBuilder {
         seed = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOptions(value: ProviderOptions): ImageGenerationParamsBuilder {
         providerOptions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): ImageGenerationParamsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun abortSignal(value: AbortSignal): ImageGenerationParamsBuilder {
         abortSignal = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun files(value: List<ImageGenerationFile>): ImageGenerationParamsBuilder {
         files = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun mask(value: ImageGenerationFile?): ImageGenerationParamsBuilder {
         mask = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ImageGenerationParams =
         ImageGenerationParams(
             prompt = requireNotNull(prompt) { "ImageGenerationParams.prompt is required" },
@@ -293,24 +350,36 @@ public class ImageGenerationParamsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ImageGenerationParams(
     block: ImageGenerationParamsBuilder.() -> Unit = {},
 ): ImageGenerationParams =
     ImageGenerationParamsBuilder().apply(block).build()
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class ImageGenerationFile(
+    /** @since 0.3.0-beta01 */
     public val mediaType: String? = null,
+    /** @since 0.3.0-beta01 */
     public val base64: String? = null,
+    /** @since 0.3.0-beta01 */
     public val url: String? = null,
+    /** @since 0.3.0-beta01 */
     public val filename: String? = null,
 )
 
-/** Token usage reported by an image model, when available. Mirrors v6's `ImageModelUsage`. */
+/**
+ * Token usage reported by an image model, when available. Mirrors v6's `ImageModelUsage`.
+ * @since 0.3.0-beta01
+ */
 @Poko
 public class ImageModelUsage(
+    /** @since 0.3.0-beta01 */
     public val inputTokens: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val outputTokens: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val totalTokens: Int? = null,
 ) {
     public companion object {
@@ -334,27 +403,44 @@ public class ImageModelUsage(
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class ImageModelResult(
+    /** @since 0.3.0-beta01 */
     public val images: List<GeneratedFile>,
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    /** @since 0.3.0-beta01 */
     public val usage: ImageModelUsage = ImageModelUsage(),
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GenerateImageResult(
+    /** @since 0.3.0-beta01 */
     public val images: List<GeneratedFile>,
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    /** Per-call response metadata, one entry per underlying model call (n-batching). */
+    /**
+     * Per-call response metadata, one entry per underlying model call (n-batching).
+     * @since 0.3.0-beta01
+     */
     public val responses: List<LanguageModelResponseMetadata> = listOf(response),
+    /** @since 0.3.0-beta01 */
     public val usage: ImageModelUsage = ImageModelUsage(),
 ) {
+    /** @since 0.3.0-beta01 */
     public val image: GeneratedFile get() = images.firstOrNull() ?: throw NoImageGeneratedError()
 }
 
+/** @since 0.3.0-beta01 */
 public object ImageGeneration {
     @Suppress("LongParameterList")
     public suspend fun generateImage(
@@ -446,18 +532,24 @@ public object ImageGeneration {
     )
 }
 
+/** @since 0.3.0-beta01 */
 public interface ImageModelMiddleware {
     public suspend fun wrapGenerate(context: ImageMiddlewareCallContext): ImageModelResult =
         context.doGenerate(context.params)
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class ImageMiddlewareCallContext(
+    /** @since 0.3.0-beta01 */
     public val params: ImageGenerationParams,
+    /** @since 0.3.0-beta01 */
     public val model: ImageModel,
+    /** @since 0.3.0-beta01 */
     public val doGenerate: suspend (ImageGenerationParams) -> ImageModelResult,
 )
 
+/** @since 0.3.0-beta01 */
 public fun WrapImageModel(
     model: ImageModel,
     middlewares: List<ImageModelMiddleware>,
@@ -504,27 +596,43 @@ private class WrappedImageModel(
         chainGenerate(params)
 }
 
+/** @since 0.3.0-beta01 */
 public interface SpeechModel {
+    /** @since 0.3.0-beta01 */
     public val modelId: String
+    /** @since 0.3.0-beta01 */
     public val provider: String
         get() = "unknown"
 
     public suspend fun generate(params: SpeechGenerationParams): SpeechModelResult
 }
 
+/** @since 0.3.0-beta01 */
 public class SpeechGenerationParams internal constructor(
+    /** @since 0.3.0-beta01 */
     public val text: String,
+    /** @since 0.3.0-beta01 */
     public val voice: String? = null,
+    /** @since 0.3.0-beta01 */
     public val instructions: String? = null,
+    /** @since 0.3.0-beta01 */
     public val speed: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val responseFormat: String? = null,
-    /** ISO 639-1 language code (e.g. "en") or "auto". Mirrors upstream's `language`. */
+    /**
+     * ISO 639-1 language code (e.g. "en") or "auto". Mirrors upstream's `language`.
+     * @since 0.3.0-beta01
+     */
     public val language: String? = null,
+    /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions = ProviderOptions.None,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val abortSignal: AbortSignal = AbortSignalNever,
 )
 
+/** @since 0.3.0-beta01 */
 public class SpeechGenerationParamsBuilder {
     private var text: String? = null
     private var voice: String? = null
@@ -536,51 +644,61 @@ public class SpeechGenerationParamsBuilder {
     private var headers: Map<String, String> = emptyMap()
     private var abortSignal: AbortSignal = AbortSignalNever
 
+    /** @since 0.3.0-beta01 */
     public fun text(value: String): SpeechGenerationParamsBuilder {
         text = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun voice(value: String?): SpeechGenerationParamsBuilder {
         voice = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun instructions(value: String?): SpeechGenerationParamsBuilder {
         instructions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun speed(value: Float?): SpeechGenerationParamsBuilder {
         speed = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun responseFormat(value: String?): SpeechGenerationParamsBuilder {
         responseFormat = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun language(value: String?): SpeechGenerationParamsBuilder {
         language = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOptions(value: ProviderOptions): SpeechGenerationParamsBuilder {
         providerOptions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): SpeechGenerationParamsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun abortSignal(value: AbortSignal): SpeechGenerationParamsBuilder {
         abortSignal = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): SpeechGenerationParams =
         SpeechGenerationParams(
             text = requireNotNull(text) { "SpeechGenerationParams.text is required" },
@@ -595,28 +713,41 @@ public class SpeechGenerationParamsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun SpeechGenerationParams(
     block: SpeechGenerationParamsBuilder.() -> Unit = {},
 ): SpeechGenerationParams =
     SpeechGenerationParamsBuilder().apply(block).build()
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class SpeechModelResult(
+    /** @since 0.3.0-beta01 */
     public val audio: GeneratedFile?,
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GenerateSpeechResult(
+    /** @since 0.3.0-beta01 */
     public val audio: GeneratedFile,
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    /** @since 0.3.0-beta01 */
     public val responses: List<LanguageModelResponseMetadata> = listOf(response),
 )
 
+/** @since 0.3.0-beta01 */
 public object SpeechGeneration {
     public suspend fun generateSpeech(
         model: SpeechModel,
@@ -680,29 +811,41 @@ public object SpeechGeneration {
     )
 }
 
+/** @since 0.3.0-beta01 */
 public interface TranscriptionModel {
+    /** @since 0.3.0-beta01 */
     public val modelId: String
+    /** @since 0.3.0-beta01 */
     public val provider: String
         get() = "unknown"
 
     public suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult
 }
 
+/** @since 0.3.0-beta01 */
 public data class AudioSource(
     val mediaType: String,
     val base64: String,
     val filename: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class TranscriptionParams internal constructor(
+    /** @since 0.3.0-beta01 */
     public val audio: AudioSource,
+    /** @since 0.3.0-beta01 */
     public val language: String? = null,
+    /** @since 0.3.0-beta01 */
     public val prompt: String? = null,
+    /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions = ProviderOptions.None,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val abortSignal: AbortSignal = AbortSignalNever,
 )
 
+/** @since 0.3.0-beta01 */
 public class TranscriptionParamsBuilder {
     private var audio: AudioSource? = null
     private var language: String? = null
@@ -711,36 +854,43 @@ public class TranscriptionParamsBuilder {
     private var headers: Map<String, String> = emptyMap()
     private var abortSignal: AbortSignal = AbortSignalNever
 
+    /** @since 0.3.0-beta01 */
     public fun audio(value: AudioSource): TranscriptionParamsBuilder {
         audio = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun language(value: String?): TranscriptionParamsBuilder {
         language = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun prompt(value: String?): TranscriptionParamsBuilder {
         prompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOptions(value: ProviderOptions): TranscriptionParamsBuilder {
         providerOptions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): TranscriptionParamsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun abortSignal(value: AbortSignal): TranscriptionParamsBuilder {
         abortSignal = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): TranscriptionParams =
         TranscriptionParams(
             audio = requireNotNull(audio) { "TranscriptionParams.audio is required" },
@@ -752,45 +902,76 @@ public class TranscriptionParamsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun TranscriptionParams(
     block: TranscriptionParamsBuilder.() -> Unit = {},
 ): TranscriptionParams =
     TranscriptionParamsBuilder().apply(block).build()
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class TranscriptSegment(
+    /** @since 0.3.0-beta01 */
     public val text: String,
+    /** @since 0.3.0-beta01 */
     public val startSeconds: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val endSeconds: Float? = null,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class TranscriptionModelResult(
+    /** @since 0.3.0-beta01 */
     public val text: String?,
+    /** @since 0.3.0-beta01 */
     public val segments: List<TranscriptSegment> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    /** Detected language as an ISO-639-1 code, or null if undetermined. */
+    /**
+     * Detected language as an ISO-639-1 code, or null if undetermined.
+     * @since 0.3.0-beta01
+     */
     public val language: String? = null,
-    /** Total audio duration in seconds, or null if undetermined. */
+    /**
+     * Total audio duration in seconds, or null if undetermined.
+     * @since 0.3.0-beta01
+     */
     public val durationInSeconds: Float? = null,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class TranscribeResult(
+    /** @since 0.3.0-beta01 */
     public val text: String,
+    /** @since 0.3.0-beta01 */
     public val segments: List<TranscriptSegment> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    /** @since 0.3.0-beta01 */
     public val responses: List<LanguageModelResponseMetadata> = listOf(response),
-    /** Detected language as an ISO-639-1 code, or null if undetermined. */
+    /**
+     * Detected language as an ISO-639-1 code, or null if undetermined.
+     * @since 0.3.0-beta01
+     */
     public val language: String? = null,
-    /** Total audio duration in seconds, or null if undetermined. */
+    /**
+     * Total audio duration in seconds, or null if undetermined.
+     * @since 0.3.0-beta01
+     */
     public val durationInSeconds: Float? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public object Transcription {
     public suspend fun transcribe(
         model: TranscriptionModel,
@@ -847,33 +1028,53 @@ public object Transcription {
     )
 }
 
+/** @since 0.3.0-beta01 */
 public interface VideoModel {
+    /** @since 0.3.0-beta01 */
     public val modelId: String
+    /** @since 0.3.0-beta01 */
     public val provider: String
         get() = "unknown"
 
-    /** How many videos this model produces per call, if limited (see [ImageModel.maxImagesPerCall]). */
+    /**
+     * How many videos this model produces per call, if limited (see [ImageModel.maxImagesPerCall]).
+     * @since 0.3.0-beta01
+     */
     public val maxVideosPerCall: Int?
         get() = null
 
     public suspend fun generate(params: VideoGenerationParams): VideoModelResult
 }
 
+/** @since 0.3.0-beta01 */
 public class VideoGenerationParams internal constructor(
+    /** @since 0.3.0-beta01 */
     public val prompt: String,
+    /** @since 0.3.0-beta01 */
     public val n: Int = 1,
+    /** @since 0.3.0-beta01 */
     public val image: GeneratedFile? = null,
+    /** @since 0.3.0-beta01 */
     public val durationSeconds: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val size: String? = null,
+    /** @since 0.3.0-beta01 */
     public val aspectRatio: String? = null,
+    /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions = ProviderOptions.None,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val abortSignal: AbortSignal = AbortSignalNever,
+    /** @since 0.3.0-beta01 */
     public val seed: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val fps: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val resolution: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class VideoGenerationParamsBuilder {
     private var prompt: String? = null
     private var n: Int = 1
@@ -888,66 +1089,79 @@ public class VideoGenerationParamsBuilder {
     private var fps: Int? = null
     private var resolution: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun prompt(value: String): VideoGenerationParamsBuilder {
         prompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun n(value: Int): VideoGenerationParamsBuilder {
         n = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun image(value: GeneratedFile?): VideoGenerationParamsBuilder {
         image = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun durationSeconds(value: Float?): VideoGenerationParamsBuilder {
         durationSeconds = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun size(value: String?): VideoGenerationParamsBuilder {
         size = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun aspectRatio(value: String?): VideoGenerationParamsBuilder {
         aspectRatio = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOptions(value: ProviderOptions): VideoGenerationParamsBuilder {
         providerOptions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): VideoGenerationParamsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun abortSignal(value: AbortSignal): VideoGenerationParamsBuilder {
         abortSignal = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun seed(value: Int?): VideoGenerationParamsBuilder {
         seed = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun fps(value: Int?): VideoGenerationParamsBuilder {
         fps = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun resolution(value: String?): VideoGenerationParamsBuilder {
         resolution = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): VideoGenerationParams =
         VideoGenerationParams(
             prompt = requireNotNull(prompt) { "VideoGenerationParams.prompt is required" },
@@ -965,31 +1179,47 @@ public class VideoGenerationParamsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun VideoGenerationParams(
     block: VideoGenerationParamsBuilder.() -> Unit = {},
 ): VideoGenerationParams =
     VideoGenerationParamsBuilder().apply(block).build()
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class VideoModelResult(
+    /** @since 0.3.0-beta01 */
     public val videos: List<GeneratedFile>,
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GenerateVideoResult(
+    /** @since 0.3.0-beta01 */
     public val videos: List<GeneratedFile>,
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    /** Per-call response metadata, one entry per underlying model call (n-batching). */
+    /**
+     * Per-call response metadata, one entry per underlying model call (n-batching).
+     * @since 0.3.0-beta01
+     */
     public val responses: List<LanguageModelResponseMetadata> = listOf(response),
 ) {
+    /** @since 0.3.0-beta01 */
     public val video: GeneratedFile get() = videos.firstOrNull() ?: throw NoVideoGeneratedError()
 }
 
+/** @since 0.3.0-beta01 */
 public object VideoGeneration {
     @Suppress("LongParameterList")
     public suspend fun generateVideo(

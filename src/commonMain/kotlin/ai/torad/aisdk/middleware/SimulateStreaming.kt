@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.flow
  * Per v6 conventions, all synthesized text events share a single `id`
  * (`"sim_text"`) since the simulation produces exactly one text segment.
  */
+/** @since 0.3.0-beta01 */
 public fun SimulateStreamingMiddleware(): LanguageModelMiddleware = object : LanguageModelMiddleware {
     override fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> = flow {
         // The fix: call doGenerate, NOT doStream. The downstream model may

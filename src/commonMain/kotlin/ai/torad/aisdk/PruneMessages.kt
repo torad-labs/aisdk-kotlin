@@ -1,36 +1,51 @@
 package ai.torad.aisdk
 
+/** @since 0.3.0-beta01 */
 public enum class PruneReasoning {
     All,
     BeforeLastMessage,
     None,
 }
 
+/** @since 0.3.0-beta01 */
 public enum class PruneEmptyMessages {
     Keep,
     Remove,
 }
 
+/** @since 0.3.0-beta01 */
 public sealed class PruneToolCalls {
+    /** @since 0.3.0-beta01 */
     public data object None : PruneToolCalls()
+    /** @since 0.3.0-beta01 */
     public data object All : PruneToolCalls()
+    /** @since 0.3.0-beta01 */
     public data object BeforeLastMessage : PruneToolCalls()
+    /** @since 0.3.0-beta01 */
     public data class BeforeLastMessages(val count: Int) : PruneToolCalls()
+    /** @since 0.3.0-beta01 */
     public data class Rules(val rules: List<PruneToolCallRule>) : PruneToolCalls()
 }
 
+/** @since 0.3.0-beta01 */
 public data class PruneToolCallRule(
     val type: PruneToolCallRuleType,
     val tools: Set<String>? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public sealed class PruneToolCallRuleType {
+    /** @since 0.3.0-beta01 */
     public data object All : PruneToolCallRuleType()
+    /** @since 0.3.0-beta01 */
     public data object BeforeLastMessage : PruneToolCallRuleType()
+    /** @since 0.3.0-beta01 */
     public data class BeforeLastMessages(val count: Int) : PruneToolCallRuleType()
 }
 
+/** @since 0.3.0-beta01 */
 public object MessagePruning {
+    /** @since 0.3.0-beta01 */
     public fun pruneMessages(
         messages: List<ModelMessage>,
         reasoning: PruneReasoning = PruneReasoning.None,

@@ -31,33 +31,59 @@ public const val REVAI_VERSION: String = "2.0.33"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class RevaiTranscriptionModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val metadata: String? = null,
+    /** @since 0.3.0-beta01 */
     public val notification_config: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val delete_after_seconds: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val verbatim: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val rush: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val test_mode: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val segments_to_transcribe: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
     public val speaker_names: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
     public val skip_diarization: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val skip_postprocessing: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val skip_punctuation: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val remove_disfluencies: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val remove_atmospherics: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val filter_profanity: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val speaker_channels_count: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val speakers_count: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val diarization_type: String? = null,
+    /** @since 0.3.0-beta01 */
     public val custom_vocabulary_id: String? = null,
+    /** @since 0.3.0-beta01 */
     public val custom_vocabularies: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
     public val strict_custom_vocabulary: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val summarization_config: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val translation_config: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val language: String? = null,
+    /** @since 0.3.0-beta01 */
     public val forced_alignment: Boolean? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class RevaiTranscriptionModelOptionsBuilder {
     private var metadata: String? = null
     private var notification_config: JsonObject? = null
@@ -84,126 +110,151 @@ public class RevaiTranscriptionModelOptionsBuilder {
     private var language: String? = null
     private var forced_alignment: Boolean? = null
 
+    /** @since 0.3.0-beta01 */
     public fun metadata(value: String?): RevaiTranscriptionModelOptionsBuilder {
         metadata = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun notification_config(value: JsonObject?): RevaiTranscriptionModelOptionsBuilder {
         notification_config = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun delete_after_seconds(value: Int?): RevaiTranscriptionModelOptionsBuilder {
         delete_after_seconds = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun verbatim(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         verbatim = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun rush(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         rush = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun test_mode(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         test_mode = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun segments_to_transcribe(value: JsonElement?): RevaiTranscriptionModelOptionsBuilder {
         segments_to_transcribe = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun speaker_names(value: JsonElement?): RevaiTranscriptionModelOptionsBuilder {
         speaker_names = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun skip_diarization(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         skip_diarization = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun skip_postprocessing(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         skip_postprocessing = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun skip_punctuation(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         skip_punctuation = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun remove_disfluencies(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         remove_disfluencies = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun remove_atmospherics(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         remove_atmospherics = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun filter_profanity(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         filter_profanity = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun speaker_channels_count(value: Int?): RevaiTranscriptionModelOptionsBuilder {
         speaker_channels_count = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun speakers_count(value: Int?): RevaiTranscriptionModelOptionsBuilder {
         speakers_count = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun diarization_type(value: String?): RevaiTranscriptionModelOptionsBuilder {
         diarization_type = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun custom_vocabulary_id(value: String?): RevaiTranscriptionModelOptionsBuilder {
         custom_vocabulary_id = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun custom_vocabularies(value: JsonElement?): RevaiTranscriptionModelOptionsBuilder {
         custom_vocabularies = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun strict_custom_vocabulary(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         strict_custom_vocabulary = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun summarization_config(value: JsonObject?): RevaiTranscriptionModelOptionsBuilder {
         summarization_config = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun translation_config(value: JsonObject?): RevaiTranscriptionModelOptionsBuilder {
         translation_config = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun language(value: String?): RevaiTranscriptionModelOptionsBuilder {
         language = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun forced_alignment(value: Boolean?): RevaiTranscriptionModelOptionsBuilder {
         forced_alignment = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): RevaiTranscriptionModelOptions =
         RevaiTranscriptionModelOptions(
             metadata = metadata,
@@ -233,6 +284,7 @@ public class RevaiTranscriptionModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun RevaiTranscriptionModelOptions(
     block: RevaiTranscriptionModelOptionsBuilder.() -> Unit = {},
 ): RevaiTranscriptionModelOptions =
@@ -240,10 +292,15 @@ public fun RevaiTranscriptionModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class RevaiProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val pollingIntervalMillis: Long = 1_000L,
+    /** @since 0.3.0-beta01 */
     public val maxPollAttempts: Int = 60,
 ) {
     internal fun revaiHeaders(callHeaders: Map<String, String>): Map<String, String> {
@@ -255,32 +312,38 @@ public class RevaiProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class RevaiProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
     private var pollingIntervalMillis: Long = 1_000L
     private var maxPollAttempts: Int = 60
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): RevaiProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): RevaiProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollingIntervalMillis(value: Long): RevaiProviderSettingsBuilder {
         pollingIntervalMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxPollAttempts(value: Int): RevaiProviderSettingsBuilder {
         maxPollAttempts = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): RevaiProviderSettings =
         RevaiProviderSettings(
             apiKey = apiKey,
@@ -290,22 +353,27 @@ public class RevaiProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun RevaiProviderSettings(
     block: RevaiProviderSettingsBuilder.() -> Unit = {},
 ): RevaiProviderSettings =
     RevaiProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class RevaiProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: RevaiProviderSettings,
 ) : Provider {
     override val providerId: String = "revai"
 
     public operator fun invoke(modelId: ModelId = ModelId("machine")): TranscriptionModel = transcription(modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun transcription(modelId: ModelId): TranscriptionModel =
         RevaiTranscriptionModel(client, settings, modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
@@ -314,7 +382,10 @@ public class RevaiProvider(
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
-/** PascalCase factory mirroring the OpenAI reference pattern. */
+/**
+ * PascalCase factory mirroring the OpenAI reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun Revai(
     client: HttpClient,
     settings: RevaiProviderSettings = RevaiProviderSettings(),

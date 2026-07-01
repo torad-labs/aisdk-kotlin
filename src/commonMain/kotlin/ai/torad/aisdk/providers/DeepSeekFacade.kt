@@ -18,9 +18,13 @@ public const val DEEPSEEK_VERSION: String = "2.0.35"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class DeepSeekProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.deepseek.com",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
@@ -116,26 +120,31 @@ public class DeepSeekProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class DeepSeekProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.deepseek.com"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): DeepSeekProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): DeepSeekProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): DeepSeekProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): DeepSeekProviderSettings =
         DeepSeekProviderSettings(
             apiKey = apiKey,
@@ -144,6 +153,7 @@ public class DeepSeekProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun DeepSeekProviderSettings(
     block: DeepSeekProviderSettingsBuilder.() -> Unit = {},
 ): DeepSeekProviderSettings =
@@ -151,22 +161,28 @@ public fun DeepSeekProviderSettings(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class DeepSeekLanguageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class DeepSeekLanguageModelOptionsBuilder {
     private var raw: Map<String, JsonElement> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun raw(value: Map<String, JsonElement>): DeepSeekLanguageModelOptionsBuilder {
         raw = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): DeepSeekLanguageModelOptions =
         DeepSeekLanguageModelOptions(raw = raw)
 }
 
+/** @since 0.3.0-beta01 */
 public fun DeepSeekLanguageModelOptions(
     block: DeepSeekLanguageModelOptionsBuilder.() -> Unit = {},
 ): DeepSeekLanguageModelOptions =
@@ -175,6 +191,7 @@ public fun DeepSeekLanguageModelOptions(
 public typealias DeepSeekChatOptions = DeepSeekLanguageModelOptions
 public typealias DeepSeekErrorData = JsonElement
 
+/** @since 0.3.0-beta01 */
 public class DeepSeekProvider(
     client: HttpClient,
     settings: DeepSeekProviderSettings,
@@ -187,12 +204,15 @@ public class DeepSeekProvider(
 
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
     override fun languageModel(modelId: String): LanguageModel = chat(modelId)
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun DeepSeek(
     client: HttpClient,
     settings: DeepSeekProviderSettings = DeepSeekProviderSettings(),

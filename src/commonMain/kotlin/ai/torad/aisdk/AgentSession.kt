@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** @since 0.3.0-beta01 */
 public enum class AgentSessionStatus {
     Ready,
     Running,
@@ -23,6 +24,7 @@ public enum class AgentSessionStatus {
     Error,
 }
 
+/** @since 0.3.0-beta01 */
 public data class AgentSessionState<TOutput>(
     val messages: List<ModelMessage> = emptyList(),
     val status: AgentSessionStatus = AgentSessionStatus.Ready,
@@ -37,6 +39,7 @@ public data class AgentSessionState<TOutput>(
 }
 
 @OptIn(ExperimentalAtomicApi::class)
+/** @since 0.3.0-beta01 */
 public class AgentSession<TContext, TOutput>(
     private val scope: CoroutineScope,
     private val agent: Agent<TContext, TOutput>,
@@ -92,12 +95,14 @@ public class AgentSession<TContext, TOutput>(
         CallState(null, AbortSignalNever, false),
     )
 
+    /** @since 0.3.0-beta01 */
     public val state: StateFlow<AgentSessionState<TOutput>> = mutableState.asStateFlow()
 
     private fun rememberCall(options: TContext?, abortSignal: AbortSignal, streaming: Boolean) {
         lastCallRef.store(CallState(options, abortSignal, streaming))
     }
 
+    /** @since 0.3.0-beta01 */
     public fun submit(
         prompt: String? = null,
         messages: List<ModelMessage> = state.value.messages,
@@ -150,6 +155,7 @@ public class AgentSession<TContext, TOutput>(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun submitStreaming(
         prompt: String? = null,
         messages: List<ModelMessage> = state.value.messages,
@@ -399,24 +405,28 @@ public class AgentSession<TContext, TOutput>(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun approve(
         approval: PendingApproval,
         options: TContext? = null,
         reason: String? = null,
     ): Job = resumeApproval(approval, approved = true, options = options, reason = reason)
 
+    /** @since 0.3.0-beta01 */
     public fun deny(
         approval: PendingApproval,
         options: TContext? = null,
         reason: String? = null,
     ): Job = resumeApproval(approval, approved = false, options = options, reason = reason)
 
+    /** @since 0.3.0-beta01 */
     public fun cancel() {
         currentJobRef.load()?.cancel()
         currentJobRef.store(null)
         mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reset(messages: List<ModelMessage> = emptyList()) {
         currentJobRef.load()?.cancel()
         currentJobRef.store(null)
@@ -529,6 +539,7 @@ public class AgentSession<TContext, TOutput>(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public object AgentSessions {
     public fun <TContext, TOutput> Agent<TContext, TOutput>.session(
         scope: CoroutineScope,

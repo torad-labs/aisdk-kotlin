@@ -29,39 +29,50 @@ public typealias BedrockRerankingOptions = JsonObject
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class BedrockCredentials internal constructor(
+    /** @since 0.3.0-beta01 */
     public val accessKeyId: String,
+    /** @since 0.3.0-beta01 */
     public val secretAccessKey: String,
+    /** @since 0.3.0-beta01 */
     public val sessionToken: String? = null,
+    /** @since 0.3.0-beta01 */
     public val region: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class BedrockCredentialsBuilder {
     private var accessKeyId: String? = null
     private var secretAccessKey: String? = null
     private var sessionToken: String? = null
     private var region: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun accessKeyId(value: String): BedrockCredentialsBuilder {
         accessKeyId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun secretAccessKey(value: String): BedrockCredentialsBuilder {
         secretAccessKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun sessionToken(value: String?): BedrockCredentialsBuilder {
         sessionToken = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun region(value: String?): BedrockCredentialsBuilder {
         region = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): BedrockCredentials =
         BedrockCredentials(
             accessKeyId = requireNotNull(accessKeyId) { "BedrockCredentials.accessKeyId is required" },
@@ -71,21 +82,33 @@ public class BedrockCredentialsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun BedrockCredentials(
     block: BedrockCredentialsBuilder.() -> Unit = {},
 ): BedrockCredentials =
     BedrockCredentialsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class AmazonBedrockProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val region: String? = null,
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val accessKeyId: String? = null,
+    /** @since 0.3.0-beta01 */
     public val secretAccessKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val sessionToken: String? = null,
+    /** @since 0.3.0-beta01 */
     public val credentialProvider: (suspend () -> BedrockCredentials)? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String? = null,
+    /** @since 0.3.0-beta01 */
     public val agentBaseURL: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val generateId: () -> String = { IdGenerator.generate() },
 ) {
     internal fun bedrockRuntimeBaseURL(): String =
@@ -113,6 +136,7 @@ public class AmazonBedrockProviderSettings internal constructor(
         }.joinToString("")
 }
 
+/** @since 0.3.0-beta01 */
 public class AmazonBedrockProviderSettingsBuilder {
     private var region: String? = null
     private var apiKey: String? = null
@@ -125,56 +149,67 @@ public class AmazonBedrockProviderSettingsBuilder {
     private var headers: Map<String, String> = emptyMap()
     private var generateId: () -> String = { IdGenerator.generate() }
 
+    /** @since 0.3.0-beta01 */
     public fun region(value: String?): AmazonBedrockProviderSettingsBuilder {
         region = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): AmazonBedrockProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun accessKeyId(value: String?): AmazonBedrockProviderSettingsBuilder {
         accessKeyId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun secretAccessKey(value: String?): AmazonBedrockProviderSettingsBuilder {
         secretAccessKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun sessionToken(value: String?): AmazonBedrockProviderSettingsBuilder {
         sessionToken = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun credentialProvider(value: (suspend () -> BedrockCredentials)?): AmazonBedrockProviderSettingsBuilder {
         credentialProvider = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String?): AmazonBedrockProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun agentBaseURL(value: String?): AmazonBedrockProviderSettingsBuilder {
         agentBaseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): AmazonBedrockProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun generateId(value: () -> String): AmazonBedrockProviderSettingsBuilder {
         generateId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AmazonBedrockProviderSettings =
         AmazonBedrockProviderSettings(
             region = region,
@@ -190,16 +225,20 @@ public class AmazonBedrockProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AmazonBedrockProviderSettings(
     block: AmazonBedrockProviderSettingsBuilder.() -> Unit = {},
 ): AmazonBedrockProviderSettings =
     AmazonBedrockProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class AmazonBedrockProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: AmazonBedrockProviderSettings,
 ) : Provider {
     override val providerId: String = "amazon-bedrock"
+    /** @since 0.3.0-beta01 */
     public val tools: AnthropicTools = anthropicTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
@@ -207,15 +246,20 @@ public class AmazonBedrockProvider(
     override fun languageModel(modelId: String): LanguageModel =
         BedrockChatLanguageModel(client, settings, modelId, "amazon-bedrock")
 
+    /** @since 0.3.0-beta01 */
     public fun embedding(modelId: ModelId): EmbeddingModel =
         BedrockEmbeddingModel(client, settings, modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel =
         BedrockImageModel(client, settings, modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun reranking(modelId: ModelId): RerankingModel =
         BedrockRerankingModel(client, settings, modelId.value)
 
@@ -224,7 +268,10 @@ public class AmazonBedrockProvider(
     override fun rerankingModel(modelId: String): RerankingModel = reranking(ModelId(modelId))
 }
 
-/** PascalCase factory — mirrors the OpenAI(...) reference faux-constructor. */
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference faux-constructor.
+ * @since 0.3.0-beta01
+ */
 public fun AmazonBedrock(
     client: HttpClient,
     settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings(),
@@ -232,11 +279,14 @@ public fun AmazonBedrock(
 
 public typealias BedrockAnthropicProviderSettings = AmazonBedrockProviderSettings
 
+/** @since 0.3.0-beta01 */
 public class BedrockAnthropicProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: AmazonBedrockProviderSettings,
 ) : Provider {
     override val providerId: String = "bedrock.anthropic"
+    /** @since 0.3.0-beta01 */
     public val tools: AnthropicTools = anthropicTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
@@ -244,10 +294,14 @@ public class BedrockAnthropicProvider(
     override fun languageModel(modelId: String): LanguageModel =
         BedrockChatLanguageModel(client, settings, modelId, "bedrock.anthropic.messages")
 
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-/** PascalCase factory — mirrors the OpenAI(...) reference faux-constructor. */
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference faux-constructor.
+ * @since 0.3.0-beta01
+ */
 public fun BedrockAnthropic(
     client: HttpClient,
     settings: BedrockAnthropicProviderSettings = BedrockAnthropicProviderSettings(),
@@ -255,8 +309,10 @@ public fun BedrockAnthropic(
 
 public typealias BedrockMantleProviderSettings = AmazonBedrockProviderSettings
 
+/** @since 0.3.0-beta01 */
 public class BedrockMantleProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: AmazonBedrockProviderSettings,
 ) : Provider {
     override val providerId: String = "bedrock-mantle"
@@ -265,16 +321,22 @@ public class BedrockMantleProvider(
 
     override fun languageModel(modelId: String): LanguageModel = chat(ModelId(modelId))
 
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel =
         BedrockMantleChatLanguageModel(client, settings, modelId.value, "bedrock-mantle.chat", "/chat/completions")
 
+    /** @since 0.3.0-beta01 */
     public fun responses(modelId: ModelId): LanguageModel =
         BedrockMantleChatLanguageModel(client, settings, modelId.value, "bedrock-mantle.responses", "/responses")
 
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-/** PascalCase factory — mirrors the OpenAI(...) reference faux-constructor. */
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference faux-constructor.
+ * @since 0.3.0-beta01
+ */
 public fun BedrockMantle(
     client: HttpClient,
     settings: BedrockMantleProviderSettings = BedrockMantleProviderSettings(),

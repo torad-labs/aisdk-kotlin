@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonObject
  *
  * This is the server-side counterpart to `streamToUiMessages` (which builds
  * renderable snapshots in-process); use this when serving the stream over HTTP.
+  * @since 0.3.0-beta01
  */
 public fun ToUIMessageStream(events: Flow<StreamEvent>): Flow<JsonObject> =
     events.mapNotNull { it.toUIMessageChunk() }

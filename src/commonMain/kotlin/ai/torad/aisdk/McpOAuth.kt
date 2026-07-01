@@ -19,17 +19,20 @@ import kotlinx.serialization.json.JsonElement
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class OAuthTokens(
     @SerialName("access_token") public val accessToken: String,
     @SerialName("token_type") public val tokenType: String,
     @SerialName("id_token") public val idToken: String? = null,
     @SerialName("expires_in") public val expiresIn: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val scope: String? = null,
     @SerialName("refresh_token") public val refreshToken: String? = null,
 )
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class OAuthClientInformation internal constructor(
     @SerialName("client_id") public val clientId: String,
     @SerialName("client_secret") public val clientSecret: String? = null,
@@ -37,32 +40,38 @@ public class OAuthClientInformation internal constructor(
     @SerialName("client_secret_expires_at") public val clientSecretExpiresAt: Long? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class OAuthClientInformationBuilder {
     private var clientId: String? = null
     private var clientSecret: String? = null
     private var clientIdIssuedAt: Long? = null
     private var clientSecretExpiresAt: Long? = null
 
+    /** @since 0.3.0-beta01 */
     public fun clientId(value: String): OAuthClientInformationBuilder {
         clientId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clientSecret(value: String?): OAuthClientInformationBuilder {
         clientSecret = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clientIdIssuedAt(value: Long?): OAuthClientInformationBuilder {
         clientIdIssuedAt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clientSecretExpiresAt(value: Long?): OAuthClientInformationBuilder {
         clientSecretExpiresAt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): OAuthClientInformation =
         OAuthClientInformation(
             clientId = requireNotNull(clientId) { "OAuthClientInformation.clientId is required" },
@@ -72,6 +81,7 @@ public class OAuthClientInformationBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun OAuthClientInformation(
     block: OAuthClientInformationBuilder.() -> Unit = {},
 ): OAuthClientInformation =
@@ -79,6 +89,7 @@ public fun OAuthClientInformation(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class OAuthClientMetadata internal constructor(
     @SerialName("redirect_uris") public val redirectUris: List<String>,
     @SerialName("token_endpoint_auth_method") public val tokenEndpointAuthMethod: String? = null,
@@ -87,17 +98,21 @@ public class OAuthClientMetadata internal constructor(
     @SerialName("client_name") public val clientName: String? = null,
     @SerialName("client_uri") public val clientUri: String? = null,
     @SerialName("logo_uri") public val logoUri: String? = null,
+    /** @since 0.3.0-beta01 */
     public val scope: String? = null,
+    /** @since 0.3.0-beta01 */
     public val contacts: List<String>? = null,
     @SerialName("tos_uri") public val tosUri: String? = null,
     @SerialName("policy_uri") public val policyUri: String? = null,
     @SerialName("jwks_uri") public val jwksUri: String? = null,
+    /** @since 0.3.0-beta01 */
     public val jwks: JsonElement? = null,
     @SerialName("software_id") public val softwareId: String? = null,
     @SerialName("software_version") public val softwareVersion: String? = null,
     @SerialName("software_statement") public val softwareStatement: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class OAuthClientMetadataBuilder {
     private var redirectUris: List<String>? = null
     private var tokenEndpointAuthMethod: String? = null
@@ -116,86 +131,103 @@ public class OAuthClientMetadataBuilder {
     private var softwareVersion: String? = null
     private var softwareStatement: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun redirectUris(value: List<String>): OAuthClientMetadataBuilder {
         redirectUris = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun tokenEndpointAuthMethod(value: String?): OAuthClientMetadataBuilder {
         tokenEndpointAuthMethod = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun grantTypes(value: List<String>?): OAuthClientMetadataBuilder {
         grantTypes = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun responseTypes(value: List<String>?): OAuthClientMetadataBuilder {
         responseTypes = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clientName(value: String?): OAuthClientMetadataBuilder {
         clientName = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clientUri(value: String?): OAuthClientMetadataBuilder {
         clientUri = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun logoUri(value: String?): OAuthClientMetadataBuilder {
         logoUri = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun scope(value: String?): OAuthClientMetadataBuilder {
         scope = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun contacts(value: List<String>?): OAuthClientMetadataBuilder {
         contacts = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun tosUri(value: String?): OAuthClientMetadataBuilder {
         tosUri = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun policyUri(value: String?): OAuthClientMetadataBuilder {
         policyUri = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun jwksUri(value: String?): OAuthClientMetadataBuilder {
         jwksUri = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun jwks(value: JsonElement?): OAuthClientMetadataBuilder {
         jwks = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun softwareId(value: String?): OAuthClientMetadataBuilder {
         softwareId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun softwareVersion(value: String?): OAuthClientMetadataBuilder {
         softwareVersion = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun softwareStatement(value: String?): OAuthClientMetadataBuilder {
         softwareStatement = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): OAuthClientMetadata =
         OAuthClientMetadata(
             redirectUris = requireNotNull(redirectUris) { "OAuthClientMetadata.redirectUris is required" },
@@ -217,6 +249,7 @@ public class OAuthClientMetadataBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun OAuthClientMetadata(
     block: OAuthClientMetadataBuilder.() -> Unit = {},
 ): OAuthClientMetadata =
@@ -224,7 +257,9 @@ public fun OAuthClientMetadata(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class AuthorizationServerMetadata(
+    /** @since 0.3.0-beta01 */
     public val issuer: String? = null,
     @SerialName("authorization_endpoint") public val authorizationEndpoint: String? = null,
     @SerialName("token_endpoint") public val tokenEndpoint: String? = null,
@@ -237,7 +272,9 @@ public class AuthorizationServerMetadata(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class OAuthProtectedResourceMetadata(
+    /** @since 0.3.0-beta01 */
     public val resource: String,
     @SerialName("authorization_servers") public val authorizationServers: List<String>? = null,
     @SerialName("jwks_uri") public val jwksUri: String? = null,
@@ -246,22 +283,32 @@ public class OAuthProtectedResourceMetadata(
     @SerialName("resource_name") public val resourceName: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class UnauthorizedError(message: String = "Unauthorized") : AiSdkException(message)
 
+/** @since 0.3.0-beta01 */
 public enum class AuthResult {
     AUTHORIZED,
     REDIRECT,
 }
 
+/** @since 0.3.0-beta01 */
 public class AuthOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val serverUrl: String,
+    /** @since 0.3.0-beta01 */
     public val authorizationCode: String? = null,
+    /** @since 0.3.0-beta01 */
     public val callbackState: String? = null,
+    /** @since 0.3.0-beta01 */
     public val scope: String? = null,
+    /** @since 0.3.0-beta01 */
     public val resourceMetadataUrl: String? = null,
+    /** @since 0.3.0-beta01 */
     public val client: HttpClient? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class AuthOptionsBuilder {
     private var serverUrl: String? = null
     private var authorizationCode: String? = null
@@ -270,36 +317,43 @@ public class AuthOptionsBuilder {
     private var resourceMetadataUrl: String? = null
     private var client: HttpClient? = null
 
+    /** @since 0.3.0-beta01 */
     public fun serverUrl(value: String): AuthOptionsBuilder {
         serverUrl = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun authorizationCode(value: String?): AuthOptionsBuilder {
         authorizationCode = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun callbackState(value: String?): AuthOptionsBuilder {
         callbackState = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun scope(value: String?): AuthOptionsBuilder {
         scope = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun resourceMetadataUrl(value: String?): AuthOptionsBuilder {
         resourceMetadataUrl = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun client(value: HttpClient?): AuthOptionsBuilder {
         client = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AuthOptions =
         AuthOptions(
             serverUrl = requireNotNull(serverUrl) { "AuthOptions.serverUrl is required" },
@@ -311,6 +365,7 @@ public class AuthOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AuthOptions(
     block: AuthOptionsBuilder.() -> Unit = {},
 ): AuthOptions =

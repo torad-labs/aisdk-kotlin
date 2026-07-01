@@ -25,25 +25,32 @@ public const val FIREWORKS_VERSION: String = "2.0.53"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class FireworksThinkingOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val type: String? = null,
+    /** @since 0.3.0-beta01 */
     public val budgetTokens: Int? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class FireworksThinkingOptionsBuilder {
     private var type: String? = null
     private var budgetTokens: Int? = null
 
+    /** @since 0.3.0-beta01 */
     public fun type(value: String?): FireworksThinkingOptionsBuilder {
         type = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun budgetTokens(value: Int?): FireworksThinkingOptionsBuilder {
         budgetTokens = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): FireworksThinkingOptions =
         FireworksThinkingOptions(
             type = type,
@@ -51,6 +58,7 @@ public class FireworksThinkingOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun FireworksThinkingOptions(
     block: FireworksThinkingOptionsBuilder.() -> Unit = {},
 ): FireworksThinkingOptions =
@@ -58,32 +66,41 @@ public fun FireworksThinkingOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class FireworksLanguageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val thinking: FireworksThinkingOptions? = null,
+    /** @since 0.3.0-beta01 */
     public val reasoningHistory: String? = null,
+    /** @since 0.3.0-beta01 */
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class FireworksLanguageModelOptionsBuilder {
     private var thinking: FireworksThinkingOptions? = null
     private var reasoningHistory: String? = null
     private var raw: Map<String, JsonElement> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun thinking(value: FireworksThinkingOptions?): FireworksLanguageModelOptionsBuilder {
         thinking = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reasoningHistory(value: String?): FireworksLanguageModelOptionsBuilder {
         reasoningHistory = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun raw(value: Map<String, JsonElement>): FireworksLanguageModelOptionsBuilder {
         raw = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): FireworksLanguageModelOptions =
         FireworksLanguageModelOptions(
             thinking = thinking,
@@ -92,6 +109,7 @@ public class FireworksLanguageModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun FireworksLanguageModelOptions(
     block: FireworksLanguageModelOptionsBuilder.() -> Unit = {},
 ): FireworksLanguageModelOptions =
@@ -101,22 +119,28 @@ public typealias FireworksProviderOptions = FireworksLanguageModelOptions
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class FireworksEmbeddingModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class FireworksEmbeddingModelOptionsBuilder {
     private var raw: Map<String, JsonElement> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun raw(value: Map<String, JsonElement>): FireworksEmbeddingModelOptionsBuilder {
         raw = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): FireworksEmbeddingModelOptions =
         FireworksEmbeddingModelOptions(raw = raw)
 }
 
+/** @since 0.3.0-beta01 */
 public fun FireworksEmbeddingModelOptions(
     block: FireworksEmbeddingModelOptionsBuilder.() -> Unit = {},
 ): FireworksEmbeddingModelOptions =
@@ -126,15 +150,21 @@ public typealias FireworksEmbeddingProviderOptions = FireworksEmbeddingModelOpti
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class FireworksErrorData(
+    /** @since 0.3.0-beta01 */
     public val error: String,
 )
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class FireworksProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.fireworks.ai/inference/v1",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
@@ -145,26 +175,31 @@ public class FireworksProviderSettings internal constructor(
         OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
+/** @since 0.3.0-beta01 */
 public class FireworksProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.fireworks.ai/inference/v1"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): FireworksProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): FireworksProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): FireworksProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): FireworksProviderSettings =
         FireworksProviderSettings(
             apiKey = apiKey,
@@ -173,11 +208,13 @@ public class FireworksProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun FireworksProviderSettings(
     block: FireworksProviderSettingsBuilder.() -> Unit = {},
 ): FireworksProviderSettings =
     FireworksProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class FireworksProvider(
     private val client: HttpClient,
     private val settings: FireworksProviderSettings,
@@ -190,14 +227,19 @@ public class FireworksProvider(
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+    /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = FireworksLanguageModel(compatible.chatModel(modelId.value))
+    /** @since 0.3.0-beta01 */
     public fun completionModel(modelId: ModelId): LanguageModel = compatible.completionModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
     override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
     override fun imageModel(modelId: String): ImageModel = FireworksImageModel(client, settings, modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun Fireworks(
     client: HttpClient,
     settings: FireworksProviderSettings = FireworksProviderSettings(),
@@ -243,6 +285,7 @@ private class FireworksLanguageModel(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class FireworksImageModel(
     private val client: HttpClient,
     private val settings: FireworksProviderSettings,

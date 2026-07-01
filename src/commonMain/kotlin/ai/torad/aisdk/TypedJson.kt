@@ -34,6 +34,7 @@ internal val aiSdkOutputJson = Json {
     encodeDefaults = true
 }
 
+/** @since 0.3.0-beta01 */
 public val ContentPart.metadata: ProviderMetadata
     get() = when (this) {
         is ContentPart.Text -> providerMetadata
@@ -48,6 +49,7 @@ public val ContentPart.metadata: ProviderMetadata
         is ContentPart.Raw -> ProviderMetadata.None
     }
 
+/** @since 0.3.0-beta01 */
 public val StreamEvent.metadata: ProviderMetadata
     get() = when (this) {
         is StreamEvent.StreamStart -> ProviderMetadata.None
@@ -124,6 +126,7 @@ internal object TypedJsonOps {
     public inline fun <reified T> Map<String, JsonElement>.decodeValue(name: String): T? =
         decodeValue(name, serializer())
 
+    /** @since 0.3.0-beta01 */
     public fun Map<String, JsonElement>?.providerMetadata(provider: String): JsonElement? =
         this?.get(provider)
 
@@ -165,15 +168,19 @@ internal object TypedJsonOps {
     public inline fun <reified T> StreamEvent.providerMetadataAs(provider: String): T? =
         providerMetadataAs(provider, serializer())
 
+    /** @since 0.3.0-beta01 */
     public fun jsonNumber(obj: JsonObject, vararg names: String): Double =
         jsonNumberOrNull(obj, *names) ?: 0.0
 
+    /** @since 0.3.0-beta01 */
     public fun jsonNumberOrNull(obj: JsonObject, vararg names: String): Double? =
         names.firstNotNullOfOrNull { name -> (obj[name] as? JsonPrimitive)?.doubleOrNull }
 
+    /** @since 0.3.0-beta01 */
     public fun jsonInt(obj: JsonObject, vararg names: String): Int =
         jsonIntOrNull(obj, *names) ?: 0
 
+    /** @since 0.3.0-beta01 */
     public fun jsonIntOrNull(obj: JsonObject, vararg names: String): Int? =
         names.firstNotNullOfOrNull { name -> (obj[name] as? JsonPrimitive)?.intOrNull }
 }

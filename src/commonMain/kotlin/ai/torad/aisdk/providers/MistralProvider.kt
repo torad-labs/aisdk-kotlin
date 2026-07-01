@@ -23,9 +23,13 @@ public typealias MistralProviderOptions = MistralLanguageModelOptions
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class MistralProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.mistral.ai/v1",
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(): OpenAICompatibleProviderSettings =
@@ -204,26 +208,31 @@ public class MistralProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class MistralProviderSettingsBuilder {
     private var baseURL: String = "https://api.mistral.ai/v1"
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): MistralProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): MistralProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): MistralProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): MistralProviderSettings =
         MistralProviderSettings(
             baseURL = baseURL,
@@ -232,6 +241,7 @@ public class MistralProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun MistralProviderSettings(
     block: MistralProviderSettingsBuilder.() -> Unit = {},
 ): MistralProviderSettings =
@@ -239,16 +249,25 @@ public fun MistralProviderSettings(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class MistralLanguageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val safePrompt: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val documentImageLimit: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val documentPageLimit: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val structuredOutputs: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val strictJsonSchema: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val parallelToolCalls: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val reasoningEffort: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class MistralLanguageModelOptionsBuilder {
     private var safePrompt: Boolean? = null
     private var documentImageLimit: Int? = null
@@ -258,41 +277,49 @@ public class MistralLanguageModelOptionsBuilder {
     private var parallelToolCalls: Boolean? = null
     private var reasoningEffort: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun safePrompt(value: Boolean?): MistralLanguageModelOptionsBuilder {
         safePrompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun documentImageLimit(value: Int?): MistralLanguageModelOptionsBuilder {
         documentImageLimit = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun documentPageLimit(value: Int?): MistralLanguageModelOptionsBuilder {
         documentPageLimit = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun structuredOutputs(value: Boolean?): MistralLanguageModelOptionsBuilder {
         structuredOutputs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun strictJsonSchema(value: Boolean?): MistralLanguageModelOptionsBuilder {
         strictJsonSchema = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun parallelToolCalls(value: Boolean?): MistralLanguageModelOptionsBuilder {
         parallelToolCalls = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reasoningEffort(value: String?): MistralLanguageModelOptionsBuilder {
         reasoningEffort = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): MistralLanguageModelOptions =
         MistralLanguageModelOptions(
             safePrompt = safePrompt,
@@ -305,13 +332,16 @@ public class MistralLanguageModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun MistralLanguageModelOptions(
     block: MistralLanguageModelOptionsBuilder.() -> Unit = {},
 ): MistralLanguageModelOptions =
     MistralLanguageModelOptionsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class MistralProvider(
     client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: MistralProviderSettings,
 ) : Provider {
     private val compatible = OpenAICompatible(client, settings.toCompatible())
@@ -320,22 +350,29 @@ public class MistralProvider(
 
     public operator fun invoke(modelId: ModelId): LanguageModel = chat(modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel =
         MistralChatLanguageModel(compatible.chatModel(modelId.value))
 
+    /** @since 0.3.0-beta01 */
     public fun embedding(modelId: ModelId): EmbeddingModel =
         MistralEmbeddingModel(compatible.embeddingModel(modelId.value))
 
     override fun languageModel(modelId: String): LanguageModel = chat(ModelId(modelId))
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+    /** @since 0.3.0-beta01 */
     public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
 
     override fun imageModel(modelId: String): ImageModel =
         throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
-/** PascalCase factory mirroring [OpenAI]. */
+/**
+ * PascalCase factory mirroring [OpenAI].
+ * @since 0.3.0-beta01
+ */
 public fun Mistral(
     client: HttpClient,
     settings: MistralProviderSettings = MistralProviderSettings(),

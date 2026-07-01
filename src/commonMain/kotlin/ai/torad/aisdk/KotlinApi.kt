@@ -13,18 +13,31 @@ import kotlinx.serialization.serializer
 public annotation class AiSdkDsl
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class CallSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val temperature: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val topP: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val topK: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val maxOutputTokens: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val stopSequences: List<String>? = null,
+    /** @since 0.3.0-beta01 */
     public val seed: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions = ProviderOptions.None,
+    /** @since 0.3.0-beta01 */
     public val abortSignal: AbortSignal? = null,
+    /** @since 0.3.0-beta01 */
     public val presencePenalty: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val frequencyPenalty: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val responseFormat: ResponseFormat? = null,
+    /** @since 0.3.0-beta01 */
     public val maxRetries: Int = 2,
 ) {
     init {
@@ -33,6 +46,7 @@ public class CallSettings internal constructor(
 }
 
 @AiSdkDsl
+/** @since 0.3.0-beta01 */
 public class CallSettingsBuilder {
     private var temperature: Float? = null
     private var topP: Float? = null
@@ -49,81 +63,97 @@ public class CallSettingsBuilder {
 
     private val stopSequences = mutableListOf<String>()
 
+    /** @since 0.3.0-beta01 */
     public fun temperature(value: Float?): CallSettingsBuilder {
         temperature = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun topP(value: Float?): CallSettingsBuilder {
         topP = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun topK(value: Int?): CallSettingsBuilder {
         topK = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxOutputTokens(value: Int?): CallSettingsBuilder {
         maxOutputTokens = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun seed(value: Int?): CallSettingsBuilder {
         seed = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxRetries(value: Int): CallSettingsBuilder {
         maxRetries = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOptions(value: ProviderOptions): CallSettingsBuilder {
         providerOptions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun abortSignal(value: AbortSignal?): CallSettingsBuilder {
         abortSignal = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun presencePenalty(value: Float?): CallSettingsBuilder {
         presencePenalty = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun frequencyPenalty(value: Float?): CallSettingsBuilder {
         frequencyPenalty = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun responseFormat(value: ResponseFormat?): CallSettingsBuilder {
         responseFormat = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun stopSequence(value: String): CallSettingsBuilder {
         stopSequences += value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun stopSequences(values: Iterable<String>): CallSettingsBuilder {
         stopSequences += values
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOption(name: String, value: JsonElement): CallSettingsBuilder {
         providerOptions = providerOptions + ProviderOptions.Raw(JsonObject(mapOf(name to value)))
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOptions(block: ProviderOptionsBuilder.() -> Unit): CallSettingsBuilder {
         providerOptions = providerOptions + ProviderOptions.Raw(JsonObject(ProviderOptionsDsl.build(block)))
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): CallSettings = CallSettings(
         temperature = temperature,
         topP = topP,
@@ -140,13 +170,16 @@ public class CallSettingsBuilder {
     )
 }
 
+/** @since 0.3.0-beta01 */
 public fun CallSettings(block: CallSettingsBuilder.() -> Unit = {}): CallSettings =
     CallSettingsBuilder().apply(block).build()
 
 @AiSdkDsl
+/** @since 0.3.0-beta01 */
 public class ProviderOptionsBuilder {
     private val values = linkedMapOf<String, JsonElement>()
 
+    /** @since 0.3.0-beta01 */
     public fun put(name: String, value: JsonElement): ProviderOptionsBuilder {
         values[name] = value
         return this
@@ -162,6 +195,7 @@ public class ProviderOptionsBuilder {
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun provider(name: String, block: JsonObjectBuilder.() -> Unit): ProviderOptionsBuilder {
         values[name] = buildJsonObject(block)
         return this
@@ -177,27 +211,37 @@ public class ProviderOptionsBuilder {
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun options(values: Map<String, JsonElement>): ProviderOptionsBuilder {
         this.values.putAll(values)
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): Map<String, JsonElement> = values.toMap()
 }
 
+/** @since 0.3.0-beta01 */
 public object ProviderOptionsDsl {
+    /** @since 0.3.0-beta01 */
     public fun build(block: ProviderOptionsBuilder.() -> Unit): Map<String, JsonElement> =
         ProviderOptionsBuilder().apply(block).build()
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class TextGenerationRequest internal constructor(
+    /** @since 0.3.0-beta01 */
     public val prompt: String? = null,
+    /** @since 0.3.0-beta01 */
     public val messages: List<ModelMessage> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val system: String? = null,
+    /** @since 0.3.0-beta01 */
     public val settings: CallSettings = CallSettings(),
 ) {
     public companion object {
+        /** @since 0.3.0-beta01 */
         public fun of(
             input: Input,
             system: String? = null,
@@ -210,16 +254,21 @@ public class TextGenerationRequest internal constructor(
         )
     }
 
+    /** @since 0.3.0-beta01 */
     public val input: Input
         get() = Input.from(prompt = prompt, messages = messages)
 
+    /** @since 0.3.0-beta01 */
     public class NonEmptyMessages private constructor(
+        /** @since 0.3.0-beta01 */
         public val values: List<ModelMessage>,
     ) {
         public companion object {
+            /** @since 0.3.0-beta01 */
             public fun of(first: ModelMessage, vararg rest: ModelMessage): NonEmptyMessages =
                 NonEmptyMessages(listOf(first) + rest)
 
+            /** @since 0.3.0-beta01 */
             public fun from(messages: Iterable<ModelMessage>): NonEmptyMessages {
                 val values = messages.toList()
                 require(values.isNotEmpty()) { "messages must contain at least one message" }
@@ -228,25 +277,34 @@ public class TextGenerationRequest internal constructor(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public sealed class Input {
+        /** @since 0.3.0-beta01 */
         public abstract val prompt: String?
+        /** @since 0.3.0-beta01 */
         public abstract val messages: List<ModelMessage>
 
+        /** @since 0.3.0-beta01 */
         public data class PromptText(
+            /** @since 0.3.0-beta01 */
             public val text: String,
         ) : Input() {
             override val prompt: String get() = text
             override val messages: List<ModelMessage> get() = emptyList()
         }
 
+        /** @since 0.3.0-beta01 */
         public data class MessageHistory(
+            /** @since 0.3.0-beta01 */
             public val history: NonEmptyMessages,
         ) : Input() {
             override val prompt: String? get() = null
             override val messages: List<ModelMessage> get() = history.values
         }
 
+        /** @since 0.3.0-beta01 */
         public data class MessageHistoryWithPrompt(
+            /** @since 0.3.0-beta01 */
             public val history: NonEmptyMessages,
             override val prompt: String,
         ) : Input() {
@@ -254,13 +312,17 @@ public class TextGenerationRequest internal constructor(
         }
 
         public companion object {
+            /** @since 0.3.0-beta01 */
             public fun prompt(text: String): Input = PromptText(text)
 
+            /** @since 0.3.0-beta01 */
             public fun messages(first: ModelMessage, vararg rest: ModelMessage): Input =
                 MessageHistory(NonEmptyMessages.of(first, *rest))
 
+            /** @since 0.3.0-beta01 */
             public fun messages(history: NonEmptyMessages): Input = MessageHistory(history)
 
+            /** @since 0.3.0-beta01 */
             public fun messagesWithPrompt(
                 history: NonEmptyMessages,
                 prompt: String,
@@ -284,6 +346,7 @@ public class TextGenerationRequest internal constructor(
 }
 
 @AiSdkDsl
+/** @since 0.3.0-beta01 */
 public class TextGenerationRequestBuilder {
     private var prompt: String? = null
     private var system: String? = null
@@ -291,36 +354,43 @@ public class TextGenerationRequestBuilder {
 
     private val messages = mutableListOf<ModelMessage>()
 
+    /** @since 0.3.0-beta01 */
     public fun prompt(value: String): TextGenerationRequestBuilder {
         prompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun system(value: String): TextGenerationRequestBuilder {
         system = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun message(message: ModelMessage): TextGenerationRequestBuilder {
         messages += message
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun messages(values: Iterable<ModelMessage>): TextGenerationRequestBuilder {
         messages += values
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun settings(value: CallSettings): TextGenerationRequestBuilder {
         settings = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun settings(block: CallSettingsBuilder.() -> Unit): TextGenerationRequestBuilder {
         settings = CallSettings(block)
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): TextGenerationRequest = TextGenerationRequest(
         prompt = prompt,
         messages = messages.toList(),
@@ -329,5 +399,6 @@ public class TextGenerationRequestBuilder {
     )
 }
 
+/** @since 0.3.0-beta01 */
 public fun TextGenerationRequest(block: TextGenerationRequestBuilder.() -> Unit = {}): TextGenerationRequest =
     TextGenerationRequestBuilder().apply(block).build()

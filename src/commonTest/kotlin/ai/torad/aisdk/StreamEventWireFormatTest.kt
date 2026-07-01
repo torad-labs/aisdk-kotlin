@@ -50,7 +50,7 @@ class StreamEventWireFormatTest {
         )
 
         for (event in events) {
-            val encoded = aiSdkJson.encodeToString(StreamEvent.serializer(), event)
+            val encoded = aiSdkOutputJson.encodeToString(StreamEvent.serializer(), event)
             val decoded = aiSdkJson.decodeFromString(StreamEvent.serializer(), encoded)
 
             assertEquals(event, decoded, encoded)

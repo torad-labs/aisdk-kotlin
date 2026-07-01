@@ -11,6 +11,7 @@ import kotlinx.serialization.json.contentOrNull
 /**
  * UI-to-model message conversion. Groups [convertToModelMessages] and its
  * helpers so none remain loose top-level functions.
+  * @since 0.3.0-beta01
  */
 public object ModelMessageConversion {
 
@@ -54,6 +55,7 @@ public object ModelMessageConversion {
      *     tool call is seen — these usually indicate corrupted history.
      */
     @Suppress("CyclomaticComplexMethod", "LongMethod")
+    /** @since 0.3.0-beta01 */
     public fun convertToModelMessages(
         messages: List<UIMessage>,
         ignoreIncompleteToolCalls: Boolean = false,

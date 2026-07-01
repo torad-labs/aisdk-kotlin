@@ -13,13 +13,17 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 
 @Serializable(with = ProviderMetadataSerializer::class)
+/** @since 0.3.0-beta01 */
 public sealed class ProviderMetadata {
 
+    /** @since 0.3.0-beta01 */
     public object None : ProviderMetadata()
 
+    /** @since 0.3.0-beta01 */
     public data class Raw(val metadata: JsonObject) : ProviderMetadata()
 
     // claude-directive-exception: 4a8117fb-7a8e-4e-0013 toMap() is the interop bridge to plain maps — not a providerMetadata field declaration
+    /** @since 0.3.0-beta01 */
     public fun toMap(): Map<String, JsonElement> = when (this) {
         is None -> emptyMap()
         is Raw -> metadata
@@ -33,6 +37,7 @@ public sealed class ProviderMetadata {
     }
 
     public companion object {
+        /** @since 0.3.0-beta01 */
         public fun ofPairs(vararg pairs: Pair<String, JsonObject>): ProviderMetadata =
             if (pairs.isEmpty()) None
             else Raw(JsonObject(pairs.associate { (k, v) -> k to (v as JsonElement) }))

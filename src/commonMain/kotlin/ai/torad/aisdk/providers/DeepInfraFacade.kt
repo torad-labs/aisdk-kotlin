@@ -27,32 +27,41 @@ public typealias DeepInfraErrorData = JsonElement
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class DeepInfraProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.deepinfra.com/v1",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class DeepInfraProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.deepinfra.com/v1"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): DeepInfraProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): DeepInfraProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): DeepInfraProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): DeepInfraProviderSettings =
         DeepInfraProviderSettings(
             apiKey = apiKey,
@@ -61,11 +70,13 @@ public class DeepInfraProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun DeepInfraProviderSettings(
     block: DeepInfraProviderSettingsBuilder.() -> Unit = {},
 ): DeepInfraProviderSettings =
     DeepInfraProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class DeepInfraProvider(
     private val client: HttpClient,
     private val settings: DeepInfraProviderSettings,
@@ -84,14 +95,19 @@ public class DeepInfraProvider(
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+    /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = DeepInfraChatLanguageModel(compatible.chatModel(modelId.value))
+    /** @since 0.3.0-beta01 */
     public fun completionModel(modelId: ModelId): LanguageModel = compatible.completionModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
     override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
     override fun imageModel(modelId: String): ImageModel = DeepInfraImageModel(client, settings, modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun DeepInfra(
     client: HttpClient,
     settings: DeepInfraProviderSettings = DeepInfraProviderSettings(),

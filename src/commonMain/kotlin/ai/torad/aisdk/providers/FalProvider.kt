@@ -33,13 +33,21 @@ public typealias FalErrorData = JsonObject
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class FalProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://fal.run",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val transcriptionPollIntervalMillis: Long = 1_000L,
+    /** @since 0.3.0-beta01 */
     public val transcriptionMaxPollAttempts: Int = 60,
+    /** @since 0.3.0-beta01 */
     public val videoPollIntervalMillis: Long = 2_000L,
+    /** @since 0.3.0-beta01 */
     public val videoMaxPollAttempts: Int = 150,
 ) {
     internal fun falHeaders(extra: Map<String, String>): Map<String, String> =
@@ -144,6 +152,7 @@ public class FalProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class FalProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://fal.run"
@@ -153,41 +162,49 @@ public class FalProviderSettingsBuilder {
     private var videoPollIntervalMillis: Long = 2_000L
     private var videoMaxPollAttempts: Int = 150
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): FalProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): FalProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): FalProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transcriptionPollIntervalMillis(value: Long): FalProviderSettingsBuilder {
         transcriptionPollIntervalMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transcriptionMaxPollAttempts(value: Int): FalProviderSettingsBuilder {
         transcriptionMaxPollAttempts = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun videoPollIntervalMillis(value: Long): FalProviderSettingsBuilder {
         videoPollIntervalMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun videoMaxPollAttempts(value: Int): FalProviderSettingsBuilder {
         videoMaxPollAttempts = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): FalProviderSettings =
         FalProviderSettings(
             apiKey = apiKey,
@@ -200,6 +217,7 @@ public class FalProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun FalProviderSettings(
     block: FalProviderSettingsBuilder.() -> Unit = {},
 ): FalProviderSettings =
@@ -207,22 +225,28 @@ public fun FalProviderSettings(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class FalImageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val useMultipleImages: Boolean? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class FalImageModelOptionsBuilder {
     private var useMultipleImages: Boolean? = null
 
+    /** @since 0.3.0-beta01 */
     public fun useMultipleImages(value: Boolean?): FalImageModelOptionsBuilder {
         useMultipleImages = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): FalImageModelOptions =
         FalImageModelOptions(useMultipleImages = useMultipleImages)
 }
 
+/** @since 0.3.0-beta01 */
 public fun FalImageModelOptions(
     block: FalImageModelOptionsBuilder.() -> Unit = {},
 ): FalImageModelOptions =
@@ -230,39 +254,50 @@ public fun FalImageModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class FalSpeechModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val voice_setting: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val audio_setting: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val language_boost: String? = null,
+    /** @since 0.3.0-beta01 */
     public val pronunciation_dict: JsonObject? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class FalSpeechModelOptionsBuilder {
     private var voice_setting: JsonObject? = null
     private var audio_setting: JsonObject? = null
     private var language_boost: String? = null
     private var pronunciation_dict: JsonObject? = null
 
+    /** @since 0.3.0-beta01 */
     public fun voice_setting(value: JsonObject?): FalSpeechModelOptionsBuilder {
         voice_setting = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun audio_setting(value: JsonObject?): FalSpeechModelOptionsBuilder {
         audio_setting = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun language_boost(value: String?): FalSpeechModelOptionsBuilder {
         language_boost = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pronunciation_dict(value: JsonObject?): FalSpeechModelOptionsBuilder {
         pronunciation_dict = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): FalSpeechModelOptions =
         FalSpeechModelOptions(
             voice_setting = voice_setting,
@@ -272,6 +307,7 @@ public class FalSpeechModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun FalSpeechModelOptions(
     block: FalSpeechModelOptionsBuilder.() -> Unit = {},
 ): FalSpeechModelOptions =
@@ -279,15 +315,23 @@ public fun FalSpeechModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class FalTranscriptionModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val language: String? = "en",
+    /** @since 0.3.0-beta01 */
     public val diarize: Boolean? = true,
+    /** @since 0.3.0-beta01 */
     public val chunkLevel: String? = "segment",
+    /** @since 0.3.0-beta01 */
     public val version: String? = "3",
+    /** @since 0.3.0-beta01 */
     public val batchSize: Int? = 64,
+    /** @since 0.3.0-beta01 */
     public val numSpeakers: Int? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class FalTranscriptionModelOptionsBuilder {
     private var language: String? = "en"
     private var diarize: Boolean? = true
@@ -296,36 +340,43 @@ public class FalTranscriptionModelOptionsBuilder {
     private var batchSize: Int? = 64
     private var numSpeakers: Int? = null
 
+    /** @since 0.3.0-beta01 */
     public fun language(value: String?): FalTranscriptionModelOptionsBuilder {
         language = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun diarize(value: Boolean?): FalTranscriptionModelOptionsBuilder {
         diarize = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun chunkLevel(value: String?): FalTranscriptionModelOptionsBuilder {
         chunkLevel = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun version(value: String?): FalTranscriptionModelOptionsBuilder {
         version = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun batchSize(value: Int?): FalTranscriptionModelOptionsBuilder {
         batchSize = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun numSpeakers(value: Int?): FalTranscriptionModelOptionsBuilder {
         numSpeakers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): FalTranscriptionModelOptions =
         FalTranscriptionModelOptions(
             language = language,
@@ -337,6 +388,7 @@ public class FalTranscriptionModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun FalTranscriptionModelOptions(
     block: FalTranscriptionModelOptionsBuilder.() -> Unit = {},
 ): FalTranscriptionModelOptions =
@@ -344,16 +396,25 @@ public fun FalTranscriptionModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class FalVideoModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val loop: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val motionStrength: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val pollIntervalMs: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val pollTimeoutMs: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val resolution: String? = null,
+    /** @since 0.3.0-beta01 */
     public val negativePrompt: String? = null,
+    /** @since 0.3.0-beta01 */
     public val promptOptimizer: Boolean? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class FalVideoModelOptionsBuilder {
     private var loop: Boolean? = null
     private var motionStrength: Float? = null
@@ -363,41 +424,49 @@ public class FalVideoModelOptionsBuilder {
     private var negativePrompt: String? = null
     private var promptOptimizer: Boolean? = null
 
+    /** @since 0.3.0-beta01 */
     public fun loop(value: Boolean?): FalVideoModelOptionsBuilder {
         loop = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun motionStrength(value: Float?): FalVideoModelOptionsBuilder {
         motionStrength = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollIntervalMs(value: Long?): FalVideoModelOptionsBuilder {
         pollIntervalMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollTimeoutMs(value: Long?): FalVideoModelOptionsBuilder {
         pollTimeoutMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun resolution(value: String?): FalVideoModelOptionsBuilder {
         resolution = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun negativePrompt(value: String?): FalVideoModelOptionsBuilder {
         negativePrompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun promptOptimizer(value: Boolean?): FalVideoModelOptionsBuilder {
         promptOptimizer = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): FalVideoModelOptions =
         FalVideoModelOptions(
             loop = loop,
@@ -410,21 +479,29 @@ public class FalVideoModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun FalVideoModelOptions(
     block: FalVideoModelOptionsBuilder.() -> Unit = {},
 ): FalVideoModelOptions =
     FalVideoModelOptionsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class FalProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: FalProviderSettings,
 ) : Provider {
     override val providerId: String = "fal"
 
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = FalImageModel(client, settings, modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun speech(modelId: ModelId): SpeechModel = FalSpeechModel(client, settings, modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun transcription(modelId: ModelId): TranscriptionModel = FalTranscriptionModel(client, settings, modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = FalVideoModel(client, settings, modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
@@ -435,7 +512,10 @@ public class FalProvider(
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-/** PascalCase factory — mirrors `OpenAI(...)`, the Layer-3 reference pattern. */
+/**
+ * PascalCase factory — mirrors `OpenAI(...)`, the Layer-3 reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun Fal(
     client: HttpClient,
     settings: FalProviderSettings = FalProviderSettings(),

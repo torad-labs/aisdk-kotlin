@@ -11,7 +11,10 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 
-/** The base64 bytes + media type of a downloaded asset. */
+/**
+ * The base64 bytes + media type of a downloaded asset.
+ * @since 0.3.0-beta01
+ */
 @Poko
 public class DownloadedAsset(public val base64: String, public val mediaType: String?)
 
@@ -23,6 +26,7 @@ public typealias DownloadFunction = suspend (url: String) -> DownloadedAsset
  * `convertToLanguageModelPrompt`. Grouped as object members because top-level loose
  * functions are disallowed in this codebase; behavior is identical to the prior
  * free-function form.
+  * @since 0.3.0-beta01
  */
 public object PromptConversion {
     /**

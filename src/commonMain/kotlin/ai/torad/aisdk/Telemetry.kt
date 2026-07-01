@@ -31,16 +31,25 @@ import kotlin.concurrent.atomics.update
  * path receives a safe projection of [AgentEvent]; raw in-process lifecycle hooks
  * remain unchanged.
  */
+/** @since 0.3.0-beta01 */
 public class TelemetrySettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val isEnabled: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val functionId: String? = null,
+    /** @since 0.3.0-beta01 */
     public val metadata: Map<String, JsonElement> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val recordInputs: Boolean = false,
+    /** @since 0.3.0-beta01 */
     public val recordOutputs: Boolean = false,
+    /** @since 0.3.0-beta01 */
     public val integrations: List<Telemetry> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val tracer: TelemetryTracer? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class TelemetrySettingsBuilder {
     private var isEnabled: Boolean? = null
     private var functionId: String? = null
@@ -50,41 +59,49 @@ public class TelemetrySettingsBuilder {
     private var integrations: List<Telemetry> = emptyList()
     private var tracer: TelemetryTracer? = null
 
+    /** @since 0.3.0-beta01 */
     public fun isEnabled(value: Boolean?): TelemetrySettingsBuilder {
         isEnabled = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun functionId(value: String?): TelemetrySettingsBuilder {
         functionId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun metadata(value: Map<String, JsonElement>): TelemetrySettingsBuilder {
         metadata = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun recordInputs(value: Boolean): TelemetrySettingsBuilder {
         recordInputs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun recordOutputs(value: Boolean): TelemetrySettingsBuilder {
         recordOutputs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun integrations(value: List<Telemetry>): TelemetrySettingsBuilder {
         integrations = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun tracer(value: TelemetryTracer?): TelemetrySettingsBuilder {
         tracer = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): TelemetrySettings =
         TelemetrySettings(
             isEnabled = isEnabled,
@@ -97,6 +114,7 @@ public class TelemetrySettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun TelemetrySettings(
     block: TelemetrySettingsBuilder.() -> Unit = {},
 ): TelemetrySettings =
@@ -109,13 +127,19 @@ public fun TelemetrySettings(
  * single agent instance serves concurrent calls. [agentId]/[agentVersion]
  * mirror [Agent.id]/[Agent.version] (parity gap #33: "useful for telemetry");
  * [functionId] comes from [TelemetrySettings.functionId].
+  * @since 0.3.0-beta01
  */
 @Poko
 public class TelemetryCall(
+    /** @since 0.3.0-beta01 */
     public val callId: String,
+    /** @since 0.3.0-beta01 */
     public val agentId: String,
+    /** @since 0.3.0-beta01 */
     public val agentVersion: String? = null,
+    /** @since 0.3.0-beta01 */
     public val modelId: String? = null,
+    /** @since 0.3.0-beta01 */
     public val functionId: String? = null,
 )
 
@@ -135,7 +159,9 @@ public class TelemetryCall(
  *  - Events may arrive CONCURRENTLY (a step's tool calls execute in parallel) —
  *    implementations must be thread-safe.
  */
+/** @since 0.3.0-beta01 */
 public interface Telemetry {
+    /** @since 0.3.0-beta01 */
     public val name: String
 
     /** Receives one lifecycle [event] for this [call]. Dispatch with `when (event)`. */
@@ -148,10 +174,12 @@ public interface Telemetry {
      * integration for one call.
      */
     public companion object {
+        /** @since 0.3.0-beta01 */
         public fun registerTelemetry(integration: Telemetry) {
             globalTelemetry.register(integration)
         }
 
+        /** @since 0.3.0-beta01 */
         public fun clearGlobalTelemetry() {
             globalTelemetry.clear()
         }
@@ -187,6 +215,7 @@ public interface Telemetry {
  * serve the agent hot path from an immutable snapshot, so a concurrent [register]/[clear]
  * can never throw ConcurrentModificationException out of a live agent call — telemetry
  * must never alter the loop.
+  * @since 0.3.0-beta01
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class TelemetryRegistry(
@@ -194,6 +223,7 @@ public class TelemetryRegistry(
 ) {
     private val snapshot = AtomicReference(seed)
 
+    /** @since 0.3.0-beta01 */
     public fun register(integration: Telemetry) {
         snapshot.update { current ->
             val replaced = current.indexOfFirst { it.name == integration.name }
@@ -205,14 +235,20 @@ public class TelemetryRegistry(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun get(name: String): Telemetry? = snapshot.load().firstOrNull { it.name == name }
+    /** @since 0.3.0-beta01 */
     public fun list(): List<Telemetry> = snapshot.load()
+    /** @since 0.3.0-beta01 */
     public fun clear() {
         snapshot.store(emptyList())
     }
 }
 
-/** Global registry — upstream v7 `registerTelemetry`: register once at startup, all calls emit. */
+/**
+ * Global registry — upstream v7 `registerTelemetry`: register once at startup, all calls emit.
+ * @since 0.3.0-beta01
+ */
 public val globalTelemetry: TelemetryRegistry = TelemetryRegistry()
 
 

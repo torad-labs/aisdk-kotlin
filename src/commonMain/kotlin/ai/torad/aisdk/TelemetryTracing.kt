@@ -116,28 +116,43 @@ internal sealed class TelemetryAttribute {
     data class Output(val resolve: suspend () -> JsonElement?) : TelemetryAttribute()
 }
 
+/** @since 0.3.0-beta01 */
 public sealed class TelemetrySpanStatus {
+    /** @since 0.3.0-beta01 */
     public data object Ok : TelemetrySpanStatus()
 
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Error(public val message: String? = null) : TelemetrySpanStatus()
 }
 
 
+/** @since 0.3.0-beta01 */
 public interface TelemetryActiveSpan {
+    /** @since 0.3.0-beta01 */
     public val name: String
+    /** @since 0.3.0-beta01 */
     public val attributes: Map<String, JsonElement>
+    /** @since 0.3.0-beta01 */
     public val status: TelemetrySpanStatus
+    /** @since 0.3.0-beta01 */
     public val events: List<AgentEvent.SpanEmitted>
+    /** @since 0.3.0-beta01 */
     public val hasEnded: Boolean
 
+    /** @since 0.3.0-beta01 */
     public fun setAttribute(key: String, value: JsonElement)
+    /** @since 0.3.0-beta01 */
     public fun addEvent(name: String, attributes: Map<String, JsonElement> = emptyMap())
+    /** @since 0.3.0-beta01 */
     public fun recordException(error: Throwable)
+    /** @since 0.3.0-beta01 */
     public fun setStatus(status: TelemetrySpanStatus)
+    /** @since 0.3.0-beta01 */
     public fun end()
 }
 
+/** @since 0.3.0-beta01 */
 public interface TelemetryTracer {
     public suspend fun <T> startActiveSpan(
         name: String,
@@ -146,6 +161,7 @@ public interface TelemetryTracer {
     ): T
 }
 
+/** @since 0.3.0-beta01 */
 public data object NoopTelemetryTracer : TelemetryTracer {
     override suspend fun <T> startActiveSpan(
         name: String,
@@ -154,8 +170,10 @@ public data object NoopTelemetryTracer : TelemetryTracer {
     ): T = block(NoopTelemetryActiveSpan(name, attributes))
 }
 
+/** @since 0.3.0-beta01 */
 public class InMemoryTelemetryTracer : TelemetryTracer {
     private val _spans: MutableList<MutableTelemetrySpan> = mutableListOf()
+    /** @since 0.3.0-beta01 */
     public val spans: List<MutableTelemetrySpan> get() = _spans
 
     override suspend fun <T> startActiveSpan(
@@ -169,6 +187,7 @@ public class InMemoryTelemetryTracer : TelemetryTracer {
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class MutableTelemetrySpan(
     override val name: String,
     initialAttributes: Map<String, JsonElement> = emptyMap(),

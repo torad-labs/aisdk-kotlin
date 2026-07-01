@@ -21,39 +21,50 @@ public const val VOYAGE_VERSION: String = "1.0.4"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class VoyageEmbeddingModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val inputType: String? = null,
+    /** @since 0.3.0-beta01 */
     public val truncation: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val outputDimension: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val outputDtype: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class VoyageEmbeddingModelOptionsBuilder {
     private var inputType: String? = null
     private var truncation: Boolean? = null
     private var outputDimension: Int? = null
     private var outputDtype: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun inputType(value: String?): VoyageEmbeddingModelOptionsBuilder {
         inputType = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun truncation(value: Boolean?): VoyageEmbeddingModelOptionsBuilder {
         truncation = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun outputDimension(value: Int?): VoyageEmbeddingModelOptionsBuilder {
         outputDimension = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun outputDtype(value: String?): VoyageEmbeddingModelOptionsBuilder {
         outputDtype = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): VoyageEmbeddingModelOptions =
         VoyageEmbeddingModelOptions(
             inputType = inputType,
@@ -63,6 +74,7 @@ public class VoyageEmbeddingModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun VoyageEmbeddingModelOptions(
     block: VoyageEmbeddingModelOptionsBuilder.() -> Unit = {},
 ): VoyageEmbeddingModelOptions =
@@ -70,25 +82,32 @@ public fun VoyageEmbeddingModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class VoyageRerankingModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val returnDocuments: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val truncation: Boolean? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class VoyageRerankingModelOptionsBuilder {
     private var returnDocuments: Boolean? = null
     private var truncation: Boolean? = null
 
+    /** @since 0.3.0-beta01 */
     public fun returnDocuments(value: Boolean?): VoyageRerankingModelOptionsBuilder {
         returnDocuments = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun truncation(value: Boolean?): VoyageRerankingModelOptionsBuilder {
         truncation = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): VoyageRerankingModelOptions =
         VoyageRerankingModelOptions(
             returnDocuments = returnDocuments,
@@ -96,6 +115,7 @@ public class VoyageRerankingModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun VoyageRerankingModelOptions(
     block: VoyageRerankingModelOptionsBuilder.() -> Unit = {},
 ): VoyageRerankingModelOptions =
@@ -103,9 +123,13 @@ public fun VoyageRerankingModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class VoyageProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.voyageai.com/v1",
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal suspend fun voyagePostJson(
@@ -146,26 +170,31 @@ public class VoyageProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class VoyageProviderSettingsBuilder {
     private var baseURL: String = "https://api.voyageai.com/v1"
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): VoyageProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): VoyageProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): VoyageProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): VoyageProviderSettings =
         VoyageProviderSettings(
             baseURL = baseURL,
@@ -174,27 +203,37 @@ public class VoyageProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun VoyageProviderSettings(
     block: VoyageProviderSettingsBuilder.() -> Unit = {},
 ): VoyageProviderSettings =
     VoyageProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class VoyageProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: VoyageProviderSettings,
 ) : Provider {
     override val providerId: String = "voyage"
 
+    /** @since 0.3.0-beta01 */
     public fun embedding(modelId: ModelId): EmbeddingModel = VoyageEmbeddingModel(client, settings, modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    /** @since 0.3.0-beta01 */
     public fun reranking(modelId: ModelId): RerankingModel = VoyageRerankingModel(client, settings, modelId.value)
 
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
     override fun rerankingModel(modelId: String): RerankingModel = reranking(ModelId(modelId))
 }
 
-/** PascalCase factory — mirrors the OpenAI reference pattern. */
+/**
+ * PascalCase factory — mirrors the OpenAI reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun Voyage(
     client: HttpClient,
     settings: VoyageProviderSettings = VoyageProviderSettings(),

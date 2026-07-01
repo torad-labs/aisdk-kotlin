@@ -33,16 +33,25 @@ public typealias ReplicateVideoProviderOptions = ReplicateVideoModelOptions
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ReplicateImageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val maxWaitTimeInSeconds: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val guidance_scale: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val num_inference_steps: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val negative_prompt: String? = null,
+    /** @since 0.3.0-beta01 */
     public val output_format: String? = null,
+    /** @since 0.3.0-beta01 */
     public val output_quality: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val strength: Double? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class ReplicateImageModelOptionsBuilder {
     private var maxWaitTimeInSeconds: Double? = null
     private var guidance_scale: Double? = null
@@ -52,41 +61,49 @@ public class ReplicateImageModelOptionsBuilder {
     private var output_quality: Int? = null
     private var strength: Double? = null
 
+    /** @since 0.3.0-beta01 */
     public fun maxWaitTimeInSeconds(value: Double?): ReplicateImageModelOptionsBuilder {
         maxWaitTimeInSeconds = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun guidance_scale(value: Double?): ReplicateImageModelOptionsBuilder {
         guidance_scale = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun num_inference_steps(value: Double?): ReplicateImageModelOptionsBuilder {
         num_inference_steps = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun negative_prompt(value: String?): ReplicateImageModelOptionsBuilder {
         negative_prompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun output_format(value: String?): ReplicateImageModelOptionsBuilder {
         output_format = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun output_quality(value: Int?): ReplicateImageModelOptionsBuilder {
         output_quality = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun strength(value: Double?): ReplicateImageModelOptionsBuilder {
         strength = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ReplicateImageModelOptions =
         ReplicateImageModelOptions(
             maxWaitTimeInSeconds = maxWaitTimeInSeconds,
@@ -99,6 +116,7 @@ public class ReplicateImageModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ReplicateImageModelOptions(
     block: ReplicateImageModelOptionsBuilder.() -> Unit = {},
 ): ReplicateImageModelOptions =
@@ -106,21 +124,35 @@ public fun ReplicateImageModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ReplicateVideoModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val pollIntervalMs: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val pollTimeoutMs: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val maxWaitTimeInSeconds: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val guidance_scale: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val num_inference_steps: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val motion_bucket_id: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val cond_aug: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val decoding_t: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val video_length: String? = null,
+    /** @since 0.3.0-beta01 */
     public val sizing_strategy: String? = null,
+    /** @since 0.3.0-beta01 */
     public val frames_per_second: Double? = null,
+    /** @since 0.3.0-beta01 */
     public val prompt_optimizer: Boolean? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class ReplicateVideoModelOptionsBuilder {
     private var pollIntervalMs: Long? = null
     private var pollTimeoutMs: Long? = null
@@ -135,66 +167,79 @@ public class ReplicateVideoModelOptionsBuilder {
     private var frames_per_second: Double? = null
     private var prompt_optimizer: Boolean? = null
 
+    /** @since 0.3.0-beta01 */
     public fun pollIntervalMs(value: Long?): ReplicateVideoModelOptionsBuilder {
         pollIntervalMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollTimeoutMs(value: Long?): ReplicateVideoModelOptionsBuilder {
         pollTimeoutMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxWaitTimeInSeconds(value: Double?): ReplicateVideoModelOptionsBuilder {
         maxWaitTimeInSeconds = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun guidance_scale(value: Double?): ReplicateVideoModelOptionsBuilder {
         guidance_scale = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun num_inference_steps(value: Double?): ReplicateVideoModelOptionsBuilder {
         num_inference_steps = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun motion_bucket_id(value: Double?): ReplicateVideoModelOptionsBuilder {
         motion_bucket_id = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun cond_aug(value: Double?): ReplicateVideoModelOptionsBuilder {
         cond_aug = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun decoding_t(value: Double?): ReplicateVideoModelOptionsBuilder {
         decoding_t = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun video_length(value: String?): ReplicateVideoModelOptionsBuilder {
         video_length = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun sizing_strategy(value: String?): ReplicateVideoModelOptionsBuilder {
         sizing_strategy = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun frames_per_second(value: Double?): ReplicateVideoModelOptionsBuilder {
         frames_per_second = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun prompt_optimizer(value: Boolean?): ReplicateVideoModelOptionsBuilder {
         prompt_optimizer = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ReplicateVideoModelOptions =
         ReplicateVideoModelOptions(
             pollIntervalMs = pollIntervalMs,
@@ -212,6 +257,7 @@ public class ReplicateVideoModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ReplicateVideoModelOptions(
     block: ReplicateVideoModelOptionsBuilder.() -> Unit = {},
 ): ReplicateVideoModelOptions =
@@ -219,9 +265,13 @@ public fun ReplicateVideoModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ReplicateProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiToken: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.replicate.com/v1",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun replicateOptions(providerOptions: ProviderOptions): JsonObject =
@@ -291,26 +341,31 @@ public class ReplicateProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class ReplicateProviderSettingsBuilder {
     private var apiToken: String? = null
     private var baseURL: String = "https://api.replicate.com/v1"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiToken(value: String?): ReplicateProviderSettingsBuilder {
         apiToken = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): ReplicateProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): ReplicateProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ReplicateProviderSettings =
         ReplicateProviderSettings(
             apiToken = apiToken,
@@ -319,30 +374,38 @@ public class ReplicateProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ReplicateProviderSettings(
     block: ReplicateProviderSettingsBuilder.() -> Unit = {},
 ): ReplicateProviderSettings =
     ReplicateProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class ReplicateProvider(
     private val client: HttpClient,
     private val settings: ReplicateProviderSettings,
 ) : Provider {
     override val providerId: String = "replicate"
 
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = ReplicateImageModel(client, settings, modelId.value)
     override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
 
+    /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = ReplicateVideoModel(client, settings, modelId.value)
     override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
 
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-/** PascalCase factory — mirrors the OpenAI provider pattern. */
+/**
+ * PascalCase factory — mirrors the OpenAI provider pattern.
+ * @since 0.3.0-beta01
+ */
 public fun Replicate(
     client: HttpClient,
     settings: ReplicateProviderSettings = ReplicateProviderSettings(),

@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.flow
  * couldn't do under the prior `(params, next)` shape that only exposed
  * the same-direction call).
  */
+/** @since 0.3.0-beta01 */
 public interface LanguageModelMiddleware {
     /**
      * Transform the call params before [wrapGenerate]/[wrapStream] run, for the
@@ -43,21 +44,36 @@ public interface LanguageModelMiddleware {
     public suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
         context.doGenerate(context.params)
 
-    /** Wrap the streaming call. Default: pass through. */
+    /**
+     * Wrap the streaming call. Default: pass through.
+     * @since 0.3.0-beta01
+     */
     public fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
         context.doStream(context.params)
 
-    /** Override the model id the wrapper presents (null = keep the wrapped model's). */
+    /**
+     * Override the model id the wrapper presents (null = keep the wrapped model's).
+     * @since 0.3.0-beta01
+     */
     public fun overrideModelId(model: LanguageModel): String? = null
 
-    /** Override the provider name the wrapper presents (null = keep the wrapped model's). */
+    /**
+     * Override the provider name the wrapper presents (null = keep the wrapped model's).
+     * @since 0.3.0-beta01
+     */
     public fun overrideProvider(model: LanguageModel): String? = null
 
-    /** Override the supported-URL patterns the wrapper presents (null = keep the wrapped model's). */
+    /**
+     * Override the supported-URL patterns the wrapper presents (null = keep the wrapped model's).
+     * @since 0.3.0-beta01
+     */
     public fun overrideSupportedUrls(model: LanguageModel): Map<String, List<String>>? = null
 }
 
-/** Which operation a [LanguageModelMiddleware.transformParams] call is transforming. */
+/**
+ * Which operation a [LanguageModelMiddleware.transformParams] call is transforming.
+ * @since 0.3.0-beta01
+ */
 public enum class MiddlewareOperation { Generate, Stream }
 
 /**
@@ -84,10 +100,15 @@ public enum class MiddlewareOperation { Generate, Stream }
  * `simulateStreamingMiddleware` work.
  */
 @Poko
+/** @since 0.3.0-beta01 */
 public class MiddlewareCallContext(
+    /** @since 0.3.0-beta01 */
     public val params: LanguageModelCallParams,
+    /** @since 0.3.0-beta01 */
     public val model: LanguageModel,
+    /** @since 0.3.0-beta01 */
     public val doGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult,
+    /** @since 0.3.0-beta01 */
     public val doStream: (LanguageModelCallParams) -> Flow<StreamEvent>,
 )
 
@@ -96,6 +117,7 @@ public class MiddlewareCallContext(
  * the first middleware in the list is the outermost wrapper — `wrapGenerate`
  * runs first on the way in, last on the way out (innermost in the
  * call stack, like Express middleware).
+  * @since 0.3.0-beta01
  */
 public fun WrapLanguageModel(
     model: LanguageModel,

@@ -24,21 +24,35 @@ public const val BYTEDANCE_VERSION: String = "1.0.15"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ByteDanceVideoProviderOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val watermark: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val generateAudio: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val cameraFixed: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val returnLastFrame: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val serviceTier: String? = null,
+    /** @since 0.3.0-beta01 */
     public val draft: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val lastFrameImage: String? = null,
+    /** @since 0.3.0-beta01 */
     public val referenceImages: List<String>? = null,
+    /** @since 0.3.0-beta01 */
     public val referenceVideos: List<String>? = null,
+    /** @since 0.3.0-beta01 */
     public val referenceAudio: List<String>? = null,
+    /** @since 0.3.0-beta01 */
     public val pollIntervalMs: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val pollTimeoutMs: Long? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class ByteDanceVideoProviderOptionsBuilder {
     private var watermark: Boolean? = null
     private var generateAudio: Boolean? = null
@@ -53,66 +67,79 @@ public class ByteDanceVideoProviderOptionsBuilder {
     private var pollIntervalMs: Long? = null
     private var pollTimeoutMs: Long? = null
 
+    /** @since 0.3.0-beta01 */
     public fun watermark(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
         watermark = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun generateAudio(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
         generateAudio = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun cameraFixed(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
         cameraFixed = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun returnLastFrame(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
         returnLastFrame = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun serviceTier(value: String?): ByteDanceVideoProviderOptionsBuilder {
         serviceTier = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun draft(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
         draft = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun lastFrameImage(value: String?): ByteDanceVideoProviderOptionsBuilder {
         lastFrameImage = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun referenceImages(value: List<String>?): ByteDanceVideoProviderOptionsBuilder {
         referenceImages = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun referenceVideos(value: List<String>?): ByteDanceVideoProviderOptionsBuilder {
         referenceVideos = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun referenceAudio(value: List<String>?): ByteDanceVideoProviderOptionsBuilder {
         referenceAudio = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollIntervalMs(value: Long?): ByteDanceVideoProviderOptionsBuilder {
         pollIntervalMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollTimeoutMs(value: Long?): ByteDanceVideoProviderOptionsBuilder {
         pollTimeoutMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ByteDanceVideoProviderOptions =
         ByteDanceVideoProviderOptions(
             watermark = watermark,
@@ -130,6 +157,7 @@ public class ByteDanceVideoProviderOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ByteDanceVideoProviderOptions(
     block: ByteDanceVideoProviderOptionsBuilder.() -> Unit = {},
 ): ByteDanceVideoProviderOptions =
@@ -137,9 +165,13 @@ public fun ByteDanceVideoProviderOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ByteDanceProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://ark.ap-southeast.bytepluses.com/api/v3",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun byteDanceHeaders(callHeaders: Map<String, String>): Map<String, String> {
@@ -152,26 +184,31 @@ public class ByteDanceProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class ByteDanceProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://ark.ap-southeast.bytepluses.com/api/v3"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): ByteDanceProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): ByteDanceProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): ByteDanceProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ByteDanceProviderSettings =
         ByteDanceProviderSettings(
             apiKey = apiKey,
@@ -180,21 +217,26 @@ public class ByteDanceProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ByteDanceProviderSettings(
     block: ByteDanceProviderSettingsBuilder.() -> Unit = {},
 ): ByteDanceProviderSettings =
     ByteDanceProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public interface ByteDanceProvider : Provider {
+    /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel
     override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
 }
 
+/** @since 0.3.0-beta01 */
 public fun ByteDance(
     client: HttpClient,
     settings: ByteDanceProviderSettings = ByteDanceProviderSettings(),
 ): ByteDanceProvider = DefaultByteDanceProvider(client, settings)
 
+/** @since 0.3.0-beta01 */
 public val byteDance: ByteDanceProvider = object : ByteDanceProvider {
     override val providerId: String = "bytedance"
     override fun video(modelId: ModelId): VideoModel =

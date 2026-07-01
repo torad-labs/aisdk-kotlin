@@ -17,9 +17,13 @@ public const val GROQ_VERSION: String = "3.0.39"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class GroqProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.groq.com/openai/v1",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
@@ -109,26 +113,31 @@ public class GroqProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class GroqProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.groq.com/openai/v1"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): GroqProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): GroqProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): GroqProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): GroqProviderSettings =
         GroqProviderSettings(
             apiKey = apiKey,
@@ -137,6 +146,7 @@ public class GroqProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun GroqProviderSettings(
     block: GroqProviderSettingsBuilder.() -> Unit = {},
 ): GroqProviderSettings =
@@ -144,22 +154,28 @@ public fun GroqProviderSettings(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class GroqLanguageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class GroqLanguageModelOptionsBuilder {
     private var raw: Map<String, JsonElement> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun raw(value: Map<String, JsonElement>): GroqLanguageModelOptionsBuilder {
         raw = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): GroqLanguageModelOptions =
         GroqLanguageModelOptions(raw = raw)
 }
 
+/** @since 0.3.0-beta01 */
 public fun GroqLanguageModelOptions(
     block: GroqLanguageModelOptionsBuilder.() -> Unit = {},
 ): GroqLanguageModelOptions =
@@ -169,39 +185,50 @@ public typealias GroqProviderOptions = GroqLanguageModelOptions
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class GroqTranscriptionModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val language: String? = null,
+    /** @since 0.3.0-beta01 */
     public val prompt: String? = null,
+    /** @since 0.3.0-beta01 */
     public val temperature: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val responseFormat: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class GroqTranscriptionModelOptionsBuilder {
     private var language: String? = null
     private var prompt: String? = null
     private var temperature: Float? = null
     private var responseFormat: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun language(value: String?): GroqTranscriptionModelOptionsBuilder {
         language = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun prompt(value: String?): GroqTranscriptionModelOptionsBuilder {
         prompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun temperature(value: Float?): GroqTranscriptionModelOptionsBuilder {
         temperature = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun responseFormat(value: String?): GroqTranscriptionModelOptionsBuilder {
         responseFormat = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): GroqTranscriptionModelOptions =
         GroqTranscriptionModelOptions(
             language = language,
@@ -211,11 +238,13 @@ public class GroqTranscriptionModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun GroqTranscriptionModelOptions(
     block: GroqTranscriptionModelOptionsBuilder.() -> Unit = {},
 ): GroqTranscriptionModelOptions =
     GroqTranscriptionModelOptionsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class GroqProvider(
     client: HttpClient,
     settings: GroqProviderSettings,
@@ -225,18 +254,23 @@ public class GroqProvider(
         settings.toCompatible("groq", GROQ_VERSION, capabilities = ProviderCapabilities(includeUsage = true)),
     )
     override val providerId: String = "groq"
+    /** @since 0.3.0-beta01 */
     public val tools: GroqTools = GroqTools()
 
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
     override fun languageModel(modelId: String): LanguageModel = chat(modelId)
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
+    /** @since 0.3.0-beta01 */
     public fun transcription(modelId: String): TranscriptionModel = compatible.transcriptionModel(modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun Groq(
     client: HttpClient,
     settings: GroqProviderSettings = GroqProviderSettings(),
@@ -251,8 +285,11 @@ private val groqBrowserSearchTool: Tool<JsonElement, JsonElement, Any?> = Provid
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GroqTools(
+    /** @since 0.3.0-beta01 */
     public val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool,
 )
 
+/** @since 0.3.0-beta01 */
 public val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool

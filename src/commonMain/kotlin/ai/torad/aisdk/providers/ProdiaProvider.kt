@@ -41,9 +41,13 @@ public typealias ProdiaImageProviderOptions = ProdiaImageModelOptions
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ProdiaProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://inference.prodia.com/v2",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun prodiaOptions(providerOptions: ProviderOptions): JsonObject =
@@ -246,26 +250,31 @@ public class ProdiaProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class ProdiaProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://inference.prodia.com/v2"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): ProdiaProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): ProdiaProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): ProdiaProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ProdiaProviderSettings =
         ProdiaProviderSettings(
             apiKey = apiKey,
@@ -274,6 +283,7 @@ public class ProdiaProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ProdiaProviderSettings(
     block: ProdiaProviderSettingsBuilder.() -> Unit = {},
 ): ProdiaProviderSettings =
@@ -281,22 +291,28 @@ public fun ProdiaProviderSettings(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ProdiaLanguageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val aspectRatio: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class ProdiaLanguageModelOptionsBuilder {
     private var aspectRatio: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun aspectRatio(value: String?): ProdiaLanguageModelOptionsBuilder {
         aspectRatio = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ProdiaLanguageModelOptions =
         ProdiaLanguageModelOptions(aspectRatio = aspectRatio)
 }
 
+/** @since 0.3.0-beta01 */
 public fun ProdiaLanguageModelOptions(
     block: ProdiaLanguageModelOptionsBuilder.() -> Unit = {},
 ): ProdiaLanguageModelOptions =
@@ -304,15 +320,23 @@ public fun ProdiaLanguageModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ProdiaImageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val steps: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val width: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val height: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val stylePreset: String? = null,
+    /** @since 0.3.0-beta01 */
     public val loras: List<String>? = null,
+    /** @since 0.3.0-beta01 */
     public val progressive: Boolean? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class ProdiaImageModelOptionsBuilder {
     private var steps: Int? = null
     private var width: Int? = null
@@ -321,36 +345,43 @@ public class ProdiaImageModelOptionsBuilder {
     private var loras: List<String>? = null
     private var progressive: Boolean? = null
 
+    /** @since 0.3.0-beta01 */
     public fun steps(value: Int?): ProdiaImageModelOptionsBuilder {
         steps = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun width(value: Int?): ProdiaImageModelOptionsBuilder {
         width = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun height(value: Int?): ProdiaImageModelOptionsBuilder {
         height = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun stylePreset(value: String?): ProdiaImageModelOptionsBuilder {
         stylePreset = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun loras(value: List<String>?): ProdiaImageModelOptionsBuilder {
         loras = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun progressive(value: Boolean?): ProdiaImageModelOptionsBuilder {
         progressive = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ProdiaImageModelOptions =
         ProdiaImageModelOptions(
             steps = steps,
@@ -362,6 +393,7 @@ public class ProdiaImageModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ProdiaImageModelOptions(
     block: ProdiaImageModelOptionsBuilder.() -> Unit = {},
 ): ProdiaImageModelOptions =
@@ -369,36 +401,47 @@ public fun ProdiaImageModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ProdiaVideoModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val resolution: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class ProdiaVideoModelOptionsBuilder {
     private var resolution: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun resolution(value: String?): ProdiaVideoModelOptionsBuilder {
         resolution = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ProdiaVideoModelOptions =
         ProdiaVideoModelOptions(resolution = resolution)
 }
 
+/** @since 0.3.0-beta01 */
 public fun ProdiaVideoModelOptions(
     block: ProdiaVideoModelOptionsBuilder.() -> Unit = {},
 ): ProdiaVideoModelOptions =
     ProdiaVideoModelOptionsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class ProdiaProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: ProdiaProviderSettings,
 ) : Provider {
     override val providerId: String = "prodia"
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel = ProdiaLanguageModel(client, settings, modelId)
@@ -407,7 +450,10 @@ public class ProdiaProvider(
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-/** PascalCase factory — mirrors the reference `OpenAI(...)` faux-constructor. */
+/**
+ * PascalCase factory — mirrors the reference `OpenAI(...)` faux-constructor.
+ * @since 0.3.0-beta01
+ */
 public fun Prodia(
     client: HttpClient,
     settings: ProdiaProviderSettings = ProdiaProviderSettings(),

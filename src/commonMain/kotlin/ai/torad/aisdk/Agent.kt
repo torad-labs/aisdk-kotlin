@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.Flow
  *                 it's `String`; for structured-output agents (with
  *                 [Output] set) it's the typed shape.
  */
+/** @since 0.3.0-beta01 */
 public interface Agent<TContext, TOutput> {
 
     /**
@@ -47,6 +48,7 @@ public interface Agent<TContext, TOutput> {
      * default to `"agent"`; override in the constructor or via class
      * member to set a more specific tag (`"chat-agent"`,
      * `"lineup-subagent"`, etc.).
+      * @since 0.3.0-beta01
      */
     public val id: String
         get() = "agent"
@@ -55,6 +57,7 @@ public interface Agent<TContext, TOutput> {
      * Optional version string — `"1.0.0"`, a git sha, anything stable
      * across an app build. Null = unversioned. Lets telemetry pin
      * issues to a specific agent revision.
+      * @since 0.3.0-beta01
      */
     public val version: String?
         get() = null
@@ -63,6 +66,7 @@ public interface Agent<TContext, TOutput> {
      * The tool surface this agent carries. Exposed at the interface
      * so consumers can inspect / dispatch without casting to
      * [ToolLoopAgent].
+      * @since 0.3.0-beta01
      */
     public val tools: ToolSet<TContext>
 
@@ -73,6 +77,7 @@ public interface Agent<TContext, TOutput> {
      *
      * To observe lifecycle events, collect [ToolLoopAgent.events] (a
      * `Flow<AgentEvent>`) — there is no callback parameter.
+      * @since 0.3.0-beta01
      */
     public fun generate(
         prompt: String? = null,
@@ -81,7 +86,10 @@ public interface Agent<TContext, TOutput> {
         abortSignal: AbortSignal = AbortSignalNever,
     ): Flow<GenerateResult<TOutput>>
 
-    /** Streaming generation. Cold flow — starts when collected. */
+    /**
+     * Streaming generation. Cold flow — starts when collected.
+     * @since 0.3.0-beta01
+     */
     public fun stream(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
@@ -94,24 +102,41 @@ public interface Agent<TContext, TOutput> {
  * Final output of [Agent.generate]. When [pendingApprovals] is non-empty,
  * the loop paused on tool approval — call [Agent.generate] again with
  * [messages] plus tool-approval-response messages to resume.
+  * @since 0.3.0-beta01
  */
 @Poko
 public class GenerateResult<TOutput>(
     internal val rawOutput: TOutput,
+    /** @since 0.3.0-beta01 */
     public val text: String,
+    /** @since 0.3.0-beta01 */
     public val steps: List<StepResult>,
+    /** @since 0.3.0-beta01 */
     public val finishReason: FinishReason,
-    /** Token usage of the FINAL step (matching upstream's `usage`); for the sum see [totalUsage]. */
+    /**
+     * Token usage of the FINAL step (matching upstream's `usage`); for the sum see [totalUsage].
+     * @since 0.3.0-beta01
+     */
     public val usage: Usage,
-    /** Combined token usage across every step of this call (matching upstream's `totalUsage`). */
+    /**
+     * Combined token usage across every step of this call (matching upstream's `totalUsage`).
+     * @since 0.3.0-beta01
+     */
     public val totalUsage: Usage = usage,
-    /** Tool calls awaiting host decision. Empty when generation finished naturally. */
+    /**
+     * Tool calls awaiting host decision. Empty when generation finished naturally.
+     * @since 0.3.0-beta01
+     */
     public val pendingApprovals: List<PendingApproval> = emptyList(),
-    /** Full message log including all assistant + tool messages from this call. */
+    /**
+     * Full message log including all assistant + tool messages from this call.
+     * @since 0.3.0-beta01
+     */
     public val messages: List<ModelMessage> = emptyList(),
 ) {
     private var outputUnavailableReason: String? = null
 
+    /** @since 0.3.0-beta01 */
     public val output: TOutput
         get() {
             if ((rawOutput as Any?) === OutputUnavailablePlaceholder) {

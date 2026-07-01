@@ -24,13 +24,21 @@ public typealias GoogleVertexVideoModelOptions = JsonObject
 public typealias GoogleVertexVideoProviderOptions = JsonObject
 
 @Serializable
+/** @since 0.3.0-beta01 */
 public class GoogleVertexProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val project: String? = null,
+    /** @since 0.3.0-beta01 */
     public val location: String = "us-central1",
+    /** @since 0.3.0-beta01 */
     public val baseURL: String? = null,
+    /** @since 0.3.0-beta01 */
     public val accessToken: String? = null,
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val generateId: () -> String = { IdGenerator.generate() },
 ) {
     internal fun googleVertexPublisherBaseURL(): String =
@@ -83,6 +91,7 @@ public class GoogleVertexProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class GoogleVertexProviderSettingsBuilder {
     private var project: String? = null
     private var location: String = "us-central1"
@@ -92,41 +101,49 @@ public class GoogleVertexProviderSettingsBuilder {
     private var headers: Map<String, String> = emptyMap()
     private var generateId: () -> String = { IdGenerator.generate() }
 
+    /** @since 0.3.0-beta01 */
     public fun project(value: String?): GoogleVertexProviderSettingsBuilder {
         project = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun location(value: String): GoogleVertexProviderSettingsBuilder {
         location = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String?): GoogleVertexProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun accessToken(value: String?): GoogleVertexProviderSettingsBuilder {
         accessToken = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): GoogleVertexProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): GoogleVertexProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun generateId(value: () -> String): GoogleVertexProviderSettingsBuilder {
         generateId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): GoogleVertexProviderSettings =
         GoogleVertexProviderSettings(
             project = project,
@@ -139,16 +156,20 @@ public class GoogleVertexProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun GoogleVertexProviderSettings(
     block: GoogleVertexProviderSettingsBuilder.() -> Unit = {},
 ): GoogleVertexProviderSettings =
     GoogleVertexProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class GoogleVertexProvider(
     client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: GoogleVertexProviderSettings,
 ) : Provider {
     override val providerId: String = "google-vertex"
+    /** @since 0.3.0-beta01 */
     public val tools: GoogleTools = googleTools
 
     private val delegate: GoogleGenerativeAIProvider = GoogleGenerativeAI(
@@ -163,13 +184,20 @@ public class GoogleVertexProvider(
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun generativeAI(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun embedding(modelId: ModelId): EmbeddingModel = delegate.embedding(modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = delegate.image(modelId)
+    /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = delegate.video(modelId)
 
     // Vertex serves files by HTTP(S) and Google Cloud Storage (gs://) — NOT the
@@ -181,7 +209,10 @@ public class GoogleVertexProvider(
     override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
 }
 
-/** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun GoogleVertex(
     client: HttpClient,
     settings: GoogleVertexProviderSettings = GoogleVertexProviderSettings(),
@@ -199,11 +230,14 @@ public typealias GoogleVertexAnthropicProviderSettings = GoogleVertexProviderSet
 public typealias GoogleVertexMaasProviderSettings = GoogleVertexProviderSettings
 public typealias GoogleVertexXaiProviderSettings = GoogleVertexProviderSettings
 
+/** @since 0.3.0-beta01 */
 public class GoogleVertexAnthropicProvider(
     client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: GoogleVertexAnthropicProviderSettings,
 ) : Provider {
     override val providerId: String = "google-vertex-anthropic"
+    /** @since 0.3.0-beta01 */
     public val tools: AnthropicTools = anthropicTools
 
     private val delegate = Anthropic(
@@ -223,8 +257,11 @@ public class GoogleVertexAnthropicProvider(
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel = delegate.languageModel(modelId)
@@ -239,8 +276,10 @@ public class GoogleVertexAnthropicProvider(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class GoogleVertexMaasProvider(
     client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: GoogleVertexMaasProviderSettings,
 ) : Provider {
     override val providerId: String = "google-vertex-maas"
@@ -256,13 +295,16 @@ public class GoogleVertexMaasProvider(
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
     override fun languageModel(modelId: String): LanguageModel = delegate.languageModel(modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public class GoogleVertexXaiProvider(
     client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: GoogleVertexXaiProviderSettings,
 ) : Provider {
     override val providerId: String = "google-vertex-xai"
@@ -284,8 +326,11 @@ public class GoogleVertexXaiProvider(
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel =
@@ -323,19 +368,28 @@ public class GoogleVertexXaiProvider(
     }
 }
 
-/** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun GoogleVertexAnthropic(
     client: HttpClient,
     settings: GoogleVertexAnthropicProviderSettings = GoogleVertexAnthropicProviderSettings(),
 ): GoogleVertexAnthropicProvider = GoogleVertexAnthropicProvider(client, settings)
 
-/** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun GoogleVertexMaas(
     client: HttpClient,
     settings: GoogleVertexMaasProviderSettings = GoogleVertexMaasProviderSettings(),
 ): GoogleVertexMaasProvider = GoogleVertexMaasProvider(client, settings)
 
-/** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun GoogleVertexXai(
     client: HttpClient,
     settings: GoogleVertexXaiProviderSettings = GoogleVertexXaiProviderSettings(),

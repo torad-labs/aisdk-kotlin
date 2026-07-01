@@ -28,39 +28,50 @@ public typealias LumaImageProviderOptions = LumaImageModelOptions
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class LumaImageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val referenceType: String? = null,
+    /** @since 0.3.0-beta01 */
     public val images: JsonArray? = null,
+    /** @since 0.3.0-beta01 */
     public val pollIntervalMillis: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val maxPollAttempts: Int? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class LumaImageModelOptionsBuilder {
     private var referenceType: String? = null
     private var images: JsonArray? = null
     private var pollIntervalMillis: Long? = null
     private var maxPollAttempts: Int? = null
 
+    /** @since 0.3.0-beta01 */
     public fun referenceType(value: String?): LumaImageModelOptionsBuilder {
         referenceType = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun images(value: JsonArray?): LumaImageModelOptionsBuilder {
         images = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollIntervalMillis(value: Long?): LumaImageModelOptionsBuilder {
         pollIntervalMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxPollAttempts(value: Int?): LumaImageModelOptionsBuilder {
         maxPollAttempts = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): LumaImageModelOptions =
         LumaImageModelOptions(
             referenceType = referenceType,
@@ -70,6 +81,7 @@ public class LumaImageModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun LumaImageModelOptions(
     block: LumaImageModelOptionsBuilder.() -> Unit = {},
 ): LumaImageModelOptions =
@@ -77,32 +89,41 @@ public fun LumaImageModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class LumaProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.lumalabs.ai",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class LumaProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.lumalabs.ai"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): LumaProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): LumaProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): LumaProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): LumaProviderSettings =
         LumaProviderSettings(
             apiKey = apiKey,
@@ -111,17 +132,21 @@ public class LumaProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun LumaProviderSettings(
     block: LumaProviderSettingsBuilder.() -> Unit = {},
 ): LumaProviderSettings =
     LumaProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class LumaProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: LumaProviderSettings = LumaProviderSettings(),
 ) : Provider {
     override val providerId: String = "luma"
 
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = LumaImageModel(client, settings, modelId.value)
 
     override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
@@ -132,10 +157,14 @@ public class LumaProvider(
     override fun embeddingModel(modelId: String): EmbeddingModel =
         throw NoSuchModelError(providerId, "embedding", modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): EmbeddingModel = embeddingModel(modelId)
 }
 
-/** PascalCase factory — mirrors `OpenAI(...)`. */
+/**
+ * PascalCase factory — mirrors `OpenAI(...)`.
+ * @since 0.3.0-beta01
+ */
 public fun Luma(
     client: HttpClient,
     settings: LumaProviderSettings = LumaProviderSettings(),

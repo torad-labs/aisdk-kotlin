@@ -33,14 +33,21 @@ public typealias AlibabaCacheControl = JsonObject
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class AlibabaProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    /** @since 0.3.0-beta01 */
     public val videoBaseURL: String = "https://dashscope-intl.aliyuncs.com",
     // The embedding API uses the DashScope native endpoint, not the
     // OpenAI-compatible one (`compatible-mode/v1`).
+    /** @since 0.3.0-beta01 */
     public val embeddingBaseURL: String = "https://dashscope-intl.aliyuncs.com/api/v1",
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val includeUsage: Boolean = true,
 ) {
     internal suspend fun alibabaPostJson(
@@ -89,6 +96,7 @@ public class AlibabaProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class AlibabaProviderSettingsBuilder {
     private var baseURL: String = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
     private var videoBaseURL: String = "https://dashscope-intl.aliyuncs.com"
@@ -97,36 +105,43 @@ public class AlibabaProviderSettingsBuilder {
     private var headers: Map<String, String> = emptyMap()
     private var includeUsage: Boolean = true
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): AlibabaProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun videoBaseURL(value: String): AlibabaProviderSettingsBuilder {
         videoBaseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun embeddingBaseURL(value: String): AlibabaProviderSettingsBuilder {
         embeddingBaseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): AlibabaProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): AlibabaProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun includeUsage(value: Boolean): AlibabaProviderSettingsBuilder {
         includeUsage = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AlibabaProviderSettings =
         AlibabaProviderSettings(
             baseURL = baseURL,
@@ -138,45 +153,59 @@ public class AlibabaProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AlibabaProviderSettings(
     block: AlibabaProviderSettingsBuilder.() -> Unit = {},
 ): AlibabaProviderSettings =
     AlibabaProviderSettingsBuilder().apply(block).build()
 
 /** Provider options for [AlibabaProvider.embeddingModel] — pass under the
+  * @since 0.3.0-beta01
  *  `"alibaba"` key in [EmbeddingModelCallParams.providerOptions]. */
 @Serializable
 @Poko
 public class AlibabaEmbeddingModelOptions internal constructor(
-    /** `"query"` or `"document"` (asymmetric retrieval); defaults to `document`. */
+    /**
+     * `"query"` or `"document"` (asymmetric retrieval); defaults to `document`.
+     * @since 0.3.0-beta01
+     */
     public val textType: String? = null,
-    /** Output vector dimension; defaults to 1024 (`text-embedding-v4` also allows 1536/2048). */
+    /**
+     * Output vector dimension; defaults to 1024 (`text-embedding-v4` also allows 1536/2048).
+     * @since 0.3.0-beta01
+     */
     public val dimension: Int? = null,
     /** `"dense"` (default), `"sparse"`, or `"dense&sparse"`. `sparse` is rejected —
+      * @since 0.3.0-beta01
      *  the embedding interface requires dense float arrays. */
     public val outputType: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class AlibabaEmbeddingModelOptionsBuilder {
     private var textType: String? = null
     private var dimension: Int? = null
     private var outputType: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun textType(value: String?): AlibabaEmbeddingModelOptionsBuilder {
         textType = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun dimension(value: Int?): AlibabaEmbeddingModelOptionsBuilder {
         dimension = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun outputType(value: String?): AlibabaEmbeddingModelOptionsBuilder {
         outputType = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AlibabaEmbeddingModelOptions =
         AlibabaEmbeddingModelOptions(
             textType = textType,
@@ -185,6 +214,7 @@ public class AlibabaEmbeddingModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AlibabaEmbeddingModelOptions(
     block: AlibabaEmbeddingModelOptionsBuilder.() -> Unit = {},
 ): AlibabaEmbeddingModelOptions =
@@ -192,32 +222,41 @@ public fun AlibabaEmbeddingModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class AlibabaLanguageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val enableThinking: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val thinkingBudget: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val parallelToolCalls: Boolean? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class AlibabaLanguageModelOptionsBuilder {
     private var enableThinking: Boolean? = null
     private var thinkingBudget: Int? = null
     private var parallelToolCalls: Boolean? = null
 
+    /** @since 0.3.0-beta01 */
     public fun enableThinking(value: Boolean?): AlibabaLanguageModelOptionsBuilder {
         enableThinking = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun thinkingBudget(value: Int?): AlibabaLanguageModelOptionsBuilder {
         thinkingBudget = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun parallelToolCalls(value: Boolean?): AlibabaLanguageModelOptionsBuilder {
         parallelToolCalls = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AlibabaLanguageModelOptions =
         AlibabaLanguageModelOptions(
             enableThinking = enableThinking,
@@ -226,6 +265,7 @@ public class AlibabaLanguageModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AlibabaLanguageModelOptions(
     block: AlibabaLanguageModelOptionsBuilder.() -> Unit = {},
 ): AlibabaLanguageModelOptions =
@@ -233,18 +273,29 @@ public fun AlibabaLanguageModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class AlibabaVideoModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val negativePrompt: String? = null,
+    /** @since 0.3.0-beta01 */
     public val audioUrl: String? = null,
+    /** @since 0.3.0-beta01 */
     public val promptExtend: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val shotType: String? = null,
+    /** @since 0.3.0-beta01 */
     public val watermark: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val audio: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val referenceUrls: List<String>? = null,
+    /** @since 0.3.0-beta01 */
     public val pollIntervalMs: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val pollTimeoutMs: Long? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class AlibabaVideoModelOptionsBuilder {
     private var negativePrompt: String? = null
     private var audioUrl: String? = null
@@ -256,51 +307,61 @@ public class AlibabaVideoModelOptionsBuilder {
     private var pollIntervalMs: Long? = null
     private var pollTimeoutMs: Long? = null
 
+    /** @since 0.3.0-beta01 */
     public fun negativePrompt(value: String?): AlibabaVideoModelOptionsBuilder {
         negativePrompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun audioUrl(value: String?): AlibabaVideoModelOptionsBuilder {
         audioUrl = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun promptExtend(value: Boolean?): AlibabaVideoModelOptionsBuilder {
         promptExtend = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun shotType(value: String?): AlibabaVideoModelOptionsBuilder {
         shotType = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun watermark(value: Boolean?): AlibabaVideoModelOptionsBuilder {
         watermark = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun audio(value: Boolean?): AlibabaVideoModelOptionsBuilder {
         audio = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun referenceUrls(value: List<String>?): AlibabaVideoModelOptionsBuilder {
         referenceUrls = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollIntervalMs(value: Long?): AlibabaVideoModelOptionsBuilder {
         pollIntervalMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollTimeoutMs(value: Long?): AlibabaVideoModelOptionsBuilder {
         pollTimeoutMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AlibabaVideoModelOptions =
         AlibabaVideoModelOptions(
             negativePrompt = negativePrompt,
@@ -315,13 +376,16 @@ public class AlibabaVideoModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AlibabaVideoModelOptions(
     block: AlibabaVideoModelOptionsBuilder.() -> Unit = {},
 ): AlibabaVideoModelOptions =
     AlibabaVideoModelOptionsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class AlibabaProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: AlibabaProviderSettings,
 ) : Provider {
     override val providerId: String = "alibaba"
@@ -341,7 +405,9 @@ public class AlibabaProvider(
         )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
 
     override fun languageModel(modelId: String): LanguageModel = AlibabaChatLanguageModel(chatProvider.chatModel(modelId))
@@ -350,7 +416,10 @@ public class AlibabaProvider(
     override fun embeddingModel(modelId: String): EmbeddingModel = AlibabaEmbeddingModel(client, settings, modelId)
 }
 
-/** PascalCase factory — mirrors `OpenAI(client, settings)`. */
+/**
+ * PascalCase factory — mirrors `OpenAI(client, settings)`.
+ * @since 0.3.0-beta01
+ */
 public fun Alibaba(
     client: HttpClient,
     settings: AlibabaProviderSettings = AlibabaProviderSettings(),

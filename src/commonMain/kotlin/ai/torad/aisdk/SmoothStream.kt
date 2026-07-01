@@ -23,9 +23,13 @@ import kotlinx.coroutines.flow.flow
  * Non-text events (tool calls, step-finish, etc.) pass through immediately
  * without delay so the loop logic isn't slowed down.
  */
+/** @since 0.3.0-beta01 */
 public sealed class ChunkBy {
+    /** @since 0.3.0-beta01 */
     public data object Word : ChunkBy()
+    /** @since 0.3.0-beta01 */
     public data object Line : ChunkBy()
+    /** @since 0.3.0-beta01 */
     public data class Pattern(val regex: Regex) : ChunkBy()
 }
 
@@ -55,6 +59,7 @@ private val LINE_REGEX = Regex("""[^\n]*\n""", RegexOption.MULTILINE)
 // partial text/reasoning buffers before propagating (CancellationException is
 // rethrown first, above), so dropping to a narrower type would lose data.
 @Suppress("TooGenericExceptionCaught", "CyclomaticComplexMethod")
+/** @since 0.3.0-beta01 */
 public fun SmoothStream(
     upstream: Flow<StreamEvent>,
     delayMs: Long = 10L,

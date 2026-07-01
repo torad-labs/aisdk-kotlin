@@ -28,22 +28,28 @@ public const val HUME_VERSION: String = "2.0.33"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class HumeSpeechModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val context: JsonObject? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class HumeSpeechModelOptionsBuilder {
     private var context: JsonObject? = null
 
+    /** @since 0.3.0-beta01 */
     public fun context(value: JsonObject?): HumeSpeechModelOptionsBuilder {
         context = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): HumeSpeechModelOptions =
         HumeSpeechModelOptions(context = context)
 }
 
+/** @since 0.3.0-beta01 */
 public fun HumeSpeechModelOptions(
     block: HumeSpeechModelOptionsBuilder.() -> Unit = {},
 ): HumeSpeechModelOptions =
@@ -51,8 +57,11 @@ public fun HumeSpeechModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class HumeProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun humeHeaders(callHeaders: Map<String, String>): Map<String, String> {
@@ -64,20 +73,24 @@ public class HumeProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class HumeProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): HumeProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): HumeProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): HumeProviderSettings =
         HumeProviderSettings(
             apiKey = apiKey,
@@ -85,19 +98,23 @@ public class HumeProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun HumeProviderSettings(
     block: HumeProviderSettingsBuilder.() -> Unit = {},
 ): HumeProviderSettings =
     HumeProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class HumeProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: HumeProviderSettings,
 ) : Provider {
     override val providerId: String = "hume"
 
     public operator fun invoke(): SpeechModel = speech()
 
+    /** @since 0.3.0-beta01 */
     public fun speech(): SpeechModel = HumeSpeechModel(client, settings)
 
     override fun speechModel(modelId: String): SpeechModel = speech()
@@ -107,7 +124,10 @@ public class HumeProvider(
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
-/** PascalCase factory — mirrors the OpenAI reference pattern. */
+/**
+ * PascalCase factory — mirrors the OpenAI reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun Hume(
     client: HttpClient,
     settings: HumeProviderSettings = HumeProviderSettings(),

@@ -51,7 +51,7 @@ class MediaParamsBuilderTest {
         assertEquals(equal, settings)
         assertEquals(equal.hashCode(), settings.hashCode())
         assertNotEquals(different, settings)
-        assertEquals(settings, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(settings)))
+        assertEquals(settings, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(settings)))
     }
 
     @Test

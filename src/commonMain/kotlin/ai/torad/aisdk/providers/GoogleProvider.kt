@@ -54,23 +54,36 @@ public typealias UsageMetadataSchema = JsonObject
 public typealias SafetyRatingSchema = JsonObject
 public typealias PromptFeedbackSchema = JsonObject
 
+/** @since 0.3.0-beta01 */
 public sealed class GoogleInteractionsModelInput {
+    /** @since 0.3.0-beta01 */
     public abstract val name: String
 
+    /** @since 0.3.0-beta01 */
     public data class Model(override val name: String) : GoogleInteractionsModelInput()
+    /** @since 0.3.0-beta01 */
     public data class Agent(override val name: String) : GoogleInteractionsModelInput()
+    /** @since 0.3.0-beta01 */
     public data class ManagedAgent(override val name: String) : GoogleInteractionsModelInput()
 }
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class GoogleGenerativeAIProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://generativelanguage.googleapis.com/v1beta",
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val generateId: () -> String = { IdGenerator.generate() },
+    /** @since 0.3.0-beta01 */
     public val name: String = "google.generative-ai",
+    /** @since 0.3.0-beta01 */
     public val videoPollIntervalMillis: Long = 1_000L,
+    /** @since 0.3.0-beta01 */
     public val videoMaxPollAttempts: Int = 120,
 ) {
     internal fun googleHeaders(extra: Map<String, String>): Map<String, String> {
@@ -86,6 +99,7 @@ public class GoogleGenerativeAIProviderSettings internal constructor(
         googleHeaders(extra) + ("Api-Revision" to "2026-05-20")
 }
 
+/** @since 0.3.0-beta01 */
 public class GoogleGenerativeAIProviderSettingsBuilder {
     private var baseURL: String = "https://generativelanguage.googleapis.com/v1beta"
     private var apiKey: String? = null
@@ -95,41 +109,49 @@ public class GoogleGenerativeAIProviderSettingsBuilder {
     private var videoPollIntervalMillis: Long = 1_000L
     private var videoMaxPollAttempts: Int = 120
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): GoogleGenerativeAIProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): GoogleGenerativeAIProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): GoogleGenerativeAIProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun generateId(value: () -> String): GoogleGenerativeAIProviderSettingsBuilder {
         generateId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun name(value: String): GoogleGenerativeAIProviderSettingsBuilder {
         name = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun videoPollIntervalMillis(value: Long): GoogleGenerativeAIProviderSettingsBuilder {
         videoPollIntervalMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun videoMaxPollAttempts(value: Int): GoogleGenerativeAIProviderSettingsBuilder {
         videoMaxPollAttempts = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): GoogleGenerativeAIProviderSettings =
         GoogleGenerativeAIProviderSettings(
             baseURL = baseURL,
@@ -142,16 +164,20 @@ public class GoogleGenerativeAIProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun GoogleGenerativeAIProviderSettings(
     block: GoogleGenerativeAIProviderSettingsBuilder.() -> Unit = {},
 ): GoogleGenerativeAIProviderSettings =
     GoogleGenerativeAIProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class GoogleGenerativeAIProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings(),
 ) : Provider {
     override val providerId: String = "google"
+    /** @since 0.3.0-beta01 */
     public val tools: GoogleTools = GoogleTools()
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
@@ -159,26 +185,37 @@ public class GoogleGenerativeAIProvider(
     override fun languageModel(modelId: String): LanguageModel =
         GoogleGenerativeAILanguageModel(client, settings, modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun generativeAI(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun embedding(modelId: ModelId): EmbeddingModel =
         GoogleGenerativeAIEmbeddingModel(client, settings, modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel =
         GoogleGenerativeAIImageModel(client, settings, modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel =
         GoogleGenerativeAIVideoModel(client, settings, modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun interactions(modelIdOrAgent: ModelId): LanguageModel =
         interactions(GoogleInteractionsModelInput.Model(modelIdOrAgent.value))
+    /** @since 0.3.0-beta01 */
     public fun interactions(modelIdOrAgent: GoogleInteractionsModelInput): LanguageModel =
         GoogleInteractionsLanguageModel(client, settings, modelIdOrAgent)
+    /** @since 0.3.0-beta01 */
     public fun agentInteraction(agentName: String): LanguageModel =
         interactions(GoogleInteractionsModelInput.Agent(agentName))
+    /** @since 0.3.0-beta01 */
     public fun managedAgentInteraction(agentName: String): LanguageModel =
         interactions(GoogleInteractionsModelInput.ManagedAgent(agentName))
 
@@ -190,7 +227,10 @@ public class GoogleGenerativeAIProvider(
 // Source/binary-compat alias for the factory below — the constructor now lives on the merged class.
 private typealias DefaultGoogleGenerativeAIProvider = GoogleGenerativeAIProvider
 
-/** PascalCase factory — mirrors the OpenAI(...) reference faux-constructor. */
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference faux-constructor.
+ * @since 0.3.0-beta01
+ */
 public fun GoogleGenerativeAI(
     client: HttpClient,
     settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings(),
@@ -198,19 +238,27 @@ public fun GoogleGenerativeAI(
 
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class GoogleTools(
+    /** @since 0.3.0-beta01 */
     public val googleSearch: Tool<JsonElement, JsonElement, Any?> =
         providerTool("google_search", "google.google_search", "Ground responses with Google Search."),
+    /** @since 0.3.0-beta01 */
     public val enterpriseWebSearch: Tool<JsonElement, JsonElement, Any?> =
         providerTool("enterprise_web_search", "google.enterprise_web_search", "Ground responses with Enterprise Web Search."),
+    /** @since 0.3.0-beta01 */
     public val googleMaps: Tool<JsonElement, JsonElement, Any?> =
         providerTool("google_maps", "google.google_maps", "Ground responses with Google Maps."),
+    /** @since 0.3.0-beta01 */
     public val urlContext: Tool<JsonElement, JsonElement, Any?> =
         providerTool("url_context", "google.url_context", "Fetch URL context through Google."),
+    /** @since 0.3.0-beta01 */
     public val fileSearch: Tool<JsonElement, JsonElement, Any?> =
         providerTool("file_search", "google.file_search", "Use Gemini File Search."),
+    /** @since 0.3.0-beta01 */
     public val codeExecution: Tool<JsonElement, JsonElement, Any?> =
         providerTool("code_execution", "google.code_execution", "Use Google hosted code execution."),
+    /** @since 0.3.0-beta01 */
     public val vertexRagStore: Tool<JsonElement, JsonElement, Any?> =
         providerTool("vertex_rag_store", "google.vertex_rag_store", "Use Vertex RAG Store."),
 ) {
@@ -230,4 +278,5 @@ public class GoogleTools(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public val googleTools: GoogleTools = GoogleTools()

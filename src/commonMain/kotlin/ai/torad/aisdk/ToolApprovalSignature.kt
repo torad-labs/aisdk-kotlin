@@ -20,6 +20,7 @@ import kotlin.io.encoding.Base64
  * it. Canonicalization sorts object keys recursively, so semantically equal
  * JSON signs identically regardless of key order.
  */
+/** @since 0.3.0-beta01 */
 public object ToolApprovalSignature {
 
     /**
@@ -52,7 +53,10 @@ public object ToolApprovalSignature {
         return "$approvalId\n$toolCallId\n$toolName\n$inputDigest".encodeToByteArray()
     }
 
-    /** Sign one approval request. [approvalId] is the EFFECTIVE id (explicit `approvalId ?: toolCallId`). */
+    /**
+     * Sign one approval request. [approvalId] is the EFFECTIVE id (explicit `approvalId ?: toolCallId`).
+     * @since 0.3.0-beta01
+     */
     public fun signToolApproval(
         secret: ByteArray,
         approvalId: String,
@@ -61,7 +65,10 @@ public object ToolApprovalSignature {
         input: JsonElement,
     ): String = toBase64Url(CryptoPrimitives.hmacSha256(secret, approvalPayload(approvalId, toolCallId, toolName, input)))
 
-    /** Verify a replayed approval's signature. Constant-time comparison; false on any malformed input. */
+    /**
+     * Verify a replayed approval's signature. Constant-time comparison; false on any malformed input.
+     * @since 0.3.0-beta01
+     */
     public fun verifyToolApprovalSignature(
         secret: ByteArray,
         signature: String,
@@ -75,7 +82,10 @@ public object ToolApprovalSignature {
         return constantTimeEquals(expected, provided)
     }
 
-    /** Sign when a [secret] is configured; null otherwise (upstream `maybeSignApproval`). */
+    /**
+     * Sign when a [secret] is configured; null otherwise (upstream `maybeSignApproval`).
+     * @since 0.3.0-beta01
+     */
     public fun maybeSignToolApproval(
         secret: ByteArray?,
         approvalId: String,

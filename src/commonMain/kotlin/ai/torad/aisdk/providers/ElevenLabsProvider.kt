@@ -34,20 +34,33 @@ public const val ELEVENLABS_VERSION: String = "2.0.33"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ElevenLabsSpeechModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val languageCode: String? = null,
+    /** @since 0.3.0-beta01 */
     public val voiceSettings: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val pronunciationDictionaryLocators: List<JsonObject>? = null,
+    /** @since 0.3.0-beta01 */
     public val seed: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val previousText: String? = null,
+    /** @since 0.3.0-beta01 */
     public val nextText: String? = null,
+    /** @since 0.3.0-beta01 */
     public val previousRequestIds: List<String>? = null,
+    /** @since 0.3.0-beta01 */
     public val nextRequestIds: List<String>? = null,
+    /** @since 0.3.0-beta01 */
     public val applyTextNormalization: String? = null,
+    /** @since 0.3.0-beta01 */
     public val applyLanguageTextNormalization: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val enableLogging: Boolean? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class ElevenLabsSpeechModelOptionsBuilder {
     private var languageCode: String? = null
     private var voiceSettings: JsonObject? = null
@@ -61,61 +74,73 @@ public class ElevenLabsSpeechModelOptionsBuilder {
     private var applyLanguageTextNormalization: Boolean? = null
     private var enableLogging: Boolean? = null
 
+    /** @since 0.3.0-beta01 */
     public fun languageCode(value: String?): ElevenLabsSpeechModelOptionsBuilder {
         languageCode = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun voiceSettings(value: JsonObject?): ElevenLabsSpeechModelOptionsBuilder {
         voiceSettings = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pronunciationDictionaryLocators(value: List<JsonObject>?): ElevenLabsSpeechModelOptionsBuilder {
         pronunciationDictionaryLocators = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun seed(value: Int?): ElevenLabsSpeechModelOptionsBuilder {
         seed = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun previousText(value: String?): ElevenLabsSpeechModelOptionsBuilder {
         previousText = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun nextText(value: String?): ElevenLabsSpeechModelOptionsBuilder {
         nextText = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun previousRequestIds(value: List<String>?): ElevenLabsSpeechModelOptionsBuilder {
         previousRequestIds = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun nextRequestIds(value: List<String>?): ElevenLabsSpeechModelOptionsBuilder {
         nextRequestIds = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun applyTextNormalization(value: String?): ElevenLabsSpeechModelOptionsBuilder {
         applyTextNormalization = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun applyLanguageTextNormalization(value: Boolean?): ElevenLabsSpeechModelOptionsBuilder {
         applyLanguageTextNormalization = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun enableLogging(value: Boolean?): ElevenLabsSpeechModelOptionsBuilder {
         enableLogging = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ElevenLabsSpeechModelOptions =
         ElevenLabsSpeechModelOptions(
             languageCode = languageCode,
@@ -132,6 +157,7 @@ public class ElevenLabsSpeechModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ElevenLabsSpeechModelOptions(
     block: ElevenLabsSpeechModelOptionsBuilder.() -> Unit = {},
 ): ElevenLabsSpeechModelOptions =
@@ -139,15 +165,23 @@ public fun ElevenLabsSpeechModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ElevenLabsTranscriptionModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val languageCode: String? = null,
+    /** @since 0.3.0-beta01 */
     public val tagAudioEvents: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val numSpeakers: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val timestampsGranularity: String? = null,
+    /** @since 0.3.0-beta01 */
     public val diarize: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val fileFormat: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class ElevenLabsTranscriptionModelOptionsBuilder {
     private var languageCode: String? = null
     private var tagAudioEvents: Boolean? = null
@@ -156,36 +190,43 @@ public class ElevenLabsTranscriptionModelOptionsBuilder {
     private var diarize: Boolean? = null
     private var fileFormat: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun languageCode(value: String?): ElevenLabsTranscriptionModelOptionsBuilder {
         languageCode = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun tagAudioEvents(value: Boolean?): ElevenLabsTranscriptionModelOptionsBuilder {
         tagAudioEvents = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun numSpeakers(value: Int?): ElevenLabsTranscriptionModelOptionsBuilder {
         numSpeakers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun timestampsGranularity(value: String?): ElevenLabsTranscriptionModelOptionsBuilder {
         timestampsGranularity = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun diarize(value: Boolean?): ElevenLabsTranscriptionModelOptionsBuilder {
         diarize = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun fileFormat(value: String?): ElevenLabsTranscriptionModelOptionsBuilder {
         fileFormat = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ElevenLabsTranscriptionModelOptions =
         ElevenLabsTranscriptionModelOptions(
             languageCode = languageCode,
@@ -197,6 +238,7 @@ public class ElevenLabsTranscriptionModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ElevenLabsTranscriptionModelOptions(
     block: ElevenLabsTranscriptionModelOptionsBuilder.() -> Unit = {},
 ): ElevenLabsTranscriptionModelOptions =
@@ -204,8 +246,11 @@ public fun ElevenLabsTranscriptionModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class ElevenLabsProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun elevenLabsHeaders(callHeaders: Map<String, String>): Map<String, String> {
@@ -220,20 +265,24 @@ public class ElevenLabsProviderSettings internal constructor(
         JsonAccess.obj(providerOptions.toMap(), "elevenlabs") ?: JsonObject(emptyMap())
 }
 
+/** @since 0.3.0-beta01 */
 public class ElevenLabsProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): ElevenLabsProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): ElevenLabsProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ElevenLabsProviderSettings =
         ElevenLabsProviderSettings(
             apiKey = apiKey,
@@ -241,25 +290,31 @@ public class ElevenLabsProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ElevenLabsProviderSettings(
     block: ElevenLabsProviderSettingsBuilder.() -> Unit = {},
 ): ElevenLabsProviderSettings =
     ElevenLabsProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class ElevenLabsProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: ElevenLabsProviderSettings,
 ) : Provider {
     override val providerId: String = "elevenlabs"
 
     public operator fun invoke(modelId: ModelId = ModelId("scribe_v1")): TranscriptionModel = transcription(modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun transcription(modelId: ModelId): TranscriptionModel =
         ElevenLabsTranscriptionModel(client, settings, modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun speech(modelId: ModelId): SpeechModel =
         ElevenLabsSpeechModel(client, settings, modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing =
         throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
@@ -267,7 +322,10 @@ public class ElevenLabsProvider(
     override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
 }
 
-/** PascalCase factory — mirrors `OpenAI(...)`. */
+/**
+ * PascalCase factory — mirrors `OpenAI(...)`.
+ * @since 0.3.0-beta01
+ */
 public fun ElevenLabs(
     client: HttpClient,
     settings: ElevenLabsProviderSettings = ElevenLabsProviderSettings(),

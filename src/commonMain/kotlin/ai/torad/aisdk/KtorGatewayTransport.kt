@@ -19,6 +19,7 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 
+/** @since 0.3.0-beta01 */
 public fun CreateGatewayHttpProvider(
     client: HttpClient,
     settings: GatewayProviderSettings = GatewayProviderSettings(),
@@ -36,6 +37,7 @@ public fun CreateGatewayHttpProvider(
     },
 )
 
+/** @since 0.3.0-beta01 */
 public class KtorGatewayTransport(
     private val client: HttpClient,
     private val json: Json = aiSdkJson,

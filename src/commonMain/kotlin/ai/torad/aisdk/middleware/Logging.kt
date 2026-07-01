@@ -12,39 +12,50 @@ import ai.torad.aisdk.StreamEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 
+/** @since 0.3.0-beta01 */
 public class LoggingOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val recordInputs: Boolean = false,
+    /** @since 0.3.0-beta01 */
     public val recordOutputs: Boolean = false,
+    /** @since 0.3.0-beta01 */
     public val allowRawValues: Boolean = false,
+    /** @since 0.3.0-beta01 */
     public val redactor: Redactor = AiSdkDefaultRedactor,
 )
 
+/** @since 0.3.0-beta01 */
 public class LoggingOptionsBuilder {
     private var recordInputs: Boolean = false
     private var recordOutputs: Boolean = false
     private var allowRawValues: Boolean = false
     private var redactor: Redactor = AiSdkDefaultRedactor
 
+    /** @since 0.3.0-beta01 */
     public fun recordInputs(value: Boolean): LoggingOptionsBuilder {
         recordInputs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun recordOutputs(value: Boolean): LoggingOptionsBuilder {
         recordOutputs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun allowRawValues(value: Boolean): LoggingOptionsBuilder {
         allowRawValues = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun redactor(value: Redactor): LoggingOptionsBuilder {
         redactor = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): LoggingOptions =
         LoggingOptions(
             recordInputs = recordInputs,
@@ -54,6 +65,7 @@ public class LoggingOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun LoggingOptions(
     block: LoggingOptionsBuilder.() -> Unit = {},
 ): LoggingOptions =
@@ -82,6 +94,7 @@ public fun LoggingOptions(
  * `wrapGenerate` logs a one-line completion summary; the streaming path
  * (the chat surface) carries the per-event detail.
  */
+/** @since 0.3.0-beta01 */
 public fun LoggingMiddleware(
     logger: Logger,
     tag: String = "agent",
@@ -91,6 +104,7 @@ public fun LoggingMiddleware(
     tag = tag,
 )
 
+/** @since 0.3.0-beta01 */
 public fun LoggingMiddleware(
     logger: Logger,
     options: LoggingOptions,

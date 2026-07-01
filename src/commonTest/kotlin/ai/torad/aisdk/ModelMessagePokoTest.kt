@@ -32,7 +32,7 @@ class ModelMessagePokoTest {
         )
 
         for ((part, discriminator) in parts) {
-            val encoded = aiSdkJson.encodeToString(ContentPart.serializer(), part)
+            val encoded = aiSdkOutputJson.encodeToString(ContentPart.serializer(), part)
             assertEquals(discriminator, aiSdkJson.parseToJsonElement(encoded).jsonObject["type"]?.jsonPrimitive?.content)
             assertEquals(part, aiSdkJson.decodeFromString(ContentPart.serializer(), encoded))
         }
@@ -89,7 +89,7 @@ class ModelMessagePokoTest {
     }
 
     private fun <T> assertRoundTrip(serializer: KSerializer<T>, value: T) {
-        val encoded = aiSdkJson.encodeToString(serializer, value)
+        val encoded = aiSdkOutputJson.encodeToString(serializer, value)
         val decoded = aiSdkJson.decodeFromString(serializer, encoded)
         assertEquals(value, decoded)
     }
