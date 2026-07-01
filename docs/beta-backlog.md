@@ -846,6 +846,11 @@ Areas still under audit or not yet deep-audited. Convert findings into BL-NNN it
 - [x] **Public API evolvability**: COMPLETE → BL-058. Data-class freeze trap + no top-level verbs + Java-uncallable fns.
 - [x] **Docs/wiki accuracy**: COMPLETE → BL-057. Systemic drift; no wiki compile-guard.
 
-**All audit areas complete.** 58 items tracked. The two cheap-now/expensive-later
-decisions (BL-058 A1 data-class demotion, A2 top-level verbs) should be settled
-before publishing `0.3.0-beta01`.
+**All audit areas complete.** 59 items tracked (BL-001..BL-059). The two
+cheap-now/expensive-later decisions (BL-058 A1 data-class demotion, A2
+top-level verbs) are settled -- A1's budget is ratcheted to 66 and A2's
+consequence (BL-057's docs rewrite to the real structured API) is done.
+
+Every Recommended-tier and Optional-tier item is DONE. The only remaining
+OPEN items, BL-018 (reactive UI binding) and BL-059 (native `json_schema`
+support), are explicitly Post-beta by design, not oversights.
