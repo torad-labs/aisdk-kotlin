@@ -23,6 +23,10 @@ class ReadmeQuickStartTest {
 
     @Test
     fun `README quick start compiles and runs`() = runTest {
+        assertEquals("Welcome.", readmeQuickStartText())
+    }
+
+    private suspend fun readmeQuickStartText(): String {
         val helloTool = Tool<EmptyInput, String, Unit>(
             name = "hello",
             description = "Return a greeting.",
@@ -37,7 +41,7 @@ class ReadmeQuickStartTest {
         val result = agent.generate(prompt = "Say hi").first()
 
         assertEquals(listOf("hello"), agent.tools.names())
-        assertEquals("Welcome.", result.text)
         assertEquals(FinishReason.Stop, result.finishReason)
+        return result.text
     }
 }

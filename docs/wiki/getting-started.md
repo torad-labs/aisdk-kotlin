@@ -46,38 +46,48 @@ val model = MockLanguageModelTextOnly("Hello from AI SDK Kotlin.")
 
 ## Generate Text
 
-Use `generateText` for a single model call.
+Use `TextGenerator` for a single model call.
 
 ```kotlin
-val result = generateText(
-    model = model,
-    system = "Answer as a concise Kotlin engineer.",
-    prompt = "What does this SDK provide?",
-)
+import ai.torad.aisdk.GenerationInput
+import ai.torad.aisdk.TextGenerator
+import kotlinx.coroutines.flow.first
+
+val result = TextGenerator(model)
+    .generate(GenerationInput.Prompt("What does this SDK provide?"))
+    .first()
 
 println(result.text)
 ```
 
-For Kotlin call sites, the builder form keeps settings grouped:
+For Kotlin call sites, pass generation settings through `CallConfig`:
 
 ```kotlin
-val result = generateText(model) {
-    system("Answer with short bullets.")
-    prompt("How do I stream output?")
-    settings {
-        temperature = 0.2f
-        maxOutputTokens = 400
-    }
-}
+import ai.torad.aisdk.CallConfig
+import ai.torad.aisdk.GenerationInput
+import ai.torad.aisdk.TextGenerator
+import kotlinx.coroutines.flow.first
+
+val result = TextGenerator(
+    model,
+    CallConfig {
+        temperature(0.2f)
+        maxOutputTokens(400)
+    },
+).generate(GenerationInput.Prompt("How do I stream output?")).first()
 ```
 
 ## Stream Text
 
-`streamText` returns a cold `Flow<StreamEvent>`. The model call starts when
-the flow is collected.
+`TextGenerator.stream(...)` returns a cold `Flow<StreamEvent>`. The model call
+starts when the flow is collected.
 
 ```kotlin
-streamText(model = model, prompt = "Write a short intro.").collect { event ->
+import ai.torad.aisdk.GenerationInput
+import ai.torad.aisdk.StreamEvent
+import ai.torad.aisdk.TextGenerator
+
+TextGenerator(model).stream(GenerationInput.Prompt("Write a short intro.")).collect { event ->
     when (event) {
         is StreamEvent.TextDelta -> print(event.text)
         is StreamEvent.Finish -> println(event.finishReason)
@@ -86,11 +96,14 @@ streamText(model = model, prompt = "Write a short intro.").collect { event ->
 }
 ```
 
-Use `streamTextResult` when you want helpers for text-only streams or
+Use `TextGenerator.streamResult(...)` when you want helpers for text-only streams or
 UI-message streams:
 
 ```kotlin
-val result = streamTextResult(model = model, prompt = "Stream this.")
+import ai.torad.aisdk.GenerationInput
+import ai.torad.aisdk.TextGenerator
+
+val result = TextGenerator(model).streamResult(GenerationInput.Prompt("Stream this."))
 result.textStream.collect { delta -> print(delta) }
 ```
 
@@ -131,6 +144,8 @@ val tools = ToolSet(
 Use `ToolLoopAgent` when the model should decide when to call tools.
 
 ```kotlin
+import kotlinx.coroutines.flow.first
+
 class WeatherAgent(model: LanguageModel, tools: ToolSet<Unit>) :
     ToolLoopAgent<Unit, String>(
         model = model,
@@ -141,7 +156,7 @@ class WeatherAgent(model: LanguageModel, tools: ToolSet<Unit>) :
 
 val agent = WeatherAgent(model, ToolSet(weatherTool))
 val answer = agent.generate(prompt = "What is the weather in Paris?")
-println(answer.text)
+println(answer.first().text)
 ```
 
 Agents can also stream:
