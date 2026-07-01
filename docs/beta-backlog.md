@@ -71,7 +71,7 @@ tests must stay green.
 
 | BL-049 | Media binary downloads + Google poll GET bypass timeout & body cap (hang+OOM) | Med-High | Recommended | CONFIRMED | DONE |
 | BL-050 | UI: late/duplicate `ToolInputDelta` reverts a finished tool card, wiping output | Medium | Recommended | CONFIRMED | DONE |
-| BL-051 | Media poll loops: abort not honored in-flight; KlingAI unfloored timeout; Google spin | Medium | Optional | CONFIRMED | OPEN |
+| BL-051 | Media poll loops: abort not honored in-flight; KlingAI unfloored timeout; Google spin | Medium | Optional | CONFIRMED | DONE (76bc110) |
 | BL-052 | UI residual: same-name tool placeholder mis-drop; Text/Reasoning id-collision stuck | Low | Optional | CONFIRMED | DONE (903b3bc) |
 | BL-053 | Media transcription base64 ~2× peak memory (structural) | Low | Optional | CONFIRMED | DONE (documented, daed633) |
 
@@ -668,10 +668,10 @@ drop to "post-beta interop." Decide and document.
 
 - **Severity:** Medium · **Beta gate:** Optional · **Confidence:** CONFIRMED
 - **Acceptance criteria:** each sub-item threads `abortSignal`/floors inputs/detects terminal error; a test per provider where applicable.
-  - [ ] **Abort not honored in-flight (systemic):** `controller.abort()` (without coroutine cancel) is only observed at the next loop-top `throwIfAborted()`; several GET helpers don't accept a signal (`FalProvider.kt:75`, `RevaiProvider.kt:192`, `AssemblyAIProvider.kt:201`, `KlingAIProvider.kt:336`, `LumaProvider.kt:218`). Register the abort against a child `Job` to cancel the in-flight request. (Coroutine cancellation already works.)
-  - [ ] **Fireworks** image poll takes no `AbortSignal` and hammers at fixed 500ms × 240 (`FireworksFacade.kt:201-231`) — thread the signal + add backoff.
-  - [ ] **KlingAI** `while(true)` with only a wall-clock bound and an unfloored `pollTimeoutMs` (`KlingAIProvider.kt:148-174`) — a `pollTimeoutMs<=0` polls forever; add `maxPollAttempts` + `coerceAtLeast(1)`.
-  - [ ] **Google** video poll uses `return@repeat` (continue) instead of `break` on `done` → busy-spins remaining iterations (`GoogleMediaModels.kt:203-205`); and a terminal `error` without `done:true` isn't detected mid-loop (`:204,219`). Use a labeled `break`; check `error` inside the loop.
+  - [x] **Abort not honored in-flight (systemic):** fixed via a two-layer approach -- `AbortSignalRuntime.withAbortCancellation` (dedicated child coroutineScope + Job cancellation) wraps each provider's poll/submit/download calls, plus `HttpTransport.requestJson` and the shared `FacadeHttp` binary-GET helper bind the abort signal directly to Ktor's per-request `executionContext` job. Threaded through Fal/AssemblyAI/Revai/KlingAI/Luma.
+  - [x] **Fireworks** image poll now threads AbortSignal and backs off `*1.5` per attempt, capped at 30s (was fixed 500ms).
+  - [x] **KlingAI** `pollTimeoutMs` floored to `>=1L`; replaced the wall-clock-only `while(true)` with `repeat(maxPollAttempts)` + an explicit timeout throw after exhaustion.
+  - [x] **Google** video poll now uses a real `for` loop with `break` on `done`; terminal `error` is checked both before and after every poll response, not just via the post-loop catch-all.
 
 ## BL-052 — UI residual edge cases (narrow)
 
