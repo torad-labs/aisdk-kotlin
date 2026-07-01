@@ -272,6 +272,16 @@ public sealed class ContentPart {
          */
         public val url: String? = null,
     ) : ContentPart()
+
+    /**
+     * Forward-compatible escape hatch for content parts a gateway or provider
+     * knows about before this SDK does. The raw JSON is preserved so callers
+     * can inspect or round-trip it instead of silently losing content.
+     */
+    @Serializable
+    @SerialName("raw")
+    @Poko
+    public class Raw(public val rawValue: JsonElement) : ContentPart()
 }
 
 /**

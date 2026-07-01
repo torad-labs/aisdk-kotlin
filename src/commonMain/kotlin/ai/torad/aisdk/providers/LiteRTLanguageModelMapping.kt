@@ -223,6 +223,7 @@ internal class LiteRTRequestMessageMapper(
                 is ContentPart.ToolApprovalRequest,
                 is ContentPart.ToolApprovalResponse,
                 is ContentPart.Source,
+                is ContentPart.Raw,
                 -> null
             }
         }

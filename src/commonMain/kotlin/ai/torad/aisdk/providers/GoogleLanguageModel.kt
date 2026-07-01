@@ -227,6 +227,7 @@ internal class GoogleGenerativeAILanguageModel(
         is ContentPart.ToolApprovalRequest,
         is ContentPart.ToolApprovalResponse,
         is ContentPart.Source,
+        is ContentPart.Raw,
         -> null
     }
 
@@ -260,6 +261,7 @@ internal class GoogleGenerativeAILanguageModel(
         is ContentPart.ToolApprovalResponse,
         is ContentPart.Source,
         is ContentPart.Image,
+        is ContentPart.Raw,
         -> null
     }
 
@@ -288,6 +290,7 @@ internal class GoogleGenerativeAILanguageModel(
         is ContentPart.Source,
         is ContentPart.File,
         is ContentPart.Image,
+        is ContentPart.Raw,
         -> null
     }
 

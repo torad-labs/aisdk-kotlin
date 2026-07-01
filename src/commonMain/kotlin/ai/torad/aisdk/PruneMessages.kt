@@ -128,6 +128,7 @@ public object MessagePruning {
                             is ContentPart.Source,
                             is ContentPart.File,
                             is ContentPart.Image,
+                            is ContentPart.Raw,
                             -> true
                         }
                     },
@@ -205,6 +206,7 @@ public object MessagePruning {
                     is ContentPart.Source,
                     is ContentPart.File,
                     is ContentPart.Image,
+                    is ContentPart.Raw,
                     -> Unit
                 }
             }

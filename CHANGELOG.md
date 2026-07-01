@@ -32,6 +32,10 @@ This project follows Semantic Versioning once the first stable release is cut.
   docs and migration notes describe. Open Responses streaming now emits a
   terminal `StreamEvent.Error` for `response.failed` events and prefers final
   `output_item.done` tool-call arguments over an empty pending placeholder.
+- Gateway content-part decoding is forward-compatible on non-stream responses:
+  unknown gateway content part types now surface as `ContentPart.Raw` instead
+  of being silently dropped, matching the stream path's `StreamEvent.Raw`
+  fallback.
 - Tool strictness is now opt-in (breaking ABI change): `ToolSchema.strict`,
   `ToolSchemaOptions.strict`, `Tool.strict`, and `LanguageModelTool.strict` are
   `Boolean?` values defaulting to `null`. OpenAI-compatible tool requests omit

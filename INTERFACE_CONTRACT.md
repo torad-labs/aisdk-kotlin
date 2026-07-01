@@ -428,6 +428,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   - `@Serializable @Poko class File(mediaType, base64)`
   - **+ `providerMetadata: Map<String, JsonElement>? = null`** on every variant above EXCEPT `ToolApprovalResponse` (a host decision — no provider produced it). gap #11.
   - `@Serializable @Poko class Image(mediaType, base64)` — multimodal forward-parity (gap #39)
+  - `@Serializable @Poko class Raw(rawValue)` — forward-compatible gateway/provider content escape hatch for unknown content-part types; gateway non-stream responses preserve these instead of dropping them.
 - `@Serializable @Poko class Usage(promptTokens, completionTokens, totalTokens)`
   - `@Serializable @Poko class Usage.InputTokenBreakdown(...)`
   - `@Serializable @Poko class Usage.OutputTokenBreakdown(...)`

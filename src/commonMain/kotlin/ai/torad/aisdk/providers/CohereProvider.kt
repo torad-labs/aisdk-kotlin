@@ -423,6 +423,7 @@ private class CohereChatLanguageModel(
                 is ContentPart.ToolResult,
                 is ContentPart.ToolApprovalRequest,
                 is ContentPart.ToolApprovalResponse,
+                is ContentPart.Raw,
                 -> Unit
             }
         }

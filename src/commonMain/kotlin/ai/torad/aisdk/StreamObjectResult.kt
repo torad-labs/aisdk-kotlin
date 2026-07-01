@@ -130,6 +130,14 @@ public class StreamObjectResult<TOutput> internal constructor(
                 -> Unit
             }
         }
+        for (id in blockOrder) {
+            val textBlock = block(id)
+            val pending = textBlock.buffer.substring(textBlock.flushedLength)
+            if (pending.isNotEmpty()) {
+                emit(pending)
+                textBlock.flushedLength = textBlock.buffer.length
+            }
+        }
     }
 
     public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
@@ -184,13 +192,7 @@ public class StreamObjectResult<TOutput> internal constructor(
                 // instead of letting it fall through to a misleading NoObjectGeneratedError below.
                 is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
                 is StreamEvent.StreamStart -> warnings = event.warnings
-                is StreamEvent.ResponseMetadata -> response = LanguageModelResponseMetadata(
-                    id = event.id,
-                    timestampMillis = event.timestampMillis,
-                    modelId = event.modelId,
-                    headers = event.headers,
-                    body = event.body,
-                )
+                is StreamEvent.ResponseMetadata -> response = response.merge(event.toLanguageModelResponseMetadata())
                 is StreamEvent.Finish -> {
                     usage = event.usage
                     finishReason = event.finishReason

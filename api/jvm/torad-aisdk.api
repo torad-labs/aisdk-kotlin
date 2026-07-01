@@ -959,6 +959,30 @@ public final class ai/torad/aisdk/ContentPart$Image$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/ContentPart$Raw : ai/torad/aisdk/ContentPart {
+	public static final field Companion Lai/torad/aisdk/ContentPart$Raw$Companion;
+	public fun <init> (Lkotlinx/serialization/json/JsonElement;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRawValue ()Lkotlinx/serialization/json/JsonElement;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class ai/torad/aisdk/ContentPart$Raw$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lai/torad/aisdk/ContentPart$Raw$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lai/torad/aisdk/ContentPart$Raw;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lai/torad/aisdk/ContentPart$Raw;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/ContentPart$Raw$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class ai/torad/aisdk/ContentPart$Reasoning : ai/torad/aisdk/ContentPart {
 	public static final field Companion Lai/torad/aisdk/ContentPart$Reasoning$Companion;
 	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V

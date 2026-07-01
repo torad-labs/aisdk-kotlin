@@ -871,6 +871,7 @@ internal object GoogleInteractions {
                         is ContentPart.ToolApprovalRequest,
                         is ContentPart.ToolApprovalResponse,
                         is ContentPart.Source,
+                        is ContentPart.Raw,
                         -> null
                     }
                 }
@@ -932,6 +933,7 @@ internal object GoogleInteractions {
                         is ContentPart.ToolApprovalRequest,
                         is ContentPart.ToolApprovalResponse,
                         is ContentPart.Source,
+                        is ContentPart.Raw,
                         -> warnings += CallWarning("other", "google.interactions: unsupported assistant content part; part dropped.")
                     }
                 }

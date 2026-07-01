@@ -296,6 +296,72 @@ class StreamObjectResultTest {
     }
 
     @Test
+    fun `textStream drains later blocks when an earlier block never closes`() = runTest {
+        val model = object : LanguageModel {
+            override val modelId = "test/unclosed-earlier-block"
+            override suspend fun generate(params: LanguageModelCallParams) =
+                LanguageModelResult(text = "{}", finishReason = FinishReason.Stop, usage = Usage())
+
+            override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+                emit(StreamEvent.TextStart("a"))
+                emit(StreamEvent.TextStart("b"))
+                emit(StreamEvent.TextDelta("b", """{"name":"Bea","age":4}"""))
+                emit(StreamEvent.TextEnd("b"))
+                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+            }
+        }
+
+        val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
+
+        assertEquals(listOf("""{"name":"Bea","age":4}"""), result.textStream.toList())
+    }
+
+    @Test
+    fun `textStream keeps single open block behavior while final draining`() = runTest {
+        val result = StreamObjectResult(
+            model = object : LanguageModel {
+                override val modelId = "test/single-open-block"
+                override suspend fun generate(params: LanguageModelCallParams) =
+                    LanguageModelResult(text = "{}", finishReason = FinishReason.Stop, usage = Usage())
+
+                override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+                    emit(StreamEvent.TextStart("t"))
+                    emit(StreamEvent.TextDelta("t", """{"name":"Cy","age":9}"""))
+                    emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+                }
+            },
+            output = Output.obj(serializer<Person>()),
+            prompt = "go",
+        )
+
+        assertEquals(listOf("""{"name":"Cy","age":9}"""), result.textStream.toList())
+    }
+
+    @Test
+    fun `finish merges response metadata events`() = runTest {
+        val model = object : LanguageModel {
+            override val modelId = "test/metadata-merge"
+            override suspend fun generate(params: LanguageModelCallParams) =
+                LanguageModelResult(text = "{}", finishReason = FinishReason.Stop, usage = Usage())
+
+            override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+                emit(StreamEvent.ResponseMetadata(headers = mapOf("x-request-id" to "req_1")))
+                emit(StreamEvent.TextStart("t"))
+                emit(StreamEvent.TextDelta("t", """{"name":"Dee","age":6}"""))
+                emit(StreamEvent.TextEnd("t"))
+                emit(StreamEvent.ResponseMetadata(id = "resp_1", modelId = "test-model"))
+                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+            }
+        }
+
+        val finish = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go").finish()
+
+        assertEquals("resp_1", finish.response.id)
+        assertEquals("test-model", finish.response.modelId)
+        assertEquals("req_1", finish.response.headers["x-request-id"])
+    }
+
+    @Test
     fun `elementStream supports top level arrays during live streaming`() = runTest {
         val arrayOutput = Output.Arr(serializer<Person>())
         val result = StreamObjectResult(

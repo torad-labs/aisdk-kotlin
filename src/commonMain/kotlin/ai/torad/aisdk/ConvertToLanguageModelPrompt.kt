@@ -118,6 +118,7 @@ public object PromptConversion {
         is ContentPart.ToolApprovalRequest,
         is ContentPart.ToolApprovalResponse,
         is ContentPart.Source,
+        is ContentPart.Raw,
         -> part
     }
 

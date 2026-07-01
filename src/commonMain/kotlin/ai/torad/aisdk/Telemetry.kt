@@ -502,6 +502,12 @@ private object TelemetryRedaction {
             } else {
                 null
             }
+        is ContentPart.Raw ->
+            if (settings.recordOutputs) {
+                ContentPart.Raw(rawValue = redactor.redactJson(rawValue))
+            } else {
+                null
+            }
     }
 
     private fun StepResult.sanitizedStep(settings: TelemetrySettings, redactor: Redactor): StepResult =

@@ -1452,6 +1452,7 @@ internal data class ConvertedOpenResponsesInput(
                     is ContentPart.Source,
                     is ContentPart.File,
                     is ContentPart.Image,
+                    is ContentPart.Raw,
                     -> ""
                 }
             }
@@ -1529,6 +1530,7 @@ internal data class ConvertedOpenResponsesInput(
             is ContentPart.ToolApprovalRequest,
             is ContentPart.ToolApprovalResponse,
             is ContentPart.Source,
+            is ContentPart.Raw,
             -> null
         }
 
@@ -1545,6 +1547,7 @@ internal data class ConvertedOpenResponsesInput(
             is ContentPart.Source,
             is ContentPart.File,
             is ContentPart.Image,
+            is ContentPart.Raw,
             -> null
         }
 
