@@ -3,8 +3,8 @@
 Agents are models plus tools plus a loop. Use them when the model needs to
 decide which actions to take, run tools, see results, and continue.
 
-For direct one-step calls, use `generateText` or `streamText`. For multi-step
-tool work, use `ToolLoopAgent`.
+For direct one-step calls, use `TextGenerator`. For multi-step tool work, use
+`ToolLoopAgent`.
 
 Application prompts and responses should cross the agent boundary, not the
 underlying `LanguageModel` execution methods. Direct model execution remains
@@ -74,8 +74,9 @@ val searchDocs = Tool<SearchInput, List<SearchResult>, AppContext>(
 ```
 
 Use `DynamicTool` only when the schema or result type is not known at compile
-time. Use `providerExecuted = true` for tools run by the provider instead of
-the local executor.
+time. Use `ProviderExecutedTool(...)` for tools run by the provider instead of
+the local executor; custom factories can set `ToolSchemaOptions {
+providerExecuted(true) }`.
 
 Tools can also carry:
 
@@ -131,14 +132,16 @@ Use `prepareCall` once per invocation for request-specific setup.
 
 ```kotlin
 prepareCall = {
-    AgentSettings(
-        instructions = instructions + "\nUse workspace ${options?.workspaceId}.",
-        providerOptions = buildProviderOptions {
-            provider("openai") {
-                put("reasoningEffort", JsonPrimitive("medium"))
-            }
-        },
-    )
+    AgentSettings {
+        instructions(instructions + "\nUse workspace ${options?.workspaceId}.")
+        providerOptions(
+            ProviderOptions.ofPairs(
+                "openai" to buildJsonObject {
+                    put("reasoningEffort", JsonPrimitive("medium"))
+                },
+            ),
+        )
+    }
 }
 ```
 
@@ -147,10 +150,10 @@ compression, or evolving context.
 
 ```kotlin
 prepareStep = {
-    StepSettings(
-        model = if (stepNumber == 1) cheapModel else strongModel,
-        activeTools = if (stepNumber == 1) listOf("classify") else null,
-    )
+    StepSettings {
+        model(if (stepNumber == 1) cheapModel else strongModel)
+        activeTools(if (stepNumber == 1) listOf("classify") else null)
+    }
 }
 ```
 
@@ -180,10 +183,10 @@ When approval is required, the loop returns with `pendingApprovals`. Resume by
 adding approval response messages:
 
 ```kotlin
-val first = agent.generate(prompt = prompt, options = context)
+val first = agent.generate(prompt = prompt, options = context).first()
 
 val responses = first.pendingApprovals.map { pending ->
-    toolApprovalResponseMessage(
+    ToolApprovalResponseMessage(
         toolCallId = pending.toolCallId,
         approved = approvalUi.ask(pending.toolName, pending.input),
         approvalId = pending.approvalId,
@@ -193,7 +196,7 @@ val responses = first.pendingApprovals.map { pending ->
 val resumed = agent.generate(
     messages = first.messages + responses,
     options = context,
-)
+).first()
 ```
 
 Approval state lives in the message log. Persist the messages, not a hidden
@@ -257,7 +260,7 @@ val researchTool = Tool<ResearchInput, String, AppContext>(
         prompt = input.prompt,
         options = context,
         abortSignal = abortSignal,
-    ).text
+    ).first().text
 }
 ```
 

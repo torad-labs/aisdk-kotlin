@@ -15,7 +15,7 @@ data class SearchHit(val title: String, val url: String, val snippet: String)
 val searchDocs = Tool<SearchInput, List<SearchHit>, AppContext>(
     name = "searchDocs",
     description = "Search product documentation by query.",
-    inputExamples = listOf("""{"query":"streamTextResult adapters","limit":3}"""),
+    inputExamples = listOf("""{"query":"TextGenerator streamResult adapters","limit":3}"""),
 ) { input ->
     docs.search(input.query, limit = input.limit)
 }
@@ -39,16 +39,15 @@ val supportAgent = SupportAgent(model, ToolSet(searchDocs, createTicket))
 val result = supportAgent.generate(
     prompt = "How do I persist chat messages?",
     options = context,
-)
+).first()
 
 println(result.text)
 ```
 
-Agents own tool execution and loop control. Direct `generateText` and
-`streamText` calls are better for one-step work; agents are better when the
-model may need to act, observe, and continue. Set `stopWhen` whenever tools are
-available. Structured output can add another model step, so leave enough room
-for tool use plus final formatting.
+Agents own tool execution and loop control. `TextGenerator` is better for
+one-step work; agents are better when the model may need to act, observe, and
+continue. Set `stopWhen` whenever tools are available. Structured output can
+add another model step, so leave enough room for tool use plus final formatting.
 
 ## Approval
 
@@ -69,7 +68,7 @@ val createTicket = Tool<CreateTicket, Ticket, AppContext>(
 ```
 
 When approval is required, generation returns with pending approval data. Add
-a `toolApprovalResponseMessage(...)` to the message log, then call the agent
+a `ToolApprovalResponseMessage(...)` to the message log, then call the agent
 again with the updated messages.
 
 ## Control What The Model Sees
@@ -127,8 +126,9 @@ val external = DynamicTool<AppContext>(
 }
 ```
 
-Use `providerExecuted = true` or provider-defined helpers when the provider
-runs the tool on its side. Keep local executors for app-owned side effects.
+Use `ProviderExecutedTool(...)` when the provider runs the tool on its side.
+For custom tool factories, set `schemaOptions = ToolSchemaOptions {
+providerExecuted(true) }`. Keep local executors for app-owned side effects.
 
 ## Input Lifecycle Hooks
 
