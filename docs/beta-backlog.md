@@ -78,7 +78,7 @@ tests must stay green.
 | BL-054 | ~~SigV4 path needs double-encode~~ → FALSE POSITIVE (boto3: single `%3A` is correct); locked w/ test | ~~Critical~~ | Recommended | REFUTED | DONE (locked) |
 | BL-055 | ~~Bedrock ARN should be raw~~ → FALSE POSITIVE (boto3 encodes ARN wholesale); locked w/ test | ~~High~~ | Recommended | REFUTED | DONE (locked) |
 | BL-056 | Bedrock eventstream frames not CRC-validated | Low | Optional | CONFIRMED | OPEN |
-| BL-057 | Wiki/README/llms.txt code samples don't compile against the real API | High | Recommended | CONFIRMED | OPEN |
+| BL-057 | Wiki/README/llms.txt code samples don't compile against the real API | High | Recommended | CONFIRMED | DONE (all 17 sub-items B1-B17/B10/B18 — see detail section) |
 | BL-058 | Public API evolvability: data-class traps, no top-level verbs, Java-uncallable fns | High | Recommended | CONFIRMED | DONE (A1/A2/A3/A4 all landed — see detail section) |
 
 All audit areas COMPLETE. Integrations → BL-013..018. MCP → BL-019..028. Core
@@ -751,23 +751,36 @@ compile-guard. A2/B1, A3, A1, B8 were independently re-verified in source.
 - **Severity:** High · **Beta gate:** Recommended (first users copy-paste these) · **Confidence:** CONFIRMED (re-verified B11/B12/B16/A2-B1/B8)
 - **Root cause:** docs target a v6-style API (top-level `generateText`, `create*` factories, `.text` on a direct result) that doesn't exist; the port uses PascalCase factories, object-qualified members, and `Flow`-returning agents. Only `ReadmeQuickStartTest` compiles one snippet; all 33 wiki pages + llms.txt + INTERFACE_CONTRACT have no compile guard (B10), so drift went unchecked.
 - **Fix direction (per A2 decision — NO loose top-level functions):** rewrite the docs to match the REAL idiomatic Kotlin API — `TextGenerator(model).generate(...)`/`.streamResult(...)`, object-qualified `Embedding.embed`/`ImageGeneration.generateImage`/etc., PascalCase factories — NOT by inventing `generateText(...)` loose verbs. Add `*DocSnippetTest` compile guards for the first-hit pages so the corrected snippets can't regress.
+- **STATUS: DONE.** All 17 sub-items fixed across 6 batches (README/getting-started;
+  core/structured-output/foundations; tools/agents; providers/mcp;
+  model-families/llms.txt; INTERFACE_CONTRACT.md), each independently re-verified
+  against real source (not just plausibility) before commit. 10 new
+  `*DocSnippetTest` compile guards added (plus the extended `ReadmeQuickStartTest`);
+  every corrected snippet executes real assertions against real mock
+  models/transports, not compile-only stubs. Test count grew 967 → 984. Full
+  `./tools/beta-readiness-check` reconfirmed green end to end after the final
+  batch. Two related source-KDoc instances of the same defect, found in passing
+  and fixed alongside (technically outside this item's wiki/README/llms.txt
+  scope but same root cause): `Output.kt`'s class KDoc, and 3
+  `toolApprovalResponseMessage` mentions in `Agent.kt`/`ToolApproval.kt`/
+  `ToolLoopAgent.kt`.
 - **Acceptance criteria:** each break fixed AND a compile-guard test added so it can't regress.
-  - [ ] **B1** top-level `generateText`/`streamText` (getting-started:52,64,80; core:15,27,45,78,132; structured-output; foundations; README:68,78; INTERFACE_CONTRACT:204) → don't exist; rewrite to `TextGenerator(model).generate(GenerationInput.Prompt(...))` or add the wrappers (BL-058/A2).
-  - [ ] **B2** `create*` factories (~45 refs across providers.md, README:83, llms.txt:93) → PascalCase `Gateway()`/`Anthropic()`/`OpenAICompatible()`; plus renames `createAzure`→`AzureOpenAI`, `createVertex`→`GoogleVertex`, `createVertexAnthropic`→`GoogleVertexAnthropic`, `createVertexMaas`→`GoogleVertexMaas`.
-  - [ ] **B3** `generateObject`/`streamObject`/`streamTextResult` (README:80; core:97; structured-output:92,109,114) → don't exist; use `TextGenerator.streamResult(...)`/`StreamObjectResult(...)`.
-  - [ ] **B4** `agent.generate(...).text` (getting-started:143; tools:39; agents:183,193,256) → `generate(...)` returns `Flow<GenerateResult>`; use `.first().text`.
-  - [ ] **B5** `createMcpTransport`/`createMCPClient` (mcp:10,19) → `CreateMcpTransport`/`CreateMCPClient` (latter `suspend`).
-  - [ ] **B6** `callSettings{}`/`wrapLanguageModel`/`*Middleware` lowercase (core:123,190-208; INTERFACE_CONTRACT:133; llms.txt:89) → PascalCase.
-  - [ ] **B7** INTERFACE_CONTRACT:13-14,54-58,175 wrong `Agent.generate` sig + phantom `outputObj`/`customProvider`/`createIdGenerator`/`generateId` → real `Output.obj`, `Provider`, `IdGenerator`.
-  - [ ] **B8** llms.txt:8-9 `ai.torad:aisdk-kotlin` / `0.1.0-SNAPSHOT` → `ai.torad:torad-aisdk` / `0.3.0-beta01` (won't resolve as written).
-  - [ ] **B9/B14** `imageGenerationFile`/`generatedFile` (core:172; model-families:71,74,133) → `ImageGenerationFile(data)`/`GeneratedFile(data)`.
-  - [ ] **B11** media verbs object-qualified (model-families:10-114) → `Embedding.embed`/`ImageGeneration.generateImage`/`Reranking.rerank`/`Transcription.transcribe`/`SpeechGeneration.generateSpeech`/`VideoGeneration.generateVideo`.
-  - [ ] **B12** `customProvider(...)` (providers:15,143) → `Provider(providerId=…, languageModels=…)`.
-  - [ ] **B13** `buildProviderOptions{}` (agents:138) → `ProviderOptions.ofPairs(...)` (type is `ProviderOptions`, not `Map`).
-  - [ ] **B15** `extractJsonMiddleware`/`loggingMiddleware`/`mockLanguageModelTextOnly`/`toolApprovalResponseMessage` → PascalCase.
-  - [ ] **B16** `MCPTransportKind` has only `{Http,Sse}` (MCP.kt:890); mcp.md:25,124 stdio prose → point to `Experimental_StdioMCPTransport`.
-  - [ ] **B17** `providerExecuted=true` as a `Tool(...)` arg (agents:78) → `ToolSchemaOptions(providerExecuted=true)` / `ProviderExecutedTool(...)`.
-  - [ ] **B10/B18** add `*DocSnippetTest` compile guards (getting-started/core/tools/structured-output/providers/mcp/agents) and show required imports for companion/extension calls.
+  - [x] **B1** top-level `generateText`/`streamText` (getting-started:52,64,80; core:15,27,45,78,132; structured-output; foundations; README:68,78; INTERFACE_CONTRACT:204) → don't exist; rewrite to `TextGenerator(model).generate(GenerationInput.Prompt(...))` or add the wrappers (BL-058/A2).
+  - [x] **B2** `create*` factories (~45 refs across providers.md, README:83, llms.txt:93) → PascalCase `Gateway()`/`Anthropic()`/`OpenAICompatible()`; plus renames `createAzure`→`AzureOpenAI`, `createVertex`→`GoogleVertex`, `createVertexAnthropic`→`GoogleVertexAnthropic`, `createVertexMaas`→`GoogleVertexMaas`.
+  - [x] **B3** `generateObject`/`streamObject`/`streamTextResult` (README:80; core:97; structured-output:92,109,114) → don't exist; use `TextGenerator.streamResult(...)`/`StreamObjectResult(...)`.
+  - [x] **B4** `agent.generate(...).text` (getting-started:143; tools:39; agents:183,193,256) → `generate(...)` returns `Flow<GenerateResult>`; use `.first().text`.
+  - [x] **B5** `createMcpTransport`/`createMCPClient` (mcp:10,19) → `CreateMcpTransport`/`CreateMCPClient` (latter `suspend`).
+  - [x] **B6** `callSettings{}`/`wrapLanguageModel`/`*Middleware` lowercase (core:123,190-208; INTERFACE_CONTRACT:133; llms.txt:89) → PascalCase.
+  - [x] **B7** INTERFACE_CONTRACT:13-14,54-58,175 wrong `Agent.generate` sig + phantom `outputObj`/`customProvider`/`createIdGenerator`/`generateId` → real `Output.obj`, `Provider`, `IdGenerator`.
+  - [x] **B8** llms.txt:8-9 `ai.torad:aisdk-kotlin` / `0.1.0-SNAPSHOT` → `ai.torad:torad-aisdk` / `0.3.0-beta01` (won't resolve as written).
+  - [x] **B9/B14** `imageGenerationFile`/`generatedFile` (core:172; model-families:71,74,133) → `ImageGenerationFile(data)`/`GeneratedFile(data)`.
+  - [x] **B11** media verbs object-qualified (model-families:10-114) → `Embedding.embed`/`ImageGeneration.generateImage`/`Reranking.rerank`/`Transcription.transcribe`/`SpeechGeneration.generateSpeech`/`VideoGeneration.generateVideo`.
+  - [x] **B12** `customProvider(...)` (providers:15,143) → `Provider(providerId=…, languageModels=…)`.
+  - [x] **B13** `buildProviderOptions{}` (agents:138) → `ProviderOptions.ofPairs(...)` (type is `ProviderOptions`, not `Map`).
+  - [x] **B15** `extractJsonMiddleware`/`loggingMiddleware`/`mockLanguageModelTextOnly`/`toolApprovalResponseMessage` → PascalCase.
+  - [x] **B16** `MCPTransportKind` has only `{Http,Sse}` (MCP.kt:890); mcp.md:25,124 stdio prose → point to `Experimental_StdioMCPTransport`.
+  - [x] **B17** `providerExecuted=true` as a `Tool(...)` arg (agents:78) → `ToolSchemaOptions(providerExecuted=true)` / `ProviderExecutedTool(...)`.
+  - [x] **B10/B18** add `*DocSnippetTest` compile guards (getting-started/core/tools/structured-output/providers/mcp/agents) and show required imports for companion/extension calls.
 
 ## BL-058 — Public API evolvability (expensive to change after the ABI freezes)
 
