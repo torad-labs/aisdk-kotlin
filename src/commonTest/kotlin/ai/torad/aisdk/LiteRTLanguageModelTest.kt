@@ -24,6 +24,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class LiteRTLanguageModelTest {
 
@@ -150,6 +151,31 @@ class LiteRTLanguageModelTest {
         assertEquals("lookup", request.tools.single().name)
         assertEquals(1, factory.createdConversations.single().sendCalls)
         assertEquals(1, factory.createdConversations.single().closeCalls)
+    }
+
+    @Test
+    fun `generate injects JSON instruction for Json response format`() = runTest {
+        val schema = JsonObject(mapOf("type" to JsonPrimitive("object")))
+        val factory = FakeLiteRTFactory()
+        val model = LiteRTLanguageModel(
+            modelId = "gemma-litert",
+            conversationFactory = factory,
+        )
+
+        val result = model.generate(
+            LanguageModelCallParams {
+                messages(listOf(SystemMessage("Be concise."), UserMessage("hello")))
+                responseFormat(ResponseFormat.Json(schemaJson = schema))
+            },
+        )
+
+        val systemText = assertIs<LiteRTContent.Text>(factory.requests.single().systemInstruction.single()).text
+        assertEquals(
+            "Be concise.\n\nJSON schema:\n{\"type\":\"object\"}\n" +
+                "You MUST answer with a JSON object that matches the JSON schema above.",
+            systemText,
+        )
+        assertTrue(result.warnings.none { it.message.orEmpty().contains("responseFormat") })
     }
 
     @Test

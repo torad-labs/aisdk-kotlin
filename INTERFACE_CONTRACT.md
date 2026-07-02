@@ -108,7 +108,8 @@ and repaired values are byte-identical to the JS SDK.
 - Structured-object result/phase holders (`DeepPartial`,
   `StructuredObjectFinish`, `StructuredObjectPhase.Streaming` / `Done`, and
   `StreamObjectFinish`) are `@Poko class` value-semantics types; field access
-  remains, but public `copy()` / `componentN()` ABI is intentionally absent.
+  remains, model stream warnings are exposed through `warnings`, but public
+  `copy()` / `componentN()` ABI is intentionally absent.
 - `fun fixJson(input: String): String` — close a truncated JSON fragment
   (drains the open-frame stack, completes literals/numbers/strings).
 - `fun parsePartialJson(jsonText: String?): PartialJsonResult`
@@ -377,7 +378,10 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `LiteRTSamplerConfig.Default`; `LiteRTConversation.cancel()` and `close()` are
   documented no-op defaults that abortable/resource-owning engines must
   override. `LiteRTContent.ToolResponse` correlates by tool name only and does
-  not carry a tool-call id.
+  not carry a tool-call id. `LiteRTLanguageModel` applies
+  `JsonInstruction.injectJsonInstructionIntoMessages` for
+  `ResponseFormat.Json`, so on-device engines receive the same schema prompt
+  guidance as the shared structured-output utilities.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`
@@ -429,6 +433,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   - `fun stream(input: GenerationInput): Flow<StreamEvent>`
   - `fun streamResult(input: GenerationInput): StreamTextResult` — terminal stream runs are memoized for replay. If all collectors leave before terminal completion, the upstream producer is cancelled and a later collector starts a fresh run. Upstream collection uses the first collector's coroutine context; `warnings` and `response` flows drain `fullStream` to terminal completion before emitting metadata.
 - `fun <TOutput> StreamObjectResult(model, output, prompt?, messages = emptyList(), system?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries = 2): StreamObjectResult<TOutput>` — routes object/text/element accessors through the same memoized stream lifecycle as `StreamTextResult`.
+- `class StructuredObjectGenerator<RESULT>(model, schema, config = CallConfig(), schemaName = "object", schemaDescription? = null)` — `stream(input)` emits structured phases whose `warnings` mirror the model stream's `StreamStart.warnings`; `generate(input)` returns `StructuredObjectFinish` with the same warnings.
 - `@Poko class GenerateObjectResult<TOutput>` remains the structured-output result holder; there are no loose top-level object-generation shims.
 - Completion helper state: `CompletionState` remains a data class for state
   updates, while `CompletionPhase.Streaming`, `CompletionPhase.Done`, and

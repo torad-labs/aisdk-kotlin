@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -23,6 +24,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.jvm.JvmOverloads
 
 @Poko
 /** @since 0.3.0-beta01 */
@@ -115,13 +117,15 @@ internal class DirectStructuredObjectTransport<INPUT>(
 
 @Poko
 /** @since 0.3.0-beta01 */
-public class StructuredObjectFinish<RESULT>(
+public class StructuredObjectFinish<RESULT> @JvmOverloads constructor(
     /** @since 0.3.0-beta01 */
     public val value: RESULT?,
     /** @since 0.3.0-beta01 */
     public val error: Throwable?,
     /** @since 0.3.0-beta01 */
     public val rawValue: JsonElement?,
+    /** @since 0.3.0-beta01 */
+    public val warnings: List<CallWarning> = emptyList(),
 )
 
 /** @since 0.3.0-beta01 */
@@ -231,24 +235,28 @@ public sealed class StructuredObjectPhase<out RESULT> {
 
     @Poko
     /** @since 0.3.0-beta01 */
-    public class Streaming<out RESULT>(
+    public class Streaming<out RESULT> @JvmOverloads constructor(
         /** @since 0.3.0-beta01 */
         public val partial: RESULT?,
         /** @since 0.3.0-beta01 */
         public val raw: JsonElement?,
         /** @since 0.3.0-beta01 */
         public val error: Throwable?,
+        /** @since 0.3.0-beta01 */
+        public val warnings: List<CallWarning> = emptyList(),
     ) : StructuredObjectPhase<RESULT>()
 
     @Poko
     /** @since 0.3.0-beta01 */
-    public class Done<out RESULT>(
+    public class Done<out RESULT> @JvmOverloads constructor(
         /** @since 0.3.0-beta01 */
         public val value: RESULT?,
         /** @since 0.3.0-beta01 */
         public val raw: JsonElement?,
         /** @since 0.3.0-beta01 */
         public val error: Throwable?,
+        /** @since 0.3.0-beta01 */
+        public val warnings: List<CallWarning> = emptyList(),
     ) : StructuredObjectPhase<RESULT>()
 }
 
@@ -327,7 +335,7 @@ public class StructuredObject<RESULT, INPUT>(
             // reaches Done (partial preserved) but must NOT fire onFinish — the host didn't finish.
             if (!controller.signal.isAborted) {
                 (mutableState.value as? StructuredObjectPhase.Done)?.let {
-                    options.onFinish(StructuredObjectFinish(it.value, it.error, it.raw))
+                    options.onFinish(StructuredObjectFinish(it.value, it.error, it.raw, it.warnings))
                 }
             }
         } catch (c: CancellationException) {
@@ -492,25 +500,60 @@ public class StructuredObjectGenerator<RESULT>(
      */
     public fun stream(input: GenerationInput): Flow<StructuredObjectPhase<RESULT>> =
         CallTimeout.flow(
-            StructuredObject.phases(
-                chunks = model.stream(buildParams(input)).textDeltas(),
-                schema = schema,
-                abortSignal = config.abortSignal,
-            ),
+            flow {
+                var warnings: List<CallWarning> = emptyList()
+                StructuredObject.phases(
+                    chunks = model.stream(buildParams(input)).textDeltas { warnings = it },
+                    schema = schema,
+                    abortSignal = config.abortSignal,
+                ).collect { phase ->
+                    emit(
+                        when (phase) {
+                            is StructuredObjectPhase.Streaming -> StructuredObjectPhase.Streaming(
+                                phase.partial,
+                                phase.raw,
+                                phase.error,
+                                warnings,
+                            )
+                            is StructuredObjectPhase.Done -> StructuredObjectPhase.Done(
+                                phase.value,
+                                phase.raw,
+                                phase.error,
+                                warnings,
+                            )
+                            StructuredObjectPhase.Idle -> StructuredObjectPhase.Idle
+                        },
+                    )
+                }
+            },
             config.timeout,
         )
 
     /** Text-delta payloads from the model stream, surfacing any in-band [StreamEvent.Error]. */
-    private fun Flow<StreamEvent>.textDeltas(): Flow<String> =
+    private fun Flow<StreamEvent>.textDeltas(onWarnings: (List<CallWarning>) -> Unit = {}): Flow<String> =
         onEach { event ->
-            if (event is StreamEvent.Error) throw UiMessageStreamError(event.message, event.cause)
+            when (event) {
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
+                is StreamEvent.StreamStart -> onWarnings(event.warnings)
+                else -> Unit
+            }
         }.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
     /** One-shot: drives the stream to [StructuredObjectPhase.Done] and returns the typed result. */
     public suspend fun generate(input: GenerationInput): StructuredObjectFinish<RESULT> =
         when (val terminal = stream(input).last()) {
-            is StructuredObjectPhase.Done -> StructuredObjectFinish(terminal.value, terminal.error, terminal.raw)
-            is StructuredObjectPhase.Streaming -> StructuredObjectFinish(terminal.partial, terminal.error, terminal.raw)
+            is StructuredObjectPhase.Done -> StructuredObjectFinish(
+                terminal.value,
+                terminal.error,
+                terminal.raw,
+                terminal.warnings,
+            )
+            is StructuredObjectPhase.Streaming -> StructuredObjectFinish(
+                terminal.partial,
+                terminal.error,
+                terminal.raw,
+                terminal.warnings,
+            )
             StructuredObjectPhase.Idle -> StructuredObjectFinish(null, null, null)
         }
     private fun buildParams(input: GenerationInput): LanguageModelCallParams =

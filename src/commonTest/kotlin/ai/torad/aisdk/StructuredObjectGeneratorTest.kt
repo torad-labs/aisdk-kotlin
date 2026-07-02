@@ -108,6 +108,33 @@ class StructuredObjectGeneratorTest {
     }
 
     @Test
+    fun `model stream warnings reach structured object callers`() = runTest {
+        val warning = CallWarning(type = "other", message = "heads up")
+        val model = object : LanguageModel {
+            override val modelId = "test/obj-warning"
+            override suspend fun generate(params: LanguageModelCallParams) =
+                LanguageModelResult(text = "{}", finishReason = FinishReason.Stop, usage = Usage())
+
+            override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+                emit(StreamEvent.StreamStart(listOf(warning)))
+                emit(StreamEvent.TextStart("t"))
+                emit(StreamEvent.TextDelta("t", """{"name":"Warn","age":3}"""))
+                emit(StreamEvent.TextEnd("t"))
+                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+            }
+        }
+        val generator = StructuredObjectGenerator(model = model, schema = personSchema)
+
+        val finish = generator.generate(GenerationInput.Prompt("make a person"))
+        val done = assertIs<StructuredObjectPhase.Done<Person>>(
+            generator.stream(GenerationInput.Prompt("make a person")).toList().last(),
+        )
+
+        assertEquals(listOf(warning), finish.warnings)
+        assertEquals(listOf(warning), done.warnings)
+    }
+
+    @Test
     fun `abort preserves the latest partial as a terminal Done`() = runTest {
         val controller = AbortController()
         // The model emits one good partial, fires the abort, then would emit more — the loop's

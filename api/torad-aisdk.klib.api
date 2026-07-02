@@ -1826,7 +1826,7 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/StreamObjectResult { // ai.torad.ai
 }
 
 final class <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectFinish { // ai.torad.aisdk/StructuredObjectFinish|null[0]
-    constructor <init>(#A?, kotlin/Throwable?, kotlinx.serialization.json/JsonElement?) // ai.torad.aisdk/StructuredObjectFinish.<init>|<init>(1:0?;kotlin.Throwable?;kotlinx.serialization.json.JsonElement?){}[0]
+    constructor <init>(#A?, kotlin/Throwable?, kotlinx.serialization.json/JsonElement?, kotlin.collections/List<ai.torad.aisdk/CallWarning> = ...) // ai.torad.aisdk/StructuredObjectFinish.<init>|<init>(1:0?;kotlin.Throwable?;kotlinx.serialization.json.JsonElement?;kotlin.collections.List<ai.torad.aisdk.CallWarning>){}[0]
 
     final val error // ai.torad.aisdk/StructuredObjectFinish.error|{}error[0]
         final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/StructuredObjectFinish.error.<get-error>|<get-error>(){}[0]
@@ -1834,6 +1834,8 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectFinish { // ai.tora
         final fun <get-rawValue>(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/StructuredObjectFinish.rawValue.<get-rawValue>|<get-rawValue>(){}[0]
     final val value // ai.torad.aisdk/StructuredObjectFinish.value|{}value[0]
         final fun <get-value>(): #A? // ai.torad.aisdk/StructuredObjectFinish.value.<get-value>|<get-value>(){}[0]
+    final val warnings // ai.torad.aisdk/StructuredObjectFinish.warnings|{}warnings[0]
+        final fun <get-warnings>(): kotlin.collections/List<ai.torad.aisdk/CallWarning> // ai.torad.aisdk/StructuredObjectFinish.warnings.<get-warnings>|<get-warnings>(){}[0]
 
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StructuredObjectFinish.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/StructuredObjectFinish.hashCode|hashCode(){}[0]
@@ -11687,7 +11689,7 @@ sealed class <#A: out kotlin/Any?> ai.torad.aisdk/ParseResult { // ai.torad.aisd
 
 sealed class <#A: out kotlin/Any?> ai.torad.aisdk/StructuredObjectPhase { // ai.torad.aisdk/StructuredObjectPhase|null[0]
     final class <#A1: out kotlin/Any?> Done : ai.torad.aisdk/StructuredObjectPhase<#A1> { // ai.torad.aisdk/StructuredObjectPhase.Done|null[0]
-        constructor <init>(#A1?, kotlinx.serialization.json/JsonElement?, kotlin/Throwable?) // ai.torad.aisdk/StructuredObjectPhase.Done.<init>|<init>(1:0?;kotlinx.serialization.json.JsonElement?;kotlin.Throwable?){}[0]
+        constructor <init>(#A1?, kotlinx.serialization.json/JsonElement?, kotlin/Throwable?, kotlin.collections/List<ai.torad.aisdk/CallWarning> = ...) // ai.torad.aisdk/StructuredObjectPhase.Done.<init>|<init>(1:0?;kotlinx.serialization.json.JsonElement?;kotlin.Throwable?;kotlin.collections.List<ai.torad.aisdk.CallWarning>){}[0]
 
         final val error // ai.torad.aisdk/StructuredObjectPhase.Done.error|{}error[0]
             final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/StructuredObjectPhase.Done.error.<get-error>|<get-error>(){}[0]
@@ -11695,6 +11697,8 @@ sealed class <#A: out kotlin/Any?> ai.torad.aisdk/StructuredObjectPhase { // ai.
             final fun <get-raw>(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/StructuredObjectPhase.Done.raw.<get-raw>|<get-raw>(){}[0]
         final val value // ai.torad.aisdk/StructuredObjectPhase.Done.value|{}value[0]
             final fun <get-value>(): #A1? // ai.torad.aisdk/StructuredObjectPhase.Done.value.<get-value>|<get-value>(){}[0]
+        final val warnings // ai.torad.aisdk/StructuredObjectPhase.Done.warnings|{}warnings[0]
+            final fun <get-warnings>(): kotlin.collections/List<ai.torad.aisdk/CallWarning> // ai.torad.aisdk/StructuredObjectPhase.Done.warnings.<get-warnings>|<get-warnings>(){}[0]
 
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StructuredObjectPhase.Done.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk/StructuredObjectPhase.Done.hashCode|hashCode(){}[0]
@@ -11702,7 +11706,7 @@ sealed class <#A: out kotlin/Any?> ai.torad.aisdk/StructuredObjectPhase { // ai.
     }
 
     final class <#A1: out kotlin/Any?> Streaming : ai.torad.aisdk/StructuredObjectPhase<#A1> { // ai.torad.aisdk/StructuredObjectPhase.Streaming|null[0]
-        constructor <init>(#A1?, kotlinx.serialization.json/JsonElement?, kotlin/Throwable?) // ai.torad.aisdk/StructuredObjectPhase.Streaming.<init>|<init>(1:0?;kotlinx.serialization.json.JsonElement?;kotlin.Throwable?){}[0]
+        constructor <init>(#A1?, kotlinx.serialization.json/JsonElement?, kotlin/Throwable?, kotlin.collections/List<ai.torad.aisdk/CallWarning> = ...) // ai.torad.aisdk/StructuredObjectPhase.Streaming.<init>|<init>(1:0?;kotlinx.serialization.json.JsonElement?;kotlin.Throwable?;kotlin.collections.List<ai.torad.aisdk.CallWarning>){}[0]
 
         final val error // ai.torad.aisdk/StructuredObjectPhase.Streaming.error|{}error[0]
             final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/StructuredObjectPhase.Streaming.error.<get-error>|<get-error>(){}[0]
@@ -11710,6 +11714,8 @@ sealed class <#A: out kotlin/Any?> ai.torad.aisdk/StructuredObjectPhase { // ai.
             final fun <get-partial>(): #A1? // ai.torad.aisdk/StructuredObjectPhase.Streaming.partial.<get-partial>|<get-partial>(){}[0]
         final val raw // ai.torad.aisdk/StructuredObjectPhase.Streaming.raw|{}raw[0]
             final fun <get-raw>(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/StructuredObjectPhase.Streaming.raw.<get-raw>|<get-raw>(){}[0]
+        final val warnings // ai.torad.aisdk/StructuredObjectPhase.Streaming.warnings|{}warnings[0]
+            final fun <get-warnings>(): kotlin.collections/List<ai.torad.aisdk/CallWarning> // ai.torad.aisdk/StructuredObjectPhase.Streaming.warnings.<get-warnings>|<get-warnings>(){}[0]
 
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StructuredObjectPhase.Streaming.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk/StructuredObjectPhase.Streaming.hashCode|hashCode(){}[0]
