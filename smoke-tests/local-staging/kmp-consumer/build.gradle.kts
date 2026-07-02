@@ -12,6 +12,8 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_17)
         }
     }
+    iosArm64()
+    linuxX64()
 
     sourceSets {
         commonMain.dependencies {
