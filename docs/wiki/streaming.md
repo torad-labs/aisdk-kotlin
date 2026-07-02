@@ -7,9 +7,8 @@ tool-call state, sources, files, errors, metadata, and finish events through
 ## Basic Text Stream
 
 ```kotlin
-streamText(
-    model = model,
-    prompt = "Write a short migration checklist.",
+TextGenerator(model).stream(
+    GenerationInput.Prompt("Write a short migration checklist."),
 ).collect { event ->
     when (event) {
         is StreamEvent.TextDelta -> print(event.text)
@@ -19,15 +18,15 @@ streamText(
 }
 ```
 
-The top-level `streamText` flow is cold. Each collection starts a new provider
-call. Use `streamTextResult` when you need a result object and adapters.
+`TextGenerator.stream(...)` is cold. Each collection starts a new provider
+call. Use `TextGenerator.streamResult(...)` when you need a result object and
+adapters.
 
 ## Stream Result Adapters
 
 ```kotlin
-val result = streamTextResult(
-    model = model,
-    prompt = "Explain UI message streams.",
+val result = TextGenerator(model).streamResult(
+    GenerationInput.Prompt("Explain UI message streams."),
 )
 
 result.textStream.collect { delta ->
@@ -46,7 +45,7 @@ framework adapters.
 ## Stream Events To UI Messages
 
 ```kotlin
-val uiMessages = streamToUiMessages(
+val uiMessages = StreamToUiMessages(
     events = agent.stream(prompt = prompt, options = context),
     assistantMessageId = "assistant-${turn.id}",
 )
@@ -63,7 +62,7 @@ Use UI messages when the host wants stable render state instead of raw deltas.
 Host frameworks can adapt SDK response values:
 
 ```kotlin
-val result = streamTextResult(model = model, prompt = prompt)
+val result = TextGenerator(model).streamResult(GenerationInput.Prompt(prompt))
 
 return result.toTextStreamResponse()
 ```
@@ -76,7 +75,8 @@ return result.toUiMessageStreamResponse(
 )
 ```
 
-Use `pipeTextStreamToResponse` and `pipeUiMessageStreamToResponse` when the
+Use `UiMessageStreams.pipeTextStreamToResponse` and
+`UiMessageStreams.pipeUiMessageStreamToResponse` when the
 host framework exposes a writer instead of a returnable response object.
 
 ## Streaming Tools
@@ -107,11 +107,10 @@ Pass an `AbortSignal` from your host when users can stop a request:
 val controller = AbortController()
 
 val job = launch {
-    streamText(
-        model = model,
-        prompt = prompt,
-        abortSignal = controller.signal,
-    ).collect(::handleEvent)
+    TextGenerator(
+        model,
+        CallConfig { abortSignal(controller.signal) },
+    ).stream(GenerationInput.Prompt(prompt)).collect(::handleEvent)
 }
 
 controller.abort()
@@ -136,7 +135,7 @@ For typed errors, retries, and UI validation failures, see [Error Handling](erro
 ## Tips
 
 - Collect a stream once unless you intentionally want another provider call.
-- Prefer `streamTextResult` for framework adapters and tests.
+- Prefer `TextGenerator.streamResult(...)` for framework adapters and tests.
 - Store completed UI messages, not raw deltas.
 - Render tool and reasoning parts independently from text parts.
 
