@@ -8,6 +8,11 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 - Beta-readiness hardening: tool execution now uses an explicit bounded `ToolExecutionPolicy` (default `maxParallelToolCalls=8`, `maxToolCallsPerStep=128`) so a model cannot create unbounded child coroutines or in-step tool work. The loop now surfaces typed `AgentError.MaxToolCallsPerStepExceeded` and `AgentError.ToolExecutionTimedOut` failures.
 - Retry hardening: `RetryPolicy` now defaults to retrying only typed retryable `APICallError` / `GatewayError`, uses injectable full-jitter backoff, honors `Retry-After` with an injected clock, supports per-attempt and total deadlines, and carries retry decision details through `RetryError.attempts`.
+- Streaming lifecycle hardening: `StreamTextResult` / `StreamObjectResult`
+  memoize only terminal stream runs. If every collector leaves before terminal
+  completion, the upstream producer is cancelled, partial replay state is
+  discarded, and a later collector starts a fresh run in the collector's
+  coroutine context.
 - Privacy hardening: telemetry integrations are metadata-only by default (`recordInputs=false`, `recordOutputs=false`) and receive a redacted event projection. `LoggingMiddleware` now logs tool metadata and byte counts by default; raw/redacted payload logging is explicit via `LoggingOptions` and the shared `Redactor` seam.
 - Release gates: coverage thresholds, detekt baseline budget ratchet, dependency verification metadata, provider capability/API review checks, local-staging consumer smoke fixtures, SHA-pinned GitHub Actions, workflow timeouts, and a `tools/beta-readiness-check` gate were added.
 - Public API hardening: JVM default-method compatibility is now pinned to `JvmDefaultMode.ENABLE`; experimental MCP/media aliases and functions, agent tool-call repair/approval-secret knobs, step/tool predicate `experimental_context`, and the remaining public experimental-prefixed surfaces now require `@ExperimentalAiSdkApi`; mutable byte payloads now defensively copy on input/output (`FileData.Bytes.toByteArray()`, `DefaultGeneratedFile.byteArray`); and `MutableTelemetrySpan` now accepts a read-only `Map` instead of a public `MutableMap`.

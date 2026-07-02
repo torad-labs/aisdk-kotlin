@@ -1,11 +1,13 @@
 package ai.torad.aisdk
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.take
@@ -47,6 +49,54 @@ class StreamTextResultTest {
         assertEquals(full, replay)
         assertEquals(4, replay.size)
         assertEquals(listOf("a", "b"), replay.filterIsInstance<StreamEvent.TextDelta>().map { it.text })
+    }
+
+    @Test
+    fun `last collector leaving before terminal cancels upstream and restarts cleanly`() = runTest {
+        var collections = 0
+        val firstRunCancelled = CompletableDeferred<Unit>()
+        val upstream = flow {
+            collections++
+            try {
+                emit(StreamEvent.TextStart("t"))
+                emit(StreamEvent.TextDelta("t", "a"))
+                if (collections == 1) {
+                    awaitCancellation()
+                }
+                emit(StreamEvent.TextDelta("t", "b"))
+                emit(StreamEvent.TextEnd("t"))
+            } finally {
+                if (collections == 1) firstRunCancelled.complete(Unit)
+            }
+        }
+        val result = StreamTextResult(sourceStream = upstream)
+
+        assertEquals(2, result.fullStream.take(2).toList().size)
+        withTimeout(5_000) { firstRunCancelled.await() }
+
+        val restarted = result.fullStream.toList()
+        assertEquals(2, collections)
+        assertEquals(4, restarted.size)
+        assertEquals(listOf("a", "b"), restarted.filterIsInstance<StreamEvent.TextDelta>().map { it.text })
+        assertEquals(restarted, result.fullStream.toList())
+    }
+
+    @Test
+    fun `upstream is collected in the collector context`() = runTest {
+        val upstreamContextName = CompletableDeferred<String?>()
+        val upstream = flow {
+            upstreamContextName.complete(currentCoroutineContext()[CoroutineName]?.name)
+            emit(StreamEvent.TextStart("t"))
+            emit(StreamEvent.TextDelta("t", "a"))
+            emit(StreamEvent.TextEnd("t"))
+        }
+        val result = StreamTextResult(sourceStream = upstream)
+
+        withContext(CoroutineName("stream-consumer")) {
+            result.fullStream.toList()
+        }
+
+        assertEquals("stream-consumer", upstreamContextName.await())
     }
 
     @Test

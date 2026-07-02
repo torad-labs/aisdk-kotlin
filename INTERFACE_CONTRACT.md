@@ -427,8 +427,8 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   - `fun generate(input: GenerationInput): Flow<GenerateTextResult<String>>`
   - `fun <T> generate(input: GenerationInput, output: Output<T>): Flow<GenerateTextResult<T>>`
   - `fun stream(input: GenerationInput): Flow<StreamEvent>`
-  - `fun streamResult(input: GenerationInput): StreamTextResult`
-- `fun <TOutput> StreamObjectResult(model, output, prompt?, messages = emptyList(), system?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries = 2): StreamObjectResult<TOutput>`
+  - `fun streamResult(input: GenerationInput): StreamTextResult` — terminal stream runs are memoized for replay. If all collectors leave before terminal completion, the upstream producer is cancelled and a later collector starts a fresh run. Upstream collection uses the first collector's coroutine context; `warnings` and `response` flows drain `fullStream` to terminal completion before emitting metadata.
+- `fun <TOutput> StreamObjectResult(model, output, prompt?, messages = emptyList(), system?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries = 2): StreamObjectResult<TOutput>` — routes object/text/element accessors through the same memoized stream lifecycle as `StreamTextResult`.
 - `@Poko class GenerateObjectResult<TOutput>` remains the structured-output result holder; there are no loose top-level object-generation shims.
 - Completion helper state: `CompletionState` remains a data class for state
   updates, while `CompletionPhase.Streaming`, `CompletionPhase.Done`, and

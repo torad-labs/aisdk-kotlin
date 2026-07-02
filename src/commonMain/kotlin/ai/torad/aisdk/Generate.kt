@@ -3,9 +3,9 @@ package ai.torad.aisdk
 import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
@@ -15,8 +15,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.CoroutineContext
 
 @Poko
 /** @since 0.3.0-beta01 */
@@ -75,12 +77,15 @@ public class GenerateTextResult<TOutput>(
 }
 
 /**
- * Streaming generation result — memoised replay. The upstream is collected at
- * most once; later collectors replay the captured events. To preserve full
- * replay for a collector that attaches after the first event, the result keeps
- * the stream event sequence in memory for the result lifetime. Hosts that need
- * minimum peak memory for a guaranteed single-consumer path can collect the
- * model stream directly instead of using this replaying result surface.
+ * Streaming generation result — memoised replay. A terminal upstream run is
+ * collected at most once; later collectors replay the captured events. If every
+ * collector leaves before the upstream reaches a terminal state, that producer
+ * is cancelled, its partial buffer is discarded, and a later collector starts a
+ * fresh upstream run. To preserve full replay for a collector that attaches
+ * after the first event, the result keeps the terminal stream event sequence in
+ * memory for the result lifetime. Hosts that need minimum peak memory for a
+ * guaranteed single-consumer path can collect the model stream directly instead
+ * of using this replaying result surface.
  * @since 0.3.0-beta01
  */
 @OptIn(ExperimentalAtomicApi::class)
@@ -102,13 +107,21 @@ public class StreamTextResult(
         .filterIsInstance<StreamEvent.TextDelta>()
         .map { it.text }
 
-    /** @since 0.3.0-beta01 */
+    /**
+     * Warnings captured from the stream. Collecting this flow drains
+     * [fullStream] to terminal completion if the stream has not completed yet.
+     * @since 0.3.0-beta01
+     */
     public val warnings: Flow<List<CallWarning>> = flow {
         ensureCollected()
         emit(capturedWarnings.load())
     }
 
-    /** @since 0.3.0-beta01 */
+    /**
+     * Response metadata captured from the stream. Collecting this flow drains
+     * [fullStream] to terminal completion if the stream has not completed yet.
+     * @since 0.3.0-beta01
+     */
     public val response: Flow<LanguageModelResponseMetadata> = flow {
         ensureCollected()
         emit(capturedResponse.load())
@@ -148,57 +161,91 @@ public class StreamTextResult(
     }
 }
 
-@OptIn(ExperimentalAtomicApi::class)
 private class MemoizedStreamReplay(
     private val upstream: Flow<StreamEvent>,
     private val onTerminalSnapshot: (List<StreamEvent>) -> Unit,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val producer = AtomicReference<Job?>(null)
     private val mutex = Mutex()
     private val buffer = mutableListOf<StreamEvent>()
     private val progress = MutableStateFlow(ReplayProgress())
+    private var producer: Job? = null
+    private var runId = 0L
+    private var activeCollectors = 0
 
     val flow: Flow<StreamEvent> = flow {
-        start()
-        var nextIndex = 0
-        while (true) {
-            val snapshot = snapshotFrom(nextIndex)
-            for (event in snapshot.events) {
-                emit(event)
-                nextIndex++
-            }
-            when (val terminal = snapshot.terminal) {
-                ReplayTerminal.Complete -> return@flow
-                is ReplayTerminal.Error -> throw terminal.throwable
-                null -> progress.first { it.size > nextIndex || it.terminal != null }
-            }
-        }
-    }
-
-    private fun start() {
-        while (true) {
-            if (producer.load() != null) return
-            val job = scope.launch(start = CoroutineStart.LAZY) { collectUpstream() }
-            if (producer.compareAndSet(null, job)) {
-                job.start()
-                return
-            }
-            job.cancel()
-        }
-    }
-
-    private suspend fun collectUpstream() {
+        var registered = false
         try {
-            upstream.collect { event ->
-                mutex.withLock {
-                    buffer += event
-                    progress.value = ReplayProgress(size = buffer.size)
+            registerCollector(currentCoroutineContext())
+            registered = true
+            var nextIndex = 0
+            while (true) {
+                val snapshot = snapshotFrom(nextIndex)
+                for (event in snapshot.events) {
+                    emit(event)
+                    nextIndex++
+                }
+                when (val terminal = snapshot.terminal) {
+                    ReplayTerminal.Complete -> return@flow
+                    is ReplayTerminal.Error -> throw terminal.throwable
+                    null -> progress.first { it.size > nextIndex || it.terminal != null }
                 }
             }
-            complete(ReplayTerminal.Complete)
+        } finally {
+            if (registered) {
+                // Cleanup must run even during collector cancellation; a contended mutex would otherwise throw CE
+                // before the active collector decrement can cancel an abandoned producer.
+                withContext(NonCancellable) { unregisterCollector() }
+            }
+        }
+    }
+
+    private suspend fun registerCollector(collectionContext: CoroutineContext) {
+        mutex.withLock {
+            activeCollectors++
+            if (producer != null || progress.value.terminal != null) return
+            runId++
+            val producerRunId = runId
+            val producerContext = collectionContext.minusKey(Job)
+            val producerScope = CoroutineScope(producerContext)
+            val job = producerScope.launch(start = CoroutineStart.LAZY) {
+                collectUpstream(producerRunId)
+            }
+            producer = job
+            job.start()
+        }
+    }
+
+    private suspend fun unregisterCollector() {
+        val abandonedProducer = mutex.withLock {
+            activeCollectors--
+            check(activeCollectors >= 0) { "Stream replay collector count underflow" }
+            if (activeCollectors != 0 || progress.value.terminal != null) return@withLock null
+            val job = producer
+            producer = null
+            runId++
+            buffer.clear()
+            progress.value = ReplayProgress()
+            job
+        }
+        abandonedProducer?.cancel()
+    }
+
+    private suspend fun collectUpstream(producerRunId: Long) {
+        try {
+            upstream.collect { event ->
+                append(producerRunId, event)
+            }
+            complete(producerRunId, ReplayTerminal.Complete)
         } catch (t: Throwable) {
-            complete(ReplayTerminal.Error(t))
+            complete(producerRunId, ReplayTerminal.Error(t))
+        }
+    }
+
+    private suspend fun append(producerRunId: Long, event: StreamEvent) {
+        mutex.withLock {
+            if (producerRunId != runId || progress.value.terminal != null) return
+            buffer += event
+            progress.value = ReplayProgress(size = buffer.size)
         }
     }
 
@@ -210,9 +257,11 @@ private class MemoizedStreamReplay(
             )
         }
 
-    private suspend fun complete(terminal: ReplayTerminal) {
+    private suspend fun complete(producerRunId: Long, terminal: ReplayTerminal) {
         mutex.withLock {
+            if (producerRunId != runId || progress.value.terminal != null) return
             onTerminalSnapshot(buffer.toList())
+            producer = null
             progress.value = ReplayProgress(size = buffer.size, terminal = terminal)
         }
     }
