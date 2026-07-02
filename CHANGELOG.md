@@ -200,7 +200,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   `LiteRTSamplerConfig {}` builds the default sampler config, and
   `LiteRTConversation.cancel()` / `close()` KDoc now documents that the defaults
   are no-ops that abortable/resource-owning engines must override. LiteRT tool
-  responses also document their name-only correlation limit.
+  responses also document their name-only correlation limit. LiteRT structured
+  output now injects the shared JSON instruction/schema into the prompt for
+  `ResponseFormat.Json` instead of warning and dropping the request, and
+  `StructuredObjectFinish` / `StructuredObjectPhase.Streaming` / `Done` now
+  carry model stream warnings.
   Call-parameter envelopes (`LanguageModelCallParams` and
   `EmbeddingModelCallParams`) are now `@Poko` value-semantics classes with
   internal positional constructors, public DSL factories for fresh

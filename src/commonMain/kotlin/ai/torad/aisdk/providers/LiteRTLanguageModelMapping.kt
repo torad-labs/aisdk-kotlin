@@ -8,6 +8,7 @@ import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.DataUrl
 import ai.torad.aisdk.FinishReason
 import ai.torad.aisdk.JsonAccess
+import ai.torad.aisdk.JsonInstruction
 import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.LanguageModelTool
@@ -36,14 +37,21 @@ internal class LiteRTCallPreparer(
 
     fun prepare(params: LanguageModelCallParams): PreparedLiteRTCall {
         val warnings = warnings(params).toMutableList()
-        val nonSystemMessages = params.messages.filterNot { it.role == MessageRole.System }
+        val messages = when (val format = params.responseFormat) {
+            is ResponseFormat.Json -> JsonInstruction.injectJsonInstructionIntoMessages(
+                messages = params.messages,
+                schema = format.schemaJson,
+            )
+            ResponseFormat.Text -> params.messages
+        }
+        val nonSystemMessages = messages.filterNot { it.role == MessageRole.System }
         val message = nonSystemMessages.lastOrNull()
             ?: throw UnsupportedFunctionalityError(
                 "LiteRT empty prompt",
                 "LiteRTLanguageModel requires at least one non-system message.",
             )
         val request = LiteRTConversationRequest {
-            systemInstruction(messageMapper.systemInstruction(params.messages))
+            systemInstruction(messageMapper.systemInstruction(messages))
             initialMessages(nonSystemMessages.dropLast(1).map(messageMapper::message))
             message(messageMapper.message(message))
             tools(tools(params, warnings))
@@ -74,9 +82,6 @@ internal class LiteRTCallPreparer(
         }
         if (params.frequencyPenalty != null) {
             add(CallWarning("unsupported", "LiteRT-LM does not expose frequencyPenalty."))
-        }
-        if (params.responseFormat !is ResponseFormat.Text) {
-            add(CallWarning("unsupported", "LiteRT-LM constrained responseFormat is not supported by this adapter."))
         }
     }
 

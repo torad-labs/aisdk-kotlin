@@ -5784,10 +5784,13 @@ public final class ai/torad/aisdk/StructuredObjectApiKt {
 
 public final class ai/torad/aisdk/StructuredObjectFinish {
 	public fun <init> (Ljava/lang/Object;Ljava/lang/Throwable;Lkotlinx/serialization/json/JsonElement;)V
+	public fun <init> (Ljava/lang/Object;Ljava/lang/Throwable;Lkotlinx/serialization/json/JsonElement;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/Object;Ljava/lang/Throwable;Lkotlinx/serialization/json/JsonElement;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getError ()Ljava/lang/Throwable;
 	public final fun getRawValue ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getValue ()Ljava/lang/Object;
+	public final fun getWarnings ()Ljava/util/List;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -5828,10 +5831,13 @@ public abstract class ai/torad/aisdk/StructuredObjectPhase {
 
 public final class ai/torad/aisdk/StructuredObjectPhase$Done : ai/torad/aisdk/StructuredObjectPhase {
 	public fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;)V
+	public fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getError ()Ljava/lang/Throwable;
 	public final fun getRaw ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getValue ()Ljava/lang/Object;
+	public final fun getWarnings ()Ljava/util/List;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -5845,10 +5851,13 @@ public final class ai/torad/aisdk/StructuredObjectPhase$Idle : ai/torad/aisdk/St
 
 public final class ai/torad/aisdk/StructuredObjectPhase$Streaming : ai/torad/aisdk/StructuredObjectPhase {
 	public fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;)V
+	public fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getError ()Ljava/lang/Throwable;
 	public final fun getPartial ()Ljava/lang/Object;
 	public final fun getRaw ()Lkotlinx/serialization/json/JsonElement;
+	public final fun getWarnings ()Ljava/util/List;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
