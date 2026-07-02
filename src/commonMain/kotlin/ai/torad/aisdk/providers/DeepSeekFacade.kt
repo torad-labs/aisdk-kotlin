@@ -192,7 +192,6 @@ public fun DeepSeekLanguageModelOptions(
     DeepSeekLanguageModelOptionsBuilder().apply(block).build()
 
 public typealias DeepSeekChatOptions = DeepSeekLanguageModelOptions
-public typealias DeepSeekErrorData = JsonElement
 
 /** @since 0.3.0-beta01 */
 public class DeepSeekProvider(
