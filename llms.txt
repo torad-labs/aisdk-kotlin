@@ -84,17 +84,21 @@ Primary package: ai.torad.aisdk
 - ToolLoopAgent: default tool-loop implementation.
 - LanguageModel, EmbeddingModel, ImageModel, SpeechModel, TranscriptionModel,
   VideoModel, RerankingModel: provider-neutral model contracts.
-- generateText and streamText: single-call text APIs.
-- Output: structured output adapter for Kotlin serializers.
-- tool, dynamicTool, ToolSet: typed and dynamic tool definitions.
+- TextGenerator.generate, TextGenerator.stream, and TextGenerator.streamResult:
+  high-level text APIs over GenerationInput and CallConfig.
+- Output and StructuredObjectGenerator: structured output adapters for Kotlin
+  serializers and schemas.
+- Tool, DynamicTool, StreamingTool, ProviderExecutedTool, and ToolSet: typed,
+  dynamic, streaming, provider-executed, and grouped tool definitions.
 - StreamEvent: low-level streaming event taxonomy.
 - UIMessage and UIMessagePart: framework-neutral render contracts.
 - Chat and ChatTransport: host-neutral chat state and transport contracts.
-- createGateway, createOpenAICompatible, createOpenAI, provider facades:
-  provider entry points.
-- createProviderRegistry and customProvider: provider routing.
-- createMCPClient: MCP client entry point.
-- devToolsMiddleware: recorder-backed development middleware.
+- Gateway, OpenAICompatible, OpenAI, and provider facades: provider entry
+  points.
+- ProviderRegistry.createProviderRegistry and CustomProvider: provider routing.
+- CreateMCPClient, MCPClientConfig, and CreateMcpTransport: MCP client and
+  transport entry points.
+- DevToolsMiddleware: recorder-backed development middleware.
 
 ## Development Commands
 
