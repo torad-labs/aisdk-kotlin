@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalAiSdkApi::class)
+
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
@@ -818,12 +820,14 @@ public class ToolExecutionContext<TContext>(
  * Options bag passed to predicate callbacks ([Tool.needsApproval], [Tool.toModelOutput]).
  * @since 0.3.0-beta01
  */
+@Suppress("ConstructorParameterNaming")
 public class ToolPredicateOptions<TContext> internal constructor(
     /** @since 0.3.0-beta01 */
     public val toolCallId: String,
     /** @since 0.3.0-beta01 */
     public val messages: List<ModelMessage>,
     /** @since 0.3.0-beta01 */
+    @ExperimentalAiSdkApi
     public val experimental_context: TContext? = null,
 )
 
@@ -846,6 +850,8 @@ public class ToolPredicateOptionsBuilder<TContext> {
     }
 
     /** @since 0.3.0-beta01 */
+    @Suppress("FunctionNaming")
+    @ExperimentalAiSdkApi
     public fun experimental_context(value: TContext?): ToolPredicateOptionsBuilder<TContext> {
         experimentalContext = value
         return this

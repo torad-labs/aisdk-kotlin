@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalAiSdkApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.serialization.KSerializer
@@ -139,6 +141,7 @@ public class AgentSettings<TContext> internal constructor(
      * Ignored when returned from `prepareCall`.
      * @since 0.3.0-beta01
      */
+    @ExperimentalAiSdkApi
     public val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
     experimental_toolApprovalSecret: ByteArray? = null,
     /**
@@ -175,6 +178,7 @@ public class AgentSettings<TContext> internal constructor(
      * construction. Ignored when returned from `prepareCall`.
      * @since 0.3.0-beta01
      */
+    @ExperimentalAiSdkApi
     public val experimental_toolApprovalSecret: ByteArray?
         get() = experimentalToolApprovalSecretBytes?.copyOf()
 }
@@ -259,6 +263,7 @@ public class AgentSettingsBuilder<TContext> {
     }
 
     /** @since 0.3.0-beta01 */
+    @ExperimentalAiSdkApi
     public fun experimental_repairToolCall(
         value: ToolCallRepairFunction<TContext>?,
     ): AgentSettingsBuilder<TContext> {
@@ -267,6 +272,7 @@ public class AgentSettingsBuilder<TContext> {
     }
 
     /** @since 0.3.0-beta01 */
+    @ExperimentalAiSdkApi
     public fun experimental_toolApprovalSecret(value: ByteArray?): AgentSettingsBuilder<TContext> {
         experimentalToolApprovalSecret = value?.copyOf()
         return this
@@ -449,6 +455,7 @@ public class PrepareStepScope<TContext>(
  * following synthesis steps are warmer.
  * @since 0.3.0-beta01
  */
+@Suppress("ConstructorParameterNaming", "LongParameterList")
 public class StepSettings<TContext> internal constructor(
     /** @since 0.3.0-beta01 */
     public val model: LanguageModel? = null,
@@ -490,6 +497,7 @@ public class StepSettings<TContext> internal constructor(
      * (e.g., RAG augmentation after a tool result).
      * @since 0.3.0-beta01
      */
+    @ExperimentalAiSdkApi
     public val experimental_context: TContext? = null,
 ) {
     init {
@@ -615,6 +623,8 @@ public class StepSettingsBuilder<TContext> {
     }
 
     /** @since 0.3.0-beta01 */
+    @Suppress("FunctionNaming")
+    @ExperimentalAiSdkApi
     public fun experimental_context(value: TContext?): StepSettingsBuilder<TContext> {
         experimental_context = value
         return this

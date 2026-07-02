@@ -13,9 +13,8 @@ import kotlin.annotation.AnnotationTarget.TYPEALIAS
  * Marks a declaration as **experimental**: a surface whose shape may change or be
  * removed in any release without going through the normal deprecation cycle.
  *
- * Currently gates the JS-ecosystem framework-adapter shims (`react`, `svelte`,
- * `vue`, `angular`, `rsc`) and the `codemod` migration helpers. These are
- * half-ported, churning surfaces that should not be mistaken for the stable core.
+ * Currently gates surfaces that mirror upstream experimental APIs or are still
+ * churning before the stable core contract freezes.
  *
  * Consumers must opt in explicitly — either annotate the using declaration with
  * `@ExperimentalAiSdkApi`, or annotate the call site with
@@ -23,7 +22,7 @@ import kotlin.annotation.AnnotationTarget.TYPEALIAS
  */
 @RequiresOptIn(
     level = RequiresOptIn.Level.ERROR,
-    message = "This is an experimental AI SDK API (framework-adapter / migration surface). " +
+    message = "This is an experimental AI SDK API. " +
         "It may change or be removed without notice. Opt in with @OptIn(ExperimentalAiSdkApi::class).",
 )
 @Retention(BINARY)
