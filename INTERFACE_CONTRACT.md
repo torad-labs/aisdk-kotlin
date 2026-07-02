@@ -48,11 +48,13 @@
   - common subclassing parameters (`model`, `instructions`, `tools`, `output`, `stopWhen`) stay source-level named arguments; advanced construction knobs live in `AgentSettings<TContext>` so future settings can be added without freezing a long subclass `<init>` signature
   - `val engineState: StateFlow<ToolLoopAgentState>`
   - `fun dispatchEngineAction(action: ToolLoopAgentAction<TContext>)`
+  - `fun events(prompt?, messages = emptyList(), options?, abortSignal?): Flow<AgentEvent>` — request-scoped lifecycle observation
+  - `suspend fun collectAgentEvents(prompt?, messages = emptyList(), options?, abortSignal?, onEvent)` — convenience collector for the same lifecycle stream
   - `fun close()`
 - `data class ToolLoopAgentState(messages, streamingAssistantText, currentToolCalls, pendingApprovals, phase, totalSteps, lastFinishReason)` — state-holder surface for long-lived hosts; remains a data class for `StateFlow.update { it.copy(...) }` MVI usage. `ToolLoopAgentState.Phase.Error` is an `@Poko class` value-semantics leaf.
 - `sealed class ToolLoopAgentAction<TContext>` — `UserSubmitPrompt`, `ApproveToolCall`, `DenyToolCall`, `Cancel`, `Reset`
 - `@Poko class GenerateResult<TOutput>(output, text, steps, finishReason, usage, pendingApprovals = [], messages = [])`
-- `data class AgentCallHooks(onStart?, onStepStart?, onStepFinish?, onFinish?, onError?, onChunk?)` — per-call hook surface
+- `AgentEvent` is the public lifecycle event hierarchy for observation. `prepareCall` / `prepareStep` in `AgentSettings<TContext>` are the public behavior hooks; telemetry integrations use `Telemetry`.
 
 ### Tool definition
 

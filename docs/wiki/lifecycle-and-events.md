@@ -1,6 +1,6 @@
 # Lifecycle And Events
 
-Lifecycle hooks observe an agent run. Stream events carry incremental model,
+Lifecycle events observe an agent run. Stream events carry incremental model,
 tool, and UI state. Telemetry integrations record the same kind of lifecycle at
 an observability boundary.
 
@@ -10,7 +10,7 @@ need request-scoped observation, middleware when you
 need model-call wrapping, and telemetry integrations when you need app-wide
 observation.
 
-## Agent Hooks
+## Agent Events
 
 Use the lifecycle event stream for full-loop observation:
 
@@ -51,21 +51,21 @@ agent.collectAgentEvents(
 
 Use `collectAgentEvents` when you only need a small subset of lifecycle events.
 
-## Hook Events
+## Event Types
 
-| Hook | Use it for |
+| Event | Use it for |
 |---|---|
-| `onStart` | Log request context and prior message count. |
-| `onStepStart` | Inspect the next step's messages and prepared request. |
-| `onStepFinish` | Record step output, usage, warnings, model id, and metadata. |
-| `onFinish` | Persist final messages, usage, pending approvals, and final context. |
-| `onError` | Observe hook, tool, prepare, and model failures. |
-| `onChunk` | Mirror streaming events into diagnostics or progress traces. |
-| `onAbort` | Persist partial work after cancellation. |
-| `experimental_onToolCallStart` | Record parsed tool input before execution. |
-| `experimental_onToolCallFinish` | Record tool output or tool failure. |
+| `AgentEvent.Started` | Log request context and prior message count. |
+| `AgentEvent.StepStarted` | Inspect the next step's messages and prepared request. |
+| `AgentEvent.StepFinished` | Record step output, usage, warnings, model id, and metadata. |
+| `AgentEvent.Finished` | Persist final messages, usage, pending approvals, and final context. |
+| `AgentEvent.Errored` | Observe tool, prepare, model, and collector failures. |
+| `AgentEvent.Chunk` | Mirror streaming events into diagnostics or progress traces. |
+| `AgentEvent.Aborted` | Persist partial work after cancellation. |
+| `AgentEvent.ToolCallStarted` | Record parsed tool input before execution. |
+| `AgentEvent.ToolCallFinished` | Record tool output or tool failure. |
 
-Hooks are observation points. Use `prepareCall` or `prepareStep` when behavior
+Events are observation points. Use `prepareCall` or `prepareStep` when behavior
 needs to change.
 
 ## Stream Events
@@ -85,8 +85,8 @@ agent.stream(prompt = prompt, options = context).collect { event ->
 }
 ```
 
-Use stream events when the host needs incremental behavior. Use hooks when the
-host wants lifecycle observation without taking over rendering.
+Use stream events when the host needs incremental behavior. Use agent events
+when the host wants lifecycle observation without taking over rendering.
 
 ## Tool Input Hooks
 
@@ -146,11 +146,11 @@ external transport.
 
 ## Tips
 
-- Hook failures are observed and logged; tool and prepare failures are real
-  generation failures.
-- Persist `onFinish.messages` when approval may resume later.
-- Use `onAbort` for cleanup and partial persistence.
-- Do not mutate global prompt or tool state from hooks.
+- Collector failures are observed as lifecycle errors; tool and prepare
+  failures are real generation failures.
+- Persist `AgentEvent.Finished.messages` when approval may resume later.
+- Use `AgentEvent.Aborted` for cleanup and partial persistence.
+- Do not mutate global prompt or tool state from event collectors.
 
 ## Related
 

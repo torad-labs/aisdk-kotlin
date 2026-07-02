@@ -202,21 +202,27 @@ val resumed = agent.generate(
 Approval state lives in the message log. Persist the messages, not a hidden
 agent process.
 
-## Lifecycle Hooks
+## Lifecycle Events
 
-Constructor hooks and per-call hooks observe the loop:
+Use the lifecycle stream to observe a single run:
 
-- `onStart`
-- `onStepStart`
-- `onStepFinish`
-- `onFinish`
-- `onError`
-- `onChunk`
-- `onAbort`
-- experimental tool-call start/finish hooks
+```kotlin
+agent.events(prompt = prompt, options = context).collect { event ->
+    when (event) {
+        is AgentEvent.Started<*> -> trace.start(event.options)
+        is AgentEvent.StepFinished -> metrics.tokens(event.step.usage.totalTokens)
+        is AgentEvent.Finished<*, *> -> save(event.messages)
+        else -> Unit
+    }
+}
+```
 
-Hook failures do not crash generation. Tool execution, model calls,
-`prepareCall`, and `prepareStep` failures do.
+`collectAgentEvents` is the same surface with a suspend handler. Event
+collection is for observation; change behavior through `prepareCall`,
+`prepareStep`, tool policy, or tools themselves.
+
+Collector failures surface as lifecycle errors. Tool execution, model calls,
+`prepareCall`, and `prepareStep` failures are generation failures.
 
 ## Sessions
 
