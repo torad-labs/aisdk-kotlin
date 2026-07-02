@@ -335,9 +335,10 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `ToolPredicateOptions`, `BedrockCredentials`, `AssemblyAICustomSpelling`,
   `OpenResponsesOptions`, `OpenResponsesAllowedTools`,
   `XaiLanguageModelChatOptions`, `XaiLanguageModelResponsesOptions`,
-  `LiteRTSamplerConfig`, `LiteRTConversationRequest`, and
-  `LiteRTLanguageModelSettings`, `OAuthClientInformation`,
-  `OAuthClientMetadata`, `Configuration`, `ElicitationCapability`,
+  `LiteRTSamplerConfig`, `LiteRTChannel`, `LiteRTToolCall`, `LiteRTMessage`,
+  `LiteRTConversationRequest`, and `LiteRTLanguageModelSettings`,
+  `OAuthClientInformation`, `OAuthClientMetadata`, `Configuration`,
+  `ElicitationCapability`,
   `ProviderMiddleware`, `RetryPolicy`, `ToolExecutionPolicy`, `CallSettings`,
   `CallConfig`, `AgentSettings`, and `StepSettings`) expose field
   getters and are configured through public DSL factories. The gateway params,
@@ -346,10 +347,12 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `RedactionOptions`, `MCPReconnectionOptions`, `StdioConfig`,
   `ToolSchemaOptions`, `BedrockCredentials`, `AssemblyAICustomSpelling`,
   `OpenResponsesOptions`, `OpenResponsesAllowedTools`,
-  `XaiLanguageModelChatOptions`, `XaiLanguageModelResponsesOptions`, and
-  `LiteRTSamplerConfig`, `OAuthClientInformation`, `OAuthClientMetadata`,
-  `Configuration`, `ElicitationCapability`, `ToolExecutionPolicy`,
-  `CallSettings`, and `CallConfig` are `@Poko` value-semantics types.
+  `XaiLanguageModelChatOptions`, `XaiLanguageModelResponsesOptions`,
+  `LiteRTSamplerConfig`, `LiteRTChannel`, `LiteRTToolCall`,
+  `LiteRTMessage`, and the six `LiteRTContent` leaf types,
+  `OAuthClientInformation`, `OAuthClientMetadata`, `Configuration`,
+  `ElicitationCapability`, `ToolExecutionPolicy`, `CallSettings`, and
+  `CallConfig` are `@Poko` value-semantics types.
   `AuthOptions`,
   media/rerank params, `CompletionRequest`, `StructuredObjectRequest`,
   `TelemetrySettings`, `MCPClientConfig`, `MCPTransportConfig`,
@@ -363,6 +366,14 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   definitions, middleware instances, retry delay generators, arbitrary context
   values, model input objects, language models, or tool sets. The positional
   constructors, `copy()`, and `componentN()` are not public.
+- LiteRT on-device bridge types use typed JSON context at the public boundary:
+  `LiteRTConversationRequest.extraContext`, `LiteRTLanguageModelSettings.extraContext`,
+  and `LiteRTConversation.send/stream(..., extraContext = ...)` are
+  `Map<String, JsonElement>`. `LiteRTSamplerConfig {}` returns
+  `LiteRTSamplerConfig.Default`; `LiteRTConversation.cancel()` and `close()` are
+  documented no-op defaults that abortable/resource-owning engines must
+  override. `LiteRTContent.ToolResponse` correlates by tool name only and does
+  not carry a tool-call id.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`

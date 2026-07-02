@@ -80,9 +80,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   protocol result/capability holders, plus tool result/output and approval
   holders, structured-object result/phase holders, and UI stream result
   holders, error/parser/devtools/telemetry result holders, OAuth metadata/token
-  payloads, provider error payloads, and model message/content/usage wire
-  types, plus generate result holders, loop snapshots, and clean state-machine
-  phase leaves; field access, equality, hashCode, toString, and JSON
+  payloads, provider error payloads, model message/content/usage wire types,
+  and LiteRT wire types (`LiteRTChannel`, the six `LiteRTContent` leaves,
+  `LiteRTToolCall`, and `LiteRTMessage`), plus generate result holders, loop
+  snapshots, and clean state-machine phase leaves; field access, equality,
+  hashCode, toString, and JSON
   serialization remain supported where applicable. State containers such as
   `AgentSessionState`, `ToolLoopAgentState`, `ChatState`, and `CompletionState`
   intentionally remain data classes for `StateFlow.update { it.copy(...) }`
@@ -182,6 +184,15 @@ This project follows Semantic Versioning once the first stable release is cut.
   approval signing, telemetry, logging, and engine context move through
   regular `AgentSettingsBuilder` setter methods, removing the old 26-parameter
   constructor from frozen public ABI.
+  LiteRT wire types now use internal constructors plus public builders/DSL
+  factories (`LiteRTChannel { ... }`, `LiteRTToolCall { ... }`,
+  `LiteRTMessage { ... }`, and `LiteRTContent.Text { ... }` etc.); their public
+  `copy()` / `componentN()` ABI is removed. LiteRT `extraContext` is now
+  `Map<String, JsonElement>` instead of `Map<String, Any?>`,
+  `LiteRTSamplerConfig {}` builds the default sampler config, and
+  `LiteRTConversation.cancel()` / `close()` KDoc now documents that the defaults
+  are no-ops that abortable/resource-owning engines must override. LiteRT tool
+  responses also document their name-only correlation limit.
   Call-parameter envelopes (`LanguageModelCallParams` and
   `EmbeddingModelCallParams`) are now `@Poko` value-semantics classes with
   internal positional constructors, public DSL factories for fresh
