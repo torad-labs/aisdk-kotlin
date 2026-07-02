@@ -4,4 +4,4 @@ Report vulnerabilities through GitHub private vulnerability reporting for this r
 
 Do not open public issues for suspected credential leaks, supply-chain problems, or exploitable behavior.
 
-This core package does not include network providers by default. Security-sensitive provider integrations should document their own secret handling, retry, logging, and redaction behavior.
+This artifact includes network-capable provider implementations, including Ktor-backed providers, Gateway, and OpenAI-compatible clients. Treat provider configuration as security-sensitive: do not commit API keys, prefer environment or secret-store injection, and report credential exposure, request-signing, retry, logging, redaction, or transport issues privately.
