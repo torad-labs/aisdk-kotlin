@@ -93,6 +93,6 @@ typed generation.
 ## Related
 
 - [UI And Streams](ui-and-streams.md)
-- [Framework Facades](framework-facades.md)
+- [Framework Host Integration](framework-facades.md)
 - [Structured Output](structured-output.md)
 - [Streaming](streaming.md)

@@ -221,13 +221,14 @@ the shape of upstream UI hooks without depending on a web framework.
 
 For examples, see [Completion And Object UI](completion-and-object-ui.md).
 
-## Framework Facades
+## Framework Hosts
 
-The `react`, `vue`, `svelte`, `angular`, and `rsc` packages expose aliases and
-adapters for upstream package parity. They do not ship actual framework
-components. Compose, SwiftUI, and server renderers belong in host apps.
+AI SDK Kotlin exposes framework-neutral UI messages, sessions, transports, and
+stream response helpers. Compose, SwiftUI, server renderers, and any other host
+framework adapt those primitives in application code; the runtime does not ship
+web framework hook packages or components.
 
-For the exact facade surfaces and when to use them, see [Framework Facades](framework-facades.md).
+For host integration guidance, see [Framework Host Integration](framework-facades.md).
 
 ## Related
 
@@ -235,7 +236,7 @@ For the exact facade surfaces and when to use them, see [Framework Facades](fram
 - [UI Stream Protocols](ui-stream-protocols.md)
 - [Chatbots](chatbots.md)
 - [Completion And Object UI](completion-and-object-ui.md)
-- [Framework Facades](framework-facades.md)
+- [Framework Host Integration](framework-facades.md)
 - [Prompts And Messages](prompts-and-messages.md)
 - [Tools](tools.md)
 - [Agents](agents.md)
