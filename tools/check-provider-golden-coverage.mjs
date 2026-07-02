@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, relative } from 'node:path';
 const root = resolve(new URL('..', import.meta.url).pathname);
 const providersDir = join(root, 'src/commonMain/kotlin/ai/torad/aisdk/providers');
+const testsDir = join(root, 'src/commonTest/kotlin/ai/torad/aisdk');
 const manifestPath = join(root, 'docs/provider-golden-coverage.json');
 function providerClasses() {
   const out = new Set();
@@ -16,8 +17,12 @@ function providerClasses() {
   return [...out].sort();
 }
 function testFiles() {
-  const base = join(root, 'src/commonTest/kotlin/ai/torad/aisdk');
-  return readdirSync(base, { withFileTypes: true }).filter(e => e.isFile() && e.name.endsWith('Test.kt')).map(e => e.name);
+  return readdirSync(testsDir, { withFileTypes: true }).filter(e => e.isFile() && e.name.endsWith('Test.kt')).map(e => e.name);
+}
+function coverageReferencePath(value) {
+  if (typeof value !== 'string') return null;
+  if (value.endsWith('.kt')) return join(testsDir, value);
+  return join(root, value);
 }
 if (!existsSync(manifestPath)) {
   const tests = testFiles();
@@ -35,7 +40,18 @@ const failures = [];
 for (const provider of expected) {
   const entry = manifest[provider];
   if (!entry) failures.push(`${provider}: missing manifest entry`);
-  else if (!entry.requestGolden && !entry.streamGolden) failures.push(`${provider}: missing request/stream golden coverage reference`);
+  else {
+    if (!entry.requestGolden && !entry.streamGolden) failures.push(`${provider}: missing request/stream golden coverage reference`);
+    for (const field of ['requestGolden', 'streamGolden']) {
+      const value = entry[field];
+      const path = coverageReferencePath(value);
+      if (!path) {
+        failures.push(`${provider}.${field}: missing coverage reference`);
+      } else if (!existsSync(path)) {
+        failures.push(`${provider}.${field}: ${value} does not exist`);
+      }
+    }
+  }
 }
 for (const provider of Object.keys(manifest)) if (!expected.includes(provider)) failures.push(`${provider}: manifest entry has no public provider class`);
 if (failures.length) {
