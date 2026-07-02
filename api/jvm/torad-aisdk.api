@@ -10458,12 +10458,6 @@ public final class ai/torad/aisdk/providers/LiteRTBytes {
 }
 
 public final class ai/torad/aisdk/providers/LiteRTChannel {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTChannel;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/LiteRTChannel;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTChannel;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getChannelName ()Ljava/lang/String;
 	public final fun getEnd ()Ljava/lang/String;
@@ -10472,30 +10466,41 @@ public final class ai/torad/aisdk/providers/LiteRTChannel {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class ai/torad/aisdk/providers/LiteRTChannelBuilder {
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTChannel;
+	public final fun channelName (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTChannelBuilder;
+	public final fun end (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTChannelBuilder;
+	public final fun start (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTChannelBuilder;
+}
+
 public abstract class ai/torad/aisdk/providers/LiteRTContent {
 }
 
 public final class ai/torad/aisdk/providers/LiteRTContent$AudioBytes : ai/torad/aisdk/providers/LiteRTContent {
-	public fun <init> (Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;)V
-	public synthetic fun <init> (Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/providers/LiteRTBytes;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$AudioBytes;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/LiteRTContent$AudioBytes;Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTContent$AudioBytes;
+	public static final field Companion Lai/torad/aisdk/providers/LiteRTContent$AudioBytes$Companion;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBytes ()Lai/torad/aisdk/providers/LiteRTBytes;
 	public final fun getMediaType ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/providers/LiteRTContent$AudioBytes$Builder {
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTContent$AudioBytes;
+	public final fun bytes (Lai/torad/aisdk/providers/LiteRTBytes;)Lai/torad/aisdk/providers/LiteRTContent$AudioBytes$Builder;
+	public final fun mediaType (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$AudioBytes$Builder;
+}
+
+public final class ai/torad/aisdk/providers/LiteRTContent$AudioBytes$Companion {
+	public final fun invoke (Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$AudioBytes;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTContent$AudioBytes;
+	public static synthetic fun invoke$default (Lai/torad/aisdk/providers/LiteRTContent$AudioBytes$Companion;Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTContent$AudioBytes;
 }
 
 public final class ai/torad/aisdk/providers/LiteRTContent$AudioFile : ai/torad/aisdk/providers/LiteRTContent {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$AudioFile;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/LiteRTContent$AudioFile;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTContent$AudioFile;
+	public static final field Companion Lai/torad/aisdk/providers/LiteRTContent$AudioFile$Companion;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbsolutePath ()Ljava/lang/String;
 	public final fun getMediaType ()Ljava/lang/String;
@@ -10503,13 +10508,21 @@ public final class ai/torad/aisdk/providers/LiteRTContent$AudioFile : ai/torad/a
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class ai/torad/aisdk/providers/LiteRTContent$AudioFile$Builder {
+	public fun <init> ()V
+	public final fun absolutePath (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$AudioFile$Builder;
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTContent$AudioFile;
+	public final fun mediaType (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$AudioFile$Builder;
+}
+
+public final class ai/torad/aisdk/providers/LiteRTContent$AudioFile$Companion {
+	public final fun invoke (Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$AudioFile;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTContent$AudioFile;
+	public static synthetic fun invoke$default (Lai/torad/aisdk/providers/LiteRTContent$AudioFile$Companion;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTContent$AudioFile;
+}
+
 public final class ai/torad/aisdk/providers/LiteRTContent$ImageBytes : ai/torad/aisdk/providers/LiteRTContent {
-	public fun <init> (Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;)V
-	public synthetic fun <init> (Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/providers/LiteRTBytes;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$ImageBytes;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/LiteRTContent$ImageBytes;Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTContent$ImageBytes;
+	public static final field Companion Lai/torad/aisdk/providers/LiteRTContent$ImageBytes$Companion;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBytes ()Lai/torad/aisdk/providers/LiteRTBytes;
 	public final fun getMediaType ()Ljava/lang/String;
@@ -10517,13 +10530,21 @@ public final class ai/torad/aisdk/providers/LiteRTContent$ImageBytes : ai/torad/
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class ai/torad/aisdk/providers/LiteRTContent$ImageBytes$Builder {
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTContent$ImageBytes;
+	public final fun bytes (Lai/torad/aisdk/providers/LiteRTBytes;)Lai/torad/aisdk/providers/LiteRTContent$ImageBytes$Builder;
+	public final fun mediaType (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$ImageBytes$Builder;
+}
+
+public final class ai/torad/aisdk/providers/LiteRTContent$ImageBytes$Companion {
+	public final fun invoke (Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$ImageBytes;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTContent$ImageBytes;
+	public static synthetic fun invoke$default (Lai/torad/aisdk/providers/LiteRTContent$ImageBytes$Companion;Lai/torad/aisdk/providers/LiteRTBytes;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTContent$ImageBytes;
+}
+
 public final class ai/torad/aisdk/providers/LiteRTContent$ImageFile : ai/torad/aisdk/providers/LiteRTContent {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$ImageFile;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/LiteRTContent$ImageFile;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTContent$ImageFile;
+	public static final field Companion Lai/torad/aisdk/providers/LiteRTContent$ImageFile$Companion;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbsolutePath ()Ljava/lang/String;
 	public final fun getMediaType ()Ljava/lang/String;
@@ -10531,28 +10552,57 @@ public final class ai/torad/aisdk/providers/LiteRTContent$ImageFile : ai/torad/a
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class ai/torad/aisdk/providers/LiteRTContent$ImageFile$Builder {
+	public fun <init> ()V
+	public final fun absolutePath (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$ImageFile$Builder;
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTContent$ImageFile;
+	public final fun mediaType (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$ImageFile$Builder;
+}
+
+public final class ai/torad/aisdk/providers/LiteRTContent$ImageFile$Companion {
+	public final fun invoke (Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$ImageFile;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTContent$ImageFile;
+	public static synthetic fun invoke$default (Lai/torad/aisdk/providers/LiteRTContent$ImageFile$Companion;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTContent$ImageFile;
+}
+
 public final class ai/torad/aisdk/providers/LiteRTContent$Text : ai/torad/aisdk/providers/LiteRTContent {
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$Text;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/LiteRTContent$Text;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTContent$Text;
+	public static final field Companion Lai/torad/aisdk/providers/LiteRTContent$Text$Companion;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getText ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class ai/torad/aisdk/providers/LiteRTContent$Text$Builder {
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTContent$Text;
+	public final fun text (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$Text$Builder;
+}
+
+public final class ai/torad/aisdk/providers/LiteRTContent$Text$Companion {
+	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$Text;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTContent$Text;
+}
+
 public final class ai/torad/aisdk/providers/LiteRTContent$ToolResponse : ai/torad/aisdk/providers/LiteRTContent {
-	public fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun copy (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/LiteRTContent$ToolResponse;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/LiteRTContent$ToolResponse;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTContent$ToolResponse;
+	public static final field Companion Lai/torad/aisdk/providers/LiteRTContent$ToolResponse$Companion;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getName ()Ljava/lang/String;
 	public final fun getResponse ()Lkotlinx/serialization/json/JsonElement;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/providers/LiteRTContent$ToolResponse$Builder {
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTContent$ToolResponse;
+	public final fun name (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTContent$ToolResponse$Builder;
+	public final fun response (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/LiteRTContent$ToolResponse$Builder;
+}
+
+public final class ai/torad/aisdk/providers/LiteRTContent$ToolResponse$Companion {
+	public final fun invoke (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/LiteRTContent$ToolResponse;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTContent$ToolResponse;
 }
 
 public abstract interface class ai/torad/aisdk/providers/LiteRTConversation {
@@ -10615,12 +10665,15 @@ public final class ai/torad/aisdk/providers/LiteRTLanguageModel : ai/torad/aisdk
 }
 
 public final class ai/torad/aisdk/providers/LiteRTLanguageModelKt {
+	public static final fun LiteRTChannel (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTChannel;
 	public static final fun LiteRTConversationRequest (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTConversationRequest;
 	public static synthetic fun LiteRTConversationRequest$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTConversationRequest;
 	public static final fun LiteRTLanguageModelSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettings;
 	public static synthetic fun LiteRTLanguageModelSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettings;
+	public static final fun LiteRTMessage (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTMessage;
 	public static final fun LiteRTSamplerConfig (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTSamplerConfig;
 	public static synthetic fun LiteRTSamplerConfig$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTSamplerConfig;
+	public static final fun LiteRTToolCall (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/LiteRTToolCall;
 }
 
 public final class ai/torad/aisdk/providers/LiteRTLanguageModelSettings {
@@ -10650,15 +10703,6 @@ public final class ai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder {
 }
 
 public final class ai/torad/aisdk/providers/LiteRTMessage {
-	public fun <init> (Lai/torad/aisdk/providers/LiteRTMessageRole;Ljava/util/List;Ljava/util/List;Ljava/util/Map;Lai/torad/aisdk/ProviderMetadata;)V
-	public synthetic fun <init> (Lai/torad/aisdk/providers/LiteRTMessageRole;Ljava/util/List;Ljava/util/List;Ljava/util/Map;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/providers/LiteRTMessageRole;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Ljava/util/List;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun component5 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Lai/torad/aisdk/providers/LiteRTMessageRole;Ljava/util/List;Ljava/util/List;Ljava/util/Map;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/providers/LiteRTMessage;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/LiteRTMessage;Lai/torad/aisdk/providers/LiteRTMessageRole;Ljava/util/List;Ljava/util/List;Ljava/util/Map;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTMessage;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getChannels ()Ljava/util/Map;
 	public final fun getContent ()Ljava/util/List;
@@ -10667,6 +10711,16 @@ public final class ai/torad/aisdk/providers/LiteRTMessage {
 	public final fun getToolCalls ()Ljava/util/List;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/providers/LiteRTMessageBuilder {
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTMessage;
+	public final fun channels (Ljava/util/Map;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
+	public final fun content (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
+	public final fun providerMetadata (Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
+	public final fun role (Lai/torad/aisdk/providers/LiteRTMessageRole;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
+	public final fun toolCalls (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
 }
 
 public final class ai/torad/aisdk/providers/LiteRTMessageRole : java/lang/Enum {
@@ -10712,14 +10766,6 @@ public final class ai/torad/aisdk/providers/LiteRTStreamTextMode : java/lang/Enu
 }
 
 public final class ai/torad/aisdk/providers/LiteRTToolCall {
-	public fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
-	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/providers/LiteRTToolCall;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/LiteRTToolCall;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/providers/LiteRTToolCall;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getArguments ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getId ()Ljava/lang/String;
@@ -10727,6 +10773,15 @@ public final class ai/torad/aisdk/providers/LiteRTToolCall {
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/providers/LiteRTToolCallBuilder {
+	public fun <init> ()V
+	public final fun arguments (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/LiteRTToolCallBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTToolCall;
+	public final fun id (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTToolCallBuilder;
+	public final fun name (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTToolCallBuilder;
+	public final fun providerMetadata (Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/providers/LiteRTToolCallBuilder;
 }
 
 public final class ai/torad/aisdk/providers/LumaImageModelOptions {

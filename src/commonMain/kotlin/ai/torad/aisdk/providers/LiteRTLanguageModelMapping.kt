@@ -19,16 +19,10 @@ import ai.torad.aisdk.ResponseFormat
 import ai.torad.aisdk.ToolChoice
 import ai.torad.aisdk.UnsupportedFunctionalityError
 import ai.torad.aisdk.Usage
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.longOrNull
 
 internal data class PreparedLiteRTCall(
     val request: LiteRTConversationRequest,
@@ -142,14 +136,14 @@ internal class LiteRTCallPreparer(
             params.temperature != null ||
             params.seed != null
 
-    fun extraContext(providerOptions: ProviderOptions): Map<String, Any?> {
+    fun extraContext(providerOptions: ProviderOptions): Map<String, JsonElement> {
         val options = options(providerOptions) ?: return settings.extraContext
         val extra = settings.extraContext.toMutableMap()
         JsonAccess.obj(options, "extraContext")?.let { obj ->
-            for ((key, value) in obj) extra[key] = jsonValue(value)
+            for ((key, value) in obj) extra[key] = value
         }
-        options["enableThinking"]?.let { extra["enable_thinking"] = jsonValue(it) }
-        options["enable_thinking"]?.let { extra["enable_thinking"] = jsonValue(it) }
+        options["enableThinking"]?.let { extra["enable_thinking"] = it }
+        options["enable_thinking"]?.let { extra["enable_thinking"] = it }
         return extra
     }
 
@@ -163,19 +157,6 @@ internal class LiteRTCallPreparer(
                 }
             }
     }
-
-    fun jsonValue(element: JsonElement): Any? =
-        when (element) {
-            JsonNull -> null
-            is JsonPrimitive -> when {
-                element.booleanOrNull != null -> element.booleanOrNull
-                element.longOrNull != null -> element.longOrNull
-                element.doubleOrNull != null -> element.doubleOrNull
-                else -> element.contentOrNull ?: element.toString()
-            }
-            is JsonArray -> element.map(::jsonValue)
-            is JsonObject -> element.mapValues { jsonValue(it.value) }
-        }
 }
 
 internal class LiteRTRequestMessageMapper(

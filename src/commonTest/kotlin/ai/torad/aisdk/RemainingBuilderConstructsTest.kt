@@ -53,6 +53,7 @@ class RemainingBuilderConstructsTest {
             temperature(0.6)
             seed(4)
         }
+        val defaultSampler = LiteRTSamplerConfig {}
         val toolPolicy = ToolExecutionPolicy {
             maxParallelToolCalls(2)
             maxToolCallsPerStep(4)
@@ -72,6 +73,7 @@ class RemainingBuilderConstructsTest {
         assertEquals(3, reconnect.maxRetries)
         assertEquals(false, schemaOptions.strict)
         assertEquals(8, sampler.topK)
+        assertEquals(LiteRTSamplerConfig.Default, defaultSampler)
         assertEquals(equalToolPolicy, toolPolicy)
         assertEquals(equalToolPolicy.hashCode(), toolPolicy.hashCode())
     }
@@ -190,7 +192,15 @@ class RemainingBuilderConstructsTest {
         val settings = LiteRTLanguageModelSettings(
             block = {
                 provider("local")
-                channels(listOf(LiteRTChannel("thinking", "<think>", "</think>")))
+                channels(
+                    listOf(
+                        LiteRTChannel {
+                            channelName("thinking")
+                            start("<think>")
+                            end("</think>")
+                        },
+                    ),
+                )
                 toolCallIdGenerator { "call-fixed" }
             },
         )

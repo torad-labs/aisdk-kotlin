@@ -1,4 +1,5 @@
 @file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+@file:Suppress("FunctionNaming")
 
 package ai.torad.aisdk.providers
 
@@ -100,9 +101,9 @@ public class LiteRTSamplerConfigBuilder {
     /** @since 0.3.0-beta01 */
     public fun build(): LiteRTSamplerConfig =
         LiteRTSamplerConfig(
-            topK = requireNotNull(topK) { "LiteRTSamplerConfig.topK is required" },
-            topP = requireNotNull(topP) { "LiteRTSamplerConfig.topP is required" },
-            temperature = requireNotNull(temperature) { "LiteRTSamplerConfig.temperature is required" },
+            topK = topK ?: LiteRTSamplerConfig.Default.topK,
+            topP = topP ?: LiteRTSamplerConfig.Default.topP,
+            temperature = temperature ?: LiteRTSamplerConfig.Default.temperature,
             seed = seed,
         )
 }
@@ -113,52 +114,456 @@ public fun LiteRTSamplerConfig(
 ): LiteRTSamplerConfig =
     LiteRTSamplerConfigBuilder().apply(block).build()
 
+@Poko
 /** @since 0.3.0-beta01 */
-public data class LiteRTChannel(
-    val channelName: String,
-    val start: String,
-    val end: String,
+public class LiteRTChannel internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val channelName: String,
+    /** @since 0.3.0-beta01 */
+    public val start: String,
+    /** @since 0.3.0-beta01 */
+    public val end: String,
 )
 
 /** @since 0.3.0-beta01 */
-public sealed class LiteRTContent {
-    /** @since 0.3.0-beta01 */
-    public data class Text(val text: String) : LiteRTContent()
+public class LiteRTChannelBuilder {
+    private var channelName: String? = null
+    private var start: String? = null
+    private var end: String? = null
 
     /** @since 0.3.0-beta01 */
-    public data class ImageBytes(val bytes: LiteRTBytes, val mediaType: String? = null) : LiteRTContent()
+    public fun channelName(value: String): LiteRTChannelBuilder {
+        channelName = value
+        return this
+    }
 
     /** @since 0.3.0-beta01 */
-    public data class ImageFile(val absolutePath: String, val mediaType: String? = null) : LiteRTContent()
+    public fun start(value: String): LiteRTChannelBuilder {
+        start = value
+        return this
+    }
 
     /** @since 0.3.0-beta01 */
-    public data class AudioBytes(val bytes: LiteRTBytes, val mediaType: String? = null) : LiteRTContent()
+    public fun end(value: String): LiteRTChannelBuilder {
+        end = value
+        return this
+    }
 
     /** @since 0.3.0-beta01 */
-    public data class AudioFile(val absolutePath: String, val mediaType: String? = null) : LiteRTContent()
-
-    /** @since 0.3.0-beta01 */
-    public data class ToolResponse(val name: String, val response: JsonElement) : LiteRTContent()
+    public fun build(): LiteRTChannel =
+        LiteRTChannel(
+            channelName = requireNotNull(channelName) { "LiteRTChannel.channelName is required" },
+            start = requireNotNull(start) { "LiteRTChannel.start is required" },
+            end = requireNotNull(end) { "LiteRTChannel.end is required" },
+        )
 }
 
 /** @since 0.3.0-beta01 */
-public data class LiteRTToolCall(
-    val name: String,
-    val arguments: JsonElement = JsonObject(emptyMap()),
-    val id: String? = null,
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+public fun LiteRTChannel(
+    block: LiteRTChannelBuilder.() -> Unit,
+): LiteRTChannel =
+    LiteRTChannelBuilder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+public sealed class LiteRTContent {
+    @Poko
+    /** @since 0.3.0-beta01 */
+    public class Text internal constructor(
+        /** @since 0.3.0-beta01 */
+        public val text: String,
+    ) : LiteRTContent() {
+        /** @since 0.3.0-beta01 */
+        public companion object {
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(text: String): Text = Text(text)
+
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(block: Builder.() -> Unit): Text =
+                Builder().apply(block).build()
+        }
+
+        /** @since 0.3.0-beta01 */
+        public class Builder {
+            private var text: String? = null
+
+            /** @since 0.3.0-beta01 */
+            public fun text(value: String): Builder {
+                text = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun build(): Text =
+                Text(requireNotNull(text) { "LiteRTContent.Text.text is required" })
+        }
+    }
+
+    @Poko
+    /** @since 0.3.0-beta01 */
+    public class ImageBytes internal constructor(
+        /** @since 0.3.0-beta01 */
+        public val bytes: LiteRTBytes,
+        /** @since 0.3.0-beta01 */
+        public val mediaType: String? = null,
+    ) : LiteRTContent() {
+        /** @since 0.3.0-beta01 */
+        public companion object {
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(bytes: LiteRTBytes, mediaType: String? = null): ImageBytes =
+                ImageBytes(bytes, mediaType)
+
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(block: Builder.() -> Unit): ImageBytes =
+                Builder().apply(block).build()
+        }
+
+        /** @since 0.3.0-beta01 */
+        public class Builder {
+            private var bytes: LiteRTBytes? = null
+            private var mediaType: String? = null
+
+            /** @since 0.3.0-beta01 */
+            public fun bytes(value: LiteRTBytes): Builder {
+                bytes = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun mediaType(value: String?): Builder {
+                mediaType = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun build(): ImageBytes =
+                ImageBytes(
+                    bytes = requireNotNull(bytes) { "LiteRTContent.ImageBytes.bytes is required" },
+                    mediaType = mediaType,
+                )
+        }
+    }
+
+    @Poko
+    /** @since 0.3.0-beta01 */
+    public class ImageFile internal constructor(
+        /** @since 0.3.0-beta01 */
+        public val absolutePath: String,
+        /** @since 0.3.0-beta01 */
+        public val mediaType: String? = null,
+    ) : LiteRTContent() {
+        /** @since 0.3.0-beta01 */
+        public companion object {
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(absolutePath: String, mediaType: String? = null): ImageFile =
+                ImageFile(absolutePath, mediaType)
+
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(block: Builder.() -> Unit): ImageFile =
+                Builder().apply(block).build()
+        }
+
+        /** @since 0.3.0-beta01 */
+        public class Builder {
+            private var absolutePath: String? = null
+            private var mediaType: String? = null
+
+            /** @since 0.3.0-beta01 */
+            public fun absolutePath(value: String): Builder {
+                absolutePath = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun mediaType(value: String?): Builder {
+                mediaType = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun build(): ImageFile =
+                ImageFile(
+                    absolutePath = requireNotNull(absolutePath) { "LiteRTContent.ImageFile.absolutePath is required" },
+                    mediaType = mediaType,
+                )
+        }
+    }
+
+    @Poko
+    /** @since 0.3.0-beta01 */
+    public class AudioBytes internal constructor(
+        /** @since 0.3.0-beta01 */
+        public val bytes: LiteRTBytes,
+        /** @since 0.3.0-beta01 */
+        public val mediaType: String? = null,
+    ) : LiteRTContent() {
+        /** @since 0.3.0-beta01 */
+        public companion object {
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(bytes: LiteRTBytes, mediaType: String? = null): AudioBytes =
+                AudioBytes(bytes, mediaType)
+
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(block: Builder.() -> Unit): AudioBytes =
+                Builder().apply(block).build()
+        }
+
+        /** @since 0.3.0-beta01 */
+        public class Builder {
+            private var bytes: LiteRTBytes? = null
+            private var mediaType: String? = null
+
+            /** @since 0.3.0-beta01 */
+            public fun bytes(value: LiteRTBytes): Builder {
+                bytes = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun mediaType(value: String?): Builder {
+                mediaType = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun build(): AudioBytes =
+                AudioBytes(
+                    bytes = requireNotNull(bytes) { "LiteRTContent.AudioBytes.bytes is required" },
+                    mediaType = mediaType,
+                )
+        }
+    }
+
+    @Poko
+    /** @since 0.3.0-beta01 */
+    public class AudioFile internal constructor(
+        /** @since 0.3.0-beta01 */
+        public val absolutePath: String,
+        /** @since 0.3.0-beta01 */
+        public val mediaType: String? = null,
+    ) : LiteRTContent() {
+        /** @since 0.3.0-beta01 */
+        public companion object {
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(absolutePath: String, mediaType: String? = null): AudioFile =
+                AudioFile(absolutePath, mediaType)
+
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(block: Builder.() -> Unit): AudioFile =
+                Builder().apply(block).build()
+        }
+
+        /** @since 0.3.0-beta01 */
+        public class Builder {
+            private var absolutePath: String? = null
+            private var mediaType: String? = null
+
+            /** @since 0.3.0-beta01 */
+            public fun absolutePath(value: String): Builder {
+                absolutePath = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun mediaType(value: String?): Builder {
+                mediaType = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun build(): AudioFile =
+                AudioFile(
+                    absolutePath = requireNotNull(absolutePath) { "LiteRTContent.AudioFile.absolutePath is required" },
+                    mediaType = mediaType,
+                )
+        }
+    }
+
+    /**
+     * Tool response content sent back to LiteRT-LM.
+     *
+     * LiteRT's bridge correlates tool responses by [name] only; this type does
+     * not carry a tool-call id. Adapters that allow multiple simultaneous calls
+     * to the same tool name must preserve/disambiguate that correlation outside
+     * this content value.
+     * @since 0.3.0-beta01
+     */
+    @Poko
+    public class ToolResponse internal constructor(
+        /** @since 0.3.0-beta01 */
+        public val name: String,
+        /** @since 0.3.0-beta01 */
+        public val response: JsonElement,
+    ) : LiteRTContent() {
+        /** @since 0.3.0-beta01 */
+        public companion object {
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(name: String, response: JsonElement): ToolResponse =
+                ToolResponse(name, response)
+
+            /** @since 0.3.0-beta01 */
+            public operator fun invoke(block: Builder.() -> Unit): ToolResponse =
+                Builder().apply(block).build()
+        }
+
+        /** @since 0.3.0-beta01 */
+        public class Builder {
+            private var name: String? = null
+            private var response: JsonElement? = null
+
+            /** @since 0.3.0-beta01 */
+            public fun name(value: String): Builder {
+                name = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun response(value: JsonElement): Builder {
+                response = value
+                return this
+            }
+
+            /** @since 0.3.0-beta01 */
+            public fun build(): ToolResponse =
+                ToolResponse(
+                    name = requireNotNull(name) { "LiteRTContent.ToolResponse.name is required" },
+                    response = requireNotNull(response) { "LiteRTContent.ToolResponse.response is required" },
+                )
+        }
+    }
+}
+
+@Poko
+/** @since 0.3.0-beta01 */
+public class LiteRTToolCall internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val name: String,
+    /** @since 0.3.0-beta01 */
+    public val arguments: JsonElement = JsonObject(emptyMap()),
+    /** @since 0.3.0-beta01 */
+    public val id: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 /** @since 0.3.0-beta01 */
-public data class LiteRTMessage(
-    val role: LiteRTMessageRole,
-    val content: List<LiteRTContent> = emptyList(),
-    val toolCalls: List<LiteRTToolCall> = emptyList(),
-    val channels: Map<String, String> = emptyMap(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+public class LiteRTToolCallBuilder {
+    private var name: String? = null
+    private var arguments: JsonElement = JsonObject(emptyMap())
+    private var id: String? = null
+    private var providerMetadata: ProviderMetadata = ProviderMetadata.None
+
+    /** @since 0.3.0-beta01 */
+    public fun name(value: String): LiteRTToolCallBuilder {
+        name = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun arguments(value: JsonElement): LiteRTToolCallBuilder {
+        arguments = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun id(value: String?): LiteRTToolCallBuilder {
+        id = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun providerMetadata(value: ProviderMetadata): LiteRTToolCallBuilder {
+        providerMetadata = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): LiteRTToolCall =
+        LiteRTToolCall(
+            name = requireNotNull(name) { "LiteRTToolCall.name is required" },
+            arguments = arguments,
+            id = id,
+            providerMetadata = providerMetadata,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTToolCall(
+    block: LiteRTToolCallBuilder.() -> Unit,
+): LiteRTToolCall =
+    LiteRTToolCallBuilder().apply(block).build()
+
+@Poko
+/** @since 0.3.0-beta01 */
+public class LiteRTMessage internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val role: LiteRTMessageRole,
+    /** @since 0.3.0-beta01 */
+    public val content: List<LiteRTContent> = emptyList(),
+    /** @since 0.3.0-beta01 */
+    public val toolCalls: List<LiteRTToolCall> = emptyList(),
+    /** @since 0.3.0-beta01 */
+    public val channels: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 /** @since 0.3.0-beta01 */
+public class LiteRTMessageBuilder {
+    private var role: LiteRTMessageRole? = null
+    private var content: List<LiteRTContent> = emptyList()
+    private var toolCalls: List<LiteRTToolCall> = emptyList()
+    private var channels: Map<String, String> = emptyMap()
+    private var providerMetadata: ProviderMetadata = ProviderMetadata.None
+
+    /** @since 0.3.0-beta01 */
+    public fun role(value: LiteRTMessageRole): LiteRTMessageBuilder {
+        role = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun content(value: List<LiteRTContent>): LiteRTMessageBuilder {
+        content = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun toolCalls(value: List<LiteRTToolCall>): LiteRTMessageBuilder {
+        toolCalls = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun channels(value: Map<String, String>): LiteRTMessageBuilder {
+        channels = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun providerMetadata(value: ProviderMetadata): LiteRTMessageBuilder {
+        providerMetadata = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): LiteRTMessage =
+        LiteRTMessage(
+            role = requireNotNull(role) { "LiteRTMessage.role is required" },
+            content = content,
+            toolCalls = toolCalls,
+            channels = channels,
+            providerMetadata = providerMetadata,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTMessage(
+    block: LiteRTMessageBuilder.() -> Unit,
+): LiteRTMessage =
+    LiteRTMessageBuilder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+@Suppress("LongParameterList")
 public class LiteRTConversationRequest internal constructor(
     /** @since 0.3.0-beta01 */
     public val systemInstruction: List<LiteRTContent> = emptyList(),
@@ -175,7 +580,7 @@ public class LiteRTConversationRequest internal constructor(
     /** @since 0.3.0-beta01 */
     public val channels: List<LiteRTChannel>? = null,
     /** @since 0.3.0-beta01 */
-    public val extraContext: Map<String, Any?> = emptyMap(),
+    public val extraContext: Map<String, JsonElement> = emptyMap(),
     /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
     /** @since 0.3.0-beta01 */
@@ -191,7 +596,7 @@ public class LiteRTConversationRequestBuilder {
     private var samplerConfig: LiteRTSamplerConfig? = null
     private var automaticToolCalling: Boolean = false
     private var channels: List<LiteRTChannel>? = null
-    private var extraContext: Map<String, Any?> = emptyMap()
+    private var extraContext: Map<String, JsonElement> = emptyMap()
     private var warnings: List<CallWarning> = emptyList()
     private var callParams: LanguageModelCallParams? = null
 
@@ -238,7 +643,7 @@ public class LiteRTConversationRequestBuilder {
     }
 
     /** @since 0.3.0-beta01 */
-    public fun extraContext(value: Map<String, Any?>): LiteRTConversationRequestBuilder {
+    public fun extraContext(value: Map<String, JsonElement>): LiteRTConversationRequestBuilder {
         extraContext = value
         return this
     }
@@ -284,19 +689,31 @@ public fun interface LiteRTConversationFactory {
 
 /** @since 0.3.0-beta01 */
 public interface LiteRTConversation {
-    public suspend fun send(message: LiteRTMessage, extraContext: Map<String, Any?> = emptyMap()): LiteRTMessage
+    /** @since 0.3.0-beta01 */
+    public suspend fun send(message: LiteRTMessage, extraContext: Map<String, JsonElement> = emptyMap()): LiteRTMessage
 
     /** @since 0.3.0-beta01 */
-    public fun stream(message: LiteRTMessage, extraContext: Map<String, Any?> = emptyMap()): Flow<LiteRTMessage>
+    public fun stream(message: LiteRTMessage, extraContext: Map<String, JsonElement> = emptyMap()): Flow<LiteRTMessage>
 
-    /** @since 0.3.0-beta01 */
+    /**
+     * Cancel in-flight generation. The default is a no-op for simple engines;
+     * implementations that can abort on-device work must override this so
+     * [LanguageModelCallParams.abortSignal] stops generation promptly.
+     * @since 0.3.0-beta01
+     */
     public fun cancel(): Unit = Unit
 
-    /** @since 0.3.0-beta01 */
+    /**
+     * Release engine resources owned by this conversation. The default is a
+     * no-op for stateless engines; implementations that allocate sessions,
+     * handles, or native resources must override it.
+     * @since 0.3.0-beta01
+     */
     public fun close(): Unit = Unit
 }
 
 /** @since 0.3.0-beta01 */
+@Suppress("LongParameterList")
 public class LiteRTLanguageModelSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val provider: String = "litert-lm",
@@ -313,7 +730,7 @@ public class LiteRTLanguageModelSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val channels: List<LiteRTChannel>? = null,
     /** @since 0.3.0-beta01 */
-    public val extraContext: Map<String, Any?> = emptyMap(),
+    public val extraContext: Map<String, JsonElement> = emptyMap(),
     /** @since 0.3.0-beta01 */
     public val toolCallIdGenerator: () -> String = { IdGenerator.generate("call") },
 )
@@ -327,7 +744,7 @@ public class LiteRTLanguageModelSettingsBuilder {
     private var reasoningChannelNames: Set<String> = setOf("thinking", "reasoning")
     private var assistantReasoningChannelName: String = "thinking"
     private var channels: List<LiteRTChannel>? = null
-    private var extraContext: Map<String, Any?> = emptyMap()
+    private var extraContext: Map<String, JsonElement> = emptyMap()
     private var toolCallIdGenerator: () -> String = { IdGenerator.generate("call") }
 
     /** @since 0.3.0-beta01 */
@@ -373,7 +790,7 @@ public class LiteRTLanguageModelSettingsBuilder {
     }
 
     /** @since 0.3.0-beta01 */
-    public fun extraContext(value: Map<String, Any?>): LiteRTLanguageModelSettingsBuilder {
+    public fun extraContext(value: Map<String, JsonElement>): LiteRTLanguageModelSettingsBuilder {
         extraContext = value
         return this
     }
