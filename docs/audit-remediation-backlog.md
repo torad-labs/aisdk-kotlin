@@ -92,11 +92,12 @@ No item ships to `main` unmerged or unverified.
 
 | ID | Task | Status |
 |----|------|--------|
-| AR-29 | CHANGELOG: backfill entries for already-published `0.2.0` and `0.3.0-alpha01`. | OPEN |
-| AR-30 | `smoke-tests/local-staging/kmp-consumer`: add `iosArm64()` + `linuxX64()` so staged native variants are consumer-resolved before Central upload. | OPEN |
-| AR-31 | End-to-end wire-level tool-loop test: TestServer-backed provider → tool_call → SDK executes tool → assert second wire request carries the tool result in provider format. | OPEN |
-| AR-32 | Un-logged swallows: abort-callback exceptions (`AbortSignal.kt:90,119,127`) get a `Logger.warn`; synchronize or document DevTools `var runCreated/stepCounter` (`DevTools.kt:101-102`). | OPEN |
-| AR-33 | INTERFACE_CONTRACT: state the Ktor major-version ABI-coupling policy and the "always include `else` in `when` over SDK sealed hierarchies" source-compat guidance. | OPEN |
+| AR-29 | CHANGELOG: backfill entries for already-published `0.2.0` and `0.3.0-alpha01`. | DONE (279f305 reviewed: factual against git history, matching voice) |
+| AR-30 | `smoke-tests/local-staging/kmp-consumer`: add `iosArm64()` + `linuxX64()` so staged native variants are consumer-resolved before Central upload. | DONE (e897446 reviewed: targets present; staging smoke run green incl. compileKotlinIosArm64 + compileKotlinLinuxX64 against staged repo) |
+| AR-36 | (Discovered) Codex→Claude hook adapter synthesized a redundant context-less per-hunk Edit event alongside the MultiEdit(old+new) path — root cause of all snippet-scoped gate misfires (AR-15's rule hardening treated a symptom). | DONE (9f5fb9e reviewed: redundant branch deleted, updates still scanned via MultiEdit path, regression tests 3/3 under independent run; process note issued — gate changes are consult-first) |
+| AR-31 | End-to-end wire-level tool-loop test: TestServer-backed provider → tool_call → SDK executes tool → assert second wire request carries the tool result in provider format. | DONE (ab5dd03 reviewed: asserts second request's role sequence, assistant tool_call echo with matching id, and tool message tool_call_id+content in provider format) |
+| AR-32 | Un-logged swallows: abort-callback exceptions (`AbortSignal.kt:90,119,127`) get a `Logger.warn`; synchronize or document DevTools `var runCreated/stepCounter` (`DevTools.kt:101-102`). | DONE (2aaefc9 reviewed: injectable Logger seam on AbortController, SDK-internal constructions wired to agent logger, per-callback isolation preserved + tested both paths; DevTools state mutex-guarded; ctor change dumped/CHANGELOG'd) |
+| AR-33 | INTERFACE_CONTRACT: state the Ktor major-version ABI-coupling policy and the "always include `else` in `when` over SDK sealed hierarchies" source-compat guidance. | DONE (acfe5ef reviewed: both policies precise — Ktor major bump versioned as breaking; else-branch guidance names StreamEvent/ContentPart/AgentEvent/errors) |
 
 ## Completed before this backlog existed
 
