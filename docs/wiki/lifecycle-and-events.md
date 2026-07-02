@@ -4,9 +4,9 @@ Lifecycle hooks observe an agent run. Stream events carry incremental model,
 tool, and UI state. Telemetry integrations record the same kind of lifecycle at
 an observability boundary.
 
-The top-level `generateText` and `streamText` functions do not take lifecycle
-callback options in this port. Use `ToolLoopAgent.events(...)` or per-call
-`AgentCallHooks` when you need request-scoped callbacks, middleware when you
+The `TextGenerator` helpers do not take lifecycle callback options in this
+port. Use `ToolLoopAgent.events(...)` or `collectAgentEvents(...)` when you
+need request-scoped observation, middleware when you
 need model-call wrapping, and telemetry integrations when you need app-wide
 observation.
 
@@ -33,21 +33,23 @@ agent.events(prompt = prompt, options = context).collect { event ->
 }
 ```
 
-Use per-call hooks for a single request:
+Use `collectAgentEvents` for a single request:
 
 ```kotlin
-val result = agent.generate(
+agent.collectAgentEvents(
     prompt = prompt,
     options = context,
-    hooks = AgentCallHooks(
-        onStart = { event -> trace.start(event.options) },
-        onChunk = { event -> trace.chunk(event.stepNumber, event.event) },
-        onAbort = { event -> trace.aborted(event.steps.size) },
-    ),
-)
+) { event ->
+    when (event) {
+        is AgentEvent.Started<*> -> trace.start(event.options)
+        is AgentEvent.Chunk -> trace.chunk(event.stepNumber, event.event)
+        is AgentEvent.Aborted -> trace.aborted(event.steps.size)
+        else -> Unit
+    }
+}
 ```
 
-Use per-call hooks when you only need a small subset of lifecycle events.
+Use `collectAgentEvents` when you only need a small subset of lifecycle events.
 
 ## Hook Events
 
@@ -107,30 +109,34 @@ still happen inside the tool executor or `needsApproval`.
 
 ## Telemetry Events
 
-Telemetry integrations receive lifecycle callbacks such as start, step start,
+Telemetry integrations receive `AgentEvent` values such as start, step start,
 tool-call start/finish, step finish, and finish:
 
 ```kotlin
-val integration = object : TelemetryIntegration {
-    override suspend fun record(span: TelemetrySpan, block: suspend () -> Unit) {
-        tracer.span(span.name, span.attributes) { block() }
-    }
+val integration = object : Telemetry {
+    override val name: String = "metrics"
 
-    override suspend fun onStepFinish(event: TelemetryEvent) {
-        metrics.increment("ai.step.finish")
+    override suspend fun onEvent(call: TelemetryCall, event: AgentEvent) {
+        when (event) {
+            is AgentEvent.StepFinished -> metrics.increment("ai.step.finish")
+            is AgentEvent.ToolCallFinished -> metrics.increment("ai.tool.finish")
+            else -> Unit
+        }
     }
 }
+
+Telemetry.registerTelemetry(integration)
 ```
 
-Use telemetry for durable observability. Use hooks for local orchestration
-observation and tests.
+Use telemetry for durable observability. Use `events` or `collectAgentEvents`
+for local orchestration observation and tests.
 
 ## UI Finish Events
 
 For UI streams, finish handling belongs at the message stream boundary:
 
 ```kotlin
-handleUiMessageStreamFinish(messages) { finalMessages ->
+UiMessageStreams.handleUiMessageStreamFinish(messages) { finalMessages ->
     save(finalMessages)
 }
 ```

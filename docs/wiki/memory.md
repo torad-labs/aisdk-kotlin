@@ -22,7 +22,7 @@ summaries often have different shapes.
 ## Conversation Memory
 
 ```kotlin
-val checked = safeValidateUIMessages(session.state.value.messages)
+val checked = UiMessageStreams.safeValidateUIMessages(session.state.value.messages)
 
 if (checked is SafeValidateUIMessagesResult.Success) {
     chatStore.save(chatId, checked.messages)
@@ -39,7 +39,7 @@ session.setMessages(messages)
 Convert to model messages only when calling the model:
 
 ```kotlin
-val modelMessages = convertToModelMessages(messages)
+val modelMessages = ModelMessageConversion.convertToModelMessages(messages)
 ```
 
 ## Summary Memory
@@ -47,23 +47,28 @@ val modelMessages = convertToModelMessages(messages)
 Summaries keep long conversations manageable:
 
 ```kotlin
-val summary = generateText(
-    model = model,
-    system = "Summarize durable facts and unresolved tasks.",
-    messages = oldMessages,
-).text
+val summary = TextGenerator(model)
+    .generate(
+        GenerationInput.Messages(
+            GenerationInput.NonEmptyMessages.from(
+                listOf(SystemMessage("Summarize durable facts and unresolved tasks.")) + oldMessages,
+            ),
+        ),
+    )
+    .first()
+    .text
 
 memoryStore.saveSummary(userId, summary)
 ```
 
-Feed summaries back through `system`, `messages`, or `prepareCall`.
+Feed summaries back through `SystemMessage`, message history, or `prepareCall`.
 
 ## Retrieval Memory
 
 Use embeddings for recall:
 
 ```kotlin
-val embedded = embedMany(
+val embedded = Embedding.embedMany(
     model = embeddingModel,
     values = notes.map { it.text },
     maxParallelCalls = 4,
@@ -101,9 +106,9 @@ Use `prepareCall` for request-specific memory:
 ```kotlin
 prepareCall = {
     val profile = memory.loadProfile(options!!.userId)
-    AgentSettings(
-        instructions = instructions + "\nKnown user profile:\n$profile",
-    )
+    AgentSettings<AppContext> {
+        instructions(instructions + "\nKnown user profile:\n$profile")
+    }
 }
 ```
 
