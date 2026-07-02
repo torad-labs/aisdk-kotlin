@@ -282,6 +282,25 @@ This project follows Semantic Versioning once the first stable release is cut.
   `recordSpan(integration, ...)`; the tracer/span machinery (`TelemetryTracer`,
   `selectTelemetryAttributes`, ...) is unchanged.
 
+## 0.3.0-alpha01
+
+- Made `Tool` an extensible abstract class and added `StreamingTool` for tools that can emit
+  preliminary snapshots while executing.
+- Changed tool approval flow so tool input is decoded and repaired before the approval gate; an
+  approved call executes against the same decoded input that was reviewed.
+- Bumped the release line to the `0.3.0-alpha01` alpha checkpoint.
+
+## 0.2.0
+
+- Published `ai.torad:torad-aisdk:0.2.0` to Maven Central and fixed release workflow issues around
+  configuration cache, signing task ordering, artifact naming, and the Central target.
+- Completed the broad KMP parity sweep across core generation, streaming, tools, providers,
+  Gateway, Open Responses, MCP transports, DevTools, UI stream helpers, and provider facades.
+- Added the Kotlin-first high-level API layer, Ktor-backed provider transports, TestServer support,
+  linuxX64, parity ledgers, and the refreshed AI SDK reference through `ai@6.0.204`.
+- Made `ToolLoopAgent` abstract for subclass-based agents, added automatic telemetry delivery
+  through the typed `Telemetry` interface, and added HMAC-signed tool approvals.
+
 ## 0.1.0-SNAPSHOT
 
 - Extracted the KMP AI SDK module into a standalone library.
