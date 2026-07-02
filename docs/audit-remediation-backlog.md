@@ -14,11 +14,11 @@ No item ships to `main` unmerged or unverified.
 
 ## Decision log (orchestrator decisions — veto window open until the owning WP is dispatched)
 
-- **DEC-1 (AR-06):** One-shot `Agent.generate` / `TextGenerator.generate` change from
-  `Flow<Result>` (single emission) to `suspend fun`. Rationale: every call site ends in
-  `.first()`; re-collection re-runs the generation *including tool side effects* (double
-  billing); Kotlin idiom for one value is `suspend`. `stream`/`streamResult` stay Flow-based.
-  Pre-beta is the last cheap moment.
+- **DEC-1 (AR-06): OVERRULED BY USER (2026-07-02).** Marcos chose to **keep Flow-of-one**
+  for `Agent.generate` / `TextGenerator.generate`. AR-06 rescoped: no API change; instead
+  ship prominent KDoc on every one-shot `generate` overload stating it is a cold flow,
+  each collection re-runs the full generation *including tool side effects*, and the
+  intended call shape is `.first()`.
 - **DEC-2 (AR-03):** Pin the Vercel reference gate to `ai@6.0.208` for the beta and make
   the upstream-freshness check **non-blocking** (warning annotation, or separate
   non-required job). A hard-fail on an upstream event masked every downstream CI check
@@ -33,26 +33,26 @@ No item ships to `main` unmerged or unverified.
 
 | ID | Task | Status |
 |----|------|--------|
-| AR-01 | Fix `:detekt` red at HEAD (5,610 findings vs stale 3,687-entry baseline). Prefer `--auto-correct` for the formatting classes (ArgumentListWrapping 1427, Indentation 1401, Wrapping 599, NoUnusedImports 497); fix or legitimately re-baseline the remainder per DEC-3. Accept: `./gradlew check` green locally; baseline entries ≤ 3687. | OPEN |
-| AR-02 | `verify-apple` dependency verification: add the 7 macOS-resolved artifacts missing from `gradle/verification-metadata.xml` (guava-parent-33.3.1-jre.pom, jackson-base-2.15.3.pom, junit-bom-5.9.2.pom/.module, junit-bom-5.10.2.module, junit-bom-5.11.0-M2.module, kotlinx-coroutines-bom-1.8.0.pom). sha256 obtainable from repo1.maven.org on Linux. Accept: `verify-apple` CI job passes. | OPEN |
-| AR-03 | Reference gate per DEC-2: pin `AI_SDK_REFERENCE_VERSION=6.0.208`, demote `tools/check-ai-sdk-reference.mjs` newer-upstream failure to a warning (still hard-fail on *mismatched pin*), so the `verify` job proceeds to gate/detekt/tests. Accept: Linux `verify` job runs all steps. | OPEN |
-| AR-04 | Acceptance gate for WP-V: one fully-green CI run (both `verify` and `verify-apple`) on PR #10 at the remediation head. | OPEN |
+| AR-01 | Fix `:detekt` red at HEAD (5,610 findings vs stale 3,687-entry baseline). Prefer `--auto-correct` for the formatting classes (ArgumentListWrapping 1427, Indentation 1401, Wrapping 599, NoUnusedImports 497); fix or legitimately re-baseline the remainder per DEC-3. Accept: `./gradlew check` green locally; baseline entries ≤ 3687. | DONE (eeb63e3 reviewed: baseline 3687→1947, budget re-seeded down, 288-file mechanical reformat, 0 deletions, `check` green) |
+| AR-02 | `verify-apple` dependency verification: add the 7 macOS-resolved artifacts missing from `gradle/verification-metadata.xml` (guava-parent-33.3.1-jre.pom, jackson-base-2.15.3.pom, junit-bom-5.9.2.pom/.module, junit-bom-5.10.2.module, junit-bom-5.11.0-M2.module, kotlinx-coroutines-bom-1.8.0.pom). sha256 obtainable from repo1.maven.org on Linux. Accept: `verify-apple` CI job passes. | DONE (da3340b reviewed: all 7 entries present; every sha256 independently re-fetched from repo1.maven.org and matched; CI confirmation folds into AR-04) |
+| AR-03 | Reference gate per DEC-2: pin `AI_SDK_REFERENCE_VERSION=6.0.208`, demote `tools/check-ai-sdk-reference.mjs` newer-upstream failure to a warning (still hard-fail on *mismatched pin*), so the `verify` job proceeds to gate/detekt/tests. Accept: Linux `verify` job runs all steps. | DONE (4b3569b reviewed: warn path exit 0 + ::warning:: annotation verified locally; pin-mismatch hard-fail verified; tool now also self-checks the reference commit) |
+| AR-04 | Acceptance gate for WP-V: one fully-green CI run (both `verify` and `verify-apple`) on PR #10 at the remediation head. | DISPATCHED — round 3. Round 2 (28613129911): mac prebuilt hashes + fetch-depth fixed. Round 3 (28613791790): Linux readiness gate ✓, iOS compile+simulator tests ✓ (first since rewrite); remaining: kotlinx-coroutines-bom-1.6.4.pom metadata (bulk-close via cold --write-verification-metadata) + run-ios-swift-smoke swiftc bug (wrong -F target, no -target/-sdk — never worked on any Mac). |
 
 ## WP-H — Ten-minute hygiene items (parallel with WP-V)
 
 | ID | Task | Status |
 |----|------|--------|
-| AR-25 | Delete stale `v0.5-beta` tag from origin (points at a 0.1.0-SNAPSHOT commit; sorts above real versions). | OPEN |
-| AR-26 | Replace short-form `LICENSE` (623 bytes) with the full Apache-2.0 text so GitHub/licensee detection works. | OPEN |
-| AR-27 | Fix `SECURITY.md:5` false claim ("does not include network providers by default" — the artifact ships ~40 Ktor-backed providers). | OPEN |
-| AR-28 | README targets: correct the iOS claim (Maven klibs via KMP, not a shipped framework — or document the XCFramework story if shipping it) and add the published `linuxX64` target to the list. | OPEN |
+| AR-25 | Delete stale `v0.5-beta` tag from origin (points at a 0.1.0-SNAPSHOT commit; sorts above real versions). | DONE (orchestrator, 2026-07-02: verified target was 0.1.0-SNAPSHOT commit 3877a4a, deleted remotely + locally) |
+| AR-26 | Replace short-form `LICENSE` (623 bytes) with the full Apache-2.0 text so GitHub/licensee detection works. | DONE (9c0ee0c reviewed: whitespace-insensitive diff vs canonical apache.org text = identical) |
+| AR-27 | Fix `SECURITY.md:5` false claim ("does not include network providers by default" — the artifact ships ~40 Ktor-backed providers). | DONE (7c58492 reviewed: claim corrected, actionable secret-handling guidance added) |
+| AR-28 | README targets: correct the iOS claim (Maven klibs via KMP, not a shipped framework — or document the XCFramework story if shipping it) and add the published `linuxX64` target to the list. | DONE (c6bc191 reviewed: accurate iOS klib/XCFramework wording, linuxX64 added, `--strict-readme` green) |
 
 ## WP-A — API/ABI regrets (before the dump freezes; blocked by WP-V)
 
 | ID | Task | Status |
 |----|------|--------|
 | AR-05 | `ToolLoopAgent`: add a settings-based public constructor (reuse `AgentSettings<TContext>`, `Context.kt:41`) and demote the 26-param ctor (`ToolLoopAgent.kt:64-178`) from the frozen surface (internal or `@Deprecated(HIDDEN)` path). Regenerate ABI dumps; update CHANGELOG + INTERFACE_CONTRACT. | OPEN |
-| AR-06 | Per DEC-1: one-shot `generate` becomes `suspend fun` on `Agent`, `ToolLoopAgent`, `TextGenerator` (+ `Output` overloads). Update all call sites, README, doc-snippet tests. `stream`/`streamResult` unchanged. | OPEN |
+| AR-06 | RESCOPED (user kept Flow-of-one): add prominent KDoc to every one-shot `generate` overload (`Agent`, `ToolLoopAgent`, `TextGenerator`, `Output` variants) — cold flow, re-collection re-runs generation + tool side effects, intended shape `.first()`. No signature change. | OPEN |
 | AR-07 | De-`data-class` the 9 LiteRT wire types (`LiteRTChannel`, 6× `LiteRTContent`, `LiteRTToolCall`, `LiteRTMessage` — `LiteRTLanguageModel.kt:117-154`) → @Poko + builder per house pattern; re-seed `data-class-budget.json` downward. Include LiteRT API hygiene: `LiteRTSamplerConfig {}` empty-block runtime throw, `extraContext: Map<String, Any?>` in public KMP API, document the no-op `cancel()`/`close()` defaults and name-only tool-response correlation. | OPEN |
 | AR-08 | Gate `experimental_repairToolCall` + `experimental_toolApprovalSecret` (`ToolLoopAgent.kt:138,151`) with `@ExperimentalAiSdkApi`. | OPEN |
 | AR-09 | Remove TS-residue typealiases from the klib surface: `AlibabaUsage`, `AlibabaCacheControl` (`AlibabaProvider.kt:29-32`), `DeepSeekErrorData` (`DeepSeekFacade.kt:192`). | OPEN |
@@ -80,6 +80,12 @@ No item ships to `main` unmerged or unverified.
 | AR-22 | Real-provider on-ramp: copy-paste block with Ktor engine artifact + `HttpClient(...)` construction + `OpenAICompatible` + API key; LiteRT wiring example implementing `LiteRTConversationFactory`. | OPEN |
 | AR-23 | Semantic KDoc (not bare `@since`) on headline entry points: `TextGenerator`, `GenerationInput`, `OpenAICompatible`, `Gateway()`, `APICallError`, LiteRT public types. Include dead-air SSE guidance: streaming has no default deadline — set `CallConfig.timeout` or engine socket timeouts (AR-11 folded here). | OPEN |
 | AR-24 | `framework-facades.md`: documents a nonexistent `ai.torad.aisdk.react` package — rewrite honestly or delete. | OPEN |
+
+## Discovered during remediation
+
+| ID | Task | Status |
+|----|------|--------|
+| AR-34 | `:compileCommonMainKotlinMetadata` (publish-path-only compilation, never run by `check`) fails: `AbortError` not accepted as `CancellationException?` at `Job.cancel`/executionContext.cancel sites (`AbortSignal.kt:153`, `HttpTransport.kt:155`, `FalProvider.kt:128`, `GoogleMediaModels.kt:365`, `LumaProvider.kt:390`, `OpenAICompatibleFacadeSupport.kt:106`). Blocks CI's `publishToMavenLocal` step (would be CI round 4's failure). Platform compilations pass; only the metadata compiler rejects. CAUTION: `AbortError`'s supertype is frozen public ABI and moving it into/out of `CancellationException` changes consumer catch + coroutines-swallowing semantics — fix design requires orchestrator sign-off before implementation. | DISPATCHED (investigation) |
 
 ## WP-X — Auditor extras (surfaced during audit, non-blocking; do last)
 
