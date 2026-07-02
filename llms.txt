@@ -54,8 +54,8 @@ Primary package: ai.torad.aisdk
   rendering, approvals, resume, and text-only transports.
 - docs/wiki/completion-and-object-ui.md: completion state, completion facades,
   partial structured object state, and object facades.
-- docs/wiki/framework-facades.md: React, Vue, Svelte, Angular, and RSC-shaped
-  parity surfaces.
+- docs/wiki/framework-facades.md: framework-neutral UI messages, chat and
+  agent sessions, stream responses, and host-framework integration boundaries.
 - docs/wiki/mcp.md: MCP transports, tools, resources, prompts, elicitation,
   and cleanup.
 - docs/wiki/application-patterns.md: tool organization, agent composition,

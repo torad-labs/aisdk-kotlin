@@ -76,8 +76,8 @@ API that exists in this repository.
   persistence, tool rendering, approval, resume, and text-only transports.
 - [Completion And Object UI](completion-and-object-ui.md) - completion state,
   completion facades, partial structured object state, and object facades.
-- [Framework Facades](framework-facades.md) - React, Vue, Svelte, Angular, and
-  RSC-shaped parity surfaces.
+- [Framework Host Integration](framework-facades.md) - adapting UI messages,
+  chat sessions, agent sessions, and stream responses into host frameworks.
 
 ## Integrations
 
@@ -118,7 +118,7 @@ For a chat UI:
 2. [UI Stream Protocols](ui-stream-protocols.md)
 3. [Chatbots](chatbots.md)
 4. [Completion And Object UI](completion-and-object-ui.md)
-5. [Framework Facades](framework-facades.md)
+5. [Framework Host Integration](framework-facades.md)
 6. [Prompts And Messages](prompts-and-messages.md)
 7. [Tools](tools.md)
 

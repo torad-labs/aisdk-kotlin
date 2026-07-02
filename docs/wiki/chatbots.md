@@ -173,6 +173,6 @@ when you need tools, files, sources, and reasoning.
 - [Completion And Object UI](completion-and-object-ui.md)
 - [Streaming](streaming.md)
 - [Advanced Streaming](advanced-streaming.md)
-- [Framework Facades](framework-facades.md)
+- [Framework Host Integration](framework-facades.md)
 - [Agents](agents.md)
 - [Tools](tools.md)
