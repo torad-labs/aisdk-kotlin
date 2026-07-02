@@ -62,5 +62,7 @@ fi
   -PsmokeRepository="$staging_repo" \
   :jvm-consumer:compileKotlin \
   :kmp-consumer:compileKotlinMetadata \
+  :kmp-consumer:compileKotlinIosArm64 \
+  :kmp-consumer:compileKotlinLinuxX64 \
   :kmp-consumer:jvmMainClasses \
   :android-consumer:assembleRelease

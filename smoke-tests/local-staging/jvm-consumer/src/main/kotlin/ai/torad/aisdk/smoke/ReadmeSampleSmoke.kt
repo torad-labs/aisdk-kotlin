@@ -4,6 +4,7 @@ import ai.torad.aisdk.FinishReason
 import ai.torad.aisdk.LanguageModel
 import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelResult
+import ai.torad.aisdk.LowLevelLanguageModelApi
 import ai.torad.aisdk.StepCountIs
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.Tool
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.builtins.serializer
 
+@OptIn(LowLevelLanguageModelApi::class)
 private object SmokeLanguageModel : LanguageModel {
     override val modelId: String = "smoke/local"
     override val provider: String = "smoke"
