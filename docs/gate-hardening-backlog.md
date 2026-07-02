@@ -16,8 +16,20 @@ synthesis), reviewed and amended by the orchestrator. All statuses OPEN.
 - **LP-4 (new, accepted during this sweep) — Coverage must be provable, not
   inferred.** LP-1 proves a gate *can* fire; nothing today proves it *was invoked*.
   Dynamic half: a per-run execution ledger. Static half: what-runs-where must be
-  traceable without archaeology (a careful analysis agent misclassified 6 CI-wired
-  gates as orphaned because script-calls-script indirection hid the wiring).
+  traceable without archaeology.
+  **Provenance — derived twice, independently, which is why it is accepted:**
+  (1) from the repo data: healthy validators (`validate_rules.py`, the three hook
+  self-test suites) simply were not invoked by any pipeline — a failure mode LP-1
+  cannot detect; (2) from the *process of building this backlog*: a careful
+  analysis agent, reading the actual workflows, misclassified 6 CI-wired gates as
+  orphaned because script-calls-script indirection hid the wiring — if a
+  best-effort audit cannot reliably enumerate what runs, neither can a maintainer.
+  Operationalized by GH-19 (ledger + expected-set registry), GH-07 (liveness
+  signal), GH-24 (the gate layer that silently isn't active on fresh clones).
+  Corollary for future sweeps (process, not repo): multi-agent analysis of a
+  verification system produces wrong inventories at every layer unless a
+  claim-verification pass sits between phases — verification of claims beats
+  volume of claims. Keep the reviewer in the loop.
 
 **Ground-truth findings this backlog rests on (all independently verified):**
 `validate_rules.py` (the ast-grep rule validator, parse + semantic fixture modes)
