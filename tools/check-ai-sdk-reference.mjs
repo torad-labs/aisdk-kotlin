@@ -6,6 +6,8 @@ import { join, resolve } from 'node:path';
 
 const repoRoot = resolve(new URL('..', import.meta.url).pathname);
 const expectedVersion = process.env.AI_SDK_REFERENCE_VERSION ?? '6.0.208';
+const expectedCommit =
+  process.env.AI_SDK_REFERENCE_COMMIT ?? '3270146267b1d82f07972bc40f09e9b4ee8bb9d3';
 const referenceRoot = join(repoRoot, '.reference', `vercel-ai-sdk-ai-${expectedVersion}`);
 const packageJsonPath = join(referenceRoot, 'packages', 'ai', 'package.json');
 
@@ -19,7 +21,7 @@ function main() {
   );
 
   if (latest !== expectedVersion) {
-    fail(
+    warn(
       `npm latest ai version is ${latest}, but this port targets ${expectedVersion}. ` +
         'Refresh .reference, regenerate parity ledgers, and close the new delta before release.',
     );
@@ -29,6 +31,13 @@ function main() {
     fail(`Missing reference package file: ${packageJsonPath}`);
   }
 
+  const actualCommit = readReferenceCommit();
+  if (actualCommit !== expectedCommit) {
+    fail(
+      `Reference checkout commit is ${actualCommit}, expected ${expectedCommit}: ${referenceRoot}`,
+    );
+  }
+
   const referencePackage = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
   if (referencePackage.version !== expectedVersion) {
     fail(
@@ -36,7 +45,28 @@ function main() {
     );
   }
 
-  console.log(`AI SDK reference is current: ai@${expectedVersion}`);
+  console.log(`AI SDK reference pin is valid: ai@${expectedVersion} (${actualCommit})`);
+}
+
+function readReferenceCommit() {
+  try {
+    return execFileSync('git', ['-C', referenceRoot, 'rev-parse', 'HEAD'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch (error) {
+    const detail = error.stderr?.toString().trim() || error.message;
+    fail(`Unable to read reference commit from ${referenceRoot}: ${detail}`);
+  }
+}
+
+function warn(message) {
+  console.warn(`::warning::${escapeGithubAnnotation(message)}`);
+}
+
+function escapeGithubAnnotation(value) {
+  return value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 }
 
 function fail(message) {
