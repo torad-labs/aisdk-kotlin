@@ -11,6 +11,9 @@ This project follows Semantic Versioning once the first stable release is cut.
 - Privacy hardening: telemetry integrations are metadata-only by default (`recordInputs=false`, `recordOutputs=false`) and receive a redacted event projection. `LoggingMiddleware` now logs tool metadata and byte counts by default; raw/redacted payload logging is explicit via `LoggingOptions` and the shared `Redactor` seam.
 - Release gates: coverage thresholds, detekt baseline budget ratchet, dependency verification metadata, provider capability/API review checks, local-staging consumer smoke fixtures, SHA-pinned GitHub Actions, workflow timeouts, and a `tools/beta-readiness-check` gate were added.
 - Public API hardening: JVM default-method compatibility is now pinned to `JvmDefaultMode.ENABLE`; experimental MCP/media aliases and functions, agent tool-call repair/approval-secret knobs, step/tool predicate `experimental_context`, and the remaining public experimental-prefixed surfaces now require `@ExperimentalAiSdkApi`; mutable byte payloads now defensively copy on input/output (`FileData.Bytes.toByteArray()`, `DefaultGeneratedFile.byteArray`); and `MutableTelemetrySpan` now accepts a read-only `Map` instead of a public `MutableMap`.
+- Public TS-residue aliases `AlibabaUsage`, `AlibabaCacheControl`, and
+  `DeepSeekErrorData` were removed before the beta ABI freeze; use `Usage`,
+  `JsonObject`, and `JsonElement` directly.
 - Visibility hardening: implementation utilities (`EventStreamParser`,
   `Base64Codec`, `TypedJsonOps`, `DirectCompletionTransport`, and
   `DirectStructuredObjectTransport`) are no longer public ABI. Advanced concrete

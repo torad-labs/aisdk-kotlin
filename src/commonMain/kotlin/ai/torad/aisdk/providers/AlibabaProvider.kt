@@ -26,8 +26,6 @@ public const val ALIBABA_VERSION: String = "1.0.26"
 
 public typealias AlibabaProviderOptions = AlibabaLanguageModelOptions
 public typealias AlibabaVideoProviderOptions = AlibabaVideoModelOptions
-public typealias AlibabaUsage = Usage
-public typealias AlibabaCacheControl = JsonObject
 
 @Serializable
 @Poko

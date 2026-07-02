@@ -324,6 +324,8 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `XaiImageModelOptions { aspect_ratio("1:1") }`. These pure data options are
   `@Serializable @Poko class` value-semantics types; their positional
   constructors, `copy()`, and `componentN()` are not public.
+- TypeScript-residue aliases that only renamed shared JSON/usage types are not
+  public ABI: `AlibabaUsage`, `AlibabaCacheControl`, and `DeepSeekErrorData`.
 - Simple construct params on the builder track (`GatewaySpendReportParams`,
   `GatewayGenerationInfoParams`, `AuthOptions`, `ImageGenerationParams`,
   `SpeechGenerationParams`, `TranscriptionParams`, `VideoGenerationParams`,
