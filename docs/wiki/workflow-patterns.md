@@ -8,17 +8,24 @@ agents when the model should decide the next action. The same app can use both.
 Run one model call, then feed its result into the next step:
 
 ```kotlin
-val classification = generateText(
-    model = fastModel,
-    prompt = "Classify this request: $request",
-    output = outputChoice("billing", "technical", "general"),
-).output
+val classification = TextGenerator(fastModel)
+    .generate(
+        GenerationInput.Prompt("Classify this request: $request"),
+        OutputChoice("billing", "technical", "general"),
+    )
+    .first()
+    .output
 
-val answer = generateText(
-    model = strongModel,
-    system = "Answer as a $classification support specialist.",
-    prompt = request,
-)
+val answer = TextGenerator(strongModel)
+    .generate(
+        GenerationInput.Messages(
+            GenerationInput.NonEmptyMessages.of(
+                SystemMessage("Answer as a $classification support specialist."),
+                UserMessage(request),
+            ),
+        ),
+    )
+    .first()
 ```
 
 Use sequential generation when each step has a clear input and output.
@@ -31,11 +38,13 @@ Route to a tool, model, or prompt based on a structured decision:
 @Serializable
 data class Route(val lane: String, val reason: String)
 
-val route = generateText(
-    model = fastModel,
-    prompt = "Route this user request: $request",
-    output = outputObj(serializer<Route>()),
-).output
+val route = TextGenerator(fastModel)
+    .generate(
+        GenerationInput.Prompt("Route this user request: $request"),
+        OutputObj(serializer<Route>()),
+    )
+    .first()
+    .output
 
 val model = when (route.lane) {
     "simple" -> fastModel
@@ -43,7 +52,7 @@ val model = when (route.lane) {
     else -> defaultModel
 }
 
-val result = generateText(model = model, prompt = request)
+val result = TextGenerator(model).generate(GenerationInput.Prompt(request)).first()
 ```
 
 Use typed output for routing. Do not parse free-form prose when the branch
@@ -62,10 +71,9 @@ val reviews = coroutineScope {
     ).awaitAll()
 }
 
-val summary = generateText(
-    model = model,
-    prompt = reviews.joinToString("\n\n") { it.text },
-)
+val summary = TextGenerator(model)
+    .generate(GenerationInput.Prompt(reviews.joinToString("\n\n") { it.text }))
+    .first()
 ```
 
 Use this for independent document review, rubric scoring, or multi-lens
@@ -79,21 +87,23 @@ Generate, evaluate, then retry with feedback:
 @Serializable
 data class Evaluation(val pass: Boolean, val feedback: String)
 
-var draft = generateText(model = model, prompt = task).text
+var draft = TextGenerator(model).generate(GenerationInput.Prompt(task)).first().text
 
 repeat(3) {
-    val evaluation = generateText(
-        model = evaluatorModel,
-        prompt = "Evaluate this draft:\n$draft",
-        output = outputObj(serializer<Evaluation>()),
-    ).output
+    val evaluation = TextGenerator(evaluatorModel)
+        .generate(
+            GenerationInput.Prompt("Evaluate this draft:\n$draft"),
+            OutputObj(serializer<Evaluation>()),
+        )
+        .first()
+        .output
 
     if (evaluation.pass) return@repeat
 
-    draft = generateText(
-        model = model,
-        prompt = "Revise using this feedback:\n${evaluation.feedback}\n\n$draft",
-    ).text
+    draft = TextGenerator(model)
+        .generate(GenerationInput.Prompt("Revise using this feedback:\n${evaluation.feedback}\n\n$draft"))
+        .first()
+        .text
 }
 ```
 
@@ -124,19 +134,18 @@ selection, use an agent.
 Build a manual loop when `ToolLoopAgent` is too opinionated:
 
 ```kotlin
-var messages = listOf(userMessage(request))
+var messages = listOf(UserMessage(request))
 
 repeat(5) {
-    val result = generateText(
-        model = model,
-        messages = messages,
-    )
+    val result = TextGenerator(model)
+        .generate(GenerationInput.Messages(GenerationInput.NonEmptyMessages.from(messages)))
+        .first()
 
-    messages = messages + assistantMessage(result.text)
+    messages = messages + AssistantMessage(result.text)
 
     if (isGoodEnough(result.text)) return@repeat
 
-    messages = messages + userMessage("Improve the answer using more concrete steps.")
+    messages = messages + UserMessage("Improve the answer using more concrete steps.")
 }
 ```
 

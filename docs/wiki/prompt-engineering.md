@@ -7,18 +7,25 @@ contracts live in tools, and output shape lives in `Output`.
 ## Start With A Stable System Prompt
 
 ```kotlin
-val result = generateText(
-    model = model,
-    system = """
-        You are a support engineer for AI SDK Kotlin.
-        Answer with concrete Kotlin examples.
-        If a capability belongs to the host app, say where the boundary is.
-    """.trimIndent(),
-    prompt = "How should I persist a chat?",
-)
+val result = TextGenerator(model)
+    .generate(
+        GenerationInput.Messages(
+            GenerationInput.NonEmptyMessages.of(
+                SystemMessage(
+                    """
+                    You are a support engineer for AI SDK Kotlin.
+                    Answer with concrete Kotlin examples.
+                    If a capability belongs to the host app, say where the boundary is.
+                    """.trimIndent(),
+                ),
+                UserMessage("How should I persist a chat?"),
+            ),
+        ),
+    )
+    .first()
 ```
 
-Use `system` for durable behavior, safety constraints, and formatting rules.
+Use `SystemMessage` for durable behavior, safety constraints, and formatting rules.
 Do not put high-trust instructions inside user-editable message history.
 
 ## Keep The User Task Small
@@ -40,7 +47,16 @@ val prompt = """
     - One code-level fix.
 """.trimIndent()
 
-val result = generateText(model = model, system = supportSystem, prompt = prompt)
+val result = TextGenerator(model)
+    .generate(
+        GenerationInput.Messages(
+            GenerationInput.NonEmptyMessages.of(
+                SystemMessage(supportSystem),
+                UserMessage(prompt),
+            ),
+        ),
+    )
+    .first()
 ```
 
 This makes later migration into `messages`, tools, or `Output` straightforward.
@@ -48,15 +64,18 @@ This makes later migration into `messages`, tools, or `Output` straightforward.
 ## Use Messages For Conversations
 
 ```kotlin
-val result = generateText(
-    model = model,
-    messages = listOf(
-        systemMessage("Answer with exact API names."),
-        userMessage("What does streamTextResult give me?"),
-        assistantMessage("It gives text and UI stream adapters plus metadata."),
-        userMessage("Show the UI stream path."),
-    ),
-)
+val result = TextGenerator(model)
+    .generate(
+        GenerationInput.Messages(
+            GenerationInput.NonEmptyMessages.of(
+                SystemMessage("Answer with exact API names."),
+                UserMessage("What does streamResult give me?"),
+                AssistantMessage("It gives text and UI stream adapters plus metadata."),
+                UserMessage("Show the UI stream path."),
+            ),
+        ),
+    )
+    .first()
 ```
 
 Use messages when prior assistant output, tool results, approval responses, or
@@ -71,7 +90,7 @@ the prompt focused on policy and task; put action details on the tool:
 val searchDocs = Tool<SearchInput, List<SearchHit>, AppContext>(
     name = "searchDocs",
     description = "Search AI SDK Kotlin docs when the user asks about API usage.",
-    inputExamples = listOf("""{"query":"streamTextResult UI messages","limit":5}"""),
+    inputExamples = listOf("""{"query":"streamResult UI messages","limit":5}"""),
 ) { input ->
     docs.search(input.query, input.limit)
 }
@@ -86,12 +105,18 @@ weak.
 @Serializable
 data class Diagnosis(val cause: String, val fix: String, val confidence: Double)
 
-val diagnosis = generateText(
-    model = model,
-    system = "Diagnose SDK integration problems.",
-    prompt = "The agent called a tool, then stopped before final text.",
-    output = outputObj(serializer<Diagnosis>()),
-).output
+val diagnosis = TextGenerator(model)
+    .generate(
+        GenerationInput.Messages(
+            GenerationInput.NonEmptyMessages.of(
+                SystemMessage("Diagnose SDK integration problems."),
+                UserMessage("The agent called a tool, then stopped before final text."),
+            ),
+        ),
+        OutputObj(serializer<Diagnosis>()),
+    )
+    .first()
+    .output
 ```
 
 Use prose for behavior and `Output` for validation. Avoid asking for JSON in
@@ -121,7 +146,7 @@ every hit into the prompt.
 
 ## Checklist
 
-- `system` contains durable behavior.
+- `SystemMessage` contains durable behavior.
 - `prompt` contains the current task.
 - `messages` contain conversation state, not hidden globals.
 - Tools explain actions and limits.
