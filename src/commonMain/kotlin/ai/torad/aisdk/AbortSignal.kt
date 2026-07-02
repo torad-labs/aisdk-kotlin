@@ -146,11 +146,17 @@ public class AbortError(
     message: String = "operation aborted"
 ) : kotlin.coroutines.cancellation.CancellationException(message)
 
+internal expect object AbortErrorCancellationBridge {
+    fun AbortError.asCoroutineCancellation(): kotlinx.coroutines.CancellationException
+}
+
 internal object AbortSignalRuntime {
     suspend fun <T> withAbortCancellation(signal: AbortSignal, block: suspend () -> T): T = coroutineScope {
         signal.throwIfAborted()
         val job = coroutineContext[Job]
-        val registration = signal.register { job?.cancel(AbortError()) }
+        val registration = signal.register {
+            job?.cancel(with(AbortErrorCancellationBridge) { AbortError().asCoroutineCancellation() })
+        }
         try {
             block()
         } finally {
