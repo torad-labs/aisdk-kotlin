@@ -359,6 +359,8 @@ class McpHttpTransportTest : MCPClientTestBase() {
             append('\n')
         }
         val errors = mutableListOf<Throwable>()
+        val recordedDelays = mutableListOf<Long>()
+        val retriesExhausted = CompletableDeferred<Unit>()
         val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://mcp.test/mcp" to UrlHandler(
@@ -375,36 +377,35 @@ class McpHttpTransportTest : MCPClientTestBase() {
         val transport = HttpMCPTransport(
             client = fixture.httpClient(),
             url = "https://mcp.test/mcp",
-            reconnectionOptions = MCPReconnectionOptions {
-                initialReconnectionDelayMillis(30)
-                reconnectionDelayGrowFactor(10.0)
-                maxReconnectionDelayMillis(1_000)
-                maxRetries(2)
-            },
+            reconnectionOptions = MCPReconnectionOptions(
+                initialReconnectionDelayMillis = 30,
+                reconnectionDelayGrowFactor = 10.0,
+                maxReconnectionDelayMillis = 100,
+                maxRetries = 2,
+                reconnectDelayer = MCPReconnectDelayer { delayMillis ->
+                    recordedDelays += delayMillis
+                },
+            ),
         )
-        transport.setOnError { errors += it }
+        transport.setOnError { error ->
+            errors += error
+            if (error.message?.contains("Maximum reconnection attempts (2) exceeded") == true) {
+                retriesExhausted.complete(Unit)
+            }
+        }
 
-        transport.start()
-        waitForRealTime { errors.isNotEmpty() }
-        assertEquals(1, fixture.calls.count { it.requestMethod == "GET" })
+        try {
+            transport.start()
+            withContext(Dispatchers.Default) {
+                withTimeout(5_000) { retriesExhausted.await() }
+            }
 
-        withContext(Dispatchers.Default) { delay(15) }
-        assertEquals(1, fixture.calls.count { it.requestMethod == "GET" })
-
-        waitForRealTime { errors.size >= 2 }
-        assertEquals(2, fixture.calls.count { it.requestMethod == "GET" })
-
-        withContext(Dispatchers.Default) { delay(100) }
-        assertEquals(2, fixture.calls.count { it.requestMethod == "GET" })
-
-        waitForRealTime { errors.any { it.message?.contains("Maximum reconnection attempts (2) exceeded") == true } }
-        assertEquals(3, fixture.calls.count { it.requestMethod == "GET" })
-
-        withContext(Dispatchers.Default) { delay(100) }
-
-        assertEquals(3, fixture.calls.count { it.requestMethod == "GET" })
-        assertTrue(errors.any { it.message?.contains("Maximum reconnection attempts (2) exceeded") == true })
-        transport.close()
+            assertEquals(listOf(30L, 100L), recordedDelays)
+            assertEquals(3, fixture.calls.count { it.requestMethod == "GET" })
+            assertTrue(errors.any { it.message?.contains("Maximum reconnection attempts (2) exceeded") == true })
+        } finally {
+            transport.close()
+        }
     }
 
     @Test
