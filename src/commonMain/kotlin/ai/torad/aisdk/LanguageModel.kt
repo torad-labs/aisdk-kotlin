@@ -63,6 +63,8 @@ public interface LanguageModel {
     /**
      * Streaming completion. Cold until collected, then drives one upstream call per
      * collection. Requires explicit low-level opt-in at direct call sites.
+     * Streaming has no default deadline; configure the provider transport or
+     * wrap the call in a higher-level [CallConfig.timeout].
      * @since 0.3.0-beta01
      */
     @LowLevelLanguageModelApi

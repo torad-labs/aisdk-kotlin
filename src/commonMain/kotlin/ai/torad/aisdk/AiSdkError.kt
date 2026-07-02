@@ -18,21 +18,52 @@ public class InvalidArgumentError(
     cause: Throwable? = null,
 ) : AiSdkException("Invalid argument `$argument`: $reason", cause)
 
-/** @since 0.3.0-beta01 */
+/**
+ * Provider HTTP/API failure with normalized request and response details.
+ *
+ * [statusCode] is the HTTP status when the failure came from a response; it is
+ * null for client-side transport failures or provider errors that do not expose
+ * a status. [responseHeaders] contains response headers exactly as the provider
+ * adapter captured them, or null when no response was received. [isRetryable]
+ * defaults to true for common transient statuses: 408, 409, 429, and 5xx.
+ * Providers may override it when the response body carries stronger retry
+ * semantics.
+ * @since 0.3.0-beta01
+ */
+@Suppress("LongParameterList")
 public class APICallError(
     message: String,
-    /** @since 0.3.0-beta01 */
+    /**
+     * Fully resolved request URL.
+     * @since 0.3.0-beta01
+     */
     public val url: String,
-    /** @since 0.3.0-beta01 */
+    /**
+     * JSON request body values when the provider adapter can expose them.
+     * @since 0.3.0-beta01
+     */
     public val requestBodyValues: JsonElement? = null,
-    /** @since 0.3.0-beta01 */
+    /**
+     * HTTP status code for response-backed failures, or null for failures
+     * before a response exists.
+     * @since 0.3.0-beta01
+     */
     public val statusCode: Int? = null,
-    /** @since 0.3.0-beta01 */
+    /**
+     * Response headers captured from the provider, or null when unavailable.
+     * @since 0.3.0-beta01
+     */
     public val responseHeaders: Map<String, String>? = null,
-    /** @since 0.3.0-beta01 */
+    /**
+     * Raw response body text when the provider returned one.
+     * @since 0.3.0-beta01
+     */
     public val responseBody: String? = null,
     cause: Throwable? = null,
-    /** @since 0.3.0-beta01 */
+    /**
+     * Whether retry middleware should treat this failure as transient.
+     * @since 0.3.0-beta01
+     */
     public val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || (statusCode ?: 0) >= 500,
 ) : AiSdkException(message, cause)
 

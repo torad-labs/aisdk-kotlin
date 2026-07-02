@@ -86,6 +86,11 @@ public class GenerateTextResult<TOutput>(
  * memory for the result lifetime. Hosts that need minimum peak memory for a
  * guaranteed single-consumer path can collect the model stream directly instead
  * of using this replaying result surface.
+ *
+ * Streaming has no default deadline. High-level callers should set
+ * [CallConfig.timeout], and low-level callers should configure the underlying
+ * HTTP/on-device engine socket timeout, so a dead SSE or local engine stream
+ * cannot wait forever.
  * @since 0.3.0-beta01
  */
 @OptIn(ExperimentalAtomicApi::class)
