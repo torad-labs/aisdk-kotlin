@@ -8,8 +8,9 @@ This is a green-room Kotlin rewrite of the architectural contracts, not a TypeSc
 
 - Common Kotlin API for shared agent code.
 - Android library publication.
-- iOS static framework publication for `iosX64`, `iosArm64`, and `iosSimulatorArm64`.
+- iOS Kotlin Multiplatform klibs for `iosX64`, `iosArm64`, and `iosSimulatorArm64` published through Maven; the XCFramework is CI-built but not distributed.
 - JVM artifact for backend and desktop services.
+- Linux/Native `linuxX64` artifact for server-side Kotlin/Native and CLI consumers.
 
 ## Install
 
