@@ -14,6 +14,7 @@ import ai.torad.aisdk.providers.LiteRTSamplerConfig
 import ai.torad.aisdk.providers.LiteRTStreamTextMode
 import ai.torad.aisdk.providers.LiteRTToolCall
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -22,7 +23,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -33,6 +36,7 @@ class LiteRTLanguageModelTest {
             role(LiteRTMessageRole.Model)
         },
         private val streamResponses: List<LiteRTMessage> = emptyList(),
+        private val streamFactory: (FakeLiteRTConversation.() -> Flow<LiteRTMessage>)? = null,
     ) : LiteRTConversationFactory {
         private val capturedRequests: MutableList<LiteRTConversationRequest> = mutableListOf()
         private val conversations: MutableList<FakeLiteRTConversation> = mutableListOf()
@@ -42,20 +46,23 @@ class LiteRTLanguageModelTest {
 
         override suspend fun create(request: LiteRTConversationRequest): LiteRTConversation {
             capturedRequests += request
-            return FakeLiteRTConversation(sendResponse, streamResponses).also { conversations += it }
+            return FakeLiteRTConversation(sendResponse, streamResponses, streamFactory).also { conversations += it }
         }
     }
 
     private class FakeLiteRTConversation(
         private val sendResponse: LiteRTMessage,
         private val streamResponses: List<LiteRTMessage>,
+        private val streamFactory: (FakeLiteRTConversation.() -> Flow<LiteRTMessage>)?,
     ) : LiteRTConversation {
         private var sendCallCount: Int = 0
         private var streamCallCount: Int = 0
+        private val cancelEvents: MutableList<Unit> = mutableListOf()
         private var closeCallCount: Int = 0
 
         val sendCalls: Int get() = sendCallCount
         val streamCalls: Int get() = streamCallCount
+        val cancelCalls: Int get() = cancelEvents.size
         val closeCalls: Int get() = closeCallCount
 
         override suspend fun send(message: LiteRTMessage, extraContext: Map<String, JsonElement>): LiteRTMessage {
@@ -69,8 +76,15 @@ class LiteRTLanguageModelTest {
         ): Flow<LiteRTMessage> =
             flow {
                 streamCallCount += 1
-                for (response in streamResponses) emit(response)
+                val source = streamFactory?.invoke(this@FakeLiteRTConversation) ?: flow {
+                    for (response in streamResponses) emit(response)
+                }
+                emitAll(source)
             }
+
+        override fun cancel() {
+            cancelEvents += Unit
+        }
 
         override fun close() {
             closeCallCount += 1
@@ -176,6 +190,231 @@ class LiteRTLanguageModelTest {
             systemText,
         )
         assertTrue(result.warnings.none { it.message.orEmpty().contains("responseFormat") })
+    }
+
+    @Test
+    fun `generate maps media content to LiteRT bytes files and text`() = runTest {
+        val factory = FakeLiteRTFactory()
+        val model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = factory)
+
+        model.generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Image(mediaType = "image/png", base64 = "aGk="),
+                                ContentPart.File(mediaType = "audio/wav", url = "data:audio/wav;base64,aGk="),
+                                ContentPart.Image(mediaType = "image/jpeg", url = "/tmp/image.jpg"),
+                                ContentPart.File(mediaType = "audio/mpeg", url = "/tmp/audio.mp3"),
+                                ContentPart.File(mediaType = "text/plain", base64 = "aGk="),
+                            ),
+                        ),
+                    ),
+                )
+            },
+        )
+
+        val content = factory.requests.single().message.content
+        val imageBytes = assertIs<LiteRTContent.ImageBytes>(content[0])
+        assertEquals("image/png", imageBytes.mediaType)
+        assertContentEquals(byteArrayOf(104, 105), imageBytes.bytes.toByteArray())
+        val audioBytes = assertIs<LiteRTContent.AudioBytes>(content[1])
+        assertEquals("audio/wav", audioBytes.mediaType)
+        assertContentEquals(byteArrayOf(104, 105), audioBytes.bytes.toByteArray())
+        val imageFile = assertIs<LiteRTContent.ImageFile>(content[2])
+        assertEquals("/tmp/image.jpg", imageFile.absolutePath)
+        assertEquals("image/jpeg", imageFile.mediaType)
+        val audioFile = assertIs<LiteRTContent.AudioFile>(content[3])
+        assertEquals("/tmp/audio.mp3", audioFile.absolutePath)
+        assertEquals("audio/mpeg", audioFile.mediaType)
+        assertEquals("hi", assertIs<LiteRTContent.Text>(content[4]).text)
+    }
+
+    @Test
+    fun `generate rejects unsupported remote media URLs`() = runTest {
+        val model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = FakeLiteRTFactory())
+
+        val error = assertFailsWith<UnsupportedFunctionalityError> {
+            model.generate(
+                LanguageModelCallParams {
+                    messages(
+                        listOf(
+                            ModelMessage(
+                                MessageRole.User,
+                                listOf(ContentPart.Image(mediaType = "image/png", url = "https://example.com/a.png")),
+                            ),
+                        ),
+                    )
+                },
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("absolute local file path"))
+    }
+
+    @Test
+    fun `generate maps LiteRT tool choices and provider executed warnings`() = runTest {
+        val weather = LanguageModelTool("weather", "Weather", """{"type":"object"}""")
+        val news = LanguageModelTool("news", "News", """{"type":"object"}""")
+        val providerTool = LanguageModelTool(
+            name = "server",
+            description = "Server tool",
+            parametersSchemaJson = """{"type":"object"}""",
+            providerExecuted = true,
+        )
+
+        val noneFactory = FakeLiteRTFactory()
+        LiteRTLanguageModel("gemma-litert", noneFactory).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+                tools(listOf(weather))
+                toolChoice(ToolChoice.None)
+            },
+        )
+        assertEquals(emptyList(), noneFactory.requests.single().tools)
+
+        val requiredFactory = FakeLiteRTFactory()
+        val required = LiteRTLanguageModel("gemma-litert", requiredFactory).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+                tools(listOf(weather))
+                toolChoice(ToolChoice.Required)
+            },
+        )
+        assertEquals(listOf("weather"), requiredFactory.requests.single().tools.map { it.name })
+        assertTrue(required.warnings.any { it.message.orEmpty().contains("required tool choice") })
+
+        val specificFactory = FakeLiteRTFactory()
+        val specific = LiteRTLanguageModel("gemma-litert", specificFactory).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+                tools(listOf(weather, news))
+                toolChoice(ToolChoice.Specific("news"))
+            },
+        )
+        assertEquals(listOf("news"), specificFactory.requests.single().tools.map { it.name })
+        assertTrue(specific.warnings.any { it.message.orEmpty().contains("specific tool choice") })
+
+        val providerFactory = FakeLiteRTFactory()
+        val providerFiltered = LiteRTLanguageModel("gemma-litert", providerFactory).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+                tools(listOf(weather, providerTool))
+            },
+        )
+        assertEquals(listOf("weather"), providerFactory.requests.single().tools.map { it.name })
+        assertTrue(providerFiltered.warnings.any { it.message.orEmpty().contains("providerExecuted") })
+    }
+
+    @Test
+    fun `generate rejects empty prompts with typed error`() = runTest {
+        val model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = FakeLiteRTFactory())
+
+        val error = assertFailsWith<UnsupportedFunctionalityError> {
+            model.generate(
+                LanguageModelCallParams {
+                    messages(listOf(SystemMessage("system only")))
+                },
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("requires at least one non-system message"))
+    }
+
+    @Test
+    fun `stream maps delta text mode by default`() = runTest {
+        val factory = FakeLiteRTFactory(
+            streamResponses = listOf(
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    content(listOf(LiteRTContent.Text("Hel")))
+                },
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    content(listOf(LiteRTContent.Text("lo")))
+                },
+            ),
+        )
+        val model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = factory)
+
+        val events = model.stream(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+            },
+        ).toList()
+
+        assertEquals(listOf("Hel", "lo"), events.filterIsInstance<StreamEvent.TextDelta>().map { it.text })
+        assertEquals(FinishReason.Stop, events.filterIsInstance<StreamEvent.Finish>().single().finishReason)
+        assertEquals(1, factory.createdConversations.single().closeCalls)
+    }
+
+    @Test
+    fun `stream cancels conversation when abort fires mid-stream`() = runTest {
+        val controller = AbortController()
+        val factory = FakeLiteRTFactory(
+            streamFactory = {
+                flow {
+                    emit(
+                        LiteRTMessage {
+                            role(LiteRTMessageRole.Model)
+                            content(listOf(LiteRTContent.Text("partial")))
+                        },
+                    )
+                    controller.abort()
+                    emit(
+                        LiteRTMessage {
+                            role(LiteRTMessageRole.Model)
+                            content(listOf(LiteRTContent.Text("ignored")))
+                        },
+                    )
+                }
+            },
+        )
+        val model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = factory)
+
+        assertFailsWith<AbortError> {
+            model.stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hello")))
+                    abortSignal(controller.signal)
+                },
+            ).toList()
+        }
+
+        val conversation = factory.createdConversations.single()
+        assertEquals(1, conversation.cancelCalls)
+        assertEquals(1, conversation.closeCalls)
+    }
+
+    @Test
+    fun `stream closes conversation when upstream fails`() = runTest {
+        val factory = FakeLiteRTFactory(
+            streamFactory = {
+                flow {
+                    emit(
+                        LiteRTMessage {
+                            role(LiteRTMessageRole.Model)
+                            content(listOf(LiteRTContent.Text("partial")))
+                        },
+                    )
+                    throw APICallError("stream failed", url = "litert://stream")
+                }
+            },
+        )
+        val model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = factory)
+
+        val error = assertFailsWith<APICallError> {
+            model.stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hello")))
+                },
+            ).toList()
+        }
+
+        assertEquals("stream failed", error.message)
+        assertEquals(1, factory.createdConversations.single().closeCalls)
     }
 
     @Test
