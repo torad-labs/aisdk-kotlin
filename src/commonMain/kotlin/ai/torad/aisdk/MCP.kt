@@ -1108,7 +1108,18 @@ public class MCPReconnectionOptions internal constructor(
     public val maxReconnectionDelayMillis: Long = 30_000,
     /** @since 0.3.0-beta01 */
     public val maxRetries: Int = 2,
+    internal val reconnectDelayer: MCPReconnectDelayer = DefaultMCPReconnectDelayer,
 )
+
+internal fun interface MCPReconnectDelayer {
+    suspend fun delay(delayMillis: Long)
+}
+
+private object DefaultMCPReconnectDelayer : MCPReconnectDelayer {
+    override suspend fun delay(delayMillis: Long) {
+        if (delayMillis > 0L) kotlinx.coroutines.delay(delayMillis)
+    }
+}
 
 /** @since 0.3.0-beta01 */
 public class MCPReconnectionOptionsBuilder {
@@ -1658,7 +1669,7 @@ public class HttpMCPTransport(
             return
         }
         reconnectDelayMillis?.let { delayMillis ->
-            delay(delayMillis)
+            reconnectionOptions.reconnectDelayer.delay(delayMillis)
             var restart = false
             inboundMutex.withLock {
                 if (lifecycle.isActive && inboundJob === currentJob) {

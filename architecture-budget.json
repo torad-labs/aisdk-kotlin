@@ -4,7 +4,7 @@
     "src/commonMain/kotlin/ai/torad/aisdk/AgentSession.kt": 554,
     "src/commonMain/kotlin/ai/torad/aisdk/Context.kt": 660,
     "src/commonMain/kotlin/ai/torad/aisdk/KtorGatewayTransport.kt": 613,
-    "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt": 2168,
+    "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt": 2179,
     "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt": 884,
     "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt": 1858,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt": 918,
