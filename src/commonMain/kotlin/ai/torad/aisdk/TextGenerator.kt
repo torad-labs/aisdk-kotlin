@@ -11,11 +11,24 @@ public class TextGenerator @JvmOverloads constructor(
     private val model: LanguageModel,
     private val config: CallConfig = CallConfig(),
 ) {
-    /** @since 0.3.0-beta01 */
+    /**
+     * Cold flow: no model call starts until collected. Each collection reruns
+     * the generation from the beginning, so provider calls may incur cost or
+     * billing again. One-shot callers should collect exactly one value,
+     * usually with `.first()`.
+     * @since 0.3.0-beta01
+     */
     public fun generate(input: GenerationInput): Flow<GenerateTextResult<String>> = flow {
         emit(doGenerate(input, null) { it })
     }
 
+    /**
+     * Cold flow: no model call starts until collected. Each collection reruns
+     * the generation from the beginning, including structured-output decoding,
+     * so provider calls may incur cost or billing again. One-shot callers
+     * should collect exactly one value, usually with `.first()`.
+     * @since 0.3.0-beta01
+     */
     public fun <T> generate(input: GenerationInput, output: Output<T>): Flow<GenerateTextResult<T>> = flow {
         emit(doGenerate(input, output, output::decode))
     }

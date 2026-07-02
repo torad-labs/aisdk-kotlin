@@ -519,6 +519,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     }
     // ──────────────────────────────────────────────────────────────────────
 
+    /**
+     * Cold flow: no model call or tool execution starts until collected.
+     * Each collection reruns the full generation from the beginning, including
+     * tool executions and their side effects, and may incur provider cost or
+     * billing again. One-shot callers should collect exactly one value, usually
+     * with `.first()`.
+     */
     @Suppress("UNCHECKED_CAST")
     override fun generate(
         prompt: String?,
