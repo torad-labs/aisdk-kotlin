@@ -888,6 +888,7 @@ private class LiteRTStreamState(
     private var cumulativeText: String = ""
     private var textOpen: Boolean = false
     private val openReasoning: MutableSet<String> = mutableSetOf()
+    private val emittedToolCalls: MutableSet<LiteRTStreamToolCallKey> = mutableSetOf()
     private var hasToolCalls: Boolean = false
 
     suspend fun accept(message: LiteRTMessage, out: FlowCollector<StreamEvent>) {
@@ -914,6 +915,8 @@ private class LiteRTStreamState(
             cumulativeReasoning[channel] = if (textMode == LiteRTStreamTextMode.Cumulative) value else prior + delta
         }
         for (call in message.toolCalls) {
+            val key = LiteRTStreamToolCallKey(id = call.id, name = call.name, arguments = call.arguments)
+            if (!emittedToolCalls.add(key)) continue
             hasToolCalls = true
             val toolCallId = call.id ?: idGenerator()
             out.emit(StreamEvent.ToolInputStart(toolCallId, call.name, call.providerMetadata))
@@ -948,3 +951,9 @@ private class LiteRTStreamState(
             next
         }
 }
+
+private data class LiteRTStreamToolCallKey(
+    val id: String?,
+    val name: String,
+    val arguments: JsonElement,
+)

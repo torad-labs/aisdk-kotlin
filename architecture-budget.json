@@ -39,7 +39,7 @@
     "src/commonMain/kotlin/ai/torad/aisdk/providers/ElevenLabsProvider.kt": 539,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/GladiaProvider.kt": 766,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/KlingAIProvider.kt": 683,
-    "src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModel.kt": 951,
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModel.kt": 960,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/ReplicateProvider.kt": 739,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/RevaiProvider.kt": 637,
     "src/commonTest/kotlin/ai/torad/aisdk/CohereProviderTest.kt": 599,
