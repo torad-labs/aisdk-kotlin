@@ -40,30 +40,33 @@ internal class TestToolLoopAgent<TContext, TOutput>(
     logger: Logger = NoopLogger,
     engineContext: CoroutineContext = Dispatchers.Default,
 ) : ToolLoopAgent<TContext, TOutput>(
+    settings = AgentSettings<TContext> {
+        activeTools(activeTools)
+        this.output(output)
+        this.prepareCall(prepareCall)
+        this.prepareStep(prepareStep)
+        this.callOptionsSchema(callOptionsSchema)
+        temperature(temperature)
+        topP(topP)
+        topK(topK)
+        maxOutputTokens(maxOutputTokens)
+        stopSequences(stopSequences)
+        seed(seed)
+        presencePenalty(presencePenalty)
+        frequencyPenalty(frequencyPenalty)
+        responseFormat(responseFormat)
+        maxRetries(maxRetries)
+        this.maxParallelToolCalls(maxParallelToolCalls)
+        this.toolExecutionPolicy(toolExecutionPolicy)
+        this.experimental_repairToolCall(experimental_repairToolCall)
+        this.experimental_toolApprovalSecret(experimental_toolApprovalSecret)
+        this.telemetry(telemetry)
+        this.logger(logger)
+        this.engineContext(engineContext)
+    },
     model = model,
     instructions = instructions,
     tools = tools,
-    activeTools = activeTools,
     output = output,
     stopWhen = stopWhen,
-    prepareCall = prepareCall,
-    prepareStep = prepareStep,
-    callOptionsSchema = callOptionsSchema,
-    temperature = temperature,
-    topP = topP,
-    topK = topK,
-    maxOutputTokens = maxOutputTokens,
-    stopSequences = stopSequences,
-    seed = seed,
-    presencePenalty = presencePenalty,
-    frequencyPenalty = frequencyPenalty,
-    responseFormat = responseFormat,
-    maxRetries = maxRetries,
-    maxParallelToolCalls = maxParallelToolCalls,
-    toolExecutionPolicy = toolExecutionPolicy,
-    experimental_repairToolCall = experimental_repairToolCall,
-    experimental_toolApprovalSecret = experimental_toolApprovalSecret,
-    telemetry = telemetry,
-    logger = logger,
-    engineContext = engineContext,
 )

@@ -57,97 +57,120 @@ import kotlin.coroutines.coroutineContext
  *
  * Generation isn't kept "in flight" while the user decides — host can
  * serialize, persist, transport, then resume.
+ *
+ * Construction accepts either direct common parameters or [AgentSettings].
+ * Direct parameters win over matching settings fields. [model],
+ * [instructions], and [tools] are required through one of those paths.
+ * Because all constructor parameters have defaults, Kotlin also exposes a
+ * public no-arg constructor; `ToolLoopAgent<Unit, String>()` compiles but
+ * fails immediately with [InvalidArgumentError] because the required model,
+ * instructions, and tools are missing.
  */
 @OptIn(ExperimentalAtomicApi::class)
-@Suppress("ConstructorParameterNaming", "LongParameterList", "VariableNaming")
+@Suppress("ConstructorParameterNaming", "LongParameterList", "UNCHECKED_CAST", "VariableNaming")
 /** @since 0.3.0-beta01 */
 public abstract class ToolLoopAgent<TContext, TOutput>(
+    /**
+     * Builder-backed construction settings for advanced agent configuration.
+     * @since 0.3.0-beta01
+     */
+    settings: AgentSettings<TContext> = AgentSettings(),
     /** @since 0.3.0-beta01 */
-    public val model: LanguageModel,
+    public val model: LanguageModel = settings.model
+        ?: throw InvalidArgumentError("model", "ToolLoopAgent requires model via parameter or settings"),
     /** @since 0.3.0-beta01 */
-    public val instructions: String,
-    override val tools: ToolSet<TContext>,
+    public val instructions: String = settings.instructions
+        ?: throw InvalidArgumentError(
+            "instructions",
+            "ToolLoopAgent requires instructions via parameter or settings",
+        ),
+    override val tools: ToolSet<TContext> = settings.tools
+        ?: throw InvalidArgumentError("tools", "ToolLoopAgent requires tools via parameter or settings"),
     /** @since 0.3.0-beta01 */
-    public val activeTools: List<String>? = null,
+    public val output: Output<TOutput>? = settings.output as Output<TOutput>?,
     /** @since 0.3.0-beta01 */
-    public val output: Output<TOutput>? = null,
+    public val stopWhen: StopCondition = settings.stopWhen ?: StepCountIs(20),
+) : Agent<TContext, TOutput> {
     /** @since 0.3.0-beta01 */
-    public val stopWhen: StopCondition = StepCountIs(20),
+    public val activeTools: List<String>? = settings.activeTools
+
     /** @since 0.3.0-beta01 */
-    public val prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = null,
+    public val prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = settings.prepareCall
+
     /** @since 0.3.0-beta01 */
-    public val prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = null,
+    public val prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = settings.prepareStep
+
     /** @since 0.3.0-beta01 */
-    public val callOptionsSchema: KSerializer<TContext>? = null,
+    public val callOptionsSchema: KSerializer<TContext>? = settings.callOptionsSchema
+
     // Sampler-param defaults set at agent construction. Mirror v6's
     // `CallSettings` (tool-loop-agent-settings.ts:145-194). Resolution
     // chain inside the loop is `StepSettings ?: AgentSettings ?: these
     // constructor defaults ?: null` (null = provider's own default).
     /** @since 0.3.0-beta01 */
-    public val temperature: Float? = null,
+    public val temperature: Float? = settings.temperature
+
     /** @since 0.3.0-beta01 */
-    public val topP: Float? = null,
+    public val topP: Float? = settings.topP
+
     /** @since 0.3.0-beta01 */
-    public val topK: Int? = null,
+    public val topK: Int? = settings.topK
+
     /** @since 0.3.0-beta01 */
-    public val maxOutputTokens: Int? = null,
+    public val maxOutputTokens: Int? = settings.maxOutputTokens
+
     /** @since 0.3.0-beta01 */
-    public val stopSequences: List<String>? = null,
+    public val stopSequences: List<String>? = settings.stopSequences
+
     /** @since 0.3.0-beta01 */
-    public val seed: Int? = null,
+    public val seed: Int? = settings.seed
+
     /**
      * v6 `CallSettings.presencePenalty` agent-default.
      * @since 0.3.0-beta01
      */
-    public val presencePenalty: Float? = null,
+    public val presencePenalty: Float? = settings.presencePenalty
+
     /**
      * v6 `CallSettings.frequencyPenalty` agent-default.
      * @since 0.3.0-beta01
      */
-    public val frequencyPenalty: Float? = null,
+    public val frequencyPenalty: Float? = settings.frequencyPenalty
+
     /**
      * Wire-level response constraint for providers that support it.
      * @since 0.3.0-beta01
      */
-    public val responseFormat: ResponseFormat = ResponseFormat.Text,
+    public val responseFormat: ResponseFormat = settings.responseFormat ?: ResponseFormat.Text
+
     /**
      * Maximum retries for each non-streaming model round-trip. Streaming retry is handled separately.
      * @since 0.3.0-beta01
      */
-    public val maxRetries: Int = 2,
-    /**
-     * Legacy shorthand for [ToolExecutionPolicy.maxParallelToolCalls]. If [toolExecutionPolicy]
-     * is supplied, the policy is the source of truth.
-     */
-    maxParallelToolCalls: Int = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS,
+    public val maxRetries: Int = settings.maxRetries ?: 2
+
+    private val requestedMaxParallelToolCalls =
+        settings.maxParallelToolCalls ?: ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS
+
     /**
      * Explicit bounded policy for per-step tool execution. Defaults cap both concurrent
      * tool executors and total accepted tool calls so a model cannot create unbounded
      * child coroutines or unbounded in-step work.
      * @since 0.3.0-beta01
      */
-    public val toolExecutionPolicy: ToolExecutionPolicy = ToolExecutionPolicy {
-        maxParallelToolCalls(maxParallelToolCalls)
-    },
+    public val toolExecutionPolicy: ToolExecutionPolicy =
+        settings.toolExecutionPolicy ?: ToolExecutionPolicy {
+            maxParallelToolCalls(requestedMaxParallelToolCalls)
+        }
+
     /**
      * Self-healing callback fired when a tool call's arguments fail to
      * decode. Return a corrected call to retry, or null to surface
      * `StreamEvent.ToolError`. See [ToolCallRepairFunction].
      * @since 0.3.0-beta01
      */
-    public val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
-    /**
-     * Secret for HMAC-signing tool-approval requests (upstream v6.0.202
-     * `experimental_toolApprovalSecret`). When set, every approval request the
-     * loop issues carries a signature over `(approvalId, toolCallId, toolName,
-     * input)`, and a replayed approval is re-validated FAIL-CLOSED before the
-     * tool executes: missing/invalid signature throws
-     * [AgentError.InvalidToolApprovalSignature], the input is re-validated
-     * against the tool's schema, and a tool that no longer requires approval
-     * is denied rather than run — so a client cannot forge, re-target, or
-     * input-swap an approval. Experimental upstream (can break in patches).
-     */
-    experimental_toolApprovalSecret: ByteArray? = null,
+    public val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = settings.experimental_repairToolCall
+
     /**
      * Telemetry for this agent's invocations (upstream v7 `telemetry`).
      * [Telemetry] integrations registered globally via `registerTelemetry`
@@ -159,7 +182,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * loop behavior.
      * @since 0.3.0-beta01
      */
-    public val telemetry: TelemetrySettings? = null,
+    public val telemetry: TelemetrySettings? = settings.telemetry
+
     /**
      * Port-side log sink for non-fatal warnings (see [Logger]). The loop warns here
      * when a [Telemetry] integration throws and the event is dropped — the swallow
@@ -167,22 +191,17 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * integration DISCOVERABLE instead of perfectly silent.
      * @since 0.3.0-beta01
      */
-    public val logger: Logger = NoopLogger,
-    /**
-     * Coroutine context for the engine-surface scope (the long-lived
-     * StateFlow-driven surface). Defaults to [Dispatchers.Default]; inject a
-     * test dispatcher or a host-controlled one for deterministic scheduling.
-     * The per-call generate()/stream() API is unaffected.
-     */
-    engineContext: CoroutineContext = Dispatchers.Default,
-) : Agent<TContext, TOutput> {
+    public val logger: Logger = settings.logger ?: NoopLogger
+
+    private val engineContext: CoroutineContext = settings.engineContext ?: Dispatchers.Default
+
     init {
         require(maxRetries >= 0) { "maxRetries must be >= 0" }
     }
 
     private val dispatcher = AgentTelemetryDispatcher<TContext>(logger)
     private val repairer = ToolCallRepairer<TContext>(experimental_repairToolCall, tools)
-    private val toolApprovalSecretBytes = experimental_toolApprovalSecret?.copyOf()
+    private val toolApprovalSecretBytes = settings.experimental_toolApprovalSecret?.copyOf()
     private val approvalCoordinator = ToolApprovalCoordinator<TContext>(toolApprovalSecretBytes, repairer)
 
     /** @since 0.3.0-beta01 */

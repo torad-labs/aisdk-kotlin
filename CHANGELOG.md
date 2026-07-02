@@ -42,10 +42,12 @@ This project follows Semantic Versioning once the first stable release is cut.
   `strict` unless callers explicitly set `true` or `false`; structured-output
   `response_format` strict behavior is unchanged.
 - Non-streaming text/object generation now retries transient model-call failures
-  by default (breaking ABI change): `CallSettings`, `CallConfig`, `ToolLoopAgent`,
+  by default (breaking ABI change): `CallSettings`, `CallConfig`,
   `AgentSettings`, and `StepSettings` expose `maxRetries` (`2` by default, `0`
-  disables). Retries wrap each individual `LanguageModel.generate` round-trip,
-  so a later model retry in a tool loop does not re-run already-executed tools.
+  disables), and `ToolLoopAgent` resolves its retry default from
+  `AgentSettings`. Retries wrap each individual `LanguageModel.generate`
+  round-trip, so a later model retry in a tool loop does not re-run
+  already-executed tools.
 - High-level call configuration now exposes per-call HTTP headers through
   `CallSettings { headers(...) }` and `CallConfig { headers(...) }`, forwarding
   them to `LanguageModelCallParams.headers`. `CallSettings { timeout(...) }` and
@@ -172,7 +174,14 @@ This project follows Semantic Versioning once the first stable release is cut.
   `StepSettings`) now follow the same internal-constructor builder pattern.
   `CallSettings` and `CallConfig` are `@Poko` value-semantics classes;
   `AgentSettings` and `StepSettings` are regular classes with identity equality
-  because they can hold model and tool objects.
+  because they can hold model and tool objects. `ToolLoopAgent` now uses
+  `AgentSettings<TContext>` as its public settings constructor surface and keeps
+  only common subclassing named arguments (`model`, `instructions`, `tools`,
+  `output`, `stopWhen`) directly on the constructor; advanced knobs such as
+  lifecycle hooks, typed call options, sampler defaults, tool execution policy,
+  approval signing, telemetry, logging, and engine context move through
+  regular `AgentSettingsBuilder` setter methods, removing the old 26-parameter
+  constructor from frozen public ABI.
   Call-parameter envelopes (`LanguageModelCallParams` and
   `EmbeddingModelCallParams`) are now `@Poko` value-semantics classes with
   internal positional constructors, public DSL factories for fresh
