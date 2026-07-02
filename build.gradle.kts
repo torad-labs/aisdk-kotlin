@@ -155,6 +155,7 @@ kotlin {
         // the project's .kt source from disk). They enforce the whole-codebase structural
         // tenets that single-file lints can't see (e.g. "every data class `…Event` has a supertype").
         jvmTest.dependencies {
+            implementation(libs.ktor.client.cio)
             implementation(libs.konsist)
         }
     }
