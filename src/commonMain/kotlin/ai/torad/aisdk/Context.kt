@@ -1,5 +1,8 @@
 package ai.torad.aisdk
 
+import kotlinx.serialization.KSerializer
+import kotlin.coroutines.CoroutineContext
+
 /**
  * Context propagated through the agent loop (invariant I-5). The agent
  * gets defaults at construction; per-invocation overrides come from
@@ -36,8 +39,16 @@ public class PrepareCallScope<TContext>(
  * on the same chain and applied by the agent around each non-streaming
  * model round-trip. Resolution chain inside the agent loop is
  * `StepSettings ?: AgentSettings ?: agent-default ?: provider-default`.
+ *
+ * [ToolLoopAgent] also accepts this type as its public construction
+ * settings. Construction-only fields such as [output], [stopWhen],
+ * [prepareCall], [prepareStep], [toolExecutionPolicy], [telemetry],
+ * [logger], and [engineContext] are read when the agent is constructed;
+ * they are ignored when an [AgentSettings] value is returned from
+ * `prepareCall`.
  * @since 0.3.0-beta01
  */
+@Suppress("ConstructorParameterNaming", "LongParameterList", "VariableNaming")
 public class AgentSettings<TContext> internal constructor(
     /** @since 0.3.0-beta01 */
     public val instructions: String? = null,
@@ -47,6 +58,40 @@ public class AgentSettings<TContext> internal constructor(
     public val tools: ToolSet<TContext>? = null,
     /** @since 0.3.0-beta01 */
     public val activeTools: List<String>? = null,
+    /**
+     * Structured-output contract used by [ToolLoopAgent] construction.
+     * Ignored when returned from `prepareCall`.
+     *
+     * This value is stored as `Output<*>` and cast to the concrete
+     * [ToolLoopAgent] output type at construction. It must decode to the
+     * agent's `TOutput`.
+     * @since 0.3.0-beta01
+     */
+    public val output: Output<*>? = null,
+    /**
+     * Loop stop condition used by [ToolLoopAgent] construction. Ignored
+     * when returned from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val stopWhen: StopCondition? = null,
+    /**
+     * Per-invocation settings hook used by [ToolLoopAgent] construction.
+     * Ignored when returned from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = null,
+    /**
+     * Per-step settings hook used by [ToolLoopAgent] construction. Ignored
+     * when returned from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = null,
+    /**
+     * Serializer for typed call options used by [ToolLoopAgent] construction.
+     * Ignored when returned from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val callOptionsSchema: KSerializer<TContext>? = null,
     /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions = ProviderOptions.None,
     /** @since 0.3.0-beta01 */
@@ -77,19 +122,77 @@ public class AgentSettings<TContext> internal constructor(
     public val responseFormat: ResponseFormat? = null,
     /** @since 0.3.0-beta01 */
     public val maxRetries: Int? = null,
+    /**
+     * Legacy shorthand for [ToolExecutionPolicy.maxParallelToolCalls] used
+     * by [ToolLoopAgent] construction. Ignored when returned from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val maxParallelToolCalls: Int? = null,
+    /**
+     * Tool execution policy used by [ToolLoopAgent] construction. Ignored
+     * when returned from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val toolExecutionPolicy: ToolExecutionPolicy? = null,
+    /**
+     * Tool-call repair callback used by [ToolLoopAgent] construction.
+     * Ignored when returned from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
+    experimental_toolApprovalSecret: ByteArray? = null,
+    /**
+     * Telemetry settings used by [ToolLoopAgent] construction. Ignored when
+     * returned from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val telemetry: TelemetrySettings? = null,
+    /**
+     * Warning logger used by [ToolLoopAgent] construction. Null means the
+     * agent's default [NoopLogger]. Ignored when returned from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val logger: Logger? = null,
+    /**
+     * Engine-surface coroutine context used by [ToolLoopAgent] construction.
+     * Null means the agent's default engine dispatcher. Ignored when returned
+     * from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val engineContext: CoroutineContext? = null,
 ) {
+    private val experimentalToolApprovalSecretBytes = experimental_toolApprovalSecret?.copyOf()
+
     init {
         maxRetries?.let { require(it >= 0) { "maxRetries must be >= 0" } }
+        maxParallelToolCalls?.let {
+            require(it > 0) { "maxParallelToolCalls must be > 0" }
+        }
     }
+
+    /**
+     * Secret for HMAC-signing tool approvals used by [ToolLoopAgent]
+     * construction. Ignored when returned from `prepareCall`.
+     * @since 0.3.0-beta01
+     */
+    public val experimental_toolApprovalSecret: ByteArray?
+        get() = experimentalToolApprovalSecretBytes?.copyOf()
 }
 
 @AiSdkDsl
 /** @since 0.3.0-beta01 */
+// Builder mirrors AgentSettings' full field set; method count is the API, not complexity.
+@Suppress("FunctionNaming", "TooManyFunctions")
 public class AgentSettingsBuilder<TContext> {
     private var instructions: String? = null
     private var model: LanguageModel? = null
     private var tools: ToolSet<TContext>? = null
     private var activeTools: List<String>? = null
+    private var output: Output<*>? = null
+    private var stopWhen: StopCondition? = null
+    private var prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = null
+    private var prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = null
+    private var callOptionsSchema: KSerializer<TContext>? = null
     private var providerOptions: ProviderOptions = ProviderOptions.None
     private var temperature: Float? = null
     private var topP: Float? = null
@@ -101,6 +204,91 @@ public class AgentSettingsBuilder<TContext> {
     private var frequencyPenalty: Float? = null
     private var responseFormat: ResponseFormat? = null
     private var maxRetries: Int? = null
+    private var maxParallelToolCalls: Int? = null
+    private var toolExecutionPolicy: ToolExecutionPolicy? = null
+    private var experimentalRepairToolCall: ToolCallRepairFunction<TContext>? = null
+    private var experimentalToolApprovalSecret: ByteArray? = null
+    private var telemetry: TelemetrySettings? = null
+    private var logger: Logger? = null
+    private var engineContext: CoroutineContext? = null
+
+    /** @since 0.3.0-beta01 */
+    public fun output(value: Output<*>?): AgentSettingsBuilder<TContext> {
+        output = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun stopWhen(value: StopCondition?): AgentSettingsBuilder<TContext> {
+        stopWhen = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun prepareCall(
+        value: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)?,
+    ): AgentSettingsBuilder<TContext> {
+        prepareCall = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun prepareStep(
+        value: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)?,
+    ): AgentSettingsBuilder<TContext> {
+        prepareStep = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun callOptionsSchema(value: KSerializer<TContext>?): AgentSettingsBuilder<TContext> {
+        callOptionsSchema = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun maxParallelToolCalls(value: Int?): AgentSettingsBuilder<TContext> {
+        maxParallelToolCalls = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun toolExecutionPolicy(value: ToolExecutionPolicy?): AgentSettingsBuilder<TContext> {
+        toolExecutionPolicy = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun experimental_repairToolCall(
+        value: ToolCallRepairFunction<TContext>?,
+    ): AgentSettingsBuilder<TContext> {
+        experimentalRepairToolCall = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun experimental_toolApprovalSecret(value: ByteArray?): AgentSettingsBuilder<TContext> {
+        experimentalToolApprovalSecret = value?.copyOf()
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun telemetry(value: TelemetrySettings?): AgentSettingsBuilder<TContext> {
+        telemetry = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun logger(value: Logger?): AgentSettingsBuilder<TContext> {
+        logger = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun engineContext(value: CoroutineContext?): AgentSettingsBuilder<TContext> {
+        engineContext = value
+        return this
+    }
 
     /** @since 0.3.0-beta01 */
     public fun instructions(value: String?): AgentSettingsBuilder<TContext> {
@@ -199,6 +387,11 @@ public class AgentSettingsBuilder<TContext> {
             model = model,
             tools = tools,
             activeTools = activeTools,
+            output = output,
+            stopWhen = stopWhen,
+            prepareCall = prepareCall,
+            prepareStep = prepareStep,
+            callOptionsSchema = callOptionsSchema,
             providerOptions = providerOptions,
             temperature = temperature,
             topP = topP,
@@ -210,6 +403,13 @@ public class AgentSettingsBuilder<TContext> {
             frequencyPenalty = frequencyPenalty,
             responseFormat = responseFormat,
             maxRetries = maxRetries,
+            maxParallelToolCalls = maxParallelToolCalls,
+            toolExecutionPolicy = toolExecutionPolicy,
+            experimental_repairToolCall = experimentalRepairToolCall,
+            experimental_toolApprovalSecret = experimentalToolApprovalSecret,
+            telemetry = telemetry,
+            logger = logger,
+            engineContext = engineContext,
         )
 }
 

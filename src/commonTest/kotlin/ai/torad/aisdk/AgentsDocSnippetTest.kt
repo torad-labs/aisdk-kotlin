@@ -49,6 +49,11 @@ class AgentsDocSnippetTest {
         prepareCall: (suspend PrepareCallScope<AppContext>.() -> AgentSettings<AppContext>)? = null,
         prepareStep: (suspend PrepareStepScope<AppContext>.() -> StepSettings<AppContext>)? = null,
     ) : ToolLoopAgent<AppContext, String>(
+        settings = AgentSettings<AppContext> {
+            this.prepareCall(prepareCall)
+            this.prepareStep(prepareStep)
+            this.callOptionsSchema(serializer<AppContext>())
+        },
         model = model,
         instructions = "Answer using project tools when needed.",
         tools = tools,
@@ -56,9 +61,6 @@ class AgentsDocSnippetTest {
             StepCountIs(8),
             HasToolCall("finalizeAnswer"),
         ),
-        prepareCall = prepareCall,
-        prepareStep = prepareStep,
-        callOptionsSchema = serializer<AppContext>(),
     )
 
     @Test

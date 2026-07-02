@@ -353,17 +353,29 @@ public final class ai/torad/aisdk/AgentSessions {
 
 public final class ai/torad/aisdk/AgentSettings {
 	public final fun getActiveTools ()Ljava/util/List;
+	public final fun getCallOptionsSchema ()Lkotlinx/serialization/KSerializer;
+	public final fun getEngineContext ()Lkotlin/coroutines/CoroutineContext;
+	public final fun getExperimental_repairToolCall ()Lkotlin/jvm/functions/Function5;
+	public final fun getExperimental_toolApprovalSecret ()[B
 	public final fun getFrequencyPenalty ()Ljava/lang/Float;
 	public final fun getInstructions ()Ljava/lang/String;
+	public final fun getLogger ()Lai/torad/aisdk/Logger;
 	public final fun getMaxOutputTokens ()Ljava/lang/Integer;
+	public final fun getMaxParallelToolCalls ()Ljava/lang/Integer;
 	public final fun getMaxRetries ()Ljava/lang/Integer;
 	public final fun getModel ()Lai/torad/aisdk/LanguageModel;
+	public final fun getOutput ()Lai/torad/aisdk/Output;
+	public final fun getPrepareCall ()Lkotlin/jvm/functions/Function2;
+	public final fun getPrepareStep ()Lkotlin/jvm/functions/Function2;
 	public final fun getPresencePenalty ()Ljava/lang/Float;
 	public final fun getProviderOptions ()Lai/torad/aisdk/ProviderOptions;
 	public final fun getResponseFormat ()Lai/torad/aisdk/ResponseFormat;
 	public final fun getSeed ()Ljava/lang/Integer;
 	public final fun getStopSequences ()Ljava/util/List;
+	public final fun getStopWhen ()Lai/torad/aisdk/StopCondition;
+	public final fun getTelemetry ()Lai/torad/aisdk/TelemetrySettings;
 	public final fun getTemperature ()Ljava/lang/Float;
+	public final fun getToolExecutionPolicy ()Lai/torad/aisdk/ToolExecutionPolicy;
 	public final fun getTools ()Lai/torad/aisdk/ToolSet;
 	public final fun getTopK ()Ljava/lang/Integer;
 	public final fun getTopP ()Ljava/lang/Float;
@@ -373,17 +385,29 @@ public final class ai/torad/aisdk/AgentSettingsBuilder {
 	public fun <init> ()V
 	public final fun activeTools (Ljava/util/List;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun build ()Lai/torad/aisdk/AgentSettings;
+	public final fun callOptionsSchema (Lkotlinx/serialization/KSerializer;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun engineContext (Lkotlin/coroutines/CoroutineContext;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun experimental_repairToolCall (Lkotlin/jvm/functions/Function5;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun experimental_toolApprovalSecret ([B)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun frequencyPenalty (Ljava/lang/Float;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun instructions (Ljava/lang/String;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun logger (Lai/torad/aisdk/Logger;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun maxOutputTokens (Ljava/lang/Integer;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun maxParallelToolCalls (Ljava/lang/Integer;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun maxRetries (Ljava/lang/Integer;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun model (Lai/torad/aisdk/LanguageModel;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun output (Lai/torad/aisdk/Output;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun prepareCall (Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun prepareStep (Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun presencePenalty (Ljava/lang/Float;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun seed (Ljava/lang/Integer;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun stopSequences (Ljava/util/List;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun stopWhen (Lai/torad/aisdk/StopCondition;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun telemetry (Lai/torad/aisdk/TelemetrySettings;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun temperature (Ljava/lang/Float;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun toolExecutionPolicy (Lai/torad/aisdk/ToolExecutionPolicy;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun tools (Lai/torad/aisdk/ToolSet;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun topK (Ljava/lang/Integer;)Lai/torad/aisdk/AgentSettingsBuilder;
 	public final fun topP (Ljava/lang/Float;)Lai/torad/aisdk/AgentSettingsBuilder;
@@ -6294,8 +6318,9 @@ public final class ai/torad/aisdk/ToolKt {
 }
 
 public abstract class ai/torad/aisdk/ToolLoopAgent : ai/torad/aisdk/Agent {
-	public fun <init> (Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Ljava/util/List;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlinx/serialization/KSerializer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;IILai/torad/aisdk/ToolExecutionPolicy;Lkotlin/jvm/functions/Function5;[BLai/torad/aisdk/TelemetrySettings;Lai/torad/aisdk/Logger;Lkotlin/coroutines/CoroutineContext;)V
-	public synthetic fun <init> (Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Ljava/util/List;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlinx/serialization/KSerializer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;IILai/torad/aisdk/ToolExecutionPolicy;Lkotlin/jvm/functions/Function5;[BLai/torad/aisdk/TelemetrySettings;Lai/torad/aisdk/Logger;Lkotlin/coroutines/CoroutineContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> ()V
+	public fun <init> (Lai/torad/aisdk/AgentSettings;Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;)V
+	public synthetic fun <init> (Lai/torad/aisdk/AgentSettings;Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun close ()V
 	public final fun collectAgentEvents (Ljava/lang/String;Ljava/util/List;Ljava/lang/Object;Lai/torad/aisdk/AbortSignal;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun collectAgentEvents$default (Lai/torad/aisdk/ToolLoopAgent;Ljava/lang/String;Ljava/util/List;Ljava/lang/Object;Lai/torad/aisdk/AbortSignal;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
