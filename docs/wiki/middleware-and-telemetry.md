@@ -7,14 +7,14 @@ to one observability backend.
 ## Wrap A Model
 
 ```kotlin
-val model = wrapLanguageModel(
+val model = WrapLanguageModel(
     model = rawModel,
     middlewares = listOf(
-        defaultSettingsMiddleware(
+        DefaultSettingsMiddleware(
             temperature = 0.2f,
             maxOutputTokens = 800,
         ),
-        extractJsonMiddleware(),
+        ExtractJsonMiddleware(),
     ),
 )
 ```
@@ -27,16 +27,16 @@ first and returns last.
 Use default settings for repeated knobs:
 
 ```kotlin
-val tuned = wrapLanguageModel(
+val tuned = WrapLanguageModel(
     model = rawModel,
     middlewares = listOf(
-        defaultSettingsMiddleware(
+        DefaultSettingsMiddleware(
             temperature = 0.1f,
-            providerOptions = buildProviderOptions {
-                provider("openai") {
+            providerOptions = ProviderOptions.ofPairs(
+                "openai" to buildJsonObject {
                     put("reasoningEffort", JsonPrimitive("medium"))
-                }
-            },
+                },
+            ),
         ),
     ),
 )
@@ -47,33 +47,37 @@ Explicit call parameters override middleware defaults.
 ## JSON Extraction
 
 Some models return fenced JSON even when asked for structured output. Use
-`extractJsonMiddleware` before decoding:
+`ExtractJsonMiddleware` before decoding:
 
 ```kotlin
-val model = wrapLanguageModel(
+val model = WrapLanguageModel(
     model = localModel,
-    middlewares = listOf(extractJsonMiddleware()),
+    middlewares = listOf(ExtractJsonMiddleware()),
 )
 
-val recipe = generateText(
-    model = model,
-    prompt = "Return only a JSON recipe.",
-    output = outputObj(serializer<Recipe>()),
-).output
+val recipe = TextGenerator(model)
+    .generate(
+        GenerationInput.Prompt("Return only a JSON recipe."),
+        OutputObj(serializer<Recipe>()),
+    )
+    .first()
+    .output
 ```
 
 ## Simulated Streaming
 
-Use `simulateStreamingMiddleware` when a model only supports one-shot
+Use `SimulateStreamingMiddleware` when a model only supports one-shot
 generation but the UI expects a stream contract:
 
 ```kotlin
-val streamingModel = wrapLanguageModel(
+val streamingModel = WrapLanguageModel(
     model = batchOnlyModel,
-    middlewares = listOf(simulateStreamingMiddleware()),
+    middlewares = listOf(SimulateStreamingMiddleware()),
 )
 
-streamText(model = streamingModel, prompt = "Explain MCP.").collect(::render)
+TextGenerator(streamingModel)
+    .stream(GenerationInput.Prompt("Explain MCP."))
+    .collect(::render)
 ```
 
 ## Custom Middleware
@@ -97,57 +101,55 @@ override visible provider/model metadata.
 ## Telemetry Integration
 
 ```kotlin
-val integration = object : TelemetryIntegration {
+val integration = object : Telemetry {
     override val name: String = "app"
 
-    override suspend fun record(span: TelemetrySpan, block: suspend () -> Unit) {
-        tracer.span(span.name, span.attributes) {
-            block()
+    override suspend fun onEvent(call: TelemetryCall, event: AgentEvent) {
+        when (event) {
+            is AgentEvent.StepFinished -> {
+                metrics.increment("ai.step.finish")
+                metrics.tokens(event.step.usage.totalTokens)
+            }
+            is AgentEvent.Errored -> errors.record(event.source.name, event.error)
+            else -> Unit
         }
-    }
-
-    override suspend fun onToolCallFinish(event: TelemetryEvent) {
-        metrics.increment("ai.tool.finish")
     }
 }
 
-registerTelemetryIntegration(integration)
+Telemetry.registerTelemetry(integration)
 ```
 
-Global integrations are app-wide. For request-scoped observation, use agent
-hooks and forward the fields you need to your tracer or metrics layer:
+Global integrations are app-wide. For request-scoped observation, collect
+agent events and forward the fields you need to your tracer or metrics layer:
 
 ```kotlin
-val result = agent.generate(
-    prompt = prompt,
-    options = context,
-    hooks = AgentCallHooks(
-        onStepFinish = { event ->
+agent.events(prompt = prompt, options = context).collect { event ->
+    when (event) {
+        is AgentEvent.StepFinished -> {
             metrics.increment("ai.step.finish")
             metrics.tokens(event.step.usage.totalTokens)
-        },
-        onError = { event ->
-            errors.record(event.source.name, event.error)
-        },
-    ),
-)
+        }
+        is AgentEvent.Errored -> errors.record(event.source.name, event.error)
+        else -> Unit
+    }
+}
 ```
 
 `TelemetrySettings` exists as shared telemetry configuration for lower-level
-helpers and tests. Do not pass it to `generateText`; that function exposes
+helpers and tests. Do not pass it to `TextGenerator`; use `CallConfig` for
 model settings, provider options, cancellation, and structured output.
 
 ## DevTools
 
-`devToolsMiddleware` records step starts, step results, generated text, stream
+`DevToolsMiddleware` records step starts, step results, generated text, stream
 chunks, and tool data through a `DevToolsRecorder`.
 
 ```kotlin
 val recorder = InMemoryDevToolsRecorder()
 
-val inspected = wrapLanguageModel(
+val inspected = WrapLanguageModel(
     model = rawModel,
-    middlewares = listOf(devToolsMiddleware(recorder)),
+    middlewares = listOf(DevToolsMiddleware(recorder)),
 )
 ```
 
@@ -157,7 +159,7 @@ to host tooling.
 ## Tips
 
 - Put provider normalization in middleware, not in agents.
-- Use agent hooks for request-scoped telemetry.
+- Use `agent.events` for request-scoped telemetry.
 - Use `InMemoryTelemetryTracer` and `InMemoryDevToolsRecorder` in tests.
 - Keep middleware small. One concern per wrapper is easier to test and reorder.
 
