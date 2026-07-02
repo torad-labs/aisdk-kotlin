@@ -234,7 +234,7 @@ class StreamObjectResultTest {
     }
 
     @Test
-    fun `objectValue does not recollect model stream after cancelled partialObjectStream collector`() = runTest {
+    fun `objectValue restarts model stream after cancelled lone partialObjectStream collector`() = runTest {
         var streamCollections = 0
         val firstPartialSeen = CompletableDeferred<Unit>()
         val gate = CompletableDeferred<Unit>()
@@ -269,7 +269,7 @@ class StreamObjectResultTest {
             Person("Ann", 30),
             withContext(Dispatchers.Default) { withTimeout(5_000) { result.objectValue() } },
         )
-        assertEquals(1, streamCollections)
+        assertEquals(2, streamCollections)
     }
 
     @Test
