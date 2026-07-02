@@ -7,6 +7,18 @@
 
 ## Module: `aisdk-kotlin` — `ai.torad.aisdk`
 
+### Versioning and Source Compatibility
+
+- Ktor client types are part of the public ABI. Provider constructors and
+  factories that accept `io.ktor.client.HttpClient` couple consumers to the
+  SDK's `ktor-client-core` major version, so a future Ktor major-version bump
+  is a consumer-visible breaking change and is versioned as one.
+- SDK sealed hierarchies may gain new leaves in minor releases. Consumer
+  `when` expressions over hierarchies such as `StreamEvent`, `ContentPart`,
+  `AgentEvent`, and SDK error classes should keep an `else` branch unless the
+  application intentionally recompiles and audits exhaustiveness on every SDK
+  release.
+
 ### Java Interop
 
 - JVM and Android bytecode expose boxed Java-callable overloads for SDK ID
