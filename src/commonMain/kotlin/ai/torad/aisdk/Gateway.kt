@@ -281,7 +281,15 @@ public interface GatewayProvider : Provider {
 public fun GatewayProvider(settings: GatewayProviderSettings = GatewayProviderSettings()): GatewayProvider =
     DefaultGatewayProvider(settings)
 
-/** @since 0.3.0-beta01 */
+/**
+ * Creates a Vercel AI Gateway provider.
+ *
+ * The returned provider resolves language, embedding, image, video, and
+ * reranking models by Gateway model id. [settings] supplies credentials,
+ * transport, metadata cache timing, and host environment values. The caller
+ * owns the transport's HTTP client and timeout behavior.
+ * @since 0.3.0-beta01
+ */
 public fun Gateway(settings: GatewayProviderSettings = GatewayProviderSettings()): GatewayProvider =
     GatewayProvider(settings)
 

@@ -22,15 +22,33 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
+/**
+ * Provider-options payload consumed by [LiteRTLanguageModel].
+ *
+ * Recognized keys include `extraContext`, `enableThinking`, and
+ * `enable_thinking`. Values are merged into the typed `extraContext` map passed
+ * to [LiteRTConversation.send] or [LiteRTConversation.stream].
+ * @since 0.3.0-beta01
+ */
 public typealias LiteRTProviderOptions = JsonObject
 
-/** @since 0.3.0-beta01 */
+/**
+ * How LiteRT streaming text snapshots should be interpreted.
+ *
+ * [Delta] treats each message text part as new text. [Cumulative] treats each
+ * snapshot as the full text so far and emits only append-only progress, with a
+ * warning when a later snapshot rewrites prior text.
+ * @since 0.3.0-beta01
+ */
 public enum class LiteRTStreamTextMode {
     Delta,
     Cumulative,
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * LiteRT-side message role used by the host conversation bridge.
+ * @since 0.3.0-beta01
+ */
 public enum class LiteRTMessageRole {
     System,
     User,
@@ -43,7 +61,13 @@ private const val LITERT_CUMULATIVE_RECOVERY_MESSAGE =
     "LiteRT cumulative stream snapshot rewrote previously emitted text; " +
         "emitted only an append-only best-effort suffix."
 
-/** @since 0.3.0-beta01 */
+/**
+ * Immutable byte container for LiteRT media parts.
+ *
+ * The constructor and [toByteArray] copy the underlying array so callers cannot
+ * mutate media content after handing it to the SDK.
+ * @since 0.3.0-beta01
+ */
 public class LiteRTBytes(bytes: ByteArray) {
     private val value: ByteArray = bytes.copyOf()
 
@@ -52,7 +76,14 @@ public class LiteRTBytes(bytes: ByteArray) {
 }
 
 @Poko
-/** @since 0.3.0-beta01 */
+/**
+ * LiteRT sampling configuration passed to the host engine.
+ *
+ * Values mirror the common per-call sampling knobs. When a call does not
+ * provide an override, [LiteRTLanguageModelSettings.defaultSamplerConfig] or
+ * [Default] supplies the base values.
+ * @since 0.3.0-beta01
+ */
 public class LiteRTSamplerConfig internal constructor(
     /** @since 0.3.0-beta01 */
     public val topK: Int,
@@ -73,7 +104,12 @@ public class LiteRTSamplerConfig internal constructor(
     }
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builder for [LiteRTSamplerConfig].
+ *
+ * Empty blocks are valid and resolve to [LiteRTSamplerConfig.Default].
+ * @since 0.3.0-beta01
+ */
 public class LiteRTSamplerConfigBuilder {
     private var topK: Int? = null
     private var topP: Double? = null
@@ -114,14 +150,24 @@ public class LiteRTSamplerConfigBuilder {
         )
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builds a LiteRT sampler configuration.
+ * @since 0.3.0-beta01
+ */
 public fun LiteRTSamplerConfig(
     block: LiteRTSamplerConfigBuilder.() -> Unit = {},
 ): LiteRTSamplerConfig =
     LiteRTSamplerConfigBuilder().apply(block).build()
 
 @Poko
-/** @since 0.3.0-beta01 */
+/**
+ * Reasoning or side-channel delimiter configuration for LiteRT prompt
+ * templates.
+ *
+ * [channelName] is the logical channel name reported by LiteRT. [start] and
+ * [end] are the delimiters used by the host engine/template bridge.
+ * @since 0.3.0-beta01
+ */
 public class LiteRTChannel internal constructor(
     /** @since 0.3.0-beta01 */
     public val channelName: String,
@@ -131,7 +177,10 @@ public class LiteRTChannel internal constructor(
     public val end: String,
 )
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builder for [LiteRTChannel].
+ * @since 0.3.0-beta01
+ */
 public class LiteRTChannelBuilder {
     private var channelName: String? = null
     private var start: String? = null
@@ -164,16 +213,30 @@ public class LiteRTChannelBuilder {
         )
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builds a LiteRT channel delimiter configuration.
+ * @since 0.3.0-beta01
+ */
 public fun LiteRTChannel(
     block: LiteRTChannelBuilder.() -> Unit,
 ): LiteRTChannel =
     LiteRTChannelBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
+/**
+ * Content value exchanged with a [LiteRTConversation].
+ *
+ * Host bridges should map their engine's text, local file, inline media, and
+ * tool-response representations to these values. Remote media URLs are not
+ * fetched by the LiteRT adapter; callers must pass inline bytes or local file
+ * paths.
+ * @since 0.3.0-beta01
+ */
 public sealed class LiteRTContent {
     @Poko
-    /** @since 0.3.0-beta01 */
+    /**
+     * Plain text content.
+     * @since 0.3.0-beta01
+     */
     public class Text internal constructor(
         /** @since 0.3.0-beta01 */
         public val text: String,
@@ -205,7 +268,10 @@ public sealed class LiteRTContent {
     }
 
     @Poko
-    /** @since 0.3.0-beta01 */
+    /**
+     * Inline image bytes plus optional media type.
+     * @since 0.3.0-beta01
+     */
     public class ImageBytes internal constructor(
         /** @since 0.3.0-beta01 */
         public val bytes: LiteRTBytes,
@@ -250,7 +316,10 @@ public sealed class LiteRTContent {
     }
 
     @Poko
-    /** @since 0.3.0-beta01 */
+    /**
+     * Absolute local image path plus optional media type.
+     * @since 0.3.0-beta01
+     */
     public class ImageFile internal constructor(
         /** @since 0.3.0-beta01 */
         public val absolutePath: String,
@@ -295,7 +364,10 @@ public sealed class LiteRTContent {
     }
 
     @Poko
-    /** @since 0.3.0-beta01 */
+    /**
+     * Inline audio bytes plus optional media type.
+     * @since 0.3.0-beta01
+     */
     public class AudioBytes internal constructor(
         /** @since 0.3.0-beta01 */
         public val bytes: LiteRTBytes,
@@ -340,7 +412,10 @@ public sealed class LiteRTContent {
     }
 
     @Poko
-    /** @since 0.3.0-beta01 */
+    /**
+     * Absolute local audio path plus optional media type.
+     * @since 0.3.0-beta01
+     */
     public class AudioFile internal constructor(
         /** @since 0.3.0-beta01 */
         public val absolutePath: String,
@@ -439,7 +514,14 @@ public sealed class LiteRTContent {
 }
 
 @Poko
-/** @since 0.3.0-beta01 */
+/**
+ * Tool call emitted by a LiteRT conversation.
+ *
+ * [id] is optional because some LiteRT engines expose only name/argument pairs.
+ * The SDK generates a stable id when needed before surfacing the call as a
+ * common [StreamEvent.ToolCall] or [ai.torad.aisdk.ContentPart.ToolCall].
+ * @since 0.3.0-beta01
+ */
 public class LiteRTToolCall internal constructor(
     /** @since 0.3.0-beta01 */
     public val name: String,
@@ -451,7 +533,10 @@ public class LiteRTToolCall internal constructor(
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builder for [LiteRTToolCall].
+ * @since 0.3.0-beta01
+ */
 public class LiteRTToolCallBuilder {
     private var name: String? = null
     private var arguments: JsonElement = JsonObject(emptyMap())
@@ -492,14 +577,24 @@ public class LiteRTToolCallBuilder {
         )
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builds a LiteRT tool call value.
+ * @since 0.3.0-beta01
+ */
 public fun LiteRTToolCall(
     block: LiteRTToolCallBuilder.() -> Unit,
 ): LiteRTToolCall =
     LiteRTToolCallBuilder().apply(block).build()
 
 @Poko
-/** @since 0.3.0-beta01 */
+/**
+ * Message exchanged with a [LiteRTConversation].
+ *
+ * [content] carries text/media/tool-response values. [toolCalls] carries model
+ * requests for SDK-owned tool execution. [channels] carries provider-specific
+ * reasoning or side-channel text keyed by channel name.
+ * @since 0.3.0-beta01
+ */
 public class LiteRTMessage internal constructor(
     /** @since 0.3.0-beta01 */
     public val role: LiteRTMessageRole,
@@ -513,7 +608,10 @@ public class LiteRTMessage internal constructor(
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builder for [LiteRTMessage].
+ * @since 0.3.0-beta01
+ */
 public class LiteRTMessageBuilder {
     private var role: LiteRTMessageRole? = null
     private var content: List<LiteRTContent> = emptyList()
@@ -562,13 +660,25 @@ public class LiteRTMessageBuilder {
         )
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builds a LiteRT message.
+ * @since 0.3.0-beta01
+ */
 public fun LiteRTMessage(
     block: LiteRTMessageBuilder.() -> Unit,
 ): LiteRTMessage =
     LiteRTMessageBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
+/**
+ * Prepared call delivered to [LiteRTConversationFactory.create].
+ *
+ * The SDK has already mapped common model messages, tools, response format,
+ * sampler settings, and provider options into LiteRT-oriented values. Host
+ * bridges should use [message] as the immediate user/model input and
+ * [initialMessages] as conversation history. [automaticToolCalling] is always
+ * false for SDK-owned tool execution.
+ * @since 0.3.0-beta01
+ */
 @Suppress("LongParameterList")
 public class LiteRTConversationRequest internal constructor(
     /** @since 0.3.0-beta01 */
@@ -593,7 +703,10 @@ public class LiteRTConversationRequest internal constructor(
     public val callParams: LanguageModelCallParams,
 )
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builder for [LiteRTConversationRequest].
+ * @since 0.3.0-beta01
+ */
 public class LiteRTConversationRequestBuilder {
     private var systemInstruction: List<LiteRTContent> = emptyList()
     private var initialMessages: List<LiteRTMessage> = emptyList()
@@ -682,18 +795,35 @@ public class LiteRTConversationRequestBuilder {
         )
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builds a prepared LiteRT conversation request.
+ * @since 0.3.0-beta01
+ */
 public fun LiteRTConversationRequest(
     block: LiteRTConversationRequestBuilder.() -> Unit = {},
 ): LiteRTConversationRequest =
     LiteRTConversationRequestBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
+/**
+ * Factory that creates a host LiteRT conversation for one SDK model call.
+ *
+ * Implementations normally translate [LiteRTConversationRequest] into the
+ * platform engine's conversation/session object and return a [LiteRTConversation]
+ * wrapper around that session.
+ * @since 0.3.0-beta01
+ */
 public fun interface LiteRTConversationFactory {
     public suspend fun create(request: LiteRTConversationRequest): LiteRTConversation
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * Host bridge for one LiteRT conversation/session.
+ *
+ * [send] performs one non-streaming model turn. [stream] returns a cold flow of
+ * LiteRT snapshots or deltas. Implement [cancel] and [close] when the underlying
+ * engine supports aborting work or owns native resources.
+ * @since 0.3.0-beta01
+ */
 public interface LiteRTConversation {
     /** @since 0.3.0-beta01 */
     public suspend fun send(message: LiteRTMessage, extraContext: Map<String, JsonElement> = emptyMap()): LiteRTMessage
@@ -718,7 +848,15 @@ public interface LiteRTConversation {
     public fun close(): Unit = Unit
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * Settings that control LiteRT prompt/request mapping.
+ *
+ * Use [defaultSamplerConfig] for engine-level sampling defaults, [streamTextMode]
+ * for delta versus cumulative streaming semantics, [channels] and
+ * [reasoningChannelNames] for reasoning extraction, and [extraContext] for
+ * typed provider context merged into every call.
+ * @since 0.3.0-beta01
+ */
 @Suppress("LongParameterList")
 public class LiteRTLanguageModelSettings internal constructor(
     /** @since 0.3.0-beta01 */
@@ -741,7 +879,10 @@ public class LiteRTLanguageModelSettings internal constructor(
     public val toolCallIdGenerator: () -> String = { IdGenerator.generate("call") },
 )
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builder for [LiteRTLanguageModelSettings].
+ * @since 0.3.0-beta01
+ */
 public class LiteRTLanguageModelSettingsBuilder {
     private var provider: String = "litert-lm"
     private var supportedUrls: Map<String, List<String>> = emptyMap()
@@ -822,13 +963,25 @@ public class LiteRTLanguageModelSettingsBuilder {
         )
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builds LiteRT language model settings.
+ * @since 0.3.0-beta01
+ */
 public fun LiteRTLanguageModelSettings(
     block: LiteRTLanguageModelSettingsBuilder.() -> Unit = {},
 ): LiteRTLanguageModelSettings =
     LiteRTLanguageModelSettingsBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
+/**
+ * [LanguageModel] adapter for on-device LiteRT-LM engines.
+ *
+ * The SDK prepares provider-neutral messages, tools, structured-output hints,
+ * sampler settings, and abort handling. The host supplies
+ * [LiteRTConversationFactory] to bind those requests to the platform engine.
+ * Streaming has no default deadline; configure [ai.torad.aisdk.CallConfig.timeout]
+ * at high-level call sites or the underlying engine timeout directly.
+ * @since 0.3.0-beta01
+ */
 public class LiteRTLanguageModel(
     override val modelId: String,
     private val conversationFactory: LiteRTConversationFactory,

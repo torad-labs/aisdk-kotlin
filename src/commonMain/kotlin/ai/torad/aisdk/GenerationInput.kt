@@ -1,21 +1,42 @@
 package ai.torad.aisdk
 
-/** @since 0.3.0-beta01 */
+/**
+ * Prompt material accepted by high-level generators.
+ *
+ * Use [Prompt] for a single user prompt, [Messages] for an already-built
+ * conversation history, and [MessagesWithPrompt] when appending a new user
+ * prompt to existing model messages. The high-level generator converts these
+ * values into [ModelMessage] lists before calling a provider.
+ * @since 0.3.0-beta01
+ */
 public sealed class GenerationInput {
 
-    /** @since 0.3.0-beta01 */
+    /**
+     * A single user prompt.
+     * @since 0.3.0-beta01
+     */
     public data class Prompt(val text: String) : GenerationInput()
 
-    /** @since 0.3.0-beta01 */
+    /**
+     * A non-empty message history passed through without adding a new prompt.
+     * @since 0.3.0-beta01
+     */
     public data class Messages(val history: NonEmptyMessages) : GenerationInput()
 
-    /** @since 0.3.0-beta01 */
+    /**
+     * A non-empty message history plus a final user prompt appended at call
+     * preparation time.
+     * @since 0.3.0-beta01
+     */
     public data class MessagesWithPrompt(
         val history: NonEmptyMessages,
         val prompt: String,
     ) : GenerationInput()
 
-    /** @since 0.3.0-beta01 */
+    /**
+     * Wrapper that guarantees history-backed inputs are never empty.
+     * @since 0.3.0-beta01
+     */
     public class NonEmptyMessages private constructor(
         /** @since 0.3.0-beta01 */
         public val values: List<ModelMessage>,

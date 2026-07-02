@@ -251,7 +251,16 @@ public interface OpenAICompatibleProvider : Provider {
     public fun textEmbeddingModel(modelId: String): EmbeddingModel = embeddingModel(modelId)
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * Builds a provider for OpenAI-shaped HTTP APIs.
+ *
+ * The caller owns the Ktor [HttpClient] and its engine, timeouts, TLS/proxy
+ * settings, and lifecycle. [settings] supplies endpoint, auth, usage mapping,
+ * structured-output support, and provider-specific request/response transforms.
+ * Use [OpenAICompatibleProvider.chatModel] for chat-completions style models or
+ * [OpenAICompatibleProvider.completionModel] for legacy completions.
+ * @since 0.3.0-beta01
+ */
 public fun OpenAICompatible(
     client: HttpClient,
     settings: OpenAICompatibleProviderSettings,
