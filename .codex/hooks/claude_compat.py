@@ -171,18 +171,6 @@ def _synthetic_write_events(data: dict[str, Any]) -> list[dict[str, Any]]:
             event["tool_name"] = "Write"
             event["tool_input"] = {"file_path": hook_path, "content": "", "operation": "delete"}
             events.append(event)
-        elif patch_file.kind in ("update", "move"):
-            for hunk in patch_file.hunks:
-                if not hunk.added_lines:
-                    continue
-                event = dict(data)
-                event["tool_name"] = "Edit"
-                event["tool_input"] = {
-                    "file_path": hook_path,
-                    "old_string": "",
-                    "new_string": "\n".join(hunk.added_lines),
-                }
-                events.append(event)
     return events
 
 
