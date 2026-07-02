@@ -205,4 +205,48 @@ class LiteRTLanguageModelTest {
         assertEquals(1, factory.createdConversations.single().streamCalls)
         assertEquals(1, factory.createdConversations.single().closeCalls)
     }
+
+    @Test
+    fun `stream deduplicates cumulative tool calls across snapshots`() = runTest {
+        val repeatedToolCall = LiteRTToolCall {
+            name("lookup")
+            arguments(JsonObject(mapOf("query" to JsonPrimitive("docs"))))
+            id("call_1")
+        }
+        val factory = FakeLiteRTFactory(
+            streamResponses = listOf(
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    toolCalls(listOf(repeatedToolCall))
+                },
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    toolCalls(listOf(repeatedToolCall))
+                },
+            ),
+        )
+        val model = LiteRTLanguageModel(
+            modelId = "gemma-litert",
+            conversationFactory = factory,
+            settings = LiteRTLanguageModelSettings(
+                block = {
+                    streamTextMode(LiteRTStreamTextMode.Cumulative)
+                },
+            ),
+        )
+
+        val events = model.stream(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+            }
+        ).toList()
+
+        assertEquals(1, events.filterIsInstance<StreamEvent.ToolInputStart>().size)
+        assertEquals(1, events.filterIsInstance<StreamEvent.ToolInputDelta>().size)
+        assertEquals(1, events.filterIsInstance<StreamEvent.ToolInputEnd>().size)
+        val toolCall = events.filterIsInstance<StreamEvent.ToolCall>().single()
+        assertEquals("call_1", toolCall.toolCallId)
+        assertEquals("lookup", toolCall.toolName)
+        assertEquals(FinishReason.ToolCalls, events.filterIsInstance<StreamEvent.Finish>().single().finishReason)
+    }
 }
