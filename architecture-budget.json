@@ -50,6 +50,7 @@
     "src/commonTest/kotlin/ai/torad/aisdk/AnthropicProviderTest.kt": 504,
     "src/commonTest/kotlin/ai/torad/aisdk/GoogleVertexProviderTest.kt": 518,
     "src/commonTest/kotlin/ai/torad/aisdk/HuggingFaceProviderTest.kt": 501,
+    "src/commonTest/kotlin/ai/torad/aisdk/LiteRTLanguageModelTest.kt": 602,
     "src/commonTest/kotlin/ai/torad/aisdk/MCPClientTest.kt": 514,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt": 554
   }
