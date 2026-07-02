@@ -36,6 +36,10 @@ There are three normal ways to get a model:
 | OpenAI-compatible | Your service speaks OpenAI-compatible HTTP. |
 | Dedicated facade | You need provider-specific options, metadata, media APIs, or auth. |
 
+For a real provider setup, [Providers And Models](providers.md) shows the Ktor
+engine dependency, `HttpClient` construction, environment-backed API key wiring,
+and OpenAI-compatible provider factory.
+
 For tests and examples, use mock models:
 
 ```kotlin

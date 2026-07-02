@@ -14,6 +14,43 @@ package boundaries for a future split.
 | Dedicated facade | Provider-specific options, metadata, auth, tools, or media APIs. | `Anthropic(...)`, `GoogleGenerativeAI(...)`, etc. |
 | Custom provider | Internal services, fakes, unsupported providers. | `Provider(...)` |
 
+For a JVM or server host using an OpenAI-compatible endpoint, include a Ktor
+engine and build the HTTP client in host code:
+
+```kotlin
+dependencies {
+    implementation("ai.torad:torad-aisdk:0.3.0-beta01")
+    implementation("io.ktor:ktor-client-cio:3.5.0")
+}
+```
+
+```kotlin
+import ai.torad.aisdk.providers.OpenAICompatible
+import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+
+val client = HttpClient(CIO)
+val apiKey = requireNotNull(System.getenv("OPENAI_API_KEY")) {
+    "OPENAI_API_KEY is required"
+}
+
+val provider = OpenAICompatible(
+    client = client,
+    settings = OpenAICompatibleProviderSettings {
+        name("openai-compatible")
+        baseUrl("https://api.openai.com/v1")
+        apiKey(apiKey)
+    },
+)
+
+val model = provider.chatModel("gpt-4o-mini")
+```
+
+Common Kotlin cannot read process environment variables directly. Pass secrets
+through settings, host config, or the `environment` map on platforms that do
+not expose `System.getenv`.
+
 ## Gateway
 
 Gateway exposes language, embedding, image, video, and reranking models plus
@@ -30,9 +67,6 @@ val gatewayProvider = Gateway(
 
 val model = gatewayProvider.languageModel("anthropic/claude-sonnet-4.5")
 ```
-
-Common Kotlin cannot read process environment variables directly. Pass secrets
-through settings, host config, or the `environment` map.
 
 ## OpenAI-Compatible
 
@@ -71,6 +105,78 @@ The prepared `LiteRTConversationRequest` mirrors LiteRT-LM's
 executes tools, records tool results, handles approvals, and calls the model
 again. This prevents mobile apps from accidentally bypassing the agent loop by
 piping prompts or tool execution directly through the local model runtime.
+
+Wrap the platform LiteRT-LM engine behind `LiteRTConversationFactory` and
+`LiteRTConversation`. The adapter receives SDK-built messages and must return
+SDK `LiteRTMessage` values:
+
+```kotlin
+class AppLiteRTConversationFactory(
+    private val engine: AppLiteRTEngine,
+) : LiteRTConversationFactory {
+    override suspend fun create(request: LiteRTConversationRequest): LiteRTConversation {
+        val session = engine.createConversation(
+            systemInstruction = request.systemInstruction,
+            initialMessages = request.initialMessages,
+            tools = request.tools,
+            samplerConfig = request.samplerConfig,
+            channels = request.channels,
+            automaticToolCalling = request.automaticToolCalling,
+        )
+        return AppLiteRTConversation(session)
+    }
+}
+
+class AppLiteRTConversation(
+    private val session: AppLiteRTSession,
+) : LiteRTConversation {
+    override suspend fun send(
+        message: LiteRTMessage,
+        extraContext: Map<String, JsonElement>,
+    ): LiteRTMessage = session.send(message, extraContext)
+
+    override fun stream(
+        message: LiteRTMessage,
+        extraContext: Map<String, JsonElement>,
+    ): Flow<LiteRTMessage> = session.stream(message, extraContext)
+
+    override fun cancel() {
+        session.cancel()
+    }
+
+    override fun close() {
+        session.close()
+    }
+}
+
+val model = LiteRTLanguageModel(
+    modelId = "gemma-litert",
+    conversationFactory = AppLiteRTConversationFactory(engine),
+    settings = LiteRTLanguageModelSettings(
+        block = {
+            defaultSamplerConfig(
+                LiteRTSamplerConfig {
+                    topK(40)
+                    topP(0.95)
+                    temperature(0.7)
+                },
+            )
+            channels(
+                listOf(
+                    LiteRTChannel {
+                        channelName("thinking")
+                        start("<think>")
+                        end("</think>")
+                    },
+                ),
+            )
+        },
+    ),
+)
+```
+
+Override `cancel()` when the engine can abort active generation, and override
+`close()` whenever a conversation allocates platform resources.
 
 Reasoning channels are preserved. By default `thinking` and `reasoning`
 channels become `ContentPart.Reasoning` / `StreamEvent.ReasoningDelta`, while
