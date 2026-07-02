@@ -176,15 +176,18 @@ private data class JSONRPCEnvelope(
 /**
  * Transport interface for MCP communication. Implementations may wrap stdio,
  * Streamable HTTP, SSE, WebSockets, or a test fixture.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public interface MCPTransport {
     /** @since 0.3.0-beta01 */
     public fun setOnClose(handler: (() -> Unit)?)
+
     /** @since 0.3.0-beta01 */
     public fun setOnError(handler: ((Throwable) -> Unit)?)
+
     /** @since 0.3.0-beta01 */
     public fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?)
+
     /** @since 0.3.0-beta01 */
     public fun setProtocolVersion(version: String?)
 
@@ -279,6 +282,7 @@ public typealias experimental_MCPClientConfig = MCPClientConfig
 public interface MCPClient {
     /** @since 0.3.0-beta01 */
     public val serverInfo: Configuration
+
     /** @since 0.3.0-beta01 */
     public val instructions: String?
 
@@ -840,6 +844,7 @@ public class ClientAuthResult(
 public interface OAuthClientProvider {
     /** @since 0.3.0-beta01 */
     public val redirectUrl: String
+
     /** @since 0.3.0-beta01 */
     public val clientMetadata: OAuthClientMetadata
 
@@ -873,90 +878,71 @@ public interface OAuthClientProvider {
 
 /** OAuth client handshake driver for the HTTP / SSE transports. */
 internal object McpAuth {
-@Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount", "ThrowsCount")
-suspend fun auth(
-    provider: OAuthClientProvider,
-    options: AuthOptions,
-    reauthorize: Boolean = false,
-): AuthResult {
-    val currentTokens = provider.tokens()
-    val hasReusableAccessToken = currentTokens?.accessToken?.isNotBlank() == true &&
-        currentTokens.refreshToken.isNullOrBlank()
-    if (hasReusableAccessToken && options.authorizationCode == null && !reauthorize) {
-        return AuthResult.AUTHORIZED
-    }
-    val resourceMetadata = options.client?.let { client ->
-        try {
-            McpOAuthFlow.discoverOAuthProtectedResourceMetadata(
-                client = client,
-                serverUrl = options.serverUrl,
-                resourceMetadataUrl = options.resourceMetadataUrl,
-            )
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Throwable) {
-            null
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount", "ThrowsCount")
+    suspend fun auth(
+        provider: OAuthClientProvider,
+        options: AuthOptions,
+        reauthorize: Boolean = false,
+    ): AuthResult {
+        val currentTokens = provider.tokens()
+        val hasReusableAccessToken = currentTokens?.accessToken?.isNotBlank() == true &&
+            currentTokens.refreshToken.isNullOrBlank()
+        if (hasReusableAccessToken && options.authorizationCode == null && !reauthorize) {
+            return AuthResult.AUTHORIZED
         }
-    }
-    val authorizationServerUrl = resourceMetadata?.authorizationServers?.firstOrNull() ?: options.serverUrl
-    val resource = provider.validateResourceURL(options.serverUrl, resourceMetadata?.resource)
-    val metadata = options.client?.let { McpOAuthFlow.discoverAuthorizationServerMetadata(it, authorizationServerUrl) }
-    var clientInformation = provider.clientInformation()
-    if (clientInformation == null) {
-        if (options.authorizationCode != null) {
-            throw MCPClientError(
-                "Existing OAuth client information is required when exchanging an authorization code.",
-            )
-        }
-        if (options.client != null) {
-            clientInformation = McpOAuthFlow.registerClient(
-                client = options.client,
-                authorizationServerUrl = authorizationServerUrl,
-                metadata = metadata,
-                clientMetadata = provider.clientMetadata,
-            )
-            provider.saveClientInformation(clientInformation)
-        }
-    }
-    if (options.authorizationCode != null) {
-        val client = options.client ?: throw MCPClientError(
-            "OAuth authorization-code exchange requires AuthOptions.client.",
-        )
-        val info = clientInformation ?: throw MCPClientError(
-            "Existing OAuth client information is required when exchanging an authorization code.",
-        )
-        provider.storedState()?.let { expected ->
-            if (expected != options.callbackState) {
-                throw MCPClientError("OAuth state parameter mismatch - possible CSRF attack.")
+        val resourceMetadata = options.client?.let { client ->
+            try {
+                McpOAuthFlow.discoverOAuthProtectedResourceMetadata(
+                    client = client,
+                    serverUrl = options.serverUrl,
+                    resourceMetadataUrl = options.resourceMetadataUrl,
+                )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Throwable) {
+                null
             }
         }
-        val tokens = McpOAuthFlow.exchangeAuthorization(
-            client = client,
-            authorizationServerUrl = authorizationServerUrl,
-            metadata = metadata,
-            clientInformation = info,
-            authorizationCode = options.authorizationCode,
-            codeVerifier = provider.codeVerifier(),
-            redirectUri = provider.redirectUrl,
-            resource = resource,
-            addClientAuthentication = { headers, params, url, metadata ->
-                val result = provider.addClientAuthentication(headers, params, url, metadata)
-                headers.putAll(result.additionalHeaders)
-                params.putAll(result.additionalParams)
-            },
-        )
-        provider.saveTokens(tokens)
-        return AuthResult.AUTHORIZED
-    }
-
-    if (currentTokens?.refreshToken?.isNotBlank() == true && options.client != null && clientInformation != null) {
-        try {
-            val tokens = McpOAuthFlow.refreshAuthorization(
-                client = options.client,
+        val authorizationServerUrl = resourceMetadata?.authorizationServers?.firstOrNull() ?: options.serverUrl
+        val resource = provider.validateResourceURL(options.serverUrl, resourceMetadata?.resource)
+        val metadata = options.client?.let { McpOAuthFlow.discoverAuthorizationServerMetadata(it, authorizationServerUrl) }
+        var clientInformation = provider.clientInformation()
+        if (clientInformation == null) {
+            if (options.authorizationCode != null) {
+                throw MCPClientError(
+                    "Existing OAuth client information is required when exchanging an authorization code.",
+                )
+            }
+            if (options.client != null) {
+                clientInformation = McpOAuthFlow.registerClient(
+                    client = options.client,
+                    authorizationServerUrl = authorizationServerUrl,
+                    metadata = metadata,
+                    clientMetadata = provider.clientMetadata,
+                )
+                provider.saveClientInformation(clientInformation)
+            }
+        }
+        if (options.authorizationCode != null) {
+            val client = options.client ?: throw MCPClientError(
+                "OAuth authorization-code exchange requires AuthOptions.client.",
+            )
+            val info = clientInformation ?: throw MCPClientError(
+                "Existing OAuth client information is required when exchanging an authorization code.",
+            )
+            provider.storedState()?.let { expected ->
+                if (expected != options.callbackState) {
+                    throw MCPClientError("OAuth state parameter mismatch - possible CSRF attack.")
+                }
+            }
+            val tokens = McpOAuthFlow.exchangeAuthorization(
+                client = client,
                 authorizationServerUrl = authorizationServerUrl,
                 metadata = metadata,
-                clientInformation = clientInformation,
-                refreshToken = currentTokens.refreshToken,
+                clientInformation = info,
+                authorizationCode = options.authorizationCode,
+                codeVerifier = provider.codeVerifier(),
+                redirectUri = provider.redirectUrl,
                 resource = resource,
                 addClientAuthentication = { headers, params, url, metadata ->
                     val result = provider.addClientAuthentication(headers, params, url, metadata)
@@ -966,45 +952,64 @@ suspend fun auth(
             )
             provider.saveTokens(tokens)
             return AuthResult.AUTHORIZED
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Throwable) {
-            // Expired/revoked refresh tokens should fall through to a fresh authorization redirect.
         }
-    }
 
-    if (currentTokens?.accessToken?.isNotBlank() == true && !reauthorize) {
-        return AuthResult.AUTHORIZED
-    }
-
-    // OAuth state (CSRF) and PKCE code_verifier must come from a CSPRNG, not the
-    // seeded Random.Default — RFC 7636 §4.1 requires high-entropy cryptographic random.
-    val state = provider.state() ?: IdGenerator.generate(prefix = "mcp", random = SecureRandom())
-    provider.saveState(state)
-    val codeVerifier = IdGenerator {
-        prefix("mcp-verifier")
-        size(48)
-        random(SecureRandom())
-    }.generate()
-    provider.saveCodeVerifier(codeVerifier)
-
-    val authClientInformation = clientInformation
-        ?: OAuthClientInformation {
-            clientId(provider.clientMetadata.clientName ?: DEFAULT_MCP_CLIENT_NAME)
+        if (currentTokens?.refreshToken?.isNotBlank() == true && options.client != null && clientInformation != null) {
+            try {
+                val tokens = McpOAuthFlow.refreshAuthorization(
+                    client = options.client,
+                    authorizationServerUrl = authorizationServerUrl,
+                    metadata = metadata,
+                    clientInformation = clientInformation,
+                    refreshToken = currentTokens.refreshToken,
+                    resource = resource,
+                    addClientAuthentication = { headers, params, url, metadata ->
+                        val result = provider.addClientAuthentication(headers, params, url, metadata)
+                        headers.putAll(result.additionalHeaders)
+                        params.putAll(result.additionalParams)
+                    },
+                )
+                provider.saveTokens(tokens)
+                return AuthResult.AUTHORIZED
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Throwable) {
+                // Expired/revoked refresh tokens should fall through to a fresh authorization redirect.
+            }
         }
-    val authorizationUrl = McpOAuthFlow.startAuthorization(
-        serverUrl = options.serverUrl,
-        metadata = metadata,
-        clientInformation = authClientInformation,
-        redirectUrl = provider.redirectUrl,
-        scope = options.scope ?: provider.clientMetadata.scope,
-        state = state,
-        codeVerifier = codeVerifier,
-        resource = resource,
-    )
-    provider.redirectToAuthorization(authorizationUrl)
-    return AuthResult.REDIRECT
-}
+
+        if (currentTokens?.accessToken?.isNotBlank() == true && !reauthorize) {
+            return AuthResult.AUTHORIZED
+        }
+
+        // OAuth state (CSRF) and PKCE code_verifier must come from a CSPRNG, not the
+        // seeded Random.Default — RFC 7636 §4.1 requires high-entropy cryptographic random.
+        val state = provider.state() ?: IdGenerator.generate(prefix = "mcp", random = SecureRandom())
+        provider.saveState(state)
+        val codeVerifier = IdGenerator {
+            prefix("mcp-verifier")
+            size(48)
+            random(SecureRandom())
+        }.generate()
+        provider.saveCodeVerifier(codeVerifier)
+
+        val authClientInformation = clientInformation
+            ?: OAuthClientInformation {
+                clientId(provider.clientMetadata.clientName ?: DEFAULT_MCP_CLIENT_NAME)
+            }
+        val authorizationUrl = McpOAuthFlow.startAuthorization(
+            serverUrl = options.serverUrl,
+            metadata = metadata,
+            clientInformation = authClientInformation,
+            redirectUrl = provider.redirectUrl,
+            scope = options.scope ?: provider.clientMetadata.scope,
+            state = state,
+            codeVerifier = codeVerifier,
+            resource = resource,
+        )
+        provider.redirectToAuthorization(authorizationUrl)
+        return AuthResult.REDIRECT
+    }
 }
 
 /** @since 0.3.0-beta01 */
@@ -1644,7 +1649,9 @@ public class HttpMCPTransport(
             }
         }
         maxRetriesExceeded?.let { maxRetries ->
-            onError?.invoke(MCPClientError("MCP HTTP Transport Error: Maximum reconnection attempts ($maxRetries) exceeded."))
+            onError?.invoke(
+                MCPClientError("MCP HTTP Transport Error: Maximum reconnection attempts ($maxRetries) exceeded.")
+            )
         }
         if (restartImmediately) {
             ensureInboundSse(resetReconnectAttempts = true)

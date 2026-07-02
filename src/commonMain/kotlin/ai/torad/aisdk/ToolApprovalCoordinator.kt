@@ -92,7 +92,9 @@ internal class ToolApprovalCoordinator<TContext>(
                 callNeedsApproval(toolDef, matchingCall, decodedInput, options, messages.toList())
             if (toolDef == null || !stillNeedsApproval) {
                 applyDenied(
-                    out, matchingCall, effectiveApprovalKey,
+                    out,
+                    matchingCall,
+                    effectiveApprovalKey,
                     approval.reason ?: "Tool \"${matchingCall.toolName}\" does not require approval",
                     messages,
                 )

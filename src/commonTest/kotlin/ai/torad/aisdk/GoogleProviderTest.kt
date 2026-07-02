@@ -2,27 +2,23 @@
 
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.GOOGLE_VERSION
-import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings
 import ai.torad.aisdk.providers.GoogleGenerativeAI
-
+import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -81,33 +77,43 @@ class GoogleProviderTest {
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    SystemMessage("Follow policy."),
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Text("Hello"),
-                            ContentPart.Image("image/png", "aW1hZ2U="),
+                messages(
+                    listOf(
+                        SystemMessage("Follow policy."),
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Text("Hello"),
+                                ContentPart.Image("image/png", "aW1hZ2U="),
+                            ),
                         ),
-                    ),
-                ))
-                tools(listOf(
-                    LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString()),
-                    LanguageModelTool("google_search", "Search.", """{"type":"object"}""", providerExecuted = true),
-                ))
+                    )
+                )
+                tools(
+                    listOf(
+                        LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString()),
+                        LanguageModelTool("google_search", "Search.", """{"type":"object"}""", providerExecuted = true),
+                    )
+                )
                 toolChoice(ToolChoice.Specific("lookup"))
                 temperature(0.3f)
                 topP(0.8f)
                 topK(40)
                 maxOutputTokens(64)
                 responseFormat(ResponseFormat.Json(schemaJson = objectSchema("answer")))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "google" to buildJsonObject {
-                        put("responseModalities", Json.parseToJsonElement("""["TEXT"]"""))
-                        put("thinkingConfig", buildJsonObject { put("thinkingBudget", JsonPrimitive(128)) })
-                        put("serviceTier", JsonPrimitive("priority"))
-                    },
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "google" to buildJsonObject {
+                                    put("responseModalities", Json.parseToJsonElement("""["TEXT"]"""))
+                                    put("thinkingConfig", buildJsonObject { put("thinkingBudget", JsonPrimitive(128)) })
+                                    put("serviceTier", JsonPrimitive("priority"))
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -124,7 +130,12 @@ class GoogleProviderTest {
         assertEquals(7, result.usage.completionTokens)
         assertEquals(5, result.usage.outputTokens.text)
         assertEquals(2, result.usage.outputTokens.reasoning)
-        assertEquals("BLOCK_REASON_UNSPECIFIED", result.providerMetadata.toMap()["google"]?.jsonObject?.get("promptFeedback")?.jsonObject?.get("blockReason")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "BLOCK_REASON_UNSPECIFIED",
+            result.providerMetadata.toMap()["google"]?.jsonObject?.get(
+                "promptFeedback"
+            )?.jsonObject?.get("blockReason")?.jsonPrimitive?.contentOrNull
+        )
 
         val request = fixture.calls.single()
         assertEquals("key", request.requestHeaders.headerValue("x-goog-api-key"))
@@ -132,10 +143,23 @@ class GoogleProviderTest {
         assertEquals("request", request.requestHeaders.headerValue("X-Request"))
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/google/$GOOGLE_VERSION"))
         val body = request.requestBodyJson.jsonObject
-        assertEquals("Follow policy.", body["systemInstruction"]?.jsonObject?.get("parts")?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
-        assertEquals("application/json", body["generationConfig"]?.jsonObject?.get("responseMimeType")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "Follow policy.",
+            body["systemInstruction"]?.jsonObject?.get(
+                "parts"
+            )?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            "application/json",
+            body["generationConfig"]?.jsonObject?.get("responseMimeType")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(64, body["generationConfig"]?.jsonObject?.get("maxOutputTokens")?.jsonPrimitive?.intOrNull)
-        assertEquals(128, body["generationConfig"]?.jsonObject?.get("thinkingConfig")?.jsonObject?.get("thinkingBudget")?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            128,
+            body["generationConfig"]?.jsonObject?.get(
+                "thinkingConfig"
+            )?.jsonObject?.get("thinkingBudget")?.jsonPrimitive?.intOrNull
+        )
         assertEquals("priority", body["serviceTier"]?.jsonPrimitive?.contentOrNull)
         val tools = body["tools"]?.jsonArray.orEmpty()
         val decl = tools[0].jsonObject["functionDeclarations"]?.jsonArray?.single()?.jsonObject
@@ -145,7 +169,12 @@ class GoogleProviderTest {
         assertTrue(params != null && "\$schema" !in params, "\$schema stripped from tool schema")
         assertTrue("additionalProperties" !in params, "additionalProperties stripped from tool schema")
         assertTrue("title" !in params, "title stripped from tool schema")
-        assertEquals("lookup", body["toolConfig"]?.jsonObject?.get("functionCallingConfig")?.jsonObject?.get("allowedFunctionNames")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "lookup",
+            body["toolConfig"]?.jsonObject?.get(
+                "functionCallingConfig"
+            )?.jsonObject?.get("allowedFunctionNames")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
@@ -168,25 +197,30 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key");
+                baseURL("https://google.test/v1beta")
+            },
         )
         val imageUrl = "https://generativelanguage.googleapis.com/v1beta/files/image-1"
         val fileUrl = "gs://bucket/doc.pdf"
 
         provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Text("inspect media"),
-                            ContentPart.Image(mediaType = "image/png", url = imageUrl),
-                            ContentPart.File(mediaType = "application/pdf", url = fileUrl),
-                            ContentPart.Image(mediaType = "image/jpeg", base64 = "aW1n"),
-                            ContentPart.File(mediaType = "text/plain", base64 = "ZG9j"),
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Text("inspect media"),
+                                ContentPart.Image(mediaType = "image/png", url = imageUrl),
+                                ContentPart.File(mediaType = "application/pdf", url = fileUrl),
+                                ContentPart.Image(mediaType = "image/jpeg", base64 = "aW1n"),
+                                ContentPart.File(mediaType = "text/plain", base64 = "ZG9j"),
+                            ),
                         ),
-                    ),
-                ))
+                    )
+                )
             },
         )
 
@@ -235,16 +269,25 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key");
+                baseURL("https://google.test/v1beta")
+            },
         )
 
         provider.chat(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("json please")))
                 responseFormat(ResponseFormat.Json(schemaJson = objectSchema("answer")))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "google" to buildJsonObject { put("structuredOutputs", JsonPrimitive(false)) },
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "google" to buildJsonObject { put("structuredOutputs", JsonPrimitive(false)) },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -273,39 +316,44 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key");
+                baseURL("https://google.test/v1beta")
+            },
         )
 
         provider.chat(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("search")))
-                tools(listOf(
-                    LanguageModelTool(
-                        name = "file_search",
-                        description = "File search.",
-                        parametersSchemaJson = """{"type":"object"}""",
-                        providerExecuted = true,
-                        metadata = mapOf(
-                            "args" to buildJsonObject {
-                                put("fileSearchStoreNames", buildJsonArray { add(JsonPrimitive("fileSearchStores/store-1")) })
-                                put("topK", JsonPrimitive(7))
-                                put("metadataFilter", JsonPrimitive("author=\"Ada\""))
-                            },
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            name = "file_search",
+                            description = "File search.",
+                            parametersSchemaJson = """{"type":"object"}""",
+                            providerExecuted = true,
+                            metadata = mapOf(
+                                "args" to buildJsonObject {
+                                    put("fileSearchStoreNames", buildJsonArray { add(JsonPrimitive("fileSearchStores/store-1")) })
+                                    put("topK", JsonPrimitive(7))
+                                    put("metadataFilter", JsonPrimitive("author=\"Ada\""))
+                                },
+                            ),
                         ),
-                    ),
-                    LanguageModelTool(
-                        name = "vertex_rag_store",
-                        description = "RAG store.",
-                        parametersSchemaJson = """{"type":"object"}""",
-                        providerExecuted = true,
-                        metadata = mapOf(
-                            "args" to buildJsonObject {
-                                put("ragCorpus", JsonPrimitive("projects/p/locations/us-central1/ragCorpora/corpus-1"))
-                                put("topK", JsonPrimitive(3))
-                            },
+                        LanguageModelTool(
+                            name = "vertex_rag_store",
+                            description = "RAG store.",
+                            parametersSchemaJson = """{"type":"object"}""",
+                            providerExecuted = true,
+                            metadata = mapOf(
+                                "args" to buildJsonObject {
+                                    put("ragCorpus", JsonPrimitive("projects/p/locations/us-central1/ragCorpora/corpus-1"))
+                                    put("topK", JsonPrimitive(3))
+                                },
+                            ),
                         ),
-                    ),
-                ))
+                    )
+                )
             },
         )
 
@@ -346,13 +394,18 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key");
+                baseURL("https://google.test/v1beta")
+            },
         )
 
         val events = drainAllItems(
-            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}),
+            provider.chat(ModelId("gemini-2.5-flash")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())
@@ -386,21 +439,43 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key");
+                baseURL("https://google.test/v1beta")
+            },
         )
 
-        val events = drainAllItems(provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams {
-            messages(listOf(UserMessage("hi")))
-        }))
+        val events = drainAllItems(
+            provider.chat(ModelId("gemini-2.5-flash")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         val sources = events.filterIsInstance<StreamEvent.SourcePart>()
         assertEquals(1, sources.size)
         assertEquals("https://source.example.com", sources.single().url)
         val finish = events.filterIsInstance<StreamEvent.Finish>().single()
         val google = finish.providerMetadata.toMap()["google"]?.jsonObject
-        assertEquals("BLOCK_REASON_UNSPECIFIED", google?.get("promptFeedback")?.jsonObject?.get("blockReason")?.jsonPrimitive?.contentOrNull)
-        assertEquals("https://source.example.com", google?.get("groundingMetadata")?.jsonObject?.get("groundingChunks")?.jsonArray?.single()?.jsonObject?.get("web")?.jsonObject?.get("uri")?.jsonPrimitive?.contentOrNull)
-        assertEquals("NEGLIGIBLE", google?.get("safetyRatings")?.jsonArray?.single()?.jsonObject?.get("probability")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "BLOCK_REASON_UNSPECIFIED",
+            google?.get("promptFeedback")?.jsonObject?.get("blockReason")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            "https://source.example.com",
+            google?.get(
+                "groundingMetadata"
+            )?.jsonObject?.get(
+                "groundingChunks"
+            )?.jsonArray?.single()?.jsonObject?.get("web")?.jsonObject?.get("uri")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            "NEGLIGIBLE",
+            google?.get(
+                "safetyRatings"
+            )?.jsonArray?.single()?.jsonObject?.get("probability")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(4, google?.get("usageMetadata")?.jsonObject?.get("promptTokenCount")?.jsonPrimitive?.intOrNull)
         assertEquals(3, finish.usage.completionTokens)
     }
@@ -440,7 +515,10 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key");
+                baseURL("https://google.test/v1beta")
+            },
         )
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
@@ -474,7 +552,10 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key");
+                baseURL("https://google.test/v1beta")
+            },
         )
         val result = provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams {
@@ -506,7 +587,10 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key");
+                baseURL("https://google.test/v1beta")
+            },
         )
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
@@ -538,13 +622,18 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key");
+                baseURL("https://google.test/v1beta")
+            },
         )
 
         val events = drainAllItems(
-            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}),
+            provider.chat(ModelId("gemini-2.5-flash")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ),
         )
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()

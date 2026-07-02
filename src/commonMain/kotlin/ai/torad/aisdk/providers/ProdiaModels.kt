@@ -10,9 +10,6 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
 
 internal class ProdiaLanguageModel(
     private val client: HttpClient,
@@ -28,11 +25,14 @@ internal class ProdiaLanguageModel(
         val image = prodiaLanguageImage(params.messages)
         val body = buildJsonObject {
             put("type", JsonPrimitive(modelId))
-            put("config", buildJsonObject {
-                put("prompt", JsonPrimitive(prompt))
-                put("include_messages", JsonPrimitive(true))
-                options["aspectRatio"]?.let { put("aspect_ratio", it) }
-            })
+            put(
+                "config",
+                buildJsonObject {
+                    put("prompt", JsonPrimitive(prompt))
+                    put("include_messages", JsonPrimitive(true))
+                    options["aspectRatio"]?.let { put("aspect_ratio", it) }
+                }
+            )
         }
         val response = settings.prodiaPostMultipart(
             client = client,
@@ -72,20 +72,41 @@ internal class ProdiaLanguageModel(
         result.content.filterIsInstance<ContentPart.File>().forEachIndexed { index, file ->
             emit(StreamEvent.FilePart("file-$index", file.mediaType, file.base64, file.providerMetadata))
         }
-        emit(StreamEvent.Finish(totalSteps = 1, finishReason = result.finishReason, usage = result.usage, providerMetadata = result.providerMetadata))
+        emit(
+            StreamEvent.Finish(
+                totalSteps = 1,
+                finishReason = result.finishReason,
+                usage = result.usage,
+                providerMetadata = result.providerMetadata
+            )
+        )
     }
 
     private fun prodiaLanguageWarnings(params: LanguageModelCallParams): List<CallWarning> = buildList {
-        if (params.temperature != null) add(CallWarning("unsupported", "Prodia language models do not support temperature."))
+        if (params.temperature != null) add(
+            CallWarning("unsupported", "Prodia language models do not support temperature.")
+        )
         if (params.topP != null) add(CallWarning("unsupported", "Prodia language models do not support topP."))
         if (params.topK != null) add(CallWarning("unsupported", "Prodia language models do not support topK."))
-        if (params.maxOutputTokens != null) add(CallWarning("unsupported", "Prodia language models do not support maxOutputTokens."))
-        if (params.stopSequences.isNotEmpty()) add(CallWarning("unsupported", "Prodia language models do not support stopSequences."))
-        if (params.presencePenalty != null) add(CallWarning("unsupported", "Prodia language models do not support presencePenalty."))
-        if (params.frequencyPenalty != null) add(CallWarning("unsupported", "Prodia language models do not support frequencyPenalty."))
+        if (params.maxOutputTokens != null) add(
+            CallWarning("unsupported", "Prodia language models do not support maxOutputTokens.")
+        )
+        if (params.stopSequences.isNotEmpty()) add(
+            CallWarning("unsupported", "Prodia language models do not support stopSequences.")
+        )
+        if (params.presencePenalty != null) add(
+            CallWarning("unsupported", "Prodia language models do not support presencePenalty.")
+        )
+        if (params.frequencyPenalty != null) add(
+            CallWarning("unsupported", "Prodia language models do not support frequencyPenalty.")
+        )
         if (params.tools.isNotEmpty()) add(CallWarning("unsupported", "Prodia language models do not support tools."))
-        if (params.toolChoice != ToolChoice.Auto) add(CallWarning("unsupported", "Prodia language models do not support toolChoice."))
-        if (params.responseFormat != ResponseFormat.Text) add(CallWarning("unsupported", "Prodia language models do not support responseFormat."))
+        if (params.toolChoice != ToolChoice.Auto) add(
+            CallWarning("unsupported", "Prodia language models do not support toolChoice.")
+        )
+        if (params.responseFormat != ResponseFormat.Text) add(
+            CallWarning("unsupported", "Prodia language models do not support responseFormat.")
+        )
     }
 
     private fun prodiaLanguagePrompt(messages: List<ModelMessage>): String {
@@ -126,16 +147,19 @@ internal class ProdiaImageModel(
         val (sizeWidth, sizeHeight) = prodiaParseSize(params.size, warnings)
         val body = buildJsonObject {
             put("type", JsonPrimitive(modelId))
-            put("config", buildJsonObject {
-                put("prompt", JsonPrimitive(params.prompt))
-                (options["width"] ?: sizeWidth?.let(::JsonPrimitive))?.let { put("width", it) }
-                (options["height"] ?: sizeHeight?.let(::JsonPrimitive))?.let { put("height", it) }
-                params.seed?.let { put("seed", JsonPrimitive(it)) }
-                options["steps"]?.let { put("steps", it) }
-                options["stylePreset"]?.let { put("style_preset", it) }
-                options["loras"]?.let { put("loras", it) }
-                options["progressive"]?.let { put("progressive", it) }
-            })
+            put(
+                "config",
+                buildJsonObject {
+                    put("prompt", JsonPrimitive(params.prompt))
+                    (options["width"] ?: sizeWidth?.let(::JsonPrimitive))?.let { put("width", it) }
+                    (options["height"] ?: sizeHeight?.let(::JsonPrimitive))?.let { put("height", it) }
+                    params.seed?.let { put("seed", JsonPrimitive(it)) }
+                    options["steps"]?.let { put("steps", it) }
+                    options["stylePreset"]?.let { put("style_preset", it) }
+                    options["loras"]?.let { put("loras", it) }
+                    options["progressive"]?.let { put("progressive", it) }
+                }
+            )
         }
         val response = settings.prodiaPostJsonForMultipart(
             client = client,
@@ -150,11 +174,15 @@ internal class ProdiaImageModel(
             images = listOf(image),
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-                "prodia" to buildJsonObject {
-                    put("images", JsonArray(listOf(response.jobMetadata())))
-                },
-            ))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "prodia" to buildJsonObject {
+                            put("images", JsonArray(listOf(response.jobMetadata())))
+                        },
+                    )
+                )
+            ),
         )
     }
 
@@ -184,11 +212,14 @@ internal class ProdiaVideoModel(
         val options = settings.prodiaOptions(params.providerOptions)
         val body = buildJsonObject {
             put("type", JsonPrimitive(modelId))
-            put("config", buildJsonObject {
-                params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
-                params.seed?.let { put("seed", JsonPrimitive(it)) }
-                (options["resolution"] ?: params.resolution?.let(::JsonPrimitive))?.let { put("resolution", it) }
-            })
+            put(
+                "config",
+                buildJsonObject {
+                    params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
+                    params.seed?.let { put("seed", JsonPrimitive(it)) }
+                    (options["resolution"] ?: params.resolution?.let(::JsonPrimitive))?.let { put("resolution", it) }
+                }
+            )
         }
         val input = params.image?.let { ProdiaInputFile.fromGeneratedFile(client, it) }
         val response = if (input == null) {
@@ -214,11 +245,15 @@ internal class ProdiaVideoModel(
         return VideoModelResult(
             videos = listOf(video),
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-                "prodia" to buildJsonObject {
-                    put("videos", JsonArray(listOf(response.jobMetadata())))
-                },
-            ))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "prodia" to buildJsonObject {
+                            put("videos", JsonArray(listOf(response.jobMetadata())))
+                        },
+                    )
+                )
+            ),
         )
     }
 }

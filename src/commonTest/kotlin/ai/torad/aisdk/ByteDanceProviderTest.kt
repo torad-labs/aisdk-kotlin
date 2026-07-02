@@ -1,11 +1,11 @@
 package ai.torad.aisdk
-import ai.torad.aisdk.providers.byteDance
-import ai.torad.aisdk.providers.ByteDanceProviderSettings
 import ai.torad.aisdk.providers.ByteDance
-
+import ai.torad.aisdk.providers.ByteDanceProviderSettings
+import ai.torad.aisdk.providers.byteDance
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -18,7 +18,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import kotlinx.serialization.json.JsonObject
 
 class ByteDanceProviderTest {
     @Test
@@ -57,29 +56,44 @@ class ByteDanceProviderTest {
                 resolution("1920x1080")
                 seed(42)
                 fps(30)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "bytedance" to buildJsonObject {
-                                        put("watermark", JsonPrimitive(true))
-                                        put("generateAudio", JsonPrimitive(false))
-                                        put("cameraFixed", JsonPrimitive(true))
-                                        put("returnLastFrame", JsonPrimitive(true))
-                                        put("serviceTier", JsonPrimitive("flex"))
-                                        put("draft", JsonPrimitive(false))
-                                        put("lastFrameImage", JsonPrimitive("https://example.com/last.png"))
-                                        put("referenceImages", kotlinx.serialization.json.buildJsonArray {
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "bytedance" to buildJsonObject {
+                                    put("watermark", JsonPrimitive(true))
+                                    put("generateAudio", JsonPrimitive(false))
+                                    put("cameraFixed", JsonPrimitive(true))
+                                    put("returnLastFrame", JsonPrimitive(true))
+                                    put("serviceTier", JsonPrimitive("flex"))
+                                    put("draft", JsonPrimitive(false))
+                                    put("lastFrameImage", JsonPrimitive("https://example.com/last.png"))
+                                    put(
+                                        "referenceImages",
+                                        kotlinx.serialization.json.buildJsonArray {
                                             add(JsonPrimitive("https://example.com/ref.png"))
-                                        })
-                                        put("referenceVideos", kotlinx.serialization.json.buildJsonArray {
+                                        }
+                                    )
+                                    put(
+                                        "referenceVideos",
+                                        kotlinx.serialization.json.buildJsonArray {
                                             add(JsonPrimitive("https://example.com/ref.mp4"))
-                                        })
-                                        put("referenceAudio", kotlinx.serialization.json.buildJsonArray {
+                                        }
+                                    )
+                                    put(
+                                        "referenceAudio",
+                                        kotlinx.serialization.json.buildJsonArray {
                                             add(JsonPrimitive("https://example.com/ref.mp3"))
-                                        })
-                                        put("pollIntervalMs", JsonPrimitive(0))
-                                        put("pollTimeoutMs", JsonPrimitive(1))
-                                        put("custom_option", JsonPrimitive("kept"))
-                                    },
-                                ))))
+                                        }
+                                    )
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(1))
+                                    put("custom_option", JsonPrimitive("kept"))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -104,7 +118,10 @@ class ByteDanceProviderTest {
         assertEquals("kept", body["custom_option"]?.jsonPrimitive?.contentOrNull)
         val content = body["content"]?.jsonArray.orEmpty()
         assertEquals("text", content[0].jsonObject["type"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("data:image/png;base64,frame", content[1].jsonObject["image_url"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "data:image/png;base64,frame",
+            content[1].jsonObject["image_url"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("first_frame", content[1].jsonObject["role"]?.jsonPrimitive?.contentOrNull)
         assertEquals("last_frame", content[2].jsonObject["role"]?.jsonPrimitive?.contentOrNull)
         assertEquals("reference_image", content[3].jsonObject["role"]?.jsonPrimitive?.contentOrNull)
@@ -141,10 +158,18 @@ class ByteDanceProviderTest {
             provider.video(ModelId("seedance")).generate(
                 VideoGenerationParams {
                     prompt("x")
-                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("bytedance" to buildJsonObject {
-                                            put("pollIntervalMs", JsonPrimitive(0))
-                                            put("pollTimeoutMs", JsonPrimitive(1))
-                                        }))))
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf(
+                                    "bytedance" to buildJsonObject {
+                                        put("pollIntervalMs", JsonPrimitive(0))
+                                        put("pollTimeoutMs", JsonPrimitive(1))
+                                    }
+                                )
+                            )
+                        )
+                    )
                 },
             )
         }

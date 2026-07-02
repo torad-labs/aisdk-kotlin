@@ -20,7 +20,16 @@ class ToolApprovalSignatureTest {
     @Test
     fun `sign then verify round-trips`() {
         val signature = ToolApprovalSignature.signToolApproval(secret, "appr_1", "call_1", "deleteFile", input)
-        assertTrue(ToolApprovalSignature.verifyToolApprovalSignature(secret, signature, "appr_1", "call_1", "deleteFile", input))
+        assertTrue(
+            ToolApprovalSignature.verifyToolApprovalSignature(
+                secret,
+                signature,
+                "appr_1",
+                "call_1",
+                "deleteFile",
+                input
+            )
+        )
     }
 
     @Test
@@ -37,7 +46,16 @@ class ToolApprovalSignatureTest {
         }
         assertEquals(ToolApprovalSignature.canonicalJson(input), ToolApprovalSignature.canonicalJson(reordered))
         val signature = ToolApprovalSignature.signToolApproval(secret, "appr_1", "call_1", "deleteFile", input)
-        assertTrue(ToolApprovalSignature.verifyToolApprovalSignature(secret, signature, "appr_1", "call_1", "deleteFile", reordered))
+        assertTrue(
+            ToolApprovalSignature.verifyToolApprovalSignature(
+                secret,
+                signature,
+                "appr_1",
+                "call_1",
+                "deleteFile",
+                reordered
+            )
+        )
     }
 
     @Test
@@ -47,17 +65,64 @@ class ToolApprovalSignatureTest {
             put("path", "/etc/passwd")
             put("recursive", true)
         }
-        assertFalse(ToolApprovalSignature.verifyToolApprovalSignature(secret, signature, "appr_1", "call_1", "deleteFile", tamperedInput))
-        assertFalse(ToolApprovalSignature.verifyToolApprovalSignature(secret, signature, "appr_2", "call_1", "deleteFile", input))
-        assertFalse(ToolApprovalSignature.verifyToolApprovalSignature(secret, signature, "appr_1", "call_2", "deleteFile", input))
-        assertFalse(ToolApprovalSignature.verifyToolApprovalSignature(secret, signature, "appr_1", "call_1", "readFile", input))
+        assertFalse(
+            ToolApprovalSignature.verifyToolApprovalSignature(
+                secret,
+                signature,
+                "appr_1",
+                "call_1",
+                "deleteFile",
+                tamperedInput
+            )
+        )
+        assertFalse(
+            ToolApprovalSignature.verifyToolApprovalSignature(
+                secret,
+                signature,
+                "appr_2",
+                "call_1",
+                "deleteFile",
+                input
+            )
+        )
+        assertFalse(
+            ToolApprovalSignature.verifyToolApprovalSignature(
+                secret,
+                signature,
+                "appr_1",
+                "call_2",
+                "deleteFile",
+                input
+            )
+        )
+        assertFalse(
+            ToolApprovalSignature.verifyToolApprovalSignature(secret, signature, "appr_1", "call_1", "readFile", input)
+        )
         val otherSecret = "other".encodeToByteArray()
-        assertFalse(ToolApprovalSignature.verifyToolApprovalSignature(otherSecret, signature, "appr_1", "call_1", "deleteFile", input))
+        assertFalse(
+            ToolApprovalSignature.verifyToolApprovalSignature(
+                otherSecret,
+                signature,
+                "appr_1",
+                "call_1",
+                "deleteFile",
+                input
+            )
+        )
     }
 
     @Test
     fun `a malformed signature is rejected rather than throwing`() {
-        assertFalse(ToolApprovalSignature.verifyToolApprovalSignature(secret, "%%not-base64url%%", "appr_1", "call_1", "deleteFile", input))
+        assertFalse(
+            ToolApprovalSignature.verifyToolApprovalSignature(
+                secret,
+                "%%not-base64url%%",
+                "appr_1",
+                "call_1",
+                "deleteFile",
+                input
+            )
+        )
     }
 
     @Test

@@ -46,10 +46,12 @@ class GatewayDefensiveParsingTest {
     fun `generateImage degrades a non-primitive image entry to empty base64 instead of crashing`() = runTest {
         val result = gateway("""{"images":[{"oops":1}]}""")
             .image(ModelId("test-model"))
-            .generate(ImageGenerationParams {
-                prompt("x")
-                n(1)
-            })
+            .generate(
+                ImageGenerationParams {
+                    prompt("x")
+                    n(1)
+                }
+            )
         assertEquals(1, result.images.size)
         assertEquals("", result.images.first().base64)
     }
@@ -78,10 +80,12 @@ class GatewayDefensiveParsingTest {
     fun `rerank drops a malformed ranking element instead of crashing`() = runTest {
         val result = gateway("""{"ranking":[{"index":0,"relevance_score":0.9},"malformed"]}""")
             .reranking(ModelId("test-model"))
-            .rerank(RerankingParams {
-                query("q")
-                documents(listOf("a", "b"))
-            })
+            .rerank(
+                RerankingParams {
+                    query("q")
+                    documents(listOf("a", "b"))
+                }
+            )
         assertEquals(1, result.results.size)
     }
 }

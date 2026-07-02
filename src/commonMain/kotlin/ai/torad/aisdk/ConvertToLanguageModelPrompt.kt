@@ -26,7 +26,7 @@ public typealias DownloadFunction = suspend (url: String) -> DownloadedAsset
  * `convertToLanguageModelPrompt`. Grouped as object members because top-level loose
  * functions are disallowed in this codebase; behavior is identical to the prior
  * free-function form.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public object PromptConversion {
     /**

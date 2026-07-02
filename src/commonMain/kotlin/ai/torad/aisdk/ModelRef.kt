@@ -68,7 +68,7 @@ public data class ModelRef(
  * PascalCase faux-constructors because a same-signature `fun ProviderId(String)` /
  * `fun ModelId(String)` would conflict with the value-class primary constructors,
  * so they live as members of this object.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public object ModelIdentifiers {
     /** @since 0.3.0-beta01 */
@@ -92,7 +92,7 @@ public fun ModelRef(providerId: String, modelId: String): ModelRef =
 /**
  * Typed, value-class- and [ModelRef]-aware accessors over [Provider]. These are
  * member-extensions: callers reach them via member import or `with(ProviderModels) { ... }`.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public object ProviderModels {
     /** @since 0.3.0-beta01 */

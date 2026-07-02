@@ -1,10 +1,11 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.REPLICATE_VERSION
+import ai.torad.aisdk.providers.Replicate
 import ai.torad.aisdk.providers.ReplicateProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -18,8 +19,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Replicate
-import kotlinx.serialization.json.JsonObject
 
 class ReplicateProviderTest {
     @Test
@@ -52,14 +51,20 @@ class ReplicateProviderTest {
                 seed(9)
                 files(listOf(ImageGenerationFile(mediaType = "image/png", base64 = "imgb64")))
                 mask(ImageGenerationFile(url = "https://example.com/mask.png"))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "replicate" to buildJsonObject {
-                                        put("maxWaitTimeInSeconds", JsonPrimitive(5))
-                                        put("guidance_scale", JsonPrimitive(3.5))
-                                        put("negative_prompt", JsonPrimitive("blur"))
-                                        put("custom_option", JsonPrimitive("kept"))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "replicate" to buildJsonObject {
+                                    put("maxWaitTimeInSeconds", JsonPrimitive(5))
+                                    put("guidance_scale", JsonPrimitive(3.5))
+                                    put("negative_prompt", JsonPrimitive("blur"))
+                                    put("custom_option", JsonPrimitive("kept"))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -159,16 +164,22 @@ class ReplicateProviderTest {
                 seed(77)
                 fps(24)
                 resolution("720p")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "replicate" to buildJsonObject {
-                                        put("maxWaitTimeInSeconds", JsonPrimitive(1))
-                                        put("pollIntervalMs", JsonPrimitive(0))
-                                        put("pollTimeoutMs", JsonPrimitive(1))
-                                        put("guidance_scale", JsonPrimitive(2.0))
-                                        put("prompt_optimizer", JsonPrimitive(true))
-                                        put("custom_video_option", JsonPrimitive("kept"))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "replicate" to buildJsonObject {
+                                    put("maxWaitTimeInSeconds", JsonPrimitive(1))
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(1))
+                                    put("guidance_scale", JsonPrimitive(2.0))
+                                    put("prompt_optimizer", JsonPrimitive(true))
+                                    put("custom_video_option", JsonPrimitive("kept"))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -218,9 +229,11 @@ class ReplicateProviderTest {
             ReplicateProviderSettings { apiToken("token") },
         ).video(ModelId("minimax/video-01"))
 
-        val result = model.generate(VideoGenerationParams {
-            prompt("array output")
-        })
+        val result = model.generate(
+            VideoGenerationParams {
+                prompt("array output")
+            }
+        )
 
         assertEquals("https://cdn.example/array.mp4", result.videos.single().url)
     }
@@ -242,9 +255,11 @@ class ReplicateProviderTest {
         val provider = Replicate(fixture.httpClient(), ReplicateProviderSettings { apiToken("token") })
 
         assertFailsWith<AiSdkException> {
-            provider.video(ModelId("minimax/video-01")).generate(VideoGenerationParams {
-                prompt("x")
-            })
+            provider.video(ModelId("minimax/video-01")).generate(
+                VideoGenerationParams {
+                    prompt("x")
+                }
+            )
         }
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

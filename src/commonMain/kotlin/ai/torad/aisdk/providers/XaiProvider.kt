@@ -3,15 +3,10 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.ProviderMetadata
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
-import io.ktor.client.request.request
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -20,14 +15,9 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlin.math.ceil
 
 public const val XAI_VERSION: String = "3.0.93"
 
@@ -492,6 +482,7 @@ public class XaiProvider(
     private val compatible = OpenAICompatible(client, xaiCompatibleSettings())
 
     override val providerId: String = "xai"
+
     /** @since 0.3.0-beta01 */
     public val tools: XaiTools = xaiTools
 
@@ -526,8 +517,11 @@ public class XaiProvider(
     override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
     override fun embeddingModel(modelId: String): EmbeddingModel =
         throw NoSuchModelError(providerId, "embeddingModel", modelId)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(
+        modelId: String
+    ): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     private fun xaiCompatibleSettings(): OpenAICompatibleProviderSettings =
         OpenAICompatibleProviderSettings {

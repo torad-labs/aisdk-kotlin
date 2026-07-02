@@ -71,7 +71,10 @@ public class MistralProviderSettings internal constructor(
                     when (key) {
                         "tool_choice" -> put("tool_choice", mistralToolChoice(value))
                         "tools" -> put("tools", mistralFilterTools(value, body["tool_choice"]))
-                        "messages" -> put("messages", mistralRewriteMessages(messages, toolCallNames, lastAssistantIndex))
+                        "messages" -> put(
+                            "messages",
+                            mistralRewriteMessages(messages, toolCallNames, lastAssistantIndex)
+                        )
                         else -> put(key, value)
                     }
                 }
@@ -196,7 +199,13 @@ public class MistralProviderSettings internal constructor(
         private fun reasoningContent(content: JsonArray): String =
             content.joinToString("") { part ->
                 val obj = part as? JsonObject
-                if ((obj?.get("type") as? JsonPrimitive)?.contentOrNull == "thinking") thinkingText(obj["thinking"]) else ""
+                if ((obj?.get("type") as? JsonPrimitive)?.contentOrNull == "thinking") {
+                    thinkingText(
+                        obj["thinking"]
+                    )
+                } else {
+                    ""
+                }
             }
 
         private fun thinkingText(value: JsonElement?): String =
@@ -360,8 +369,10 @@ public class MistralProvider(
 
     override fun languageModel(modelId: String): LanguageModel = chat(ModelId(modelId))
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+
     /** @since 0.3.0-beta01 */
     public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
 
@@ -382,7 +393,9 @@ private class MistralChatLanguageModel(
     private val delegate: LanguageModel,
 ) : LanguageModel by delegate {
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        delegate.generate(params.toBuilder().providerOptions(transformMistralProviderOptions(params.providerOptions)).build()).let {
+        delegate.generate(
+            params.toBuilder().providerOptions(transformMistralProviderOptions(params.providerOptions)).build()
+        ).let {
             LanguageModelResult(
                 text = it.text,
                 toolCalls = it.toolCalls,
@@ -398,7 +411,9 @@ private class MistralChatLanguageModel(
         }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> =
-        delegate.stream(params.toBuilder().providerOptions(transformMistralProviderOptions(params.providerOptions)).build()).map { event ->
+        delegate.stream(
+            params.toBuilder().providerOptions(transformMistralProviderOptions(params.providerOptions)).build()
+        ).map { event ->
             if (event is StreamEvent.Finish && event.rawFinishReason == "model_length") {
                 StreamEvent.Finish(
                     totalSteps = event.totalSteps,
@@ -413,7 +428,9 @@ private class MistralChatLanguageModel(
         }
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
-        delegate.streamResult(params.toBuilder().providerOptions(transformMistralProviderOptions(params.providerOptions)).build()).let {
+        delegate.streamResult(
+            params.toBuilder().providerOptions(transformMistralProviderOptions(params.providerOptions)).build()
+        ).let {
             LanguageModelStreamResult(
                 stream = it.stream.map { event ->
                     if (event is StreamEvent.Finish && event.rawFinishReason == "model_length") {

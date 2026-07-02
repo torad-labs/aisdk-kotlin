@@ -1,13 +1,14 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.FAL_VERSION
+import ai.torad.aisdk.providers.Fal
 import ai.torad.aisdk.providers.FalProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
@@ -18,8 +19,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Fal
-import kotlinx.serialization.json.JsonObject
 
 class FalProviderTest {
     @Test
@@ -75,19 +74,27 @@ class FalProviderTest {
                 n(1)
                 size("1024x1024")
                 seed(123)
-                files(listOf(
-                                    ImageGenerationFile(mediaType = "image/png", base64 = "aW1hZ2U="),
-                                    ImageGenerationFile(url = "https://example.com/second.png"),
-                                ))
+                files(
+                    listOf(
+                        ImageGenerationFile(mediaType = "image/png", base64 = "aW1hZ2U="),
+                        ImageGenerationFile(url = "https://example.com/second.png"),
+                    )
+                )
                 mask(ImageGenerationFile(mediaType = "image/png", base64 = "bWFzaw=="))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "fal" to buildJsonObject {
-                                        put("guidanceScale", JsonPrimitive(7.5f))
-                                        put("num_inference_steps", JsonPrimitive(30))
-                                        put("enableSafetyChecker", JsonPrimitive(false))
-                                        put("extra_param", JsonPrimitive("extra"))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "fal" to buildJsonObject {
+                                    put("guidanceScale", JsonPrimitive(7.5f))
+                                    put("num_inference_steps", JsonPrimitive(30))
+                                    put("enableSafetyChecker", JsonPrimitive(false))
+                                    put("extra_param", JsonPrimitive("extra"))
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -98,9 +105,17 @@ class FalProviderTest {
         assertEquals("image-bytes", Base64Codec.decode(result.images.single().base64).decodeToString())
         assertEquals("https://fal.media/files/image.png", result.images.single().url)
         assertEquals("image.png", result.images.single().filename)
-        assertEquals(false, result.providerMetadata.toMap()["fal"]?.jsonObject?.get("images")?.jsonArray?.single()?.jsonObject?.get("nsfw")?.jsonPrimitive?.booleanOrNull)
+        assertEquals(
+            false,
+            result.providerMetadata.toMap()["fal"]?.jsonObject?.get(
+                "images"
+            )?.jsonArray?.single()?.jsonObject?.get("nsfw")?.jsonPrimitive?.booleanOrNull
+        )
         assertEquals(123, result.providerMetadata.toMap()["fal"]?.jsonObject?.get("seed")?.jsonPrimitive?.intOrNull)
-        assertEquals(30, result.providerMetadata.toMap()["fal"]?.jsonObject?.get("num_inference_steps")?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            30,
+            result.providerMetadata.toMap()["fal"]?.jsonObject?.get("num_inference_steps")?.jsonPrimitive?.intOrNull
+        )
         assertTrue(result.warnings.any { it.message.orEmpty().contains("Multiple input images") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("num_inference_steps") })
 
@@ -160,14 +175,20 @@ class FalProviderTest {
                 instructions("Speak softly.")
                 speed(1.2f)
                 responseFormat("wav")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "fal" to buildJsonObject {
-                                        put(
-                                            "voice_setting",
-                                            buildJsonObject { put("emotion", JsonPrimitive("happy")) },
-                                        )
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "fal" to buildJsonObject {
+                                    put(
+                                        "voice_setting",
+                                        buildJsonObject { put("emotion", JsonPrimitive("happy")) },
+                                    )
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -229,14 +250,20 @@ class FalProviderTest {
             TranscriptionParams {
                 audio(AudioSource("audio/wav", "YXVkaW8=", "clip.wav"))
                 language("pt")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "fal" to buildJsonObject {
-                                        put("diarize", JsonPrimitive(false))
-                                        put("chunkLevel", JsonPrimitive("segment"))
-                                        put("batchSize", JsonPrimitive(16))
-                                        put("numSpeakers", JsonPrimitive(2))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "fal" to buildJsonObject {
+                                    put("diarize", JsonPrimitive(false))
+                                    put("chunkLevel", JsonPrimitive("segment"))
+                                    put("batchSize", JsonPrimitive(16))
+                                    put("numSpeakers", JsonPrimitive(2))
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -319,16 +346,22 @@ class FalProviderTest {
                 durationSeconds(5f)
                 aspectRatio("16:9")
                 seed(42)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "fal" to buildJsonObject {
-                                        put("pollIntervalMs", JsonPrimitive(1))
-                                        put("pollTimeoutMs", JsonPrimitive(2))
-                                        put("motionStrength", JsonPrimitive(0.7f))
-                                        put("negativePrompt", JsonPrimitive("blur"))
-                                        put("promptOptimizer", JsonPrimitive(true))
-                                        put("customFlag", JsonPrimitive("custom"))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "fal" to buildJsonObject {
+                                    put("pollIntervalMs", JsonPrimitive(1))
+                                    put("pollTimeoutMs", JsonPrimitive(2))
+                                    put("motionStrength", JsonPrimitive(0.7f))
+                                    put("negativePrompt", JsonPrimitive("blur"))
+                                    put("promptOptimizer", JsonPrimitive(true))
+                                    put("customFlag", JsonPrimitive("custom"))
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -339,8 +372,16 @@ class FalProviderTest {
         assertEquals("", result.videos.single().base64)
         assertEquals("https://fal.media/files/video.mp4", result.videos.single().url)
         assertEquals(42, result.providerMetadata.toMap()["fal"]?.jsonObject?.get("seed")?.jsonPrimitive?.intOrNull)
-        assertEquals("Enhanced prompt", result.providerMetadata.toMap()["fal"]?.jsonObject?.get("prompt")?.jsonPrimitive?.contentOrNull)
-        assertEquals(1920, result.providerMetadata.toMap()["fal"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject?.get("width")?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            "Enhanced prompt",
+            result.providerMetadata.toMap()["fal"]?.jsonObject?.get("prompt")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            1920,
+            result.providerMetadata.toMap()["fal"]?.jsonObject?.get(
+                "videos"
+            )?.jsonArray?.single()?.jsonObject?.get("width")?.jsonPrimitive?.intOrNull
+        )
 
         val request = fixture.calls.first()
         assertEquals("https://queue.fal.run/fal-ai/luma-dream-machine", request.requestUrl)

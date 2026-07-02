@@ -1,11 +1,11 @@
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Surface-tests for the [ResponseFormat] sealed type added in Phase 4C
@@ -25,8 +25,8 @@ class ResponseFormatTest {
     fun `given default call params when constructed then responseFormat is Text`() {
         // GIVEN / WHEN
         val params = LanguageModelCallParams {
-    messages(emptyList())
-}
+            messages(emptyList())
+        }
 
         // THEN
         assertEquals(
@@ -85,9 +85,9 @@ class ResponseFormatTest {
     fun `given call params with Json response-format when constructed then the field is wired`() {
         // GIVEN — the wire surface a provider actually reads.
         val params = LanguageModelCallParams {
-    messages(emptyList())
-    responseFormat(ResponseFormat.Json(schemaName = "Recipe"))
-}
+            messages(emptyList())
+            responseFormat(ResponseFormat.Json(schemaName = "Recipe"))
+        }
 
         // WHEN / THEN
         val rf = params.responseFormat

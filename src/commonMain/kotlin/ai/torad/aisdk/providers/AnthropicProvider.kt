@@ -3,7 +3,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -18,16 +17,11 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 
 public const val ANTHROPIC_VERSION: String = "3.0.81"
@@ -49,7 +43,8 @@ public class AnthropicProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
     /** @since 0.3.0-beta01 */
-    public val requestHeadersProvider: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)? = null,
+    public val requestHeadersProvider:
+    (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)? = null,
     /** @since 0.3.0-beta01 */
     public val buildRequestUrl: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)? = null,
     /** @since 0.3.0-beta01 */
@@ -110,11 +105,17 @@ public class AnthropicProviderSettings internal constructor(
                 sourceType = StreamEvent.SourcePart.SourceType.Url,
                 url = (citation["url"] as? JsonPrimitive)?.contentOrNull,
                 title = (citation["title"] as? JsonPrimitive)?.contentOrNull,
-                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
-                    citation["cited_text"]?.let { put("citedText", it) }
-                    citation["encrypted_index"]?.let { put("encryptedIndex", it) }
-                    put("id", JsonPrimitive(generateId()))
-                }))),
+                providerMetadata = ProviderMetadata.Raw(
+                    JsonObject(
+                        mapOf(
+                            "anthropic" to buildJsonObject {
+                                citation["cited_text"]?.let { put("citedText", it) }
+                                citation["encrypted_index"]?.let { put("encryptedIndex", it) }
+                                put("id", JsonPrimitive(generateId()))
+                            }
+                        )
+                    )
+                ),
             )
             "page_location", "char_location" -> ContentPart.Source(
                 sourceType = StreamEvent.SourcePart.SourceType.Document,
@@ -169,7 +170,8 @@ public class AnthropicProviderSettingsBuilder {
     private var apiKey: String? = null
     private var authToken: String? = null
     private var headers: Map<String, String> = emptyMap()
-    private var requestHeadersProvider: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)? = null
+    private var requestHeadersProvider:
+        (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)? = null
     private var buildRequestUrl: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)? = null
     private var transformRequestBody: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)? = null
     private var supportedUrls: Map<String, List<String>>? = null
@@ -201,19 +203,25 @@ public class AnthropicProviderSettingsBuilder {
     }
 
     /** @since 0.3.0-beta01 */
-    public fun requestHeadersProvider(value: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)?): AnthropicProviderSettingsBuilder {
+    public fun requestHeadersProvider(
+        value: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)?
+    ): AnthropicProviderSettingsBuilder {
         requestHeadersProvider = value
         return this
     }
 
     /** @since 0.3.0-beta01 */
-    public fun buildRequestUrl(value: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)?): AnthropicProviderSettingsBuilder {
+    public fun buildRequestUrl(
+        value: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)?
+    ): AnthropicProviderSettingsBuilder {
         buildRequestUrl = value
         return this
     }
 
     /** @since 0.3.0-beta01 */
-    public fun transformRequestBody(value: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)?): AnthropicProviderSettingsBuilder {
+    public fun transformRequestBody(
+        value: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)?
+    ): AnthropicProviderSettingsBuilder {
         transformRequestBody = value
         return this
     }
@@ -266,27 +274,42 @@ public class AnthropicProvider(
 ) : Provider {
     init {
         if (!settings.apiKey.isNullOrBlank() && !settings.authToken.isNullOrBlank()) {
-            throw InvalidArgumentError("apiKey/authToken", "Both apiKey and authToken were provided. Please use only one authentication method.")
+            throw InvalidArgumentError(
+                "apiKey/authToken",
+                "Both apiKey and authToken were provided. Please use only one authentication method."
+            )
         }
     }
 
     override val providerId: String = "anthropic"
+
     /** @since 0.3.0-beta01 */
     public val tools: AnthropicTools = anthropicTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
     override fun languageModel(modelId: String): LanguageModel =
         AnthropicMessagesLanguageModel(client, settings, modelId)
 
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 }
 
 /**
@@ -331,7 +354,11 @@ public class AnthropicMessagesLanguageModel(
         val rawLines = anthropicStreamSse(prepared.body, prepared.betas, params.headers) { sseHeaders = it }
         val baseURL = settings.baseURL.trimEnd('/')
         val requestUrl = settings.buildRequestUrl?.invoke(baseURL, modelId, true) ?: "$baseURL/messages"
-        val parsedEvents = EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)
+        val parsedEvents = EventStreamParser.parse(
+            rawLines,
+            Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())),
+            aiSdkJson
+        )
         val firstProviderEvent = BooleanArray(1) { true }
         val streamStartEmitted = BooleanArray(1)
         val responseMetadataEmitted = BooleanArray(1)
@@ -399,12 +426,14 @@ public class AnthropicMessagesLanguageModel(
             requestHeaders.forEach { (name, value) -> header(name, value) }
             setBody(encodedBody)
         }
-        return with(HttpTransport) { response.toJsonResponse(
-            url = url,
-            parseJson = true,
-            requestBodyValues = requestBody,
-            errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
-        ) }
+        return with(HttpTransport) {
+            response.toJsonResponse(
+                url = url,
+                parseJson = true,
+                requestBodyValues = requestBody,
+                errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
+            )
+        }
     }
 
     /** Streaming counterpart of [anthropicPost]: same URL/header/transform path,
@@ -422,15 +451,17 @@ public class AnthropicMessagesLanguageModel(
         val baseHeaders = settings.anthropicHeaders(extraHeaders, betas)
         val requestHeaders = settings.requestHeadersProvider?.invoke(url, encodedBody, baseHeaders) ?: baseHeaders
         emitAll(
-            HttpTransport.streamSse(client = client,
-            url = url,
-            method = HttpMethod.Post,
-            headers = requestHeaders + (HttpHeaders.Accept to "text/event-stream"),
-            body = requestBody,
-            json = aiSdkJson,
-            requestBodyValues = requestBody,
-            errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
-            onResponse = onResponse,),
+            HttpTransport.streamSse(
+                client = client,
+                url = url,
+                method = HttpMethod.Post,
+                headers = requestHeaders + (HttpHeaders.Accept to "text/event-stream"),
+                body = requestBody,
+                json = aiSdkJson,
+                requestBodyValues = requestBody,
+                errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
+                onResponse = onResponse,
+            ),
         )
     }
 
@@ -458,15 +489,27 @@ public class AnthropicMessagesLanguageModel(
                 }
                 "thinking" -> content += ContentPart.Reasoning(
                     text = (obj["thinking"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
-                    providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
-                        obj["signature"]?.let { put("signature", it) }
-                    }))),
+                    providerMetadata = ProviderMetadata.Raw(
+                        JsonObject(
+                            mapOf(
+                                "anthropic" to buildJsonObject {
+                                    obj["signature"]?.let { put("signature", it) }
+                                }
+                            )
+                        )
+                    ),
                 )
                 "redacted_thinking" -> content += ContentPart.Reasoning(
                     text = "",
-                    providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
-                        obj["data"]?.let { put("redactedData", it) }
-                    }))),
+                    providerMetadata = ProviderMetadata.Raw(
+                        JsonObject(
+                            mapOf(
+                                "anthropic" to buildJsonObject {
+                                    obj["data"]?.let { put("redactedData", it) }
+                                }
+                            )
+                        )
+                    ),
                 )
                 "tool_use", "server_tool_use", "mcp_tool_use" -> {
                     val toolCallId = WireDecoder.requiredString(obj, "id", "anthropic", "response content", path)
@@ -494,7 +537,13 @@ public class AnthropicMessagesLanguageModel(
                         toolName = toolName,
                         input = obj["input"] ?: JsonObject(emptyMap()),
                         providerMetadata = if ((obj["type"] as? JsonPrimitive)?.contentOrNull != "tool_use") {
-                            ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })))
+                            ProviderMetadata.Raw(
+                                JsonObject(
+                                    mapOf(
+                                        "anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }
+                                    )
+                                )
+                            )
                         } else {
                             ProviderMetadata.None
                         },
@@ -623,7 +672,12 @@ private class AnthropicStreamState(
         when (type) {
             "message_start" -> {
                 val message = try {
-                    WireDecoder.objectValue(WireDecoder.required(obj, "message", "anthropic", "stream event"), "anthropic", "stream event", "$.message")
+                    WireDecoder.objectValue(
+                        WireDecoder.required(obj, "message", "anthropic", "stream event"),
+                        "anthropic",
+                        "stream event",
+                        "$.message"
+                    )
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }
@@ -639,7 +693,12 @@ private class AnthropicStreamState(
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }
                 val block = try {
-                    WireDecoder.objectValue(WireDecoder.required(obj, "content_block", "anthropic", "stream event"), "anthropic", "stream event", "$.content_block")
+                    WireDecoder.objectValue(
+                        WireDecoder.required(obj, "content_block", "anthropic", "stream event"),
+                        "anthropic",
+                        "stream event",
+                        "$.content_block"
+                    )
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }
@@ -694,7 +753,12 @@ private class AnthropicStreamState(
                 val block = blocks[index]
                     ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_delta for unknown block index $index."))
                 val delta = try {
-                    WireDecoder.objectValue(WireDecoder.required(obj, "delta", "anthropic", "stream event"), "anthropic", "stream event", "$.delta")
+                    WireDecoder.objectValue(
+                        WireDecoder.required(obj, "delta", "anthropic", "stream event"),
+                        "anthropic",
+                        "stream event",
+                        "$.delta"
+                    )
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }
@@ -709,11 +773,19 @@ private class AnthropicStreamState(
                     // Mid-stream citation: emit a Source, mirroring the non-streaming citation path.
                     "citations_delta" -> citationSourceEvent(delta)?.let { events += it }
                     "input_json_delta" -> {
-                        val text = WireDecoder.requiredString(delta, "partial_json", "anthropic", "stream event", "$.delta")
+                        val text = WireDecoder.requiredString(
+                            delta,
+                            "partial_json",
+                            "anthropic",
+                            "stream event",
+                            "$.delta"
+                        )
                         block.input += text
                         events += StreamEvent.ToolInputDelta(block.id, text)
                     }
-                    null -> return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing delta.type."))
+                    null -> return listOf(
+                        StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing delta.type.")
+                    )
                     // Forward-compatible: ignore unknown delta subtypes (matches upstream Vercel AI
                     // SDK) rather than aborting generation on a delta Anthropic adds later.
                     else -> return emptyList()
@@ -759,7 +831,13 @@ private class AnthropicStreamState(
                             toolCallId = block.id,
                             toolName = toolName,
                             inputJson = inputJson,
-                            providerMetadata = if (block.type != "tool_use") ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))) else ProviderMetadata.None,
+                            providerMetadata = if (block.type != "tool_use") {
+                                ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
+                                    put("providerExecuted", JsonPrimitive(true))
+                                })))
+                            } else {
+                                ProviderMetadata.None
+                            },
                         )
                     }
                 }
@@ -813,9 +891,15 @@ private class AnthropicStreamState(
             totalSteps = 1,
             finishReason = finishReason,
             usage = usage,
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
-                responseId?.let { put("responseId", JsonPrimitive(it)) }
-            }))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "anthropic" to buildJsonObject {
+                            responseId?.let { put("responseId", JsonPrimitive(it)) }
+                        }
+                    )
+                )
+            ),
             rawFinishReason = rawStopReason,
         ),
     )

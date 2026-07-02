@@ -196,14 +196,19 @@ public class TogetherAIProvider(
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+
     /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = compatible.chatModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun completionModel(modelId: ModelId): LanguageModel = compatible.completionModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun reranking(modelId: ModelId): RerankingModel = rerankingModel(modelId.value)
     override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
@@ -258,13 +263,23 @@ private class TogetherAIImageModel(
                 mediaType = "image/png",
                 // Fail loudly on a missing image payload instead of emitting base64="" — a zero-byte
                 // PNG slips past generateImage's empty-list guard and reaches the caller as success.
-                base64 = WireDecoder.requiredString(obj, "b64_json", "togetherai", "image generation response", "$.data[$index]"),
+                base64 = WireDecoder.requiredString(
+                    obj,
+                    "b64_json",
+                    "togetherai",
+                    "image generation response",
+                    "$.data[$index]"
+                ),
             )
         }
         return ImageModelResult(
             images = images,
             warnings = warnings,
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
         )
     }
 }

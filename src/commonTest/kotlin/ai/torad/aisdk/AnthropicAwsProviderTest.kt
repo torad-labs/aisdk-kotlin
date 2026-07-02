@@ -3,9 +3,8 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ANTHROPIC_AWS_VERSION
 import ai.torad.aisdk.providers.ANTHROPIC_VERSION
-import ai.torad.aisdk.providers.AnthropicAwsProviderSettings
 import ai.torad.aisdk.providers.AnthropicAws
-
+import ai.torad.aisdk.providers.AnthropicAwsProviderSettings
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -111,9 +110,11 @@ class AnthropicAwsProviderTest {
         )
 
         val events = drainAllItems(
-            provider.messages(ModelId("claude-sonnet-4-6")).stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}),
+            provider.messages(ModelId("claude-sonnet-4-6")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())
@@ -162,9 +163,11 @@ class AnthropicAwsProviderTest {
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertEquals("advisor", provider.tools.advisor_20260301.name)
-        val result = provider.languageModel("claude-sonnet-4-6").generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        val result = provider.languageModel("claude-sonnet-4-6").generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         val request = fixture.calls.single()
         assertEquals("signed", result.text)
@@ -172,7 +175,11 @@ class AnthropicAwsProviderTest {
         assertEquals("aws-anthropic.test", request.requestHeaders.headerValue("host"))
         assertTrue(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("AWS4-HMAC-SHA256"))
         assertTrue(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("Credential=id/"))
-        assertTrue(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("/aws-external-anthropic/aws4_request"))
+        assertTrue(
+            request.requestHeaders.headerValue(
+                HttpHeaders.Authorization
+            ).orEmpty().contains("/aws-external-anthropic/aws4_request")
+        )
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

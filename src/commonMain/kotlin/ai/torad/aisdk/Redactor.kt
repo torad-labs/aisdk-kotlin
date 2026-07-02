@@ -12,8 +12,10 @@ import kotlinx.serialization.json.contentOrNull
 public interface Redactor {
     /** @since 0.3.0-beta01 */
     public fun redactText(value: String): String
+
     /** @since 0.3.0-beta01 */
     public fun redactHeaders(headers: Map<String, String>): Map<String, String>
+
     /** @since 0.3.0-beta01 */
     public fun redactJson(value: JsonElement): JsonElement
 }

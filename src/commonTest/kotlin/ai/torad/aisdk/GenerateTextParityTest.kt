@@ -3,12 +3,6 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -20,6 +14,12 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class GenerateTextParityTest {
 
@@ -124,7 +124,9 @@ class GenerateTextParityTest {
     @Test
     fun `generate forwards call settings and auto derives JSON response format from output`() = runTest {
         // GIVEN
-        val providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) })))
+        val providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to buildJsonObject {
+            put("reasoningEffort", JsonPrimitive("high"))
+        })))
         val model = CapturingModel(
             generateResult = LanguageModelResult(
                 text = """{"name":"cake","ingredients":[]}""",
@@ -207,7 +209,11 @@ class GenerateTextParityTest {
             toolName = "lookup",
             input = JsonObject(mapOf("q" to JsonPrimitive("ai"))),
         )
-        val source = ContentPart.Source(StreamEvent.SourcePart.SourceType.Url, url = "https://example.com", title = "Example")
+        val source = ContentPart.Source(
+            StreamEvent.SourcePart.SourceType.Url,
+            url = "https://example.com",
+            title = "Example"
+        )
         val file = ContentPart.File(mediaType = "text/plain", base64 = "b2s=", filename = "ok.txt")
         val model = CapturingModel(
             generateResult = LanguageModelResult(
@@ -215,7 +221,9 @@ class GenerateTextParityTest {
                 toolCalls = listOf(toolCall),
                 finishReason = FinishReason.Other,
                 usage = Usage.of(promptTokens = 10, completionTokens = 11),
-                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("mock" to buildJsonObject { put("trace", JsonPrimitive("abc")) }))),
+                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("mock" to buildJsonObject {
+                    put("trace", JsonPrimitive("abc"))
+                }))),
                 content = listOf(
                     ContentPart.Text("answer"),
                     ContentPart.Reasoning("because"),

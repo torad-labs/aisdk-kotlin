@@ -373,8 +373,13 @@ public interface BlackForestLabsProvider : Provider {
     /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel
     override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 }
 
 /** @since 0.3.0-beta01 */
@@ -387,7 +392,10 @@ public fun BlackForestLabs(
 public val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsProvider {
     override val providerId: String = "black-forest-labs"
     override fun image(modelId: ModelId): ImageModel =
-        throw UnsupportedFunctionalityError("black-forest-labs", "Black Forest Labs provider is not configured. Use BlackForestLabs(client, settings).")
+        throw UnsupportedFunctionalityError(
+            "black-forest-labs",
+            "Black Forest Labs provider is not configured. Use BlackForestLabs(client, settings)."
+        )
 }
 
 private class DefaultBlackForestLabsProvider(
@@ -396,8 +404,16 @@ private class DefaultBlackForestLabsProvider(
 ) : BlackForestLabsProvider {
     override val providerId: String = "black-forest-labs"
     override fun image(modelId: ModelId): ImageModel = BlackForestLabsImageModel(client, settings, modelId.value)
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
+        providerId,
+        "languageModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 }
 
 private class BlackForestLabsImageModel(
@@ -441,9 +457,13 @@ private class BlackForestLabsImageModel(
             images = listOf(downloaded.file),
             warnings = args.warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = downloaded.headers),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-                "blackForestLabs" to bflProviderMetadata(submitBody, pollResult.result),
-            ))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "blackForestLabs" to bflProviderMetadata(submitBody, pollResult.result),
+                    )
+                )
+            ),
         )
     }
 
@@ -548,7 +568,9 @@ private class BlackForestLabsImageModel(
         pollTimeoutMillis: Long,
     ): BflPollResult {
         val interval = pollIntervalMillis.coerceAtLeast(1L)
-        val maxPollAttempts = ceil(pollTimeoutMillis.coerceAtLeast(1L).toDouble() / interval.toDouble()).toInt().coerceAtLeast(1)
+        val maxPollAttempts = ceil(
+            pollTimeoutMillis.coerceAtLeast(1L).toDouble() / interval.toDouble()
+        ).toInt().coerceAtLeast(1)
         repeat(maxPollAttempts) { attempt ->
             abortSignal.throwIfAborted()
             val poll = bflGetJson(client, pollingUrl, headers, abortSignal).value.jsonObject
@@ -622,22 +644,32 @@ private class BlackForestLabsImageModel(
     }
 
     private fun bflProviderMetadata(submit: JsonObject, result: JsonObject): JsonElement = buildJsonObject {
-        put("images", JsonArray(listOf(buildJsonObject {
-            putIfPresent("seed", result["seed"])
-            putIfPresent("start_time", result["start_time"])
-            putIfPresent("end_time", result["end_time"])
-            putIfPresent("duration", result["duration"])
-            putIfPresent("cost", submit["cost"])
-            putIfPresent("inputMegapixels", submit["input_mp"])
-            putIfPresent("outputMegapixels", submit["output_mp"])
-        })))
+        put(
+            "images",
+            JsonArray(
+                listOf(
+                    buildJsonObject {
+                        putIfPresent("seed", result["seed"])
+                        putIfPresent("start_time", result["start_time"])
+                        putIfPresent("end_time", result["end_time"])
+                        putIfPresent("duration", result["duration"])
+                        putIfPresent("cost", submit["cost"])
+                        putIfPresent("inputMegapixels", submit["input_mp"])
+                        putIfPresent("outputMegapixels", submit["output_mp"])
+                    }
+                )
+            )
+        )
     }
 
     private fun bflOptions(providerOptions: ProviderOptions): JsonObject =
         JsonAccess.obj(providerOptions.toMap(), "blackForestLabs") ?: JsonObject(emptyMap())
 
     private fun bflPollUrl(pollingUrl: String, requestId: String): String {
-        val hasId = pollingUrl.substringAfter('?', missingDelimiterValue = "").split('&').any { it.substringBefore('=') == "id" }
+        val hasId = pollingUrl.substringAfter(
+            '?',
+            missingDelimiterValue = ""
+        ).split('&').any { it.substringBefore('=') == "id" }
         if (hasId) return pollingUrl
         val separator = if ('?' in pollingUrl) "&" else "?"
         return "$pollingUrl${separator}id=$requestId"
@@ -708,7 +740,6 @@ private class BlackForestLabsImageModel(
 
 private const val DEFAULT_BFL_POLL_INTERVAL_MILLIS: Long = 500L
 private const val DEFAULT_BFL_POLL_TIMEOUT_MILLIS: Long = 60_000L
-
 
 internal data class BflArgs(
     val body: JsonObject,

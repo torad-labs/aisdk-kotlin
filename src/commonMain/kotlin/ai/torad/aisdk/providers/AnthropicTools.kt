@@ -4,38 +4,26 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import dev.drewhamilton.poko.Poko
-import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
 
 @Poko
 /** @since 0.3.0-beta01 */
 public class AnthropicTools(
     /** @since 0.3.0-beta01 */
     public val advisor_20260301: Tool<JsonElement, JsonElement, Any?> =
-        anthropicProviderTool("advisor", "anthropic.advisor_20260301", "Consult an Anthropic advisor model during generation."),
+        anthropicProviderTool(
+            "advisor",
+            "anthropic.advisor_20260301",
+            "Consult an Anthropic advisor model during generation."
+        ),
     /** @since 0.3.0-beta01 */
     public val bash_20241022: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("bash", "anthropic.bash_20241022", "Use Anthropic's hosted Bash tool."),
@@ -44,13 +32,25 @@ public class AnthropicTools(
         anthropicProviderTool("bash", "anthropic.bash_20250124", "Use Anthropic's hosted Bash tool."),
     /** @since 0.3.0-beta01 */
     public val codeExecution_20250522: Tool<JsonElement, JsonElement, Any?> =
-        anthropicProviderTool("code_execution", "anthropic.code_execution_20250522", "Use Anthropic hosted code execution."),
+        anthropicProviderTool(
+            "code_execution",
+            "anthropic.code_execution_20250522",
+            "Use Anthropic hosted code execution."
+        ),
     /** @since 0.3.0-beta01 */
     public val codeExecution_20250825: Tool<JsonElement, JsonElement, Any?> =
-        anthropicProviderTool("code_execution", "anthropic.code_execution_20250825", "Use Anthropic hosted code execution."),
+        anthropicProviderTool(
+            "code_execution",
+            "anthropic.code_execution_20250825",
+            "Use Anthropic hosted code execution."
+        ),
     /** @since 0.3.0-beta01 */
     public val codeExecution_20260120: Tool<JsonElement, JsonElement, Any?> =
-        anthropicProviderTool("code_execution", "anthropic.code_execution_20260120", "Use Anthropic hosted code execution."),
+        anthropicProviderTool(
+            "code_execution",
+            "anthropic.code_execution_20260120",
+            "Use Anthropic hosted code execution."
+        ),
     /** @since 0.3.0-beta01 */
     public val computer_20241022: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("computer", "anthropic.computer_20241022", "Use Anthropic computer control."),
@@ -71,10 +71,18 @@ public class AnthropicTools(
         anthropicProviderTool("str_replace_editor", "anthropic.text_editor_20250124", "Use Anthropic text editor."),
     /** @since 0.3.0-beta01 */
     public val textEditor_20250429: Tool<JsonElement, JsonElement, Any?> =
-        anthropicProviderTool("str_replace_based_edit_tool", "anthropic.text_editor_20250429", "Use Anthropic text editor."),
+        anthropicProviderTool(
+            "str_replace_based_edit_tool",
+            "anthropic.text_editor_20250429",
+            "Use Anthropic text editor."
+        ),
     /** @since 0.3.0-beta01 */
     public val textEditor_20250728: Tool<JsonElement, JsonElement, Any?> =
-        anthropicProviderTool("str_replace_based_edit_tool", "anthropic.text_editor_20250728", "Use Anthropic text editor."),
+        anthropicProviderTool(
+            "str_replace_based_edit_tool",
+            "anthropic.text_editor_20250728",
+            "Use Anthropic text editor."
+        ),
     /** @since 0.3.0-beta01 */
     public val webFetch_20250910: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("web_fetch", "anthropic.web_fetch_20250910", "Fetch web content through Anthropic."),
@@ -89,10 +97,18 @@ public class AnthropicTools(
         anthropicProviderTool("web_search", "anthropic.web_search_20260209", "Search the web through Anthropic."),
     /** @since 0.3.0-beta01 */
     public val toolSearchRegex_20251119: Tool<JsonElement, JsonElement, Any?> =
-        anthropicProviderTool("tool_search_tool_regex", "anthropic.tool_search_regex_20251119", "Search deferred tools with regex."),
+        anthropicProviderTool(
+            "tool_search_tool_regex",
+            "anthropic.tool_search_regex_20251119",
+            "Search deferred tools with regex."
+        ),
     /** @since 0.3.0-beta01 */
     public val toolSearchBm25_20251119: Tool<JsonElement, JsonElement, Any?> =
-        anthropicProviderTool("tool_search_tool_bm25", "anthropic.tool_search_bm25_20251119", "Search deferred tools with BM25."),
+        anthropicProviderTool(
+            "tool_search_tool_bm25",
+            "anthropic.tool_search_bm25_20251119",
+            "Search deferred tools with BM25."
+        ),
 ) {
     internal companion object {
         internal fun anthropicPrepareTools(
@@ -138,9 +154,13 @@ public class AnthropicTools(
             }
 
             val toolChoice = when (choice) {
-                ToolChoice.Auto -> if (prepared.isEmpty() && disableParallel != true) null else buildJsonObject {
-                    put("type", JsonPrimitive("auto"))
-                    disableParallel?.let { put("disable_parallel_tool_use", JsonPrimitive(it)) }
+                ToolChoice.Auto -> if (prepared.isEmpty() && disableParallel != true) {
+                    null
+                } else {
+                    buildJsonObject {
+                        put("type", JsonPrimitive("auto"))
+                        disableParallel?.let { put("disable_parallel_tool_use", JsonPrimitive(it)) }
+                    }
                 }
                 ToolChoice.Required -> buildJsonObject {
                     put("type", JsonPrimitive("any"))
@@ -185,21 +205,45 @@ public class AnthropicTools(
             return when (providerToolId) {
                 "anthropic.code_execution_20250522" -> {
                     betas += "code-execution-2025-05-22"
-                    buildJsonObject { put("type", JsonPrimitive("code_execution_20250522")); put("name", JsonPrimitive("code_execution")) }
+                    buildJsonObject {
+                        put(
+                            "type",
+                            JsonPrimitive("code_execution_20250522")
+                        );
+                        put("name", JsonPrimitive("code_execution"))
+                    }
                 }
                 "anthropic.code_execution_20250825" -> {
                     betas += "code-execution-2025-08-25"
-                    buildJsonObject { put("type", JsonPrimitive("code_execution_20250825")); put("name", JsonPrimitive("code_execution")) }
+                    buildJsonObject {
+                        put(
+                            "type",
+                            JsonPrimitive("code_execution_20250825")
+                        );
+                        put("name", JsonPrimitive("code_execution"))
+                    }
                 }
                 "anthropic.code_execution_20260120" ->
-                    buildJsonObject { put("type", JsonPrimitive("code_execution_20260120")); put("name", JsonPrimitive("code_execution")) }
+                    buildJsonObject {
+                        put(
+                            "type",
+                            JsonPrimitive("code_execution_20260120")
+                        );
+                        put("name", JsonPrimitive("code_execution"))
+                    }
                 "anthropic.bash_20241022" -> {
                     betas += "computer-use-2024-10-22"
-                    buildJsonObject { put("type", JsonPrimitive("bash_20241022")); put("name", JsonPrimitive("bash")) }
+                    buildJsonObject {
+                        put("type", JsonPrimitive("bash_20241022"));
+                        put("name", JsonPrimitive("bash"))
+                    }
                 }
                 "anthropic.bash_20250124" -> {
                     betas += "computer-use-2025-01-24"
-                    buildJsonObject { put("type", JsonPrimitive("bash_20250124")); put("name", JsonPrimitive("bash")) }
+                    buildJsonObject {
+                        put("type", JsonPrimitive("bash_20250124"));
+                        put("name", JsonPrimitive("bash"))
+                    }
                 }
                 "anthropic.computer_20241022" -> {
                     betas += "computer-use-2024-10-22"
@@ -234,19 +278,43 @@ public class AnthropicTools(
                 }
                 "anthropic.memory_20250818" -> {
                     betas += "context-management-2025-06-27"
-                    buildJsonObject { put("type", JsonPrimitive("memory_20250818")); put("name", JsonPrimitive("memory")) }
+                    buildJsonObject {
+                        put(
+                            "type",
+                            JsonPrimitive("memory_20250818")
+                        );
+                        put("name", JsonPrimitive("memory"))
+                    }
                 }
                 "anthropic.text_editor_20241022" -> {
                     betas += "computer-use-2024-10-22"
-                    buildJsonObject { put("type", JsonPrimitive("text_editor_20241022")); put("name", JsonPrimitive("str_replace_editor")) }
+                    buildJsonObject {
+                        put(
+                            "type",
+                            JsonPrimitive("text_editor_20241022")
+                        );
+                        put("name", JsonPrimitive("str_replace_editor"))
+                    }
                 }
                 "anthropic.text_editor_20250124" -> {
                     betas += "computer-use-2025-01-24"
-                    buildJsonObject { put("type", JsonPrimitive("text_editor_20250124")); put("name", JsonPrimitive("str_replace_editor")) }
+                    buildJsonObject {
+                        put(
+                            "type",
+                            JsonPrimitive("text_editor_20250124")
+                        );
+                        put("name", JsonPrimitive("str_replace_editor"))
+                    }
                 }
                 "anthropic.text_editor_20250429" -> {
                     betas += "computer-use-2025-01-24"
-                    buildJsonObject { put("type", JsonPrimitive("text_editor_20250429")); put("name", JsonPrimitive("str_replace_based_edit_tool")) }
+                    buildJsonObject {
+                        put(
+                            "type",
+                            JsonPrimitive("text_editor_20250429")
+                        );
+                        put("name", JsonPrimitive("str_replace_based_edit_tool"))
+                    }
                 }
                 "anthropic.text_editor_20250728" -> buildJsonObject {
                     put("type", JsonPrimitive("text_editor_20250728"))
@@ -297,9 +365,21 @@ public class AnthropicTools(
                     }
                 }
                 "anthropic.tool_search_regex_20251119" ->
-                    buildJsonObject { put("type", JsonPrimitive("tool_search_tool_regex_20251119")); put("name", JsonPrimitive("tool_search_tool_regex")) }
+                    buildJsonObject {
+                        put(
+                            "type",
+                            JsonPrimitive("tool_search_tool_regex_20251119")
+                        );
+                        put("name", JsonPrimitive("tool_search_tool_regex"))
+                    }
                 "anthropic.tool_search_bm25_20251119" ->
-                    buildJsonObject { put("type", JsonPrimitive("tool_search_tool_bm25_20251119")); put("name", JsonPrimitive("tool_search_tool_bm25")) }
+                    buildJsonObject {
+                        put(
+                            "type",
+                            JsonPrimitive("tool_search_tool_bm25_20251119")
+                        );
+                        put("name", JsonPrimitive("tool_search_tool_bm25"))
+                    }
                 "anthropic.advisor_20260301" -> {
                     betas += "advisor-tool-2026-03-01"
                     buildJsonObject {
@@ -329,11 +409,9 @@ public class AnthropicTools(
     }
 }
 
-
 internal data class PreparedAnthropicTools(
     val tools: JsonArray?,
     val toolChoice: JsonElement?,
     val warnings: List<CallWarning>,
     val betas: Set<String>,
 )
-

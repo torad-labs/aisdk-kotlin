@@ -1,13 +1,12 @@
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 /**
  * Surface tests for the Phase 4C #18 slice — `providerMetadata` on
@@ -50,12 +49,16 @@ class ProviderMetadataTest {
                 inputTokens = Usage.InputTokenBreakdown(total = 1200, cacheRead = 1000, cacheWrite = 50),
                 outputTokens = Usage.OutputTokenBreakdown(total = 80, text = 80),
             ),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-                "anthropic" to buildJsonObject {
-                    put("cache_creation_input_tokens", JsonPrimitive(50))
-                    put("cache_read_input_tokens", JsonPrimitive(1000))
-                },
-            ))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "anthropic" to buildJsonObject {
+                            put("cache_creation_input_tokens", JsonPrimitive(50))
+                            put("cache_read_input_tokens", JsonPrimitive(1000))
+                        },
+                    )
+                )
+            ),
         )
 
         // WHEN
@@ -76,12 +79,16 @@ class ProviderMetadataTest {
             totalSteps = 3,
             finishReason = FinishReason.Stop,
             usage = Usage.of(promptTokens = 500, completionTokens = 200),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-                "openai" to buildJsonObject {
-                    put("reasoning_effort", JsonPrimitive("high"))
-                    put("reasoning_tokens", JsonPrimitive(150))
-                },
-            ))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "openai" to buildJsonObject {
+                            put("reasoning_effort", JsonPrimitive("high"))
+                            put("reasoning_tokens", JsonPrimitive(150))
+                        },
+                    )
+                )
+            ),
         )
 
         // WHEN

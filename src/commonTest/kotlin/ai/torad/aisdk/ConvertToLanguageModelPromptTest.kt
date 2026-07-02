@@ -16,7 +16,9 @@ class ConvertToLanguageModelPromptTest {
 
     @Test
     fun `a data URL image is decoded inline regardless of supportedUrls`() = runTest {
-        val converted = PromptConversion.convertToLanguageModelPrompt(listOf(imageMessage("data:image/png;base64,aW1n")))
+        val converted = PromptConversion.convertToLanguageModelPrompt(
+            listOf(imageMessage("data:image/png;base64,aW1n"))
+        )
         val img = converted.single().content.single() as ContentPart.Image
         assertEquals("aW1n", img.base64)
         assertNull(img.url, "url cleared once inlined")

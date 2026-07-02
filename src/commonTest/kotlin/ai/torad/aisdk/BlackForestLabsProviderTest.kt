@@ -1,12 +1,12 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.BLACK_FOREST_LABS_VERSION
+import ai.torad.aisdk.providers.BlackForestLabs
 import ai.torad.aisdk.providers.BlackForestLabsProviderSettings
 import ai.torad.aisdk.providers.blackForestLabs
-import ai.torad.aisdk.providers.BlackForestLabs
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -19,7 +19,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import kotlinx.serialization.json.JsonObject
 
 class BlackForestLabsProviderTest {
     @Test
@@ -56,27 +55,35 @@ class BlackForestLabsProviderTest {
                 prompt("a detailed city model")
                 size("1024x512")
                 seed(7)
-                files(listOf(
-                                    ImageGenerationFile(url = "https://example.com/ref.png"),
-                                    ImageGenerationFile(mediaType = "image/png", base64 = "abc123"),
-                                ))
+                files(
+                    listOf(
+                        ImageGenerationFile(url = "https://example.com/ref.png"),
+                        ImageGenerationFile(mediaType = "image/png", base64 = "abc123"),
+                    )
+                )
                 mask(ImageGenerationFile(mediaType = "image/png", base64 = "mask123"))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "blackForestLabs" to buildJsonObject {
-                                        put("steps", JsonPrimitive(4))
-                                        put("guidance", JsonPrimitive(2.5))
-                                        put("imagePromptStrength", JsonPrimitive(0.7))
-                                        put("imagePrompt", JsonPrimitive("prompt-image"))
-                                        put("outputFormat", JsonPrimitive("jpeg"))
-                                        put("promptUpsampling", JsonPrimitive(true))
-                                        put("raw", JsonPrimitive(false))
-                                        put("safetyTolerance", JsonPrimitive(3))
-                                        put("webhookSecret", JsonPrimitive("secret"))
-                                        put("webhookUrl", JsonPrimitive("https://hooks.example/bfl"))
-                                        put("pollIntervalMillis", JsonPrimitive(1))
-                                        put("pollTimeoutMillis", JsonPrimitive(1))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "blackForestLabs" to buildJsonObject {
+                                    put("steps", JsonPrimitive(4))
+                                    put("guidance", JsonPrimitive(2.5))
+                                    put("imagePromptStrength", JsonPrimitive(0.7))
+                                    put("imagePrompt", JsonPrimitive("prompt-image"))
+                                    put("outputFormat", JsonPrimitive("jpeg"))
+                                    put("promptUpsampling", JsonPrimitive(true))
+                                    put("raw", JsonPrimitive(false))
+                                    put("safetyTolerance", JsonPrimitive(3))
+                                    put("webhookSecret", JsonPrimitive("secret"))
+                                    put("webhookUrl", JsonPrimitive("https://hooks.example/bfl"))
+                                    put("pollIntervalMillis", JsonPrimitive(1))
+                                    put("pollTimeoutMillis", JsonPrimitive(1))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -144,16 +151,24 @@ class BlackForestLabsProviderTest {
                 prompt("replace the sky")
                 size("1024x1024")
                 aspectRatio("16:9")
-                files(listOf(
-                                    ImageGenerationFile(url = "https://example.com/input.png"),
-                                    ImageGenerationFile(url = "https://example.com/second.png"),
-                                ))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "blackForestLabs" to buildJsonObject {
-                                        put("width", JsonPrimitive(1280))
-                                        put("height", JsonPrimitive(720))
-                                    },
-                                ))))
+                files(
+                    listOf(
+                        ImageGenerationFile(url = "https://example.com/input.png"),
+                        ImageGenerationFile(url = "https://example.com/second.png"),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "blackForestLabs" to buildJsonObject {
+                                    put("width", JsonPrimitive(1280))
+                                    put("height", JsonPrimitive(720))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -188,10 +203,18 @@ class BlackForestLabsProviderTest {
             model.generate(
                 ImageGenerationParams {
                     prompt("x")
-                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("blackForestLabs" to buildJsonObject {
-                                            put("pollIntervalMillis", JsonPrimitive(1))
-                                            put("pollTimeoutMillis", JsonPrimitive(1))
-                                        }))))
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf(
+                                    "blackForestLabs" to buildJsonObject {
+                                        put("pollIntervalMillis", JsonPrimitive(1))
+                                        put("pollTimeoutMillis", JsonPrimitive(1))
+                                    }
+                                )
+                            )
+                        )
+                    )
                 },
             )
         }
@@ -229,10 +252,18 @@ class BlackForestLabsProviderTest {
             model.generate(
                 ImageGenerationParams {
                     prompt("x")
-                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("blackForestLabs" to buildJsonObject {
-                                            put("pollIntervalMillis", JsonPrimitive(1))
-                                            put("pollTimeoutMillis", JsonPrimitive(100))
-                                        }))))
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf(
+                                    "blackForestLabs" to buildJsonObject {
+                                        put("pollIntervalMillis", JsonPrimitive(1))
+                                        put("pollTimeoutMillis", JsonPrimitive(100))
+                                    }
+                                )
+                            )
+                        )
+                    )
                 },
             )
         }

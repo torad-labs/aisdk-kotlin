@@ -2,11 +2,13 @@
 
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.MISTRAL_VERSION
+import ai.torad.aisdk.providers.Mistral
 import ai.torad.aisdk.providers.MistralProviderSettings
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
@@ -19,10 +21,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Mistral
-import kotlinx.serialization.json.JsonObject
 
 class MistralProviderTest {
     @Test
@@ -62,16 +61,22 @@ class MistralProviderTest {
                 frequencyPenalty(0.2f)
                 presencePenalty(0.1f)
                 seed(77)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "mistral" to buildJsonObject {
-                        put("safePrompt", JsonPrimitive(true))
-                        put("documentImageLimit", JsonPrimitive(2))
-                        put("documentPageLimit", JsonPrimitive(8))
-                        put("parallelToolCalls", JsonPrimitive(false))
-                        put("reasoningEffort", JsonPrimitive("high"))
-                        put("strictJsonSchema", JsonPrimitive(false))
-                    },
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "mistral" to buildJsonObject {
+                                    put("safePrompt", JsonPrimitive(true))
+                                    put("documentImageLimit", JsonPrimitive(2))
+                                    put("documentPageLimit", JsonPrimitive(8))
+                                    put("parallelToolCalls", JsonPrimitive(false))
+                                    put("reasoningEffort", JsonPrimitive("high"))
+                                    put("strictJsonSchema", JsonPrimitive(false))
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -129,8 +134,14 @@ class MistralProviderTest {
         )
 
         assertEquals("mistral.embedding", provider.embeddingModel("mistral-embed").provider)
-        assertEquals(provider.embedding(ModelId("mistral-embed")).modelId, provider.textEmbedding(ModelId("mistral-embed")).modelId)
-        assertEquals(provider.embedding(ModelId("mistral-embed")).modelId, provider.textEmbeddingModel(ModelId("mistral-embed")).modelId)
+        assertEquals(
+            provider.embedding(ModelId("mistral-embed")).modelId,
+            provider.textEmbedding(ModelId("mistral-embed")).modelId
+        )
+        assertEquals(
+            provider.embedding(ModelId("mistral-embed")).modelId,
+            provider.textEmbeddingModel(ModelId("mistral-embed")).modelId
+        )
         assertEquals(32, provider.embedding(ModelId("mistral-embed")).maxEmbeddingsPerCall)
         assertEquals(false, provider.embedding(ModelId("mistral-embed")).supportsParallelCalls)
         assertEquals(listOf(listOf(3f, 4f), listOf(1f, 2f)), result.embeddings)
@@ -163,21 +174,25 @@ class MistralProviderTest {
         val provider = Mistral(fixture.httpClient(), MistralProviderSettings { apiKey("key") })
         provider.chat(ModelId("mistral-small-latest")).generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    UserMessage("go"),
-                    ModelMessage(
-                        MessageRole.Assistant,
-                        listOf(ContentPart.ToolCall("t1", "lookup", buildJsonObject {})),
-                    ),
-                    ModelMessage(
-                        MessageRole.Tool,
-                        listOf(ContentPart.ToolResult("t1", "lookup", JsonPrimitive("done"))),
-                    ),
-                ))
-                tools(listOf(
-                    LanguageModelTool("lookup", "d", "{\"type\":\"object\"}"),
-                    LanguageModelTool("other", "d", "{\"type\":\"object\"}"),
-                ))
+                messages(
+                    listOf(
+                        UserMessage("go"),
+                        ModelMessage(
+                            MessageRole.Assistant,
+                            listOf(ContentPart.ToolCall("t1", "lookup", buildJsonObject {})),
+                        ),
+                        ModelMessage(
+                            MessageRole.Tool,
+                            listOf(ContentPart.ToolResult("t1", "lookup", JsonPrimitive("done"))),
+                        ),
+                    )
+                )
+                tools(
+                    listOf(
+                        LanguageModelTool("lookup", "d", "{\"type\":\"object\"}"),
+                        LanguageModelTool("other", "d", "{\"type\":\"object\"}"),
+                    )
+                )
                 toolChoice(ToolChoice.Specific("lookup"))
             },
         )
@@ -252,9 +267,11 @@ class MistralProviderTest {
             },
         )
         val events = drainAllItems(
-            provider.chat(ModelId("magistral-small-2507")).stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}),
+            provider.chat(ModelId("magistral-small-2507")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ),
         )
 
         assertEquals("Final answer.", generated.text)
@@ -329,28 +346,46 @@ class MistralProviderTest {
         val provider = Mistral(fixture.httpClient(), MistralProviderSettings { apiKey("key") })
         val model = provider.chat(ModelId("mistral-small-latest"))
 
-        val generatedModelLength = model.generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
-        val generatedLength = model.generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
-        val generatedStop = model.generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
-        val streamedModelLength = drainAllItems(model.stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val generatedModelLength = model.generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
+        val generatedLength = model.generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
+        val generatedStop = model.generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
+        val streamedModelLength = drainAllItems(
+            model.stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
             .filterIsInstance<StreamEvent.Finish>()
             .single()
-        val streamedLength = drainAllItems(model.stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val streamedLength = drainAllItems(
+            model.stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
             .filterIsInstance<StreamEvent.Finish>()
             .single()
-        val streamedStop = drainAllItems(model.stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val streamedStop = drainAllItems(
+            model.stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
             .filterIsInstance<StreamEvent.Finish>()
             .single()
 
@@ -366,7 +401,9 @@ class MistralProviderTest {
 
     @Test
     fun `unsupported model families and unconfigured singleton fail explicitly`() {
-        val provider = Mistral(TestServer.createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings { apiKey("key") })
+        val provider = Mistral(TestServer.createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings {
+            apiKey("key")
+        })
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("pixtral") }
     }

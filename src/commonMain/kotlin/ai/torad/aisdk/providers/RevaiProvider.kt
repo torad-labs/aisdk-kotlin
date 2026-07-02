@@ -28,7 +28,6 @@ import kotlinx.serialization.json.jsonObject
 
 public const val REVAI_VERSION: String = "2.0.33"
 
-
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -374,11 +373,17 @@ public class RevaiProvider(
         RevaiTranscriptionModel(client, settings, modelId.value)
 
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(
+        modelId: String
+    ): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun languageModel(
+        modelId: String
+    ): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
+    override fun embeddingModel(
+        modelId: String
+    ): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
@@ -474,7 +479,10 @@ private class RevaiTranscriptionModel(
                             Base64Codec.decode(params.audio.base64),
                             Headers.build {
                                 append(HttpHeaders.ContentType, params.audio.mediaType)
-                                append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"$filename\"")
+                                append(
+                                    HttpHeaders.ContentDisposition,
+                                    "${ContentDisposition.File}; filename=\"$filename\""
+                                )
                             },
                         )
                         append("config", aiSdkOutputJson.encodeToString(JsonElement.serializer(), config))
@@ -593,7 +601,6 @@ private class RevaiTranscriptionModel(
 }
 
 private const val REVAI_BASE_URL: String = "https://api.rev.ai"
-
 
 internal data class RevaiTranscriptMapping(
     val text: String,

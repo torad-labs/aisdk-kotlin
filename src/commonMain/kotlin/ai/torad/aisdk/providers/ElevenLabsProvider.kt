@@ -22,15 +22,12 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 
 public const val ELEVENLABS_VERSION: String = "2.0.33"
-
 
 @Serializable
 @Poko
@@ -493,7 +490,13 @@ private class ElevenLabsTranscriptionModel(
                 ),
             )
         }
-        val response = with(HttpTransport) { rawResponse.toJsonResponse(url = "https://api.elevenlabs.io/v1/speech-to-text", errorMessage = ::elevenLabsErrorMessage) }
+        val response =
+            with(HttpTransport) {
+                rawResponse.toJsonResponse(
+                    url = "https://api.elevenlabs.io/v1/speech-to-text",
+                    errorMessage = ::elevenLabsErrorMessage
+                )
+            }
         val value = response.value.jsonObject
         val words = (JsonAccess.arr(value, "words")).orEmpty()
         return TranscriptionModelResult(
@@ -506,7 +509,11 @@ private class ElevenLabsTranscriptionModel(
                     endSeconds = (obj["end"] as? JsonPrimitive)?.floatOrNull,
                 )
             },
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
             language = (value["language_code"] as? JsonPrimitive)?.contentOrNull,
             durationInSeconds = ((words.lastOrNull() as? JsonObject)?.get("end") as? JsonPrimitive)?.floatOrNull,
         )
@@ -523,7 +530,6 @@ private class ElevenLabsTranscriptionModel(
 }
 
 private const val ELEVENLABS_DEFAULT_VOICE_ID: String = "21m00Tcm4TlvDq8ikWAM"
-
 
 internal class ElevenLabsBinaryResponse(
     val bytes: ByteArray,

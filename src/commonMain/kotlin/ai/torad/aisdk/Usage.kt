@@ -43,7 +43,7 @@ public class Usage(
          * replaces the old secondary constructor. Unambiguous because
          * BOTH params are required; the primary constructor's `Usage()`
          * no-arg path goes through default breakdown defaults.
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          */
         public fun of(promptTokens: Int, completionTokens: Int): Usage = Usage(
             inputTokens = InputTokenBreakdown(total = promptTokens),
@@ -254,7 +254,7 @@ public class Usage(
  * Arithmetic over [Usage]. The `+` operator lives here as a member-extension
  * (decision-C: no loose top-level funs). Call sites bring it into scope with
  * `with(UsageArithmetic) { a + b }` or a member import.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public object UsageArithmetic {
     public operator fun Usage.plus(other: Usage): Usage = Usage(
@@ -284,6 +284,7 @@ public enum class FinishReason {
     ToolCalls,
     ContentFilter,
     Error,
+
     /** v6: generation paused because tool(s) need approval. */
     ToolApprovalRequested,
     Other,

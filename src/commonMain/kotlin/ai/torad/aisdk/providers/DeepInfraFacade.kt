@@ -16,9 +16,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val DEEPINFRA_VERSION: String = "2.0.52"
@@ -95,12 +93,18 @@ public class DeepInfraProvider(
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+
     /** @since 0.3.0-beta01 */
-    public fun chatModel(modelId: ModelId): LanguageModel = DeepInfraChatLanguageModel(compatible.chatModel(modelId.value))
+    public fun chatModel(
+        modelId: ModelId
+    ): LanguageModel = DeepInfraChatLanguageModel(compatible.chatModel(modelId.value))
+
     /** @since 0.3.0-beta01 */
     public fun completionModel(modelId: ModelId): LanguageModel = compatible.completionModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
     override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
@@ -256,7 +260,11 @@ private class DeepInfraImageModel(
             }
         return ImageModelResult(
             images = images,
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
         )
     }
 }

@@ -342,8 +342,16 @@ public class KlingAIProvider(
     public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
 
     override fun videoModel(modelId: String): VideoModel = KlingAIVideoModel(client, settings, modelId)
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
+        providerId,
+        "languageModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
@@ -451,12 +459,16 @@ private class KlingAIVideoModel(
             videos = generated,
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = headers),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-                "klingai" to buildJsonObject {
-                    put("taskId", JsonPrimitive(taskId))
-                    put("videos", JsonArray(videos.mapNotNull { (it as? JsonObject)?.let(::klingAIVideoMetadata) }))
-                },
-            ))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "klingai" to buildJsonObject {
+                            put("taskId", JsonPrimitive(taskId))
+                            put("videos", JsonArray(videos.mapNotNull { (it as? JsonObject)?.let(::klingAIVideoMetadata) }))
+                        },
+                    )
+                )
+            ),
         )
     }
 
@@ -551,7 +563,10 @@ private class KlingAIVideoModel(
         val characterOrientation = (options["characterOrientation"] as? JsonPrimitive)?.contentOrNull
         val mode = (options["mode"] as? JsonPrimitive)?.contentOrNull
         if (videoUrl.isNullOrBlank() || characterOrientation.isNullOrBlank() || mode.isNullOrBlank()) {
-            throw InvalidArgumentError("providerOptions", "KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode.")
+            throw InvalidArgumentError(
+                "providerOptions",
+                "KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode."
+            )
         }
         return buildJsonObject {
             put("model_name", JsonPrimitive(klingAIModelName(modelId, KlingAIVideoMode.MotionControl)))
@@ -576,10 +591,19 @@ private class KlingAIVideoModel(
     }
 
     private fun klingAIStandardWarnings(params: VideoGenerationParams): List<CallWarning> = buildList {
-        if (params.resolution != null) add(CallWarning("unsupported", "KlingAI video models do not support the resolution option."))
-        if (params.seed != null) add(CallWarning("unsupported", "KlingAI video models do not support seed for deterministic generation."))
+        if (params.resolution != null) add(
+            CallWarning("unsupported", "KlingAI video models do not support the resolution option.")
+        )
+        if (params.seed != null) add(
+            CallWarning("unsupported", "KlingAI video models do not support seed for deterministic generation.")
+        )
         if (params.fps != null) add(CallWarning("unsupported", "KlingAI video models do not support custom FPS."))
-        if (params.n > 1) add(CallWarning("unsupported", "KlingAI video models do not support generating multiple videos per call. Only 1 video will be generated."))
+        if (params.n > 1) add(
+            CallWarning(
+                "unsupported",
+                "KlingAI video models do not support generating multiple videos per call. Only 1 video will be generated."
+            )
+        )
     }
 
     private fun klingAIPassthroughOptions(builder: kotlinx.serialization.json.JsonObjectBuilder, options: JsonObject) {

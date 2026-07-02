@@ -1,11 +1,11 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.BasetenEmbeddingModelOptions
 import ai.torad.aisdk.providers.AlibabaEmbeddingModelOptions
 import ai.torad.aisdk.providers.AlibabaLanguageModelOptions
 import ai.torad.aisdk.providers.AlibabaVideoModelOptions
 import ai.torad.aisdk.providers.AssemblyAICustomSpelling
 import ai.torad.aisdk.providers.AssemblyAITranscriptionModelOptions
+import ai.torad.aisdk.providers.BasetenEmbeddingModelOptions
 import ai.torad.aisdk.providers.BlackForestLabsImageModelOptions
 import ai.torad.aisdk.providers.ByteDanceVideoProviderOptions
 import ai.torad.aisdk.providers.CohereEmbeddingModelOptions
@@ -13,6 +13,8 @@ import ai.torad.aisdk.providers.CohereLanguageModelOptions
 import ai.torad.aisdk.providers.CohereRerankingModelOptions
 import ai.torad.aisdk.providers.CohereThinkingOptions
 import ai.torad.aisdk.providers.DeepSeekLanguageModelOptions
+import ai.torad.aisdk.providers.DeepgramSpeechModelOptions
+import ai.torad.aisdk.providers.DeepgramTranscriptionModelOptions
 import ai.torad.aisdk.providers.ElevenLabsSpeechModelOptions
 import ai.torad.aisdk.providers.ElevenLabsTranscriptionModelOptions
 import ai.torad.aisdk.providers.FalImageModelOptions
@@ -31,15 +33,13 @@ import ai.torad.aisdk.providers.LMNTSpeechModelOptions
 import ai.torad.aisdk.providers.LumaImageModelOptions
 import ai.torad.aisdk.providers.MistralLanguageModelOptions
 import ai.torad.aisdk.providers.MoonshotAILanguageModelOptions
-import ai.torad.aisdk.providers.ProdiaLanguageModelOptions
 import ai.torad.aisdk.providers.ProdiaImageModelOptions
+import ai.torad.aisdk.providers.ProdiaLanguageModelOptions
 import ai.torad.aisdk.providers.ProdiaVideoModelOptions
 import ai.torad.aisdk.providers.QuiverAIImageModelOptions
 import ai.torad.aisdk.providers.ReplicateImageModelOptions
 import ai.torad.aisdk.providers.ReplicateVideoModelOptions
 import ai.torad.aisdk.providers.RevaiTranscriptionModelOptions
-import ai.torad.aisdk.providers.DeepgramSpeechModelOptions
-import ai.torad.aisdk.providers.DeepgramTranscriptionModelOptions
 import ai.torad.aisdk.providers.TogetherAIImageModelOptions
 import ai.torad.aisdk.providers.TogetherAIRerankingModelOptions
 import ai.torad.aisdk.providers.VoyageEmbeddingModelOptions
@@ -67,21 +67,28 @@ class ProviderModelOptionsBuilderTest {
             thinking(thinking)
         }
         val equal = CohereLanguageModelOptions {
-            thinking(CohereThinkingOptions {
-                type("enabled")
-                tokenBudget(512)
-            })
+            thinking(
+                CohereThinkingOptions {
+                    type("enabled")
+                    tokenBudget(512)
+                }
+            )
         }
         val different = CohereLanguageModelOptions {
-            thinking(CohereThinkingOptions {
-                type("disabled")
-            })
+            thinking(
+                CohereThinkingOptions {
+                    type("disabled")
+                }
+            )
         }
 
         assertEquals(equal, options)
         assertEquals(equal.hashCode(), options.hashCode())
         assertNotEquals(different, options)
-        assertEquals(options, aiSdkJson.decodeFromString<CohereLanguageModelOptions>(aiSdkOutputJson.encodeToString(options)))
+        assertEquals(
+            options,
+            aiSdkJson.decodeFromString<CohereLanguageModelOptions>(aiSdkOutputJson.encodeToString(options))
+        )
     }
 
     @Test
@@ -102,18 +109,30 @@ class ProviderModelOptionsBuilderTest {
         }
 
         assertEquals("search_document", cohere.inputType)
-        assertEquals(cohere, CohereEmbeddingModelOptions {
-            inputType("search_document")
-            truncate("END")
-            outputDimension(512)
-        })
-        assertEquals(voyage, aiSdkJson.decodeFromString<VoyageEmbeddingModelOptions>(aiSdkOutputJson.encodeToString(voyage)))
-        assertEquals(baseten, BasetenEmbeddingModelOptions {
-            raw(mapOf("normalize" to JsonPrimitive(true)))
-        })
-        assertNotEquals(baseten, BasetenEmbeddingModelOptions {
-            raw(mapOf("normalize" to JsonPrimitive(false)))
-        })
+        assertEquals(
+            cohere,
+            CohereEmbeddingModelOptions {
+                inputType("search_document")
+                truncate("END")
+                outputDimension(512)
+            }
+        )
+        assertEquals(
+            voyage,
+            aiSdkJson.decodeFromString<VoyageEmbeddingModelOptions>(aiSdkOutputJson.encodeToString(voyage))
+        )
+        assertEquals(
+            baseten,
+            BasetenEmbeddingModelOptions {
+                raw(mapOf("normalize" to JsonPrimitive(true)))
+            }
+        )
+        assertNotEquals(
+            baseten,
+            BasetenEmbeddingModelOptions {
+                raw(mapOf("normalize" to JsonPrimitive(false)))
+            }
+        )
     }
 
     @Test
@@ -130,17 +149,29 @@ class ProviderModelOptionsBuilderTest {
             rankFields(listOf("title", "body"))
         }
 
-        assertEquals(cohere, CohereRerankingModelOptions {
-            maxTokensPerDoc(400)
-            priority(2)
-        })
-        assertEquals(voyage, aiSdkJson.decodeFromString<VoyageRerankingModelOptions>(aiSdkOutputJson.encodeToString(voyage)))
-        assertEquals(together, TogetherAIRerankingModelOptions {
-            rankFields(listOf("title", "body"))
-        })
-        assertNotEquals(together, TogetherAIRerankingModelOptions {
-            rankFields(listOf("body"))
-        })
+        assertEquals(
+            cohere,
+            CohereRerankingModelOptions {
+                maxTokensPerDoc(400)
+                priority(2)
+            }
+        )
+        assertEquals(
+            voyage,
+            aiSdkJson.decodeFromString<VoyageRerankingModelOptions>(aiSdkOutputJson.encodeToString(voyage))
+        )
+        assertEquals(
+            together,
+            TogetherAIRerankingModelOptions {
+                rankFields(listOf("title", "body"))
+            }
+        )
+        assertNotEquals(
+            together,
+            TogetherAIRerankingModelOptions {
+                rankFields(listOf("body"))
+            }
+        )
     }
 
     @Test
@@ -169,10 +200,14 @@ class ProviderModelOptionsBuilderTest {
         val assembly = AssemblyAITranscriptionModelOptions {
             languageCode("en")
             autoChapters(true)
-            customSpelling(listOf(AssemblyAICustomSpelling {
-                from(listOf("ai sdk"))
-                to("AI SDK")
-            }))
+            customSpelling(
+                listOf(
+                    AssemblyAICustomSpelling {
+                        from(listOf("ai sdk"))
+                        to("AI SDK")
+                    }
+                )
+            )
             wordBoost(listOf("torad"))
         }
         val blackForestLabs = BlackForestLabsImageModelOptions {
@@ -229,35 +264,60 @@ class ProviderModelOptionsBuilderTest {
             fillerWords(false)
         }
 
-        assertEquals(alibabaEmbedding, aiSdkJson.decodeFromString<AlibabaEmbeddingModelOptions>(aiSdkOutputJson.encodeToString(alibabaEmbedding)))
-        assertEquals(alibabaLanguage, AlibabaLanguageModelOptions {
-            enableThinking(true)
-            thinkingBudget(512)
-            parallelToolCalls(false)
-        })
-        assertNotEquals(alibabaVideo, AlibabaVideoModelOptions {
-            negativePrompt("different")
-        })
-        assertEquals(assembly, aiSdkJson.decodeFromString<AssemblyAITranscriptionModelOptions>(aiSdkOutputJson.encodeToString(assembly)))
-        assertEquals(blackForestLabs, aiSdkJson.decodeFromString<BlackForestLabsImageModelOptions>(aiSdkOutputJson.encodeToString(blackForestLabs)))
-        assertEquals(byteDance, ByteDanceVideoProviderOptions {
-            watermark(false)
-            generateAudio(true)
-            cameraFixed(true)
-            returnLastFrame(false)
-            serviceTier("standard")
-            draft(false)
-            lastFrameImage("last-frame")
-            referenceImages(listOf("image-1"))
-            referenceVideos(listOf("video-1"))
-            referenceAudio(listOf("audio-1"))
-            pollIntervalMs(300)
-            pollTimeoutMs(6_000)
-        })
-        assertEquals(deepgramSpeech, aiSdkJson.decodeFromString<DeepgramSpeechModelOptions>(aiSdkOutputJson.encodeToString(deepgramSpeech)))
+        assertEquals(
+            alibabaEmbedding,
+            aiSdkJson.decodeFromString<AlibabaEmbeddingModelOptions>(aiSdkOutputJson.encodeToString(alibabaEmbedding))
+        )
+        assertEquals(
+            alibabaLanguage,
+            AlibabaLanguageModelOptions {
+                enableThinking(true)
+                thinkingBudget(512)
+                parallelToolCalls(false)
+            }
+        )
+        assertNotEquals(
+            alibabaVideo,
+            AlibabaVideoModelOptions {
+                negativePrompt("different")
+            }
+        )
+        assertEquals(
+            assembly,
+            aiSdkJson.decodeFromString<AssemblyAITranscriptionModelOptions>(aiSdkOutputJson.encodeToString(assembly))
+        )
+        assertEquals(
+            blackForestLabs,
+            aiSdkJson.decodeFromString<BlackForestLabsImageModelOptions>(
+                aiSdkOutputJson.encodeToString(blackForestLabs)
+            )
+        )
+        assertEquals(
+            byteDance,
+            ByteDanceVideoProviderOptions {
+                watermark(false)
+                generateAudio(true)
+                cameraFixed(true)
+                returnLastFrame(false)
+                serviceTier("standard")
+                draft(false)
+                lastFrameImage("last-frame")
+                referenceImages(listOf("image-1"))
+                referenceVideos(listOf("video-1"))
+                referenceAudio(listOf("audio-1"))
+                pollIntervalMs(300)
+                pollTimeoutMs(6_000)
+            }
+        )
+        assertEquals(
+            deepgramSpeech,
+            aiSdkJson.decodeFromString<DeepgramSpeechModelOptions>(aiSdkOutputJson.encodeToString(deepgramSpeech))
+        )
         assertEquals(
             deepgramTranscription,
-            aiSdkJson.decodeFromString<DeepgramTranscriptionModelOptions>(aiSdkOutputJson.encodeToString(deepgramTranscription)),
+            aiSdkJson.decodeFromString<DeepgramTranscriptionModelOptions>(
+                aiSdkOutputJson.encodeToString(deepgramTranscription)
+            ),
         )
     }
 
@@ -316,21 +376,42 @@ class ProviderModelOptionsBuilderTest {
             raw(mapOf("user" to JsonPrimitive("test-user")))
         }
 
-        assertEquals(deepSeek, aiSdkJson.decodeFromString<DeepSeekLanguageModelOptions>(aiSdkOutputJson.encodeToString(deepSeek)))
-        assertEquals(elevenLabsSpeech, aiSdkJson.decodeFromString<ElevenLabsSpeechModelOptions>(aiSdkOutputJson.encodeToString(elevenLabsSpeech)))
-        assertEquals(elevenLabsTranscription, ElevenLabsTranscriptionModelOptions {
-            languageCode("en")
-            tagAudioEvents(true)
-            numSpeakers(2)
-            timestampsGranularity("word")
-            diarize(true)
-            fileFormat("mp3")
-        })
-        assertEquals(falImage, aiSdkJson.decodeFromString<FalImageModelOptions>(aiSdkOutputJson.encodeToString(falImage)))
-        assertEquals(falSpeech, aiSdkJson.decodeFromString<FalSpeechModelOptions>(aiSdkOutputJson.encodeToString(falSpeech)))
-        assertEquals(falTranscription, aiSdkJson.decodeFromString<FalTranscriptionModelOptions>(aiSdkOutputJson.encodeToString(falTranscription)))
+        assertEquals(
+            deepSeek,
+            aiSdkJson.decodeFromString<DeepSeekLanguageModelOptions>(aiSdkOutputJson.encodeToString(deepSeek))
+        )
+        assertEquals(
+            elevenLabsSpeech,
+            aiSdkJson.decodeFromString<ElevenLabsSpeechModelOptions>(aiSdkOutputJson.encodeToString(elevenLabsSpeech))
+        )
+        assertEquals(
+            elevenLabsTranscription,
+            ElevenLabsTranscriptionModelOptions {
+                languageCode("en")
+                tagAudioEvents(true)
+                numSpeakers(2)
+                timestampsGranularity("word")
+                diarize(true)
+                fileFormat("mp3")
+            }
+        )
+        assertEquals(
+            falImage,
+            aiSdkJson.decodeFromString<FalImageModelOptions>(aiSdkOutputJson.encodeToString(falImage))
+        )
+        assertEquals(
+            falSpeech,
+            aiSdkJson.decodeFromString<FalSpeechModelOptions>(aiSdkOutputJson.encodeToString(falSpeech))
+        )
+        assertEquals(
+            falTranscription,
+            aiSdkJson.decodeFromString<FalTranscriptionModelOptions>(aiSdkOutputJson.encodeToString(falTranscription))
+        )
         assertNotEquals(falVideo, FalVideoModelOptions { resolution("1080p") })
-        assertEquals(fireworks, aiSdkJson.decodeFromString<FireworksEmbeddingModelOptions>(aiSdkOutputJson.encodeToString(fireworks)))
+        assertEquals(
+            fireworks,
+            aiSdkJson.decodeFromString<FireworksEmbeddingModelOptions>(aiSdkOutputJson.encodeToString(fireworks))
+        )
 
         val falTranscriptionDefaults = FalTranscriptionModelOptions()
         assertEquals("en", falTranscriptionDefaults.language)
@@ -425,21 +506,36 @@ class ProviderModelOptionsBuilderTest {
             maxPollAttempts(4)
         }
 
-        assertEquals(fireworks, aiSdkJson.decodeFromString<FireworksLanguageModelOptions>(aiSdkOutputJson.encodeToString(fireworks)))
-        assertEquals(gladia, aiSdkJson.decodeFromString<GladiaTranscriptionModelOptions>(aiSdkOutputJson.encodeToString(gladia)))
-        assertEquals(groqLanguage, aiSdkJson.decodeFromString<GroqLanguageModelOptions>(aiSdkOutputJson.encodeToString(groqLanguage)))
-        assertEquals(groqTranscription, GroqTranscriptionModelOptions {
-            language("en")
-            prompt("Domain terms")
-            temperature(0.2f)
-            responseFormat("json")
-        })
+        assertEquals(
+            fireworks,
+            aiSdkJson.decodeFromString<FireworksLanguageModelOptions>(aiSdkOutputJson.encodeToString(fireworks))
+        )
+        assertEquals(
+            gladia,
+            aiSdkJson.decodeFromString<GladiaTranscriptionModelOptions>(aiSdkOutputJson.encodeToString(gladia))
+        )
+        assertEquals(
+            groqLanguage,
+            aiSdkJson.decodeFromString<GroqLanguageModelOptions>(aiSdkOutputJson.encodeToString(groqLanguage))
+        )
+        assertEquals(
+            groqTranscription,
+            GroqTranscriptionModelOptions {
+                language("en")
+                prompt("Domain terms")
+                temperature(0.2f)
+                responseFormat("json")
+            }
+        )
         assertEquals(hume, aiSdkJson.decodeFromString<HumeSpeechModelOptions>(aiSdkOutputJson.encodeToString(hume)))
         assertEquals(kling, aiSdkJson.decodeFromString<KlingAIVideoModelOptions>(aiSdkOutputJson.encodeToString(kling)))
         assertEquals(luma, aiSdkJson.decodeFromString<LumaImageModelOptions>(aiSdkOutputJson.encodeToString(luma)))
-        assertNotEquals(luma, LumaImageModelOptions {
-            referenceType("character")
-        })
+        assertNotEquals(
+            luma,
+            LumaImageModelOptions {
+                referenceType("character")
+            }
+        )
     }
 
     @Test
@@ -534,14 +630,32 @@ class ProviderModelOptionsBuilderTest {
         }
 
         assertEquals(lmnt, aiSdkJson.decodeFromString<LMNTSpeechModelOptions>(aiSdkOutputJson.encodeToString(lmnt)))
-        assertEquals(revai, aiSdkJson.decodeFromString<RevaiTranscriptionModelOptions>(aiSdkOutputJson.encodeToString(revai)))
-        assertEquals(replicateImage, aiSdkJson.decodeFromString<ReplicateImageModelOptions>(aiSdkOutputJson.encodeToString(replicateImage)))
-        assertEquals(replicateVideo, aiSdkJson.decodeFromString<ReplicateVideoModelOptions>(aiSdkOutputJson.encodeToString(replicateVideo)))
-        assertEquals(prodiaImage, aiSdkJson.decodeFromString<ProdiaImageModelOptions>(aiSdkOutputJson.encodeToString(prodiaImage)))
+        assertEquals(
+            revai,
+            aiSdkJson.decodeFromString<RevaiTranscriptionModelOptions>(aiSdkOutputJson.encodeToString(revai))
+        )
+        assertEquals(
+            replicateImage,
+            aiSdkJson.decodeFromString<ReplicateImageModelOptions>(aiSdkOutputJson.encodeToString(replicateImage))
+        )
+        assertEquals(
+            replicateVideo,
+            aiSdkJson.decodeFromString<ReplicateVideoModelOptions>(aiSdkOutputJson.encodeToString(replicateVideo))
+        )
+        assertEquals(
+            prodiaImage,
+            aiSdkJson.decodeFromString<ProdiaImageModelOptions>(aiSdkOutputJson.encodeToString(prodiaImage))
+        )
         assertEquals(prodiaVideo, ProdiaVideoModelOptions { resolution("720p") })
-        assertEquals(quiver, aiSdkJson.decodeFromString<QuiverAIImageModelOptions>(aiSdkOutputJson.encodeToString(quiver)))
+        assertEquals(
+            quiver,
+            aiSdkJson.decodeFromString<QuiverAIImageModelOptions>(aiSdkOutputJson.encodeToString(quiver))
+        )
         assertNotEquals(quiver, QuiverAIImageModelOptions { operation("generate") })
-        assertEquals(togetherImage, aiSdkJson.decodeFromString<TogetherAIImageModelOptions>(aiSdkOutputJson.encodeToString(togetherImage)))
+        assertEquals(
+            togetherImage,
+            aiSdkJson.decodeFromString<TogetherAIImageModelOptions>(aiSdkOutputJson.encodeToString(togetherImage))
+        )
 
         val togetherJson = aiSdkOutputJson.encodeToString(togetherImage)
         assertTrue(togetherJson.contains("\"negative_prompt\""))
@@ -582,11 +696,23 @@ class ProviderModelOptionsBuilderTest {
             resolution("720p")
         }
 
-        assertEquals(mistral, aiSdkJson.decodeFromString<MistralLanguageModelOptions>(aiSdkOutputJson.encodeToString(mistral)))
-        assertEquals(moonshot, aiSdkJson.decodeFromString<MoonshotAILanguageModelOptions>(aiSdkOutputJson.encodeToString(moonshot)))
+        assertEquals(
+            mistral,
+            aiSdkJson.decodeFromString<MistralLanguageModelOptions>(aiSdkOutputJson.encodeToString(mistral))
+        )
+        assertEquals(
+            moonshot,
+            aiSdkJson.decodeFromString<MoonshotAILanguageModelOptions>(aiSdkOutputJson.encodeToString(moonshot))
+        )
         assertEquals(prodia, ProdiaLanguageModelOptions { aspectRatio("16:9") })
-        assertEquals(xaiImage, aiSdkJson.decodeFromString<XaiImageModelOptions>(aiSdkOutputJson.encodeToString(xaiImage)))
-        assertEquals(xaiVideo, aiSdkJson.decodeFromString<XaiVideoModelOptions>(aiSdkOutputJson.encodeToString(xaiVideo)))
+        assertEquals(
+            xaiImage,
+            aiSdkJson.decodeFromString<XaiImageModelOptions>(aiSdkOutputJson.encodeToString(xaiImage))
+        )
+        assertEquals(
+            xaiVideo,
+            aiSdkJson.decodeFromString<XaiVideoModelOptions>(aiSdkOutputJson.encodeToString(xaiVideo))
+        )
         assertNotEquals(xaiVideo, XaiVideoModelOptions { mode("fast") })
 
         val xaiImageJson = aiSdkOutputJson.encodeToString(xaiImage)

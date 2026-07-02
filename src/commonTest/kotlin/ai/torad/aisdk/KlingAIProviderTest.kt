@@ -1,10 +1,11 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.KLINGAI_VERSION
+import ai.torad.aisdk.providers.KlingAI
 import ai.torad.aisdk.providers.KlingAIProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
@@ -18,8 +19,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.KlingAI
-import kotlinx.serialization.json.JsonObject
 
 class KlingAIProviderTest {
     @Test
@@ -45,34 +44,51 @@ class KlingAIProviderTest {
                 seed(9)
                 fps(24)
                 resolution("720p")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "klingai" to buildJsonObject {
-                                        put("mode", JsonPrimitive("pro"))
-                                        put("pollIntervalMs", JsonPrimitive(0))
-                                        put("pollTimeoutMs", JsonPrimitive(1_000))
-                                        put("negativePrompt", JsonPrimitive("blur"))
-                                        put("sound", JsonPrimitive("on"))
-                                        put("cfgScale", JsonPrimitive(0.7f))
-                                        put("cameraControl", buildJsonObject {
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "klingai" to buildJsonObject {
+                                    put("mode", JsonPrimitive("pro"))
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(1_000))
+                                    put("negativePrompt", JsonPrimitive("blur"))
+                                    put("sound", JsonPrimitive("on"))
+                                    put("cfgScale", JsonPrimitive(0.7f))
+                                    put(
+                                        "cameraControl",
+                                        buildJsonObject {
                                             put("type", JsonPrimitive("simple"))
                                             put("config", buildJsonObject { put("zoom", JsonPrimitive(0.2f)) })
-                                        })
-                                        put("multiShot", JsonPrimitive(true))
-                                        put("shotType", JsonPrimitive("intelligence"))
-                                        put("multiPrompt", buildJsonArray {
-                                            add(buildJsonObject {
-                                                put("index", JsonPrimitive(1))
-                                                put("prompt", JsonPrimitive("wide shot"))
-                                                put("duration", JsonPrimitive("5"))
-                                            })
-                                        })
-                                        put("voiceList", buildJsonArray {
+                                        }
+                                    )
+                                    put("multiShot", JsonPrimitive(true))
+                                    put("shotType", JsonPrimitive("intelligence"))
+                                    put(
+                                        "multiPrompt",
+                                        buildJsonArray {
+                                            add(
+                                                buildJsonObject {
+                                                    put("index", JsonPrimitive(1))
+                                                    put("prompt", JsonPrimitive("wide shot"))
+                                                    put("duration", JsonPrimitive("5"))
+                                                }
+                                            )
+                                        }
+                                    )
+                                    put(
+                                        "voiceList",
+                                        buildJsonArray {
                                             add(buildJsonObject { put("voice_id", JsonPrimitive("voice_1")) })
-                                        })
-                                        put("watermarkEnabled", JsonPrimitive(false))
-                                        put("custom_passthrough", JsonPrimitive("kept"))
-                                    },
-                                ))))
+                                        }
+                                    )
+                                    put("watermarkEnabled", JsonPrimitive(false))
+                                    put("custom_passthrough", JsonPrimitive("kept"))
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -81,10 +97,18 @@ class KlingAIProviderTest {
         assertEquals(1, model.maxVideosPerCall)
         assertEquals("video/mp4", result.videos.single().mediaType)
         assertEquals("https://cdn.kling.test/video.mp4", result.videos.single().url)
-        assertEquals("task-1", result.providerMetadata.toMap()["klingai"]?.jsonObject?.get("taskId")?.jsonPrimitive?.contentOrNull)
-        val videoMetadata = result.providerMetadata.toMap()["klingai"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject
+        assertEquals(
+            "task-1",
+            result.providerMetadata.toMap()["klingai"]?.jsonObject?.get("taskId")?.jsonPrimitive?.contentOrNull
+        )
+        val videoMetadata = result.providerMetadata.toMap()["klingai"]?.jsonObject?.get(
+            "videos"
+        )?.jsonArray?.single()?.jsonObject
         assertEquals("video-1", videoMetadata?.get("id")?.jsonPrimitive?.contentOrNull)
-        assertEquals("https://cdn.kling.test/video-watermark.mp4", videoMetadata?.get("watermarkUrl")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "https://cdn.kling.test/video-watermark.mp4",
+            videoMetadata?.get("watermarkUrl")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("5.0", videoMetadata?.get("duration")?.jsonPrimitive?.contentOrNull)
         assertTrue(result.warnings.any { it.message.orEmpty().contains("image input") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("resolution") })
@@ -110,7 +134,10 @@ class KlingAIProviderTest {
         assertEquals("5", body["duration"]?.jsonPrimitive?.contentOrNull)
         assertEquals(true, body["multi_shot"]?.jsonPrimitive?.booleanOrNull)
         assertEquals("intelligence", body["shot_type"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("voice_1", body["voice_list"]?.jsonArray?.single()?.jsonObject?.get("voice_id")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "voice_1",
+            body["voice_list"]?.jsonArray?.single()?.jsonObject?.get("voice_id")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(false, body["watermark_info"]?.jsonObject?.get("enabled")?.jsonPrimitive?.booleanOrNull)
         assertEquals("kept", body["custom_passthrough"]?.jsonPrimitive?.contentOrNull)
         assertEquals("GET", fixture.calls[1].requestMethod)
@@ -135,29 +162,48 @@ class KlingAIProviderTest {
                 image(GeneratedFile(mediaType = "image/png", base64 = "frameb64"))
                 durationSeconds(10f)
                 aspectRatio("1:1")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "klingai" to buildJsonObject {
-                                        put("mode", JsonPrimitive("std"))
-                                        put("pollIntervalMs", JsonPrimitive(0))
-                                        put("imageTail", JsonPrimitive("tailb64"))
-                                        put("staticMask", JsonPrimitive("maskb64"))
-                                        put("dynamicMasks", buildJsonArray {
-                                            add(buildJsonObject {
-                                                put("mask", JsonPrimitive("dynmask"))
-                                                put("trajectories", buildJsonArray {
-                                                    add(buildJsonObject {
-                                                        put("x", JsonPrimitive(1))
-                                                        put("y", JsonPrimitive(2))
-                                                    })
-                                                })
-                                            })
-                                        })
-                                        put("elementList", buildJsonArray {
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "klingai" to buildJsonObject {
+                                    put("mode", JsonPrimitive("std"))
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("imageTail", JsonPrimitive("tailb64"))
+                                    put("staticMask", JsonPrimitive("maskb64"))
+                                    put(
+                                        "dynamicMasks",
+                                        buildJsonArray {
+                                            add(
+                                                buildJsonObject {
+                                                    put("mask", JsonPrimitive("dynmask"))
+                                                    put(
+                                                        "trajectories",
+                                                        buildJsonArray {
+                                                            add(
+                                                                buildJsonObject {
+                                                                    put("x", JsonPrimitive(1))
+                                                                    put("y", JsonPrimitive(2))
+                                                                }
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    )
+                                    put(
+                                        "elementList",
+                                        buildJsonArray {
                                             add(buildJsonObject { put("element_id", JsonPrimitive(3)) })
-                                        })
-                                        put("watermarkEnabled", JsonPrimitive(true))
-                                    },
-                                ))))
+                                        }
+                                    )
+                                    put("watermarkEnabled", JsonPrimitive(true))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -166,8 +212,16 @@ class KlingAIProviderTest {
         assertEquals("frameb64", body["image"]?.jsonPrimitive?.contentOrNull)
         assertEquals("tailb64", body["image_tail"]?.jsonPrimitive?.contentOrNull)
         assertEquals("maskb64", body["static_mask"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("dynmask", body["dynamic_masks"]?.jsonArray?.single()?.jsonObject?.get("mask")?.jsonPrimitive?.contentOrNull)
-        assertEquals(3, body["element_list"]?.jsonArray?.single()?.jsonObject?.get("element_id")?.jsonPrimitive?.contentOrNull?.toInt())
+        assertEquals(
+            "dynmask",
+            body["dynamic_masks"]?.jsonArray?.single()?.jsonObject?.get("mask")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            3,
+            body["element_list"]?.jsonArray?.single()?.jsonObject?.get(
+                "element_id"
+            )?.jsonPrimitive?.contentOrNull?.toInt()
+        )
         assertEquals("10", body["duration"]?.jsonPrimitive?.contentOrNull)
         assertEquals(true, body["watermark_info"]?.jsonObject?.get("enabled")?.jsonPrimitive?.booleanOrNull)
     }
@@ -185,9 +239,11 @@ class KlingAIProviderTest {
         ).video(ModelId("kling-v2.6-motion-control"))
 
         val missing = assertFailsWith<AiSdkException> {
-            model.generate(VideoGenerationParams {
-                prompt("missing options")
-            })
+            model.generate(
+                VideoGenerationParams {
+                    prompt("missing options")
+                }
+            )
         }
         assertTrue(missing.message.orEmpty().contains("Motion Control"))
 
@@ -197,17 +253,23 @@ class KlingAIProviderTest {
                 image(GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/ref.png"))
                 durationSeconds(5f)
                 aspectRatio("16:9")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "klingai" to buildJsonObject {
-                                        put("pollIntervalMs", JsonPrimitive(0))
-                                        put("videoUrl", JsonPrimitive("https://example.com/ref.mp4"))
-                                        put("characterOrientation", JsonPrimitive("image"))
-                                        put("mode", JsonPrimitive("std"))
-                                        put("keepOriginalSound", JsonPrimitive("yes"))
-                                        put("watermarkEnabled", JsonPrimitive(false))
-                                        put("custom_motion", JsonPrimitive("kept"))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "klingai" to buildJsonObject {
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("videoUrl", JsonPrimitive("https://example.com/ref.mp4"))
+                                    put("characterOrientation", JsonPrimitive("image"))
+                                    put("mode", JsonPrimitive("std"))
+                                    put("keepOriginalSound", JsonPrimitive("yes"))
+                                    put("watermarkEnabled", JsonPrimitive(false))
+                                    put("custom_motion", JsonPrimitive("kept"))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -237,9 +299,13 @@ class KlingAIProviderTest {
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        assertFailsWith<NoSuchModelError> { provider.video(ModelId("unknown-model")).generate(VideoGenerationParams {
-            prompt("x")
-        }) }
+        assertFailsWith<NoSuchModelError> {
+            provider.video(ModelId("unknown-model")).generate(
+                VideoGenerationParams {
+                    prompt("x")
+                }
+            )
+        }
     }
 
     private fun createKlingAIFixture(endpoint: String): CreatedTestServer {

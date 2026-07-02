@@ -1,10 +1,11 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.QUIVERAI_VERSION
+import ai.torad.aisdk.providers.QuiverAI
 import ai.torad.aisdk.providers.QuiverAIProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -17,8 +18,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.QuiverAI
-import kotlinx.serialization.json.JsonObject
 
 class QuiverAIProviderTest {
     @Test
@@ -47,19 +46,27 @@ class QuiverAIProviderTest {
         val result = model.generate(
             ImageGenerationParams {
                 prompt("Draw a square icon.")
-                files(listOf(
-                                    ImageGenerationFile(url = "https://example.com/ref.png"),
-                                    ImageGenerationFile(mediaType = "image/png", base64 = "BAUG"),
-                                ))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "quiverai" to buildJsonObject {
-                                        put("instructions", JsonPrimitive("Use clean geometry."))
-                                        put("temperature", JsonPrimitive(0.4))
-                                        put("topP", JsonPrimitive(0.95))
-                                        put("presencePenalty", JsonPrimitive(0.2))
-                                        put("maxOutputTokens", JsonPrimitive(4096))
-                                    },
-                                ))))
+                files(
+                    listOf(
+                        ImageGenerationFile(url = "https://example.com/ref.png"),
+                        ImageGenerationFile(mediaType = "image/png", base64 = "BAUG"),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "quiverai" to buildJsonObject {
+                                    put("instructions", JsonPrimitive("Use clean geometry."))
+                                    put("temperature", JsonPrimitive(0.4))
+                                    put("topP", JsonPrimitive(0.95))
+                                    put("presencePenalty", JsonPrimitive(0.2))
+                                    put("maxOutputTokens", JsonPrimitive(4096))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -83,11 +90,20 @@ class QuiverAIProviderTest {
         assertEquals(0.95, body["top_p"]?.jsonPrimitive?.doubleOrNull)
         assertEquals(0.2, body["presence_penalty"]?.jsonPrimitive?.doubleOrNull)
         assertEquals(4096, body["max_output_tokens"]?.jsonPrimitive?.intOrNull)
-        assertEquals("https://example.com/ref.png", body["references"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)
-        assertEquals("BAUG", body["references"]?.jsonArray?.get(1)?.jsonObject?.get("base64")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "https://example.com/ref.png",
+            body["references"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            "BAUG",
+            body["references"]?.jsonArray?.get(1)?.jsonObject?.get("base64")?.jsonPrimitive?.contentOrNull
+        )
 
         val metadata = result.providerMetadata.toMap()["quiverai"]?.jsonObject
-        assertEquals("image/svg+xml", metadata?.get("images")?.jsonArray?.single()?.jsonObject?.get("mimeType")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "image/svg+xml",
+            metadata?.get("images")?.jsonArray?.single()?.jsonObject?.get("mimeType")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(21, metadata?.get("usage")?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull)
         assertEquals(ImageModelUsage(inputTokens = 12, outputTokens = 9, totalTokens = 21), result.usage)
     }
@@ -113,22 +129,31 @@ class QuiverAIProviderTest {
                 prompt("")
                 n(2)
                 files(listOf(ImageGenerationFile(url = "https://example.com/logo.png")))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "quiverai" to buildJsonObject {
-                                        put("operation", JsonPrimitive("vectorize"))
-                                        put("temperature", JsonPrimitive(0.3))
-                                        put("topP", JsonPrimitive(0.9))
-                                        put("autoCrop", JsonPrimitive(true))
-                                        put("targetSize", JsonPrimitive(1024))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "quiverai" to buildJsonObject {
+                                    put("operation", JsonPrimitive("vectorize"))
+                                    put("temperature", JsonPrimitive(0.3))
+                                    put("topP", JsonPrimitive(0.9))
+                                    put("autoCrop", JsonPrimitive(true))
+                                    put("targetSize", JsonPrimitive(1024))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject
         assertEquals("arrow-1", body["model"]?.jsonPrimitive?.contentOrNull)
         assertEquals(2, body["n"]?.jsonPrimitive?.intOrNull)
-        assertEquals("https://example.com/logo.png", body["image"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "https://example.com/logo.png",
+            body["image"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(0.3, body["temperature"]?.jsonPrimitive?.doubleOrNull)
         assertEquals(0.9, body["top_p"]?.jsonPrimitive?.doubleOrNull)
         assertEquals(true, body["auto_crop"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull())
@@ -159,7 +184,13 @@ class QuiverAIProviderTest {
             provider.image(ModelId("arrow-1")).generate(
                 ImageGenerationParams {
                     prompt("")
-                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }))))
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) })
+                            )
+                        )
+                    )
                 },
             )
         }
@@ -168,7 +199,13 @@ class QuiverAIProviderTest {
                 ImageGenerationParams {
                     prompt("")
                     files(listOf(ImageGenerationFile(url = "a"), ImageGenerationFile(url = "b")))
-                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }))))
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) })
+                            )
+                        )
+                    )
                 },
             )
         }

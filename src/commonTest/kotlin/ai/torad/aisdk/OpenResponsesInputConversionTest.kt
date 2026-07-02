@@ -4,7 +4,6 @@ package ai.torad.aisdk
 import ai.torad.aisdk.ToolResultOutputs.toJsonElement
 import ai.torad.aisdk.providers.OpenResponses
 import ai.torad.aisdk.providers.OpenResponsesProviderSettings
-import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -17,18 +16,12 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 class OpenResponsesInputConversionTest {
     @Test
     fun `tool call and tool result content convert back to Open Responses input`() = runTest {
@@ -43,7 +36,10 @@ class OpenResponsesInputConversionTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(client, OpenResponsesProviderSettings {
+            url("https://api.test/v1/responses");
+            name("openresponses")
+        })
 
         val modelVisible = ToolResultOutput.Content(
             value = listOf(
@@ -60,29 +56,31 @@ class OpenResponsesInputConversionTest {
         ).toJsonElement()
         provider.languageModel("gpt-resp").generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    ModelMessage(
-                        MessageRole.Assistant,
-                        listOf(
-                            ContentPart.ToolCall(
-                                toolCallId = "call_1",
-                                toolName = "render",
-                                input = buildJsonObject { put("topic", JsonPrimitive("logo")) },
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.Assistant,
+                            listOf(
+                                ContentPart.ToolCall(
+                                    toolCallId = "call_1",
+                                    toolName = "render",
+                                    input = buildJsonObject { put("topic", JsonPrimitive("logo")) },
+                                ),
                             ),
                         ),
-                    ),
-                    ModelMessage(
-                        MessageRole.Tool,
-                        listOf(
-                            ContentPart.ToolResult(
-                                toolCallId = "call_1",
-                                toolName = "render",
-                                output = JsonPrimitive("full"),
-                                modelVisible = modelVisible,
+                        ModelMessage(
+                            MessageRole.Tool,
+                            listOf(
+                                ContentPart.ToolResult(
+                                    toolCallId = "call_1",
+                                    toolName = "render",
+                                    output = JsonPrimitive("full"),
+                                    modelVisible = modelVisible,
+                                ),
                             ),
                         ),
-                    ),
-                ))
+                    )
+                )
             },
         )
 
@@ -111,7 +109,10 @@ class OpenResponsesInputConversionTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(client, OpenResponsesProviderSettings {
+            url("https://api.test/v1/responses");
+            name("openresponses")
+        })
 
         // modelVisible defaults to the tool's RAW output. This success object collides on the
         // "text" discriminator yet carries no `value` companion: the old path threw a hard
@@ -123,19 +124,21 @@ class OpenResponsesInputConversionTest {
         }
         provider.languageModel("gpt-resp").generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    ModelMessage(
-                        MessageRole.Tool,
-                        listOf(
-                            ContentPart.ToolResult(
-                                toolCallId = "call_raw",
-                                toolName = "lookup",
-                                output = rawModelVisible,
-                                modelVisible = rawModelVisible,
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.Tool,
+                            listOf(
+                                ContentPart.ToolResult(
+                                    toolCallId = "call_raw",
+                                    toolName = "lookup",
+                                    output = rawModelVisible,
+                                    modelVisible = rawModelVisible,
+                                ),
                             ),
                         ),
-                    ),
-                ))
+                    )
+                )
             },
         )
 
@@ -168,28 +171,34 @@ class OpenResponsesInputConversionTest {
 
         provider.languageModel("gpt-resp").generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.File(
-                                mediaType = "application/pdf",
-                                base64 = "file-abc",
-                                filename = "payload.pdf",
-                            ),
-                            ContentPart.File(
-                                mediaType = "application/pdf",
-                                base64 = "ignored",
-                                filename = "remote.pdf",
-                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-                                    "openai" to buildJsonObject {
-                                        put("file_id", JsonPrimitive("file-explicit"))
-                                    },
-                                ))),
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.File(
+                                    mediaType = "application/pdf",
+                                    base64 = "file-abc",
+                                    filename = "payload.pdf",
+                                ),
+                                ContentPart.File(
+                                    mediaType = "application/pdf",
+                                    base64 = "ignored",
+                                    filename = "remote.pdf",
+                                    providerMetadata = ProviderMetadata.Raw(
+                                        JsonObject(
+                                            mapOf(
+                                                "openai" to buildJsonObject {
+                                                    put("file_id", JsonPrimitive("file-explicit"))
+                                                },
+                                            )
+                                        )
+                                    ),
+                                ),
                             ),
                         ),
-                    ),
-                ))
+                    )
+                )
             },
         )
 
@@ -215,23 +224,28 @@ class OpenResponsesInputConversionTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(client, OpenResponsesProviderSettings {
+            url("https://api.test/v1/responses");
+            name("openresponses")
+        })
         val imageUrl = "https://cdn.test/image.png"
         val fileUrl = "https://cdn.test/paper.pdf"
 
         provider.languageModel("gpt-resp").generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Image(mediaType = "image/png", url = imageUrl),
-                            ContentPart.File(mediaType = "application/pdf", url = fileUrl, filename = "paper.pdf"),
-                            ContentPart.Image(mediaType = "image/jpeg", base64 = "aW1n"),
-                            ContentPart.File(mediaType = "text/plain", base64 = "ZG9j", filename = "note.txt"),
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Image(mediaType = "image/png", url = imageUrl),
+                                ContentPart.File(mediaType = "application/pdf", url = fileUrl, filename = "paper.pdf"),
+                                ContentPart.Image(mediaType = "image/jpeg", base64 = "aW1n"),
+                                ContentPart.File(mediaType = "text/plain", base64 = "ZG9j", filename = "note.txt"),
+                            ),
                         ),
-                    ),
-                ))
+                    )
+                )
             },
         )
 
@@ -266,6 +280,4 @@ class OpenResponsesInputConversionTest {
             is OutgoingContent.NoContent -> ""
             else -> body.toString()
         }
-
-
 }

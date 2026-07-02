@@ -1,9 +1,10 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.HUME_VERSION
+import ai.torad.aisdk.providers.Hume
 import ai.torad.aisdk.providers.HumeProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -15,8 +16,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Hume
-import kotlinx.serialization.json.JsonObject
 
 class HumeProviderTest {
     @Test
@@ -41,26 +40,32 @@ class HumeProviderTest {
                 instructions("calm")
                 speed(1.1f)
                 responseFormat("wav")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "hume" to buildJsonObject {
-                                        put(
-                                            "context",
-                                            buildJsonObject {
-                                                put(
-                                                    "utterances",
-                                                    buildJsonArray {
-                                                        add(
-                                                            buildJsonObject {
-                                                                put("text", JsonPrimitive("prior"))
-                                                                put("trailingSilence", JsonPrimitive(0.2f))
-                                                            },
-                                                        )
-                                                    },
-                                                )
-                                            },
-                                        )
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "hume" to buildJsonObject {
+                                    put(
+                                        "context",
+                                        buildJsonObject {
+                                            put(
+                                                "utterances",
+                                                buildJsonArray {
+                                                    add(
+                                                        buildJsonObject {
+                                                            put("text", JsonPrimitive("prior"))
+                                                            put("trailingSilence", JsonPrimitive(0.2f))
+                                                        },
+                                                    )
+                                                },
+                                            )
+                                        },
+                                    )
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -96,13 +101,20 @@ class HumeProviderTest {
             HumeProviderSettings { apiKey("key") },
         ).speech()
 
-        val result = model.generate(SpeechGenerationParams {
-            text("hello")
-            responseFormat("flac")
-        })
+        val result = model.generate(
+            SpeechGenerationParams {
+                text("hello")
+                responseFormat("flac")
+            }
+        )
 
         assertEquals("unsupported", result.warnings.single().type)
-        assertEquals("mp3", fixture.calls.single().requestBodyJson.jsonObject["format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "mp3",
+            fixture.calls.single().requestBodyJson.jsonObject["format"]?.jsonObject?.get(
+                "type"
+            )?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("audio/mpeg", result.audio?.mediaType)
     }
 

@@ -17,7 +17,10 @@ class MediaFieldsTest {
 
         val imageResult = GenerateImageResult(images = listOf(file), usage = ImageModelUsage(inputTokens = 1))
         val equalImageResult = GenerateImageResult(images = listOf(equalFile), usage = ImageModelUsage(inputTokens = 1))
-        val differentImageResult = GenerateImageResult(images = listOf(differentFile), usage = ImageModelUsage(inputTokens = 1))
+        val differentImageResult = GenerateImageResult(
+            images = listOf(differentFile),
+            usage = ImageModelUsage(inputTokens = 1)
+        )
         assertEquals(imageResult, equalImageResult)
         assertEquals(imageResult.hashCode(), equalImageResult.hashCode())
         assertNotEquals(imageResult, differentImageResult)

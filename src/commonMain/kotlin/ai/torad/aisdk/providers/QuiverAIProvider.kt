@@ -23,7 +23,6 @@ import kotlinx.serialization.json.jsonObject
 public const val QUIVERAI_VERSION: String = "1.0.0"
 private const val QUIVERAI_MAX_IMAGES_PER_CALL: Int = 16
 
-
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -220,10 +219,17 @@ public class QuiverAIProvider(
     /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = QuiverAIImageModel(client, settings, modelId.value)
     override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun languageModel(
+        modelId: String
+    ): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
+    override fun embeddingModel(
+        modelId: String
+    ): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(
+        modelId: String
+    ): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
 /**
@@ -296,7 +302,10 @@ private class QuiverAIImageModel(
         return when (operation) {
             "generate" -> quiverAIGenerateBody(modelId, params, options, shared)
             "vectorize" -> quiverAIVectorizeBody(modelId, params, options, shared)
-            else -> throw InvalidArgumentError("providerOptions.quiverai.operation", "must be `generate` or `vectorize`")
+            else -> throw InvalidArgumentError(
+                "providerOptions.quiverai.operation",
+                "must be `generate` or `vectorize`"
+            )
         }
     }
 
@@ -307,11 +316,17 @@ private class QuiverAIImageModel(
         shared: JsonObject,
     ): JsonObject {
         if (params.prompt.isBlank()) {
-            throw InvalidArgumentError("prompt", "QuiverAI image generation requires a non-empty prompt for generateImage.")
+            throw InvalidArgumentError(
+                "prompt",
+                "QuiverAI image generation requires a non-empty prompt for generateImage."
+            )
         }
         val maxReferences = if (modelId == "arrow-1.1-max") 16 else 4
         if (params.files.size > maxReferences) {
-            throw InvalidArgumentError("files", "QuiverAI generate supports up to $maxReferences reference images for model \"$modelId\".")
+            throw InvalidArgumentError(
+                "files",
+                "QuiverAI generate supports up to $maxReferences reference images for model \"$modelId\"."
+            )
         }
         return buildJsonObject {
             put("model", JsonPrimitive(modelId))
@@ -337,7 +352,12 @@ private class QuiverAIImageModel(
                 "QuiverAI vectorize requires an input image. Pass an image in generateImage files and set providerOptions.quiverai.operation to \"vectorize\".",
             )
         }
-        if (params.files.size > 1) throw InvalidArgumentError("files", "QuiverAI vectorize accepts a single input image.")
+        if (params.files.size > 1) {
+            throw InvalidArgumentError(
+                "files",
+                "QuiverAI vectorize accepts a single input image."
+            )
+        }
         return buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("n", JsonPrimitive(params.n))
@@ -349,10 +369,35 @@ private class QuiverAIImageModel(
     }
 
     private fun quiverAIWarnings(params: ImageGenerationParams): List<CallWarning> = buildList {
-        if (params.size != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `size` option. The setting was ignored."))
-        if (params.aspectRatio != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `aspectRatio` option. The setting was ignored."))
-        if (params.seed != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `seed` option. The setting was ignored."))
-        if (params.mask != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support masks. The mask was ignored."))
+        if (params.size != null) {
+            add(
+                CallWarning(
+                    "unsupported",
+                    "QuiverAI SVG generation does not support the `size` option. The setting was ignored."
+                )
+            )
+        }
+        if (params.aspectRatio != null) {
+            add(
+                CallWarning(
+                    "unsupported",
+                    "QuiverAI SVG generation does not support the `aspectRatio` option. The setting was ignored."
+                )
+            )
+        }
+        if (params.seed != null) {
+            add(
+                CallWarning(
+                    "unsupported",
+                    "QuiverAI SVG generation does not support the `seed` option. The setting was ignored."
+                )
+            )
+        }
+        if (params.mask != null) {
+            add(
+                CallWarning("unsupported", "QuiverAI SVG generation does not support masks. The mask was ignored.")
+            )
+        }
     }
 
     private fun ImageGenerationFile.toQuiverAIImageReference(): JsonObject = buildJsonObject {

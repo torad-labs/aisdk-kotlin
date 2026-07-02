@@ -2,15 +2,12 @@
 
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.BASETEN_VERSION
-import ai.torad.aisdk.providers.BasetenProviderSettings
 import ai.torad.aisdk.providers.Baseten
-
+import ai.torad.aisdk.providers.BasetenProviderSettings
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -36,16 +33,21 @@ class BasetenProviderTest {
         fixture.server.start()
         val provider = Baseten(fixture.httpClient(), BasetenProviderSettings { apiKey("key") })
 
-        val result = provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        val result = provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         assertEquals("ok", result.text)
         assertEquals("baseten.chat", provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).provider)
         val call = fixture.calls.single()
         assertEquals("Bearer key", call.requestHeaders.headerValue(HttpHeaders.Authorization))
         assertTrue(call.requestUserAgent.orEmpty().contains("ai-sdk/baseten/$BASETEN_VERSION"))
-        assertEquals("deepseek-ai/DeepSeek-V3-0324", call.requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "deepseek-ai/DeepSeek-V3-0324",
+            call.requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
@@ -71,12 +73,17 @@ class BasetenProviderTest {
             },
         )
 
-        val result = provider.chatModel().generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        val result = provider.chatModel().generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         assertEquals("custom", result.text)
-        assertEquals("placeholder", fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "placeholder",
+            fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
@@ -116,9 +123,11 @@ class BasetenProviderTest {
             },
         )
 
-        val result = provider.embeddingModel().embed(EmbeddingModelCallParams {
-    values(listOf("hello"))
-})
+        val result = provider.embeddingModel().embed(
+            EmbeddingModelCallParams {
+                values(listOf("hello"))
+            }
+        )
 
         assertEquals(listOf(0.1f, 0.2f), result.embeddings.single())
         assertEquals(3, result.usage.tokens)

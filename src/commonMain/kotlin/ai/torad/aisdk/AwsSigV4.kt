@@ -60,7 +60,9 @@ internal object AwsSigV4 {
             CryptoPrimitives.sha256Hex(canonicalRequest.encodeToByteArray()),
         ).joinToString("\n")
         val signingKey = awsSigV4SigningKey(credentials.secretAccessKey, date, region, service)
-        val signature = with(CryptoPrimitives) { CryptoPrimitives.hmacSha256(signingKey, stringToSign.encodeToByteArray()).toHex() }
+        val signature = with(CryptoPrimitives) {
+            CryptoPrimitives.hmacSha256(signingKey, stringToSign.encodeToByteArray()).toHex()
+        }
 
         val result = linkedMapOf<String, String>()
         headers.forEach { (name, value) ->

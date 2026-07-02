@@ -14,12 +14,9 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val LUMA_VERSION: String = "2.0.33"
@@ -256,19 +253,29 @@ private class LumaImageModel(
                 if (params.files.size > 4) {
                     throw InvalidArgumentError("files", "Luma AI image supports up to 4 reference images.")
                 }
-                put("image", JsonArray(params.files.mapIndexed { index, file ->
-                    buildJsonObject {
-                        put("url", JsonPrimitive(file.url.orEmpty()))
-                        put("weight", imageConfigs.getOrNull(index)?.get("weight") ?: JsonPrimitive(0.85f))
-                    }
-                }))
+                put(
+                    "image",
+                    JsonArray(
+                        params.files.mapIndexed { index, file ->
+                            buildJsonObject {
+                                put("url", JsonPrimitive(file.url.orEmpty()))
+                                put("weight", imageConfigs.getOrNull(index)?.get("weight") ?: JsonPrimitive(0.85f))
+                            }
+                        }
+                    )
+                )
             }
-            "style" -> put("style", JsonArray(params.files.mapIndexed { index, file ->
-                buildJsonObject {
-                    put("url", JsonPrimitive(file.url.orEmpty()))
-                    put("weight", imageConfigs.getOrNull(index)?.get("weight") ?: JsonPrimitive(0.8f))
-                }
-            }))
+            "style" -> put(
+                "style",
+                JsonArray(
+                    params.files.mapIndexed { index, file ->
+                        buildJsonObject {
+                            put("url", JsonPrimitive(file.url.orEmpty()))
+                            put("weight", imageConfigs.getOrNull(index)?.get("weight") ?: JsonPrimitive(0.8f))
+                        }
+                    }
+                )
+            )
             "character" -> {
                 val identities = linkedMapOf<String, MutableList<String>>()
                 params.files.forEachIndexed { index, file ->
@@ -283,22 +290,31 @@ private class LumaImageModel(
                         )
                     }
                 }
-                put("character", buildJsonObject {
-                    identities.forEach { (id, images) ->
-                        put(id, buildJsonObject {
-                            put("images", JsonArray(images.map(::JsonPrimitive)))
-                        })
+                put(
+                    "character",
+                    buildJsonObject {
+                        identities.forEach { (id, images) ->
+                            put(
+                                id,
+                                buildJsonObject {
+                                    put("images", JsonArray(images.map(::JsonPrimitive)))
+                                }
+                            )
+                        }
                     }
-                })
+                )
             }
             "modify_image" -> {
                 if (params.files.size > 1) {
                     throw InvalidArgumentError("files", "Luma AI modify_image only supports a single input image.")
                 }
-                put("modify_image", buildJsonObject {
-                    put("url", JsonPrimitive(params.files.single().url.orEmpty()))
-                    put("weight", imageConfigs.firstOrNull()?.get("weight") ?: JsonPrimitive(1.0f))
-                })
+                put(
+                    "modify_image",
+                    buildJsonObject {
+                        put("url", JsonPrimitive(params.files.single().url.orEmpty()))
+                        put("weight", imageConfigs.firstOrNull()?.get("weight") ?: JsonPrimitive(1.0f))
+                    }
+                )
             }
             else -> throw InvalidArgumentError("referenceType", "Unsupported Luma referenceType: $referenceType")
         }

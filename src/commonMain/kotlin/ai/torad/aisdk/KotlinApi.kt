@@ -317,6 +317,7 @@ public class TextGenerationRequest internal constructor(
     public sealed class Input {
         /** @since 0.3.0-beta01 */
         public abstract val prompt: String?
+
         /** @since 0.3.0-beta01 */
         public abstract val messages: List<ModelMessage>
 

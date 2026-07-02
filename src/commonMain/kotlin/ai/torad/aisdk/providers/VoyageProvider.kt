@@ -18,7 +18,6 @@ import kotlinx.serialization.json.jsonObject
 
 public const val VOYAGE_VERSION: String = "1.0.4"
 
-
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -219,10 +218,13 @@ public class VoyageProvider(
 
     /** @since 0.3.0-beta01 */
     public fun embedding(modelId: ModelId): EmbeddingModel = VoyageEmbeddingModel(client, settings, modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun reranking(modelId: ModelId): RerankingModel = VoyageRerankingModel(client, settings, modelId.value)
 

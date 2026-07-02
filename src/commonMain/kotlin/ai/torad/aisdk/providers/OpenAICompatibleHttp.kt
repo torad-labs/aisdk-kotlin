@@ -90,14 +90,16 @@ internal abstract class OpenAICompatibleHttpModel(
         onResponse: suspend (Map<String, String>) -> Unit = {},
     ): Flow<String> = flow {
         emitAll(
-            HttpTransport.streamSse(client = client,
-            url = url(path),
-            method = HttpMethod.Post,
-            headers = commonHeaders(headers),
-            body = body,
-            json = json,
-            errorMessage = ::openAICompatibleErrorMessage,
-            onResponse = onResponse,),
+            HttpTransport.streamSse(
+                client = client,
+                url = url(path),
+                method = HttpMethod.Post,
+                headers = commonHeaders(headers),
+                body = body,
+                json = json,
+                errorMessage = ::openAICompatibleErrorMessage,
+                onResponse = onResponse,
+            ),
         )
     }
 
@@ -112,11 +114,13 @@ internal abstract class OpenAICompatibleHttpModel(
                 commonHeaders(headers).forEach { (name, value) -> header(name, value) }
                 setBody(body)
             }
-            with(HttpTransport) { response.toJsonResponse(
-                url = url(path),
-                json = json,
-                errorMessage = ::openAICompatibleErrorMessage,
-            ) }
+            with(HttpTransport) {
+                response.toJsonResponse(
+                    url = url(path),
+                    json = json,
+                    errorMessage = ::openAICompatibleErrorMessage,
+                )
+            }
         }
 
     protected suspend fun postBytes(
@@ -224,22 +228,55 @@ internal abstract class OpenAICompatibleHttpModel(
         val reasoning = (message["reasoning_content"] as? JsonPrimitive)?.contentOrNull
             ?: (message["reasoning"] as? JsonPrimitive)?.contentOrNull
         if (!reasoning.isNullOrEmpty()) content += ContentPart.Reasoning(reasoning)
-        val toolCalls = WireDecoder.optionalArray(message, "tool_calls", provider, "chat completion response", "$.choices[0].message").orEmpty()
+        val toolCalls = WireDecoder.optionalArray(
+            message,
+            "tool_calls",
+            provider,
+            "chat completion response",
+            "$.choices[0].message"
+        ).orEmpty()
             .mapIndexed { index, call ->
-            val callObj = WireDecoder.objectValue(call, provider, "chat completion response", "$.choices[0].message.tool_calls[$index]")
-            val function = WireDecoder.objectValue(
-                WireDecoder.required(callObj, "function", provider, "chat completion response", "$.choices[0].message.tool_calls[$index]"),
-                provider,
-                "chat completion response",
-                "$.choices[0].message.tool_calls[$index].function",
-            )
-            ContentPart.ToolCall(
-                toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
-                toolName = WireDecoder.requiredString(function, "name", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function"),
-                input = ContentPart.ToolCall.parseOpenAIToolInput(WireDecoder.requiredString(function, "arguments", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function")),
-                providerMetadata = ContentPart.ToolCall.thoughtSignatureMetadata(callObj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
-            )
-        }
+                val callObj = WireDecoder.objectValue(
+                    call,
+                    provider,
+                    "chat completion response",
+                    "$.choices[0].message.tool_calls[$index]"
+                )
+                val function = WireDecoder.objectValue(
+                    WireDecoder.required(
+                        callObj,
+                        "function",
+                        provider,
+                        "chat completion response",
+                        "$.choices[0].message.tool_calls[$index]"
+                    ),
+                    provider,
+                    "chat completion response",
+                    "$.choices[0].message.tool_calls[$index].function",
+                )
+                ContentPart.ToolCall(
+                    toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
+                    toolName = WireDecoder.requiredString(
+                        function,
+                        "name",
+                        provider,
+                        "chat completion response",
+                        "$.choices[0].message.tool_calls[$index].function"
+                    ),
+                    input = ContentPart.ToolCall.parseOpenAIToolInput(
+                        WireDecoder.requiredString(
+                            function,
+                            "arguments",
+                            provider,
+                            "chat completion response",
+                            "$.choices[0].message.tool_calls[$index].function"
+                        )
+                    ),
+                    providerMetadata = ContentPart.ToolCall.thoughtSignatureMetadata(callObj)?.let {
+                        ProviderMetadata.Raw(JsonObject(it))
+                    } ?: ProviderMetadata.None,
+                )
+            }
         content += toolCalls
         val finishReason = FinishReason.fromOpenAI((choice["finish_reason"] as? JsonPrimitive)?.contentOrNull)
         val providerMetadata = JsonObject(openAIProviderMetadata(obj["providerMetadata"], "openaiCompatible"))
@@ -264,7 +301,13 @@ internal abstract class OpenAICompatibleHttpModel(
             toolCalls = toolCalls,
             finishReason = finishReason,
             usage = (convertUsage ?: Usage.Companion::fromOpenAI).invoke(obj["usage"]),
-            providerMetadata = if (providerMetadata.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(providerMetadata),
+            providerMetadata = if (providerMetadata.isEmpty()) {
+                ProviderMetadata.None
+            } else {
+                ProviderMetadata.Raw(
+                    providerMetadata
+                )
+            },
             content = content,
             rawFinishReason = (choice["finish_reason"] as? JsonPrimitive)?.contentOrNull,
             warnings = warnings,
@@ -322,7 +365,10 @@ internal abstract class OpenAICompatibleHttpModel(
         MessageRole.System -> listOf(
             buildJsonObject {
                 put("role", JsonPrimitive("system"))
-                put("content", JsonPrimitive(message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }))
+                put(
+                    "content",
+                    JsonPrimitive(message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text })
+                )
             },
         )
         MessageRole.User -> listOf(
@@ -341,24 +387,29 @@ internal abstract class OpenAICompatibleHttpModel(
                 val text = message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
                 val reasoning = message.content.filterIsInstance<ContentPart.Reasoning>().joinToString("") { it.text }
                 val toolCalls = message.content.filterIsInstance<ContentPart.ToolCall>()
-                put("content", if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() }))
+                put(
+                    "content",
+                    if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() })
+                )
                 if (reasoning.isNotEmpty()) put("reasoning_content", JsonPrimitive(reasoning))
                 if (toolCalls.isNotEmpty()) {
                     put(
                         "tool_calls",
-                        JsonArray(toolCalls.map { part ->
-                            buildJsonObject {
-                                put("id", JsonPrimitive(part.toolCallId))
-                                put("type", JsonPrimitive("function"))
-                                put(
-                                    "function",
-                                    buildJsonObject {
-                                        put("name", JsonPrimitive(part.toolName))
-                                        put("arguments", JsonPrimitive(part.input.toString()))
-                                    },
-                                )
+                        JsonArray(
+                            toolCalls.map { part ->
+                                buildJsonObject {
+                                    put("id", JsonPrimitive(part.toolCallId))
+                                    put("type", JsonPrimitive("function"))
+                                    put(
+                                        "function",
+                                        buildJsonObject {
+                                            put("name", JsonPrimitive(part.toolName))
+                                            put("arguments", JsonPrimitive(part.input.toString()))
+                                        },
+                                    )
+                                }
                             }
-                        }),
+                        ),
                     )
                 }
             },
@@ -468,25 +519,25 @@ internal abstract class OpenAICompatibleHttpModel(
 
     protected fun openAIResponseFormat(format: ResponseFormat, capabilities: ResponseFormatCapabilities): JsonElement? =
         when (format) {
-        ResponseFormat.Text -> null
-        is ResponseFormat.Json -> {
-            if (format.schemaJson != null && capabilities.structuredOutputs) {
-                buildJsonObject {
-                    put("type", JsonPrimitive("json_schema"))
-                    put(
-                        "json_schema",
-                        buildJsonObject {
-                            put("name", JsonPrimitive(format.schemaName ?: "response"))
-                            format.schemaDescription?.let { put("description", JsonPrimitive(it)) }
-                            put("schema", format.schemaJson)
-                            put("strict", JsonPrimitive(capabilities.strict))
-                        },
-                    )
+            ResponseFormat.Text -> null
+            is ResponseFormat.Json -> {
+                if (format.schemaJson != null && capabilities.structuredOutputs) {
+                    buildJsonObject {
+                        put("type", JsonPrimitive("json_schema"))
+                        put(
+                            "json_schema",
+                            buildJsonObject {
+                                put("name", JsonPrimitive(format.schemaName ?: "response"))
+                                format.schemaDescription?.let { put("description", JsonPrimitive(it)) }
+                                put("schema", format.schemaJson)
+                                put("strict", JsonPrimitive(capabilities.strict))
+                            },
+                        )
+                    }
+                } else {
+                    buildJsonObject { put("type", JsonPrimitive("json_object")) }
                 }
-            } else {
-                buildJsonObject { put("type", JsonPrimitive("json_object")) }
             }
-        }
         }
 
     protected data class ResponseFormatCapabilities(val strict: Boolean, val structuredOutputs: Boolean)
@@ -516,8 +567,10 @@ internal abstract class OpenAICompatibleHttpModel(
         null, JsonNull -> ""
         is JsonPrimitive -> value.contentOrNull.orEmpty()
         is JsonArray -> value.mapNotNull { item ->
-            ((item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
-                ?.get("text") as? JsonPrimitive)?.contentOrNull
+            (
+                (item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+                    ?.get("text") as? JsonPrimitive
+                )?.contentOrNull
         }.joinToString("")
         else -> value.toString()
     }
@@ -533,8 +586,10 @@ internal abstract class OpenAICompatibleHttpModel(
         }
 
     private fun openAIToolResultItemText(item: JsonElement): String =
-        ((item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
-            ?.get("text") as? JsonPrimitive)?.contentOrNull.orEmpty()
+        (
+            (item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+                ?.get("text") as? JsonPrimitive
+            )?.contentOrNull.orEmpty()
 
     private fun JsonObject.deepMergedWith(other: JsonObject): JsonObject {
         val merged = toMutableMap()

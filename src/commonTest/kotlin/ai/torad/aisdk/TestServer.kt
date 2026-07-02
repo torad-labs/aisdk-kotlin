@@ -79,7 +79,9 @@ class UrlHandler private constructor(
 
     constructor(factory: (TestServerCallOptions) -> UrlResponse?) : this(UrlResponseParameter.Factory(factory))
 
-    constructor(factory: (TestServerHttpRequest, TestServerCallOptions) -> UrlResponse?) : this(UrlResponseParameter.RequestFactory(factory))
+    constructor(factory: (TestServerHttpRequest, TestServerCallOptions) -> UrlResponse?) : this(
+        UrlResponseParameter.RequestFactory(factory)
+    )
 }
 
 sealed interface UrlResponseParameter {
@@ -90,15 +92,24 @@ sealed interface UrlResponseParameter {
     }
 
     data class Sequence(val responses: List<UrlResponse?>) : UrlResponseParameter {
-        override fun responseFor(callNumber: Int, request: TestServerHttpRequest): UrlResponse? = responses.getOrNull(callNumber)
+        override fun responseFor(
+            callNumber: Int,
+            request: TestServerHttpRequest
+        ): UrlResponse? = responses.getOrNull(callNumber)
     }
 
     class Factory(private val factory: (TestServerCallOptions) -> UrlResponse?) : UrlResponseParameter {
-        override fun responseFor(callNumber: Int, request: TestServerHttpRequest): UrlResponse? = factory(TestServerCallOptions(callNumber))
+        override fun responseFor(
+            callNumber: Int,
+            request: TestServerHttpRequest
+        ): UrlResponse? = factory(TestServerCallOptions(callNumber))
     }
 
     class RequestFactory(private val factory: (TestServerHttpRequest, TestServerCallOptions) -> UrlResponse?) : UrlResponseParameter {
-        override fun responseFor(callNumber: Int, request: TestServerHttpRequest): UrlResponse? = factory(request, TestServerCallOptions(callNumber))
+        override fun responseFor(
+            callNumber: Int,
+            request: TestServerHttpRequest
+        ): UrlResponse? = factory(request, TestServerCallOptions(callNumber))
     }
 }
 
@@ -207,9 +218,11 @@ class TestServer internal constructor(
         return with(TestServerOps) { response.toHttpResponse(json) }
     }
 
-    fun httpClient(): HttpClient = HttpClient(MockEngine { request ->
-        respondToKtor(request)
-    })
+    fun httpClient(): HttpClient = HttpClient(
+        MockEngine { request ->
+            respondToKtor(request)
+        }
+    )
 
     private suspend fun MockRequestHandleScope.respondToKtor(request: HttpRequestData) = with(TestServerOps) {
         handle(
@@ -243,7 +256,6 @@ data class CreatedTestServer(
 
     fun httpClient(): HttpClient = server.httpClient()
 }
-
 
 class TestResponseController {
     private val channel = ByteChannel(autoFlush = true)

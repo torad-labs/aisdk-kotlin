@@ -24,7 +24,6 @@ import kotlinx.serialization.json.jsonObject
 
 public const val ASSEMBLYAI_VERSION: String = "2.0.33"
 
-
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -514,11 +513,23 @@ public class AssemblyAIProvider(
         AssemblyAITranscriptionModel(client, settings, modelId.value)
 
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
+        providerId,
+        "languageModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
@@ -663,7 +674,9 @@ private class AssemblyAITranscriptionModel(
                 else -> throw InvalidResponseDataError(null, "AssemblyAI transcript response has unsupported status")
             }
         }
-        throw NoTranscriptGeneratedError("AssemblyAI transcription polling timed out after ${settings.maxPollAttempts} attempts")
+        throw NoTranscriptGeneratedError(
+            "AssemblyAI transcription polling timed out after ${settings.maxPollAttempts} attempts"
+        )
     }
 
     private fun submitBody(

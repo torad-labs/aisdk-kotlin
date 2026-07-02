@@ -1,25 +1,10 @@
 package ai.torad.aisdk
 
-import dev.drewhamilton.poko.Poko
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.longOrNull
-import kotlinx.serialization.serializer
-import kotlin.jvm.JvmOverloads
 
 /** @since 0.3.0-beta01 */
 public class ProviderToolFactoryOptions<TInput, TOutput, TContext> internal constructor(
@@ -65,7 +50,9 @@ public class ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
     private var onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null
 
     /** @since 0.3.0-beta01 */
-    public fun outputSerializer(value: KSerializer<TOutput>): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
+    public fun outputSerializer(
+        value: KSerializer<TOutput>
+    ): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         outputSerializer = value
         return this
     }
@@ -101,37 +88,49 @@ public class ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
     }
 
     /** @since 0.3.0-beta01 */
-    public fun execute(value: (suspend ToolExecutionContext<TContext>.(TInput) -> TOutput)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
+    public fun execute(
+        value: (suspend ToolExecutionContext<TContext>.(TInput) -> TOutput)?
+    ): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         execute = value
         return this
     }
 
     /** @since 0.3.0-beta01 */
-    public fun needsApproval(value: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
+    public fun needsApproval(
+        value: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)?
+    ): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         needsApproval = value
         return this
     }
 
     /** @since 0.3.0-beta01 */
-    public fun toModelOutput(value: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
+    public fun toModelOutput(
+        value: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)?
+    ): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         toModelOutput = value
         return this
     }
 
     /** @since 0.3.0-beta01 */
-    public fun onInputStart(value: (suspend (streamingId: String) -> Unit)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
+    public fun onInputStart(
+        value: (suspend (streamingId: String) -> Unit)?
+    ): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         onInputStart = value
         return this
     }
 
     /** @since 0.3.0-beta01 */
-    public fun onInputDelta(value: (suspend (streamingId: String, delta: String) -> Unit)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
+    public fun onInputDelta(
+        value: (suspend (streamingId: String, delta: String) -> Unit)?
+    ): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         onInputDelta = value
         return this
     }
 
     /** @since 0.3.0-beta01 */
-    public fun onInputAvailable(value: (suspend (toolCallId: String, input: TInput) -> Unit)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
+    public fun onInputAvailable(
+        value: (suspend (toolCallId: String, input: TInput) -> Unit)?
+    ): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         onInputAvailable = value
         return this
     }
@@ -155,7 +154,6 @@ public class ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
             onInputAvailable = onInputAvailable,
         )
 }
-
 
 /** @since 0.3.0-beta01 */
 public class ProviderToolFactory<TInput, TContext>(
@@ -319,4 +317,3 @@ public object ProviderTools {
         if (supportsDeferredResults) put("supportsDeferredResults", JsonPrimitive(true))
     }
 }
-

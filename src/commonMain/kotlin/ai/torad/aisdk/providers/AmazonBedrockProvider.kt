@@ -238,6 +238,7 @@ public class AmazonBedrockProvider(
     public val settings: AmazonBedrockProviderSettings,
 ) : Provider {
     override val providerId: String = "amazon-bedrock"
+
     /** @since 0.3.0-beta01 */
     public val tools: AnthropicTools = anthropicTools
 
@@ -252,6 +253,7 @@ public class AmazonBedrockProvider(
 
     /** @since 0.3.0-beta01 */
     public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
 
@@ -286,6 +288,7 @@ public class BedrockAnthropicProvider(
     public val settings: AmazonBedrockProviderSettings,
 ) : Provider {
     override val providerId: String = "bedrock.anthropic"
+
     /** @since 0.3.0-beta01 */
     public val tools: AnthropicTools = anthropicTools
 
@@ -295,7 +298,9 @@ public class BedrockAnthropicProvider(
         BedrockChatLanguageModel(client, settings, modelId, "bedrock.anthropic.messages")
 
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(
+        modelId: String
+    ): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
 /**
@@ -330,7 +335,9 @@ public class BedrockMantleProvider(
         BedrockMantleChatLanguageModel(client, settings, modelId.value, "bedrock-mantle.responses", "/responses")
 
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(
+        modelId: String
+    ): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
 /**
@@ -452,7 +459,11 @@ private class BedrockEmbeddingModel(
             embeddings = listOf(BedrockResponse.bedrockEmbeddingVector(obj)),
             usage = EmbeddingUsage(tokens = BedrockResponse.bedrockEmbeddingTokens(obj), raw = response.value),
             request = LanguageModelRequestMetadata(body),
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
         )
     }
 }
@@ -488,7 +499,11 @@ private class BedrockImageModel(
         return ImageModelResult(
             images = images,
             warnings = prepared.warnings,
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to response.value))),
         )
     }
@@ -530,7 +545,11 @@ private class BedrockRerankingModel(
         }
         return RerankingModelResult(
             results = results,
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to response.value))),
         )
     }
@@ -599,7 +618,15 @@ private class BedrockMantleChatLanguageModel(
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val result = generate(params)
         emit(StreamEvent.StreamStart(result.warnings))
-        emit(StreamEvent.ResponseMetadata(result.response.id, result.response.timestampMillis, result.response.modelId, result.response.headers, result.response.body))
+        emit(
+            StreamEvent.ResponseMetadata(
+                result.response.id,
+                result.response.timestampMillis,
+                result.response.modelId,
+                result.response.headers,
+                result.response.body
+            )
+        )
         if (result.text.isNotEmpty()) {
             emit(StreamEvent.TextStart("0"))
             emit(StreamEvent.TextDelta("0", result.text))

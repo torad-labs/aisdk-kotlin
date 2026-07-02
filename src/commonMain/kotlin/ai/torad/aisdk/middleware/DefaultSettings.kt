@@ -5,9 +5,9 @@ import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelMiddleware
 import ai.torad.aisdk.LanguageModelTool
 import ai.torad.aisdk.MiddlewareOperation
+import ai.torad.aisdk.ProviderOptions
 import ai.torad.aisdk.ResponseFormat
 import ai.torad.aisdk.ToolChoice
-import ai.torad.aisdk.ProviderOptions
 import kotlin.jvm.JvmOverloads
 
 /**
@@ -20,7 +20,7 @@ import kotlin.jvm.JvmOverloads
  *   - app-wide `temperature = 0.7`, `maxOutputTokens = 1000`
  *   - default `tools` / `toolChoice` / `headers`
  *   - default `providerOptions` like `{ openai: { reasoningEffort: "high" } }`
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 @JvmOverloads
 public fun DefaultSettingsMiddleware(

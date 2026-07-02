@@ -41,15 +41,17 @@ class OpenResponsesProviderOptionsTest {
             provider.responses("gpt-resp").generate(
                 LanguageModelCallParams {
                     messages(listOf(UserMessage("hi")))
-                    providerOptions(ProviderOptions.Raw(
-                        JsonObject(
-                            mapOf(
-                                "openresponses" to buildJsonObject {
-                                    put("previousReponseId", JsonPrimitive("resp_1"))
-                                },
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf(
+                                    "openresponses" to buildJsonObject {
+                                        put("previousReponseId", JsonPrimitive("resp_1"))
+                                    },
+                                ),
                             ),
-                        ),
-                    ))
+                        )
+                    )
                 },
             )
         }
@@ -84,15 +86,17 @@ class OpenResponsesProviderOptionsTest {
         provider.responses("gpt-resp").generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("hi")))
-                providerOptions(ProviderOptions.Raw(
-                    JsonObject(
-                        mapOf(
-                            "open-responses" to buildJsonObject {
-                                put("previousResponseId", JsonPrimitive("resp_prev"))
-                            },
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "open-responses" to buildJsonObject {
+                                    put("previousResponseId", JsonPrimitive("resp_prev"))
+                                },
+                            ),
                         ),
-                    ),
-                ))
+                    )
+                )
             },
         )
 

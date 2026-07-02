@@ -4,14 +4,14 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.middleware.SimulateStreamingMiddleware
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Validates the middleware-shape fix for `simulateStreamingMiddleware`.
@@ -62,9 +62,11 @@ class SimulateStreamingTest {
 
             // WHEN
             val events = drainAllItems(
-                wrapped.stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}),
+                wrapped.stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    }
+                ),
             )
 
             // THEN — leads with StreamStart + ResponseMetadata (v6 parity), then the
@@ -103,9 +105,11 @@ class SimulateStreamingTest {
 
             // WHEN
             val events = drainAllItems(
-                wrapped.stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("save a note")))
-}),
+                wrapped.stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("save a note")))
+                    }
+                ),
             )
 
             // THEN
@@ -135,9 +139,11 @@ class SimulateStreamingTest {
 
             // WHEN
             val events = drainAllItems(
-                wrapped.stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}),
+                wrapped.stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    }
+                ),
             )
 
             // THEN

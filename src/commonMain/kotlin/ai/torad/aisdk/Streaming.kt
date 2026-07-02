@@ -77,7 +77,7 @@ public sealed class StreamEvent {
      * stream request starts. Mirrors v6's `response-metadata` stream
      * part so [StreamTextResult.response] can expose IDs, timestamps,
      * model IDs, headers, and retained response bodies.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("response-metadata")
@@ -400,7 +400,7 @@ public sealed class StreamEvent {
      * substring-matching [message]. `@Transient` — it's dropped on
      * serialization (AgentError isn't `@Serializable`); [message] is the
      * wire-stable rendering and stays the single source of display text.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("tool-error")
@@ -424,7 +424,7 @@ public sealed class StreamEvent {
      * is added to the assistant message in the result, and the host calls
      * [Agent.generate] again with a tool message containing
      * [ai.torad.aisdk.ContentPart.ToolApprovalResponse] to resume.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("tool-approval-request")
@@ -441,7 +441,7 @@ public sealed class StreamEvent {
          * Null defaults to [toolCallId] for the common case (single
          * approval per call). Explicit when two approvals share a
          * tool-call id and need separate correlation.
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          */
         public val approvalId: String? = null,
         /**
@@ -460,7 +460,7 @@ public sealed class StreamEvent {
      * Distinct from [ToolError] — denial is a CHOICE, not a failure.
      * The matching UI part transitions through
      * [ai.torad.aisdk.ui.ToolCallState.OutputDenied].
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("tool-output-denied")
@@ -483,7 +483,7 @@ public sealed class StreamEvent {
      *  Per historical parity gap #18 (slice), [providerMetadata]
      *  carries provider-specific payloads (Anthropic prompt-cache
      *  hints, OpenAI reasoning trace tokens, etc.) so consumers can
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      *  measure cache-hit rate per step without parsing raw streams. */
     @Serializable
     @SerialName("step-finish")
@@ -496,7 +496,7 @@ public sealed class StreamEvent {
         /** @since 0.3.0-beta01 */
         public val usage: Usage,
         /** Optional provider-specific payload; null on providers that
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          *  don't expose it. Mirrors v6's `finishStep.providerMetadata`. */
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
@@ -518,7 +518,7 @@ public sealed class StreamEvent {
         public val usage: Usage,
         /** Provider-specific summary payload on completion (per
          *  historical parity gap #18 slice). Routing layers measure
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          *  end-to-end cache rate here without parsing each step. */
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
@@ -532,7 +532,7 @@ public sealed class StreamEvent {
          *  (`incomplete_details.reason`), Amazon Bedrock (`stopReason`), and
          *  `ai.torad.aisdk.middleware.simulateStreamingMiddleware` (propagated from the generate result).
          *  Null when the provider does not send a finish-reason string (e.g. KtorGatewayTransport,
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          *  which receives an already-mapped enum value on the wire). */
         public val rawFinishReason: String? = null,
     ) : StreamEvent()
@@ -564,7 +564,7 @@ public sealed class StreamEvent {
      * provider features that the SDK doesn't yet wrap in a typed event.
      * Off by default — providers opt in via call params. [rawValue] already
      * IS the provider payload, so no separate `providerMetadata` slot.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("raw")

@@ -25,7 +25,7 @@ import kotlinx.serialization.json.buildJsonObject
  * Lets tests verify the loop, the tool dispatch, the lifecycle hooks, the
  * stop conditions, and the message-parts conversion without spinning up a
  * real model.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public class MockLanguageModel(
     override val modelId: String = "mock/test",
@@ -128,7 +128,7 @@ public fun MockLanguageModelTextOnly(text: String): MockLanguageModel = MockLang
 /**
  * A model whose first call requests a tool, second call (after the
  * tool result is appended) returns a final text response.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public fun MockLanguageModelToolThenText(
     toolName: String,

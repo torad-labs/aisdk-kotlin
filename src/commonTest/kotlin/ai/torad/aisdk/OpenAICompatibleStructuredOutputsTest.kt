@@ -55,10 +55,12 @@ class OpenAICompatibleStructuredOutputsTest {
         val result = TextGenerator(
             provider.languageModel("m"),
             CallConfig {
-                responseFormat(ResponseFormat.Json(
-                    schemaName = "Answer",
-                    schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
-                ))
+                responseFormat(
+                    ResponseFormat.Json(
+                        schemaName = "Answer",
+                        schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
+                    )
+                )
             },
         ).generate(GenerationInput.Prompt("hi")).first()
 

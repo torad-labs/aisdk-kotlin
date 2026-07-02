@@ -1,29 +1,21 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.MockLanguageModelTextOnly
-import ai.torad.aisdk.ui.ToolCallState
-import ai.torad.aisdk.ui.UIMessage
-import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.UIMessageMetadata.metadataAs
-import ai.torad.aisdk.TypedJsonOps.decodeAs
-import ai.torad.aisdk.TypedJsonOps.decodeValue
-import ai.torad.aisdk.TypedJsonOps.decodeProviderMetadata
-import ai.torad.aisdk.TypedJsonOps.providerMetadataAs
-import ai.torad.aisdk.TypedJsonOps.putJson
 import ai.torad.aisdk.AbortSignals.asAbortSignal
 import ai.torad.aisdk.AgentSessions.session
 import ai.torad.aisdk.GeneratedFiles.bytes
 import ai.torad.aisdk.GeneratedFiles.fileData
+import ai.torad.aisdk.TypedJsonOps.decodeAs
+import ai.torad.aisdk.TypedJsonOps.decodeProviderMetadata
+import ai.torad.aisdk.TypedJsonOps.decodeValue
+import ai.torad.aisdk.TypedJsonOps.providerMetadataAs
+import ai.torad.aisdk.TypedJsonOps.putJson
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+import ai.torad.aisdk.ui.ToolCallState
+import ai.torad.aisdk.ui.UIMessage
+import ai.torad.aisdk.ui.UIMessageMetadata.metadataAs
+import ai.torad.aisdk.ui.UIMessagePart
+import ai.torad.aisdk.ui.UIMessageRole
 import kotlinx.coroutines.Job
-import kotlin.test.Test
-import kotlin.test.assertContentEquals
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -32,6 +24,14 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class KotlinIdiomsTest {
 
@@ -77,7 +77,10 @@ class KotlinIdiomsTest {
             }
         }
 
-        assertEquals("high", settings.providerOptions.toMap().decodeProviderMetadata<ProviderTuning>("openai")?.reasoningEffort)
+        assertEquals(
+            "high",
+            settings.providerOptions.toMap().decodeProviderMetadata<ProviderTuning>("openai")?.reasoningEffort
+        )
         assertEquals("sampled", settings.providerOptions.toMap().decodeValue<ProviderTuning>("trace")?.reasoningEffort)
         val anthropic = assertIs<JsonObject>(settings.providerOptions.toMap()["anthropic"])
         assertEquals("read-write", anthropic["cache"]?.decodeAs<ProviderTuning>()?.reasoningEffort)
@@ -106,12 +109,14 @@ class KotlinIdiomsTest {
 
     @Test
     fun `tool set builder infers serializers and rejects duplicate tool names`() {
-        val tools = ToolSet(Tool<WeatherInput, WeatherOutput, Unit>(
-            name = "weather",
-            description = "Get weather.",
-        ) { input ->
-            WeatherOutput(temperature = input.city.length)
-        })
+        val tools = ToolSet(
+            Tool<WeatherInput, WeatherOutput, Unit>(
+                name = "weather",
+                description = "Get weather.",
+            ) { input ->
+                WeatherOutput(temperature = input.city.length)
+            }
+        )
 
         val descriptor = tools.descriptors.single()
         assertEquals("weather", descriptor.name)
@@ -196,7 +201,9 @@ class KotlinIdiomsTest {
 
     @Test
     fun `metadata helpers decode provider payloads without raw json plumbing`() {
-        val metadata = ProviderMetadata.Raw(JsonObject(mapOf("mock" to TypedJsonOps.encodeJsonElement(ProviderTuning("cached")))))
+        val metadata = ProviderMetadata.Raw(
+            JsonObject(mapOf("mock" to TypedJsonOps.encodeJsonElement(ProviderTuning("cached"))))
+        )
         val result = LanguageModelResult(
             text = "ok",
             finishReason = FinishReason.Stop,

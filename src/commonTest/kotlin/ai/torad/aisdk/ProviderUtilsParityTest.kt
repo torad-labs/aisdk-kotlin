@@ -15,15 +15,6 @@ import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
 import ai.torad.aisdk.ui.UiMessageStreams.safeValidateUIMessages
 import ai.torad.aisdk.ui.UiMessageStreams.validateUIMessages
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.test.runTest
@@ -37,8 +28,6 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -82,12 +71,17 @@ class ProviderUtilsParityTest {
 
         val parsed = EventStreamParser.parse(text, schema)
         val streamed = drainAllItems(
-            EventStreamParser.parse(flowOf("data: {\"type\":\"chunk\"", ",\"value\":3}\n\n", "data: [DONE]\n\n"),
-            schema,),
+            EventStreamParser.parse(
+                flowOf("data: {\"type\":\"chunk\"", ",\"value\":3}\n\n", "data: [DONE]\n\n"),
+                schema,
+            ),
         )
         val failed = EventStreamParser.parse("data: {bad json}\n\n", schema)
 
-        assertEquals(listOf(1, 2), parsed.map { (it as ParseResult.Success).value["value"]?.let { value -> value as JsonPrimitive }?.content?.toInt() })
+        assertEquals(
+            listOf(1, 2),
+            parsed.map { (it as ParseResult.Success).value["value"]?.let { value -> value as JsonPrimitive }?.content?.toInt() }
+        )
         assertEquals(JsonPrimitive(3), (streamed.single() as ParseResult.Success).value["value"])
         assertIs<ParseResult.Failure>(failed.single())
     }
@@ -101,8 +95,10 @@ class ProviderUtilsParityTest {
             alphabet("ab")
             separator("_")
         }.generate()
-        val headers = ProviderHeaders.withUserAgentSuffix(mapOf("User-Agent" to "app/1.0", "X-Empty" to null),
-        "ai-sdk/test",)
+        val headers = ProviderHeaders.withUserAgentSuffix(
+            mapOf("User-Agent" to "app/1.0", "X-Empty" to null),
+            "ai-sdk/test",
+        )
 
         assertEquals(16, generated.length)
         assertTrue(prefixed.startsWith("msg_"))
@@ -113,7 +109,10 @@ class ProviderUtilsParityTest {
                 separator("-")
             }.generate()
         }
-        assertEquals(mapOf("a" to "1", "b" to null), ProviderHeaders.combine(mapOf("a" to "0"), mapOf("a" to "1", "b" to null)))
+        assertEquals(
+            mapOf("a" to "1", "b" to null),
+            ProviderHeaders.combine(mapOf("a" to "0"), mapOf("a" to "1", "b" to null))
+        )
         assertEquals(mapOf("x-a" to "1"), ProviderHeaders.normalize(mapOf("X-A" to "1", "X-B" to null)))
         assertEquals("app/1.0 ai-sdk/test", headers["user-agent"])
         assertEquals("mp3", MediaTypes.toExtension("audio/mpeg"))
@@ -154,12 +153,22 @@ class ProviderUtilsParityTest {
 
         assertEquals(0, created)
         assertEquals(JsonPrimitive("ok"), Schemas.validateTypes(value, lazy)["name"])
-        assertEquals(JsonPrimitive("ok"), Schemas.safeValidateTypes(value, lazy).let { (it as ValidationResult.Success).value["name"] })
+        assertEquals(
+            JsonPrimitive("ok"),
+            Schemas.safeValidateTypes(value, lazy).let { (it as ValidationResult.Success).value["name"] }
+        )
         assertEquals(1, created)
         assertEquals(lazy(), Schemas.asSchema(lazy))
         assertEquals(1, created)
         assertNull(Schemas.parseProviderOptions("missing", ProviderOptions.None, lazy()))
-        assertEquals(JsonPrimitive("ok"), Schemas.parseProviderOptions("test", ProviderOptions.Raw(JsonObject(mapOf("test" to value))), lazy())?.get("name"))
+        assertEquals(
+            JsonPrimitive("ok"),
+            Schemas.parseProviderOptions(
+                "test",
+                ProviderOptions.Raw(JsonObject(mapOf("test" to value))),
+                lazy()
+            )?.get("name")
+        )
         assertFailsWith<InvalidArgumentError> {
             Schemas.parseProviderOptions(
                 "test",
@@ -178,9 +187,14 @@ class ProviderUtilsParityTest {
             buildJsonObject { put("type", JsonPrimitive("object")) },
         )
 
-        val string = assertIs<ValidationResult.Success<String>>(Schemas.safeValidateTypes(JsonPrimitive("ok"), stringSchema))
-        val objectFailure = assertIs<ValidationResult.Failure>(Schemas.safeValidateTypes(JsonPrimitive("not-object"), objectSchema))
-        val stringFailure = assertIs<ValidationResult.Failure>(Schemas.safeValidateTypes(buildJsonObject { put("x", JsonPrimitive(1)) }, stringSchema))
+        val string =
+            assertIs<ValidationResult.Success<String>>(Schemas.safeValidateTypes(JsonPrimitive("ok"), stringSchema))
+        val objectFailure =
+            assertIs<ValidationResult.Failure>(Schemas.safeValidateTypes(JsonPrimitive("not-object"), objectSchema))
+        val stringFailure =
+            assertIs<ValidationResult.Failure>(
+                Schemas.safeValidateTypes(buildJsonObject { put("x", JsonPrimitive(1)) }, stringSchema)
+            )
 
         assertEquals("ok", string.value)
         assertTrue(objectFailure.error.message.orEmpty().contains("Expected JSON object"))
@@ -220,8 +234,8 @@ class ProviderUtilsParityTest {
             ProviderToolFactoryOptions {
                 outputSerializer(JsonElement.serializer())
                 execute({ input ->
-                                    buildJsonObject { put("seen", input["query"] ?: JsonPrimitive("missing")) }
-                                })
+                    buildJsonObject { put("seen", input["query"] ?: JsonPrimitive("missing")) }
+                })
             },
         )
 
@@ -267,7 +281,10 @@ class ProviderUtilsParityTest {
         mutableBytes[0] = 0
         val exposedBytes = copiedFile.byteArray
         exposedBytes[1] = 0
-        val image: Experimental_GenerateImageResult = ImageGeneration.experimental_generateImage(MockImageModel(), "logo")
+        val image: Experimental_GenerateImageResult = ImageGeneration.experimental_generateImage(
+            MockImageModel(),
+            "logo"
+        )
         val speech: Experimental_SpeechResult = SpeechGeneration.experimental_generateSpeech(MockSpeechModel(), "hello")
         val transcript: Experimental_TranscriptionResult =
             Transcription.experimental_transcribe(MockTranscriptionModel(), MockAudioSource())

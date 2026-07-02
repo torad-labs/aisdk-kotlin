@@ -37,10 +37,12 @@ class BlackForestLabsDefensiveParsingTest {
             .image(ModelId("flux-pro-1.1"))
 
         val error = assertFails {
-            model.generate(ImageGenerationParams {
-                prompt("x")
-                size("1024x1024")
-            })
+            model.generate(
+                ImageGenerationParams {
+                    prompt("x")
+                    size("1024x1024")
+                }
+            )
         }
 
         assertTrue(

@@ -17,12 +17,16 @@ public enum class PruneEmptyMessages {
 public sealed class PruneToolCalls {
     /** @since 0.3.0-beta01 */
     public data object None : PruneToolCalls()
+
     /** @since 0.3.0-beta01 */
     public data object All : PruneToolCalls()
+
     /** @since 0.3.0-beta01 */
     public data object BeforeLastMessage : PruneToolCalls()
+
     /** @since 0.3.0-beta01 */
     public data class BeforeLastMessages(val count: Int) : PruneToolCalls()
+
     /** @since 0.3.0-beta01 */
     public data class Rules(val rules: List<PruneToolCallRule>) : PruneToolCalls()
 }
@@ -37,8 +41,10 @@ public data class PruneToolCallRule(
 public sealed class PruneToolCallRuleType {
     /** @since 0.3.0-beta01 */
     public data object All : PruneToolCallRuleType()
+
     /** @since 0.3.0-beta01 */
     public data object BeforeLastMessage : PruneToolCallRuleType()
+
     /** @since 0.3.0-beta01 */
     public data class BeforeLastMessages(val count: Int) : PruneToolCallRuleType()
 }

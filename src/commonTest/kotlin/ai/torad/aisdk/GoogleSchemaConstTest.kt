@@ -170,9 +170,13 @@ class GoogleSchemaConstTest {
         assertTrue("anyOf" !in optionalName, "single non-null nullable anyOf must flatten")
         val optionalValue = assertNotNull(responseProps["optionalValue"]).jsonObject
         assertEquals(true, optionalValue["nullable"]?.jsonPrimitive?.content?.toBoolean())
-        assertEquals(listOf("string", "number"), optionalValue["anyOf"]?.jsonArray?.map { it.jsonObject["type"]?.jsonPrimitive?.content })
+        assertEquals(listOf("string", "number"), optionalValue["anyOf"]?.jsonArray?.map {
+            it.jsonObject["type"]?.jsonPrimitive?.content
+        })
         val stringOrNumber = assertNotNull(responseProps["stringOrNumber"]).jsonObject
-        assertEquals(listOf("string", "number"), stringOrNumber["anyOf"]?.jsonArray?.map { it.jsonObject["type"]?.jsonPrimitive?.content })
+        assertEquals(listOf("string", "number"), stringOrNumber["anyOf"]?.jsonArray?.map {
+            it.jsonObject["type"]?.jsonPrimitive?.content
+        })
         assertTrue("type" !in stringOrNumber, "multi-type schema must become anyOf")
         val toolParameters = assertNotNull(
             body["tools"]?.jsonArray?.single()?.jsonObject

@@ -4,28 +4,21 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.ProviderMetadata
-import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.request
 import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlin.math.ceil
 
@@ -83,22 +76,32 @@ internal class XaiImageModel(
         return ImageModelResult(
             images = images,
             warnings = warnings,
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
             providerMetadata = xaiImageMetadata(data, responseObj),
         )
     }
 
     private fun xaiImageMetadata(data: List<JsonElement>, responseObj: JsonObject): ProviderMetadata =
-        ProviderMetadata.Raw(JsonObject(mapOf("xai" to buildJsonObject {
-            val imageEntries = data.map { image ->
-                val revisedPrompt = ((image as? JsonObject)?.get("revised_prompt") as? JsonPrimitive)?.contentOrNull
-                buildJsonObject {
-                    if (revisedPrompt != null) put("revisedPrompt", JsonPrimitive(revisedPrompt))
-                }
-            }
-            put("images", JsonArray(imageEntries))
-            (JsonAccess.obj(responseObj, "usage"))?.get("cost_in_usd_ticks")?.let { put("costInUsdTicks", it) }
-        })))
+        ProviderMetadata.Raw(
+            JsonObject(
+                mapOf(
+                    "xai" to buildJsonObject {
+                        val imageEntries = data.map { image ->
+                            val revisedPrompt = ((image as? JsonObject)?.get("revised_prompt") as? JsonPrimitive)?.contentOrNull
+                            buildJsonObject {
+                                if (revisedPrompt != null) put("revisedPrompt", JsonPrimitive(revisedPrompt))
+                            }
+                        }
+                        put("images", JsonArray(imageEntries))
+                        (JsonAccess.obj(responseObj, "usage"))?.get("cost_in_usd_ticks")?.let { put("costInUsdTicks", it) }
+                    }
+                )
+            )
+        )
 
     private fun putXaiImageInputs(builder: JsonObjectBuilder, files: List<ImageGenerationFile>) {
         val imageUrls = files.map { xaiDataUri(it) }
@@ -199,13 +202,19 @@ internal class XaiVideoModel(
             videos = listOf(GeneratedFile(mediaType = "video/mp4", base64 = "", url = videoUrl)),
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = status.headers, body = status.value),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("xai" to buildJsonObject {
-                put("requestId", JsonPrimitive(requestId))
-                put("videoUrl", JsonPrimitive(videoUrl))
-                video["duration"]?.let { put("duration", it) }
-                JsonAccess.obj(statusObj, "usage")?.get("cost_in_usd_ticks")?.let { put("costInUsdTicks", it) }
-                statusObj["progress"]?.let { put("progress", it) }
-            }))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "xai" to buildJsonObject {
+                            put("requestId", JsonPrimitive(requestId))
+                            put("videoUrl", JsonPrimitive(videoUrl))
+                            video["duration"]?.let { put("duration", it) }
+                            JsonAccess.obj(statusObj, "usage")?.get("cost_in_usd_ticks")?.let { put("costInUsdTicks", it) }
+                            statusObj["progress"]?.let { put("progress", it) }
+                        }
+                    )
+                )
+            ),
         )
     }
 
@@ -248,12 +257,14 @@ internal class XaiVideoModel(
         if (!isEdit && !isExtension) params.aspectRatio?.let { put("aspect_ratio", JsonPrimitive(it)) }
         if (!isEdit && !isExtension) {
             val resolution = (options["resolution"] as? JsonPrimitive)?.contentOrNull
-                ?: params.resolution?.let { xaiVideoResolutionMap[it] ?: it.also {
-                    warnings += CallWarning(
-                        "unsupported",
-                        "Unrecognized resolution \"$it\". Use providerOptions.xai.resolution with \"480p\" or \"720p\" instead.",
-                    )
-                } }
+                ?: params.resolution?.let {
+                    xaiVideoResolutionMap[it] ?: it.also {
+                        warnings += CallWarning(
+                            "unsupported",
+                            "Unrecognized resolution \"$it\". Use providerOptions.xai.resolution with \"480p\" or \"720p\" instead.",
+                        )
+                    }
+                }
             if (resolution in setOf("480p", "720p")) put("resolution", JsonPrimitive(resolution))
         }
         if (isEdit || isExtension) {
@@ -289,7 +300,9 @@ internal class XaiVideoModel(
         pollTimeoutMs: Long,
     ): HttpJsonResponse {
         val interval = pollIntervalMs.coerceAtLeast(1L)
-        val maxPollAttempts = ceil(pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble()).toInt().coerceAtLeast(1)
+        val maxPollAttempts = ceil(
+            pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble()
+        ).toInt().coerceAtLeast(1)
         repeat(maxPollAttempts) { attempt ->
             if (pollIntervalMs > 0 && attempt > 0) delay(pollIntervalMs)
             val status = settings.xaiGetJson(
@@ -303,7 +316,9 @@ internal class XaiVideoModel(
             val video = JsonAccess.obj(body, "video")
             val hasVideoUrl = (video?.get("url") as? JsonPrimitive)?.contentOrNull != null
             if (statusValue == "done" || (statusValue == null && hasVideoUrl)) return status
-            if (statusValue in setOf("failed", "error")) throw NoVideoGeneratedError("xAI video generation failed: $body")
+            if (statusValue in setOf("failed", "error")) throw NoVideoGeneratedError(
+                "xAI video generation failed: $body"
+            )
         }
         throw NoVideoGeneratedError("xAI video generation timed out after ${pollTimeoutMs}ms")
     }
@@ -312,10 +327,8 @@ internal class XaiVideoModel(
 private const val DEFAULT_XAI_VIDEO_POLL_INTERVAL_MS: Long = 5_000L
 private const val DEFAULT_XAI_VIDEO_POLL_TIMEOUT_MS: Long = 600_000L
 
-
 private val xaiVideoResolutionMap = mapOf(
     "1280x720" to "720p",
     "854x480" to "480p",
     "640x480" to "480p",
 )
-

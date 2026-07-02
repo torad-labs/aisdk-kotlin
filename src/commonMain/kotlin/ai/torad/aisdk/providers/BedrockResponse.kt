@@ -38,13 +38,17 @@ internal object BedrockResponse {
                 (JsonAccess.obj(reasoning, "reasoningText"))?.let {
                     content += ContentPart.Reasoning(
                         text = (it["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
-                        providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject { it["signature"]?.let { signature -> put("signature", signature) } }))),
+                        providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject {
+                            it["signature"]?.let { signature -> put("signature", signature) }
+                        }))),
                     )
                 }
                 (JsonAccess.obj(reasoning, "redactedReasoning"))?.let {
                     content += ContentPart.Reasoning(
                         text = "",
-                        providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject { it["data"]?.let { data -> put("redactedData", data) } }))),
+                        providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject {
+                            it["data"]?.let { data -> put("redactedData", data) }
+                        }))),
                     )
                 }
             }
@@ -81,7 +85,13 @@ internal object BedrockResponse {
             toolCalls = toolCalls,
             finishReason = mapBedrockFinishReason(stopReason, isJsonResponseFromTool),
             usage = bedrockUsage(response["usage"]),
-            providerMetadata = if (metadata.isNotEmpty()) ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to metadata))) else ProviderMetadata.None,
+            providerMetadata = if (metadata.isNotEmpty()) {
+                ProviderMetadata.Raw(
+                    JsonObject(mapOf("bedrock" to metadata))
+                )
+            } else {
+                ProviderMetadata.None
+            },
             content = content,
             rawFinishReason = stopReason,
             warnings = warnings,
@@ -246,7 +256,9 @@ internal class BedrockStreamState(
                         events += StreamEvent.ToolCall(
                             toolCallId = block.id,
                             toolName = block.name,
-                            inputJson = runCatching { aiSdkJson.parseToJsonElement(block.input.ifBlank { "{}" }) }.getOrElse { JsonPrimitive(block.input) },
+                            inputJson = runCatching {
+                                aiSdkJson.parseToJsonElement(block.input.ifBlank { "{}" })
+                            }.getOrElse { JsonPrimitive(block.input) },
                         )
                     }
                 }
@@ -267,7 +279,13 @@ internal class BedrockStreamState(
                 totalSteps = 1,
                 finishReason = finishReason,
                 usage = usage,
-                providerMetadata = if (metadata.isNotEmpty()) ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to metadata))) else ProviderMetadata.None,
+                providerMetadata = if (metadata.isNotEmpty()) {
+                    ProviderMetadata.Raw(
+                        JsonObject(mapOf("bedrock" to metadata))
+                    )
+                } else {
+                    ProviderMetadata.None
+                },
                 rawFinishReason = rawStopReason,
             ),
         )
@@ -281,5 +299,10 @@ internal class BedrockStreamState(
 internal sealed class BedrockStreamBlock {
     data object Text : BedrockStreamBlock()
     data object Reasoning : BedrockStreamBlock()
-    data class Tool(val id: String, val name: String, var input: String, val isJsonResponseTool: Boolean) : BedrockStreamBlock()
+    data class Tool(
+        val id: String,
+        val name: String,
+        var input: String,
+        val isJsonResponseTool: Boolean
+    ) : BedrockStreamBlock()
 }

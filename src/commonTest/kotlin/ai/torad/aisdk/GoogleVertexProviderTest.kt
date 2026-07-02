@@ -3,13 +3,14 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.GOOGLE_VERSION
 import ai.torad.aisdk.providers.GOOGLE_VERTEX_VERSION
-import ai.torad.aisdk.providers.GoogleVertexAnthropicProviderSettings
-import ai.torad.aisdk.providers.GoogleVertexMaasProviderSettings
+import ai.torad.aisdk.providers.GoogleVertex
+import ai.torad.aisdk.providers.GoogleVertexAnthropic
+import ai.torad.aisdk.providers.GoogleVertexMaas
 import ai.torad.aisdk.providers.GoogleVertexProviderSettings
-import ai.torad.aisdk.providers.GoogleVertexXaiProviderSettings
-
+import ai.torad.aisdk.providers.GoogleVertexXai
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -21,11 +22,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.GoogleVertex
-import ai.torad.aisdk.providers.GoogleVertexAnthropic
-import ai.torad.aisdk.providers.GoogleVertexMaas
-import ai.torad.aisdk.providers.GoogleVertexXai
-import kotlinx.serialization.json.JsonObject
 
 class GoogleVertexProviderTest {
     @Test
@@ -60,12 +56,18 @@ class GoogleVertexProviderTest {
         val result = provider.chat(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("hi")))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "google" to buildJsonObject {
-                        put("sharedRequestType", JsonPrimitive("priority"))
-                        put("requestType", JsonPrimitive("shared"))
-                    },
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "google" to buildJsonObject {
+                                    put("sharedRequestType", JsonPrimitive("priority"))
+                                    put("requestType", JsonPrimitive("shared"))
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -84,7 +86,12 @@ class GoogleVertexProviderTest {
         assertEquals("request", request.requestHeaders.headerValue("X-Request"))
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/google-vertex/$GOOGLE_VERTEX_VERSION"))
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/google/$GOOGLE_VERSION"))
-        assertEquals("hi", request.requestBodyJson.jsonObject["contents"]?.jsonArray?.single()?.jsonObject?.get("parts")?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "hi",
+            request.requestBodyJson.jsonObject["contents"]?.jsonArray?.single()?.jsonObject?.get(
+                "parts"
+            )?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
@@ -136,12 +143,22 @@ class GoogleVertexProviderTest {
             }),
         )
 
-        assertEquals("eu", eu.chat(ModelId("gemini-2.5-flash")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}).text)
-        assertEquals("us", us.chat(ModelId("gemini-2.5-flash")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}).text)
+        assertEquals(
+            "eu",
+            eu.chat(ModelId("gemini-2.5-flash")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
+        assertEquals(
+            "us",
+            us.chat(ModelId("gemini-2.5-flash")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
         assertEquals(
             listOf(
                 "https://aiplatform.eu.rep.googleapis.com/v1beta1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent",
@@ -180,15 +197,20 @@ class GoogleVertexProviderTest {
             }),
         )
 
-        val result = provider.chat(ModelId("llama-model")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        val result = provider.chat(ModelId("llama-model")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         assertEquals("maas", result.text)
         assertEquals(3, result.usage.promptTokens)
         assertEquals(4, result.usage.completionTokens)
         assertEquals("Bearer token", fixture.calls.single().requestHeaders.headerValue("Authorization"))
-        assertEquals("llama-model", fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "llama-model",
+            fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
@@ -239,15 +261,30 @@ class GoogleVertexProviderTest {
             }),
         )
 
-        assertEquals("global", global.chat(ModelId("llama")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}).text)
-        assertEquals("regional", regional.chat(ModelId("llama")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}).text)
-        assertEquals("eu", eu.chat(ModelId("llama")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}).text)
+        assertEquals(
+            "global",
+            global.chat(ModelId("llama")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
+        assertEquals(
+            "regional",
+            regional.chat(ModelId("llama")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
+        assertEquals(
+            "eu",
+            eu.chat(ModelId("llama")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
         assertEquals(
             listOf(
                 "https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions",
@@ -319,7 +356,12 @@ class GoogleVertexProviderTest {
         val body = request.requestBodyJson.jsonObject
         assertEquals(null, body["model"])
         assertEquals("vertex-2023-10-16", body["anthropic_version"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("hi", body["messages"]?.jsonArray?.single()?.jsonObject?.get("content")?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "hi",
+            body["messages"]?.jsonArray?.single()?.jsonObject?.get(
+                "content"
+            )?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
@@ -379,12 +421,22 @@ class GoogleVertexProviderTest {
             }),
         )
 
-        assertEquals("eu", eu.messages(ModelId("claude-sonnet-4")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}).text)
-        assertEquals("us", us.messages(ModelId("claude-sonnet-4")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}).text)
+        assertEquals(
+            "eu",
+            eu.messages(ModelId("claude-sonnet-4")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
+        assertEquals(
+            "us",
+            us.messages(ModelId("claude-sonnet-4")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
         assertEquals(
             listOf(
                 "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/anthropic/models/claude-sonnet-4:rawPredict",
@@ -432,12 +484,18 @@ class GoogleVertexProviderTest {
         val result = provider.chatModel(ModelId("grok")).generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("hi")))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "xai" to buildJsonObject {
-                        put("reasoningEffort", JsonPrimitive("high"))
-                        put("topLogprobs", JsonPrimitive(3))
-                    },
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "xai" to buildJsonObject {
+                                    put("reasoningEffort", JsonPrimitive("high"))
+                                    put("topLogprobs", JsonPrimitive(3))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 

@@ -30,35 +30,35 @@ private const val DEFAULT_GENERIC_SUFFIX = "You MUST answer with JSON."
  *
  * Groups the splice-half procedures ported from Vercel AI SDK v6
  * `inject-json-instruction.ts`.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public object JsonInstruction {
     /**
- * Build the JSON instruction block.
- *
- * Mirrors the v6 array-filter-join exactly:
- * ```
- * [
- *   prompt (only if non-empty),
- *   ""     (blank separator line — only if prompt non-empty),
- *   schemaPrefix,
- *   JSON.stringify(schema) (only if schema present),
- *   schemaSuffix,
- * ].filter(notNull).join("\n")
- * ```
- *
- * `schema.toString()` on a kotlinx [JsonElement] yields compact JSON
- * (no insignificant whitespace), matching JS `JSON.stringify(schema)`.
- *
- * @param prompt existing instruction text to lead with (the model's
- *   system prompt, typically). Empty / null contributes nothing and
- *   suppresses the blank separator line.
- * @param schema the JSON schema the answer must satisfy. When null the
- *   suffix degrades to the generic "answer with JSON" form and no
- *   schema block is emitted.
- * @param schemaPrefix label printed before the schema. Defaults to
- *   [DEFAULT_SCHEMA_PREFIX] when a schema is present, else null.
- * @param schemaSuffix closing instruction. Defaults to the
+     * Build the JSON instruction block.
+     *
+     * Mirrors the v6 array-filter-join exactly:
+     * ```
+     * [
+     *   prompt (only if non-empty),
+     *   ""     (blank separator line — only if prompt non-empty),
+     *   schemaPrefix,
+     *   JSON.stringify(schema) (only if schema present),
+     *   schemaSuffix,
+     * ].filter(notNull).join("\n")
+     * ```
+     *
+     * `schema.toString()` on a kotlinx [JsonElement] yields compact JSON
+     * (no insignificant whitespace), matching JS `JSON.stringify(schema)`.
+     *
+     * @param prompt existing instruction text to lead with (the model's
+     *   system prompt, typically). Empty / null contributes nothing and
+     *   suppresses the blank separator line.
+     * @param schema the JSON schema the answer must satisfy. When null the
+     *   suffix degrades to the generic "answer with JSON" form and no
+     *   schema block is emitted.
+     * @param schemaPrefix label printed before the schema. Defaults to
+     *   [DEFAULT_SCHEMA_PREFIX] when a schema is present, else null.
+     * @param schemaSuffix closing instruction. Defaults to the
      *   schema-aware suffix when a schema is present, else the generic one.
      */
     /** @since 0.3.0-beta01 */
@@ -86,7 +86,7 @@ public object JsonInstruction {
      * This is the provider-side entry point a LiteRt [LanguageModel] would
      * call before generation when the caller requested structured output
      * but the engine has no native JSON mode.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public fun injectJsonInstructionIntoMessages(
         messages: List<ModelMessage>,

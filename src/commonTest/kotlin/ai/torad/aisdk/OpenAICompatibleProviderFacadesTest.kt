@@ -2,37 +2,38 @@
 
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.CEREBRAS_VERSION
+import ai.torad.aisdk.providers.Cerebras
 import ai.torad.aisdk.providers.CerebrasProviderSettings
 import ai.torad.aisdk.providers.DEEPINFRA_VERSION
 import ai.torad.aisdk.providers.DEEPSEEK_VERSION
+import ai.torad.aisdk.providers.DeepInfra
 import ai.torad.aisdk.providers.DeepInfraProviderSettings
+import ai.torad.aisdk.providers.DeepSeek
 import ai.torad.aisdk.providers.DeepSeekProviderSettings
 import ai.torad.aisdk.providers.FIREWORKS_VERSION
+import ai.torad.aisdk.providers.Fireworks
 import ai.torad.aisdk.providers.FireworksProviderSettings
 import ai.torad.aisdk.providers.GROQ_VERSION
+import ai.torad.aisdk.providers.Groq
 import ai.torad.aisdk.providers.GroqProviderSettings
 import ai.torad.aisdk.providers.MOONSHOTAI_VERSION
+import ai.torad.aisdk.providers.MoonshotAI
 import ai.torad.aisdk.providers.MoonshotAIProviderSettings
 import ai.torad.aisdk.providers.PERPLEXITY_VERSION
+import ai.torad.aisdk.providers.Perplexity
 import ai.torad.aisdk.providers.PerplexityProviderSettings
 import ai.torad.aisdk.providers.TOGETHERAI_VERSION
+import ai.torad.aisdk.providers.TogetherAI
 import ai.torad.aisdk.providers.TogetherAIProviderSettings
 import ai.torad.aisdk.providers.VERCEL_VERSION
+import ai.torad.aisdk.providers.Vercel
 import ai.torad.aisdk.providers.VercelProviderSettings
 import ai.torad.aisdk.providers.browserSearch
-import ai.torad.aisdk.providers.Cerebras
-import ai.torad.aisdk.providers.DeepInfra
-import ai.torad.aisdk.providers.DeepSeek
-import ai.torad.aisdk.providers.Fireworks
-import ai.torad.aisdk.providers.Groq
-import ai.torad.aisdk.providers.MoonshotAI
-import ai.torad.aisdk.providers.Perplexity
-import ai.torad.aisdk.providers.TogetherAI
-import ai.torad.aisdk.providers.Vercel
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
@@ -45,7 +46,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import kotlinx.serialization.json.JsonObject
 
 class OpenAICompatibleProviderFacadesTest {
     @Test
@@ -56,7 +56,10 @@ class OpenAICompatibleProviderFacadesTest {
                 expectedChatUrl = "https://deepseek.test/chat/completions",
                 expectedUserAgent = "ai-sdk/deepseek/$DEEPSEEK_VERSION",
                 create = { client ->
-                    DeepSeek(client, DeepSeekProviderSettings { apiKey("key"); baseURL("https://deepseek.test") }).languageModel("model")
+                    DeepSeek(client, DeepSeekProviderSettings {
+                        apiKey("key")
+                        baseURL("https://deepseek.test")
+                    }).languageModel("model")
                 },
             ),
             ProviderCase(
@@ -64,7 +67,10 @@ class OpenAICompatibleProviderFacadesTest {
                 expectedChatUrl = "https://cerebras.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/cerebras/$CEREBRAS_VERSION",
                 create = { client ->
-                    Cerebras(client, CerebrasProviderSettings { apiKey("key"); baseURL("https://cerebras.test/v1") }).languageModel("model")
+                    Cerebras(client, CerebrasProviderSettings {
+                        apiKey("key")
+                        baseURL("https://cerebras.test/v1")
+                    }).languageModel("model")
                 },
             ),
             ProviderCase(
@@ -72,7 +78,10 @@ class OpenAICompatibleProviderFacadesTest {
                 expectedChatUrl = "https://deepinfra.test/v1/openai/chat/completions",
                 expectedUserAgent = "ai-sdk/deepinfra/$DEEPINFRA_VERSION",
                 create = { client ->
-                    DeepInfra(client, DeepInfraProviderSettings { apiKey("key"); baseURL("https://deepinfra.test/v1") }).languageModel("model")
+                    DeepInfra(client, DeepInfraProviderSettings {
+                        apiKey("key")
+                        baseURL("https://deepinfra.test/v1")
+                    }).languageModel("model")
                 },
             ),
             ProviderCase(
@@ -80,7 +89,10 @@ class OpenAICompatibleProviderFacadesTest {
                 expectedChatUrl = "https://fireworks.test/inference/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/fireworks/$FIREWORKS_VERSION",
                 create = { client ->
-                    Fireworks(client, FireworksProviderSettings { apiKey("key"); baseURL("https://fireworks.test/inference/v1") }).chatModel(ModelId("model"))
+                    Fireworks(client, FireworksProviderSettings {
+                        apiKey("key")
+                        baseURL("https://fireworks.test/inference/v1")
+                    }).chatModel(ModelId("model"))
                 },
             ),
             ProviderCase(
@@ -88,7 +100,10 @@ class OpenAICompatibleProviderFacadesTest {
                 expectedChatUrl = "https://perplexity.test/chat/completions",
                 expectedUserAgent = "ai-sdk/perplexity/$PERPLEXITY_VERSION",
                 create = { client ->
-                    Perplexity(client, PerplexityProviderSettings { apiKey("key"); baseURL("https://perplexity.test") }).languageModel("model")
+                    Perplexity(client, PerplexityProviderSettings {
+                        apiKey("key")
+                        baseURL("https://perplexity.test")
+                    }).languageModel("model")
                 },
             ),
             ProviderCase(
@@ -96,7 +111,10 @@ class OpenAICompatibleProviderFacadesTest {
                 expectedChatUrl = "https://moonshot.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/moonshotai/$MOONSHOTAI_VERSION",
                 create = { client ->
-                    MoonshotAI(client, MoonshotAIProviderSettings { apiKey("key"); baseURL("https://moonshot.test/v1") }).chatModel(ModelId("model"))
+                    MoonshotAI(client, MoonshotAIProviderSettings {
+                        apiKey("key")
+                        baseURL("https://moonshot.test/v1")
+                    }).chatModel(ModelId("model"))
                 },
             ),
             ProviderCase(
@@ -104,7 +122,10 @@ class OpenAICompatibleProviderFacadesTest {
                 expectedChatUrl = "https://groq.test/openai/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/groq/$GROQ_VERSION",
                 create = { client ->
-                    Groq(client, GroqProviderSettings { apiKey("key"); baseURL("https://groq.test/openai/v1") }).chat("model")
+                    Groq(client, GroqProviderSettings {
+                        apiKey("key")
+                        baseURL("https://groq.test/openai/v1")
+                    }).chat("model")
                 },
             ),
             ProviderCase(
@@ -112,7 +133,10 @@ class OpenAICompatibleProviderFacadesTest {
                 expectedChatUrl = "https://together.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/togetherai/$TOGETHERAI_VERSION",
                 create = { client ->
-                    TogetherAI(client, TogetherAIProviderSettings { apiKey("key"); baseURL("https://together.test/v1") }).chatModel(ModelId("model"))
+                    TogetherAI(client, TogetherAIProviderSettings {
+                        apiKey("key")
+                        baseURL("https://together.test/v1")
+                    }).chatModel(ModelId("model"))
                 },
             ),
             ProviderCase(
@@ -120,7 +144,10 @@ class OpenAICompatibleProviderFacadesTest {
                 expectedChatUrl = "https://vercel.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/vercel/$VERCEL_VERSION",
                 create = { client ->
-                    Vercel(client, VercelProviderSettings { apiKey("key"); baseURL("https://vercel.test/v1") }).languageModel("model")
+                    Vercel(client, VercelProviderSettings {
+                        apiKey("key")
+                        baseURL("https://vercel.test/v1")
+                    }).languageModel("model")
                 },
             ),
         )
@@ -141,9 +168,11 @@ class OpenAICompatibleProviderFacadesTest {
             fixture.server.start()
 
             val model = case.create(fixture.httpClient())
-            val result = model.generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+            val result = model.generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
             seenRequests += fixture.calls
 
             assertEquals(case.name, result.text)
@@ -194,19 +223,23 @@ class OpenAICompatibleProviderFacadesTest {
 
         val result = provider.chat("deepseek-chat").generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Text("Return an object."),
-                            ContentPart.Image("image/png", "aW1n"),
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Text("Return an object."),
+                                ContentPart.Image("image/png", "aW1n"),
+                            ),
                         ),
-                    ),
-                ))
+                    )
+                )
                 seed(7)
-                responseFormat(ResponseFormat.Json(
-                    schemaJson = buildJsonObject { put("type", JsonPrimitive("object")) },
-                ))
+                responseFormat(
+                    ResponseFormat.Json(
+                        schemaJson = buildJsonObject { put("type", JsonPrimitive("object")) },
+                    )
+                )
             },
         )
 
@@ -261,23 +294,27 @@ class OpenAICompatibleProviderFacadesTest {
 
         val result = provider.languageModel("sonar").generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(ContentPart.Text("A"), ContentPart.Text("B")),
-                    ),
-                    ModelMessage(
-                        MessageRole.Assistant,
-                        listOf(ContentPart.ToolCall("call_1", "lookup", buildJsonObject {})),
-                    ),
-                    ModelMessage(
-                        MessageRole.Tool,
-                        listOf(ContentPart.ToolResult("call_1", "lookup", JsonPrimitive("done"))),
-                    ),
-                ))
-                tools(listOf(
-                    LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
-                ))
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(ContentPart.Text("A"), ContentPart.Text("B")),
+                        ),
+                        ModelMessage(
+                            MessageRole.Assistant,
+                            listOf(ContentPart.ToolCall("call_1", "lookup", buildJsonObject {})),
+                        ),
+                        ModelMessage(
+                            MessageRole.Tool,
+                            listOf(ContentPart.ToolResult("call_1", "lookup", JsonPrimitive("done"))),
+                        ),
+                    )
+                )
+                tools(
+                    listOf(
+                        LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
+                    )
+                )
                 toolChoice(ToolChoice.Required)
                 stopSequences(listOf("END"))
                 seed(12)
@@ -332,9 +369,11 @@ class OpenAICompatibleProviderFacadesTest {
             },
         )
 
-        val result = provider.chatModel(ModelId("kimi")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        val result = provider.chatModel(ModelId("kimi")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         assertEquals(3, result.usage.inputTokens.cacheRead)
         assertEquals(6, result.usage.inputTokens.noCache)
@@ -374,18 +413,22 @@ class OpenAICompatibleProviderFacadesTest {
         // browser_search is only valid on the gpt-oss models, so use a supported one here.
         val result = provider.chat("openai/gpt-oss-20b").generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    UserMessage("hi"),
-                    ModelMessage(MessageRole.Assistant, listOf(ContentPart.Reasoning("prior thought"))),
-                ))
-                tools(listOf(
-                    LanguageModelTool(
-                        "browserSearch",
-                        "Search.",
-                        """{"type":"object"}""",
-                        providerExecuted = true,
-                    ),
-                ))
+                messages(
+                    listOf(
+                        UserMessage("hi"),
+                        ModelMessage(MessageRole.Assistant, listOf(ContentPart.Reasoning("prior thought"))),
+                    )
+                )
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            "browserSearch",
+                            "Search.",
+                            """{"type":"object"}""",
+                            providerExecuted = true,
+                        ),
+                    )
+                )
             },
         )
 
@@ -427,9 +470,11 @@ class OpenAICompatibleProviderFacadesTest {
         provider.chat("llama").generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("hi")))
-                tools(listOf(
-                    LanguageModelTool("browserSearch", "Search.", """{"type":"object"}""", providerExecuted = true),
-                ))
+                tools(
+                    listOf(
+                        LanguageModelTool("browserSearch", "Search.", """{"type":"object"}""", providerExecuted = true),
+                    )
+                )
             },
         )
         // browser_search was the only tool and is unsupported on llama → tools key omitted entirely.
@@ -472,15 +517,21 @@ class OpenAICompatibleProviderFacadesTest {
             },
         )
 
-        val chat = provider.chatModel(ModelId("model")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
-        val completion = provider.completionModel(ModelId("model")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
-        val embedding = provider.textEmbeddingModel(ModelId("embed")).embed(EmbeddingModelCallParams {
-    values(listOf("hello"))
-})
+        val chat = provider.chatModel(ModelId("model")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
+        val completion = provider.completionModel(ModelId("model")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
+        val embedding = provider.textEmbeddingModel(ModelId("embed")).embed(
+            EmbeddingModelCallParams {
+                values(listOf("hello"))
+            }
+        )
         val image = provider.image(ModelId("black-forest-labs/FLUX-1-schnell")).generate(
             ImageGenerationParams {
                 prompt("mountain")
@@ -488,7 +539,9 @@ class OpenAICompatibleProviderFacadesTest {
                 size("512x768")
                 aspectRatio("1:1")
                 seed(7)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("deepinfra" to buildJsonObject { put("scheduler", JsonPrimitive("fast")) }))))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("deepinfra" to buildJsonObject {
+                    put("scheduler", JsonPrimitive("fast"))
+                }))))
             },
         )
 
@@ -536,18 +589,24 @@ class OpenAICompatibleProviderFacadesTest {
         provider.chatModel(ModelId("model")).generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("hi")))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "fireworks" to buildJsonObject {
-                        put(
-                            "thinking",
-                            buildJsonObject {
-                                put("type", JsonPrimitive("enabled"))
-                                put("budgetTokens", JsonPrimitive(2048))
-                            },
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "fireworks" to buildJsonObject {
+                                    put(
+                                        "thinking",
+                                        buildJsonObject {
+                                            put("type", JsonPrimitive("enabled"))
+                                            put("budgetTokens", JsonPrimitive(2048))
+                                        },
+                                    )
+                                    put("reasoningHistory", JsonPrimitive("preserved"))
+                                },
+                            )
                         )
-                        put("reasoningHistory", JsonPrimitive("preserved"))
-                    },
-                ))))
+                    )
+                )
             },
         )
         val chatBody = fixture.calls.single { it.requestUrl.endsWith("/chat/completions") }.requestBodyJson.jsonObject
@@ -606,9 +665,11 @@ class OpenAICompatibleProviderFacadesTest {
             },
         )
 
-        val image = provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(ImageGenerationParams {
-            prompt("edit")
-        })
+        val image = provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(
+            ImageGenerationParams {
+                prompt("edit")
+            }
+        )
 
         assertEquals(Base64Codec.encode(byteArrayOf(9, 8, 7)), image.images.single().base64)
         assertEquals(
@@ -654,24 +715,40 @@ class OpenAICompatibleProviderFacadesTest {
             },
         )
 
-        assertEquals("done", provider.completionModel(ModelId("model")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}).text)
-        assertEquals(listOf(0.3f, 0.4f), provider.embeddingModel("embed").embed(EmbeddingModelCallParams {
-    values(listOf("hello"))
-}).embeddings.single())
+        assertEquals(
+            "done",
+            provider.completionModel(ModelId("model")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
+        assertEquals(
+            listOf(0.3f, 0.4f),
+            provider.embeddingModel("embed").embed(
+                EmbeddingModelCallParams {
+                    values(listOf("hello"))
+                }
+            ).embeddings.single()
+        )
         val image = provider.image(ModelId("black-forest-labs/FLUX.1-dev")).generate(
             ImageGenerationParams {
                 prompt("house")
                 n(2)
                 size("1024x768")
                 seed(12)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "togetherai" to buildJsonObject {
-                                        put("steps", JsonPrimitive(8))
-                                        put("disable_safety_checker", JsonPrimitive(true))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "togetherai" to buildJsonObject {
+                                    put("steps", JsonPrimitive(8))
+                                    put("disable_safety_checker", JsonPrimitive(true))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
         val ranking = provider.reranking(ModelId("ranker")).rerank(
@@ -679,7 +756,9 @@ class OpenAICompatibleProviderFacadesTest {
                 query("best")
                 documents(listOf("alpha", "beta"))
                 topN(1)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("togetherai" to buildJsonObject { put("rankFields", JsonArray(listOf(JsonPrimitive("text")))) }))))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("togetherai" to buildJsonObject {
+                    put("rankFields", JsonArray(listOf(JsonPrimitive("text"))))
+                }))))
             },
         )
 

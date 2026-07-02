@@ -65,7 +65,10 @@ class AnthropicReAuditTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
+        val provider = Anthropic(
+            fixture.httpClient(),
+            AnthropicProviderSettings { baseURL("https://anthropic.test/v1") }
+        )
 
         val events = drainAllItems(
             provider.messages(ModelId("claude-sonnet-4-5")).stream(
@@ -97,7 +100,10 @@ class AnthropicReAuditTest {
     fun `tool result decodes MCP content with text plus image into Anthropic content blocks`() = runTest {
         val fixture = anthropicEchoFixture()
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
+        val provider = Anthropic(
+            fixture.httpClient(),
+            AnthropicProviderSettings { baseURL("https://anthropic.test/v1") }
+        )
 
         val mcpContent = with(ToolResultOutputs) {
             ToolResultOutput.Content(
@@ -117,19 +123,21 @@ class AnthropicReAuditTest {
 
         provider.messages(ModelId("claude-sonnet-4-5")).generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    ModelMessage(
-                        MessageRole.Tool,
-                        listOf(
-                            ContentPart.ToolResult(
-                                toolCallId = "toolu_mcp",
-                                toolName = "screenshot",
-                                output = mcpContent,
-                                modelVisible = mcpContent,
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.Tool,
+                            listOf(
+                                ContentPart.ToolResult(
+                                    toolCallId = "toolu_mcp",
+                                    toolName = "screenshot",
+                                    output = mcpContent,
+                                    modelVisible = mcpContent,
+                                ),
                             ),
                         ),
-                    ),
-                ))
+                    )
+                )
             },
         )
 
@@ -149,7 +157,10 @@ class AnthropicReAuditTest {
     fun `tool result does not leak the error wrapper into the prompt`() = runTest {
         val fixture = anthropicEchoFixture()
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
+        val provider = Anthropic(
+            fixture.httpClient(),
+            AnthropicProviderSettings { baseURL("https://anthropic.test/v1") }
+        )
 
         val errorOutput = with(ToolResultOutputs) {
             ToolResultOutput.Error("upstream timed out").toJsonElement()
@@ -157,20 +168,22 @@ class AnthropicReAuditTest {
 
         provider.messages(ModelId("claude-sonnet-4-5")).generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    ModelMessage(
-                        MessageRole.Tool,
-                        listOf(
-                            ContentPart.ToolResult(
-                                toolCallId = "toolu_err",
-                                toolName = "lookup",
-                                output = errorOutput,
-                                modelVisible = errorOutput,
-                                isError = true,
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.Tool,
+                            listOf(
+                                ContentPart.ToolResult(
+                                    toolCallId = "toolu_err",
+                                    toolName = "lookup",
+                                    output = errorOutput,
+                                    modelVisible = errorOutput,
+                                    isError = true,
+                                ),
                             ),
                         ),
-                    ),
-                ))
+                    )
+                )
             },
         )
 

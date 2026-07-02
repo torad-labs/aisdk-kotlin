@@ -4,16 +4,12 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.intOrNull
-import kotlin.jvm.JvmOverloads
 
 /** @since 0.3.0-beta01 */
 public interface VideoModel {
     /** @since 0.3.0-beta01 */
     public val modelId: String
+
     /** @since 0.3.0-beta01 */
     public val provider: String
         get() = "unknown"
@@ -258,7 +254,9 @@ public object VideoGeneration {
             videos = videos,
             warnings = results.flatMap { it.warnings },
             response = results.first().response,
-            providerMetadata = results.firstNotNullOfOrNull { (it.providerMetadata as? ProviderMetadata.Raw) } ?: ProviderMetadata.None,
+            providerMetadata = results.firstNotNullOfOrNull {
+                (it.providerMetadata as? ProviderMetadata.Raw)
+            } ?: ProviderMetadata.None,
             responses = results.map { it.response },
         )
     }

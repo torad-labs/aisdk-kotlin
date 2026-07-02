@@ -1,10 +1,11 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ASSEMBLYAI_VERSION
+import ai.torad.aisdk.providers.AssemblyAI
 import ai.torad.aisdk.providers.AssemblyAIProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -18,8 +19,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.AssemblyAI
-import kotlinx.serialization.json.JsonObject
 
 class AssemblyAIProviderTest {
     @Test
@@ -57,32 +56,43 @@ class AssemblyAIProviderTest {
 
         val result = model.transcribe(
             TranscriptionParams {
-                audio(AudioSource(
-                                    mediaType = "audio/mpeg",
-                                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
-                                    filename = "clip.mp3",
-                                ))
+                audio(
+                    AudioSource(
+                        mediaType = "audio/mpeg",
+                        base64 = Base64Codec.encode("abc".encodeToByteArray()),
+                        filename = "clip.mp3",
+                    )
+                )
                 language("en_us")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "assemblyai" to buildJsonObject {
-                                        put("audioEndAt", JsonPrimitive(10))
-                                        put("autoChapters", JsonPrimitive(true))
-                                        put("contentSafetyConfidence", JsonPrimitive(75))
-                                        put("customSpelling", buildJsonArray {
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "assemblyai" to buildJsonObject {
+                                    put("audioEndAt", JsonPrimitive(10))
+                                    put("autoChapters", JsonPrimitive(true))
+                                    put("contentSafetyConfidence", JsonPrimitive(75))
+                                    put(
+                                        "customSpelling",
+                                        buildJsonArray {
                                             add(
                                                 buildJsonObject {
                                                     put("from", buildJsonArray { add(JsonPrimitive("sdk")) })
                                                     put("to", JsonPrimitive("SDK"))
                                                 },
                                             )
-                                        })
-                                        put("languageCode", JsonPrimitive("en"))
-                                        put("languageDetection", JsonPrimitive(true))
-                                        put("speakerLabels", JsonPrimitive(true))
-                                        put("speechThreshold", JsonPrimitive(0.7f))
-                                        put("wordBoost", buildJsonArray { add(JsonPrimitive("Kotlin")) })
-                                    },
-                                ))))
+                                        }
+                                    )
+                                    put("languageCode", JsonPrimitive("en"))
+                                    put("languageDetection", JsonPrimitive(true))
+                                    put("speakerLabels", JsonPrimitive(true))
+                                    put("speechThreshold", JsonPrimitive(0.7f))
+                                    put("wordBoost", buildJsonArray { add(JsonPrimitive("Kotlin")) })
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -98,7 +108,10 @@ class AssemblyAIProviderTest {
         assertEquals(4.2f, result.durationInSeconds)
         assertEquals("true", result.response.headers["x-final"])
         assertEquals("completed", result.response.body?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
-        assertEquals("completed", result.providerMetadata.toMap()["assemblyai"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "completed",
+            result.providerMetadata.toMap()["assemblyai"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull
+        )
 
         val upload = fixture.calls[0]
         assertEquals("POST", upload.requestMethod)
@@ -115,7 +128,10 @@ class AssemblyAIProviderTest {
         assertEquals(10, body["audio_end_at"]?.jsonPrimitive?.intOrNull)
         assertEquals(true, body["auto_chapters"]?.jsonPrimitive?.contentOrNull.toBoolean())
         assertEquals(75, body["content_safety_confidence"]?.jsonPrimitive?.intOrNull)
-        assertEquals("SDK", body["custom_spelling"]?.jsonArray?.single()?.jsonObject?.get("to")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "SDK",
+            body["custom_spelling"]?.jsonArray?.single()?.jsonObject?.get("to")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("en", body["language_code"]?.jsonPrimitive?.contentOrNull)
         assertEquals(true, body["language_detection"]?.jsonPrimitive?.contentOrNull.toBoolean())
         assertEquals(true, body["speaker_labels"]?.jsonPrimitive?.contentOrNull.toBoolean())
@@ -185,9 +201,11 @@ class AssemblyAIProviderTest {
         ).transcription(ModelId("best"))
 
         val error = assertFailsWith<AiSdkException> {
-            model.transcribe(TranscriptionParams {
-                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
-            })
+            model.transcribe(
+                TranscriptionParams {
+                    audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                }
+            )
         }
         assertTrue(error.message.orEmpty().contains("bad audio"))
     }

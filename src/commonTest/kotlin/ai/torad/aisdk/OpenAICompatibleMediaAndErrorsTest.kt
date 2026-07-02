@@ -1,9 +1,8 @@
 @file:OptIn(LowLevelLanguageModelApi::class)
 
 package ai.torad.aisdk
-import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings
 import ai.torad.aisdk.providers.OpenAICompatible
-import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -12,19 +11,12 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
-import io.ktor.utils.io.ByteChannel
-import io.ktor.utils.io.writeStringUtf8
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -48,7 +40,11 @@ class OpenAICompatibleMediaAndErrorsTest {
                 )
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
+        val provider =
+            OpenAICompatible(client, OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+            })
 
         val image = ImageGeneration.generateImage(provider.imageModel("image"), prompt = "logo")
 
@@ -92,14 +88,27 @@ class OpenAICompatibleMediaAndErrorsTest {
                         HttpStatusCode.OK,
                         headersOf(HttpHeaders.ContentType, "application/json"),
                     )
-                    else -> respond("{}", HttpStatusCode.NotFound, headersOf(HttpHeaders.ContentType, "application/json"))
+                    else -> respond(
+                        "{}",
+                        HttpStatusCode.NotFound,
+                        headersOf(HttpHeaders.ContentType, "application/json")
+                    )
                 }
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
+        val provider =
+            OpenAICompatible(client, OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+            })
 
         val embedding = Embedding.embedMany(provider.embeddingModel("embed"), listOf("a", "b"))
-        val image = ImageGeneration.generateImage(provider.imageModel("image"), prompt = "logo", aspectRatio = "1:1", seed = 1)
+        val image = ImageGeneration.generateImage(
+            provider.imageModel("image"),
+            prompt = "logo",
+            aspectRatio = "1:1",
+            seed = 1
+        )
         val speech = SpeechGeneration.generateSpeech(provider.speechModel("tts"), text = "hello", voice = "alloy")
         val transcript = Transcription.transcribe(
             provider.transcriptionModel("whisper"),
@@ -140,7 +149,11 @@ class OpenAICompatibleMediaAndErrorsTest {
                 )
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
+        val provider =
+            OpenAICompatible(client, OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+            })
 
         val image = ImageGeneration.generateImage(
             model = provider.imageModel("image"),
@@ -165,7 +178,11 @@ class OpenAICompatibleMediaAndErrorsTest {
                 )
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
+        val provider =
+            OpenAICompatible(client, OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+            })
 
         val error = assertFailsWith<WireDecodeException> {
             Embedding.embed(provider.embeddingModel("embed"), "a")
@@ -186,7 +203,11 @@ class OpenAICompatibleMediaAndErrorsTest {
                 )
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
+        val provider =
+            OpenAICompatible(client, OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+            })
 
         val error = assertFailsWith<WireDecodeException> {
             TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).first()
@@ -220,7 +241,11 @@ class OpenAICompatibleMediaAndErrorsTest {
                 }
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
+        val provider =
+            OpenAICompatible(client, OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+            })
 
         val completionError = assertFailsWith<WireDecodeException> {
             TextGenerator(provider.completionModel("davinci")).generate(GenerationInput.Prompt("complete")).first()
@@ -251,7 +276,11 @@ class OpenAICompatibleMediaAndErrorsTest {
                 )
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
+        val provider =
+            OpenAICompatible(client, OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+            })
 
         val error = assertFailsWith<APICallError> {
             TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).first()
@@ -314,9 +343,11 @@ class OpenAICompatibleMediaAndErrorsTest {
             ),
         )
 
-        model.generate(LanguageModelCallParams {
-    messages(messages)
-})
+        model.generate(
+            LanguageModelCallParams {
+                messages(messages)
+            }
+        )
 
         val wireMessages = seenBodies.single()["messages"]!!.jsonArray.map { it.jsonObject }
         val toolMessages = wireMessages.filter { it["role"]?.jsonPrimitive?.content == "tool" }
@@ -374,9 +405,11 @@ class OpenAICompatibleMediaAndErrorsTest {
             ),
         )
 
-        model.generate(LanguageModelCallParams {
-    messages(messages)
-})
+        model.generate(
+            LanguageModelCallParams {
+                messages(messages)
+            }
+        )
 
         val wireMessages = seenBodies.single()["messages"]!!.jsonArray.map { it.jsonObject }
         val toolMessages = wireMessages.filter { it["role"]?.jsonPrimitive?.content == "tool" }
@@ -399,6 +432,4 @@ class OpenAICompatibleMediaAndErrorsTest {
             is OutgoingContent.NoContent -> ""
             else -> body.toString()
         }
-
-
 }

@@ -47,8 +47,16 @@ class AwsSigV4Test {
         )
 
         assertEquals("token", headers.headerValue("x-amz-security-token"))
-        assertTrue(headers.headerValue("Authorization").orEmpty().contains("Credential=id/20260102/us-east-1/bedrock/aws4_request"))
-        assertTrue(headers.headerValue("Authorization").orEmpty().contains("SignedHeaders=content-type;host;x-amz-date;x-amz-security-token"))
+        assertTrue(
+            headers.headerValue(
+                "Authorization"
+            ).orEmpty().contains("Credential=id/20260102/us-east-1/bedrock/aws4_request")
+        )
+        assertTrue(
+            headers.headerValue(
+                "Authorization"
+            ).orEmpty().contains("SignedHeaders=content-type;host;x-amz-date;x-amz-security-token")
+        )
     }
 
     @Test

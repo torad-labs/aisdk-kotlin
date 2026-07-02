@@ -117,8 +117,10 @@ public sealed class ToolResult<out O> {
 public abstract class Tool<TInput, TOutput, TContext> {
     /** @since 0.3.0-beta01 */
     public abstract val schema: ToolSchema
+
     /** @since 0.3.0-beta01 */
     public abstract val inputSerializer: KSerializer<TInput>
+
     /** @since 0.3.0-beta01 */
     public abstract val outputSerializer: KSerializer<TOutput>
 
@@ -126,23 +128,29 @@ public abstract class Tool<TInput, TOutput, TContext> {
      * Flow-first executor: emit one [ToolResult.Success] per value. The LAST emission is the
      * final result that feeds the model; earlier emissions surface as preliminary tool results.
      * Extend [StreamingTool] and override [StreamingTool.executeStream] for the streaming case.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public abstract fun execute(input: TInput, ctx: ToolExecutionContext<TContext>): Flow<ToolResult<TOutput>>
 
     // Backward-compat properties so ToolLoopAgent compiles unchanged.
     /** @since 0.3.0-beta01 */
     public val name: String get() = schema.name
+
     /** @since 0.3.0-beta01 */
     public val description: String get() = schema.description
+
     /** @since 0.3.0-beta01 */
     public val strict: Boolean? get() = schema.strict
+
     /** @since 0.3.0-beta01 */
     public val inputExamples: List<String> get() = schema.inputExamples
+
     /** @since 0.3.0-beta01 */
     public val metadata: Map<String, JsonElement> get() = schema.metadata
+
     /** @since 0.3.0-beta01 */
     public val providerExecuted: Boolean get() = schema.providerExecuted
+
     /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions get() = schema.providerOptions
 
@@ -224,7 +232,10 @@ internal class LambdaTool<TInput, TOutput, TContext>(
         modelOutputFn?.invoke(output, options)
     override suspend fun onInputStart(streamingId: String) { inputStartFn?.invoke(streamingId) }
     override suspend fun onInputDelta(streamingId: String, delta: String) { inputDeltaFn?.invoke(streamingId, delta) }
-    override suspend fun onInputAvailable(toolCallId: String, input: TInput) { inputAvailableFn?.invoke(toolCallId, input) }
+    override suspend fun onInputAvailable(
+        toolCallId: String,
+        input: TInput
+    ) { inputAvailableFn?.invoke(toolCallId, input) }
 }
 
 @Suppress("LongParameterList")
@@ -246,12 +257,15 @@ internal class LambdaStreamingTool<TInput, TOutput, TContext>(
         modelOutputFn?.invoke(output, options)
     override suspend fun onInputStart(streamingId: String) { inputStartFn?.invoke(streamingId) }
     override suspend fun onInputDelta(streamingId: String, delta: String) { inputDeltaFn?.invoke(streamingId, delta) }
-    override suspend fun onInputAvailable(toolCallId: String, input: TInput) { inputAvailableFn?.invoke(toolCallId, input) }
+    override suspend fun onInputAvailable(
+        toolCallId: String,
+        input: TInput
+    ) { inputAvailableFn?.invoke(toolCallId, input) }
 }
 
 /**
  * Erased map of tools indexed by name. Application code constructs via the [ToolSet] factory.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public class ToolSet<TContext>(
     /** @since 0.3.0-beta01 */
@@ -339,7 +353,15 @@ public fun <TInput, TOutput, TContext> Tool(
     providerOptions: ProviderOptions = ProviderOptions.None,
     executor: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
 ): Tool<TInput, TOutput, TContext> = LambdaTool(
-    schema = ToolSchema(name, description, schemaOptions.strict, inputExamples, metadata, schemaOptions.providerExecuted, providerOptions),
+    schema = ToolSchema(
+        name,
+        description,
+        schemaOptions.strict,
+        inputExamples,
+        metadata,
+        schemaOptions.providerExecuted,
+        providerOptions
+    ),
     inputSerializer = inputSerializer,
     outputSerializer = outputSerializer,
     executeFn = executor,
@@ -401,7 +423,15 @@ public fun <TInput, TOutput, TContext> StreamingTool(
     providerOptions: ProviderOptions = ProviderOptions.None,
     executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
 ): Tool<TInput, TOutput, TContext> = LambdaStreamingTool(
-    schema = ToolSchema(name, description, schemaOptions.strict, inputExamples, metadata, schemaOptions.providerExecuted, providerOptions),
+    schema = ToolSchema(
+        name,
+        description,
+        schemaOptions.strict,
+        inputExamples,
+        metadata,
+        schemaOptions.providerExecuted,
+        providerOptions
+    ),
     inputSerializer = inputSerializer,
     outputSerializer = outputSerializer,
     streamFn = executor,
@@ -767,7 +797,7 @@ public data object NoopToolStreamWriter : ToolStreamWriter {
 /**
  * What [Tool.execute] receives as its context. Holds the typed application context,
  * abort signal, step number, running message list, and a writer for custom events.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public class ToolExecutionContext<TContext>(
     /** @since 0.3.0-beta01 */
@@ -786,7 +816,7 @@ public class ToolExecutionContext<TContext>(
 
 /**
  * Options bag passed to predicate callbacks ([Tool.needsApproval], [Tool.toModelOutput]).
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public class ToolPredicateOptions<TContext> internal constructor(
     /** @since 0.3.0-beta01 */

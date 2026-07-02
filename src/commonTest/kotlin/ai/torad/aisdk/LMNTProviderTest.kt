@@ -1,9 +1,10 @@
 package ai.torad.aisdk
-import ai.torad.aisdk.providers.LMNT_VERSION
+import ai.torad.aisdk.providers.LMNT
 import ai.torad.aisdk.providers.LMNTProviderSettings
-
+import ai.torad.aisdk.providers.LMNT_VERSION
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -14,8 +15,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.LMNT
-import kotlinx.serialization.json.JsonObject
 
 class LMNTProviderTest {
     @Test
@@ -40,14 +39,20 @@ class LMNTProviderTest {
                 responseFormat("wav")
                 language("fr")
                 speed(1.1f)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "lmnt" to buildJsonObject {
-                                        put("seed", JsonPrimitive(123))
-                                        put("sampleRate", JsonPrimitive(24000))
-                                        put("topP", JsonPrimitive(0.9f))
-                                        put("temperature", JsonPrimitive(0.5f))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "lmnt" to buildJsonObject {
+                                    put("seed", JsonPrimitive(123))
+                                    put("sampleRate", JsonPrimitive(24000))
+                                    put("topP", JsonPrimitive(0.9f))
+                                    put("temperature", JsonPrimitive(0.5f))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -95,7 +100,10 @@ class LMNTProviderTest {
         )
 
         assertEquals("unsupported", result.warnings.single().type)
-        assertEquals("mp3", fixture.calls.single().requestBodyJson.jsonObject["response_format"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "mp3",
+            fixture.calls.single().requestBodyJson.jsonObject["response_format"]?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("audio/mpeg", result.audio?.mediaType)
     }
 

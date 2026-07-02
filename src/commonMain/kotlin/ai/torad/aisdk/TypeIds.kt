@@ -1,9 +1,9 @@
 package ai.torad.aisdk
 
+import kotlinx.serialization.Serializable
 import kotlin.ExperimentalStdlibApi
 import kotlin.jvm.JvmExposeBoxed
 import kotlin.jvm.JvmInline
-import kotlinx.serialization.Serializable
 
 @JvmInline
 @Serializable

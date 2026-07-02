@@ -3,22 +3,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import dev.drewhamilton.poko.Poko
-import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -29,9 +13,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
 
 private data class OpenResponsesRequestBuildContext(
     val params: LanguageModelCallParams,
@@ -211,9 +193,15 @@ internal data class PreparedOpenResponsesRequest(
                 }
                 "web_search", "web_search_preview" -> {
                     put("type", JsonPrimitive(type))
-                    putOpenResponsesField("external_web_access", args["externalWebAccess"] ?: args["external_web_access"])
+                    putOpenResponsesField(
+                        "external_web_access",
+                        args["externalWebAccess"] ?: args["external_web_access"]
+                    )
                     putOpenResponsesField("filters", openResponsesWebSearchFilters(args["filters"]))
-                    putOpenResponsesField("search_context_size", args["searchContextSize"] ?: args["search_context_size"])
+                    putOpenResponsesField(
+                        "search_context_size",
+                        args["searchContextSize"] ?: args["search_context_size"]
+                    )
                     putOpenResponsesField("user_location", args["userLocation"] ?: args["user_location"])
                 }
                 "code_interpreter" -> {
@@ -224,7 +212,10 @@ internal data class PreparedOpenResponsesRequest(
                     put("type", JsonPrimitive(type))
                     putOpenResponsesField("background", args["background"])
                     putOpenResponsesField("input_fidelity", args["inputFidelity"] ?: args["input_fidelity"])
-                    putOpenResponsesField("input_image_mask", openResponsesInputImageMask(args["inputImageMask"] ?: args["input_image_mask"]))
+                    putOpenResponsesField(
+                        "input_image_mask",
+                        openResponsesInputImageMask(args["inputImageMask"] ?: args["input_image_mask"])
+                    )
                     putOpenResponsesField("model", args["model"])
                     putOpenResponsesField("moderation", args["moderation"])
                     putOpenResponsesField("partial_images", args["partialImages"] ?: args["partial_images"])
@@ -236,11 +227,17 @@ internal data class PreparedOpenResponsesRequest(
                 "mcp" -> {
                     put("type", JsonPrimitive(type))
                     putOpenResponsesField("server_label", args["serverLabel"] ?: args["server_label"])
-                    putOpenResponsesField("allowed_tools", openResponsesAllowedMcpTools(args["allowedTools"] ?: args["allowed_tools"]))
+                    putOpenResponsesField(
+                        "allowed_tools",
+                        openResponsesAllowedMcpTools(args["allowedTools"] ?: args["allowed_tools"])
+                    )
                     putOpenResponsesField("authorization", args["authorization"])
                     putOpenResponsesField("connector_id", args["connectorId"] ?: args["connector_id"])
                     putOpenResponsesField("headers", args["headers"])
-                    putOpenResponsesField("require_approval", openResponsesRequireApproval(args["requireApproval"] ?: args["require_approval"]))
+                    putOpenResponsesField(
+                        "require_approval",
+                        openResponsesRequireApproval(args["requireApproval"] ?: args["require_approval"])
+                    )
                     putOpenResponsesField("server_description", args["serverDescription"] ?: args["server_description"])
                     putOpenResponsesField("server_url", args["serverUrl"] ?: args["server_url"])
                 }
@@ -470,4 +467,3 @@ internal data class PreparedOpenResponsesRequest(
                 modelId.startsWith("gpt-5_")
     }
 }
-

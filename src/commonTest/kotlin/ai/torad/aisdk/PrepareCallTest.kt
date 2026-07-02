@@ -2,14 +2,14 @@
 
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.MockLanguageModel
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
 import kotlinx.serialization.encoding.CompositeDecoder
@@ -23,7 +23,6 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlinx.coroutines.test.runTest
 
 /** Invariant I-5 — `prepareCall` runs once per invocation, before the loop. */
 class PrepareCallTest {

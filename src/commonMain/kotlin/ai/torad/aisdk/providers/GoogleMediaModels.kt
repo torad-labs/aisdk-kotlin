@@ -5,32 +5,16 @@ import ai.torad.aisdk.providers.GoogleHttp.googlePostJson
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 internal class GoogleGenerativeAIEmbeddingModel(
@@ -56,7 +40,9 @@ internal class GoogleGenerativeAIEmbeddingModel(
         }
         val response = googlePostJson(
             client = client,
-            url = "${settings.baseURL.trimEnd('/')}/models/$modelId:${if (single) "embedContent" else "batchEmbedContents"}",
+            url = "${settings.baseURL.trimEnd(
+                '/'
+            )}/models/$modelId:${if (single) "embedContent" else "batchEmbedContents"}",
             body = body,
             headers = settings.googleHeaders(params.headers),
             abortSignal = params.abortSignal,
@@ -78,7 +64,11 @@ internal class GoogleGenerativeAIEmbeddingModel(
             embeddings = embeddings,
             usage = EmbeddingUsage(raw = response.value),
             request = LanguageModelRequestMetadata(body),
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
         )
     }
 }
@@ -100,8 +90,14 @@ internal class GoogleGenerativeAIImageModel(
     }
 
     private suspend fun generateImagen(params: ImageGenerationParams): ImageModelResult {
-        if (params.files.isNotEmpty()) throw UnsupportedFunctionalityError("imageEditing", "Google Generative AI Imagen models do not support image editing. Use Google Vertex AI for image editing.")
-        if (params.mask != null) throw UnsupportedFunctionalityError("imageMask", "Google Generative AI Imagen models do not support masks. Use Google Vertex AI for image editing.")
+        if (params.files.isNotEmpty()) throw UnsupportedFunctionalityError(
+            "imageEditing",
+            "Google Generative AI Imagen models do not support image editing. Use Google Vertex AI for image editing."
+        )
+        if (params.mask != null) throw UnsupportedFunctionalityError(
+            "imageMask",
+            "Google Generative AI Imagen models do not support masks. Use Google Vertex AI for image editing."
+        )
         val warnings = mutableListOf<CallWarning>()
         if (params.size != null) warnings += CallWarning("unsupported", "size")
         if (params.seed != null) warnings += CallWarning("unsupported", "seed")
@@ -113,7 +109,10 @@ internal class GoogleGenerativeAIImageModel(
                 buildJsonObject {
                     put("sampleCount", JsonPrimitive(params.n))
                     put("aspectRatio", options["aspectRatio"] ?: JsonPrimitive(params.aspectRatio ?: "1:1"))
-                    options.forEach { (key, value) -> if (value !is JsonNull && key !in setOf("googleSearch")) put(key, value) }
+                    options.forEach { (key, value) -> if (value !is JsonNull && key !in setOf("googleSearch")) put(
+                        key,
+                        value
+                    ) }
                 },
             )
         }
@@ -126,27 +125,60 @@ internal class GoogleGenerativeAIImageModel(
             parseJson = true,
         )
         val responseObject = WireDecoder.objectValue(response.value, provider, "image generation response")
-        val predictions = WireDecoder.requiredArray(responseObject, "predictions", provider, "image generation response")
+        val predictions = WireDecoder.requiredArray(
+            responseObject,
+            "predictions",
+            provider,
+            "image generation response"
+        )
         val images = predictions.mapIndexed { index, prediction ->
-            val obj = WireDecoder.objectValue(prediction, provider, "image generation response", "$.predictions[$index]")
+            val obj = WireDecoder.objectValue(
+                prediction,
+                provider,
+                "image generation response",
+                "$.predictions[$index]"
+            )
             GeneratedFile(
                 mediaType = "image/png",
-                base64 = WireDecoder.requiredString(obj, "bytesBase64Encoded", provider, "image generation response", "$.predictions[$index]"),
+                base64 = WireDecoder.requiredString(
+                    obj,
+                    "bytesBase64Encoded",
+                    provider,
+                    "image generation response",
+                    "$.predictions[$index]"
+                ),
             )
         }
         if (images.isEmpty()) throw NoImageGeneratedError("Google image response contained no predictions.")
-        return ImageModelResult(images, warnings, LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value), ProviderMetadata.Raw(JsonObject(mapOf("google" to response.value))))
+        return ImageModelResult(
+            images,
+            warnings,
+            LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            ProviderMetadata.Raw(JsonObject(mapOf("google" to response.value)))
+        )
     }
 
     private suspend fun generateGeminiImage(params: ImageGenerationParams): ImageModelResult {
-        if (params.n > 1) throw UnsupportedFunctionalityError("imageMultiSample", "Gemini image models do not support n > 1.")
-        if (params.mask != null) throw UnsupportedFunctionalityError("imageMask", "Gemini image models do not support mask-based image editing.")
+        if (params.n > 1) throw UnsupportedFunctionalityError(
+            "imageMultiSample",
+            "Gemini image models do not support n > 1."
+        )
+        if (params.mask != null) throw UnsupportedFunctionalityError(
+            "imageMask",
+            "Gemini image models do not support mask-based image editing."
+        )
         val message = ModelMessage(
             MessageRole.User,
             buildList {
                 add(ContentPart.Text(params.prompt))
                 params.files.forEach { file ->
-                    add(ContentPart.File(file.mediaType ?: "image/png", file.base64 ?: throw UnsupportedFunctionalityError("imageInputUrl", "Gemini image input URLs are not supported in this facade."), file.filename))
+                    add(
+                        ContentPart.File(
+                            file.mediaType ?: "image/png",
+                            file.base64 ?: throw UnsupportedFunctionalityError("imageInputUrl", "Gemini image input URLs are not supported in this facade."),
+                            file.filename
+                        )
+                    )
                 }
             },
         )
@@ -154,20 +186,29 @@ internal class GoogleGenerativeAIImageModel(
             LanguageModelCallParams {
                 messages(listOf(message))
                 seed(params.seed)
-                providerOptions(ProviderOptions.ofPairs(
-                    "google" to buildJsonObject {
-                        put("responseModalities", JsonArray(listOf(JsonPrimitive("IMAGE"))))
-                        params.aspectRatio?.let {
-                            put("imageConfig", buildJsonObject { put("aspectRatio", JsonPrimitive(it)) })
-                        }
-                    },
-                ))
+                providerOptions(
+                    ProviderOptions.ofPairs(
+                        "google" to buildJsonObject {
+                            put("responseModalities", JsonArray(listOf(JsonPrimitive("IMAGE"))))
+                            params.aspectRatio?.let {
+                                put("imageConfig", buildJsonObject { put("aspectRatio", JsonPrimitive(it)) })
+                            }
+                        },
+                    )
+                )
                 headers(params.headers)
                 abortSignal(params.abortSignal)
             },
         )
         val images = result.content.filterIsInstance<ContentPart.File>()
-            .map { GeneratedFile(mediaType = it.mediaType, base64 = it.base64, filename = it.filename, providerMetadata = it.providerMetadata) }
+            .map {
+                GeneratedFile(
+                    mediaType = it.mediaType,
+                    base64 = it.base64,
+                    filename = it.filename,
+                    providerMetadata = it.providerMetadata
+                )
+            }
         if (images.isEmpty()) throw NoImageGeneratedError("Gemini image response contained no image file parts.")
         return ImageModelResult(images, result.warnings, result.response, result.providerMetadata)
     }
@@ -235,35 +276,72 @@ internal class GoogleGenerativeAIVideoModel(
             "$.response",
         )
         val videoResponse = WireDecoder.objectValue(
-            WireDecoder.required(responseObject, "generateVideoResponse", provider, "video poll response", "$.response"),
+            WireDecoder.required(
+                responseObject,
+                "generateVideoResponse",
+                provider,
+                "video poll response",
+                "$.response"
+            ),
             provider,
             "video poll response",
             "$.response.generateVideoResponse",
         )
-        val samples = WireDecoder.requiredArray(videoResponse, "generatedSamples", provider, "video poll response", "$.response.generateVideoResponse")
+        val samples = WireDecoder.requiredArray(
+            videoResponse,
+            "generatedSamples",
+            provider,
+            "video poll response",
+            "$.response.generateVideoResponse"
+        )
         val videos = samples.mapIndexed { index, sample ->
-            val sampleObject = WireDecoder.objectValue(sample, provider, "video poll response", "$.response.generateVideoResponse.generatedSamples[$index]")
+            val sampleObject = WireDecoder.objectValue(
+                sample,
+                provider,
+                "video poll response",
+                "$.response.generateVideoResponse.generatedSamples[$index]"
+            )
             val video = WireDecoder.objectValue(
-                WireDecoder.required(sampleObject, "video", provider, "video poll response", "$.response.generateVideoResponse.generatedSamples[$index]"),
+                WireDecoder.required(
+                    sampleObject,
+                    "video",
+                    provider,
+                    "video poll response",
+                    "$.response.generateVideoResponse.generatedSamples[$index]"
+                ),
                 provider,
                 "video poll response",
                 "$.response.generateVideoResponse.generatedSamples[$index].video",
             )
-            val uri = WireDecoder.requiredString(video, "uri", provider, "video poll response", "$.response.generateVideoResponse.generatedSamples[$index].video")
+            val uri = WireDecoder.requiredString(
+                video,
+                "uri",
+                provider,
+                "video poll response",
+                "$.response.generateVideoResponse.generatedSamples[$index].video"
+            )
             GeneratedFile(
                 mediaType = "video/mp4",
                 base64 = "",
                 url = uri,
-                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-                    "google" to buildJsonObject {
-                        put("uri", JsonPrimitive(uri))
-                        put("requiresApiKey", JsonPrimitive(settings.apiKey != null))
-                    },
-                ))),
+                providerMetadata = ProviderMetadata.Raw(
+                    JsonObject(
+                        mapOf(
+                            "google" to buildJsonObject {
+                                put("uri", JsonPrimitive(uri))
+                                put("requiresApiKey", JsonPrimitive(settings.apiKey != null))
+                            },
+                        )
+                    )
+                ),
             )
         }
         if (videos.isEmpty()) throw NoVideoGeneratedError("Google video response contained no videos.")
-        return VideoModelResult(videos = videos, response = LanguageModelResponseMetadata(modelId = modelId, headers = headers, body = current), providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to current))))
+        return VideoModelResult(
+            videos = videos,
+            response = LanguageModelResponseMetadata(modelId = modelId, headers = headers, body = current),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to current)))
+        )
     }
 
     private suspend fun googleGetJsonWithRetry(
@@ -309,71 +387,79 @@ internal class GoogleGenerativeAIVideoModel(
 // Request-body builders for the Google embedding / image / video model families.
 internal object GoogleMedia {
     fun googleSingleEmbeddingBody(modelId: String, value: String, options: JsonObject): JsonObject = buildJsonObject {
-    put("model", JsonPrimitive("models/$modelId"))
-    put("content", buildJsonObject { put("parts", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(value)) }))) })
-    options["outputDimensionality"]?.let { put("outputDimensionality", it) }
-    options["taskType"]?.let { put("taskType", it) }
-}
+        put("model", JsonPrimitive("models/$modelId"))
+        put("content", buildJsonObject {
+            put("parts", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(value)) })))
+        })
+        options["outputDimensionality"]?.let { put("outputDimensionality", it) }
+        options["taskType"]?.let { put("taskType", it) }
+    }
 
     fun googleBatchEmbeddingBody(modelId: String, values: List<String>, options: JsonObject): JsonObject = buildJsonObject {
-    put(
-        "requests",
-        JsonArray(
-            values.map { value ->
-                buildJsonObject {
-                    put("model", JsonPrimitive("models/$modelId"))
-                    put("content", buildJsonObject {
-                        put("role", JsonPrimitive("user"))
-                        put("parts", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(value)) })))
-                    })
-                    options["outputDimensionality"]?.let { put("outputDimensionality", it) }
-                    options["taskType"]?.let { put("taskType", it) }
-                }
-            },
-        ),
-    )
-}
-
-    fun googleVideoRequestBody(params: VideoGenerationParams, options: JsonObject): JsonObject = buildJsonObject {
-    put(
-        "instances",
-        JsonArray(
-            listOf(
-                buildJsonObject {
-                    put("prompt", JsonPrimitive(params.prompt))
-                    params.image?.let { image ->
+        put(
+            "requests",
+            JsonArray(
+                values.map { value ->
+                    buildJsonObject {
+                        put("model", JsonPrimitive("models/$modelId"))
                         put(
-                            "image",
+                            "content",
                             buildJsonObject {
-                                put("inlineData", buildJsonObject {
-                                    put("mimeType", JsonPrimitive(image.mediaType))
-                                    put("data", JsonPrimitive(image.base64))
-                                })
-                            },
+                                put("role", JsonPrimitive("user"))
+                                put("parts", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(value)) })))
+                            }
                         )
+                        options["outputDimensionality"]?.let { put("outputDimensionality", it) }
+                        options["taskType"]?.let { put("taskType", it) }
                     }
-                    options["referenceImages"]?.let { put("referenceImages", it) }
                 },
             ),
-        ),
-    )
-    put(
-        "parameters",
-        buildJsonObject {
-            put("sampleCount", JsonPrimitive(params.n))
-            params.aspectRatio?.let { put("aspectRatio", JsonPrimitive(it)) }
-            params.durationSeconds?.let { put("durationSeconds", JsonPrimitive(it)) }
-            params.seed?.let { put("seed", JsonPrimitive(it)) }
-            params.resolution?.let { put("resolution", JsonPrimitive(googleVideoResolution(it))) }
-            options["personGeneration"]?.let { put("personGeneration", it) }
-            options["negativePrompt"]?.let { put("negativePrompt", it) }
-        },
-    )
-}
+        )
+    }
+
+    fun googleVideoRequestBody(params: VideoGenerationParams, options: JsonObject): JsonObject = buildJsonObject {
+        put(
+            "instances",
+            JsonArray(
+                listOf(
+                    buildJsonObject {
+                        put("prompt", JsonPrimitive(params.prompt))
+                        params.image?.let { image ->
+                            put(
+                                "image",
+                                buildJsonObject {
+                                    put(
+                                        "inlineData",
+                                        buildJsonObject {
+                                            put("mimeType", JsonPrimitive(image.mediaType))
+                                            put("data", JsonPrimitive(image.base64))
+                                        }
+                                    )
+                                },
+                            )
+                        }
+                        options["referenceImages"]?.let { put("referenceImages", it) }
+                    },
+                ),
+            ),
+        )
+        put(
+            "parameters",
+            buildJsonObject {
+                put("sampleCount", JsonPrimitive(params.n))
+                params.aspectRatio?.let { put("aspectRatio", JsonPrimitive(it)) }
+                params.durationSeconds?.let { put("durationSeconds", JsonPrimitive(it)) }
+                params.seed?.let { put("seed", JsonPrimitive(it)) }
+                params.resolution?.let { put("resolution", JsonPrimitive(googleVideoResolution(it))) }
+                options["personGeneration"]?.let { put("personGeneration", it) }
+                options["negativePrompt"]?.let { put("negativePrompt", it) }
+            },
+        )
+    }
     fun googleVideoResolution(resolution: String): String = when (resolution) {
-    "1280x720" -> "720p"
-    "1920x1080" -> "1080p"
-    "3840x2160" -> "4k"
-    else -> resolution
-}
+        "1280x720" -> "720p"
+        "1920x1080" -> "1080p"
+        "3840x2160" -> "4k"
+        else -> resolution
+    }
 }

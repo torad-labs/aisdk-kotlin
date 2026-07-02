@@ -8,7 +8,6 @@ import kotlinx.serialization.json.JsonElement
 
 public const val AZURE_VERSION: String = "3.0.69"
 
-
 @Poko
 /** @since 0.3.0-beta01 */
 public class AzureOpenAIProviderSettings internal constructor(
@@ -117,6 +116,7 @@ public class AzureOpenAIProvider(
     private val compatible = OpenAICompatible(client, compatibleSettings())
 
     override val providerId: String = "azure"
+
     /** @since 0.3.0-beta01 */
     public val tools: AzureOpenAITools = azureOpenaiTools
 
@@ -163,8 +163,10 @@ public class AzureOpenAIProvider(
 
     override fun languageModel(modelId: String): LanguageModel = responses(modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+
     /** @since 0.3.0-beta01 */
     public fun textEmbedding(deploymentId: ModelId): EmbeddingModel = embedding(deploymentId)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(deploymentId: ModelId): EmbeddingModel = embedding(deploymentId)
     override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))

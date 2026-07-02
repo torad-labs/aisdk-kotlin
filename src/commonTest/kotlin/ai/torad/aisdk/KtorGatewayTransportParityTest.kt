@@ -2,44 +2,20 @@
 
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.MockAudioSource
-import ai.torad.aisdk.providers.MockImageModel
-import ai.torad.aisdk.providers.MockSpeechModel
-import ai.torad.aisdk.providers.MockTranscriptionModel
-import ai.torad.aisdk.providers.MockVideoModel
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
-import ai.torad.aisdk.ui.SafeValidateUIMessagesResult
-import ai.torad.aisdk.ui.TextUIPartState
-import ai.torad.aisdk.ui.UIMessage
-import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.UiMessageStreams.safeValidateUIMessages
-import ai.torad.aisdk.ui.UiMessageStreams.validateUIMessages
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalAiSdkApi::class)
@@ -73,19 +49,32 @@ class KtorGatewayTransportParityTest {
                             )
                         }
                     }
-                    else -> respond("""{}""", HttpStatusCode.NotFound, headersOf(HttpHeaders.ContentType, "application/json"))
+                    else -> respond(
+                        """{}""",
+                        HttpStatusCode.NotFound,
+                        headersOf(HttpHeaders.ContentType, "application/json")
+                    )
                 }
             },
         )
         val provider = CreateGatewayHttpProvider(
             client,
-            GatewayProviderSettings { baseUrl("https://gateway.test/v3/ai"); apiKey("secret") },
+            GatewayProviderSettings {
+                baseUrl("https://gateway.test/v3/ai");
+                apiKey("secret")
+            },
         )
 
-        val generated = TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).single()
-        val streamed = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val generated = TextGenerator(
+            provider.languageModel("gpt-test")
+        ).generate(GenerationInput.Prompt("hi")).single()
+        val streamed = drainAllItems(
+            provider.languageModel("gpt-test").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         assertEquals("hello", generated.text)
         assertEquals(JsonPrimitive("gen_1"), generated.providerMetadata.toMap()["gateway"]?.jsonObject?.get("id"))
@@ -106,19 +95,30 @@ class KtorGatewayTransportParityTest {
                         status = HttpStatusCode.OK,
                         headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
                     )
-                    else -> respond("""{}""", HttpStatusCode.NotFound, headersOf(HttpHeaders.ContentType, "application/json"))
+                    else -> respond(
+                        """{}""",
+                        HttpStatusCode.NotFound,
+                        headersOf(HttpHeaders.ContentType, "application/json")
+                    )
                 }
             },
         )
         val provider = CreateGatewayHttpProvider(
             client,
-            GatewayProviderSettings { baseUrl("https://gateway.test/v3/ai"); apiKey("secret") },
+            GatewayProviderSettings {
+                baseUrl("https://gateway.test/v3/ai");
+                apiKey("secret")
+            },
         )
 
         val error = assertFailsWith<WireDecodeException> {
-            drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+            drainAllItems(
+                provider.languageModel("gpt-test").stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    }
+                )
+            )
         }
 
         assertEquals("gateway", error.provider)
@@ -143,15 +143,20 @@ class KtorGatewayTransportParityTest {
         )
         val provider = CreateGatewayHttpProvider(
             client,
-            GatewayProviderSettings { baseUrl("https://gateway.test/v3/ai"); apiKey("secret") },
+            GatewayProviderSettings {
+                baseUrl("https://gateway.test/v3/ai");
+                apiKey("secret")
+            },
         )
 
         val models = provider.getAvailableModels()
         val credits = provider.getCredits()
-        val spend = provider.getSpendReport(GatewaySpendReportParams {
-            startDate("2026-06-01")
-            endDate("2026-06-03")
-        })
+        val spend = provider.getSpendReport(
+            GatewaySpendReportParams {
+                startDate("2026-06-01")
+                endDate("2026-06-03")
+            }
+        )
         val generation = provider.getGenerationInfo(GatewayGenerationInfoParams { id("gen_1") })
 
         assertEquals("m1", models.models.single().id)
@@ -190,7 +195,10 @@ class KtorGatewayTransportParityTest {
         )
         val provider = CreateGatewayHttpProvider(
             client,
-            GatewayProviderSettings { baseUrl("https://gateway.test/v3/ai"); apiKey("secret") },
+            GatewayProviderSettings {
+                baseUrl("https://gateway.test/v3/ai");
+                apiKey("secret")
+            },
         )
 
         val embedding = Embedding.embed(provider.embeddingModel("embed"), "abc")
@@ -205,5 +213,4 @@ class KtorGatewayTransportParityTest {
         assertEquals("AAAA", video.video.base64)
         assertEquals("second", ranked.results.first().value)
     }
-
 }

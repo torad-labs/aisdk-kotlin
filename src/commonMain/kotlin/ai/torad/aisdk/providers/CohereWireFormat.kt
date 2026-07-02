@@ -3,22 +3,13 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import dev.drewhamilton.poko.Poko
-import io.ktor.client.HttpClient
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
 
 internal object CohereWireFormat {
     internal fun cohereChatRequest(
@@ -41,16 +32,24 @@ internal object CohereWireFormat {
             params.frequencyPenalty?.let { put("frequency_penalty", JsonPrimitive(it)) }
             params.presencePenalty?.let { put("presence_penalty", JsonPrimitive(it)) }
             params.seed?.let { put("seed", JsonPrimitive(it)) }
-            if (params.stopSequences.isNotEmpty()) put("stop_sequences", JsonArray(params.stopSequences.map(::JsonPrimitive)))
+            if (params.stopSequences.isNotEmpty()) {
+                put(
+                    "stop_sequences",
+                    JsonArray(params.stopSequences.map(::JsonPrimitive))
+                )
+            }
             cohereResponseFormat(params.responseFormat)?.let { put("response_format", it) }
             if (toolConfig.tools.isNotEmpty()) put("tools", JsonArray(toolConfig.tools))
             toolConfig.toolChoice?.let { put("tool_choice", it) }
             if (prompt.documents.isNotEmpty()) put("documents", JsonArray(prompt.documents))
             (JsonAccess.obj(options, "thinking"))?.let { thinking ->
-                put("thinking", buildJsonObject {
-                    put("type", thinking["type"] ?: JsonPrimitive("enabled"))
-                    thinking["tokenBudget"]?.let { put("token_budget", it) }
-                })
+                put(
+                    "thinking",
+                    buildJsonObject {
+                        put("type", thinking["type"] ?: JsonPrimitive("enabled"))
+                        thinking["tokenBudget"]?.let { put("token_budget", it) }
+                    }
+                )
             }
         }
         return CohereChatRequest(body, prompt.warnings + toolConfig.warnings)
@@ -178,8 +177,10 @@ internal object CohereWireFormat {
 
     /** Flatten one MCP content item to plain text — Cohere tool content is a string, so images can't ride here. */
     private fun cohereToolResultItemText(item: JsonElement): String =
-        ((item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
-            ?.get("text") as? JsonPrimitive)?.contentOrNull.orEmpty()
+        (
+            (item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+                ?.get("text") as? JsonPrimitive
+            )?.contentOrNull.orEmpty()
 
     private fun cohereImagePart(
         mediaType: String,
@@ -204,17 +205,20 @@ internal object CohereWireFormat {
     }
 
     private fun cohereDocumentPart(part: ContentPart.File): JsonObject = buildJsonObject {
-        put("data", buildJsonObject {
-            put(
-                "text",
-                JsonPrimitive(
-                    runCatching { Base64Codec.decode(part.base64).decodeToString() }.getOrElse {
-                        throw InvalidArgumentError("messages", "Cohere document file content must be valid base64.")
-                    },
-                ),
-            )
-            part.filename?.let { put("title", JsonPrimitive(it)) }
-        })
+        put(
+            "data",
+            buildJsonObject {
+                put(
+                    "text",
+                    JsonPrimitive(
+                        runCatching { Base64Codec.decode(part.base64).decodeToString() }.getOrElse {
+                            throw InvalidArgumentError("messages", "Cohere document file content must be valid base64.")
+                        },
+                    ),
+                )
+                part.filename?.let { put("title", JsonPrimitive(it)) }
+            }
+        )
     }
 
     private fun cohereTools(tools: List<LanguageModelTool>, toolChoice: ToolChoice): CoherePreparedTools {
@@ -255,11 +259,14 @@ internal object CohereWireFormat {
 
     private fun cohereToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
         put("type", JsonPrimitive("function"))
-        put("function", buildJsonObject {
-            put("name", JsonPrimitive(tool.name))
-            put("description", JsonPrimitive(tool.description))
-            put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
-        })
+        put(
+            "function",
+            buildJsonObject {
+                put("name", JsonPrimitive(tool.name))
+                put("description", JsonPrimitive(tool.description))
+                put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
+            }
+        )
     }
 
     private fun cohereResponseFormat(responseFormat: ResponseFormat): JsonObject? = when (responseFormat) {
@@ -351,9 +358,13 @@ internal object CohereWireFormat {
 
     internal fun cohereToolInput(value: String?): JsonElement {
         val normalized = if (value == "null") "{}" else value
-        return if (normalized.isNullOrBlank()) JsonObject(emptyMap()) else runCatching {
-            aiSdkJson.parseToJsonElement(normalized)
-        }.getOrElse { JsonPrimitive(normalized) }
+        return if (normalized.isNullOrBlank()) {
+            JsonObject(emptyMap())
+        } else {
+            runCatching {
+                aiSdkJson.parseToJsonElement(normalized)
+            }.getOrElse { JsonPrimitive(normalized) }
+        }
     }
 
     internal fun cohereUsage(value: JsonObject?): Usage {

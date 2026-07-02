@@ -1,40 +1,15 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonElement
-import io.ktor.http.HttpHeaders
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.TimeSource
 
 @OptIn(ExperimentalAiSdkApi::class, ExperimentalCoroutinesApi::class, InternalAiSdkApi::class)
 class MCPJsonRpcTest : MCPClientTestBase() {
@@ -42,7 +17,9 @@ class MCPJsonRpcTest : MCPClientTestBase() {
     @Test
     fun `JSON-RPC parser maps requests notifications responses and errors`() {
         assertIs<JSONRPCRequest>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}"""))
-        assertIs<JSONRPCNotification>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","method":"notifications/initialized"}"""))
+        assertIs<JSONRPCNotification>(
+            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","method":"notifications/initialized"}""")
+        )
         assertIs<JSONRPCResponse>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"result":{"ok":true}}"""))
         val nullResult = assertIs<JSONRPCResponse>(
             JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":7,"result":null}"""),
@@ -73,9 +50,11 @@ class MCPJsonRpcTest : MCPClientTestBase() {
         )
 
         val error = assertFailsWith<MCPClientError> {
-            client.listTools(options = MCPRequestOptions {
-                timeoutMillis(50)
-            })
+            client.listTools(
+                options = MCPRequestOptions {
+                    timeoutMillis(50)
+                }
+            )
         }
 
         assertEquals("Failed to parse server response", error.message)
@@ -107,9 +86,11 @@ class MCPJsonRpcTest : MCPClientTestBase() {
                     respond(JsonPrimitive(message.id.jsonPrimitive.content), listToolsResult())
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         // Pre-fix: the string-typed echo misses the handler and throws out of send().
         val tools = client.listTools()

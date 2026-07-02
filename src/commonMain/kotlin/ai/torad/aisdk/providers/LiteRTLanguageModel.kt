@@ -124,14 +124,19 @@ public data class LiteRTChannel(
 public sealed class LiteRTContent {
     /** @since 0.3.0-beta01 */
     public data class Text(val text: String) : LiteRTContent()
+
     /** @since 0.3.0-beta01 */
     public data class ImageBytes(val bytes: LiteRTBytes, val mediaType: String? = null) : LiteRTContent()
+
     /** @since 0.3.0-beta01 */
     public data class ImageFile(val absolutePath: String, val mediaType: String? = null) : LiteRTContent()
+
     /** @since 0.3.0-beta01 */
     public data class AudioBytes(val bytes: LiteRTBytes, val mediaType: String? = null) : LiteRTContent()
+
     /** @since 0.3.0-beta01 */
     public data class AudioFile(val absolutePath: String, val mediaType: String? = null) : LiteRTContent()
+
     /** @since 0.3.0-beta01 */
     public data class ToolResponse(val name: String, val response: JsonElement) : LiteRTContent()
 }

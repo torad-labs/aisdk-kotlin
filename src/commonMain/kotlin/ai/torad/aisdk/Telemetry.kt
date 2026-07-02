@@ -127,7 +127,7 @@ public fun TelemetrySettings(
  * single agent instance serves concurrent calls. [agentId]/[agentVersion]
  * mirror [Agent.id]/[Agent.version] (parity gap #33: "useful for telemetry");
  * [functionId] comes from [TelemetrySettings.functionId].
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 @Poko
 public class TelemetryCall(
@@ -215,7 +215,7 @@ public interface Telemetry {
  * serve the agent hot path from an immutable snapshot, so a concurrent [register]/[clear]
  * can never throw ConcurrentModificationException out of a live agent call — telemetry
  * must never alter the loop.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class TelemetryRegistry(
@@ -237,8 +237,10 @@ public class TelemetryRegistry(
 
     /** @since 0.3.0-beta01 */
     public fun get(name: String): Telemetry? = snapshot.load().firstOrNull { it.name == name }
+
     /** @since 0.3.0-beta01 */
     public fun list(): List<Telemetry> = snapshot.load()
+
     /** @since 0.3.0-beta01 */
     public fun clear() {
         snapshot.store(emptyList())
@@ -250,7 +252,6 @@ public class TelemetryRegistry(
  * @since 0.3.0-beta01
  */
 public val globalTelemetry: TelemetryRegistry = TelemetryRegistry()
-
 
 /** One telemetry notification, delivered to each integration of a [CompositeTelemetry]. */
 private fun interface TelemetryNotify {

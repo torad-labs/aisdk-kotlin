@@ -72,10 +72,12 @@ class AgentSessionTest {
 
     @Test
     fun `streaming session records tool-call and tool-result parts in the message log`() = runTest {
-        val tools = ToolSet(Tool<WeatherInput, WeatherOutput, Unit>(
-            name = "weather",
-            description = "Get weather.",
-        ) { input -> WeatherOutput(temperature = input.city.length) })
+        val tools = ToolSet(
+            Tool<WeatherInput, WeatherOutput, Unit>(
+                name = "weather",
+                description = "Get weather.",
+            ) { input -> WeatherOutput(temperature = input.city.length) }
+        )
         val agent = TestToolLoopAgent<Unit, String>(
             model = MockLanguageModelToolThenText(
                 toolName = "weather",
@@ -234,11 +236,13 @@ class AgentSessionTest {
 
     @Test
     fun `streaming preserves the tool's model-visible summary rather than the full output`() = runTest {
-        val tools = ToolSet(Tool<WeatherInput, WeatherOutput, Unit>(
-            name = "weather",
-            description = "Get weather.",
-            toModelOutput = { _, _ -> ToolResultOutput.Text("summary") },
-        ) { input -> WeatherOutput(temperature = input.city.length) })
+        val tools = ToolSet(
+            Tool<WeatherInput, WeatherOutput, Unit>(
+                name = "weather",
+                description = "Get weather.",
+                toModelOutput = { _, _ -> ToolResultOutput.Text("summary") },
+            ) { input -> WeatherOutput(temperature = input.city.length) }
+        )
         val agent = TestToolLoopAgent<Unit, String>(
             model = MockLanguageModelToolThenText(
                 toolName = "weather",

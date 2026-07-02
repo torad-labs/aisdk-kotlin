@@ -39,8 +39,11 @@ public sealed class ProviderMetadata {
     public companion object {
         /** @since 0.3.0-beta01 */
         public fun ofPairs(vararg pairs: Pair<String, JsonObject>): ProviderMetadata =
-            if (pairs.isEmpty()) None
-            else Raw(JsonObject(pairs.associate { (k, v) -> k to (v as JsonElement) }))
+            if (pairs.isEmpty()) {
+                None
+            } else {
+                Raw(JsonObject(pairs.associate { (k, v) -> k to (v as JsonElement) }))
+            }
     }
 }
 

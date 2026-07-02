@@ -270,7 +270,10 @@ public class ProviderRegistry(
 
     private fun singleProviderId(): String {
         if (providers.size == 1) return providers.keys.single()
-        throw InvalidArgumentError("modelId", "must include a provider prefix when more than one provider is registered")
+        throw InvalidArgumentError(
+            "modelId",
+            "must include a provider prefix when more than one provider is registered"
+        )
     }
 
     public companion object {

@@ -9,32 +9,18 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.TimeSource
 
 @OptIn(ExperimentalAiSdkApi::class, ExperimentalCoroutinesApi::class, InternalAiSdkApi::class)
 class McpHttpTransportTest : MCPClientTestBase() {
@@ -64,11 +50,13 @@ class McpHttpTransportTest : MCPClientTestBase() {
 
         val client = CreateMCPClient(
             MCPClientConfig {
-                transport(HttpMCPTransport(
-                                    client = fixture.httpClient(),
-                                    url = "https://mcp.test/mcp",
-                                    headers = mapOf("X-Test" to "transport"),
-                                ))
+                transport(
+                    HttpMCPTransport(
+                        client = fixture.httpClient(),
+                        url = "https://mcp.test/mcp",
+                        headers = mapOf("X-Test" to "transport"),
+                    )
+                )
             },
         )
 
@@ -76,7 +64,9 @@ class McpHttpTransportTest : MCPClientTestBase() {
         assertEquals("echo", client.listTools().tools.single().name)
         waitForRealTime { fixture.calls.count { it.requestMethod == "POST" } >= 3 }
         val initialize = fixture.calls.first { it.requestBodyText.contains("\"method\":\"initialize\"") }
-        val initialized = fixture.calls.first { it.requestBodyText.contains("\"method\":\"notifications/initialized\"") }
+        val initialized = fixture.calls.first { it.requestBodyText.contains(
+            "\"method\":\"notifications/initialized\""
+        ) }
         val listTools = fixture.calls.first { it.requestBodyText.contains("\"method\":\"tools/list\"") }
         assertEquals("POST", initialize.requestMethod)
         assertEquals("transport", initialize.requestHeaders.headerValue("X-Test"))
@@ -181,7 +171,9 @@ class McpHttpTransportTest : MCPClientTestBase() {
             } == parallelism &&
                 fixture.calls.count { it.requestUrl == "https://auth.mcp.test/token" } == 1
         }
-        tokenController.write("""{"access_token":"refreshed-token","token_type":"Bearer","refresh_token":"refresh-token"}""")
+        tokenController.write(
+            """{"access_token":"refreshed-token","token_type":"Bearer","refresh_token":"refresh-token"}"""
+        )
         tokenController.close()
 
         requests.awaitAll().forEach { assertEquals("echo", it.tools.single().name) }
@@ -563,10 +555,12 @@ class McpHttpTransportTest : MCPClientTestBase() {
         fixture.server.start()
         val client = CreateMCPClient(
             MCPClientConfig {
-                transport(HttpMCPTransport(
-                                    client = fixture.httpClient(),
-                                    url = "https://mcp.test/mcp",
-                                ))
+                transport(
+                    HttpMCPTransport(
+                        client = fixture.httpClient(),
+                        url = "https://mcp.test/mcp",
+                    )
+                )
             },
         )
 
@@ -648,9 +642,11 @@ class McpHttpTransportTest : MCPClientTestBase() {
         )
         fixture.server.start()
         val transport = HttpMCPTransport(fixture.httpClient(), "https://mcp.test/mcp")
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         val tools = withContext(Dispatchers.Default) { withTimeout(20_000) { client.listTools() } }
         assertEquals("echo", tools.tools.single().name)

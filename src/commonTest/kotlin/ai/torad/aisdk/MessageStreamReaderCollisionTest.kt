@@ -90,7 +90,11 @@ class MessageStreamReaderCollisionTest {
         val tools = last.parts.filterIsInstance<UIMessagePart.ToolUI>()
 
         assertEquals(2, tools.size)
-        assertTrue(tools.any { it.toolCallId == "partial-1" && it.input?.jsonObject?.get("message")?.jsonPrimitive?.content == "one" })
-        assertTrue(tools.any { it.toolCallId == "call-final" && it.input?.jsonObject?.get("message")?.jsonPrimitive?.content == "two" })
+        assertTrue(tools.any {
+            it.toolCallId == "partial-1" && it.input?.jsonObject?.get("message")?.jsonPrimitive?.content == "one"
+        })
+        assertTrue(tools.any {
+            it.toolCallId == "call-final" && it.input?.jsonObject?.get("message")?.jsonPrimitive?.content == "two"
+        })
     }
 }

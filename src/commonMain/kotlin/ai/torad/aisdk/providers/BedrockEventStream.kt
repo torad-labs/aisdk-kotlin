@@ -62,7 +62,10 @@ internal object BedrockEventStream {
                 // generation. (readAvailable suspends via awaitContent when the
                 // buffer is momentarily empty, so this never busy-spins.)
                 if (read == 0) return null
-                throw InvalidResponseDataError(null, "Bedrock event stream truncated: got $read of $count frame bytes before EOF")
+                throw InvalidResponseDataError(
+                    null,
+                    "Bedrock event stream truncated: got $read of $count frame bytes before EOF"
+                )
             }
             read += n
         }

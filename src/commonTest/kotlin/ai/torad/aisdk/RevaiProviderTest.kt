@@ -1,15 +1,15 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.REVAI_VERSION
+import ai.torad.aisdk.providers.Revai
 import ai.torad.aisdk.providers.RevaiProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -17,8 +17,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Revai
-import kotlinx.serialization.json.JsonObject
 
 class RevaiProviderTest {
     @Test
@@ -52,53 +50,72 @@ class RevaiProviderTest {
 
         val result = model.transcribe(
             TranscriptionParams {
-                audio(AudioSource(
-                                    mediaType = "audio/wav",
-                                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
-                                    filename = "clip.wav",
-                                ))
+                audio(
+                    AudioSource(
+                        mediaType = "audio/wav",
+                        base64 = Base64Codec.encode("abc".encodeToByteArray()),
+                        filename = "clip.wav",
+                    )
+                )
                 language("en")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "revai" to buildJsonObject {
-                                        put("metadata", JsonPrimitive("job-metadata"))
-                                        put("rush", JsonPrimitive(true))
-                                        put("test_mode", JsonPrimitive(true))
-                                        put("skip_diarization", JsonPrimitive(true))
-                                        put("filter_profanity", JsonPrimitive(true))
-                                        put("language", JsonPrimitive("en-us"))
-                                        put("forced_alignment", JsonPrimitive(true))
-                                        put("segments_to_transcribe", buildJsonArray {
-                                            add(buildJsonObject {
-                                                put("start", JsonPrimitive(0))
-                                                put("end", JsonPrimitive(60))
-                                            })
-                                        })
-                                        put(
-                                            "notification_config",
-                                            buildJsonObject {
-                                                put("url", JsonPrimitive("https://example.com/hook"))
-                                                put("auth_headers", buildJsonObject {
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "revai" to buildJsonObject {
+                                    put("metadata", JsonPrimitive("job-metadata"))
+                                    put("rush", JsonPrimitive(true))
+                                    put("test_mode", JsonPrimitive(true))
+                                    put("skip_diarization", JsonPrimitive(true))
+                                    put("filter_profanity", JsonPrimitive(true))
+                                    put("language", JsonPrimitive("en-us"))
+                                    put("forced_alignment", JsonPrimitive(true))
+                                    put(
+                                        "segments_to_transcribe",
+                                        buildJsonArray {
+                                            add(
+                                                buildJsonObject {
+                                                    put("start", JsonPrimitive(0))
+                                                    put("end", JsonPrimitive(60))
+                                                }
+                                            )
+                                        }
+                                    )
+                                    put(
+                                        "notification_config",
+                                        buildJsonObject {
+                                            put("url", JsonPrimitive("https://example.com/hook"))
+                                            put(
+                                                "auth_headers",
+                                                buildJsonObject {
                                                     put("Authorization", JsonPrimitive("Bearer hook"))
-                                                })
-                                            },
-                                        )
-                                        put(
-                                            "summarization_config",
-                                            buildJsonObject {
-                                                put("model", JsonPrimitive("premium"))
-                                                put("type", JsonPrimitive("bullets"))
-                                            },
-                                        )
-                                        put(
-                                            "translation_config",
-                                            buildJsonObject {
-                                                put("target_languages", buildJsonArray {
+                                                }
+                                            )
+                                        },
+                                    )
+                                    put(
+                                        "summarization_config",
+                                        buildJsonObject {
+                                            put("model", JsonPrimitive("premium"))
+                                            put("type", JsonPrimitive("bullets"))
+                                        },
+                                    )
+                                    put(
+                                        "translation_config",
+                                        buildJsonObject {
+                                            put(
+                                                "target_languages",
+                                                buildJsonArray {
                                                     add(buildJsonObject { put("language", JsonPrimitive("es")) })
-                                                })
-                                            },
-                                        )
-                                    },
-                                ))))
+                                                }
+                                            )
+                                        },
+                                    )
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -114,10 +131,13 @@ class RevaiProviderTest {
         assertEquals("en", result.language)
         assertEquals(0.8f, result.durationInSeconds)
         assertEquals("true", result.response.headers["x-final"])
-        assertEquals("Hello", result.providerMetadata.toMap()["revai"]?.jsonObject
-            ?.get("monologues")?.jsonArray?.first()?.jsonObject
-            ?.get("elements")?.jsonArray?.first()?.jsonObject
-            ?.get("value")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "Hello",
+            result.providerMetadata.toMap()["revai"]?.jsonObject
+                ?.get("monologues")?.jsonArray?.first()?.jsonObject
+                ?.get("elements")?.jsonArray?.first()?.jsonObject
+                ?.get("value")?.jsonPrimitive?.contentOrNull
+        )
 
         val submit = fixture.calls[0]
         assertEquals("POST", submit.requestMethod)
@@ -156,9 +176,11 @@ class RevaiProviderTest {
         ).transcription(ModelId("machine"))
 
         val error = assertFailsWith<AiSdkException> {
-            model.transcribe(TranscriptionParams {
-                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
-            })
+            model.transcribe(
+                TranscriptionParams {
+                    audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                }
+            )
         }
         assertTrue(error.message.orEmpty().contains("Failed to submit"))
     }

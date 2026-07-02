@@ -9,7 +9,7 @@ import ai.torad.aisdk.StreamEvent
 /**
  * UI-to-model message conversion. Groups [convertToModelMessages] and its
  * helpers so none remain loose top-level functions.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public object ModelMessageConversion {
 
@@ -150,7 +150,9 @@ public object ModelMessageConversion {
         contextHint: String,
     ) {
         when (part) {
-            is UIMessagePart.Text -> onContentPart(ContentPart.Text(part.text, providerMetadata = part.providerMetadata))
+            is UIMessagePart.Text -> onContentPart(
+                ContentPart.Text(part.text, providerMetadata = part.providerMetadata)
+            )
             is UIMessagePart.Reasoning ->
                 onContentPart(ContentPart.Reasoning(part.text, providerMetadata = part.providerMetadata))
             is UIMessagePart.ToolUI -> convertToolCall(
@@ -264,7 +266,9 @@ public object ModelMessageConversion {
                     ContentPart.ToolResult(
                         toolCallId = toolCallId,
                         toolName = toolName,
-                        output = requireNotNull(output) { "ToolResult.output absent at OutputAvailable in $contextHint" },
+                        output = requireNotNull(
+                            output
+                        ) { "ToolResult.output absent at OutputAvailable in $contextHint" },
                         providerMetadata = providerMetadata,
                     ),
                 )
@@ -277,7 +281,9 @@ public object ModelMessageConversion {
                 ContentPart.ToolApprovalRequest(
                     toolCallId = toolCallId,
                     toolName = toolName,
-                    input = requireNotNull(input) { "ToolApprovalRequest.input absent at approval state in $contextHint" },
+                    input = requireNotNull(
+                        input
+                    ) { "ToolApprovalRequest.input absent at approval state in $contextHint" },
                     approvalId = approvalId,
                     // The v6.0.202 HMAC signature must survive the UI round-trip: with a
                     // configured approval secret, a replay without it is denied fail-closed.

@@ -12,7 +12,7 @@ package ai.torad.aisdk
  * Scope for `prepareCall`, run once before the loop starts. Useful for
  * RAG context injection, per-user customization, database lookups that
  * shouldn't repeat per step.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public class PrepareCallScope<TContext>(
     /** @since 0.3.0-beta01 */
@@ -36,7 +36,7 @@ public class PrepareCallScope<TContext>(
  * on the same chain and applied by the agent around each non-streaming
  * model round-trip. Resolution chain inside the agent loop is
  * `StepSettings ?: AgentSettings ?: agent-default ?: provider-default`.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public class AgentSettings<TContext> internal constructor(
     /** @since 0.3.0-beta01 */
@@ -68,7 +68,7 @@ public class AgentSettings<TContext> internal constructor(
      * Phase 4C #21). Each provider applies them differently; some
      * accept both, some only one, some neither. Null = provider
      * default.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val presencePenalty: Float? = null,
     /** @since 0.3.0-beta01 */
@@ -223,7 +223,7 @@ public fun <TContext> AgentSettings(
  * model routing per step (cheap model for step 1 + 2, expensive for step
  * 3), tool gating per step (only the search tool is callable on step 1),
  * dynamic system prompts, message compression.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public class PrepareStepScope<TContext>(
     /** @since 0.3.0-beta01 */
@@ -247,7 +247,7 @@ public class PrepareStepScope<TContext>(
  * `tool-loop-agent-settings.ts`'s `prepareStep` return. Useful when
  * (say) step 1 is a deterministic plan (`temperature = 0`) and the
  * following synthesis steps are warmer.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public class StepSettings<TContext> internal constructor(
     /** @since 0.3.0-beta01 */
@@ -288,7 +288,7 @@ public class StepSettings<TContext> internal constructor(
      * When set, subsequent steps see this value as their
      * `ToolExecutionContext.context` — useful for mid-loop context evolution
      * (e.g., RAG augmentation after a tool result).
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val experimental_context: TContext? = null,
 ) {

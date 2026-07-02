@@ -6,6 +6,7 @@ import dev.drewhamilton.poko.Poko
 public interface RerankingModel {
     /** @since 0.3.0-beta01 */
     public val modelId: String
+
     /** @since 0.3.0-beta01 */
     public val provider: String
         get() = "unknown"
@@ -141,7 +142,7 @@ public class RerankResult<T>(
      * The reranked documents in descending relevance order (fewer than
      * [originalDocuments] when a `topN` limit was applied). Convenience accessor
      * over [results]'s values — matches upstream's `rerankedDocuments`.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val rerankedDocuments: List<T> get() = results.map { it.value }
 }

@@ -1,11 +1,11 @@
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class WireDecoderTest {
     @Serializable
@@ -32,7 +32,11 @@ class WireDecoderTest {
     @Test
     fun `embedding float rejects nonnumeric values with wire context`() {
         val error = assertFailsWith<WireDecodeException> {
-            WireDecoder.embeddingFloat(JsonPrimitive("not-a-number"), provider = "fixture.embedding", path = "$.data[0]")
+            WireDecoder.embeddingFloat(
+                JsonPrimitive("not-a-number"),
+                provider = "fixture.embedding",
+                path = "$.data[0]"
+            )
         }
 
         assertEquals("fixture.embedding", error.provider)

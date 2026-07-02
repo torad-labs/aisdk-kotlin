@@ -1,10 +1,10 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.GLADIA_VERSION
+import ai.torad.aisdk.providers.Gladia
 import ai.torad.aisdk.providers.GladiaProviderSettings
-
-import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -18,8 +18,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Gladia
-import kotlinx.serialization.json.JsonObject
 
 class GladiaProviderTest {
     @Test
@@ -53,71 +51,82 @@ class GladiaProviderTest {
 
         val result = model.transcribe(
             TranscriptionParams {
-                audio(AudioSource(
-                                    mediaType = "audio/mpeg",
-                                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
-                                    filename = "clip.mp3",
-                                ))
+                audio(
+                    AudioSource(
+                        mediaType = "audio/mpeg",
+                        base64 = Base64Codec.encode("abc".encodeToByteArray()),
+                        filename = "clip.mp3",
+                    )
+                )
                 language("en")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "gladia" to buildJsonObject {
-                                        put("contextPrompt", JsonPrimitive("domain words"))
-                                        put("customVocabulary", buildJsonArray { add(JsonPrimitive("Kotlin")) })
-                                        put("detectLanguage", JsonPrimitive(true))
-                                        put("diarization", JsonPrimitive(true))
-                                        put("translation", JsonPrimitive(true))
-                                        put("summarization", JsonPrimitive(true))
-                                        put("namedEntityRecognition", JsonPrimitive(true))
-                                        put("structuredDataExtraction", JsonPrimitive(true))
-                                        put("audioToLlm", JsonPrimitive(true))
-                                        put("customMetadata", buildJsonObject { put("source", JsonPrimitive("test")) })
-                                        put("sentences", JsonPrimitive(true))
-                                        put(
-                                            "customVocabularyConfig",
-                                            buildJsonObject {
-                                                put("vocabulary", buildJsonArray { add(JsonPrimitive("AISDK")) })
-                                                put("defaultIntensity", JsonPrimitive(0.7f))
-                                            },
-                                        )
-                                        put(
-                                            "callbackConfig",
-                                            buildJsonObject {
-                                                put("url", JsonPrimitive("https://example.com/hook"))
-                                                put("method", JsonPrimitive("POST"))
-                                            },
-                                        )
-                                        put(
-                                            "subtitlesConfig",
-                                            buildJsonObject {
-                                                put("formats", buildJsonArray { add(JsonPrimitive("srt")) })
-                                                put("maximumCharactersPerRow", JsonPrimitive(42))
-                                            },
-                                        )
-                                        put(
-                                            "diarizationConfig",
-                                            buildJsonObject {
-                                                put("numberOfSpeakers", JsonPrimitive(2))
-                                            },
-                                        )
-                                        put(
-                                            "translationConfig",
-                                            buildJsonObject {
-                                                put("targetLanguages", buildJsonArray { add(JsonPrimitive("es")) })
-                                                put("model", JsonPrimitive("enhanced"))
-                                                put("matchOriginalUtterances", JsonPrimitive(true))
-                                            },
-                                        )
-                                        put("summarizationConfig", buildJsonObject { put("type", JsonPrimitive("bullet_points")) })
-                                        put(
-                                            "customSpellingConfig",
-                                            buildJsonObject {
-                                                put("spellingDictionary", buildJsonObject {
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "gladia" to buildJsonObject {
+                                    put("contextPrompt", JsonPrimitive("domain words"))
+                                    put("customVocabulary", buildJsonArray { add(JsonPrimitive("Kotlin")) })
+                                    put("detectLanguage", JsonPrimitive(true))
+                                    put("diarization", JsonPrimitive(true))
+                                    put("translation", JsonPrimitive(true))
+                                    put("summarization", JsonPrimitive(true))
+                                    put("namedEntityRecognition", JsonPrimitive(true))
+                                    put("structuredDataExtraction", JsonPrimitive(true))
+                                    put("audioToLlm", JsonPrimitive(true))
+                                    put("customMetadata", buildJsonObject { put("source", JsonPrimitive("test")) })
+                                    put("sentences", JsonPrimitive(true))
+                                    put(
+                                        "customVocabularyConfig",
+                                        buildJsonObject {
+                                            put("vocabulary", buildJsonArray { add(JsonPrimitive("AISDK")) })
+                                            put("defaultIntensity", JsonPrimitive(0.7f))
+                                        },
+                                    )
+                                    put(
+                                        "callbackConfig",
+                                        buildJsonObject {
+                                            put("url", JsonPrimitive("https://example.com/hook"))
+                                            put("method", JsonPrimitive("POST"))
+                                        },
+                                    )
+                                    put(
+                                        "subtitlesConfig",
+                                        buildJsonObject {
+                                            put("formats", buildJsonArray { add(JsonPrimitive("srt")) })
+                                            put("maximumCharactersPerRow", JsonPrimitive(42))
+                                        },
+                                    )
+                                    put(
+                                        "diarizationConfig",
+                                        buildJsonObject {
+                                            put("numberOfSpeakers", JsonPrimitive(2))
+                                        },
+                                    )
+                                    put(
+                                        "translationConfig",
+                                        buildJsonObject {
+                                            put("targetLanguages", buildJsonArray { add(JsonPrimitive("es")) })
+                                            put("model", JsonPrimitive("enhanced"))
+                                            put("matchOriginalUtterances", JsonPrimitive(true))
+                                        },
+                                    )
+                                    put("summarizationConfig", buildJsonObject { put("type", JsonPrimitive("bullet_points")) })
+                                    put(
+                                        "customSpellingConfig",
+                                        buildJsonObject {
+                                            put(
+                                                "spellingDictionary",
+                                                buildJsonObject {
                                                     put("KMP", buildJsonArray { add(JsonPrimitive("k m p")) })
-                                                })
-                                            },
-                                        )
-                                    },
-                                ))))
+                                                }
+                                            )
+                                        },
+                                    )
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -129,7 +138,10 @@ class GladiaProviderTest {
         assertEquals("en", result.language)
         assertEquals(3.5f, result.durationInSeconds)
         assertEquals("true", result.response.headers["x-final"])
-        assertEquals("done", result.providerMetadata.toMap()["gladia"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "done",
+            result.providerMetadata.toMap()["gladia"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull
+        )
 
         val upload = fixture.calls[0]
         assertEquals("POST", upload.requestMethod)
@@ -146,16 +158,33 @@ class GladiaProviderTest {
         assertEquals("domain words", body["context_prompt"]?.jsonPrimitive?.contentOrNull)
         assertEquals("en", body["language"]?.jsonPrimitive?.contentOrNull)
         assertEquals("Kotlin", body["custom_vocabulary"]?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
-        assertEquals(0.7f, body["custom_vocabulary_config"]?.jsonObject?.get("default_intensity")?.jsonPrimitive?.floatOrNull)
+        assertEquals(
+            0.7f,
+            body["custom_vocabulary_config"]?.jsonObject?.get("default_intensity")?.jsonPrimitive?.floatOrNull
+        )
         assertEquals("POST", body["callback_config"]?.jsonObject?.get("method")?.jsonPrimitive?.contentOrNull)
-        assertEquals(42, body["subtitles_config"]?.jsonObject?.get("maximum_characters_per_row")?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            42,
+            body["subtitles_config"]?.jsonObject?.get("maximum_characters_per_row")?.jsonPrimitive?.intOrNull
+        )
         assertEquals(2, body["diarization_config"]?.jsonObject?.get("number_of_speakers")?.jsonPrimitive?.intOrNull)
-        assertEquals("es", body["translation_config"]?.jsonObject?.get("target_languages")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
-        assertEquals("bullet_points", body["summarization_config"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "es",
+            body["translation_config"]?.jsonObject?.get(
+                "target_languages"
+            )?.jsonArray?.single()?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            "bullet_points",
+            body["summarization_config"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("test", body["custom_metadata"]?.jsonObject?.get("source")?.jsonPrimitive?.contentOrNull)
-        assertEquals("k m p", body["custom_spelling_config"]?.jsonObject
-            ?.get("spelling_dictionary")?.jsonObject
-            ?.get("KMP")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "k m p",
+            body["custom_spelling_config"]?.jsonObject
+                ?.get("spelling_dictionary")?.jsonObject
+                ?.get("KMP")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull
+        )
 
         val poll = fixture.calls[2]
         assertEquals("GET", poll.requestMethod)
@@ -187,9 +216,11 @@ class GladiaProviderTest {
         ).transcription()
 
         val error = assertFailsWith<AiSdkException> {
-            model.transcribe(TranscriptionParams {
-                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
-            })
+            model.transcribe(
+                TranscriptionParams {
+                    audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                }
+            )
         }
         assertTrue(error.message.orEmpty().contains("failed"))
     }
@@ -221,9 +252,11 @@ class GladiaProviderTest {
             },
         ).transcription()
 
-        model.transcribe(TranscriptionParams {
-            audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
-        })
+        model.transcribe(
+            TranscriptionParams {
+                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+            }
+        )
 
         val poll = fixture.calls.first { it.requestUrl.contains("evil.example") }
         assertEquals("GET", poll.requestMethod)

@@ -1,8 +1,8 @@
 @file:OptIn(LowLevelLanguageModelApi::class)
 
 package ai.torad.aisdk
-import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings
 import ai.torad.aisdk.providers.OpenAICompatible
+import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -15,24 +15,21 @@ import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @Suppress("LargeClass")
@@ -96,20 +93,28 @@ class OpenAICompatibleProviderTest {
         val result = TextGenerator(
             provider.languageModel("gpt-test"),
             CallConfig {
-                responseFormat(ResponseFormat.Json(
-                    schemaName = "Answer",
-                    schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
-                ))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "openai" to JsonObject(
-                        mapOf(
-                            "user" to JsonPrimitive("user_1"),
-                            "reasoningEffort" to JsonPrimitive("high"),
-                            "textVerbosity" to JsonPrimitive("low"),
-                            "parallel_tool_calls" to JsonPrimitive(false),
-                        ),
-                    ),
-                ))))
+                responseFormat(
+                    ResponseFormat.Json(
+                        schemaName = "Answer",
+                        schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "openai" to JsonObject(
+                                    mapOf(
+                                        "user" to JsonPrimitive("user_1"),
+                                        "reasoningEffort" to JsonPrimitive("high"),
+                                        "textVerbosity" to JsonPrimitive("low"),
+                                        "parallel_tool_calls" to JsonPrimitive(false),
+                                    ),
+                                ),
+                            )
+                        )
+                    )
+                )
             },
         ).generate(GenerationInput.Prompt("hi")).first()
 
@@ -165,25 +170,27 @@ class OpenAICompatibleProviderTest {
         provider.languageModel("gpt-test").generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("hi")))
-                tools(listOf(
-                    LanguageModelTool(
-                        name = "default",
-                        description = "Default schema",
-                        parametersSchemaJson = """{"type":"object"}""",
-                    ),
-                    LanguageModelTool(
-                        name = "strict",
-                        description = "Strict schema",
-                        parametersSchemaJson = """{"type":"object"}""",
-                        strict = true,
-                    ),
-                    LanguageModelTool(
-                        name = "loose",
-                        description = "Loose schema",
-                        parametersSchemaJson = """{"type":"object"}""",
-                        strict = false,
-                    ),
-                ))
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            name = "default",
+                            description = "Default schema",
+                            parametersSchemaJson = """{"type":"object"}""",
+                        ),
+                        LanguageModelTool(
+                            name = "strict",
+                            description = "Strict schema",
+                            parametersSchemaJson = """{"type":"object"}""",
+                            strict = true,
+                        ),
+                        LanguageModelTool(
+                            name = "loose",
+                            description = "Loose schema",
+                            parametersSchemaJson = """{"type":"object"}""",
+                            strict = false,
+                        ),
+                    )
+                )
             },
         )
 
@@ -224,10 +231,12 @@ class OpenAICompatibleProviderTest {
         provider.languageModel("gpt-test").generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("hi")))
-                responseFormat(ResponseFormat.Json(
-                    schemaName = "Answer",
-                    schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
-                ))
+                responseFormat(
+                    ResponseFormat.Json(
+                        schemaName = "Answer",
+                        schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
+                    )
+                )
             },
         )
 
@@ -264,9 +273,11 @@ class OpenAICompatibleProviderTest {
                 apiKey("secret")
             },
         )
-        provider.languageModel("gpt-test").generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        provider.languageModel("gpt-test").generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
         // No tools → neither tools nor tool_choice in the body (strict servers reject lone tool_choice).
         val body = seenBodies.single()
         assertEquals(null, body["tool_choice"], "tool_choice omitted without tools")
@@ -308,9 +319,13 @@ class OpenAICompatibleProviderTest {
             },
         )
 
-        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val events = drainAllItems(
+            provider.languageModel("gpt-test").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         assertIs<StreamEvent.StreamStart>(events[0])
         val metadata = events.filterIsInstance<StreamEvent.ResponseMetadata>()
@@ -347,12 +362,19 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") },
+            OpenAICompatibleProviderSettings {
+                name("openai");
+                baseUrl("https://api.test/v1")
+            },
         )
 
-        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val events = drainAllItems(
+            provider.languageModel("gpt-test").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         val textIndex = events.indexOfFirst { it is StreamEvent.TextDelta && it.text == "hello" }
         val errorIndex = events.indexOfFirst { it is StreamEvent.Error }
@@ -379,12 +401,19 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") },
+            OpenAICompatibleProviderSettings {
+                name("openai");
+                baseUrl("https://api.test/v1")
+            },
         )
 
-        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val events = drainAllItems(
+            provider.languageModel("gpt-test").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         val finish = events.filterIsInstance<StreamEvent.Finish>().single()
@@ -434,9 +463,11 @@ class OpenAICompatibleProviderTest {
             },
         )
         val events = drainAllItems(
-            provider.languageModel("gpt-test").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}),
+            provider.languageModel("gpt-test").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ),
         )
 
         assertEquals("generated", generated.text)
@@ -473,9 +504,11 @@ class OpenAICompatibleProviderTest {
         val firstDelta = CompletableDeferred<Unit>()
         val collector = launch {
             provider.languageModel("gpt-test")
-                .stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+                .stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    }
+                )
                 .collect { event ->
                     if (event is StreamEvent.TextDelta) {
                         deltas += event.text
@@ -527,12 +560,25 @@ class OpenAICompatibleProviderTest {
                 }
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
+        val provider =
+            OpenAICompatible(
+                client,
+                OpenAICompatibleProviderSettings {
+                    name("openai");
+                    baseUrl("https://api.test/v1")
+                }
+            )
 
-        val generated = TextGenerator(provider.completionModel("davinci")).generate(GenerationInput.Prompt("complete")).first()
-        val streamed = drainAllItems(provider.completionModel("davinci").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val generated = TextGenerator(
+            provider.completionModel("davinci")
+        ).generate(GenerationInput.Prompt("complete")).first()
+        val streamed = drainAllItems(
+            provider.completionModel("davinci").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         assertEquals("done", generated.text)
         assertEquals(3, generated.usage.promptTokens)

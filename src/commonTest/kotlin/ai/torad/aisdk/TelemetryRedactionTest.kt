@@ -27,14 +27,16 @@ class TelemetryRedactionTest {
     @Test
     fun `telemetry defaults to metadata-only event projection`() = runTest {
         val capturing = CapturingTelemetry()
-        val telemetry = Telemetry.resolveTelemetry(TelemetrySettings {
-            integrations(listOf(capturing))
-        })
+        val telemetry = Telemetry.resolveTelemetry(
+            TelemetrySettings {
+                integrations(listOf(capturing))
+            }
+        )
             ?: fail("telemetry should resolve")
         val params = LanguageModelCallParams {
-    messages(listOf(UserMessage("prompt secret")))
-    headers(mapOf("Authorization" to "Bearer sk-live-secret"))
-}
+            messages(listOf(UserMessage("prompt secret")))
+            headers(mapOf("Authorization" to "Bearer sk-live-secret"))
+        }
 
         telemetry.onEvent(call, AgentEvent.Started("prompt secret", listOf(UserMessage("prior secret")), null))
         telemetry.onEvent(call, AgentEvent.ModelCallStarted(stepNumber = 1, modelId = "model", params = params))
@@ -117,9 +119,11 @@ class TelemetryRedactionTest {
     @Suppress("LongMethod")
     fun `chunk telemetry redacts approval input raw payloads and streamed tool input by default`() = runTest {
         val capturing = CapturingTelemetry()
-        val telemetry = Telemetry.resolveTelemetry(TelemetrySettings {
-            integrations(listOf(capturing))
-        })
+        val telemetry = Telemetry.resolveTelemetry(
+            TelemetrySettings {
+                integrations(listOf(capturing))
+            }
+        )
             ?: fail("telemetry should resolve")
 
         telemetry.onEvent(
@@ -223,9 +227,11 @@ class TelemetryRedactionTest {
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     fun `chunk telemetry strips provider metadata from stream events`() = runTest {
         val capturing = CapturingTelemetry()
-        val telemetry = Telemetry.resolveTelemetry(TelemetrySettings {
-            integrations(listOf(capturing))
-        })
+        val telemetry = Telemetry.resolveTelemetry(
+            TelemetrySettings {
+                integrations(listOf(capturing))
+            }
+        )
             ?: fail("telemetry should resolve")
         val metadata = ProviderMetadata.Raw(buildJsonObject { put("token", "raw-meta-secret") })
         val rawUsage = Usage(raw = buildJsonObject { put("payload", "raw-usage-secret") })

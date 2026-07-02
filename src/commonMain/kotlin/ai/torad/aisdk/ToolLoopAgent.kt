@@ -124,7 +124,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * Explicit bounded policy for per-step tool execution. Defaults cap both concurrent
      * tool executors and total accepted tool calls so a model cannot create unbounded
      * child coroutines or unbounded in-step work.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val toolExecutionPolicy: ToolExecutionPolicy = ToolExecutionPolicy {
         maxParallelToolCalls(maxParallelToolCalls)
@@ -133,7 +133,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * Self-healing callback fired when a tool call's arguments fail to
      * decode. Return a corrected call to retry, or null to surface
      * `StreamEvent.ToolError`. See [ToolCallRepairFunction].
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
     /**
@@ -157,7 +157,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * global registrations for this agent's calls (upstream per-call
      * semantics). Telemetry observes — an integration throw never alters
      * loop behavior.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val telemetry: TelemetrySettings? = null,
     /**
@@ -165,7 +165,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * when a [Telemetry] integration throws and the event is dropped — the swallow
      * contract keeps telemetry from altering the loop, and the warn keeps a broken
      * integration DISCOVERABLE instead of perfectly silent.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val logger: Logger = NoopLogger,
     /**
@@ -215,7 +215,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * is a host-specific reactive lifecycle surface layered on top.
      * Renamed from `state` so subclasses can declare their own `state`
      * member without member-hiding clashes.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val engineState: StateFlow<ToolLoopAgentState> = mutableEngineState.asStateFlow()
 
@@ -238,7 +238,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * Cancel the engine scope and any in-flight engine job. Call when a
      * long-lived host (ViewModel / Repository) that drove the engine surface
      * is disposed. The per-call generate()/stream() API needs no close().
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public fun close() {
         currentEngineAbortControllerRef.load()?.abort()
@@ -258,7 +258,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * which takes a host-specific host action type. The port-level engine
      * action dispatch lives here; subclasses layer their own onAction
      * with different action types on top.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public fun dispatchEngineAction(action: ToolLoopAgentAction<TContext>) {
         when (action) {
@@ -474,7 +474,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         } catch (t: CancellationException) {
             throw t
         } catch (t: Throwable) {
-            updateEngineStateIfCurrent(ownJob) { it.copy(phase = ToolLoopAgentState.Phase.Error(t.message ?: "agent failed")) }
+            updateEngineStateIfCurrent(
+                ownJob
+            ) { it.copy(phase = ToolLoopAgentState.Phase.Error(t.message ?: "agent failed")) }
         }
     }
 
@@ -595,17 +597,19 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 ),
             )
         } else {
-            emit(GenerateResult(
-                decodeFinalOutput(output, text, finishReason),
-                text = text,
-                steps = steps,
-                finishReason = finishReason,
-                // upstream parity: usage = final step's usage, totalUsage = sum across steps.
-                usage = usage,
-                totalUsage = totalUsage,
-                pendingApprovals = approvals,
-                messages = collectedMessages,
-            ))
+            emit(
+                GenerateResult(
+                    decodeFinalOutput(output, text, finishReason),
+                    text = text,
+                    steps = steps,
+                    finishReason = finishReason,
+                    // upstream parity: usage = final step's usage, totalUsage = sum across steps.
+                    usage = usage,
+                    totalUsage = totalUsage,
+                    pendingApprovals = approvals,
+                    messages = collectedMessages,
+                )
+            )
         }
     }
 
@@ -649,7 +653,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * Collect with an exhaustive `when` (no `else`), or use [collectAgentEvents].
      * [stream] stays the curated `Flow<StreamEvent>` (model deltas only); this is the
      * superset that also surfaces the loop's own lifecycle boundaries.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public fun events(
         prompt: String? = null,
@@ -853,31 +857,41 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             }
 
             val callParams = LanguageModelCallParams {
-    messages(effectiveMessages)
-    tools(stepTools.descriptors)
-    toolChoice(stepToolChoice)
-    temperature(stepSettings.temperature
-                    ?: resolvedSettings.temperature ?: temperature)
-    topP(stepSettings.topP ?: resolvedSettings.topP ?: topP)
-    topK(stepSettings.topK ?: resolvedSettings.topK ?: topK)
-    maxOutputTokens(stepSettings.maxOutputTokens
-                    ?: resolvedSettings.maxOutputTokens ?: maxOutputTokens)
-    stopSequences(resolveStopSequences(stepSettings, resolvedSettings))
-    seed(stepSettings.seed ?: resolvedSettings.seed ?: seed)
-    providerOptions(stepProviderOptions)
-    abortSignal(abortSignal)
-    presencePenalty(stepSettings.presencePenalty
-                    ?: resolvedSettings.presencePenalty ?: presencePenalty)
-    frequencyPenalty(stepSettings.frequencyPenalty
-                    ?: resolvedSettings.frequencyPenalty ?: frequencyPenalty)
-    responseFormat(stepSettings.responseFormat
-                    ?: resolvedSettings.responseFormat
-                    ?: if (responseFormat == ResponseFormat.Text && output != null) {
-                        output.toResponseFormat()
-                    } else {
-                        responseFormat
-                    })
-}
+                messages(effectiveMessages)
+                tools(stepTools.descriptors)
+                toolChoice(stepToolChoice)
+                temperature(
+                    stepSettings.temperature
+                        ?: resolvedSettings.temperature ?: temperature
+                )
+                topP(stepSettings.topP ?: resolvedSettings.topP ?: topP)
+                topK(stepSettings.topK ?: resolvedSettings.topK ?: topK)
+                maxOutputTokens(
+                    stepSettings.maxOutputTokens
+                        ?: resolvedSettings.maxOutputTokens ?: maxOutputTokens
+                )
+                stopSequences(resolveStopSequences(stepSettings, resolvedSettings))
+                seed(stepSettings.seed ?: resolvedSettings.seed ?: seed)
+                providerOptions(stepProviderOptions)
+                abortSignal(abortSignal)
+                presencePenalty(
+                    stepSettings.presencePenalty
+                        ?: resolvedSettings.presencePenalty ?: presencePenalty
+                )
+                frequencyPenalty(
+                    stepSettings.frequencyPenalty
+                        ?: resolvedSettings.frequencyPenalty ?: frequencyPenalty
+                )
+                responseFormat(
+                    stepSettings.responseFormat
+                        ?: resolvedSettings.responseFormat
+                        ?: if (responseFormat == ResponseFormat.Text && output != null) {
+                            output.toResponseFormat()
+                        } else {
+                            responseFormat
+                        }
+                )
+            }
 
             // Fire onStepStart AFTER prepareStep + callParams so the event carries the
             // fully-resolved request (post prepareStep overrides) and the accumulated
@@ -968,7 +982,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         is StreamEvent.ToolInputDelta -> {
                             // gap #18: raw-character pre-warm as input streams in.
                             val deltaTool = toolInputNames[event.id]?.let { stepTools.find(it) }
-                            dispatcher.runHook(stepNumber, feed, hooks) { deltaTool?.onInputDelta(event.id, event.delta) }
+                            dispatcher.runHook(
+                                stepNumber,
+                                feed,
+                                hooks
+                            ) { deltaTool?.onInputDelta(event.id, event.delta) }
                             emit(event)
                         }
                         is StreamEvent.ToolCall -> {
@@ -1144,7 +1162,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     continue
                 }
                 val needsApproval = try {
-                    approvalCoordinator.callNeedsApproval(resolvedTool, call, resolvedInput, activeContext, messages.toList())
+                    approvalCoordinator.callNeedsApproval(
+                        resolvedTool,
+                        call,
+                        resolvedInput,
+                        activeContext,
+                        messages.toList()
+                    )
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {

@@ -12,7 +12,6 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.readLine
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -22,6 +21,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlin.coroutines.CoroutineContext
 
 /** Maximum response body size for non-streaming requests (50 MB). */
 internal const val MAX_RESPONSE_BODY_BYTES: Long = 50L * 1024 * 1024

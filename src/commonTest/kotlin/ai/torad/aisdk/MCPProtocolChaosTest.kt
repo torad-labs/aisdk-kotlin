@@ -57,9 +57,11 @@ class MCPProtocolChaosTest {
                 }
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         assertEquals("echo", client.listTools().tools.single().name)
         assertFailsWith<MCPClientError> {
@@ -84,14 +86,18 @@ class MCPProtocolChaosTest {
                     timedOutToolsId.complete(message.id)
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         assertFailsWith<TimeoutCancellationException> {
-            client.listTools(options = MCPRequestOptions {
-                timeoutMillis(50)
-            })
+            client.listTools(
+                options = MCPRequestOptions {
+                    timeoutMillis(50)
+                }
+            )
         }
         assertFailsWith<MCPClientError> {
             transport.emitFromServer(JSONRPCResponse(id = timedOutToolsId.await(), result = listToolsResult()))

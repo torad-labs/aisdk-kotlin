@@ -27,8 +27,10 @@ import kotlinx.coroutines.flow.flow
 public sealed class ChunkBy {
     /** @since 0.3.0-beta01 */
     public data object Word : ChunkBy()
+
     /** @since 0.3.0-beta01 */
     public data object Line : ChunkBy()
+
     /** @since 0.3.0-beta01 */
     public data class Pattern(val regex: Regex) : ChunkBy()
 }

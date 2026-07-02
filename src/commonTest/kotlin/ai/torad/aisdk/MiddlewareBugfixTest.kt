@@ -36,9 +36,11 @@ class MiddlewareBugfixTest {
             ),
         )
         val wrapped = WrapLanguageModel(inner, listOf(ExtractReasoningMiddleware()))
-        val result = wrapped.generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        val result = wrapped.generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         // text is cleaned of the tag
         assertEquals("beforeafter", result.text)
@@ -57,9 +59,11 @@ class MiddlewareBugfixTest {
             ),
         )
         val wrapped = WrapLanguageModel(inner, listOf(ExtractReasoningMiddleware()))
-        val result = wrapped.generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        val result = wrapped.generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
         // Empty tags must still be stripped — no literal <reasoning> in visible text.
         assertEquals("beforeafter", result.text)
         assertTrue(result.content.filterIsInstance<ContentPart.Text>().none { "<reasoning>" in it.text })
@@ -68,17 +72,27 @@ class MiddlewareBugfixTest {
     @Test
     fun `defaultSettingsMiddleware deep-merges providerOptions per provider key`() = runTest {
         // default sets openai.reasoningEffort; per-call sets openai.user — both must survive.
-        val defaults = ProviderOptions.Raw(JsonObject(mapOf(
-            "openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) },
-        )))
+        val defaults = ProviderOptions.Raw(
+            JsonObject(
+                mapOf(
+                    "openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) },
+                )
+            )
+        )
         val inner = model(LanguageModelResult(text = "ok", finishReason = FinishReason.Stop, usage = Usage()))
         val wrapped = WrapLanguageModel(inner, listOf(DefaultSettingsMiddleware(providerOptions = defaults)))
         wrapped.generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("hi")))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "openai" to buildJsonObject { put("user", JsonPrimitive("u1")) },
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "openai" to buildJsonObject { put("user", JsonPrimitive("u1")) },
+                            )
+                        )
+                    )
+                )
             },
         )
         val merged = inner.seen?.providerOptions?.toMap()?.get("openai")?.jsonObject

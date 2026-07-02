@@ -3,21 +3,13 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 
 internal class CohereChatLanguageModel(
@@ -36,7 +28,13 @@ internal class CohereChatLanguageModel(
             body = request.body,
             headers = settings.cohereHeaders(params.headers),
         )
-        return CohereWireFormat.cohereChatResult(response.value.jsonObject, request.body, response.headers, response.value, request.warnings)
+        return CohereWireFormat.cohereChatResult(
+            response.value.jsonObject,
+            request.body,
+            response.headers,
+            response.value,
+            request.warnings
+        )
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
@@ -57,7 +55,11 @@ internal class CohereChatLanguageModel(
             errorMessage = settings::cohereErrorMessage,
             onResponse = { sseHeaders = it },
         )
-        val parsedEvents = EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)
+        val parsedEvents = EventStreamParser.parse(
+            rawLines,
+            Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())),
+            aiSdkJson
+        )
         var streamStartEmitted = false
         var responseMetadataEmitted = false
         suspend fun emitStartAndMetadata() {

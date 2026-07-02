@@ -8,7 +8,6 @@ import kotlinx.serialization.json.JsonElement
 
 public const val BASETEN_VERSION: String = "1.0.51"
 
-
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -124,18 +123,24 @@ public class BasetenProvider(
 
     public operator fun invoke(): LanguageModel = chatModel()
     public operator fun invoke(modelId: ModelId): LanguageModel = chatModel(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun chatModel(): LanguageModel = createChatModel(null)
+
     /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = createChatModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun languageModel(): LanguageModel = chatModel()
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+
     /** @since 0.3.0-beta01 */
     public fun embeddingModel(): EmbeddingModel = createEmbeddingModel(null)
     override fun embeddingModel(modelId: String): EmbeddingModel = createEmbeddingModel(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(): EmbeddingModel = embeddingModel()
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
@@ -155,7 +160,10 @@ public class BasetenProvider(
         } else {
             modelId ?: "chat"
         }
-        return OpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).chatModel(resolvedModelId)
+        return OpenAICompatible(
+            client,
+            settings.toCompatible("baseten", BASETEN_VERSION, baseURL)
+        ).chatModel(resolvedModelId)
     }
 
     private fun createEmbeddingModel(modelId: String?): EmbeddingModel {
@@ -171,7 +179,10 @@ public class BasetenProvider(
             )
         }
         val baseURL = if (customURL.contains("/sync/v1")) customURL else "$customURL/v1"
-        return OpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).embeddingModel(modelId ?: "embeddings")
+        return OpenAICompatible(
+            client,
+            settings.toCompatible("baseten", BASETEN_VERSION, baseURL)
+        ).embeddingModel(modelId ?: "embeddings")
     }
 }
 

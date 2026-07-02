@@ -27,7 +27,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
@@ -43,31 +42,37 @@ class MediaPollRobustnessTest {
         val pollBody = TestResponseController()
         val controller = AbortController()
         var pollCalls = 0
-        val client = HttpClient(MockEngine { request ->
-            when (request.url.toString()) {
-                "https://queue.fal.run/fal-ai/test-video" -> json("""{"response_url":"https://queue.fal.run/result"}""")
-                "https://queue.fal.run/result" -> {
-                    pollCalls++
-                    pollStarted.complete(Unit)
-                    respond(
-                        content = pollBody.stream,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
-                    )
+        val client = HttpClient(
+            MockEngine { request ->
+                when (request.url.toString()) {
+                    "https://queue.fal.run/fal-ai/test-video" -> json("""{"response_url":"https://queue.fal.run/result"}""")
+                    "https://queue.fal.run/result" -> {
+                        pollCalls++
+                        pollStarted.complete(Unit)
+                        respond(
+                            content = pollBody.stream,
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                        )
+                    }
+                    else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
                 }
-                else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
             }
-        })
+        )
         val model = Fal(client, FalProviderSettings { apiKey("key") }).video(ModelId("test-video"))
 
         val pending = async {
-            model.generate(VideoGenerationParams {
-                prompt("x")
-                providerOptions(ProviderOptions.ofPairs(
-                    "fal" to buildJsonObject { put("pollIntervalMs", JsonPrimitive(0)) },
-                ))
-                abortSignal(controller.signal)
-            })
+            model.generate(
+                VideoGenerationParams {
+                    prompt("x")
+                    providerOptions(
+                        ProviderOptions.ofPairs(
+                            "fal" to buildJsonObject { put("pollIntervalMs", JsonPrimitive(0)) },
+                        )
+                    )
+                    abortSignal(controller.signal)
+                }
+            )
         }
         pollStarted.await()
         pollBody.error(AbortError())
@@ -83,22 +88,24 @@ class MediaPollRobustnessTest {
         val pollBody = TestResponseController()
         val controller = AbortController()
         var pollCalls = 0
-        val client = HttpClient(MockEngine { request ->
-            when (request.url.toString()) {
-                "https://api.assemblyai.com/v2/upload" -> json("""{"upload_url":"https://cdn.example/audio"}""")
-                "https://api.assemblyai.com/v2/transcript" -> json("""{"id":"tx1","status":"queued"}""")
-                "https://api.assemblyai.com/v2/transcript/tx1" -> {
-                    pollCalls++
-                    pollStarted.complete(Unit)
-                    respond(
-                        content = pollBody.stream,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
-                    )
+        val client = HttpClient(
+            MockEngine { request ->
+                when (request.url.toString()) {
+                    "https://api.assemblyai.com/v2/upload" -> json("""{"upload_url":"https://cdn.example/audio"}""")
+                    "https://api.assemblyai.com/v2/transcript" -> json("""{"id":"tx1","status":"queued"}""")
+                    "https://api.assemblyai.com/v2/transcript/tx1" -> {
+                        pollCalls++
+                        pollStarted.complete(Unit)
+                        respond(
+                            content = pollBody.stream,
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                        )
+                    }
+                    else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
                 }
-                else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
             }
-        })
+        )
         val model = AssemblyAI(
             client,
             AssemblyAIProviderSettings {
@@ -108,10 +115,12 @@ class MediaPollRobustnessTest {
         ).transcription(ModelId("best"))
 
         val pending = async {
-            model.transcribe(TranscriptionParams {
-                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
-                abortSignal(controller.signal)
-            })
+            model.transcribe(
+                TranscriptionParams {
+                    audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                    abortSignal(controller.signal)
+                }
+            )
         }
         pollStarted.await()
         pollBody.error(AbortError())
@@ -127,21 +136,23 @@ class MediaPollRobustnessTest {
         val pollBody = TestResponseController()
         val controller = AbortController()
         var pollCalls = 0
-        val client = HttpClient(MockEngine { request ->
-            when (request.url.toString()) {
-                "https://api.rev.ai/speechtotext/v1/jobs" -> json("""{"id":"job1","status":"in_progress"}""")
-                "https://api.rev.ai/speechtotext/v1/jobs/job1" -> {
-                    pollCalls++
-                    pollStarted.complete(Unit)
-                    respond(
-                        content = pollBody.stream,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
-                    )
+        val client = HttpClient(
+            MockEngine { request ->
+                when (request.url.toString()) {
+                    "https://api.rev.ai/speechtotext/v1/jobs" -> json("""{"id":"job1","status":"in_progress"}""")
+                    "https://api.rev.ai/speechtotext/v1/jobs/job1" -> {
+                        pollCalls++
+                        pollStarted.complete(Unit)
+                        respond(
+                            content = pollBody.stream,
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                        )
+                    }
+                    else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
                 }
-                else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
             }
-        })
+        )
         val model = Revai(
             client,
             RevaiProviderSettings {
@@ -151,10 +162,12 @@ class MediaPollRobustnessTest {
         ).transcription(ModelId("machine"))
 
         val pending = async {
-            model.transcribe(TranscriptionParams {
-                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
-                abortSignal(controller.signal)
-            })
+            model.transcribe(
+                TranscriptionParams {
+                    audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                    abortSignal(controller.signal)
+                }
+            )
         }
         pollStarted.await()
         pollBody.error(AbortError())
@@ -170,21 +183,23 @@ class MediaPollRobustnessTest {
         val pollBody = TestResponseController()
         val controller = AbortController()
         var pollCalls = 0
-        val client = HttpClient(MockEngine { request ->
-            when (request.url.toString()) {
-                "https://luma.test/dream-machine/v1/generations/image" -> json("""{"id":"gen1","state":"queued"}""")
-                "https://luma.test/dream-machine/v1/generations/gen1" -> {
-                    pollCalls++
-                    pollStarted.complete(Unit)
-                    respond(
-                        content = pollBody.stream,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
-                    )
+        val client = HttpClient(
+            MockEngine { request ->
+                when (request.url.toString()) {
+                    "https://luma.test/dream-machine/v1/generations/image" -> json("""{"id":"gen1","state":"queued"}""")
+                    "https://luma.test/dream-machine/v1/generations/gen1" -> {
+                        pollCalls++
+                        pollStarted.complete(Unit)
+                        respond(
+                            content = pollBody.stream,
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                        )
+                    }
+                    else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
                 }
-                else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
             }
-        })
+        )
         val model = Luma(
             client,
             LumaProviderSettings {
@@ -194,13 +209,17 @@ class MediaPollRobustnessTest {
         ).image(ModelId("photon-1"))
 
         val pending = async {
-            model.generate(ImageGenerationParams {
-                prompt("x")
-                providerOptions(ProviderOptions.ofPairs(
-                    "luma" to buildJsonObject { put("pollIntervalMillis", JsonPrimitive(0)) },
-                ))
-                abortSignal(controller.signal)
-            })
+            model.generate(
+                ImageGenerationParams {
+                    prompt("x")
+                    providerOptions(
+                        ProviderOptions.ofPairs(
+                            "luma" to buildJsonObject { put("pollIntervalMillis", JsonPrimitive(0)) },
+                        )
+                    )
+                    abortSignal(controller.signal)
+                }
+            )
         }
         pollStarted.await()
         pollBody.error(AbortError())
@@ -216,21 +235,23 @@ class MediaPollRobustnessTest {
         val pollBody = TestResponseController()
         val controller = AbortController()
         var pollCalls = 0
-        val client = HttpClient(MockEngine { request ->
-            when (request.url.toString()) {
-                "https://kling.test/v1/videos/text2video" -> json(klingTask("submitted"))
-                "https://kling.test/v1/videos/text2video/task-1" -> {
-                    pollCalls++
-                    pollStarted.complete(Unit)
-                    respond(
-                        content = pollBody.stream,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
-                    )
+        val client = HttpClient(
+            MockEngine { request ->
+                when (request.url.toString()) {
+                    "https://kling.test/v1/videos/text2video" -> json(klingTask("submitted"))
+                    "https://kling.test/v1/videos/text2video/task-1" -> {
+                        pollCalls++
+                        pollStarted.complete(Unit)
+                        respond(
+                            content = pollBody.stream,
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                        )
+                    }
+                    else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
                 }
-                else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
             }
-        })
+        )
         val model = KlingAI(
             client,
             KlingAIProviderSettings {
@@ -241,13 +262,17 @@ class MediaPollRobustnessTest {
         ).video(ModelId("kling-v2.6-t2v"))
 
         val pending = async {
-            model.generate(VideoGenerationParams {
-                prompt("x")
-                providerOptions(ProviderOptions.ofPairs(
-                    "klingai" to buildJsonObject { put("pollIntervalMs", JsonPrimitive(0)) },
-                ))
-                abortSignal(controller.signal)
-            })
+            model.generate(
+                VideoGenerationParams {
+                    prompt("x")
+                    providerOptions(
+                        ProviderOptions.ofPairs(
+                            "klingai" to buildJsonObject { put("pollIntervalMs", JsonPrimitive(0)) },
+                        )
+                    )
+                    abortSignal(controller.signal)
+                }
+            )
         }
         pollStarted.await()
         pollBody.error(AbortError())
@@ -288,9 +313,11 @@ class MediaPollRobustnessTest {
             },
         ).image(ModelId(modelId))
 
-        val result = model.generate(ImageGenerationParams {
-            prompt("x")
-        })
+        val result = model.generate(
+            ImageGenerationParams {
+                prompt("x")
+            }
+        )
 
         assertEquals(3, pollCalls)
         assertEquals(1, result.images.size)
@@ -320,15 +347,19 @@ class MediaPollRobustnessTest {
         ).video(ModelId("kling-v2.6-t2v"))
 
         val error = assertFailsWith<NoVideoGeneratedError> {
-            model.generate(VideoGenerationParams {
-                prompt("x")
-                providerOptions(ProviderOptions.ofPairs(
-                    "klingai" to buildJsonObject {
-                        put("pollIntervalMs", JsonPrimitive(0))
-                        put("pollTimeoutMs", JsonPrimitive(0))
-                    },
-                ))
-            })
+            model.generate(
+                VideoGenerationParams {
+                    prompt("x")
+                    providerOptions(
+                        ProviderOptions.ofPairs(
+                            "klingai" to buildJsonObject {
+                                put("pollIntervalMs", JsonPrimitive(0))
+                                put("pollTimeoutMs", JsonPrimitive(0))
+                            },
+                        )
+                    )
+                }
+            )
         }
 
         assertTrue(error.message.orEmpty().contains("1 poll attempts"))
@@ -352,9 +383,11 @@ class MediaPollRobustnessTest {
             },
         ).video(ModelId("veo-3.1-generate-preview"))
 
-        model.generate(VideoGenerationParams {
-            prompt("x")
-        })
+        model.generate(
+            VideoGenerationParams {
+                prompt("x")
+            }
+        )
 
         assertEquals(1, pollCalls)
     }
@@ -362,7 +395,9 @@ class MediaPollRobustnessTest {
     @Test
     fun `google video poll detects terminal error without done true`() = runTest {
         val fixture = googleVideoFixture {
-            UrlResponse.JsonValue(Json.parseToJsonElement("""{"name":"operations/video-1","error":{"message":"quota exceeded"}}"""))
+            UrlResponse.JsonValue(
+                Json.parseToJsonElement("""{"name":"operations/video-1","error":{"message":"quota exceeded"}}""")
+            )
         }
         val model = GoogleGenerativeAI(
             fixture.httpClient(),
@@ -375,9 +410,11 @@ class MediaPollRobustnessTest {
         ).video(ModelId("veo-3.1-generate-preview"))
 
         val error = assertFailsWith<NoVideoGeneratedError> {
-            model.generate(VideoGenerationParams {
-                prompt("x")
-            })
+            model.generate(
+                VideoGenerationParams {
+                    prompt("x")
+                }
+            )
         }
 
         assertTrue(error.message.orEmpty().contains("quota exceeded"))

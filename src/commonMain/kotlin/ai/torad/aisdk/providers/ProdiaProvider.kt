@@ -96,7 +96,10 @@ public class ProdiaProviderSettings internal constructor(
                                 file.bytes,
                                 Headers.build {
                                     append(HttpHeaders.ContentType, file.mediaType)
-                                    append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"${file.filename ?: "input.${MediaTypes.toExtension(file.mediaType)}"}\"")
+                                    append(
+                                        HttpHeaders.ContentDisposition,
+                                        "${ContentDisposition.File}; filename=\"${file.filename ?: "input.${MediaTypes.toExtension(file.mediaType)}"}\""
+                                    )
                                 },
                             )
                         }
@@ -234,7 +237,9 @@ public class ProdiaProviderSettings internal constructor(
     }
 
     private fun prodiaErrorMessage(raw: String): String {
-        val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+        val obj = runCatching {
+            aiSdkJson.parseToJsonElement(raw).jsonObject
+        }.getOrNull() ?: return raw.ifBlank { "request failed" }
         return (obj["detail"] as? JsonPrimitive)?.contentOrNull
             ?: (obj["error"] as? JsonPrimitive)?.contentOrNull
             ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
@@ -429,17 +434,28 @@ public class ProdiaProvider(
     override val providerId: String = "prodia"
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 
     override fun languageModel(modelId: String): LanguageModel = ProdiaLanguageModel(client, settings, modelId)
     override fun imageModel(modelId: String): ImageModel = ProdiaImageModel(client, settings, modelId)
     override fun videoModel(modelId: String): VideoModel = ProdiaVideoModel(client, settings, modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 }
 
 /**

@@ -63,7 +63,9 @@ public object ToolApprovalSignature {
         toolCallId: String,
         toolName: String,
         input: JsonElement,
-    ): String = toBase64Url(CryptoPrimitives.hmacSha256(secret, approvalPayload(approvalId, toolCallId, toolName, input)))
+    ): String = toBase64Url(
+        CryptoPrimitives.hmacSha256(secret, approvalPayload(approvalId, toolCallId, toolName, input))
+    )
 
     /**
      * Verify a replayed approval's signature. Constant-time comparison; false on any malformed input.

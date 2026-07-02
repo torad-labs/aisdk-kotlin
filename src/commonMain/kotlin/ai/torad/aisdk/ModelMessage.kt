@@ -20,7 +20,7 @@ import kotlinx.serialization.json.contentOrNull
  * results travel as their own content part variants. Tool approval
  * (request and response) likewise rides on dedicated content parts so
  * approval state is persisted in the message log alongside everything else.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 @Serializable
 @Poko
@@ -36,15 +36,21 @@ public class ModelMessage(
 
 /** @since 0.3.0-beta01 */
 public fun SystemMessage(text: String): ModelMessage = ModelMessage(MessageRole.System, listOf(ContentPart.Text(text)))
+
 /** @since 0.3.0-beta01 */
 public fun UserMessage(text: String): ModelMessage = ModelMessage(MessageRole.User, listOf(ContentPart.Text(text)))
+
 /** @since 0.3.0-beta01 */
-public fun AssistantMessage(text: String): ModelMessage = ModelMessage(MessageRole.Assistant, listOf(ContentPart.Text(text)))
+public fun AssistantMessage(
+    text: String
+): ModelMessage = ModelMessage(MessageRole.Assistant, listOf(ContentPart.Text(text)))
+
 /** @since 0.3.0-beta01 */
 public fun ToolMessage(toolCallId: String, toolName: String, output: JsonElement): ModelMessage = ModelMessage(
     MessageRole.Tool,
     listOf(ContentPart.ToolResult(toolCallId, toolName, output)),
 )
+
 /** @since 0.3.0-beta01 */
 public fun ToolApprovalResponseMessage(
     toolCallId: String,
@@ -257,7 +263,7 @@ public sealed class ContentPart {
         /** @since 0.3.0-beta01 */
         public val sourceType: StreamEvent.SourcePart.SourceType,
         /** Provider's stable handle for the source so repeated mentions can be deduped;
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          *  survives the UIMessage -> ModelMessage round-trip (was silently dropped). */
         public val sourceId: String? = null,
         /** @since 0.3.0-beta01 */
@@ -286,7 +292,7 @@ public sealed class ContentPart {
      * data shape; a URL-shaped variant lives in [Source]. `filename`
      * is the user-facing label (Anthropic models produce it for
      * artifact-like outputs; v6 has a dedicated slot for it).
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("file")
@@ -308,7 +314,7 @@ public sealed class ContentPart {
          * Remote (or data) URL for the file content, when not provided inline as
          * [base64]. Mirrors v6's `data: DataContent | URL`. Resolve with
          * `convertToLanguageModelPrompt` for providers that don't accept URLs.
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          */
         public val url: String? = null,
     ) : ContentPart()
@@ -341,7 +347,7 @@ public sealed class ContentPart {
          * Remote (or data) URL for the image, when not provided inline as
          * [base64]. Mirrors v6's `image: DataContent | URL`. Resolve with
          * `convertToLanguageModelPrompt` for providers that don't accept URLs.
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          */
         public val url: String? = null,
     ) : ContentPart()
@@ -350,7 +356,7 @@ public sealed class ContentPart {
      * Forward-compatible escape hatch for content parts a gateway or provider
      * knows about before this SDK does. The raw JSON is preserved so callers
      * can inspect or round-trip it instead of silently losing content.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("raw")

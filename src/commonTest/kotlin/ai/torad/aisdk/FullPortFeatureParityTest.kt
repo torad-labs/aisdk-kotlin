@@ -1,46 +1,45 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.providers.MockAudioSource
 import ai.torad.aisdk.providers.MockEmbeddingModel
 import ai.torad.aisdk.providers.MockImageModel
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import ai.torad.aisdk.providers.MockRerankingModel
 import ai.torad.aisdk.providers.MockSpeechModel
 import ai.torad.aisdk.providers.MockTranscriptionModel
 import ai.torad.aisdk.providers.MockVideoModel
-import ai.torad.aisdk.providers.MockAudioSource
-import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import ai.torad.aisdk.ui.Chat
 import ai.torad.aisdk.ui.ChatRequest
+import ai.torad.aisdk.ui.CreateTextStreamResponse
+import ai.torad.aisdk.ui.CreateUiMessageStream
 import ai.torad.aisdk.ui.DirectChatTransport
 import ai.torad.aisdk.ui.ServerResponseWriter
+import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.TextStreamChatTransport
+import ai.torad.aisdk.ui.TextStreamFromEvents
 import ai.torad.aisdk.ui.TextUIPartState
+import ai.torad.aisdk.ui.TransformTextToUiMessageStream
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.CreateTextStreamResponse
-import ai.torad.aisdk.ui.CreateUiMessageStream
 import ai.torad.aisdk.ui.UiMessageStreams.getResponseUiMessageId
 import ai.torad.aisdk.ui.UiMessageStreams.lastAssistantMessageIsCompleteWithToolCalls
 import ai.torad.aisdk.ui.UiMessageStreams.pipeTextStreamToResponse
-import ai.torad.aisdk.ui.TextStreamFromEvents
-import ai.torad.aisdk.ui.TransformTextToUiMessageStream
-import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.UiMessageStreams.validateUiMessages
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
 
 class FullPortFeatureParityTest {
 
@@ -158,7 +157,12 @@ class FullPortFeatureParityTest {
             messages = emptyList(),
             toolCallId = "call_1",
         )
-        val value = (tool.execute(buildJsonObject { put("value", JsonPrimitive("ok")) }, ctx).first() as ToolResult.Success).value
+        val value = (
+            tool.execute(
+                buildJsonObject { put("value", JsonPrimitive("ok")) },
+                ctx
+            ).first() as ToolResult.Success
+            ).value
 
         assertEquals("runtimeTool", tool.name)
         assertEquals(schema, Schemas.asSchema(schema))
@@ -227,9 +231,15 @@ class FullPortFeatureParityTest {
             telemetry = settings,
             input = JsonPrimitive("in"),
             output = JsonPrimitive("out"),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("mock" to buildJsonObject { put("id", JsonPrimitive("1")) }))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(mapOf("mock" to buildJsonObject { put("id", JsonPrimitive("1")) }))
+            ),
         )
-        TelemetryTracing.recordSpan(TelemetryTracing.assembleOperationName("generateText", settings), tracer, attributes) {}
+        TelemetryTracing.recordSpan(
+            TelemetryTracing.assembleOperationName("generateText", settings),
+            tracer,
+            attributes
+        ) {}
 
         assertEquals("chat.generateText", tracer.spans.single().name)
         assertEquals(JsonPrimitive("in"), tracer.spans.single().attributes["ai.input"])
@@ -343,12 +353,15 @@ class FullPortFeatureParityTest {
             flowOf(assistant("assistant-1", "pong"))
         }
         val chat = Chat(id = "c1", transport = transport)
-        val emitted = drainAllItems(chat.sendMessage(UIMessage("u1", UIMessageRole.User, listOf(UIMessagePart.Text("ping")))))
+        val emitted =
+            drainAllItems(chat.sendMessage(UIMessage("u1", UIMessageRole.User, listOf(UIMessagePart.Text("ping")))))
         val textTransport = TextStreamChatTransport(handler = { flowOf("he", "llo") })
         val textMessages = drainAllItems(
-            textTransport.sendMessages(ChatRequest {
-                messages(listOf(UIMessage("u2", UIMessageRole.User, listOf(UIMessagePart.Text("hi")))))
-            }),
+            textTransport.sendMessages(
+                ChatRequest {
+                    messages(listOf(UIMessage("u2", UIMessageRole.User, listOf(UIMessagePart.Text("hi")))))
+                }
+            ),
         )
 
         assertEquals("pong", (emitted.single().parts.single() as UIMessagePart.Text).text)

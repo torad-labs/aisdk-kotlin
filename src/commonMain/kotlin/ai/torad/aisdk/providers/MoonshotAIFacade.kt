@@ -13,7 +13,6 @@ import kotlinx.serialization.json.intOrNull
 
 public const val MOONSHOTAI_VERSION: String = "2.0.23"
 
-
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -48,7 +47,10 @@ public class MoonshotAIProviderSettings internal constructor(
             (obj["cached_tokens"] as? JsonPrimitive)?.intOrNull
                 ?: obj.nestedIntField("prompt_tokens_details", "cached_tokens")
             ).coerceAtMost(promptTokens)
-        val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
+        val reasoning = obj.nestedIntField(
+            "completion_tokens_details",
+            "reasoning_tokens"
+        ).coerceAtMost(completionTokens)
         return Usage.fromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
     }
 }
@@ -130,15 +132,22 @@ public class MoonshotAIProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(
         client,
-        settings.toCompatible("moonshotai", MOONSHOTAI_VERSION, capabilities = ProviderCapabilities(includeUsage = true)),
+        settings.toCompatible(
+            "moonshotai",
+            MOONSHOTAI_VERSION,
+            capabilities = ProviderCapabilities(includeUsage = true)
+        ),
     )
     override val providerId: String = "moonshotai"
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+
     /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = compatible.chatModel(modelId.value)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(
+        modelId: String
+    ): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 

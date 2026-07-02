@@ -1,19 +1,10 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonElement
-import io.ktor.http.HttpHeaders
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -21,20 +12,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
-import kotlin.time.TimeSource
 
 @OptIn(ExperimentalAiSdkApi::class, ExperimentalCoroutinesApi::class, InternalAiSdkApi::class)
 abstract class MCPClientTestBase {
@@ -163,12 +142,14 @@ abstract class MCPClientTestBase {
         private var clientInformation: OAuthClientInformation? = OAuthClientInformation {
             clientId("client-id")
         },
-        private val onAddClientAuthentication: (suspend (
-            headers: Map<String, String>,
-            params: Map<String, String>,
-            url: String,
-            metadata: AuthorizationServerMetadata?,
-        ) -> ClientAuthResult)? = null,
+        private val onAddClientAuthentication: (
+            suspend (
+                headers: Map<String, String>,
+                params: Map<String, String>,
+                url: String,
+                metadata: AuthorizationServerMetadata?,
+            ) -> ClientAuthResult
+        )? = null,
     ) : OAuthClientProvider {
         var lastAuthorizationUrl: String? = null
         var savedCodeVerifier: String = "verifier"

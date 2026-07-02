@@ -1,16 +1,15 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
-import kotlin.jvm.JvmOverloads
-import kotlin.time.TimeSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.jvm.JvmOverloads
+import kotlin.time.TimeSource
 
 @Poko
 /** @since 0.3.0-beta01 */
@@ -64,10 +63,13 @@ public class InMemoryDevToolsRecorder : DevToolsRecorder {
     private val _runs: MutableList<String> = mutableListOf()
     private val _steps: MutableList<DevToolsStep> = mutableListOf()
     private val _results: MutableMap<String, DevToolsStepResult> = linkedMapOf()
+
     /** @since 0.3.0-beta01 */
     public val runs: List<String> get() = _runs
+
     /** @since 0.3.0-beta01 */
     public val steps: List<DevToolsStep> get() = _steps
+
     /** @since 0.3.0-beta01 */
     public val results: Map<String, DevToolsStepResult> get() = _results
 
@@ -93,8 +95,11 @@ public fun DevToolsMiddleware(
     idGenerator: () -> String = { IdGenerator.generate(prefix = "step") },
 ): LanguageModelMiddleware {
     if (environment == "production") {
-        throw UnsupportedFunctionalityError("devtools in production", "@ai-sdk/devtools should not be used in production. " +
-            "Remove devToolsMiddleware from your model configuration for production builds.")
+        throw UnsupportedFunctionalityError(
+            "devtools in production",
+            "@ai-sdk/devtools should not be used in production. " +
+                "Remove devToolsMiddleware from your model configuration for production builds."
+        )
     }
 
     return object : LanguageModelMiddleware {
@@ -286,67 +291,67 @@ internal object DevToolsJson {
     }
 
     fun streamEventJson(event: StreamEvent): JsonElement = when (event) {
-    is StreamEvent.TextStart -> buildJsonObject {
-        put("type", JsonPrimitive("text-start"))
-        put("id", JsonPrimitive(event.id))
-    }
-    is StreamEvent.TextDelta -> buildJsonObject {
-        put("type", JsonPrimitive("text-delta"))
-        put("id", JsonPrimitive(event.id))
-        put("text", JsonPrimitive(event.text))
-    }
-    is StreamEvent.TextEnd -> buildJsonObject {
-        put("type", JsonPrimitive("text-end"))
-        put("id", JsonPrimitive(event.id))
-    }
-    is StreamEvent.ReasoningStart -> buildJsonObject {
-        put("type", JsonPrimitive("reasoning-start"))
-        put("id", JsonPrimitive(event.id))
-    }
-    is StreamEvent.ReasoningDelta -> buildJsonObject {
-        put("type", JsonPrimitive("reasoning-delta"))
-        put("id", JsonPrimitive(event.id))
-        put("text", JsonPrimitive(event.text))
-    }
-    is StreamEvent.ReasoningEnd -> buildJsonObject {
-        put("type", JsonPrimitive("reasoning-end"))
-        put("id", JsonPrimitive(event.id))
-    }
-    is StreamEvent.ToolCall -> buildJsonObject {
-        put("type", JsonPrimitive("tool-call"))
-        put("toolCallId", JsonPrimitive(event.toolCallId))
-        put("toolName", JsonPrimitive(event.toolName))
-        put("input", event.inputJson)
-    }
-    is StreamEvent.Finish -> buildJsonObject {
-        put("type", JsonPrimitive("finish"))
-        put("finishReason", JsonPrimitive(event.finishReason.name))
-    }
-    is StreamEvent.Raw -> buildJsonObject {
-        put("type", JsonPrimitive("raw"))
-        put("rawValue", event.rawValue)
-    }
-    is StreamEvent.Data -> buildJsonObject {
-        put("type", JsonPrimitive("data-${event.name}"))
-        event.id?.let { put("id", JsonPrimitive(it)) }
-        put("data", event.data)
-        if (event.transient) put("transient", JsonPrimitive(true))
-    }
-    is StreamEvent.StreamStart,
-    is StreamEvent.ResponseMetadata,
-    is StreamEvent.StepStart,
-    is StreamEvent.SourcePart,
-    is StreamEvent.FilePart,
-    is StreamEvent.ToolInputStart,
-    is StreamEvent.ToolInputDelta,
-    is StreamEvent.ToolInputEnd,
-    is StreamEvent.ToolResult,
-    is StreamEvent.ToolError,
-    is StreamEvent.ToolApprovalRequest,
-    is StreamEvent.ToolOutputDenied,
-    is StreamEvent.StepFinish,
-    StreamEvent.Abort,
-    is StreamEvent.Error,
-    -> buildJsonObject { put("type", JsonPrimitive("event")) }
+        is StreamEvent.TextStart -> buildJsonObject {
+            put("type", JsonPrimitive("text-start"))
+            put("id", JsonPrimitive(event.id))
+        }
+        is StreamEvent.TextDelta -> buildJsonObject {
+            put("type", JsonPrimitive("text-delta"))
+            put("id", JsonPrimitive(event.id))
+            put("text", JsonPrimitive(event.text))
+        }
+        is StreamEvent.TextEnd -> buildJsonObject {
+            put("type", JsonPrimitive("text-end"))
+            put("id", JsonPrimitive(event.id))
+        }
+        is StreamEvent.ReasoningStart -> buildJsonObject {
+            put("type", JsonPrimitive("reasoning-start"))
+            put("id", JsonPrimitive(event.id))
+        }
+        is StreamEvent.ReasoningDelta -> buildJsonObject {
+            put("type", JsonPrimitive("reasoning-delta"))
+            put("id", JsonPrimitive(event.id))
+            put("text", JsonPrimitive(event.text))
+        }
+        is StreamEvent.ReasoningEnd -> buildJsonObject {
+            put("type", JsonPrimitive("reasoning-end"))
+            put("id", JsonPrimitive(event.id))
+        }
+        is StreamEvent.ToolCall -> buildJsonObject {
+            put("type", JsonPrimitive("tool-call"))
+            put("toolCallId", JsonPrimitive(event.toolCallId))
+            put("toolName", JsonPrimitive(event.toolName))
+            put("input", event.inputJson)
+        }
+        is StreamEvent.Finish -> buildJsonObject {
+            put("type", JsonPrimitive("finish"))
+            put("finishReason", JsonPrimitive(event.finishReason.name))
+        }
+        is StreamEvent.Raw -> buildJsonObject {
+            put("type", JsonPrimitive("raw"))
+            put("rawValue", event.rawValue)
+        }
+        is StreamEvent.Data -> buildJsonObject {
+            put("type", JsonPrimitive("data-${event.name}"))
+            event.id?.let { put("id", JsonPrimitive(it)) }
+            put("data", event.data)
+            if (event.transient) put("transient", JsonPrimitive(true))
+        }
+        is StreamEvent.StreamStart,
+        is StreamEvent.ResponseMetadata,
+        is StreamEvent.StepStart,
+        is StreamEvent.SourcePart,
+        is StreamEvent.FilePart,
+        is StreamEvent.ToolInputStart,
+        is StreamEvent.ToolInputDelta,
+        is StreamEvent.ToolInputEnd,
+        is StreamEvent.ToolResult,
+        is StreamEvent.ToolError,
+        is StreamEvent.ToolApprovalRequest,
+        is StreamEvent.ToolOutputDenied,
+        is StreamEvent.StepFinish,
+        StreamEvent.Abort,
+        is StreamEvent.Error,
+        -> buildJsonObject { put("type", JsonPrimitive("event")) }
     }
 }
