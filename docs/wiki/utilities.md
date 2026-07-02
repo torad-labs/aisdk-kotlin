@@ -6,12 +6,12 @@ similarity, abort signals, and small data helpers.
 ## Generate Ids
 
 ```kotlin
-val messageId = generateId(prefix = "msg")
+val messageId = IdGenerator.generate(prefix = "msg")
 
-val idGenerator = createIdGenerator(
-    prefix = "tool",
-    size = 12,
-)
+val idGenerator = IdGenerator {
+    prefix("tool")
+    size(12)
+}
 
 val toolCallId = idGenerator.generate()
 ```
@@ -21,8 +21,8 @@ Use stable ids for persisted UI messages, tool calls, and stream resume.
 ## Smooth Streams
 
 ```kotlin
-val smooth = smoothStream(
-    upstream = streamText(model = model, prompt = prompt),
+val smooth = SmoothStream(
+    upstream = TextGenerator(model).stream(GenerationInput.Prompt(prompt)),
     delayMs = 15,
     chunkBy = ChunkBy.Word,
 )
@@ -30,7 +30,7 @@ val smooth = smoothStream(
 smooth.collect { event -> render(event) }
 ```
 
-Use `smoothStream` when a provider emits text too quickly or in awkward token
+Use `SmoothStream` when a provider emits text too quickly or in awkward token
 chunks for a chat UI. Non-text events pass through without delay.
 
 ## Replay Recorded Streams
@@ -49,7 +49,7 @@ Use this in tests and stream-caching middleware.
 ## Prune Messages
 
 ```kotlin
-val pruned = pruneMessages(
+val pruned = MessagePruning.pruneMessages(
     messages = messages,
     reasoning = PruneReasoning.BeforeLastMessage,
     toolCalls = PruneToolCalls.BeforeLastMessages(2),
@@ -63,7 +63,7 @@ state.
 ## Cosine Similarity
 
 ```kotlin
-val score = cosineSimilarity(queryEmbedding, documentEmbedding)
+val score = EmbeddingMath.cosineSimilarity(queryEmbedding, documentEmbedding)
 ```
 
 Use this for simple in-memory ranking. For large datasets, use a vector index
@@ -72,9 +72,9 @@ owned by the host app.
 ## Abort Signals
 
 ```kotlin
-val signal = mergeAbortSignals(
+val signal = CombineAbortSignals(
     userRequestSignal,
-    backgroundJob.asAbortSignal(),
+    with(AbortSignals) { backgroundJob.asAbortSignal() },
 )
 ```
 
@@ -83,7 +83,7 @@ Use merged signals when cancellation can come from more than one owner.
 ## Data URLs
 
 ```kotlin
-val parsed = splitDataUrl("data:image/png;base64,$encoded")
+val parsed = DataUrl.parse("data:image/png;base64,$encoded")
 ```
 
 Use file and media helpers when passing generated media between model families.
