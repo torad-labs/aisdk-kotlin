@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 public typealias LiteRTProviderOptions = JsonObject
 
@@ -36,6 +37,11 @@ public enum class LiteRTMessageRole {
     Model,
     Tool,
 }
+
+private const val LITERT_CUMULATIVE_RECOVERY_TYPE = "non-prefix-cumulative-snapshot"
+private const val LITERT_CUMULATIVE_RECOVERY_MESSAGE =
+    "LiteRT cumulative stream snapshot rewrote previously emitted text; " +
+        "emitted only an append-only best-effort suffix."
 
 /** @since 0.3.0-beta01 */
 public class LiteRTBytes(bytes: ByteArray) {
@@ -856,6 +862,7 @@ public class LiteRTLanguageModel(
         val conversation = conversationFactory.create(prepared.request)
         val abortRegistration = params.abortSignal.register { conversation.cancel() }
         val state = LiteRTStreamState(
+            provider = settings.provider,
             textMode = settings.streamTextMode,
             reasoningChannelNames = settings.reasoningChannelNames,
             idGenerator = settings.toolCallIdGenerator,
@@ -878,6 +885,7 @@ public class LiteRTLanguageModel(
 }
 
 private class LiteRTStreamState(
+    private val provider: String,
     private val textMode: LiteRTStreamTextMode,
     private val reasoningChannelNames: Set<String>,
     private val idGenerator: () -> String,
@@ -890,29 +898,69 @@ private class LiteRTStreamState(
     private val openReasoning: MutableSet<String> = mutableSetOf()
     private val emittedToolCalls: MutableSet<LiteRTStreamToolCallKey> = mutableSetOf()
     private var hasToolCalls: Boolean = false
+    private val textRecoveryMetadata: ProviderMetadata = ProviderMetadata.ofPairs(
+        provider to JsonObject(
+            mapOf(
+                "cumulativeRecovery" to JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive(LITERT_CUMULATIVE_RECOVERY_TYPE),
+                        "block" to JsonPrimitive("text"),
+                        "message" to JsonPrimitive(LITERT_CUMULATIVE_RECOVERY_MESSAGE),
+                    ),
+                ),
+            ),
+        ),
+    )
+    private val reasoningRecoveryMetadata: ProviderMetadata = ProviderMetadata.ofPairs(
+        provider to JsonObject(
+            mapOf(
+                "cumulativeRecovery" to JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive(LITERT_CUMULATIVE_RECOVERY_TYPE),
+                        "block" to JsonPrimitive("reasoning"),
+                        "message" to JsonPrimitive(LITERT_CUMULATIVE_RECOVERY_MESSAGE),
+                    ),
+                ),
+            ),
+        ),
+    )
 
     suspend fun accept(message: LiteRTMessage, out: FlowCollector<StreamEvent>) {
-        val text = message.content.filterIsInstance<LiteRTContent.Text>().joinToString("") { it.text }
-        val textDelta = delta(cumulativeText, text)
-        if (textDelta.isNotEmpty()) {
-            if (!textOpen) {
-                out.emit(StreamEvent.TextStart(textId, message.providerMetadata))
-                textOpen = true
+        val textParts = message.content.filterIsInstance<LiteRTContent.Text>()
+        if (textParts.isNotEmpty()) {
+            val text = textParts.joinToString("") { it.text }
+            val textDelta = delta(cumulativeText, text)
+            if (textDelta.text.isNotEmpty()) {
+                if (!textOpen) {
+                    out.emit(StreamEvent.TextStart(textId, message.providerMetadata))
+                    textOpen = true
+                }
+                val metadata = if (textDelta.recovered) {
+                    message.providerMetadata + textRecoveryMetadata
+                } else {
+                    message.providerMetadata
+                }
+                out.emit(StreamEvent.TextDelta(textId, textDelta.text, metadata))
             }
-            out.emit(StreamEvent.TextDelta(textId, textDelta, message.providerMetadata))
-            cumulativeText = if (textMode == LiteRTStreamTextMode.Cumulative) text else cumulativeText + textDelta
+            cumulativeText = textDelta.nextBaseline
         }
         for ((channel, value) in message.channels.filterKeys { it in reasoningChannelNames }) {
             val prior = cumulativeReasoning[channel].orEmpty()
             val delta = delta(prior, value)
-            if (delta.isEmpty()) continue
-            val id = reasoningIds.getOrPut(channel) { "reasoning-${reasoningIds.size + 1}" }
-            if (channel !in openReasoning) {
-                out.emit(StreamEvent.ReasoningStart(id, message.providerMetadata))
-                openReasoning += channel
+            if (delta.text.isNotEmpty()) {
+                val id = reasoningIds.getOrPut(channel) { "reasoning-${reasoningIds.size + 1}" }
+                if (channel !in openReasoning) {
+                    out.emit(StreamEvent.ReasoningStart(id, message.providerMetadata))
+                    openReasoning += channel
+                }
+                val metadata = if (delta.recovered) {
+                    message.providerMetadata + reasoningRecoveryMetadata
+                } else {
+                    message.providerMetadata
+                }
+                out.emit(StreamEvent.ReasoningDelta(id, delta.text, metadata))
             }
-            out.emit(StreamEvent.ReasoningDelta(id, delta, message.providerMetadata))
-            cumulativeReasoning[channel] = if (textMode == LiteRTStreamTextMode.Cumulative) value else prior + delta
+            cumulativeReasoning[channel] = delta.nextBaseline
         }
         for (call in message.toolCalls) {
             val key = LiteRTStreamToolCallKey(id = call.id, name = call.name, arguments = call.arguments)
@@ -944,13 +992,56 @@ private class LiteRTStreamState(
         )
     }
 
-    private fun delta(prior: String, next: String): String =
-        if (textMode == LiteRTStreamTextMode.Cumulative && next.startsWith(prior)) {
-            next.removePrefix(prior)
-        } else {
-            next
+    private fun delta(prior: String, next: String): LiteRTCumulativeDelta =
+        when {
+            textMode != LiteRTStreamTextMode.Cumulative -> LiteRTCumulativeDelta(
+                text = next,
+                nextBaseline = prior + next,
+            )
+            next.startsWith(prior) -> LiteRTCumulativeDelta(
+                text = next.removePrefix(prior),
+                nextBaseline = next,
+            )
+            else -> {
+                // Stream events are append-only, so LiteRT cumulative rewrites can only surface as
+                // a marked best-effort suffix; the rewritten snapshot still becomes the baseline.
+                LiteRTCumulativeDelta(
+                    text = bestEffortSuffix(prior, next),
+                    nextBaseline = next,
+                    recovered = true,
+                )
+            }
         }
+
+    private fun bestEffortSuffix(prior: String, next: String): String =
+        suffixAfterSubsequence(prior, next)
+            ?: suffixAfterCoveredPrefix(prior, next)
+
+    private fun suffixAfterSubsequence(prior: String, next: String): String? {
+        var priorIndex = 0
+        for (nextIndex in next.indices) {
+            if (priorIndex < prior.length && next[nextIndex] == prior[priorIndex]) {
+                priorIndex += 1
+                if (priorIndex == prior.length) return next.substring(nextIndex + 1)
+            }
+        }
+        return null
+    }
+
+    private fun suffixAfterCoveredPrefix(prior: String, next: String): String {
+        var nextIndex = 0
+        for (char in prior) {
+            if (nextIndex < next.length && char == next[nextIndex]) nextIndex += 1
+        }
+        return if (nextIndex == 0) "" else next.substring(nextIndex)
+    }
 }
+
+private data class LiteRTCumulativeDelta(
+    val text: String,
+    val nextBaseline: String,
+    val recovered: Boolean = false,
+)
 
 private data class LiteRTStreamToolCallKey(
     val id: String?,

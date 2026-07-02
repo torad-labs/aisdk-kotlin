@@ -207,6 +207,90 @@ class LiteRTLanguageModelTest {
     }
 
     @Test
+    fun `stream emits cumulative text suffixes for prefix snapshots`() = runTest {
+        val factory = FakeLiteRTFactory(
+            streamResponses = listOf(
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    content(listOf(LiteRTContent.Text("Hel")))
+                },
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    content(listOf(LiteRTContent.Text("Hello")))
+                },
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    content(listOf(LiteRTContent.Text("Hello!")))
+                },
+            ),
+        )
+        val model = LiteRTLanguageModel(
+            modelId = "gemma-litert",
+            conversationFactory = factory,
+            settings = LiteRTLanguageModelSettings(
+                block = {
+                    streamTextMode(LiteRTStreamTextMode.Cumulative)
+                },
+            ),
+        )
+
+        val events = model.stream(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+            }
+        ).toList()
+
+        assertEquals(listOf("Hel", "lo", "!"), events.filterIsInstance<StreamEvent.TextDelta>().map { it.text })
+        assertEquals("Hello!", events.filterIsInstance<StreamEvent.TextDelta>().joinToString("") { it.text })
+    }
+
+    @Test
+    fun `stream does not duplicate non-prefix cumulative text rewrites`() = runTest {
+        val factory = FakeLiteRTFactory(
+            streamResponses = listOf(
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    content(listOf(LiteRTContent.Text("Hello world")))
+                },
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    content(listOf(LiteRTContent.Text("Hello  world!")))
+                },
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    content(listOf(LiteRTContent.Text("Hello  world! Done")))
+                },
+            ),
+        )
+        val model = LiteRTLanguageModel(
+            modelId = "gemma-litert",
+            conversationFactory = factory,
+            settings = LiteRTLanguageModelSettings(
+                block = {
+                    streamTextMode(LiteRTStreamTextMode.Cumulative)
+                },
+            ),
+        )
+
+        val events = model.stream(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+            }
+        ).toList()
+
+        val deltas = events.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
+        assertEquals(listOf("Hello world", "!", " Done"), deltas)
+        assertEquals("Hello world! Done", deltas.joinToString(""))
+        val metadata = assertIs<ProviderMetadata.Raw>(
+            events.filterIsInstance<StreamEvent.TextDelta>()[1].providerMetadata,
+        )
+        val litertMetadata = assertIs<JsonObject>(metadata.metadata["litert-lm"])
+        val recovery = assertIs<JsonObject>(litertMetadata["cumulativeRecovery"])
+        assertEquals(JsonPrimitive("non-prefix-cumulative-snapshot"), recovery["type"])
+        assertEquals(JsonPrimitive("text"), recovery["block"])
+    }
+
+    @Test
     fun `stream deduplicates cumulative tool calls across snapshots`() = runTest {
         val repeatedToolCall = LiteRTToolCall {
             name("lookup")
