@@ -387,7 +387,11 @@ private class LumaImageModel(
                 try {
                     val response = client.request(url) {
                         abortSignal.throwIfAborted()
-                        abortRegistrations += abortSignal.register { executionContext.cancel(AbortError()) }
+                        abortRegistrations += abortSignal.register {
+                            executionContext.cancel(
+                                with(AbortErrorCancellationBridge) { AbortError().asCoroutineCancellation() }
+                            )
+                        }
                         method = HttpMethod.Get
                     }
                     Triple(

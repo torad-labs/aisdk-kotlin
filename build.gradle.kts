@@ -280,6 +280,8 @@ val detektBaselineBudgetCheck by tasks.registering(Exec::class) {
 }
 
 tasks.named("check").configure {
+    // AR-34: exercise publish-path-only metadata compilation during normal check.
+    dependsOn("metadataMainClasses")
     dependsOn("koverVerify")
     dependsOn(detektBaselineBudgetCheck)
     dependsOn(detekt)
