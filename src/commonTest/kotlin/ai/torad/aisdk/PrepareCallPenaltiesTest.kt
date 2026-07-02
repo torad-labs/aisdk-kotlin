@@ -2,18 +2,18 @@
 
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
-import kotlinx.serialization.json.JsonObject
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /**
  * Validates the v6-aligned `presencePenalty` + `frequencyPenalty`
@@ -183,12 +183,20 @@ class PrepareCallPenaltiesTest {
             tools = ToolSet(),
             prepareCall = {
                 AgentSettings {
-                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("common" to JsonPrimitive("call"), "callOnly" to JsonPrimitive(true)))))
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(mapOf("common" to JsonPrimitive("call"), "callOnly" to JsonPrimitive(true)))
+                        )
+                    )
                 }
             },
             prepareStep = {
                 StepSettings {
-                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("common" to JsonPrimitive("step"), "stepOnly" to JsonPrimitive(1)))))
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(mapOf("common" to JsonPrimitive("step"), "stepOnly" to JsonPrimitive(1)))
+                        )
+                    )
                 }
             },
         )

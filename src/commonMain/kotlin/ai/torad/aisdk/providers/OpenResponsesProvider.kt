@@ -22,11 +22,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
@@ -443,6 +440,7 @@ public fun OpenResponsesAllowedTools(
 /** @since 0.3.0-beta01 */
 public interface OpenResponsesProvider : Provider {
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun responses(modelId: String): LanguageModel = languageModel(modelId)
 }
@@ -508,7 +506,11 @@ private class OpenResponsesLanguageModel(
         val rawLines = streamResponsesSse(prepared.body, params.headers) { sseHeaders = it }
         with(HttpTransport) {
             forwardSseEvents(
-                events = EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), json),
+                events = EventStreamParser.parse(
+                    rawLines,
+                    Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())),
+                    json
+                ),
                 capturedHeaders = { sseHeaders },
                 parseErrorPrefix = "Failed to parse Open Responses stream event",
                 onEvent = { state.accept(it).forEach { e -> emit(e) } },
@@ -552,19 +554,21 @@ private class OpenResponsesLanguageModel(
         onResponse: suspend (Map<String, String>) -> Unit,
     ): Flow<String> = flow {
         emitAll(
-            HttpTransport.streamSse(client = client,
-            url = settings.url,
-            method = HttpMethod.Post,
-            headers = requestHeaders(headers) + (HttpHeaders.Accept to "text/event-stream"),
-            body = body,
-            json = json,
-            requestBodyValues = body,
-            errorMessage = { _, parsed, raw ->
-                val errorObj = (parsed as? JsonObject)?.get("error") as? JsonObject
-                (errorObj?.get("message") as? JsonPrimitive)?.contentOrNull
-                    ?: raw.ifBlank { "Open Responses request failed" }
-            },
-            onResponse = onResponse,),
+            HttpTransport.streamSse(
+                client = client,
+                url = settings.url,
+                method = HttpMethod.Post,
+                headers = requestHeaders(headers) + (HttpHeaders.Accept to "text/event-stream"),
+                body = body,
+                json = json,
+                requestBodyValues = body,
+                errorMessage = { _, parsed, raw ->
+                    val errorObj = (parsed as? JsonObject)?.get("error") as? JsonObject
+                    (errorObj?.get("message") as? JsonPrimitive)?.contentOrNull
+                        ?: raw.ifBlank { "Open Responses request failed" }
+                },
+                onResponse = onResponse,
+            ),
         )
     }
 
@@ -608,8 +612,11 @@ private class OpenResponsesLanguageModel(
             (response["id"] as? JsonPrimitive)?.contentOrNull?.let { put("responseId", JsonPrimitive(it)) }
             if (logprobs.isNotEmpty()) put("logprobs", JsonArray(logprobs))
         }
-        return if (metadata.isEmpty()) ProviderMetadata.None
-        else ProviderMetadata.Raw(JsonObject(mapOf(providerMetadataKey to metadata)))
+        return if (metadata.isEmpty()) {
+            ProviderMetadata.None
+        } else {
+            ProviderMetadata.Raw(JsonObject(mapOf(providerMetadataKey to metadata)))
+        }
     }
 
     private fun openResponsesPartMetadata(
@@ -623,8 +630,11 @@ private class OpenResponsesLanguageModel(
             obj["logprobs"]?.let { put("logprobs", it) }
             obj["encrypted_content"]?.let { put("encryptedContent", it) }
         }
-        return if (metadata.isEmpty()) ProviderMetadata.None
-        else ProviderMetadata.Raw(JsonObject(mapOf(providerMetadataKey to metadata)))
+        return if (metadata.isEmpty()) {
+            ProviderMetadata.None
+        } else {
+            ProviderMetadata.Raw(JsonObject(mapOf(providerMetadataKey to metadata)))
+        }
     }
 
     private fun openResponsesGenerateResult(
@@ -672,7 +682,13 @@ private class OpenResponsesLanguageModel(
                 }
                 "function_call" -> {
                     hasToolCalls = true
-                    val toolCallId = WireDecoder.requiredString(obj, "call_id", "Open Responses", "response output", path)
+                    val toolCallId = WireDecoder.requiredString(
+                        obj,
+                        "call_id",
+                        "Open Responses",
+                        "response output",
+                        path
+                    )
                     if (toolCallId.isBlank()) {
                         WireDecoder.fail(
                             "Open Responses",
@@ -715,25 +731,34 @@ private class OpenResponsesLanguageModel(
                     val action = obj["action"] as? JsonObject
                     val output = when ((action?.get("type") as? JsonPrimitive)?.contentOrNull) {
                         "search" -> buildJsonObject {
-                            put("action", buildJsonObject {
-                                put("type", JsonPrimitive("search"))
-                                action["query"]?.let { put("query", it) }
-                                action["queries"]?.let { put("queries", it) }
-                            })
+                            put(
+                                "action",
+                                buildJsonObject {
+                                    put("type", JsonPrimitive("search"))
+                                    action["query"]?.let { put("query", it) }
+                                    action["queries"]?.let { put("queries", it) }
+                                }
+                            )
                             action["sources"]?.let { put("sources", it) }
                         }
                         "open_page" -> buildJsonObject {
-                            put("action", buildJsonObject {
-                                put("type", JsonPrimitive("openPage"))
-                                action["url"]?.let { put("url", it) }
-                            })
+                            put(
+                                "action",
+                                buildJsonObject {
+                                    put("type", JsonPrimitive("openPage"))
+                                    action["url"]?.let { put("url", it) }
+                                }
+                            )
                         }
                         "find_in_page" -> buildJsonObject {
-                            put("action", buildJsonObject {
-                                put("type", JsonPrimitive("findInPage"))
-                                action["url"]?.let { put("url", it) }
-                                action["pattern"]?.let { put("pattern", it) }
-                            })
+                            put(
+                                "action",
+                                buildJsonObject {
+                                    put("type", JsonPrimitive("findInPage"))
+                                    action["url"]?.let { put("url", it) }
+                                    action["pattern"]?.let { put("pattern", it) }
+                                }
+                            )
                         }
                         else -> action?.let { buildJsonObject { put("action", it) } } ?: JsonObject(emptyMap())
                     }
@@ -923,25 +948,34 @@ private class OpenResponsesLanguageModel(
                             val action = item["action"] as? JsonObject
                             val output = when ((action?.get("type") as? JsonPrimitive)?.contentOrNull) {
                                 "search" -> buildJsonObject {
-                                    put("action", buildJsonObject {
-                                        put("type", JsonPrimitive("search"))
-                                        action["query"]?.let { put("query", it) }
-                                        action["queries"]?.let { put("queries", it) }
-                                    })
+                                    put(
+                                        "action",
+                                        buildJsonObject {
+                                            put("type", JsonPrimitive("search"))
+                                            action["query"]?.let { put("query", it) }
+                                            action["queries"]?.let { put("queries", it) }
+                                        }
+                                    )
                                     action["sources"]?.let { put("sources", it) }
                                 }
                                 "open_page" -> buildJsonObject {
-                                    put("action", buildJsonObject {
-                                        put("type", JsonPrimitive("openPage"))
-                                        action["url"]?.let { put("url", it) }
-                                    })
+                                    put(
+                                        "action",
+                                        buildJsonObject {
+                                            put("type", JsonPrimitive("openPage"))
+                                            action["url"]?.let { put("url", it) }
+                                        }
+                                    )
                                 }
                                 "find_in_page" -> buildJsonObject {
-                                    put("action", buildJsonObject {
-                                        put("type", JsonPrimitive("findInPage"))
-                                        action["url"]?.let { put("url", it) }
-                                        action["pattern"]?.let { put("pattern", it) }
-                                    })
+                                    put(
+                                        "action",
+                                        buildJsonObject {
+                                            put("type", JsonPrimitive("findInPage"))
+                                            action["url"]?.let { put("url", it) }
+                                            action["pattern"]?.let { put("pattern", it) }
+                                        }
+                                    )
                                 }
                                 else -> action?.let { buildJsonObject { put("action", it) } } ?: JsonObject(emptyMap())
                             }

@@ -38,6 +38,7 @@ public class UIMessageStreamResponse(
 public interface ServerResponseWriter {
     /** @since 0.3.0-beta01 */
     public fun setStatus(status: Int)
+
     /** @since 0.3.0-beta01 */
     public fun setHeader(name: String, value: String)
     public suspend fun write(chunk: String)
@@ -190,7 +191,12 @@ public object UiMessageStreams {
     }
 
     /** @since 0.3.0-beta01 */
-    public fun getResponseUiMessageId(messages: List<UIMessage>, createId: () -> String = { "msg_${messages.size + 1}" }): String =
+    public fun getResponseUiMessageId(
+        messages: List<UIMessage>,
+        createId: () -> String = {
+            "msg_${messages.size + 1}"
+        }
+    ): String =
         messages.lastOrNull { it.role == UIMessageRole.Assistant }?.id ?: createId()
 
     /** @since 0.3.0-beta01 */

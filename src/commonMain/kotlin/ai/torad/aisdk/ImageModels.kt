@@ -8,12 +8,12 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
-import kotlin.jvm.JvmOverloads
 
 /** @since 0.3.0-beta01 */
 public interface ImageModel {
     /** @since 0.3.0-beta01 */
     public val modelId: String
+
     /** @since 0.3.0-beta01 */
     public val provider: String
         get() = "unknown"
@@ -23,7 +23,7 @@ public interface ImageModel {
      * splits a request for more than this into ceil(n / limit) concurrent calls
      * (was: passing n straight through, so a model capped at 1 returned 1 of n).
      * Null = no limit.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val maxImagesPerCall: Int?
         get() = null
@@ -289,7 +289,9 @@ public object ImageGeneration {
             images = images,
             warnings = results.flatMap { it.warnings },
             response = results.first().response,
-            providerMetadata = results.firstNotNullOfOrNull { (it.providerMetadata as? ProviderMetadata.Raw) } ?: ProviderMetadata.None,
+            providerMetadata = results.firstNotNullOfOrNull {
+                (it.providerMetadata as? ProviderMetadata.Raw)
+            } ?: ProviderMetadata.None,
             responses = results.map { it.response },
             usage = ImageModelUsage.sum(results.map { it.usage }),
         )
@@ -358,6 +360,7 @@ private class WrappedImageModel(
 ) : ImageModel {
     override val modelId: String = inner.modelId
     override val provider: String = inner.provider
+
     // Forward the inner model's per-call image cap; without this the wrapper inherits the
     // interface default (null = unlimited) and defeats n-batching for capped inner models.
     override val maxImagesPerCall: Int? = inner.maxImagesPerCall

@@ -2,15 +2,15 @@
 
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.AZURE_VERSION
+import ai.torad.aisdk.providers.AzureOpenAI
 import ai.torad.aisdk.providers.AzureOpenAIProviderSettings
-
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.Headers
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
@@ -24,9 +24,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.AzureOpenAI
 
 class AzureProviderTest {
     @Test
@@ -57,14 +55,20 @@ class AzureProviderTest {
             LanguageModelCallParams {
                 messages(listOf(UserMessage("Hello")))
                 maxOutputTokens(64)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "openai" to JsonObject(
-                        mapOf(
-                            "reasoningEffort" to JsonPrimitive("low"),
-                            "reasoningSummary" to JsonPrimitive("concise"),
-                        ),
-                    ),
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "openai" to JsonObject(
+                                    mapOf(
+                                        "reasoningEffort" to JsonPrimitive("low"),
+                                        "reasoningSummary" to JsonPrimitive("concise"),
+                                    ),
+                                ),
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("Custom-Request-Header" to "request-header-value"))
             },
         )
@@ -110,12 +114,16 @@ class AzureProviderTest {
             },
         )
 
-        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("Hi")))
-})
-        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("Hi again")))
-})
+        provider.chat(ModelId("test-deployment")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hi")))
+            }
+        )
+        provider.chat(ModelId("test-deployment")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hi again")))
+            }
+        )
 
         assertEquals(2, tokenCount)
         assertEquals(
@@ -164,15 +172,21 @@ class AzureProviderTest {
                 prompt("A cute baby sea otter")
                 n(2)
                 size("1024x1024")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("openai" to JsonObject(mapOf("style" to JsonPrimitive("natural")))))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(mapOf("openai" to JsonObject(mapOf("style" to JsonPrimitive("natural")))))
+                    )
+                )
             },
         )
         val transcript = provider.transcription(ModelId("whisper-1")).transcribe(
             TranscriptionParams {
-                audio(AudioSource(
-                                    mediaType = "audio/wav",
-                                    base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
-                                ))
+                audio(
+                    AudioSource(
+                        mediaType = "audio/wav",
+                        base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
+                    )
+                )
             },
         )
 
@@ -193,7 +207,10 @@ class AzureProviderTest {
         assertEquals("azure.image", provider.image(ModelId("image-deployment")).provider)
         assertEquals("azure.transcription", provider.transcriptionModel("whisper-1").provider)
         assertEquals("azure.speech", provider.speech(ModelId("tts-1")).provider)
-        assertEquals(provider.embedding(ModelId("embedding-deployment")).modelId, provider.textEmbeddingModel(ModelId("embedding-deployment")).modelId)
+        assertEquals(
+            provider.embedding(ModelId("embedding-deployment")).modelId,
+            provider.textEmbeddingModel(ModelId("embedding-deployment")).modelId
+        )
     }
 
     @Test
@@ -226,7 +243,6 @@ class AzureProviderTest {
             )
         }
         assertTrue(error.message.orEmpty().contains("Both apiKey and tokenProvider were provided"))
-
     }
 
     private fun azureResponsesJson(text: String): String =

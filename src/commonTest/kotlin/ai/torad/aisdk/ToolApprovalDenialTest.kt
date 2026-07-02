@@ -3,18 +3,18 @@ package ai.torad.aisdk
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.providers.MockToolInput
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.StreamToUiMessages
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ToolApprovalDenialTest {
 
@@ -63,12 +63,14 @@ class ToolApprovalDenialTest {
             .single { it.toolCallId == pending.toolCallId }
 
         assertFalse(executed, "denied tool must not execute")
-        assertTrue(events.any {
-            it is StreamEvent.ToolOutputDenied &&
-                it.toolCallId == pending.toolCallId &&
-                it.approvalId == "approval_send_1" &&
-                it.reason == "user said no"
-        })
+        assertTrue(
+            events.any {
+                it is StreamEvent.ToolOutputDenied &&
+                    it.toolCallId == pending.toolCallId &&
+                    it.approvalId == "approval_send_1" &&
+                    it.reason == "user said no"
+            }
+        )
         assertFalse(events.any { it is StreamEvent.ToolError }, "denial is not a tool error")
         assertEquals(ToolCallState.OutputDenied, ui.state)
         assertEquals(true, events.filterIsInstance<StreamEvent.ToolResult>().single().isError)

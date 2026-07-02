@@ -71,7 +71,12 @@ internal object BedrockRequest {
                 params.topP?.let { put("topP", JsonPrimitive(it)) }
                 params.topK?.let { put("topK", JsonPrimitive(it)) }
             }
-            if (params.stopSequences.isNotEmpty()) put("stopSequences", JsonArray(params.stopSequences.map(::JsonPrimitive)))
+            if (params.stopSequences.isNotEmpty()) {
+                put(
+                    "stopSequences",
+                    JsonArray(params.stopSequences.map(::JsonPrimitive))
+                )
+            }
         }
         val converted = bedrockMessages(params.messages)
         warnings += converted.warnings
@@ -260,8 +265,10 @@ internal object BedrockRequest {
             is ToolResultOutput.Json -> o.json.toString()
             is ToolResultOutput.ErrorJson -> o.json.toString()
             is ToolResultOutput.Content -> o.value.joinToString("") { item ->
-                ((item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
-                    ?.get("text") as? JsonPrimitive)?.contentOrNull.orEmpty()
+                (
+                    (item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+                        ?.get("text") as? JsonPrimitive
+                    )?.contentOrNull.orEmpty()
             }
         }
 
@@ -295,7 +302,10 @@ internal object BedrockRequest {
                         buildJsonObject {
                             put("name", JsonPrimitive(tool.name))
                             if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
-                            put("inputSchema", buildJsonObject { put("json", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson)) })
+                            put(
+                                "inputSchema",
+                                buildJsonObject { put("json", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson)) }
+                            )
                         },
                     )
                 }
@@ -305,7 +315,12 @@ internal object BedrockRequest {
         val toolChoice = when (choice) {
             ToolChoice.Auto -> buildJsonObject { put("auto", buildJsonObject { }) }
             ToolChoice.Required -> buildJsonObject { put("any", buildJsonObject { }) }
-            is ToolChoice.Specific -> buildJsonObject { put("tool", buildJsonObject { put("name", JsonPrimitive(choice.toolName)) }) }
+            is ToolChoice.Specific -> buildJsonObject {
+                put(
+                    "tool",
+                    buildJsonObject { put("name", JsonPrimitive(choice.toolName)) }
+                )
+            }
             ToolChoice.None -> null
         }
         return BedrockPreparedTools(
@@ -351,10 +366,12 @@ internal object BedrockRequest {
         if (modelId.contains("anthropic") && responseFormat is ResponseFormat.Json && responseFormat.schemaJson != null && reasoningType in setOf("enabled", "adaptive")) {
             val existing = JsonAccess.obj(additional, "output_config") ?: JsonObject(emptyMap())
             additional["output_config"] = JsonObject(
-                existing + ("format" to buildJsonObject {
-                    put("type", JsonPrimitive("json_schema"))
-                    put("schema", responseFormat.schemaJson)
-                }),
+                existing + (
+                    "format" to buildJsonObject {
+                        put("type", JsonPrimitive("json_schema"))
+                        put("schema", responseFormat.schemaJson)
+                    }
+                    ),
             )
         }
         (JsonAccess.arr(options, "anthropicBeta"))?.let { additional["anthropic_beta"] = it }
@@ -441,7 +458,10 @@ internal object BedrockRequest {
                 }
                 "BACKGROUND_REMOVAL" -> buildJsonObject {
                     put("taskType", JsonPrimitive("BACKGROUND_REMOVAL"))
-                    put("backgroundRemovalParams", buildJsonObject { put("image", JsonPrimitive(bedrockImageFileBase64(params.files.first()))) })
+                    put(
+                        "backgroundRemovalParams",
+                        buildJsonObject { put("image", JsonPrimitive(bedrockImageFileBase64(params.files.first()))) }
+                    )
                 }
                 else -> buildJsonObject {
                     put("taskType", JsonPrimitive("IMAGE_VARIATION"))
@@ -579,6 +599,8 @@ internal object BedrockRequest {
         (metadata?.get("bedrock") as? JsonObject)?.get("cachePoint")
 
     private fun bedrockCitationsEnabled(metadata: Map<String, JsonElement>?): Boolean =
-        (((metadata?.get("bedrock") as? JsonObject)?.get("citations") as? JsonObject)
-            ?.get("enabled") as? JsonPrimitive)?.contentOrNull == "true"
+        (
+            ((metadata?.get("bedrock") as? JsonObject)?.get("citations") as? JsonObject)
+                ?.get("enabled") as? JsonPrimitive
+            )?.contentOrNull == "true"
 }

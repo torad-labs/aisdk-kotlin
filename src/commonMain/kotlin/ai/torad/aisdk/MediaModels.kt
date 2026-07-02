@@ -4,10 +4,6 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.intOrNull
 import kotlin.jvm.JvmOverloads
 
 @Poko
@@ -29,6 +25,7 @@ public class GeneratedFile(
 public sealed class FileData {
     /** @since 0.3.0-beta01 */
     public abstract val mediaType: String?
+
     /** @since 0.3.0-beta01 */
     public abstract val filename: String?
 
@@ -48,6 +45,7 @@ public sealed class FileData {
         override val filename: String? = null,
     ) : FileData() {
         private val bytesData: ByteArray = bytes.copyOf()
+
         /** @since 0.3.0-beta01 */
         public fun toByteArray(): ByteArray = bytesData.copyOf()
 
@@ -129,7 +127,7 @@ public fun ImageGenerationFile(data: FileData): ImageGenerationFile = when (data
 /**
  * GeneratedFile read accessors as member-extensions. Use via member-import
  * (`import ai.torad.aisdk.GeneratedFiles.bytes`) or `with(GeneratedFiles) { ... }`.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public object GeneratedFiles {
     /** @since 0.3.0-beta01 */
@@ -144,7 +142,7 @@ public object GeneratedFiles {
      * bytes) — fetch [GeneratedFile.url] to obtain the data. Without this guard a
      * URL-backed file (whose `base64` is `""`) silently decoded to an empty
      * `ByteArray`, a wrong answer indistinguishable from a genuinely empty file.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public fun GeneratedFile.bytes(): ByteArray {
         if (base64.isEmpty()) {
@@ -215,7 +213,10 @@ public class DefaultGeneratedFile private constructor(
         }
 
     /** @since 0.3.0-beta01 */
-    public fun toGeneratedFile(filename: String? = null, providerMetadata: ProviderMetadata = ProviderMetadata.None): GeneratedFile =
+    public fun toGeneratedFile(
+        filename: String? = null,
+        providerMetadata: ProviderMetadata = ProviderMetadata.None
+    ): GeneratedFile =
         GeneratedFile(mediaType = mediaType, base64 = base64, filename = filename, providerMetadata = providerMetadata)
 }
 

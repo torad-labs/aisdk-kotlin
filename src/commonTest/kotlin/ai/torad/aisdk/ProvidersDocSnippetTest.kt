@@ -64,9 +64,12 @@ class ProvidersDocSnippetTest {
                 ProviderOptions.ofPairs(
                     "litert" to buildJsonObject {
                         put("enableThinking", JsonPrimitive(true))
-                        put("extraContext", buildJsonObject {
-                            put("screen", JsonPrimitive("home"))
-                        })
+                        put(
+                            "extraContext",
+                            buildJsonObject {
+                                put("screen", JsonPrimitive("home"))
+                            }
+                        )
                     },
                 ),
             )
@@ -101,9 +104,12 @@ class ProvidersDocSnippetTest {
             .first()
             .text
 
-        assertEquals("Plan the next step.", params.messages.single().content.single().let {
-            (it as ContentPart.Text).text
-        })
+        assertEquals(
+            "Plan the next step.",
+            params.messages.single().content.single().let {
+                (it as ContentPart.Text).text
+            }
+        )
         assertEquals(
             "home",
             params.providerOptions.toMap().getValue("litert").jsonObject

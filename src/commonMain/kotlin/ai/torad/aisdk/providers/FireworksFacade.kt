@@ -22,7 +22,6 @@ import kotlinx.serialization.json.jsonObject
 
 public const val FIREWORKS_VERSION: String = "2.0.53"
 
-
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -227,12 +226,16 @@ public class FireworksProvider(
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+
     /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = FireworksLanguageModel(compatible.chatModel(modelId.value))
+
     /** @since 0.3.0-beta01 */
     public fun completionModel(modelId: ModelId): LanguageModel = compatible.completionModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
     override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
@@ -249,13 +252,19 @@ private class FireworksLanguageModel(
     private val delegate: LanguageModel,
 ) : LanguageModel by delegate {
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        delegate.generate(params.toBuilder().providerOptions(transformFireworksProviderOptions(params.providerOptions)).build())
+        delegate.generate(
+            params.toBuilder().providerOptions(transformFireworksProviderOptions(params.providerOptions)).build()
+        )
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> =
-        delegate.stream(params.toBuilder().providerOptions(transformFireworksProviderOptions(params.providerOptions)).build())
+        delegate.stream(
+            params.toBuilder().providerOptions(transformFireworksProviderOptions(params.providerOptions)).build()
+        )
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
-        delegate.streamResult(params.toBuilder().providerOptions(transformFireworksProviderOptions(params.providerOptions)).build())
+        delegate.streamResult(
+            params.toBuilder().providerOptions(transformFireworksProviderOptions(params.providerOptions)).build()
+        )
 
     private fun transformFireworksProviderOptions(options: ProviderOptions): ProviderOptions {
         val map = options.toMap()

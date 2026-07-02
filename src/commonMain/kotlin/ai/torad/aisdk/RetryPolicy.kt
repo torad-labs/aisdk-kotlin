@@ -167,6 +167,7 @@ public class RetryPolicy internal constructor(
 
     private fun retryAfterDelayMs(t: Throwable): Long? {
         val headers = (t as? APICallError)?.responseHeaders ?: return null
+
         // The flattened header map preserves the server's wire casing, and HTTP/1.1 servers send
         // `Retry-After` / `Retry-After-Ms` in Title-Case — so these MUST be looked up
         // case-insensitively, or the server's backoff guidance is silently dropped over HTTP/1.1.

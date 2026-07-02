@@ -52,8 +52,14 @@ internal class FalImageModel(
         return ImageModelResult(
             images = downloaded,
             warnings = prepared.warnings,
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("fal" to falImageProviderMetadata(value, targetImages)))),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(mapOf("fal" to falImageProviderMetadata(value, targetImages)))
+            ),
         )
     }
 
@@ -148,16 +154,30 @@ internal class FalImageModel(
             "9:16" -> JsonPrimitive("portrait_16_9")
             "4:3" -> JsonPrimitive("landscape_4_3")
             "3:4" -> JsonPrimitive("portrait_4_3")
-            "16:10" -> buildJsonObject { put("width", JsonPrimitive(1280)); put("height", JsonPrimitive(800)) }
-            "10:16" -> buildJsonObject { put("width", JsonPrimitive(800)); put("height", JsonPrimitive(1280)) }
-            "21:9" -> buildJsonObject { put("width", JsonPrimitive(2560)); put("height", JsonPrimitive(1080)) }
-            "9:21" -> buildJsonObject { put("width", JsonPrimitive(1080)); put("height", JsonPrimitive(2560)) }
+            "16:10" -> buildJsonObject {
+                put("width", JsonPrimitive(1280))
+                put("height", JsonPrimitive(800))
+            }
+            "10:16" -> buildJsonObject {
+                put("width", JsonPrimitive(800))
+                put("height", JsonPrimitive(1280))
+            }
+            "21:9" -> buildJsonObject {
+                put("width", JsonPrimitive(2560))
+                put("height", JsonPrimitive(1080))
+            }
+            "9:21" -> buildJsonObject {
+                put("width", JsonPrimitive(1080))
+                put("height", JsonPrimitive(2560))
+            }
             else -> null
         }
     }
 
     private fun falImageGenerationFileUrl(file: ImageGenerationFile): JsonPrimitive =
-        JsonPrimitive(file.url ?: "data:${file.mediaType ?: "application/octet-stream"};base64,${file.base64.orEmpty()}")
+        JsonPrimitive(
+            file.url ?: "data:${file.mediaType ?: "application/octet-stream"};base64,${file.base64.orEmpty()}"
+        )
 
     private fun snakeToCamel(key: String): String =
         key.replace(Regex("_([a-z])")) { it.groupValues[1].uppercase() }
@@ -171,14 +191,16 @@ internal class FalImageModel(
     private fun falImageProviderMetadata(value: JsonObject, images: List<JsonObject>): JsonObject = buildJsonObject {
         put(
             "images",
-            JsonArray(images.mapIndexed { index, image ->
-                buildJsonObject {
-                    settings.putJsonObjectFields(this, falImageMetadata(image))
-                    val nsfw = (JsonAccess.arr(value, "has_nsfw_concepts"))?.getOrNull(index)
-                        ?: (JsonAccess.arr(value, "nsfw_content_detected"))?.getOrNull(index)
-                    nsfw?.let { put("nsfw", it) }
+            JsonArray(
+                images.mapIndexed { index, image ->
+                    buildJsonObject {
+                        settings.putJsonObjectFields(this, falImageMetadata(image))
+                        val nsfw = (JsonAccess.arr(value, "has_nsfw_concepts"))?.getOrNull(index)
+                            ?: (JsonAccess.arr(value, "nsfw_content_detected"))?.getOrNull(index)
+                        nsfw?.let { put("nsfw", it) }
+                    }
                 }
-            }),
+            ),
         )
         for ((key, item) in value) {
             if (key !in setOf("images", "image", "prompt", "has_nsfw_concepts", "nsfw_content_detected") && item !is JsonNull) {

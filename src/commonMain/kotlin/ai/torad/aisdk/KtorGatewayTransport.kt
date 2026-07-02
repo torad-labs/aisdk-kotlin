@@ -105,7 +105,10 @@ public class KtorGatewayTransport(
     ): EmbeddingModelResult {
         val body = buildJsonObject {
             put("values", JsonArray(params.values.map(::JsonPrimitive)))
-            if (params.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions.toMap()))
+            if (params.providerOptions.toMap().isNotEmpty()) put(
+                "providerOptions",
+                JsonObject(params.providerOptions.toMap())
+            )
         }
         val response = postJson(
             context = context,
@@ -125,7 +128,9 @@ public class KtorGatewayTransport(
                 tokens = ((JsonAccess.obj(value, "usage"))?.get("tokens") as? JsonPrimitive)?.intOrNull ?: 0,
             ),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
-            providerMetadata = value["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
+            providerMetadata = value["providerMetadata"].let {
+                if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None
+            },
         )
     }
 
@@ -139,7 +144,10 @@ public class KtorGatewayTransport(
             put("n", JsonPrimitive(params.n))
             params.size?.let { put("size", JsonPrimitive(it)) }
             params.aspectRatio?.let { put("aspectRatio", JsonPrimitive(it)) }
-            if (params.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions.toMap()))
+            if (params.providerOptions.toMap().isNotEmpty()) put(
+                "providerOptions",
+                JsonObject(params.providerOptions.toMap())
+            )
         }
         val response = postJson(
             context = context,
@@ -161,7 +169,9 @@ public class KtorGatewayTransport(
                 headers = response.headers,
                 body = response.value
             ),
-            providerMetadata = value["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
+            providerMetadata = value["providerMetadata"].let {
+                if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None
+            },
         )
     }
 
@@ -179,7 +189,10 @@ public class KtorGatewayTransport(
             params.fps?.let { put("fps", JsonPrimitive(it)) }
             params.resolution?.let { put("resolution", JsonPrimitive(it)) }
             params.size?.let { put("size", JsonPrimitive(it)) }
-            if (params.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions.toMap()))
+            if (params.providerOptions.toMap().isNotEmpty()) put(
+                "providerOptions",
+                JsonObject(params.providerOptions.toMap())
+            )
             params.image?.let { image ->
                 put(
                     "image",
@@ -242,7 +255,9 @@ public class KtorGatewayTransport(
             },
             warnings = callWarnings(event["warnings"]),
             response = LanguageModelResponseMetadata(modelId = modelId.value, headers = sseHeaders),
-            providerMetadata = event["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
+            providerMetadata = event["providerMetadata"].let {
+                if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None
+            },
         )
     }
 
@@ -255,7 +270,10 @@ public class KtorGatewayTransport(
             put("documents", JsonArray(params.documents.map(::JsonPrimitive)))
             put("query", JsonPrimitive(params.query))
             params.topN?.let { put("topN", JsonPrimitive(it)) }
-            if (params.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions.toMap()))
+            if (params.providerOptions.toMap().isNotEmpty()) put(
+                "providerOptions",
+                JsonObject(params.providerOptions.toMap())
+            )
         }
         val response = postJson(
             context = context,
@@ -278,7 +296,9 @@ public class KtorGatewayTransport(
                 )
             },
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
-            providerMetadata = value["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
+            providerMetadata = value["providerMetadata"].let {
+                if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None
+            },
         )
     }
 
@@ -467,7 +487,10 @@ public class KtorGatewayTransport(
         params.seed?.let { put("seed", JsonPrimitive(it)) }
         params.presencePenalty?.let { put("presencePenalty", JsonPrimitive(it)) }
         params.frequencyPenalty?.let { put("frequencyPenalty", JsonPrimitive(it)) }
-        if (params.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions.toMap()))
+        if (params.providerOptions.toMap().isNotEmpty()) put(
+            "providerOptions",
+            JsonObject(params.providerOptions.toMap())
+        )
         put("responseFormat", responseFormatJson(params.responseFormat))
     }
 
@@ -493,7 +516,9 @@ public class KtorGatewayTransport(
             toolCalls = content.filterIsInstance<ContentPart.ToolCall>(),
             finishReason = finishReason((obj["finishReason"] as? JsonPrimitive)?.contentOrNull),
             usage = usageFromJson(obj["usage"]),
-            providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
+            providerMetadata = obj["providerMetadata"].let {
+                if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None
+            },
             content = content.ifEmpty { if (text.isNotEmpty()) listOf(ContentPart.Text(text)) else emptyList() },
             rawFinishReason = (obj["finishReason"] as? JsonPrimitive)?.contentOrNull,
             warnings = callWarnings(obj["warnings"]),
@@ -541,7 +566,11 @@ public class KtorGatewayTransport(
     }
 
     private fun contentParts(value: JsonElement?): List<ContentPart> =
-        value?.let { WireDecoder.arrayValue(it, "gateway", "content parts").mapNotNull(::contentPartFromJson) }.orEmpty()
+        value?.let { WireDecoder.arrayValue(
+            it,
+            "gateway",
+            "content parts"
+        ).mapNotNull(::contentPartFromJson) }.orEmpty()
 
     private fun contentPartFromJson(value: JsonElement): ContentPart? =
         ProtocolAdapters.gatewayContentPartFromJson(value)

@@ -110,7 +110,7 @@ public sealed interface UIMessagePart {
          * "loading more" indicator on a still-incomplete card without
          * collapsing back to `InputAvailable`. Mirrors v6's
          * `preliminary?: boolean` on `output-available`.
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          */
         public val preliminary: Boolean = false,
         /**
@@ -118,14 +118,14 @@ public sealed interface UIMessagePart {
          * states — carried so a UI round-trip (convert to model messages,
          * resume) preserves the approval's correlation key. Null outside
          * the approval states. Mirrors v6's `approval.id`.
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          */
         public val approvalId: String? = null,
         /**
          * HMAC-SHA256 approval signature (v6.0.202, `approval.signature`).
          * Must survive the UI round-trip untouched: with a configured
          * approval secret, a replay missing it is denied fail-closed.
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          */
         public val signature: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
@@ -180,7 +180,7 @@ public sealed interface UIMessagePart {
      *
      * `sourceId` is the provider's stable handle for the source so
      * repeated mentions across multiple parts can be deduped.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("source-url")
@@ -203,7 +203,7 @@ public sealed interface UIMessagePart {
      * Distinct from [File] which carries the file's payload — this
      * variant is a CITATION POINTER to a document the model read,
      * not a file the model produced.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("source-document")
@@ -253,7 +253,7 @@ public sealed interface UIMessagePart {
     /**
      * Typed custom data part. Mirrors v6 `data-*` UI parts while using
      * an explicit [type] string instead of TypeScript literal keys.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("data")
@@ -270,13 +270,13 @@ public sealed interface UIMessagePart {
          * Optional stable id. Streaming data parts that share an id replace the
          * prior one in place (e.g. a progress indicator that updates) rather than
          * appending a duplicate — matching v6's keyed data parts.
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          */
         public val id: String? = null,
         /**
          * Transient parts are shown live but not meant to be persisted in stored
          * message history. Mirrors v6's `transient` data-chunk flag.
-          * @since 0.3.0-beta01
+         * @since 0.3.0-beta01
          */
         public val transient: Boolean = false,
     ) : UIMessagePart {
@@ -293,7 +293,7 @@ public sealed interface UIMessagePart {
      * next LLM call). Preserves the v6 `step-start` UI part so a
      * subagent handoff or multi-tool flow can render a visible
      * divider in the chat list. Per historical parity gap #8.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("step-start")
@@ -308,7 +308,7 @@ public sealed interface UIMessagePart {
      * branch on `is DynamicToolUI` and fall back to a generic
      * "Calling [toolName]…" card with JSON-printed input / output.
      * Per historical parity gap #9.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("dynamic-tool")

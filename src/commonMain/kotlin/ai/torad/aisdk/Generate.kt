@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +15,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 @Poko
 /** @since 0.3.0-beta01 */
@@ -63,10 +63,13 @@ public class GenerateTextResult<TOutput>(
 ) {
     /** @since 0.3.0-beta01 */
     public val staticToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { !it.dynamic }
+
     /** @since 0.3.0-beta01 */
     public val dynamicToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { it.dynamic }
+
     /** @since 0.3.0-beta01 */
     public val staticToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { !it.dynamic }
+
     /** @since 0.3.0-beta01 */
     public val dynamicToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { it.dynamic }
 }
@@ -78,7 +81,7 @@ public class GenerateTextResult<TOutput>(
  * the stream event sequence in memory for the result lifetime. Hosts that need
  * minimum peak memory for a guaranteed single-consumer path can collect the
  * model stream directly instead of using this replaying result surface.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class StreamTextResult(
@@ -254,6 +257,7 @@ public class GenerateObjectResult<TOutput>(
 ) {
     /** @since 0.3.0-beta01 */
     public val output: TOutput get() = value
+
     /** @since 0.3.0-beta01 */
     public val generatedObject: TOutput get() = value
 }

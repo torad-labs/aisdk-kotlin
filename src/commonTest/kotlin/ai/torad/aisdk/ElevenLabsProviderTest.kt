@@ -1,10 +1,11 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ELEVENLABS_VERSION
+import ai.torad.aisdk.providers.ElevenLabs
 import ai.torad.aisdk.providers.ElevenLabsProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -15,8 +16,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.ElevenLabs
-import kotlinx.serialization.json.JsonObject
 
 class ElevenLabsProviderTest {
     @Test
@@ -42,21 +41,27 @@ class ElevenLabsProviderTest {
                 language("es")
                 speed(1.2f)
                 instructions("ignore")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "elevenlabs" to buildJsonObject {
-                                        put("seed", JsonPrimitive(123))
-                                        // languageCode is set too, but params.language ("es") must win (upstream order).
-                                        put("languageCode", JsonPrimitive("fr"))
-                                        put("enableLogging", JsonPrimitive(false))
-                                        put(
-                                            "voiceSettings",
-                                            buildJsonObject {
-                                                put("similarityBoost", JsonPrimitive(0.7f))
-                                                put("useSpeakerBoost", JsonPrimitive(true))
-                                            },
-                                        )
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "elevenlabs" to buildJsonObject {
+                                    put("seed", JsonPrimitive(123))
+                                    // languageCode is set too, but params.language ("es") must win (upstream order).
+                                    put("languageCode", JsonPrimitive("fr"))
+                                    put("enableLogging", JsonPrimitive(false))
+                                    put(
+                                        "voiceSettings",
+                                        buildJsonObject {
+                                            put("similarityBoost", JsonPrimitive(0.7f))
+                                            put("useSpeakerBoost", JsonPrimitive(true))
+                                        },
+                                    )
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -73,7 +78,10 @@ class ElevenLabsProviderTest {
         assertEquals(123, body["seed"]?.jsonPrimitive?.intOrNull)
         assertEquals(1.2f, body["voice_settings"]?.jsonObject?.get("speed")?.jsonPrimitive?.floatOrNull)
         assertEquals(0.7f, body["voice_settings"]?.jsonObject?.get("similarity_boost")?.jsonPrimitive?.floatOrNull)
-        assertEquals(true, body["voice_settings"]?.jsonObject?.get("use_speaker_boost")?.jsonPrimitive?.contentOrNull.toBoolean())
+        assertEquals(
+            true,
+            body["voice_settings"]?.jsonObject?.get("use_speaker_boost")?.jsonPrimitive?.contentOrNull.toBoolean()
+        )
     }
 
     @Test
@@ -97,20 +105,28 @@ class ElevenLabsProviderTest {
 
         val result = model.transcribe(
             TranscriptionParams {
-                audio(AudioSource(
-                                    mediaType = "audio/mpeg",
-                                    base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
-                                    filename = "clip.mp3",
-                                ))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "elevenlabs" to buildJsonObject {
-                                        put("languageCode", JsonPrimitive("en"))
-                                        put("diarize", JsonPrimitive(false))
-                                        put("numSpeakers", JsonPrimitive(2))
-                                        put("timestampsGranularity", JsonPrimitive("word"))
-                                        put("fileFormat", JsonPrimitive("other"))
-                                    },
-                                ))))
+                audio(
+                    AudioSource(
+                        mediaType = "audio/mpeg",
+                        base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
+                        filename = "clip.mp3",
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "elevenlabs" to buildJsonObject {
+                                    put("languageCode", JsonPrimitive("en"))
+                                    put("diarize", JsonPrimitive(false))
+                                    put("numSpeakers", JsonPrimitive(2))
+                                    put("timestampsGranularity", JsonPrimitive("word"))
+                                    put("fileFormat", JsonPrimitive("other"))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 

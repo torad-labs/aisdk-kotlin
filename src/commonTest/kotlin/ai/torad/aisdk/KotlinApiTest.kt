@@ -3,23 +3,23 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.serializer
-import kotlinx.serialization.json.JsonObject
 
 class KotlinApiTest {
 
@@ -55,7 +55,9 @@ class KotlinApiTest {
 
     @Test
     fun `text generation request forwards grouped settings`() = runTest {
-        val providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) })))
+        val providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to buildJsonObject {
+            put("reasoningEffort", JsonPrimitive("high"))
+        })))
         val model = CapturingModel()
         val request = TextGenerationRequest.of(
             input = TextGenerationRequest.Input.messagesWithPrompt(
@@ -195,10 +197,16 @@ class KotlinApiTest {
                 temperature(0.9f)
                 topP(0.3f)
                 headers(mapOf("X-Text" to "yes"))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "base" to JsonPrimitive("yes"),
-                    "call" to JsonPrimitive("yes"),
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "base" to JsonPrimitive("yes"),
+                                "call" to JsonPrimitive("yes"),
+                            )
+                        )
+                    )
+                )
             },
         ).generate(GenerationInput.Prompt("answer")).first()
 

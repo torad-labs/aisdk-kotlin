@@ -1,8 +1,5 @@
 package ai.torad.aisdk
 
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -14,6 +11,9 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonPrimitive
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /** @since 0.3.0-beta01 */
 public enum class AgentSessionStatus {

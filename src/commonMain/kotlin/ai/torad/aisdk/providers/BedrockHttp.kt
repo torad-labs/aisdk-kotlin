@@ -138,7 +138,10 @@ internal object BedrockHttp {
         headers[HttpHeaders.ContentType] = ContentType.Application.Json.toString()
         settings.headers.forEach { (key, value) -> headers[key] = value }
         extra.forEach { (key, value) -> headers[key] = value }
-        val headersWithUserAgent = ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/amazon-bedrock/$AMAZON_BEDROCK_VERSION")
+        val headersWithUserAgent = ProviderHeaders.withUserAgentSuffix(
+            headers,
+            "ai-sdk/amazon-bedrock/$AMAZON_BEDROCK_VERSION"
+        )
         val apiKey = settings.apiKey?.trim()?.takeIf { it.isNotEmpty() }
         if (apiKey != null) {
             return headersWithUserAgent + (HttpHeaders.Authorization to "Bearer $apiKey")
@@ -163,18 +166,20 @@ internal object BedrockHttp {
         // rerank) is signed for the region it actually targets. Falls back to the
         // configured region for custom/proxy hosts that don't follow the AWS shape.
         val region = regionFromAwsHost(url) ?: credentials.region ?: settings.region ?: "us-east-1"
-        return AwsSigV4.awsSigV4SignedHeaders(method = "POST",
-        url = url,
-        service = service,
-        region = region,
-        headers = headersWithUserAgent,
-        body = body,
-        credentials = AwsSigV4Credentials(
-            accessKeyId = credentials.accessKeyId,
-            secretAccessKey = credentials.secretAccessKey,
-            sessionToken = credentials.sessionToken,
-        ),
-        amzDate = amzDate,)
+        return AwsSigV4.awsSigV4SignedHeaders(
+            method = "POST",
+            url = url,
+            service = service,
+            region = region,
+            headers = headersWithUserAgent,
+            body = body,
+            credentials = AwsSigV4Credentials(
+                accessKeyId = credentials.accessKeyId,
+                secretAccessKey = credentials.secretAccessKey,
+                sessionToken = credentials.sessionToken,
+            ),
+            amzDate = amzDate,
+        )
     }
 
     fun bedrockErrorMessage(parsed: JsonElement?, raw: String): String {

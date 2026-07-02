@@ -4,7 +4,6 @@ import ai.torad.aisdk.*
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -41,7 +40,11 @@ internal class FalSpeechModel(
                 url = audioUrl,
             ),
             warnings = prepared.warnings,
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
         )
     }
 

@@ -23,9 +23,9 @@ import kotlin.test.assertTrue
  */
 class GatewayReauditTest {
     private val params = LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-    headers(mapOf("x-call-header" to "call-value"))
-}
+        messages(listOf(UserMessage("hi")))
+        headers(mapOf("x-call-header" to "call-value"))
+    }
 
     private fun gateway(client: HttpClient): GatewayProvider =
         CreateGatewayHttpProvider(client, GatewayProviderSettings { apiKey("key") })
@@ -97,14 +97,14 @@ class GatewayReauditTest {
             MockEngine {
                 respond(
                     content =
-                        "{" +
-                            "\"content\":[" +
-                            "{\"type\":\"tool-approval-request\",\"toolCallId\":\"call_1\",\"toolName\":\"send\",\"input\":{\"message\":\"hi\"},\"approvalId\":\"approval_1\",\"signature\":\"sig-1\"}," +
-                            "{\"type\":\"tool-approval-response\",\"toolCallId\":\"call_1\",\"approved\":false,\"reason\":\"denied\",\"approvalId\":\"approval_1\"}" +
-                            "]," +
-                            "\"finishReason\":\"tool-approval-requested\"," +
-                            "\"usage\":{\"inputTokens\":10,\"outputTokens\":7,\"cachedInputTokens\":3,\"cacheCreationInputTokens\":2,\"reasoningTokens\":4}" +
-                            "}",
+                    "{" +
+                        "\"content\":[" +
+                        "{\"type\":\"tool-approval-request\",\"toolCallId\":\"call_1\",\"toolName\":\"send\",\"input\":{\"message\":\"hi\"},\"approvalId\":\"approval_1\",\"signature\":\"sig-1\"}," +
+                        "{\"type\":\"tool-approval-response\",\"toolCallId\":\"call_1\",\"approved\":false,\"reason\":\"denied\",\"approvalId\":\"approval_1\"}" +
+                        "]," +
+                        "\"finishReason\":\"tool-approval-requested\"," +
+                        "\"usage\":{\"inputTokens\":10,\"outputTokens\":7,\"cachedInputTokens\":3,\"cacheCreationInputTokens\":2,\"reasoningTokens\":4}" +
+                        "}",
                     status = HttpStatusCode.OK,
                     headers = headersOf(HttpHeaders.ContentType, "application/json"),
                 )
@@ -132,14 +132,14 @@ class GatewayReauditTest {
             MockEngine {
                 respond(
                     content =
-                        """
+                    """
                         {
                           "content":[
                             {"type":"future-part","payload":{"value":1},"providerMetadata":{"gateway":{"trace":"raw"}}}
                           ],
                           "finishReason":"stop"
                         }
-                        """.trimIndent(),
+                    """.trimIndent(),
                     status = HttpStatusCode.OK,
                     headers = headersOf(HttpHeaders.ContentType, "application/json"),
                 )
@@ -255,10 +255,12 @@ class GatewayReauditTest {
         )
 
         provider.getCredits()
-        provider.getSpendReport(GatewaySpendReportParams {
-            startDate("2026-06-01")
-            endDate("2026-06-02")
-        })
+        provider.getSpendReport(
+            GatewaySpendReportParams {
+                startDate("2026-06-01")
+                endDate("2026-06-02")
+            }
+        )
         provider.getGenerationInfo(GatewayGenerationInfoParams { id("gen_1") })
 
         assertTrue("/tenant/v1/credits" in seenPaths)

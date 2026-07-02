@@ -2,17 +2,17 @@
 
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.COHERE_VERSION
+import ai.torad.aisdk.providers.Cohere
 import ai.torad.aisdk.providers.CohereProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -22,8 +22,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Cohere
-import kotlinx.serialization.json.JsonObject
 
 class CohereProviderTest {
     @Test
@@ -111,34 +109,42 @@ class CohereProviderTest {
 
         val result = provider(ModelId("command-r-plus")).generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    SystemMessage("Use documents when available."),
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Text("Where is Paris?"),
-                            ContentPart.File(mediaType = "text/plain", base64 = documentBase64, filename = "notes.txt"),
-                            ContentPart.Image(
-                                mediaType = "image/png",
-                                base64 = "iVBORw0=",
-                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("cohere" to buildJsonObject { put("detail", JsonPrimitive("high")) }))),
+                messages(
+                    listOf(
+                        SystemMessage("Use documents when available."),
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Text("Where is Paris?"),
+                                ContentPart.File(mediaType = "text/plain", base64 = documentBase64, filename = "notes.txt"),
+                                ContentPart.Image(
+                                    mediaType = "image/png",
+                                    base64 = "iVBORw0=",
+                                    providerMetadata = ProviderMetadata.Raw(
+                                        JsonObject(
+                                            mapOf("cohere" to buildJsonObject { put("detail", JsonPrimitive("high")) })
+                                        )
+                                    ),
+                                ),
                             ),
                         ),
-                    ),
-                ))
-                tools(listOf(
-                    LanguageModelTool(
-                        name = "lookup",
-                        description = "Look up a place.",
-                        parametersSchemaJson = """{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}""",
-                    ),
-                    LanguageModelTool(
-                        name = "providerSearch",
-                        description = "Provider hosted search.",
-                        parametersSchemaJson = """{"type":"object"}""",
-                        providerExecuted = true,
-                    ),
-                ))
+                    )
+                )
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            name = "lookup",
+                            description = "Look up a place.",
+                            parametersSchemaJson = """{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}""",
+                        ),
+                        LanguageModelTool(
+                            name = "providerSearch",
+                            description = "Provider hosted search.",
+                            parametersSchemaJson = """{"type":"object"}""",
+                            providerExecuted = true,
+                        ),
+                    )
+                )
                 toolChoice(ToolChoice.Specific("lookup"))
                 maxOutputTokens(256)
                 temperature(0.2f)
@@ -148,17 +154,25 @@ class CohereProviderTest {
                 frequencyPenalty(0.2f)
                 seed(7)
                 stopSequences(listOf("STOP"))
-                responseFormat(ResponseFormat.Json(
-                    schemaJson = buildJsonObject {
-                        put("type", JsonPrimitive("object"))
-                        put("additionalProperties", JsonPrimitive(false))
-                    },
-                ))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "cohere" to buildJsonObject {
-                        put("thinking", buildJsonObject { put("tokenBudget", JsonPrimitive(128)) })
-                    },
-                ))))
+                responseFormat(
+                    ResponseFormat.Json(
+                        schemaJson = buildJsonObject {
+                            put("type", JsonPrimitive("object"))
+                            put("additionalProperties", JsonPrimitive(false))
+                        },
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "cohere" to buildJsonObject {
+                                    put("thinking", buildJsonObject { put("tokenBudget", JsonPrimitive(128)) })
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -195,9 +209,19 @@ class CohereProviderTest {
         assertEquals(7, body["seed"]?.jsonPrimitive?.intOrNull)
         assertEquals("STOP", body["stop_sequences"]?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
         assertEquals("json_object", body["response_format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
-        assertEquals(false, body["response_format"]?.jsonObject?.get("json_schema")?.jsonObject?.get("additionalProperties")?.jsonPrimitive?.contentOrNull?.toBoolean())
+        assertEquals(
+            false,
+            body["response_format"]?.jsonObject?.get(
+                "json_schema"
+            )?.jsonObject?.get("additionalProperties")?.jsonPrimitive?.contentOrNull?.toBoolean()
+        )
         assertEquals("REQUIRED", body["tool_choice"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("lookup", body["tools"]?.jsonArray?.single()?.jsonObject?.get("function")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "lookup",
+            body["tools"]?.jsonArray?.single()?.jsonObject?.get(
+                "function"
+            )?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("enabled", body["thinking"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
         assertEquals(128, body["thinking"]?.jsonObject?.get("token_budget")?.jsonPrimitive?.intOrNull)
 
@@ -210,7 +234,10 @@ class CohereProviderTest {
             "data:image/png;base64,iVBORw0=",
             userContent[1].jsonObject["image_url"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull,
         )
-        assertEquals("high", userContent[1].jsonObject["image_url"]?.jsonObject?.get("detail")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "high",
+            userContent[1].jsonObject["image_url"]?.jsonObject?.get("detail")?.jsonPrimitive?.contentOrNull
+        )
         val document = body["documents"]?.jsonArray?.single()?.jsonObject?.get("data")?.jsonObject
         assertEquals("Paris document", document?.get("text")?.jsonPrimitive?.contentOrNull)
         assertEquals("notes.txt", document?.get("title")?.jsonPrimitive?.contentOrNull)
@@ -250,13 +277,19 @@ class CohereProviderTest {
             EmbeddingModelCallParams {
                 values(listOf("alpha", "beta"))
                 truncate(false)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "cohere" to buildJsonObject {
-                        put("inputType", JsonPrimitive("classification"))
-                        put("truncate", JsonPrimitive("START"))
-                        put("outputDimension", JsonPrimitive(512))
-                    },
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "cohere" to buildJsonObject {
+                                    put("inputType", JsonPrimitive("classification"))
+                                    put("truncate", JsonPrimitive("START"))
+                                    put("outputDimension", JsonPrimitive(512))
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -264,8 +297,14 @@ class CohereProviderTest {
         assertEquals("cohere.textEmbedding", provider.embeddingModel("embed-v4.0").provider)
         assertEquals(96, provider.embedding(ModelId("embed-v4.0")).maxEmbeddingsPerCall)
         assertEquals(true, provider.embedding(ModelId("embed-v4.0")).supportsParallelCalls)
-        assertEquals(provider.embedding(ModelId("embed-v4.0")).modelId, provider.textEmbedding(ModelId("embed-v4.0")).modelId)
-        assertEquals(provider.embedding(ModelId("embed-v4.0")).modelId, provider.textEmbeddingModel(ModelId("embed-v4.0")).modelId)
+        assertEquals(
+            provider.embedding(ModelId("embed-v4.0")).modelId,
+            provider.textEmbedding(ModelId("embed-v4.0")).modelId
+        )
+        assertEquals(
+            provider.embedding(ModelId("embed-v4.0")).modelId,
+            provider.textEmbeddingModel(ModelId("embed-v4.0")).modelId
+        )
         assertEquals(listOf(listOf(0.1f, 0.2f), listOf(0.3f, 0.4f)), result.embeddings)
         assertEquals(10, result.usage.tokens)
         assertEquals("embed-1", result.response.id)
@@ -317,12 +356,18 @@ class CohereProviderTest {
                 query("capital")
                 documents(listOf("Berlin", "Paris"))
                 topN(1)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "cohere" to buildJsonObject {
-                                        put("maxTokensPerDoc", JsonPrimitive(64))
-                                        put("priority", JsonPrimitive(1))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "cohere" to buildJsonObject {
+                                    put("maxTokensPerDoc", JsonPrimitive(64))
+                                    put("priority", JsonPrimitive(1))
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -425,13 +470,15 @@ class CohereProviderTest {
         val events = model.stream(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("where")))
-                tools(listOf(
-                    LanguageModelTool(
-                        name = "lookup",
-                        description = "Look up a place.",
-                        parametersSchemaJson = """{"type":"object","properties":{"city":{"type":"string"}}}""",
-                    ),
-                ))
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            name = "lookup",
+                            description = "Look up a place.",
+                            parametersSchemaJson = """{"type":"object","properties":{"city":{"type":"string"}}}""",
+                        ),
+                    )
+                )
             },
         ).toList()
 
@@ -472,12 +519,16 @@ class CohereProviderTest {
         val unsupportedFile = assertFailsWith<InvalidArgumentError> {
             provider(ModelId("command-r")).generate(
                 LanguageModelCallParams {
-                    messages(listOf(
-                        ModelMessage(
-                            MessageRole.User,
-                            listOf(ContentPart.File(mediaType = "application/pdf", base64 = "AA==", filename = "paper.pdf")),
-                        ),
-                    ))
+                    messages(
+                        listOf(
+                            ModelMessage(
+                                MessageRole.User,
+                                listOf(
+                                    ContentPart.File(mediaType = "application/pdf", base64 = "AA==", filename = "paper.pdf")
+                                ),
+                            ),
+                        )
+                    )
                 },
             )
         }
@@ -515,18 +566,20 @@ class CohereProviderTest {
 
         model.generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Image(
-                                mediaType = "image/png",
-                                base64 = "",
-                                url = "https://images.test/cat.png",
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Image(
+                                    mediaType = "image/png",
+                                    base64 = "",
+                                    url = "https://images.test/cat.png",
+                                ),
                             ),
                         ),
-                    ),
-                ))
+                    )
+                )
             },
         )
 

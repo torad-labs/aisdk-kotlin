@@ -1,32 +1,21 @@
 @file:OptIn(LowLevelLanguageModelApi::class)
 
 package ai.torad.aisdk
-import ai.torad.aisdk.providers.ANTHROPIC_VERSION
+import ai.torad.aisdk.providers.Anthropic
 import ai.torad.aisdk.providers.AnthropicProviderSettings
-import ai.torad.aisdk.providers.AnthropicMessagesLanguageModel.Companion.forwardAnthropicContainerIdFromLastStep
-
-import ai.torad.aisdk.testing.FlowDrain.drainAllItems
-import io.ktor.http.HttpHeaders
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Anthropic
 
 class AnthropicProviderLimitsTest {
     @Test
@@ -45,7 +34,8 @@ class AnthropicProviderLimitsTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
+        val provider =
+            Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
         provider.messages(ModelId("claude-opus-4-8")).generate(
             LanguageModelCallParams {
                 messages(listOf(UserMessage("hi")))
@@ -69,18 +59,23 @@ class AnthropicProviderLimitsTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
-        val thinkingOptions = ProviderOptions.Raw(JsonObject(mapOf(
-            "anthropic" to buildJsonObject {
-                put(
-                    "thinking",
-                    buildJsonObject {
-                        put("type", JsonPrimitive("enabled"))
-                        put("budgetTokens", JsonPrimitive(10_000))
+        val provider =
+            Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
+        val thinkingOptions = ProviderOptions.Raw(
+            JsonObject(
+                mapOf(
+                    "anthropic" to buildJsonObject {
+                        put(
+                            "thinking",
+                            buildJsonObject {
+                                put("type", JsonPrimitive("enabled"))
+                                put("budgetTokens", JsonPrimitive(10_000))
+                            },
+                        )
                     },
                 )
-            },
-        )))
+            )
+        )
 
         val implicit = provider.messages(ModelId("claude-sonnet-4-5")).generate(
             LanguageModelCallParams {
@@ -133,7 +128,8 @@ class AnthropicProviderLimitsTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
+        val provider =
+            Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
         val rejectedModels = listOf("claude-opus-4-8", "claude-opus-4-7", "claude-fable-5")
         val samplingFeatures = setOf("temperature", "topK", "topP")
 

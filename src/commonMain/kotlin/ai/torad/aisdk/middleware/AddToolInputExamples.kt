@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.Flow
  * Mirrors v6's `addToolInputExamplesMiddleware`. Pass a map of tool name
  * → list of example input JSON strings. Examples are appended in
  * "Example: <json>" form below the existing description.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public fun AddToolInputExamplesMiddleware(
     examplesByTool: Map<String, List<String>>,

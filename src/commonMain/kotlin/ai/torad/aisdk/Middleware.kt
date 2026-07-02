@@ -117,7 +117,7 @@ public class MiddlewareCallContext(
  * the first middleware in the list is the outermost wrapper — `wrapGenerate`
  * runs first on the way in, last on the way out (innermost in the
  * call stack, like Express middleware).
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public fun WrapLanguageModel(
     model: LanguageModel,

@@ -1,10 +1,5 @@
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -14,6 +9,11 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Invariant I-2 — tools use [Tool.inputSerializer], NOT v5's `parameters`.
@@ -22,9 +22,13 @@ import kotlinx.serialization.serializer
 class ToolTest {
 
     @Serializable data class WeatherInput(val location: String)
+
     @Serializable data class WeatherOutput(val tempF: Int, val condition: String)
+
     @Serializable enum class UnitSystem { Celsius, Fahrenheit }
+
     @Serializable data class WeatherWindow(val startHour: Int, val endHour: Int?)
+
     @Serializable
     data class ForecastInput(
         val location: String,
@@ -67,12 +71,16 @@ class ToolTest {
     @Test
     fun `toolSet_descriptors_carry_each_tool`() {
         val a = Tool<WeatherInput, String, Unit>(
-            name = "a", description = "alpha",
-            inputSerializer = serializer(), outputSerializer = serializer(),
+            name = "a",
+            description = "alpha",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
         ) { "" }
         val b = Tool<WeatherInput, String, Unit>(
-            name = "b", description = "beta",
-            inputSerializer = serializer(), outputSerializer = serializer(),
+            name = "b",
+            description = "beta",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
         ) { "" }
         val set = ToolSet(a, b)
         val names = set.descriptors.map { it.name }.toSet()
@@ -114,10 +122,15 @@ class ToolTest {
         assertEquals("number", properties["threshold"]?.jsonObject?.get("type")?.jsonPrimitive?.content)
         assertEquals("boolean", properties["includeAlerts"]?.jsonObject?.get("type")?.jsonPrimitive?.content)
         assertEquals("array", properties["tags"]?.jsonObject?.get("type")?.jsonPrimitive?.content)
-        assertEquals("string", properties["tags"]?.jsonObject?.get("items")?.jsonObject?.get("type")?.jsonPrimitive?.content)
+        assertEquals(
+            "string",
+            properties["tags"]?.jsonObject?.get("items")?.jsonObject?.get("type")?.jsonPrimitive?.content
+        )
         assertEquals(
             "number",
-            properties["weights"]?.jsonObject?.get("additionalProperties")?.jsonObject?.get("type")?.jsonPrimitive?.content,
+            properties["weights"]?.jsonObject?.get(
+                "additionalProperties"
+            )?.jsonObject?.get("type")?.jsonPrimitive?.content,
         )
         assertEquals(
             setOf("Celsius", "Fahrenheit"),
@@ -128,17 +141,25 @@ class ToolTest {
         assertTrue(noteAnyOf.any { it.jsonObject["type"]?.jsonPrimitive?.content == "null" })
         val window = properties["window"]!!.jsonObject
         assertEquals("object", window["type"]?.jsonPrimitive?.content)
-        assertEquals(setOf("startHour", "endHour"), window["required"]!!.jsonArray.map { it.jsonPrimitive.content }.toSet())
-        assertEquals(setOf("location", "days", "threshold", "includeAlerts", "tags", "weights", "note", "window"), required)
+        assertEquals(
+            setOf("startHour", "endHour"),
+            window["required"]!!.jsonArray.map { it.jsonPrimitive.content }.toSet()
+        )
+        assertEquals(
+            setOf("location", "days", "threshold", "includeAlerts", "tags", "weights", "note", "window"),
+            required
+        )
         assertTrue("unit" !in required)
     }
 
     @Serializable
     private sealed class ShapeCmd {
-        @Serializable @SerialName("circle")
+        @Serializable
+        @SerialName("circle")
         data class Circle(val radius: Int) : ShapeCmd()
 
-        @Serializable @SerialName("rect")
+        @Serializable
+        @SerialName("rect")
         data class Rect(val w: Int, val h: Int) : ShapeCmd()
     }
 

@@ -1,10 +1,10 @@
 package ai.torad.aisdk
 
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlinx.serialization.json.Json
 
 /**
  * Surface tests for Phase 4F #38 + #39 — [ContentPart.File] richer
@@ -68,8 +68,8 @@ class ContentPartPolishTest {
         // GIVEN — the producer obligation: request + priorSteps are REQUIRED, so
         // the loop must supply the data it already has in scope (no empty default).
         val params = LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}
+            messages(listOf(UserMessage("hi")))
+        }
         val prior = StepResult(
             stepNumber = 1,
             text = "step 1 text",

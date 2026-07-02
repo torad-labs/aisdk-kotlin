@@ -19,10 +19,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val HUME_VERSION: String = "2.0.33"
 
@@ -119,8 +115,16 @@ public class HumeProvider(
 
     override fun speechModel(modelId: String): SpeechModel = speech()
 
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
+        providerId,
+        "languageModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
@@ -254,7 +258,6 @@ private class HumeSpeechModel(
 private const val HUME_DEFAULT_VOICE_ID: String = "d8ab67c6-953d-4bd8-9370-8fa53a0f1453"
 
 private val humeSupportedFormats: Set<String> = setOf("mp3", "pcm", "wav")
-
 
 internal class HumeBinaryResponse(
     val bytes: ByteArray,

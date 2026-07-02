@@ -2,7 +2,7 @@ package ai.torad.aisdk
 
 /**
  * Loop-termination checks for the tool loop.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public object LoopTermination {
     /**

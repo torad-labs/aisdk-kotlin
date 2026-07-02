@@ -4,8 +4,8 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable

@@ -21,7 +21,6 @@ import kotlin.math.ceil
 
 public const val BYTEDANCE_VERSION: String = "1.0.15"
 
-
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -240,7 +239,10 @@ public fun ByteDance(
 public val byteDance: ByteDanceProvider = object : ByteDanceProvider {
     override val providerId: String = "bytedance"
     override fun video(modelId: ModelId): VideoModel =
-        throw UnsupportedFunctionalityError("bytedance", "ByteDance provider is not configured. Use ByteDance(client, settings).")
+        throw UnsupportedFunctionalityError(
+            "bytedance",
+            "ByteDance provider is not configured. Use ByteDance(client, settings)."
+        )
 }
 
 private class DefaultByteDanceProvider(
@@ -249,8 +251,16 @@ private class DefaultByteDanceProvider(
 ) : ByteDanceProvider {
     override val providerId: String = "bytedance"
     override fun video(modelId: ModelId): VideoModel = ByteDanceVideoModel(client, settings, modelId.value)
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
+        providerId,
+        "languageModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
@@ -305,10 +315,16 @@ private class ByteDanceVideoModel(
             ),
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = status.headers, body = status.value),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bytedance" to buildJsonObject {
-                put("taskId", JsonPrimitive(taskId))
-                statusBody["usage"]?.takeIf { it !is JsonNull }?.let { put("usage", it) }
-            }))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "bytedance" to buildJsonObject {
+                            put("taskId", JsonPrimitive(taskId))
+                            statusBody["usage"]?.takeIf { it !is JsonNull }?.let { put("usage", it) }
+                        }
+                    )
+                )
+            ),
         )
     }
 
@@ -334,34 +350,40 @@ private class ByteDanceVideoModel(
         }
     }
 
-    private fun byteDanceContent(params: VideoGenerationParams, options: JsonObject): JsonArray = JsonArray(buildList {
-        add(buildJsonObject {
-            put("type", JsonPrimitive("text"))
-            put("text", JsonPrimitive(params.prompt))
-        })
-        params.image?.let { image ->
-            add(buildJsonObject {
-                put("type", JsonPrimitive("image_url"))
-                put("image_url", buildJsonObject { put("url", JsonPrimitive(image.byteDanceDataUri())) })
-                if (options["lastFrameImage"] != null) put("role", JsonPrimitive("first_frame"))
-            })
+    private fun byteDanceContent(params: VideoGenerationParams, options: JsonObject): JsonArray = JsonArray(
+        buildList {
+            add(
+                buildJsonObject {
+                    put("type", JsonPrimitive("text"))
+                    put("text", JsonPrimitive(params.prompt))
+                }
+            )
+            params.image?.let { image ->
+                add(
+                    buildJsonObject {
+                        put("type", JsonPrimitive("image_url"))
+                        put("image_url", buildJsonObject { put("url", JsonPrimitive(image.byteDanceDataUri())) })
+                        if (options["lastFrameImage"] != null) put("role", JsonPrimitive("first_frame"))
+                    }
+                )
+            }
+            (options["lastFrameImage"] as? JsonPrimitive)?.contentOrNull?.let { url ->
+                add(byteDanceMediaContent("image_url", "image_url", url, "last_frame"))
+            }
+            (JsonAccess.arr(options, "referenceImages")).orEmpty().forEach { url ->
+                val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
+                add(byteDanceMediaContent("image_url", "image_url", ref, "reference_image"))
+            }
+            (JsonAccess.arr(options, "referenceVideos")).orEmpty().forEach { url ->
+                val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
+                add(byteDanceMediaContent("video_url", "video_url", ref, "reference_video"))
+            }
+            (JsonAccess.arr(options, "referenceAudio")).orEmpty().forEach { url ->
+                val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
+                add(byteDanceMediaContent("audio_url", "audio_url", ref, "reference_audio"))
+            }
         }
-        (options["lastFrameImage"] as? JsonPrimitive)?.contentOrNull?.let { url ->
-            add(byteDanceMediaContent("image_url", "image_url", url, "last_frame"))
-        }
-        (JsonAccess.arr(options, "referenceImages")).orEmpty().forEach { url ->
-            val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
-            add(byteDanceMediaContent("image_url", "image_url", ref, "reference_image"))
-        }
-        (JsonAccess.arr(options, "referenceVideos")).orEmpty().forEach { url ->
-            val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
-            add(byteDanceMediaContent("video_url", "video_url", ref, "reference_video"))
-        }
-        (JsonAccess.arr(options, "referenceAudio")).orEmpty().forEach { url ->
-            val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
-            add(byteDanceMediaContent("audio_url", "audio_url", ref, "reference_audio"))
-        }
-    })
+    )
 
     private fun byteDanceMediaContent(type: String, field: String, url: String, role: String): JsonObject = buildJsonObject {
         put("type", JsonPrimitive(type))
@@ -416,7 +438,9 @@ private class ByteDanceVideoModel(
         pollTimeoutMs: Long,
     ): HttpJsonResponse {
         val interval = pollIntervalMs.coerceAtLeast(1L)
-        val maxPollAttempts = ceil(pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble()).toInt().coerceAtLeast(1)
+        val maxPollAttempts = ceil(
+            pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble()
+        ).toInt().coerceAtLeast(1)
         repeat(maxPollAttempts) { attempt ->
             val status = byteDanceGetJson(
                 client = client,
@@ -460,7 +484,6 @@ private class ByteDanceVideoModel(
 
 private const val DEFAULT_BYTEDANCE_POLL_INTERVAL_MS: Long = 3_000L
 private const val DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS: Long = 300_000L
-
 
 private val byteDanceHandledOptions = setOf(
     "watermark",

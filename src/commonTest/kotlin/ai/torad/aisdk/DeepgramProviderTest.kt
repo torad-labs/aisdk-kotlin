@@ -1,15 +1,15 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.DEEPGRAM_VERSION
+import ai.torad.aisdk.providers.Deepgram
 import ai.torad.aisdk.providers.DeepgramProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -17,8 +17,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Deepgram
-import kotlinx.serialization.json.JsonObject
 
 class DeepgramProviderTest {
     @Test
@@ -46,19 +44,28 @@ class DeepgramProviderTest {
                 speed(1.2f)
                 instructions("soft")
                 responseFormat("opus")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "deepgram" to buildJsonObject {
-                                        put("bitRate", JsonPrimitive(64000))
-                                        put("sampleRate", JsonPrimitive(16000))
-                                        put("callback", JsonPrimitive("https://example.com/hook"))
-                                        put("callbackMethod", JsonPrimitive("POST"))
-                                        put("mipOptOut", JsonPrimitive(true))
-                                        put("tag", buildJsonArray {
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "deepgram" to buildJsonObject {
+                                    put("bitRate", JsonPrimitive(64000))
+                                    put("sampleRate", JsonPrimitive(16000))
+                                    put("callback", JsonPrimitive("https://example.com/hook"))
+                                    put("callbackMethod", JsonPrimitive("POST"))
+                                    put("mipOptOut", JsonPrimitive(true))
+                                    put(
+                                        "tag",
+                                        buildJsonArray {
                                             add(JsonPrimitive("alpha"))
                                             add(JsonPrimitive("beta"))
-                                        })
-                                    },
-                                ))))
+                                        }
+                                    )
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -102,35 +109,46 @@ class DeepgramProviderTest {
 
         val result = model.transcribe(
             TranscriptionParams {
-                audio(AudioSource(
-                                    mediaType = "audio/wav",
-                                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
-                                    filename = "clip.wav",
-                                ))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "deepgram" to buildJsonObject {
-                                        put("diarize", JsonPrimitive(false))
-                                        put("detectLanguage", JsonPrimitive(true))
-                                        put("fillerWords", JsonPrimitive(true))
-                                        put("language", JsonPrimitive("en"))
-                                        put("punctuate", JsonPrimitive(true))
-                                        put("redact", buildJsonArray {
+                audio(
+                    AudioSource(
+                        mediaType = "audio/wav",
+                        base64 = Base64Codec.encode("abc".encodeToByteArray()),
+                        filename = "clip.wav",
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "deepgram" to buildJsonObject {
+                                    put("diarize", JsonPrimitive(false))
+                                    put("detectLanguage", JsonPrimitive(true))
+                                    put("fillerWords", JsonPrimitive(true))
+                                    put("language", JsonPrimitive("en"))
+                                    put("punctuate", JsonPrimitive(true))
+                                    put(
+                                        "redact",
+                                        buildJsonArray {
                                             add(JsonPrimitive("pii"))
                                             add(JsonPrimitive("ssn"))
-                                        })
-                                        put("search", JsonPrimitive("Kotlin"))
-                                        put("smartFormat", JsonPrimitive(true))
-                                        put("summarize", JsonPrimitive("v2"))
-                                        put("topics", JsonPrimitive(true))
-                                        put("utterances", JsonPrimitive(true))
-                                        put("uttSplit", JsonPrimitive(0.8f))
-                                        put("paragraphs", JsonPrimitive(true))
-                                        put("intents", JsonPrimitive(true))
-                                        put("sentiment", JsonPrimitive(true))
-                                        put("replace", JsonPrimitive("redacted"))
-                                        put("keyterm", JsonPrimitive("sdk"))
-                                    },
-                                ))))
+                                        }
+                                    )
+                                    put("search", JsonPrimitive("Kotlin"))
+                                    put("smartFormat", JsonPrimitive(true))
+                                    put("summarize", JsonPrimitive("v2"))
+                                    put("topics", JsonPrimitive(true))
+                                    put("utterances", JsonPrimitive(true))
+                                    put("uttSplit", JsonPrimitive(0.8f))
+                                    put("paragraphs", JsonPrimitive(true))
+                                    put("intents", JsonPrimitive(true))
+                                    put("sentiment", JsonPrimitive(true))
+                                    put("replace", JsonPrimitive("redacted"))
+                                    put("keyterm", JsonPrimitive("sdk"))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -141,11 +159,14 @@ class DeepgramProviderTest {
         assertEquals(0.8f, result.segments.last().endSeconds)
         assertEquals("en", result.language)
         assertEquals(3.5f, result.durationInSeconds)
-        assertEquals("hello world", result.response.body?.jsonObject
-            ?.get("results")?.jsonObject
-            ?.get("channels")?.jsonArray?.first()?.jsonObject
-            ?.get("alternatives")?.jsonArray?.first()?.jsonObject
-            ?.get("transcript")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "hello world",
+            result.response.body?.jsonObject
+                ?.get("results")?.jsonObject
+                ?.get("channels")?.jsonArray?.first()?.jsonObject
+                ?.get("alternatives")?.jsonArray?.first()?.jsonObject
+                ?.get("transcript")?.jsonPrimitive?.contentOrNull
+        )
 
         val request = fixture.calls.single()
         assertEquals("POST", request.requestMethod)

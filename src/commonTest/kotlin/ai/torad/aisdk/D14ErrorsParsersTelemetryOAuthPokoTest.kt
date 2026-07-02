@@ -110,8 +110,10 @@ class D14ErrorsParsersTelemetryOAuthPokoTest {
         assertValueSemantics(partial, equalPartial, differentPartial)
 
         val call = TelemetryCall(callId = "c1", agentId = "agent", agentVersion = "1", modelId = "m", functionId = "fn")
-        val equalCall = TelemetryCall(callId = "c1", agentId = "agent", agentVersion = "1", modelId = "m", functionId = "fn")
-        val differentCall = TelemetryCall(callId = "c2", agentId = "agent", agentVersion = "1", modelId = "m", functionId = "fn")
+        val equalCall =
+            TelemetryCall(callId = "c1", agentId = "agent", agentVersion = "1", modelId = "m", functionId = "fn")
+        val differentCall =
+            TelemetryCall(callId = "c2", agentId = "agent", agentVersion = "1", modelId = "m", functionId = "fn")
         assertValueSemantics(call, equalCall, differentCall)
 
         val status: TelemetrySpanStatus = TelemetrySpanStatus.Error("failed")

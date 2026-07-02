@@ -1,19 +1,19 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import ai.torad.aisdk.ui.ChatSession
 import ai.torad.aisdk.ui.ChatStatus
 import ai.torad.aisdk.ui.DirectChatTransport
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.ChatSession
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class ChatSessionTest {
 

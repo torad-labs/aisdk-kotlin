@@ -1,14 +1,14 @@
 package ai.torad.aisdk.middleware
 
+import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.FinishReason
 import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.MiddlewareCallContext
-import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.Usage
-import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import ai.torad.aisdk.UserMessage
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import app.cash.turbine.test
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -29,8 +29,8 @@ class ExtractJsonTest {
 
     private fun genContext(rawText: String) = MiddlewareCallContext(
         params = LanguageModelCallParams {
-    messages(listOf(UserMessage("x")))
-},
+            messages(listOf(UserMessage("x")))
+        },
         model = MockLanguageModelTextOnly("x"),
         doGenerate = { LanguageModelResult(rawText, emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
         doStream = { flowOf() },
@@ -112,8 +112,8 @@ class ExtractJsonTest {
         // GIVEN a text block whose content is an open object.
         val ctx = MiddlewareCallContext(
             params = LanguageModelCallParams {
-    messages(listOf(UserMessage("x")))
-},
+                messages(listOf(UserMessage("x")))
+            },
             model = MockLanguageModelTextOnly("x"),
             doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
@@ -143,8 +143,8 @@ class ExtractJsonTest {
     fun `given fenced json streamed in split chunks when stream-wrapped then fences are stripped`() = runTest {
         val ctx = MiddlewareCallContext(
             params = LanguageModelCallParams {
-    messages(listOf(UserMessage("x")))
-},
+                messages(listOf(UserMessage("x")))
+            },
             model = MockLanguageModelTextOnly("x"),
             doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
@@ -174,8 +174,8 @@ class ExtractJsonTest {
         val largeJson = """{"data":"${"x".repeat(100)}","nested":[0,1,2,3]}"""
         val ctx = MiddlewareCallContext(
             params = LanguageModelCallParams {
-    messages(listOf(UserMessage("x")))
-},
+                messages(listOf(UserMessage("x")))
+            },
             model = MockLanguageModelTextOnly("x"),
             doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
@@ -202,8 +202,8 @@ class ExtractJsonTest {
     fun `given custom transform when stream-wrapped then text is buffered and transformed at text end`() = runTest {
         val ctx = MiddlewareCallContext(
             params = LanguageModelCallParams {
-    messages(listOf(UserMessage("x")))
-},
+                messages(listOf(UserMessage("x")))
+            },
             model = MockLanguageModelTextOnly("x"),
             doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {

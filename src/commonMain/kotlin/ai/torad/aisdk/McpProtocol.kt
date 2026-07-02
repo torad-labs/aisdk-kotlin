@@ -452,6 +452,7 @@ public class GetPromptResult(
 
 /** @since 0.3.0-beta01 */
 public object ElicitationRequestSchema
+
 /** @since 0.3.0-beta01 */
 public object ElicitResultSchema
 

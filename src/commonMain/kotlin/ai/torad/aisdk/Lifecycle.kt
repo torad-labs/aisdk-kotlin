@@ -42,7 +42,7 @@ public sealed class AgentEvent {
      * params (system prompt, tool subset, sampler overrides); [priorSteps] are
      * the accumulated step results (`priorSteps[i]` is step i+1's outcome, empty
      * on step 1). Both required — the event fires only once the params exist.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Poko
     public class StepStarted(
@@ -80,7 +80,7 @@ public sealed class AgentEvent {
     /**
      * Fired immediately before a tool's executor runs. Carries the parsed tool
      * call envelope and the messages-list snapshot so observers can record context.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Poko
     public class ToolCallStarted(
@@ -99,7 +99,7 @@ public sealed class AgentEvent {
     /**
      * Fired immediately after a tool's executor returns or throws. Carries an
      * owned typed [outcome] instead of paired nullable success/error fields.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Poko
     public class ToolCallFinished(
@@ -141,7 +141,7 @@ public sealed class AgentEvent {
     /**
      * Fired when generation is aborted via [AbortSignal] before it finishes.
      * Carries the steps completed up to the abort.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Poko
     public class Aborted(
@@ -154,7 +154,7 @@ public sealed class AgentEvent {
      * [experimentalContext] is the typed context after any `prepareStep`
      * override (was `Any?`). [messages] is the final accumulated message list,
      * for resuming after a tool-approval pause without re-walking the events.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Poko
     public class Finished<TContext, TOutput>(
@@ -225,7 +225,7 @@ public sealed class AgentEvent {
 /**
  * Snapshot of one completed loop step — surfaced to [AgentEvent.StepFinished]
  * and accumulated in the loop state for [PrepareStepScope.steps].
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 @Poko
 public class StepResult(
@@ -277,10 +277,13 @@ public class StepResult(
      * @since 0.3.0-beta01
      */
     public val staticToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { !it.dynamic }
+
     /** @since 0.3.0-beta01 */
     public val dynamicToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { it.dynamic }
+
     /** @since 0.3.0-beta01 */
     public val staticToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { !it.dynamic }
+
     /** @since 0.3.0-beta01 */
     public val dynamicToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { it.dynamic }
 }

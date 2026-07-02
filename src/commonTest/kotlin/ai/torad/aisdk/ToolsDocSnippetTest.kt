@@ -1,8 +1,8 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
@@ -61,7 +61,9 @@ class ToolsDocSnippetTest {
             description = "Search product documentation by query.",
             inputExamples = listOf("""{"query":"TextGenerator streamResult adapters","limit":3}"""),
         ) { input ->
-            listOf(SearchHit("Streams", "https://docs.example/streams", "Use streamResult for adapters: ${input.query}"))
+            listOf(
+                SearchHit("Streams", "https://docs.example/streams", "Use streamResult for adapters: ${input.query}")
+            )
         }
         val createTicket = Tool<CreateTicket, Ticket, AppContext>(
             name = "createTicket",
@@ -88,7 +90,9 @@ class ToolsDocSnippetTest {
 
         assertEquals("Persist chat messages in your message log.", result.text)
         assertEquals(listOf("searchDocs", "createTicket"), supportAgent.tools.names())
-        assertTrue(supportAgent.tools.descriptors.single { it.name == "searchDocs" }.description.contains("TextGenerator streamResult adapters"))
+        assertTrue(supportAgent.tools.descriptors.single {
+            it.name == "searchDocs"
+        }.description.contains("TextGenerator streamResult adapters"))
     }
 
     @Test
@@ -144,7 +148,10 @@ class ToolsDocSnippetTest {
             }
         }
         val lookupResults = ExecuteTool(lookupIssue, IssueInput("ISSUE-1"), context).toList()
-        assertEquals("cached ISSUE-1", assertIs<ExecuteToolResult.Preliminary<IssueSnapshot>>(lookupResults[0]).output.body)
+        assertEquals(
+            "cached ISSUE-1",
+            assertIs<ExecuteToolResult.Preliminary<IssueSnapshot>>(lookupResults[0]).output.body
+        )
         assertEquals("full ISSUE-1", assertIs<ExecuteToolResult.Final<IssueSnapshot>>(lookupResults[1]).output.body)
 
         val external = DynamicTool<AppContext>(
@@ -159,8 +166,11 @@ class ToolsDocSnippetTest {
             buildJsonObject { put("value", JsonPrimitive("ok")) },
             context,
         ).toList().single()
-        assertEquals("ok", assertIs<ExecuteToolResult.Final<JsonElement>>(externalResult).output.jsonObject
-            .getValue("echo").jsonPrimitive.content)
+        assertEquals(
+            "ok",
+            assertIs<ExecuteToolResult.Final<JsonElement>>(externalResult).output.jsonObject
+                .getValue("echo").jsonPrimitive.content
+        )
 
         val providerTool = ProviderExecutedTool<JsonElement, JsonElement, AppContext>(
             name = "providerSearch",

@@ -81,9 +81,18 @@ public class VercelProvider(
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 

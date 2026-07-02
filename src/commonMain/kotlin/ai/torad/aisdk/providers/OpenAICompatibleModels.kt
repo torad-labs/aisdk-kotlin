@@ -91,7 +91,11 @@ internal class OpenAICompatibleChatLanguageModel(
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val prepared = chatRequestBody(params, stream = true)
         emit(StreamEvent.StreamStart(prepared.warnings))
-        val state = OpenAIChatStreamState(provider = providerName, providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)
+        val state = OpenAIChatStreamState(
+            provider = providerName,
+            providerKey = providerOptionsKey(),
+            convertUsage = settings.convertUsage
+        )
         var sseHeaders: Map<String, String> = emptyMap()
         val rawLines = postSse(
             path = "/chat/completions",
@@ -101,7 +105,11 @@ internal class OpenAICompatibleChatLanguageModel(
         )
         with(HttpTransport) {
             forwardSseEvents(
-                events = EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
+                events = EventStreamParser.parse(
+                    rawLines,
+                    Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())),
+                    json
+                )
                     .map { it.transformChatStreamEvent() },
                 capturedHeaders = { sseHeaders },
                 parseErrorPrefix = "Failed to parse OpenAI-compatible stream event",
@@ -190,7 +198,14 @@ internal class OpenAICompatibleCompletionLanguageModel(
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val prepared = completionRequestBody(params, stream = false)
         val response = postJson("/completions", prepared.body, params.headers)
-        return completionResultFromJson(response.value, providerName, prepared.body, response.headers, response.value, prepared.warnings)
+        return completionResultFromJson(
+            response.value,
+            providerName,
+            prepared.body,
+            response.headers,
+            response.value,
+            prepared.warnings
+        )
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
@@ -209,13 +224,21 @@ internal class OpenAICompatibleCompletionLanguageModel(
             headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
             onResponse = { sseHeaders = it },
         )
-        EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
+        EventStreamParser.parse(
+            rawLines,
+            Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())),
+            json
+        ).collect { event ->
             if (!headerMetaEmitted) {
                 emit(StreamEvent.ResponseMetadata(headers = sseHeaders))
                 headerMetaEmitted = true
             }
             when (event) {
-                is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse OpenAI-compatible completion stream event: ${event.error.message}"))
+                is ParseResult.Failure -> emit(
+                    StreamEvent.Error(
+                        "Failed to parse OpenAI-compatible completion stream event: ${event.error.message}"
+                    )
+                )
                 is ParseResult.Success -> {
                     val value = event.value.jsonObject
                     if (!emittedResponseMetadata) {
@@ -250,7 +273,10 @@ internal class OpenAICompatibleCompletionLanguageModel(
         val warnings = mutableListOf<CallWarning>()
         if (params.tools.isNotEmpty()) warnings += CallWarning("unsupported", "tools are not supported by completion models")
         if (params.topK != null) warnings += CallWarning("unsupported", "topK is not supported by completion models")
-        val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
+        val options = openAIProviderOptions(
+            params.providerOptions.toMap(),
+            settings.providerOptionsName ?: settings.name
+        )
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("prompt", JsonPrimitive(openAICompletionPrompt(params.messages)))
@@ -287,9 +313,15 @@ internal class OpenAICompatibleEmbeddingModel(
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         val max = params.maxEmbeddingsPerCall ?: settings.maxEmbeddingsPerCall
         if (params.values.size > max) {
-            throw InvalidArgumentError("values", "embedding model ${settings.name}:$modelId supports at most $max values per call")
+            throw InvalidArgumentError(
+                "values",
+                "embedding model ${settings.name}:$modelId supports at most $max values per call"
+            )
         }
-        val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
+        val options = openAIProviderOptions(
+            params.providerOptions.toMap(),
+            settings.providerOptionsName ?: settings.name
+        )
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("input", JsonArray(params.values.map(::JsonPrimitive)))
@@ -314,7 +346,10 @@ internal class OpenAICompatibleEmbeddingModel(
             warnings = emptyList(),
             request = LanguageModelRequestMetadata(body),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
-            providerMetadata = openAIProviderMetadata(value["providerMetadata"], settings.name).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
+            providerMetadata = openAIProviderMetadata(
+                value["providerMetadata"],
+                settings.name
+            ).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
         )
     }
 }
@@ -337,7 +372,10 @@ internal class OpenAICompatibleImageModel(
         if (params.seed != null) {
             warnings += CallWarning("unsupported", "seed is not supported by OpenAI-compatible image generation")
         }
-        val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
+        val options = openAIProviderOptions(
+            params.providerOptions.toMap(),
+            settings.providerOptionsName ?: settings.name
+        )
         val response = openAICompatibleImageResponse(params, options)
         val responseObject = WireDecoder.objectValue(response.value, providerName, "image generation response")
         val data = WireDecoder.requiredArray(responseObject, "data", providerName, "image generation response")
@@ -345,7 +383,14 @@ internal class OpenAICompatibleImageModel(
         return ImageModelResult(
             images = data.mapIndexed { index, image ->
                 val obj = WireDecoder.objectValue(image, providerName, "image generation response", "$.data[$index]")
-                val imageData = WireDecoder.requiredOneOfString(obj, providerName, "image generation response", "$.data[$index]", "b64_json", "url")
+                val imageData = WireDecoder.requiredOneOfString(
+                    obj,
+                    providerName,
+                    "image generation response",
+                    "$.data[$index]",
+                    "b64_json",
+                    "url"
+                )
                 GeneratedFile(
                     mediaType = (obj["media_type"] as? JsonPrimitive)?.contentOrNull ?: "image/png",
                     base64 = obj["b64_json"]?.let { imageData }.orEmpty(),
@@ -353,8 +398,15 @@ internal class OpenAICompatibleImageModel(
                 )
             },
             warnings = warnings,
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = openAIProviderMetadata(responseObject["providerMetadata"], settings.name).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
+            providerMetadata = openAIProviderMetadata(
+                responseObject["providerMetadata"],
+                settings.name
+            ).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
             usage = ImageModelUsage.fromOpenAI(responseObject["usage"]),
         )
     }
@@ -429,7 +481,10 @@ internal class OpenAICompatibleSpeechModel(
         get() = providerName
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
-        val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
+        val options = openAIProviderOptions(
+            params.providerOptions.toMap(),
+            settings.providerOptionsName ?: settings.name
+        )
         val format = params.responseFormat ?: (options["response_format"] as? JsonPrimitive)?.contentOrNull ?: "mp3"
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
@@ -463,7 +518,10 @@ internal class OpenAICompatibleTranscriptionModel(
         get() = providerName
 
     override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
-        val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
+        val options = openAIProviderOptions(
+            params.providerOptions.toMap(),
+            settings.providerOptionsName ?: settings.name
+        )
         val multipart = MultiPartFormDataContent(
             formData {
                 append("model", modelId)
@@ -490,16 +548,46 @@ internal class OpenAICompatibleTranscriptionModel(
         val value = WireDecoder.objectValue(response.value, providerName, "transcription response")
         return TranscriptionModelResult(
             text = WireDecoder.requiredString(value, "text", providerName, "transcription response"),
-            segments = WireDecoder.optionalArray(value, "segments", providerName, "transcription response").orEmpty().mapIndexed { index, segment ->
+            segments = WireDecoder.optionalArray(
+                value,
+                "segments",
+                providerName,
+                "transcription response"
+            ).orEmpty().mapIndexed { index, segment ->
                 val obj = WireDecoder.objectValue(segment, providerName, "transcription response", "$.segments[$index]")
                 TranscriptSegment(
-                    text = WireDecoder.requiredString(obj, "text", providerName, "transcription response", "$.segments[$index]"),
-                    startSeconds = WireDecoder.optionalFloat(obj, "start", providerName, "transcription response", "$.segments[$index]"),
-                    endSeconds = WireDecoder.optionalFloat(obj, "end", providerName, "transcription response", "$.segments[$index]"),
+                    text = WireDecoder.requiredString(
+                        obj,
+                        "text",
+                        providerName,
+                        "transcription response",
+                        "$.segments[$index]"
+                    ),
+                    startSeconds = WireDecoder.optionalFloat(
+                        obj,
+                        "start",
+                        providerName,
+                        "transcription response",
+                        "$.segments[$index]"
+                    ),
+                    endSeconds = WireDecoder.optionalFloat(
+                        obj,
+                        "end",
+                        providerName,
+                        "transcription response",
+                        "$.segments[$index]"
+                    ),
                 )
             },
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = openAIProviderMetadata(value["providerMetadata"], settings.name).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
+            providerMetadata = openAIProviderMetadata(
+                value["providerMetadata"],
+                settings.name
+            ).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
             // verbose_json responses carry the detected language + audio duration.
             language = WireDecoder.optionalString(value, "language", providerName, "transcription response"),
             durationInSeconds = WireDecoder.optionalFloat(value, "duration", providerName, "transcription response"),

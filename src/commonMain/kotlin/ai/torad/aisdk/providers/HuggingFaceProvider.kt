@@ -93,12 +93,16 @@ public class HuggingFaceProviderSettings internal constructor(
     internal fun huggingFaceItemMetadata(
         itemId: String,
         providerExecuted: Boolean = false,
-    ): ProviderMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-        "huggingface" to buildJsonObject {
-            put("itemId", JsonPrimitive(itemId))
-            if (providerExecuted) put("providerExecuted", JsonPrimitive(true))
-        },
-    )))
+    ): ProviderMetadata = ProviderMetadata.Raw(
+        JsonObject(
+            mapOf(
+                "huggingface" to buildJsonObject {
+                    put("itemId", JsonPrimitive(itemId))
+                    if (providerExecuted) put("providerExecuted", JsonPrimitive(true))
+                },
+            )
+        )
+    )
 
     internal fun huggingFaceParseToolInput(arguments: String?, json: Json): JsonElement =
         if (arguments.isNullOrBlank()) {
@@ -245,7 +249,10 @@ public class HuggingFaceProvider(
     override fun languageModel(modelId: String): LanguageModel =
         HuggingFaceResponsesLanguageModel(client, settings, modelId)
 
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw huggingFaceNoEmbeddingModel(providerId, modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw huggingFaceNoEmbeddingModel(
+        providerId,
+        modelId
+    )
 
     override fun imageModel(modelId: String): ImageModel = throw huggingFaceNoImageModel(providerId, modelId)
 
@@ -305,7 +312,11 @@ private class HuggingFaceResponsesLanguageModel(
         val rawLines = streamResponsesSse(prepared.body, params.headers) { sseHeaders = it }
         with(HttpTransport) {
             forwardSseEvents(
-                events = EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson),
+                events = EventStreamParser.parse(
+                    rawLines,
+                    Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())),
+                    aiSdkJson
+                ),
                 capturedHeaders = { sseHeaders },
                 parseErrorPrefix = "Failed to parse Hugging Face Responses stream event",
                 onEvent = { state.accept(it).forEach { e -> emit(e) } },
@@ -478,7 +489,11 @@ private class HuggingFaceResponsesLanguageModel(
             toolCalls = toolCalls,
             finishReason = settings.mapHuggingFaceFinishReason(incompleteReason ?: "stop"),
             usage = settings.huggingFaceUsage(response["usage"]),
-            providerMetadata = responseId?.let { ProviderMetadata.Raw(JsonObject(mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) }))) } ?: ProviderMetadata.None,
+            providerMetadata = responseId?.let {
+                ProviderMetadata.Raw(JsonObject(mapOf("huggingface" to buildJsonObject {
+                    put("responseId", JsonPrimitive(it))
+                })))
+            } ?: ProviderMetadata.None,
             content = content,
             rawFinishReason = incompleteReason,
             warnings = warnings,
@@ -501,17 +516,19 @@ private class HuggingFaceResponsesLanguageModel(
         onResponse: suspend (Map<String, String>) -> Unit,
     ): Flow<String> = flow {
         emitAll(
-            HttpTransport.streamSse(client = client,
-            url = "${settings.baseURL.trimEnd('/')}/responses",
-            method = HttpMethod.Post,
-            headers = settings.huggingFaceHeaders(headers) + (HttpHeaders.Accept to "text/event-stream"),
-            body = body,
-            json = aiSdkJson,
-            requestBodyValues = body,
-            errorMessage = { _, parsed, raw ->
-                "Hugging Face API error: ${parsed?.let(settings::huggingFaceErrorMessage) ?: raw}"
-            },
-            onResponse = onResponse,),
+            HttpTransport.streamSse(
+                client = client,
+                url = "${settings.baseURL.trimEnd('/')}/responses",
+                method = HttpMethod.Post,
+                headers = settings.huggingFaceHeaders(headers) + (HttpHeaders.Accept to "text/event-stream"),
+                body = body,
+                json = aiSdkJson,
+                requestBodyValues = body,
+                errorMessage = { _, parsed, raw ->
+                    "Hugging Face API error: ${parsed?.let(settings::huggingFaceErrorMessage) ?: raw}"
+                },
+                onResponse = onResponse,
+            ),
         )
     }
 
@@ -637,11 +654,17 @@ private class HuggingFaceResponsesLanguageModel(
         }
         is ContentPart.File -> {
             if (!part.mediaType.startsWith("image/")) {
-                throw UnsupportedFunctionalityError("file part media type ${part.mediaType}", "Hugging Face Responses API does not support file part media type ${part.mediaType}.")
+                throw UnsupportedFunctionalityError(
+                    "file part media type ${part.mediaType}",
+                    "Hugging Face Responses API does not support file part media type ${part.mediaType}."
+                )
             }
             buildJsonObject {
                 put("type", JsonPrimitive("input_image"))
-                put("image_url", JsonPrimitive("data:${huggingFaceImageMediaType(part.mediaType)};base64,${part.base64}"))
+                put(
+                    "image_url",
+                    JsonPrimitive("data:${huggingFaceImageMediaType(part.mediaType)};base64,${part.base64}")
+                )
             }
         }
         is ContentPart.Reasoning,
@@ -905,7 +928,9 @@ private class HuggingFaceResponsesStreamState(
     }
 
     fun finish(): List<StreamEvent> = buildList {
-        openReasoningIds.toList().forEach { id -> add(StreamEvent.ReasoningEnd(id, settings.huggingFaceItemMetadata(id))) }
+        openReasoningIds.toList().forEach { id -> add(
+            StreamEvent.ReasoningEnd(id, settings.huggingFaceItemMetadata(id))
+        ) }
         add(
             StreamEvent.Finish(
                 totalSteps = 1,

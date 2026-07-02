@@ -1,14 +1,14 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.TextUIPartState
 import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.StreamToUiMessages
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
 
 /**
  * Validates Phase 4E #30: `TextUIPart.state` + `ReasoningUIPart.state`

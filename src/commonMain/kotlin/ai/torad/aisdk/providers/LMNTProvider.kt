@@ -12,21 +12,14 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val LMNT_VERSION: String = "2.0.33"
-
 
 @Serializable
 @Poko
@@ -202,8 +195,12 @@ public class LMNTProvider(
     public fun speech(modelId: ModelId): SpeechModel = LMNTSpeechModel(client, settings, modelId.value)
 
     override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun languageModel(
+        modelId: String
+    ): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
+    override fun embeddingModel(
+        modelId: String
+    ): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
@@ -303,7 +300,6 @@ private class LMNTSpeechModel(
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
-
 
 internal class LMNTBinaryResponse(
     val bytes: ByteArray,

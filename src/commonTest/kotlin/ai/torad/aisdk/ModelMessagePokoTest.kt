@@ -33,7 +33,10 @@ class ModelMessagePokoTest {
 
         for ((part, discriminator) in parts) {
             val encoded = aiSdkOutputJson.encodeToString(ContentPart.serializer(), part)
-            assertEquals(discriminator, aiSdkJson.parseToJsonElement(encoded).jsonObject["type"]?.jsonPrimitive?.content)
+            assertEquals(
+                discriminator,
+                aiSdkJson.parseToJsonElement(encoded).jsonObject["type"]?.jsonPrimitive?.content
+            )
             assertEquals(part, aiSdkJson.decodeFromString(ContentPart.serializer(), encoded))
         }
     }

@@ -156,6 +156,7 @@ public class OpenAIProvider(
     private val compatible = OpenAICompatible(client, settings.toCompatibleSettings())
 
     override val providerId: String = settings.name
+
     /** @since 0.3.0-beta01 */
     public val tools: OpenAITools = OpenAITools()
 
@@ -204,8 +205,10 @@ public class OpenAIProvider(
         compatible.speechModel(modelId)
 
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbedding(modelId: String): EmbeddingModel = embedding(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
     override fun imageModel(modelId: String): ImageModel = image(modelId)
@@ -221,7 +224,6 @@ public fun OpenAI(
     client: HttpClient,
     settings: OpenAISettings = OpenAISettings(),
 ): OpenAIProvider = OpenAIProvider(client, settings)
-
 
 private class OpenAIImageModel(
     override val modelId: String,

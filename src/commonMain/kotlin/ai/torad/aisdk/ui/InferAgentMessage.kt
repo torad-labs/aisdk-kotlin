@@ -48,7 +48,7 @@ import dev.drewhamilton.poko.Poko
 /**
  * Typed invocation handle — what a per-tool renderer receives. Carries
  * the typed input + output via the tool's own serializers.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 @Poko
 public class UIToolInvocationPayload<TInput, TOutput>(
@@ -116,7 +116,7 @@ public class UIToolInvocation<TInput, TOutput> constructor(
  * server-rendered nodes, or any other renderer value.
  *
  * Stays out of `Compose` imports so the SDK remains platform-agnostic.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
     private val handlers: Map<String, (UIMessagePart.ToolUI) -> TRenderResult>,

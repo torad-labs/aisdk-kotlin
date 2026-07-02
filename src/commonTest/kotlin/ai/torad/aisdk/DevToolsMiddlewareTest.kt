@@ -3,21 +3,20 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class DevToolsMiddlewareTest {
 
@@ -31,9 +30,11 @@ class DevToolsMiddlewareTest {
         )
         val wrapped = WrapLanguageModel(MockLanguageModelTextOnly("ok"), listOf(middleware))
 
-        wrapped.generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        wrapped.generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         assertEquals(listOf("run_1"), recorder.runs)
         val step = recorder.steps.single()
@@ -60,15 +61,20 @@ class DevToolsMiddlewareTest {
         )
         val wrapped = WrapLanguageModel(StreamingFixtureModel(), listOf(middleware))
 
-        val events = wrapped.stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}).toList()
+        val events = wrapped.stream(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        ).toList()
 
         assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "hello" })
         val result = assertNotNull(recorder.results["step_1"])
         val output = result.output!!.jsonObject
         assertEquals("hello", output["textParts"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content)
-        assertEquals("because", output["reasoningParts"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content)
+        assertEquals(
+            "because",
+            output["reasoningParts"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content
+        )
         assertEquals("search", output["toolCalls"]!!.jsonArray.single().jsonObject["toolName"]!!.jsonPrimitive.content)
         assertEquals(FinishReason.ToolCalls.name, output["finishReason"]!!.jsonPrimitive.content)
         assertEquals(2, result.usage!!.completionTokens)

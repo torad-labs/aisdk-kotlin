@@ -39,10 +39,13 @@ public data class ToolLoopAgentState(
     public sealed class Phase {
         /** @since 0.3.0-beta01 */
         public data object Idle : Phase()
+
         /** @since 0.3.0-beta01 */
         public data object Streaming : Phase()
+
         /** @since 0.3.0-beta01 */
         public data object ModelLoading : Phase()
+
         @Poko
         /** @since 0.3.0-beta01 */
         public class Error(public val message: String) : Phase()
@@ -53,7 +56,7 @@ public data class ToolLoopAgentState(
  * Actions the host dispatches to drive the agent. Mirrors the
  * Action sealed type a Compose ViewModel exposes — the agent is the
  * "model" of an MVI loop.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public sealed class ToolLoopAgentAction<out TContext> {
 

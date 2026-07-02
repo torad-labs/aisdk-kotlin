@@ -1,13 +1,14 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.VOYAGE_VERSION
+import ai.torad.aisdk.providers.Voyage
 import ai.torad.aisdk.providers.VoyageProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -17,8 +18,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Voyage
-import kotlinx.serialization.json.JsonObject
 
 class VoyageProviderTest {
     @Test
@@ -46,14 +45,20 @@ class VoyageProviderTest {
         val result = model.embed(
             EmbeddingModelCallParams {
                 values(listOf("first", "second"))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "voyage" to buildJsonObject {
-                        put("inputType", JsonPrimitive("document"))
-                        put("truncation", JsonPrimitive(true))
-                        put("outputDimension", JsonPrimitive(256))
-                        put("outputDtype", JsonPrimitive("int8"))
-                    },
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "voyage" to buildJsonObject {
+                                    put("inputType", JsonPrimitive("document"))
+                                    put("truncation", JsonPrimitive(true))
+                                    put("outputDimension", JsonPrimitive(256))
+                                    put("outputDtype", JsonPrimitive("int8"))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -103,12 +108,18 @@ class VoyageProviderTest {
                 query("best")
                 documents(listOf("alpha", "beta"))
                 topN(1)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "voyage" to buildJsonObject {
-                                        put("returnDocuments", JsonPrimitive(false))
-                                        put("truncation", JsonPrimitive(true))
-                                    },
-                                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "voyage" to buildJsonObject {
+                                    put("returnDocuments", JsonPrimitive(false))
+                                    put("truncation", JsonPrimitive(true))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -133,9 +144,11 @@ class VoyageProviderTest {
         ).embedding(ModelId("voyage-4"))
 
         val error = assertFailsWith<InvalidArgumentError> {
-            model.embed(EmbeddingModelCallParams {
-    values(List(129) { "value-$it" })
-})
+            model.embed(
+                EmbeddingModelCallParams {
+                    values(List(129) { "value-$it" })
+                }
+            )
         }
 
         assertTrue(error.message.orEmpty().contains("128 values"))

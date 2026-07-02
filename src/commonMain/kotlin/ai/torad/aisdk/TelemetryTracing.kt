@@ -126,28 +126,35 @@ public sealed class TelemetrySpanStatus {
     public class Error(public val message: String? = null) : TelemetrySpanStatus()
 }
 
-
 /** @since 0.3.0-beta01 */
 public interface TelemetryActiveSpan {
     /** @since 0.3.0-beta01 */
     public val name: String
+
     /** @since 0.3.0-beta01 */
     public val attributes: Map<String, JsonElement>
+
     /** @since 0.3.0-beta01 */
     public val status: TelemetrySpanStatus
+
     /** @since 0.3.0-beta01 */
     public val events: List<AgentEvent.SpanEmitted>
+
     /** @since 0.3.0-beta01 */
     public val hasEnded: Boolean
 
     /** @since 0.3.0-beta01 */
     public fun setAttribute(key: String, value: JsonElement)
+
     /** @since 0.3.0-beta01 */
     public fun addEvent(name: String, attributes: Map<String, JsonElement> = emptyMap())
+
     /** @since 0.3.0-beta01 */
     public fun recordException(error: Throwable)
+
     /** @since 0.3.0-beta01 */
     public fun setStatus(status: TelemetrySpanStatus)
+
     /** @since 0.3.0-beta01 */
     public fun end()
 }
@@ -173,6 +180,7 @@ public data object NoopTelemetryTracer : TelemetryTracer {
 /** @since 0.3.0-beta01 */
 public class InMemoryTelemetryTracer : TelemetryTracer {
     private val _spans: MutableList<MutableTelemetrySpan> = mutableListOf()
+
     /** @since 0.3.0-beta01 */
     public val spans: List<MutableTelemetrySpan> get() = _spans
 
@@ -218,7 +226,12 @@ public class MutableTelemetrySpan(
             buildMap {
                 put("exception.type", JsonPrimitive(error::class.simpleName ?: "Throwable"))
                 error.message?.let { put("exception.message", JsonPrimitive(it)) }
-                error.stackTraceToString().takeIf { it.isNotBlank() }?.let { put("exception.stacktrace", JsonPrimitive(it)) }
+                error.stackTraceToString().takeIf { it.isNotBlank() }?.let {
+                    put(
+                        "exception.stacktrace",
+                        JsonPrimitive(it)
+                    )
+                }
             },
         )
     }

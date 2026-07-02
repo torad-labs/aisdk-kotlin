@@ -1,10 +1,11 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.LUMA_VERSION
+import ai.torad.aisdk.providers.Luma
 import ai.torad.aisdk.providers.LumaProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -17,8 +18,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Luma
-import kotlinx.serialization.json.JsonObject
 
 class LumaProviderTest {
     @Test
@@ -45,22 +44,33 @@ class LumaProviderTest {
                 size("1024x1024")
                 aspectRatio("16:9")
                 seed(42)
-                files(listOf(
-                                    ImageGenerationFile(url = "https://example.com/ref-a.png"),
-                                    ImageGenerationFile(url = "https://example.com/ref-b.png"),
-                                ))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "luma" to buildJsonObject {
-                                        put("pollIntervalMillis", JsonPrimitive(0))
-                                        put("maxPollAttempts", JsonPrimitive(1))
-                                        put("referenceType", JsonPrimitive("image"))
-                                        put("images", buildJsonArray {
+                files(
+                    listOf(
+                        ImageGenerationFile(url = "https://example.com/ref-a.png"),
+                        ImageGenerationFile(url = "https://example.com/ref-b.png"),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "luma" to buildJsonObject {
+                                    put("pollIntervalMillis", JsonPrimitive(0))
+                                    put("maxPollAttempts", JsonPrimitive(1))
+                                    put("referenceType", JsonPrimitive("image"))
+                                    put(
+                                        "images",
+                                        buildJsonArray {
                                             add(buildJsonObject { put("weight", JsonPrimitive(0.9f)) })
                                             add(buildJsonObject { put("weight", JsonPrimitive(0.5f)) })
-                                        })
-                                        put("style", JsonPrimitive("cinematic"))
-                                    },
-                                ))))
+                                        }
+                                    )
+                                    put("style", JsonPrimitive("cinematic"))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -81,7 +91,10 @@ class LumaProviderTest {
         assertEquals("16:9", body["aspect_ratio"]?.jsonPrimitive?.contentOrNull)
         assertEquals("photon-1", body["model"]?.jsonPrimitive?.contentOrNull)
         assertEquals("cinematic", body["style"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("https://example.com/ref-a.png", body["image"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "https://example.com/ref-a.png",
+            body["image"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(0.9f, body["image"]?.jsonArray?.first()?.jsonObject?.get("weight")?.jsonPrimitive?.floatOrNull)
     }
 
@@ -104,27 +117,43 @@ class LumaProviderTest {
         model.generate(
             ImageGenerationParams {
                 prompt("portrait")
-                files(listOf(
-                                    ImageGenerationFile(url = "https://example.com/a.png"),
-                                    ImageGenerationFile(url = "https://example.com/b.png"),
-                                ))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "luma" to buildJsonObject {
-                                        put("pollIntervalMillis", JsonPrimitive(0))
-                                        put("maxPollAttempts", JsonPrimitive(1))
-                                        put("referenceType", JsonPrimitive("character"))
-                                        put("images", buildJsonArray {
+                files(
+                    listOf(
+                        ImageGenerationFile(url = "https://example.com/a.png"),
+                        ImageGenerationFile(url = "https://example.com/b.png"),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "luma" to buildJsonObject {
+                                    put("pollIntervalMillis", JsonPrimitive(0))
+                                    put("maxPollAttempts", JsonPrimitive(1))
+                                    put("referenceType", JsonPrimitive("character"))
+                                    put(
+                                        "images",
+                                        buildJsonArray {
                                             add(buildJsonObject { put("id", JsonPrimitive("hero")) })
                                             add(buildJsonObject { put("id", JsonPrimitive("hero")) })
-                                        })
-                                    },
-                                ))))
+                                        }
+                                    )
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
-        val character = fixture.calls.first().requestBodyJson.jsonObject["character"]?.jsonObject?.get("hero")?.jsonObject
+        val character = fixture.calls.first().requestBodyJson.jsonObject["character"]?.jsonObject?.get(
+            "hero"
+        )?.jsonObject
         assertEquals(2, character?.get("images")?.jsonArray?.size)
-        assertEquals("https://example.com/a.png", character?.get("images")?.jsonArray?.first()?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "https://example.com/a.png",
+            character?.get("images")?.jsonArray?.first()?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
@@ -133,16 +162,20 @@ class LumaProviderTest {
         val model = Luma(fixture.httpClient(), LumaProviderSettings { apiKey("key") }).image(ModelId("photon-1"))
 
         assertFailsWith<AiSdkException> {
-            model.generate(ImageGenerationParams {
-                prompt("x")
-                files(listOf(ImageGenerationFile(mediaType = "image/png", base64 = "abc")))
-            })
+            model.generate(
+                ImageGenerationParams {
+                    prompt("x")
+                    files(listOf(ImageGenerationFile(mediaType = "image/png", base64 = "abc")))
+                }
+            )
         }
         assertFailsWith<AiSdkException> {
-            model.generate(ImageGenerationParams {
-                prompt("x")
-                mask(ImageGenerationFile(url = "https://example.com/mask.png"))
-            })
+            model.generate(
+                ImageGenerationParams {
+                    prompt("x")
+                    mask(ImageGenerationFile(url = "https://example.com/mask.png"))
+                }
+            )
         }
     }
 

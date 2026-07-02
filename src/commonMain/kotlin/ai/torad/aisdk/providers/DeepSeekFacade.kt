@@ -115,7 +115,10 @@ public class DeepSeekProviderSettings internal constructor(
         val promptTokens = obj.intField("prompt_tokens")
         val completionTokens = obj.intField("completion_tokens")
         val cacheRead = obj.intField("prompt_cache_hit_tokens").coerceAtMost(promptTokens)
-        val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
+        val reasoning = obj.nestedIntField(
+            "completion_tokens_details",
+            "reasoning_tokens"
+        ).coerceAtMost(completionTokens)
         return Usage.fromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
     }
 }
@@ -198,17 +201,27 @@ public class DeepSeekProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(
         client,
-        settings.toCompatible("deepseek", DEEPSEEK_VERSION, capabilities = ProviderCapabilities(supportsStructuredOutputs = true)),
+        settings.toCompatible(
+            "deepseek",
+            DEEPSEEK_VERSION,
+            capabilities = ProviderCapabilities(supportsStructuredOutputs = true)
+        ),
     )
     override val providerId: String = "deepseek"
 
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
     override fun languageModel(modelId: String): LanguageModel = chat(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(
+        modelId: String
+    ): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(
+        modelId: String
+    ): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 

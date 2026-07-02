@@ -330,7 +330,9 @@ public fun StreamToUiMessages(
                             state == ToolCallState.OutputError ||
                             state == ToolCallState.OutputDenied
                     } == true
-                ) return@collect
+                ) {
+                    return@collect
+                }
                 upsertTool(
                     toolCallId = event.id,
                     toolName = toolName,
@@ -357,17 +359,18 @@ public fun StreamToUiMessages(
                 // final entry so we don't render two cards.
                 val placeholderId = when {
                     event.toolCallId in toolNameByInputId -> event.toolCallId
-                    else -> toolNameByInputId.entries
-                        .firstOrNull {
-                            if (it.value != event.toolName || it.key == event.toolCallId) return@firstOrNull false
-                            val raw = toolInputBufById[it.key]?.toString()?.trim().orEmpty()
-                            if (raw.isEmpty()) return@firstOrNull false
-                            runCatching { aiSdkJson.parseToJsonElement(raw) }
-                                .getOrNull()
-                                ?.let { buffered -> return@firstOrNull buffered == event.inputJson }
-                            event.inputJson.toString().startsWith(raw)
-                        }
-                        ?.key
+                    else ->
+                        toolNameByInputId.entries
+                            .firstOrNull {
+                                if (it.value != event.toolName || it.key == event.toolCallId) return@firstOrNull false
+                                val raw = toolInputBufById[it.key]?.toString()?.trim().orEmpty()
+                                if (raw.isEmpty()) return@firstOrNull false
+                                runCatching { aiSdkJson.parseToJsonElement(raw) }
+                                    .getOrNull()
+                                    ?.let { buffered -> return@firstOrNull buffered == event.inputJson }
+                                event.inputJson.toString().startsWith(raw)
+                            }
+                            ?.key
                 }
                 if (placeholderId != null) {
                     val placeholderIdx = lastToolIndex(placeholderId)

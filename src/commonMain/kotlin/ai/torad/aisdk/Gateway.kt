@@ -17,6 +17,7 @@ public enum class GatewayAuthMethod(public val wireValue: String) {
     ApiKey("api-key"),
     Oidc("oidc"),
 }
+
 /** @since 0.3.0-beta01 */
 public data class GatewayAuthToken(
     val token: String,
@@ -54,7 +55,7 @@ public class GatewayProviderSettings internal constructor(
      * Host-supplied environment. When [apiKey] is null, `AI_GATEWAY_API_KEY` here
      * is used — the KMP-idiomatic equivalent of upstream's process.env lookup
      * (commonMain has no platform `getenv`; the host passes the map).
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val environment: Map<String, String> = emptyMap(),
 ) {
@@ -246,20 +247,27 @@ public class GatewayTransportNotConfiguredError :
 public interface GatewayProvider : Provider {
     /** @since 0.3.0-beta01 */
     public val settings: GatewayProviderSettings
+
     /** @since 0.3.0-beta01 */
     public val tools: GatewayTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun embedding(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun reranking(modelId: ModelId): RerankingModel = rerankingModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
 

@@ -3,46 +3,18 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.GoogleHttp.googlePostJson
-import ai.torad.aisdk.providers.GoogleHttp.googleStreamSse
 import ai.torad.aisdk.providers.GoogleInteractions.googleInteractionsFinishReason
 import ai.torad.aisdk.providers.GoogleInteractions.googleInteractionsMetadata
-import ai.torad.aisdk.providers.GoogleInteractions.googleInteractionsRequestBody
-import ai.torad.aisdk.providers.GoogleInteractions.googleInteractionsResult
-import ai.torad.aisdk.providers.GoogleInteractions.googleInteractionsTerminal
 import ai.torad.aisdk.providers.GoogleInteractions.googleInteractionsUsage
-import ai.torad.aisdk.providers.GoogleInteractions.googlePollInteraction
-import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 
 internal class GoogleInteractionsStreamState(
     private val generateId: () -> String,
@@ -388,7 +360,9 @@ internal class GoogleInteractionsStreamState(
     }
 
     private fun acceptStatus(event: JsonObject): List<StreamEvent> {
-        normalizeInteractionId((event["interaction_id"] as? JsonPrimitive)?.contentOrNull)?.let { liveInteractionId[0] = it }
+        normalizeInteractionId(
+            (event["interaction_id"] as? JsonPrimitive)?.contentOrNull
+        )?.let { liveInteractionId[0] = it }
         rawFinishReason = (event["status"] as? JsonPrimitive)?.contentOrNull ?: when ((event["event_type"] as? JsonPrimitive)?.contentOrNull) {
             "interaction.requires_action" -> "requires_action"
             else -> rawFinishReason ?: "in_progress"
@@ -438,14 +412,28 @@ internal class GoogleInteractionsStreamState(
                     } catch (error: WireDecodeException) {
                         return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                     }
-                    when (val blockType = WireDecoder.optionalString(block, "type", "google", "interactions stream step", "$.content[$index]")) {
+                    when (
+                        val blockType = WireDecoder.optionalString(
+                            block,
+                            "type",
+                            "google",
+                            "interactions stream step",
+                            "$.content[$index]"
+                        )
+                    ) {
                         "text" -> {
                             val id = textId ?: (textCounter++).toString().also {
                                 textId = it
                                 events += StreamEvent.TextStart(it, googleInteractionsMetadata(interactionId = interactionId))
                             }
                             val text = try {
-                                WireDecoder.requiredString(block, "text", "google", "interactions stream step", "$.content[$index]")
+                                WireDecoder.requiredString(
+                                    block,
+                                    "text",
+                                    "google",
+                                    "interactions stream step",
+                                    "$.content[$index]"
+                                )
                             } catch (error: WireDecodeException) {
                                 return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                             }
@@ -461,8 +449,14 @@ internal class GoogleInteractionsStreamState(
                             },
                             providerMetadata = googleInteractionsMetadata(interactionId = interactionId),
                         )
-                        null -> return listOf(StreamEvent.Error("Google stream protocol error: model_output content block missing type."))
-                        else -> return listOf(StreamEvent.Error("Google stream protocol error: unsupported model_output content block type `$blockType`."))
+                        null -> return listOf(
+                            StreamEvent.Error("Google stream protocol error: model_output content block missing type.")
+                        )
+                        else -> return listOf(
+                            StreamEvent.Error(
+                                "Google stream protocol error: unsupported model_output content block type `$blockType`."
+                            )
+                        )
                     }
                 }
             }
@@ -509,7 +503,9 @@ internal class GoogleInteractionsStreamState(
                     type.removeSuffix("_call")
                 }
                 val input = step["arguments"] ?: JsonObject(emptyMap())
-                val metadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })))
+                val metadata = ProviderMetadata.Raw(
+                    JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))
+                )
                 events += StreamEvent.ToolInputStart(id, name, metadata)
                 events += StreamEvent.ToolInputDelta(id, input.toString(), metadata)
                 events += StreamEvent.ToolInputEnd(id, metadata)
@@ -565,7 +561,11 @@ internal class GoogleInteractionsStreamState(
         val input = try {
             aiSdkJson.parseToJsonElement(inputText)
         } catch (error: Throwable) {
-            return listOf(StreamEvent.Error("Google stream protocol error: function_call arguments were not valid JSON: ${error.message}"))
+            return listOf(
+                StreamEvent.Error(
+                    "Google stream protocol error: function_call arguments were not valid JSON: ${error.message}"
+                )
+            )
         }
         return listOf(
             StreamEvent.ToolInputEnd(open.toolCallId(), metadata),
@@ -591,7 +591,11 @@ internal class GoogleInteractionsStreamState(
 
     private fun annotationSourceEvents(annotations: JsonArray?): List<StreamEvent.SourcePart> {
         val metadata = currentMetadata().toMap().ifEmpty { null }
-        return GoogleInteractions.googleInteractionsAnnotationSources(annotations, generateId, metadata).mapNotNull { source ->
+        return GoogleInteractions.googleInteractionsAnnotationSources(
+            annotations,
+            generateId,
+            metadata
+        ).mapNotNull { source ->
             val key = when (source.sourceType) {
                 StreamEvent.SourcePart.SourceType.Url -> "url:${source.url}"
                 StreamEvent.SourcePart.SourceType.Document -> "doc:${source.url ?: source.title}"
@@ -615,7 +619,11 @@ internal class GoogleInteractionsStreamState(
     private fun currentMetadata(
         signature: String? = null,
         extra: Map<String, JsonElement> = emptyMap(),
-    ): ProviderMetadata = googleInteractionsMetadata(signature = signature, interactionId = liveInteractionId[0], extra = extra)
+    ): ProviderMetadata = googleInteractionsMetadata(
+        signature = signature,
+        interactionId = liveInteractionId[0],
+        extra = extra
+    )
 
     private fun finishMetadata(): ProviderMetadata = googleInteractionsMetadata(
         interactionId = liveInteractionId[0],
@@ -623,7 +631,9 @@ internal class GoogleInteractionsStreamState(
     )
 
     private fun providerExecutedMetadata(): ProviderMetadata =
-        ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })))
+        ProviderMetadata.Raw(
+            JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))
+        )
 
     private fun normalizeInteractionId(value: String?): String? = value?.takeIf { it.isNotBlank() }
 
@@ -633,4 +643,3 @@ internal class GoogleInteractionsStreamState(
             listOf(StreamEvent.TextEnd(it))
         }.orEmpty()
 }
-

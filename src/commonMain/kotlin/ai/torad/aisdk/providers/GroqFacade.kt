@@ -103,7 +103,10 @@ public class GroqProviderSettings internal constructor(
         val obj = value as? JsonObject ?: return Usage(raw = value)
         val promptTokens = obj.intField("prompt_tokens")
         val completionTokens = obj.intField("completion_tokens")
-        val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
+        val reasoning = obj.nestedIntField(
+            "completion_tokens_details",
+            "reasoning_tokens"
+        ).coerceAtMost(completionTokens)
         return Usage.fromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
     }
 
@@ -254,19 +257,31 @@ public class GroqProvider(
         settings.toCompatible("groq", GROQ_VERSION, capabilities = ProviderCapabilities(includeUsage = true)),
     )
     override val providerId: String = "groq"
+
     /** @since 0.3.0-beta01 */
     public val tools: GroqTools = GroqTools()
 
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
     override fun languageModel(modelId: String): LanguageModel = chat(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun transcription(modelId: String): TranscriptionModel = compatible.transcriptionModel(modelId)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 

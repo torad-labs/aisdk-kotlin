@@ -48,7 +48,7 @@ public interface Agent<TContext, TOutput> {
      * default to `"agent"`; override in the constructor or via class
      * member to set a more specific tag (`"chat-agent"`,
      * `"lineup-subagent"`, etc.).
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val id: String
         get() = "agent"
@@ -57,7 +57,7 @@ public interface Agent<TContext, TOutput> {
      * Optional version string — `"1.0.0"`, a git sha, anything stable
      * across an app build. Null = unversioned. Lets telemetry pin
      * issues to a specific agent revision.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val version: String?
         get() = null
@@ -66,7 +66,7 @@ public interface Agent<TContext, TOutput> {
      * The tool surface this agent carries. Exposed at the interface
      * so consumers can inspect / dispatch without casting to
      * [ToolLoopAgent].
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val tools: ToolSet<TContext>
 
@@ -77,7 +77,7 @@ public interface Agent<TContext, TOutput> {
      *
      * To observe lifecycle events, collect [ToolLoopAgent.events] (a
      * `Flow<AgentEvent>`) — there is no callback parameter.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public fun generate(
         prompt: String? = null,
@@ -102,7 +102,7 @@ public interface Agent<TContext, TOutput> {
  * Final output of [Agent.generate]. When [pendingApprovals] is non-empty,
  * the loop paused on tool approval — call [Agent.generate] again with
  * [messages] plus tool-approval-response messages to resume.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 @Poko
 public class GenerateResult<TOutput>(

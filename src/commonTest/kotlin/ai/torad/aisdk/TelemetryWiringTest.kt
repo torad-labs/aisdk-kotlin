@@ -7,8 +7,8 @@ import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
@@ -93,9 +93,11 @@ class TelemetryWiringTest {
         ),
         instructions = "x",
         tools = ToolSet(echoTool()),
-        telemetry = rec?.let { TelemetrySettings {
-            integrations(listOf(it))
-        } },
+        telemetry = rec?.let {
+            TelemetrySettings {
+                integrations(listOf(it))
+            }
+        },
     )
 
     @Test

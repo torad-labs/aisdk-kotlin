@@ -66,18 +66,20 @@ public class AnthropicAwsProviderSettings internal constructor(
         if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
             throw LoadAPIKeyError("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
         }
-        return AwsSigV4.awsSigV4SignedHeaders(method = "POST",
-        url = url,
-        service = "aws-external-anthropic",
-        region = credentials.region ?: region ?: "us-east-1",
-        headers = headers + (HttpHeaders.ContentType to "application/json"),
-        body = body,
-        credentials = AwsSigV4Credentials(
-            accessKeyId = credentials.accessKeyId,
-            secretAccessKey = credentials.secretAccessKey,
-            sessionToken = credentials.sessionToken,
-        ),
-        amzDate = amzDate,)
+        return AwsSigV4.awsSigV4SignedHeaders(
+            method = "POST",
+            url = url,
+            service = "aws-external-anthropic",
+            region = credentials.region ?: region ?: "us-east-1",
+            headers = headers + (HttpHeaders.ContentType to "application/json"),
+            body = body,
+            credentials = AwsSigV4Credentials(
+                accessKeyId = credentials.accessKeyId,
+                secretAccessKey = credentials.secretAccessKey,
+                sessionToken = credentials.sessionToken,
+            ),
+            amzDate = amzDate,
+        )
     }
 }
 
@@ -143,7 +145,9 @@ public class AnthropicAwsProviderSettingsBuilder {
     }
 
     /** @since 0.3.0-beta01 */
-    public fun credentialProvider(value: (suspend () -> AnthropicAwsCredentials)?): AnthropicAwsProviderSettingsBuilder {
+    public fun credentialProvider(
+        value: (suspend () -> AnthropicAwsCredentials)?
+    ): AnthropicAwsProviderSettingsBuilder {
         credentialProvider = value
         return this
     }
@@ -180,16 +184,24 @@ public fun AnthropicAwsProviderSettings(
 public interface AnthropicAwsProvider : Provider {
     /** @since 0.3.0-beta01 */
     public val settings: AnthropicAwsProviderSettings
+
     /** @since 0.3.0-beta01 */
     public val tools: AnthropicTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 }
 
 /** @since 0.3.0-beta01 */
@@ -204,8 +216,15 @@ public val anthropicAws: AnthropicAwsProvider = object : AnthropicAwsProvider {
     override val settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings()
     override val tools: AnthropicTools = anthropicTools
     override fun languageModel(modelId: String): LanguageModel =
-        throw UnsupportedFunctionalityError("anthropic-aws", "Anthropic AWS provider is not configured. Use AnthropicAws(client, settings).")
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+        throw UnsupportedFunctionalityError(
+            "anthropic-aws",
+            "Anthropic AWS provider is not configured. Use AnthropicAws(client, settings)."
+        )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
@@ -219,7 +238,11 @@ private class DefaultAnthropicAwsProvider(
     override fun languageModel(modelId: String): LanguageModel =
         AnthropicAwsMessagesLanguageModel(client, settings, modelId)
 
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
@@ -234,11 +257,13 @@ private class AnthropicAwsMessagesLanguageModel(
             baseURL(settings.anthropicAwsBaseURL())
             apiKey(settings.apiKey)
             headers(settings.anthropicAwsHeaders())
-            requestHeadersProvider(if (settings.apiKey.isNullOrBlank()) {
-                { url, body, headers -> settings.anthropicAwsSigV4Headers(url, body, headers) }
-            } else {
-                null
-            })
+            requestHeadersProvider(
+                if (settings.apiKey.isNullOrBlank()) {
+                    { url, body, headers -> settings.anthropicAwsSigV4Headers(url, body, headers) }
+                } else {
+                    null
+                }
+            )
             generateId(settings.generateId)
             name("anthropic-aws.messages")
         },

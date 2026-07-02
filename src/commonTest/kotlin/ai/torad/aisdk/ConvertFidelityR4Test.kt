@@ -1,9 +1,9 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.ui.ModelMessageConversion.convertToModelMessages
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.ModelMessageConversion.convertToModelMessages
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -43,7 +43,11 @@ class ConvertFidelityR4Test {
             ),
         )
         val text = convertToModelMessages(ui).single().content.single() as ContentPart.Text
-        assertEquals(ProviderMetadata.Raw(JsonObject(meta)), text.providerMetadata, "providerMetadata preserved on round-trip")
+        assertEquals(
+            ProviderMetadata.Raw(JsonObject(meta)),
+            text.providerMetadata,
+            "providerMetadata preserved on round-trip"
+        )
     }
 
     @Test

@@ -1,13 +1,13 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.test.runTest
 
 /**
  * Best practice #7 — Agent is an interface; ToolLoopAgent is one impl.
@@ -26,13 +26,15 @@ class AgentInterfaceTest {
             abortSignal: AbortSignal,
         ): Flow<GenerateResult<String>> = flow {
             generatedPrompt = prompt
-            emit(GenerateResult(
-                "fake-output",
-                text = "fake-output",
-                steps = emptyList(),
-                finishReason = FinishReason.Stop,
-                usage = Usage(),
-            ))
+            emit(
+                GenerateResult(
+                    "fake-output",
+                    text = "fake-output",
+                    steps = emptyList(),
+                    finishReason = FinishReason.Stop,
+                    usage = Usage(),
+                )
+            )
         }
         override fun stream(
             prompt: String?,
@@ -63,5 +65,4 @@ class AgentInterfaceTest {
         assertTrue(events.any { it is StreamEvent.TextDelta })
         assertTrue(events.last() is StreamEvent.Finish)
     }
-
 }

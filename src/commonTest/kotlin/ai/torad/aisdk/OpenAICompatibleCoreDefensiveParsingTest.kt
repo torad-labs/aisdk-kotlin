@@ -130,9 +130,11 @@ class OpenAICompatibleCoreDefensiveParsingTest {
         )
         val result = Xai(client, XaiProviderSettings { apiKey("key") })
             .chat(ModelId("grok-3"))
-            .generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+            .generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
         assertEquals("hi", result.text)
     }
 
@@ -154,9 +156,11 @@ class OpenAICompatibleCoreDefensiveParsingTest {
         )
         val result = DeepInfra(client, DeepInfraProviderSettings { apiKey("key") })
             .embeddingModel("BAAI/bge")
-            .embed(EmbeddingModelCallParams {
-    values(listOf("a", "b"))
-})
+            .embed(
+                EmbeddingModelCallParams {
+                    values(listOf("a", "b"))
+                }
+            )
         assertEquals(2, result.embeddings.size)
         assertTrue(result.embeddings[1].isEmpty(), "the malformed row degrades to an empty embedding")
     }

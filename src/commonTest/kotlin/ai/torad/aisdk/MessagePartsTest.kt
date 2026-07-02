@@ -1,19 +1,19 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.TextUIPartState
 import ai.torad.aisdk.ui.ToolCallState
-import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.TransformTextToUiMessageStream
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import ai.torad.aisdk.ui.UIMessagePart
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Coverage 14 — message parts stream emits typed parts in correct

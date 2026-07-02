@@ -192,7 +192,9 @@ public class StructuredObjectOptionsBuilder<RESULT, INPUT> {
     }
 
     /** @since 0.3.0-beta01 */
-    public fun onFinish(value: suspend (StructuredObjectFinish<RESULT>) -> Unit): StructuredObjectOptionsBuilder<RESULT, INPUT> {
+    public fun onFinish(
+        value: suspend (StructuredObjectFinish<RESULT>) -> Unit
+    ): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         onFinish = value
         return this
     }
@@ -226,6 +228,7 @@ public fun <RESULT, INPUT> StructuredObjectOptions(
 public sealed class StructuredObjectPhase<out RESULT> {
     /** @since 0.3.0-beta01 */
     public data object Idle : StructuredObjectPhase<Nothing>()
+
     @Poko
     /** @since 0.3.0-beta01 */
     public class Streaming<out RESULT>(
@@ -255,6 +258,7 @@ public class StructuredObject<RESULT, INPUT>(
 ) {
     /** @since 0.3.0-beta01 */
     public val id: String = options.id
+
     /** @since 0.3.0-beta01 */
     public val api: String = options.api
 
@@ -471,7 +475,7 @@ public class StructuredObject<RESULT, INPUT>(
  * for [schema], streams its text deltas into [StructuredObject.phases] (the shared parse/validate
  * loop), and surfaces typed partials/value. Mirrors [TextGenerator] — a PascalCase class, not a
  * camelCase top-level `generateObject`/`streamObject`.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public class StructuredObjectGenerator<RESULT>(
     private val model: LanguageModel,
@@ -484,7 +488,7 @@ public class StructuredObjectGenerator<RESULT>(
      * Cold stream of phases: accumulating [StructuredObjectPhase.Streaming] partials terminating in
      * a single [StructuredObjectPhase.Done]. An in-band [StreamEvent.Error] from the model is
      * surfaced (not silently dropped) so a provider failure can't masquerade as an empty object.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public fun stream(input: GenerationInput): Flow<StructuredObjectPhase<RESULT>> =
         CallTimeout.flow(

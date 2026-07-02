@@ -32,6 +32,7 @@ public class MockEmbeddingModel(
     private val dimensions: Int = 3,
 ) : EmbeddingModel {
     private var _captured: EmbeddingModelCallParams? = null
+
     /** @since 0.3.0-beta01 */
     public val captured: EmbeddingModelCallParams? get() = _captured
 
@@ -53,6 +54,7 @@ public class MockImageModel(
     private val image: GeneratedFile = GeneratedFile("image/png", "iVBORw0KGgo=", "image.png"),
 ) : ImageModel {
     private var _captured: ImageGenerationParams? = null
+
     /** @since 0.3.0-beta01 */
     public val captured: ImageGenerationParams? get() = _captured
 
@@ -69,6 +71,7 @@ public class MockSpeechModel(
     private val audio: GeneratedFile = GeneratedFile("audio/mpeg", "SUQz", "speech.mp3"),
 ) : SpeechModel {
     private var _captured: SpeechGenerationParams? = null
+
     /** @since 0.3.0-beta01 */
     public val captured: SpeechGenerationParams? get() = _captured
 
@@ -85,6 +88,7 @@ public class MockTranscriptionModel(
     private val transcript: String = "hello world",
 ) : TranscriptionModel {
     private var _captured: TranscriptionParams? = null
+
     /** @since 0.3.0-beta01 */
     public val captured: TranscriptionParams? get() = _captured
 
@@ -104,6 +108,7 @@ public class MockVideoModel(
     private val video: GeneratedFile = GeneratedFile("video/mp4", "AAAA", "video.mp4"),
 ) : VideoModel {
     private var _captured: VideoGenerationParams? = null
+
     /** @since 0.3.0-beta01 */
     public val captured: VideoGenerationParams? get() = _captured
 
@@ -119,6 +124,7 @@ public class MockRerankingModel(
     override val provider: String = "mock",
 ) : RerankingModel {
     private var _captured: RerankingParams? = null
+
     /** @since 0.3.0-beta01 */
     public val captured: RerankingParams? get() = _captured
 
@@ -128,9 +134,16 @@ public class MockRerankingModel(
             val score = if (document.contains(params.query, ignoreCase = true)) 1f else 0.1f / (index + 1)
             RerankedItem(document, score, index)
         }
-        return RerankingModelResult(results = results, usage = Usage.of(promptTokens = params.query.length, completionTokens = 0))
+        return RerankingModelResult(
+            results = results,
+            usage = Usage.of(promptTokens = params.query.length, completionTokens = 0)
+        )
     }
 }
 
 /** @since 0.3.0-beta01 */
-public fun MockAudioSource(): AudioSource = AudioSource(mediaType = "audio/mpeg", base64 = "SUQz", filename = "audio.mp3")
+public fun MockAudioSource(): AudioSource = AudioSource(
+    mediaType = "audio/mpeg",
+    base64 = "SUQz",
+    filename = "audio.mp3"
+)

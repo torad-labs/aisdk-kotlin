@@ -16,10 +16,8 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlin.time.Clock
@@ -160,7 +158,7 @@ public fun AlibabaProviderSettings(
     AlibabaProviderSettingsBuilder().apply(block).build()
 
 /** Provider options for [AlibabaProvider.embeddingModel] — pass under the
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  *  `"alibaba"` key in [EmbeddingModelCallParams.providerOptions]. */
 @Serializable
 @Poko
@@ -176,7 +174,7 @@ public class AlibabaEmbeddingModelOptions internal constructor(
      */
     public val dimension: Int? = null,
     /** `"dense"` (default), `"sparse"`, or `"dense&sparse"`. `sparse` is rejected —
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      *  the embedding interface requires dense float arrays. */
     public val outputType: String? = null,
 )
@@ -405,12 +403,16 @@ public class AlibabaProvider(
         )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
 
-    override fun languageModel(modelId: String): LanguageModel = AlibabaChatLanguageModel(chatProvider.chatModel(modelId))
+    override fun languageModel(modelId: String): LanguageModel = AlibabaChatLanguageModel(
+        chatProvider.chatModel(modelId)
+    )
     override fun videoModel(modelId: String): VideoModel = AlibabaVideoModel(client, settings, modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = AlibabaEmbeddingModel(client, settings, modelId)
@@ -433,7 +435,9 @@ private class AlibabaChatLanguageModel(
     override val supportedUrls: Map<String, List<String>> = delegate.supportedUrls
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val result = delegate.generate(params.toBuilder().providerOptions(transformAlibabaChatOptions(params.providerOptions)).build())
+        val result = delegate.generate(
+            params.toBuilder().providerOptions(transformAlibabaChatOptions(params.providerOptions)).build()
+        )
         return LanguageModelResult(
             text = result.text,
             toolCalls = result.toolCalls,
@@ -449,7 +453,9 @@ private class AlibabaChatLanguageModel(
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        delegate.stream(params.toBuilder().providerOptions(transformAlibabaChatOptions(params.providerOptions)).build()).collect { event ->
+        delegate.stream(
+            params.toBuilder().providerOptions(transformAlibabaChatOptions(params.providerOptions)).build()
+        ).collect { event ->
             emit(
                 if (event is StreamEvent.Finish) {
                     StreamEvent.Finish(
@@ -557,8 +563,16 @@ private class AlibabaVideoModel(
                     return VideoModelResult(
                         videos = listOf(GeneratedFile(mediaType = "video/mp4", base64 = "", url = videoUrl)),
                         warnings = warnings,
-                        response = LanguageModelResponseMetadata(modelId = modelId, headers = headers, body = status.value),
-                        providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject)))),
+                        response = LanguageModelResponseMetadata(
+                            modelId = modelId,
+                            headers = headers,
+                            body = status.value
+                        ),
+                        providerMetadata = ProviderMetadata.Raw(
+                            JsonObject(
+                                mapOf("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject))
+                            )
+                        ),
                     )
                 }
                 "FAILED", "CANCELED" -> {
@@ -653,12 +667,15 @@ private class AlibabaVideoModel(
         put("videoUrl", JsonPrimitive(videoUrl))
         (output["actual_prompt"] as? JsonPrimitive)?.contentOrNull?.let { put("actualPrompt", JsonPrimitive(it)) }
         (JsonAccess.obj(value, "usage"))?.let { usage ->
-            put("usage", buildJsonObject {
-                usage["duration"]?.let { put("duration", it) }
-                usage["output_video_duration"]?.let { put("outputVideoDuration", it) }
-                usage["SR"]?.let { put("resolution", it) }
-                usage["size"]?.let { put("size", it) }
-            })
+            put(
+                "usage",
+                buildJsonObject {
+                    usage["duration"]?.let { put("duration", it) }
+                    usage["output_video_duration"]?.let { put("outputVideoDuration", it) }
+                    usage["SR"]?.let { put("resolution", it) }
+                    usage["size"]?.let { put("size", it) }
+                }
+            )
         }
     }
 }

@@ -6,22 +6,10 @@ import ai.torad.aisdk.*
 import ai.torad.aisdk.providers.GoogleHttp.googlePostJson
 import ai.torad.aisdk.providers.GoogleHttp.googleStreamSse
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -32,7 +20,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 
@@ -71,7 +58,14 @@ internal class GoogleGenerativeAILanguageModel(
             abortSignal = params.abortSignal,
             parseJson = true,
         )
-        return googleLanguageResult(response.value.jsonObject, prepared.body, response.headers, response.value, prepared.warnings, settings)
+        return googleLanguageResult(
+            response.value.jsonObject,
+            prepared.body,
+            response.headers,
+            response.value,
+            prepared.warnings,
+            settings
+        )
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
@@ -85,10 +79,16 @@ internal class GoogleGenerativeAILanguageModel(
             headers = settings.googleHeaders(params.headers) + (HttpHeaders.Accept to "text/event-stream"),
             abortSignal = params.abortSignal,
         )
-        EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
+        EventStreamParser.parse(
+            rawLines,
+            Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())),
+            aiSdkJson
+        ).collect { event ->
             when (event) {
                 is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
-                is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Google stream event: ${event.error.message}"))
+                is ParseResult.Failure -> emit(
+                    StreamEvent.Error("Failed to parse Google stream event: ${event.error.message}")
+                )
             }
         }
         state.finish().forEach { emit(it) }
@@ -120,7 +120,12 @@ internal class GoogleGenerativeAILanguageModel(
             params.topP?.let { put("topP", JsonPrimitive(it)) }
             params.frequencyPenalty?.let { put("frequencyPenalty", JsonPrimitive(it)) }
             params.presencePenalty?.let { put("presencePenalty", JsonPrimitive(it)) }
-            if (params.stopSequences.isNotEmpty()) put("stopSequences", JsonArray(params.stopSequences.map(::JsonPrimitive)))
+            if (params.stopSequences.isNotEmpty()) {
+                put(
+                    "stopSequences",
+                    JsonArray(params.stopSequences.map(::JsonPrimitive))
+                )
+            }
             params.seed?.let { put("seed", JsonPrimitive(it)) }
             if (params.responseFormat is ResponseFormat.Json) {
                 put("responseMimeType", JsonPrimitive("application/json"))
@@ -138,7 +143,13 @@ internal class GoogleGenerativeAILanguageModel(
             body = buildJsonObject {
                 put("generationConfig", generationConfig)
                 put("contents", converted.contents)
-                if (!modelId.startsWith("gemma-", ignoreCase = true)) converted.systemInstruction?.let { put("systemInstruction", it) }
+                if (!modelId.startsWith(
+                        "gemma-",
+                        ignoreCase = true
+                    )
+                ) {
+                    converted.systemInstruction?.let { put("systemInstruction", it) }
+                }
                 options["safetySettings"]?.let { put("safetySettings", it) }
                 if (tools.isNotEmpty()) put("tools", tools)
                 if (tools.isNotEmpty()) googleToolConfig(params.toolChoice, options)?.let { put("toolConfig", it) }
@@ -185,7 +196,16 @@ internal class GoogleGenerativeAILanguageModel(
         }
         return GoogleConvertedMessages(
             contents = JsonArray(contents),
-            systemInstruction = if (systemParts.isEmpty()) null else buildJsonObject { put("parts", JsonArray(systemParts)) },
+            systemInstruction = if (systemParts.isEmpty()) {
+                null
+            } else {
+                buildJsonObject {
+                    put(
+                        "parts",
+                        JsonArray(systemParts)
+                    )
+                }
+            },
             warnings = warnings,
         )
     }
@@ -197,28 +217,40 @@ internal class GoogleGenerativeAILanguageModel(
         }
         is ContentPart.File -> buildJsonObject {
             if (part.url != null) {
-                put("fileData", buildJsonObject {
-                    put("mimeType", JsonPrimitive(part.mediaType))
-                    put("fileUri", JsonPrimitive(part.url))
-                })
+                put(
+                    "fileData",
+                    buildJsonObject {
+                        put("mimeType", JsonPrimitive(part.mediaType))
+                        put("fileUri", JsonPrimitive(part.url))
+                    }
+                )
             } else {
-                put("inlineData", buildJsonObject {
-                    put("mimeType", JsonPrimitive(part.mediaType))
-                    put("data", JsonPrimitive(part.base64))
-                })
+                put(
+                    "inlineData",
+                    buildJsonObject {
+                        put("mimeType", JsonPrimitive(part.mediaType))
+                        put("data", JsonPrimitive(part.base64))
+                    }
+                )
             }
         }
         is ContentPart.Image -> buildJsonObject {
             if (part.url != null) {
-                put("fileData", buildJsonObject {
-                    put("mimeType", JsonPrimitive(part.mediaType))
-                    put("fileUri", JsonPrimitive(part.url))
-                })
+                put(
+                    "fileData",
+                    buildJsonObject {
+                        put("mimeType", JsonPrimitive(part.mediaType))
+                        put("fileUri", JsonPrimitive(part.url))
+                    }
+                )
             } else {
-                put("inlineData", buildJsonObject {
-                    put("mimeType", JsonPrimitive(part.mediaType))
-                    put("data", JsonPrimitive(part.base64))
-                })
+                put(
+                    "inlineData",
+                    buildJsonObject {
+                        put("mimeType", JsonPrimitive(part.mediaType))
+                        put("data", JsonPrimitive(part.base64))
+                    }
+                )
             }
         }
         is ContentPart.Reasoning,
@@ -243,11 +275,14 @@ internal class GoogleGenerativeAILanguageModel(
         }
         is ContentPart.File -> googleContentPart(part)
         is ContentPart.ToolCall -> buildJsonObject {
-            put("functionCall", buildJsonObject {
-                put("id", JsonPrimitive(part.toolCallId))
-                put("name", JsonPrimitive(part.toolName))
-                put("args", part.input)
-            })
+            put(
+                "functionCall",
+                buildJsonObject {
+                    put("id", JsonPrimitive(part.toolCallId))
+                    put("name", JsonPrimitive(part.toolName))
+                    put("args", part.input)
+                }
+            )
             // Gemini 3 rejects (HTTP 400) a replayed functionCall lacking a thoughtSignature.
             // Use the captured signature, else inject the documented sentinel for Gemini 3.
             val sig = (JsonAccess.obj(part.providerMetadata.toMap(), "google"))?.get("thoughtSignature")
@@ -276,11 +311,14 @@ internal class GoogleGenerativeAILanguageModel(
                 put("name", JsonPrimitive(part.toolName))
                 put("content", part.modelVisible)
             }
-            put("functionResponse", buildJsonObject {
-                put("id", JsonPrimitive(part.toolCallId))
-                put("name", JsonPrimitive(part.toolName))
-                put("response", response)
-            })
+            put(
+                "functionResponse",
+                buildJsonObject {
+                    put("id", JsonPrimitive(part.toolCallId))
+                    put("name", JsonPrimitive(part.toolName))
+                    put("response", response)
+                }
+            )
         }
         is ContentPart.Text,
         is ContentPart.Reasoning,
@@ -388,12 +426,21 @@ internal class GoogleGenerativeAILanguageModel(
             (JsonAccess.obj(obj, "executableCode"))?.let { code ->
                 val id = settings.generateId()
                 lastCodeExecutionId = id
-                val call = ContentPart.ToolCall(id, "code_execution", code, providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))))
+                val call = ContentPart.ToolCall(
+                    id,
+                    "code_execution",
+                    code,
+                    providerMetadata = ProviderMetadata.Raw(
+                        JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))
+                    )
+                )
                 content += call
                 toolCalls += call
             }
             (JsonAccess.obj(obj, "codeExecutionResult"))?.let { result ->
-                content += ContentPart.ToolResult(lastCodeExecutionId ?: settings.generateId(), "code_execution", result, providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))))
+                content += ContentPart.ToolResult(lastCodeExecutionId ?: settings.generateId(), "code_execution", result, providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
+                    put("providerExecuted", JsonPrimitive(true))
+                }))))
                 lastCodeExecutionId = null
             }
             (obj["text"] as? JsonPrimitive)?.contentOrNull?.let { text ->
@@ -410,7 +457,13 @@ internal class GoogleGenerativeAILanguageModel(
                     // Fail loudly on a missing/blank functionCall.name (matching the streaming path)
                     // rather than fabricating toolName="" that fails downstream as a confusing
                     // "tool not found", masking the real wire problem.
-                    toolName = WireDecoder.requiredString(callObj, "name", "google", "generateContent response", "$.functionCall"),
+                    toolName = WireDecoder.requiredString(
+                        callObj,
+                        "name",
+                        "google",
+                        "generateContent response",
+                        "$.functionCall"
+                    ),
                     input = callObj["args"] ?: JsonObject(emptyMap()),
                     providerMetadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
                 )
@@ -460,7 +513,11 @@ internal class GoogleGenerativeAILanguageModel(
      * and tool calling.
      */
     private fun googleSchema(element: JsonElement): JsonElement {
-        return SchemaSanitizer.stripUnsupportedSchemaKeys(element, dropAdditionalProperties = true, googleOpenApi = true)
+        return SchemaSanitizer.stripUnsupportedSchemaKeys(
+            element,
+            dropAdditionalProperties = true,
+            googleOpenApi = true
+        )
     }
 
     private fun googleThoughtMetadata(metadata: Map<String, JsonElement>?): JsonObject? {
@@ -533,10 +590,16 @@ internal class GoogleGenerativeAILanguageModel(
                     sourceType = StreamEvent.SourcePart.SourceType.Url,
                     url = (web["uri"] as? JsonPrimitive)?.contentOrNull,
                     title = (web["title"] as? JsonPrimitive)?.contentOrNull,
-                    providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
-                        put("id", JsonPrimitive(IdGenerator.generate()))
-                        put("groundingChunk", chunk)
-                    }))),
+                    providerMetadata = ProviderMetadata.Raw(
+                        JsonObject(
+                            mapOf(
+                                "google" to buildJsonObject {
+                                    put("id", JsonPrimitive(IdGenerator.generate()))
+                                    put("groundingChunk", chunk)
+                                }
+                            )
+                        )
+                    ),
                 )
             }
         }
@@ -571,12 +634,23 @@ private class GoogleStreamState(
         val parts = ((JsonAccess.obj(candidate, "content"))?.get("parts") as? JsonArray).orEmpty()
         for ((index, part) in parts.withIndex()) {
             val obj = try {
-                WireDecoder.objectValue(part, "google", "generateContent stream part", "$.candidates[0].content.parts[$index]")
+                WireDecoder.objectValue(
+                    part,
+                    "google",
+                    "generateContent stream part",
+                    "$.candidates[0].content.parts[$index]"
+                )
             } catch (error: WireDecodeException) {
                 return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
             }
             val text = try {
-                WireDecoder.optionalString(obj, "text", "google", "generateContent stream part", "$.candidates[0].content.parts[$index]")
+                WireDecoder.optionalString(
+                    obj,
+                    "text",
+                    "google",
+                    "generateContent stream part",
+                    "$.candidates[0].content.parts[$index]"
+                )
             } catch (error: WireDecodeException) {
                 return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
             }
@@ -605,19 +679,32 @@ private class GoogleStreamState(
             }
             obj["functionCall"]?.let { callElement ->
                 val call = try {
-                    WireDecoder.objectValue(callElement, "google", "generateContent stream part", "$.candidates[0].content.parts[$index].functionCall")
+                    WireDecoder.objectValue(
+                        callElement,
+                        "google",
+                        "generateContent stream part",
+                        "$.candidates[0].content.parts[$index].functionCall"
+                    )
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
                 val id = (call["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate()
                 val name = try {
-                    WireDecoder.requiredString(call, "name", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].functionCall")
+                    WireDecoder.requiredString(
+                        call,
+                        "name",
+                        "google",
+                        "generateContent stream part",
+                        "$.candidates[0].content.parts[$index].functionCall"
+                    )
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
                 val input = call["args"] ?: JsonObject(emptyMap())
                 hasToolCalls = true
-                val partMetadata = GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None
+                val partMetadata = GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let {
+                    ProviderMetadata.Raw(JsonObject(it))
+                } ?: ProviderMetadata.None
                 events += StreamEvent.ToolInputStart(id, name, partMetadata)
                 events += StreamEvent.ToolInputDelta(id, input.toString(), partMetadata)
                 events += StreamEvent.ToolInputEnd(id, partMetadata)
@@ -625,7 +712,12 @@ private class GoogleStreamState(
             }
             obj["inlineData"]?.let { dataElement ->
                 val data = try {
-                    WireDecoder.objectValue(dataElement, "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")
+                    WireDecoder.objectValue(
+                        dataElement,
+                        "google",
+                        "generateContent stream part",
+                        "$.candidates[0].content.parts[$index].inlineData"
+                    )
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
@@ -637,7 +729,9 @@ private class GoogleStreamState(
                     } catch (error: WireDecodeException) {
                         return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                     },
-                    providerMetadata = GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
+                    providerMetadata = GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let {
+                        ProviderMetadata.Raw(JsonObject(it))
+                    } ?: ProviderMetadata.None,
                 )
             }
         }

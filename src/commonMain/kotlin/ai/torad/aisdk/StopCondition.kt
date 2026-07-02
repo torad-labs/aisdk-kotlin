@@ -43,7 +43,7 @@ public class LoopState(
      * inspect per-step text / reasoning / usage instead of only
      * the synthesized aggregate fields above. Empty during the
      * pre-first-step check.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val steps: List<StepResult> = emptyList(),
 )
@@ -89,7 +89,7 @@ public fun AllOf(vararg conditions: StopCondition): StopCondition = StopConditio
  * Compares only the FIRST tool call of each step (small models call one
  * tool per step in practice); per-step JSON identity uses the raw
  * `input` JsonElement's stringified form so identical args match.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public fun RepeatedToolCallLoop(n: Int): StopCondition = StopCondition { state ->
     if (n < 2 || state.steps.size < n) return@StopCondition false

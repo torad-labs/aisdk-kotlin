@@ -8,7 +8,7 @@ import kotlinx.serialization.json.JsonObject
  *
  * The full options map is wrapped in [Raw] (key = provider name, value = provider JSON).
  * Use [None] as the default when no options are supplied.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public sealed class ProviderOptions {
 
@@ -22,7 +22,7 @@ public sealed class ProviderOptions {
      * Raw JSON options map.
      * [options] keys are provider names (e.g. `"openai"`, `"anthropic"`);
      * values are provider-specific JSON objects.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public data class Raw(val options: JsonObject) : ProviderOptions()
 
@@ -71,7 +71,10 @@ public sealed class ProviderOptions {
          * @since 0.3.0-beta01
          */
         public fun ofPairs(vararg pairs: Pair<String, JsonObject>): ProviderOptions =
-            if (pairs.isEmpty()) None
-            else Raw(JsonObject(pairs.associate { (k, v) -> k to (v as JsonElement) }))
+            if (pairs.isEmpty()) {
+                None
+            } else {
+                Raw(JsonObject(pairs.associate { (k, v) -> k to (v as JsonElement) }))
+            }
     }
 }

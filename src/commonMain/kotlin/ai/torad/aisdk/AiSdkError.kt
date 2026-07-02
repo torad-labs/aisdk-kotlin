@@ -144,7 +144,9 @@ public class TypeValidationError(
                 context?.entityId?.let { add("id: \"$it\"") }
             }.takeIf { it.isNotEmpty() }?.joinToString(", ")?.let { " ($it)" }
             val fieldQualifier: String? = context?.field?.let { " for $it" }
-            return "Type validation failed${fieldQualifier.orEmpty()}${entityQualifier.orEmpty()}: Value: $value.\nError message: ${ErrorMessages.of(cause)}"
+            return "Type validation failed${fieldQualifier.orEmpty()}${entityQualifier.orEmpty()}: Value: $value.\nError message: ${ErrorMessages.of(
+                cause
+            )}"
         }
     }
 }

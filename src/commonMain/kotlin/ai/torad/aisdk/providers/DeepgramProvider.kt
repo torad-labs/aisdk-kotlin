@@ -8,7 +8,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
@@ -407,10 +406,22 @@ public class DeepgramProvider(
         DeepgramSpeechModel(client, settings, modelId.value)
 
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
+        providerId,
+        "languageModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
     override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))

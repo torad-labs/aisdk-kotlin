@@ -4,11 +4,11 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.middleware.DefaultSettingsMiddleware
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.test.runTest
 
 class MiddlewareDefaultsTest {
 
@@ -33,9 +33,11 @@ class MiddlewareDefaultsTest {
                 CaptureMiddleware { observed = it },
             ),
         )
-        wrapped.generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        wrapped.generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
         val captured = assertNotNull(observed)
         assertEquals(0.7f, captured.temperature)
         assertEquals(200, captured.maxOutputTokens)
@@ -77,9 +79,11 @@ class MiddlewareDefaultsTest {
             ),
         )
 
-        wrapped.generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+        wrapped.generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         val captured = assertNotNull(observed)
         assertEquals(0.3f, captured.presencePenalty)

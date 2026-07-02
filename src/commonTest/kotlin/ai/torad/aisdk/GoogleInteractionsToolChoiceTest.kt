@@ -40,10 +40,10 @@ class GoogleInteractionsToolChoiceTest {
         val prepared = GoogleInteractions.googleInteractionsRequestBody(
             input = GoogleInteractionsModelInput.Model("gemini-2.0"),
             params = LanguageModelCallParams {
-    messages(listOf(UserMessage("Hello")))
-    tools(listOf(googleSearchTool))
-    toolChoice(ToolChoice.Required)
-},
+                messages(listOf(UserMessage("Hello")))
+                tools(listOf(googleSearchTool))
+                toolChoice(ToolChoice.Required)
+            },
             stream = false,
         )
 
@@ -59,10 +59,10 @@ class GoogleInteractionsToolChoiceTest {
         val prepared = GoogleInteractions.googleInteractionsRequestBody(
             input = GoogleInteractionsModelInput.Model("gemini-2.0"),
             params = LanguageModelCallParams {
-    messages(listOf(UserMessage("Hello")))
-    tools(listOf(googleSearchTool, functionTool))
-    toolChoice(ToolChoice.Required)
-},
+                messages(listOf(UserMessage("Hello")))
+                tools(listOf(googleSearchTool, functionTool))
+                toolChoice(ToolChoice.Required)
+            },
             stream = false,
         )
 
@@ -78,18 +78,20 @@ class GoogleInteractionsToolChoiceTest {
         val prepared = GoogleInteractions.googleInteractionsRequestBody(
             input = GoogleInteractionsModelInput.Model("gemini-2.0"),
             params = LanguageModelCallParams {
-    messages(listOf(
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Image(mediaType = "image/png", url = imageUrl),
-                            ContentPart.File(mediaType = "application/pdf", url = fileUrl),
-                            ContentPart.Image(mediaType = "image/jpeg", base64 = "aW1n"),
-                            ContentPart.File(mediaType = "text/plain", base64 = "ZG9j"),
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Image(mediaType = "image/png", url = imageUrl),
+                                ContentPart.File(mediaType = "application/pdf", url = fileUrl),
+                                ContentPart.Image(mediaType = "image/jpeg", base64 = "aW1n"),
+                                ContentPart.File(mediaType = "text/plain", base64 = "ZG9j"),
+                            ),
                         ),
-                    ),
-                ))
-},
+                    )
+                )
+            },
             stream = false,
         )
 
@@ -155,10 +157,10 @@ class GoogleInteractionsToolChoiceTest {
         val prepared = GoogleInteractions.googleInteractionsRequestBody(
             input = GoogleInteractionsModelInput.Model("gemini-2.0"),
             params = LanguageModelCallParams {
-    messages(listOf(UserMessage("Hello")))
-    tools(listOf(LanguageModelTool("lookup", "Lookup.", toolSchema.toString())))
-    responseFormat(ResponseFormat.Json(schemaJson = schema))
-},
+                messages(listOf(UserMessage("Hello")))
+                tools(listOf(LanguageModelTool("lookup", "Lookup.", toolSchema.toString())))
+                responseFormat(ResponseFormat.Json(schemaJson = schema))
+            },
             stream = false,
         )
 
@@ -175,7 +177,10 @@ class GoogleInteractionsToolChoiceTest {
         assertEquals("string", optionalName["type"]?.jsonPrimitive?.contentOrNull)
         assertEquals(true, optionalName["nullable"]?.jsonPrimitive?.contentOrNull?.toBoolean())
         val stringOrNumber = responseSchema.getValue("properties").jsonObject.getValue("stringOrNumber").jsonObject
-        assertEquals(listOf("string", "number"), stringOrNumber["anyOf"]?.jsonArray?.map { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull })
+        assertEquals(
+            listOf("string", "number"),
+            stringOrNumber["anyOf"]?.jsonArray?.map { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull }
+        )
         val parameters = prepared.body.getValue("tools")
             .jsonArray
             .single()

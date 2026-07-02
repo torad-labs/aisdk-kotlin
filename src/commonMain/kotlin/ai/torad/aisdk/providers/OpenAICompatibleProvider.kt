@@ -152,13 +152,17 @@ public class OpenAICompatibleProviderSettingsBuilder {
     }
 
     /** @since 0.3.0-beta01 */
-    public fun authHeadersProvider(value: (suspend () -> Map<String, String>)?): OpenAICompatibleProviderSettingsBuilder {
+    public fun authHeadersProvider(
+        value: (suspend () -> Map<String, String>)?
+    ): OpenAICompatibleProviderSettingsBuilder {
         authHeadersProvider = value
         return this
     }
 
     /** @since 0.3.0-beta01 */
-    public fun urlBuilder(value: ((path: String, modelId: String) -> String)?): OpenAICompatibleProviderSettingsBuilder {
+    public fun urlBuilder(
+        value: ((path: String, modelId: String) -> String)?
+    ): OpenAICompatibleProviderSettingsBuilder {
         urlBuilder = value
         return this
     }
@@ -239,8 +243,10 @@ public fun OpenAICompatibleProviderSettings(
 public interface OpenAICompatibleProvider : Provider {
     /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: String): LanguageModel
+
     /** @since 0.3.0-beta01 */
     public fun completionModel(modelId: String): LanguageModel
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): EmbeddingModel = embeddingModel(modelId)
 }

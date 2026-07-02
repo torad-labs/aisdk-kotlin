@@ -1,16 +1,15 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.MockLanguageModel
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.providers.MockToolInput
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
-import kotlin.test.fail
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.fail
 
 /**
  * Invariant I-10 — a tool that wraps a subagent must propagate the

@@ -1,16 +1,11 @@
 @file:OptIn(LowLevelLanguageModelApi::class)
 
 package ai.torad.aisdk
-import ai.torad.aisdk.providers.GOOGLE_VERSION
-import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings
 import ai.torad.aisdk.providers.GoogleGenerativeAI
-
-import ai.torad.aisdk.testing.FlowDrain.drainAllItems
-import io.ktor.http.HttpHeaders
+import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
@@ -23,7 +18,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @Suppress("LargeClass")
@@ -80,12 +74,18 @@ class GoogleMediaProviderTest {
         val embeddings = provider.embedding(ModelId("text-embedding-004")).embed(
             EmbeddingModelCallParams {
                 values(listOf("one", "two"))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "google" to buildJsonObject {
-                        put("taskType", JsonPrimitive("RETRIEVAL_QUERY"))
-                        put("outputDimensionality", JsonPrimitive(256))
-                    },
-                ))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "google" to buildJsonObject {
+                                    put("taskType", JsonPrimitive("RETRIEVAL_QUERY"))
+                                    put("outputDimensionality", JsonPrimitive(256))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
         val image = provider.image(ModelId("imagen-4.0-generate-001")).generate(
@@ -93,7 +93,13 @@ class GoogleMediaProviderTest {
                 prompt("A product render")
                 n(1)
                 aspectRatio("16:9")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("google" to buildJsonObject { put("personGeneration", JsonPrimitive("dont_allow")) }))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf("google" to buildJsonObject { put("personGeneration", JsonPrimitive("dont_allow")) })
+                        )
+                    )
+                )
             },
         )
         val video = provider.video(ModelId("veo-3.1-generate-preview")).generate(
@@ -103,7 +109,11 @@ class GoogleMediaProviderTest {
                 aspectRatio("16:9")
                 durationSeconds(4f)
                 resolution("1920x1080")
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("google" to buildJsonObject { put("negativePrompt", JsonPrimitive("blur")) }))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(mapOf("google" to buildJsonObject { put("negativePrompt", JsonPrimitive("blur")) }))
+                    )
+                )
             },
         )
 
@@ -119,9 +129,17 @@ class GoogleMediaProviderTest {
 
         val embeddingBody = fixture.calls[0].requestBodyJson.jsonObject
         assertEquals(2, embeddingBody["requests"]?.jsonArray?.size)
-        assertEquals(256, embeddingBody["requests"]?.jsonArray?.first()?.jsonObject?.get("outputDimensionality")?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            256,
+            embeddingBody["requests"]?.jsonArray?.first()?.jsonObject?.get(
+                "outputDimensionality"
+            )?.jsonPrimitive?.intOrNull
+        )
         val imageBody = fixture.calls[1].requestBodyJson.jsonObject
-        assertEquals("A product render", imageBody["instances"]?.jsonArray?.single()?.jsonObject?.get("prompt")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "A product render",
+            imageBody["instances"]?.jsonArray?.single()?.jsonObject?.get("prompt")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("16:9", imageBody["parameters"]?.jsonObject?.get("aspectRatio")?.jsonPrimitive?.contentOrNull)
         val videoBody = fixture.calls[2].requestBodyJson.jsonObject
         assertEquals("1080p", videoBody["parameters"]?.jsonObject?.get("resolution")?.jsonPrimitive?.contentOrNull)
@@ -167,18 +185,21 @@ class GoogleMediaProviderTest {
         )
 
         val imageError = assertFailsWith<WireDecodeException> {
-            provider.image(ModelId("imagen-4.0-generate-001")).generate(ImageGenerationParams {
-                prompt("x")
-            })
+            provider.image(ModelId("imagen-4.0-generate-001")).generate(
+                ImageGenerationParams {
+                    prompt("x")
+                }
+            )
         }
         val videoError = assertFailsWith<WireDecodeException> {
-            provider.video(ModelId("veo-3.1-generate-preview")).generate(VideoGenerationParams {
-                prompt("x")
-            })
+            provider.video(ModelId("veo-3.1-generate-preview")).generate(
+                VideoGenerationParams {
+                    prompt("x")
+                }
+            )
         }
 
         assertTrue(imageError.message.orEmpty().contains("bytesBase64Encoded"))
         assertTrue(videoError.message.orEmpty().contains("video.uri"))
     }
-
 }

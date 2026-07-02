@@ -42,9 +42,11 @@ class KlingAIDefensiveParsingTest {
             .video(ModelId("kling-v2.6-t2v"))
 
         val error = assertFails {
-            model.generate(VideoGenerationParams {
-                prompt("x")
-            })
+            model.generate(
+                VideoGenerationParams {
+                    prompt("x")
+                }
+            )
         }
 
         assertTrue(

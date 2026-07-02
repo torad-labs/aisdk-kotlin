@@ -2,44 +2,15 @@
 
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.MockAudioSource
-import ai.torad.aisdk.providers.MockImageModel
-import ai.torad.aisdk.providers.MockSpeechModel
-import ai.torad.aisdk.providers.MockTranscriptionModel
-import ai.torad.aisdk.providers.MockVideoModel
-import ai.torad.aisdk.testing.FlowDrain.drainAllItems
-import ai.torad.aisdk.ui.SafeValidateUIMessagesResult
-import ai.torad.aisdk.ui.TextUIPartState
-import ai.torad.aisdk.ui.UIMessage
-import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.UiMessageStreams.safeValidateUIMessages
-import ai.torad.aisdk.ui.UiMessageStreams.validateUIMessages
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 import kotlin.test.assertNotEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalAiSdkApi::class)
@@ -62,7 +33,10 @@ class GatewayAndProviderUtilsParityTest {
         val embedding = Embedding.embed(provider.embedding(ModelId("embed-model")), "hello")
         val image = ImageGeneration.generateImage(provider.image(ModelId("image-model")), "logo")
         val video = VideoGeneration.generateVideo(provider.video(ModelId("video-model")), "clip")
-        val previewVideo = VideoGeneration.generateVideo(provider.video(ModelId("xai/grok-imagine-video-1.5-preview")), "clip")
+        val previewVideo = VideoGeneration.generateVideo(
+            provider.video(ModelId("xai/grok-imagine-video-1.5-preview")),
+            "clip"
+        )
         val reranked = Reranking.rerank(provider.reranking(ModelId("rank-model")), "q", listOf("a", "bb"))
 
         assertEquals("gateway:chat-model", text.text)
@@ -357,7 +331,10 @@ class GatewayAndProviderUtilsParityTest {
                     GatewayLanguageModelEntry(
                         id = "model-$metadataCalls",
                         name = "Model $metadataCalls",
-                        specification = GatewayLanguageModelSpecification(provider = "gateway", modelId = "model-$metadataCalls"),
+                        specification = GatewayLanguageModelSpecification(
+                            provider = "gateway",
+                            modelId = "model-$metadataCalls"
+                        ),
                         modelType = GatewayModelType.Language,
                     ),
                 ),

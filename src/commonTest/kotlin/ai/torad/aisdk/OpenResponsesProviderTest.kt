@@ -1,7 +1,6 @@
 @file:OptIn(LowLevelLanguageModelApi::class)
 
 package ai.torad.aisdk
-import ai.torad.aisdk.ToolResultOutputs.toJsonElement
 import ai.torad.aisdk.providers.OpenResponses
 import ai.torad.aisdk.providers.OpenResponsesProviderSettings
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
@@ -19,7 +18,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -27,7 +25,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 class OpenResponsesProviderTest {
     @Test
@@ -78,28 +75,38 @@ class OpenResponsesProviderTest {
         val result = provider.responses("gpt-resp").generate(
             LanguageModelCallParams {
                 messages(listOf(SystemMessage("system rules"), UserMessage("hi")))
-                tools(listOf(
-                    LanguageModelTool(
-                        name = "search",
-                        description = "Search docs",
-                        parametersSchemaJson = objectSchema("q").toString(),
-                        strict = false,
-                    ),
-                ))
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            name = "search",
+                            description = "Search docs",
+                            parametersSchemaJson = objectSchema("q").toString(),
+                            strict = false,
+                        ),
+                    )
+                )
                 toolChoice(ToolChoice.Specific("search"))
                 maxOutputTokens(100)
                 temperature(0.5f)
                 topP(0.9f)
-                responseFormat(ResponseFormat.Json(
-                    schemaName = "Answer",
-                    schemaJson = objectSchema("answer"),
-                ))
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                    "openresponses" to buildJsonObject {
-                        put("reasoningEffort", JsonPrimitive("low"))
-                        put("reasoningSummary", JsonPrimitive("concise"))
-                    },
-                ))))
+                responseFormat(
+                    ResponseFormat.Json(
+                        schemaName = "Answer",
+                        schemaJson = objectSchema("answer"),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "openresponses" to buildJsonObject {
+                                    put("reasoningEffort", JsonPrimitive("low"))
+                                    put("reasoningSummary", JsonPrimitive("concise"))
+                                },
+                            )
+                        )
+                    )
+                )
             },
         )
 
@@ -108,7 +115,10 @@ class OpenResponsesProviderTest {
         assertEquals("aisdk", seenHeaders.single()["x-project"]?.single())
         assertEquals("gpt-resp", body["model"]?.jsonPrimitive?.content)
         assertEquals("system rules", body["instructions"]?.jsonPrimitive?.content)
-        assertEquals("hi", body["input"]!!.jsonArray.single().jsonObject["content"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content)
+        assertEquals(
+            "hi",
+            body["input"]!!.jsonArray.single().jsonObject["content"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content
+        )
         assertEquals("low", body["reasoning"]!!.jsonObject["effort"]!!.jsonPrimitive.content)
         assertEquals("concise", body["reasoning"]!!.jsonObject["summary"]!!.jsonPrimitive.content)
         assertEquals("function", body["tools"]!!.jsonArray.single().jsonObject["type"]!!.jsonPrimitive.content)
@@ -161,11 +171,19 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(
+            client,
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+            }
+        )
 
-        val result = provider.responses("gpt-resp").generate(LanguageModelCallParams {
-            messages(listOf(UserMessage("hi")))
-        })
+        val result = provider.responses("gpt-resp").generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         val toolCall = result.content.filterIsInstance<ContentPart.ToolCall>().single()
         assertEquals("ws_1", toolCall.toolCallId)
@@ -176,9 +194,20 @@ class OpenResponsesProviderTest {
         assertEquals("ws_1", toolResult.toolCallId)
         assertEquals("web_search", toolResult.toolName)
         assertEquals(true, toolResult.providerExecuted)
-        assertEquals("search", toolResult.output.jsonObject.getValue("action").jsonObject.getValue("type").jsonPrimitive.content)
-        assertEquals("kotlin ai sdk", toolResult.output.jsonObject.getValue("action").jsonObject.getValue("query").jsonPrimitive.content)
-        assertEquals("https://example.com", toolResult.output.jsonObject.getValue("sources").jsonArray.single().jsonObject.getValue("url").jsonPrimitive.content)
+        assertEquals(
+            "search",
+            toolResult.output.jsonObject.getValue("action").jsonObject.getValue("type").jsonPrimitive.content
+        )
+        assertEquals(
+            "kotlin ai sdk",
+            toolResult.output.jsonObject.getValue("action").jsonObject.getValue("query").jsonPrimitive.content
+        )
+        assertEquals(
+            "https://example.com",
+            toolResult.output.jsonObject.getValue(
+                "sources"
+            ).jsonArray.single().jsonObject.getValue("url").jsonPrimitive.content
+        )
         assertEquals("done", result.text)
         assertEquals(FinishReason.Stop, result.finishReason)
         assertEquals(1, result.usage.promptTokens)
@@ -207,12 +236,20 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(
+            client,
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+            }
+        )
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.responses("gpt-resp").generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+            provider.responses("gpt-resp").generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
         }
 
         val message = error.message.orEmpty()
@@ -239,12 +276,20 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(
+            client,
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+            }
+        )
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.responses("gpt-resp").generate(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-})
+            provider.responses("gpt-resp").generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
         }
 
         val message = error.message.orEmpty()
@@ -291,11 +336,21 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(
+            client,
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+            }
+        )
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val events = drainAllItems(
+            provider.languageModel("gpt-resp").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         assertIs<StreamEvent.StreamStart>(events.first())
         assertTrue(events.any { it is StreamEvent.ReasoningDelta && it.text == "think" })
@@ -328,11 +383,21 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(
+            client,
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+            }
+        )
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams {
-            messages(listOf(UserMessage("hi")))
-        }))
+        val events = drainAllItems(
+            provider.languageModel("gpt-resp").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         val toolCall = events.filterIsInstance<StreamEvent.ToolCall>().single()
         assertEquals("ws_1", toolCall.toolCallId)
@@ -341,8 +406,14 @@ class OpenResponsesProviderTest {
         val toolResult = events.filterIsInstance<StreamEvent.ToolResult>().single()
         assertEquals("ws_1", toolResult.toolCallId)
         assertEquals("web_search", toolResult.toolName)
-        assertEquals("search", toolResult.outputJson.jsonObject.getValue("action").jsonObject.getValue("type").jsonPrimitive.content)
-        assertEquals("streamed", toolResult.outputJson.jsonObject.getValue("action").jsonObject.getValue("query").jsonPrimitive.content)
+        assertEquals(
+            "search",
+            toolResult.outputJson.jsonObject.getValue("action").jsonObject.getValue("type").jsonPrimitive.content
+        )
+        assertEquals(
+            "streamed",
+            toolResult.outputJson.jsonObject.getValue("action").jsonObject.getValue("query").jsonPrimitive.content
+        )
         val finish = events.filterIsInstance<StreamEvent.Finish>().single()
         assertEquals(FinishReason.Stop, finish.finishReason)
         assertEquals(1, finish.usage.promptTokens)
@@ -365,11 +436,21 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(
+            client,
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+            }
+        )
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val events = drainAllItems(
+            provider.languageModel("gpt-resp").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("item_id"), error.message)
@@ -392,11 +473,21 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(
+            client,
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+            }
+        )
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val events = drainAllItems(
+            provider.languageModel("gpt-resp").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         val errors = events.filterIsInstance<StreamEvent.Error>()
         assertEquals(2, errors.size)
@@ -416,11 +507,21 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+        val provider = OpenResponses(
+            client,
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+            }
+        )
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams {
-    messages(listOf(UserMessage("hi")))
-}))
+        val events = drainAllItems(
+            provider.languageModel("gpt-resp").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("missing item"))

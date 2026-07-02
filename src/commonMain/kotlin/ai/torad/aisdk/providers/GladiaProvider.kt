@@ -26,7 +26,6 @@ import kotlinx.serialization.json.jsonObject
 
 public const val GLADIA_VERSION: String = "2.0.33"
 
-
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -523,8 +522,10 @@ private class GladiaTranscriptionModel(
         val transcript = (resultObj?.get("transcription") as? JsonObject)
             ?: throw NoTranscriptGeneratedError("Transcription result is empty")
         val utterances = (JsonAccess.arr(transcript, "utterances")).orEmpty()
-        val detectedLanguage = (JsonAccess.arr(transcript, "languages")
-            ?.firstOrNull() as? JsonPrimitive)
+        val detectedLanguage = (
+            JsonAccess.arr(transcript, "languages")
+                ?.firstOrNull() as? JsonPrimitive
+            )
             ?.contentOrNull
         return TranscriptionModelResult(
             text = (transcript["full_transcript"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
@@ -543,8 +544,10 @@ private class GladiaTranscriptionModel(
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("gladia" to result.value))),
             language = detectedLanguage,
-            durationInSeconds = ((JsonAccess.obj(resultObj, "metadata"))
-                ?.get("audio_duration") as? JsonPrimitive)
+            durationInSeconds = (
+                (JsonAccess.obj(resultObj, "metadata"))
+                    ?.get("audio_duration") as? JsonPrimitive
+                )
                 ?.floatOrNull,
         )
     }
@@ -566,7 +569,10 @@ private class GladiaTranscriptionModel(
                             Base64Codec.decode(params.audio.base64),
                             Headers.build {
                                 append(HttpHeaders.ContentType, params.audio.mediaType)
-                                append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"$filename\"")
+                                append(
+                                    HttpHeaders.ContentDisposition,
+                                    "${ContentDisposition.File}; filename=\"$filename\""
+                                )
                             },
                         )
                     },
@@ -626,7 +632,10 @@ private class GladiaTranscriptionModel(
                 "queued", "processing" -> if (settings.pollingIntervalMillis > 0 && attempt < settings.maxPollAttempts - 1) {
                     delay(settings.pollingIntervalMillis)
                 }
-                else -> throw InvalidResponseDataError(response.value, "Gladia transcription response has unsupported status")
+                else -> throw InvalidResponseDataError(
+                    response.value,
+                    "Gladia transcription response has unsupported status"
+                )
             }
         }
         throw NoTranscriptGeneratedError("Transcription job polling timed out")
@@ -656,56 +665,80 @@ private class GladiaTranscriptionModel(
 
     private fun JsonObjectBuilder.putNestedOptions(options: JsonObject) {
         options["customVocabularyConfig"]?.jsonObjectOrNull()?.let { config ->
-            put("custom_vocabulary_config", buildJsonObject {
-                config["vocabulary"]?.let { put("vocabulary", it) }
-                config["defaultIntensity"]?.let { put("default_intensity", it) }
-            })
+            put(
+                "custom_vocabulary_config",
+                buildJsonObject {
+                    config["vocabulary"]?.let { put("vocabulary", it) }
+                    config["defaultIntensity"]?.let { put("default_intensity", it) }
+                }
+            )
         }
         options["codeSwitchingConfig"]?.jsonObjectOrNull()?.let { config ->
-            put("code_switching_config", buildJsonObject {
-                config["languages"]?.let { put("languages", it) }
-            })
+            put(
+                "code_switching_config",
+                buildJsonObject {
+                    config["languages"]?.let { put("languages", it) }
+                }
+            )
         }
         options["callbackConfig"]?.jsonObjectOrNull()?.let { config ->
-            put("callback_config", buildJsonObject {
-                config["url"]?.let { put("url", it) }
-                config["method"]?.let { put("method", it) }
-            })
+            put(
+                "callback_config",
+                buildJsonObject {
+                    config["url"]?.let { put("url", it) }
+                    config["method"]?.let { put("method", it) }
+                }
+            )
         }
         options["subtitlesConfig"]?.jsonObjectOrNull()?.let { config ->
-            put("subtitles_config", buildJsonObject {
-                config["formats"]?.let { put("formats", it) }
-                config["minimumDuration"]?.let { put("minimum_duration", it) }
-                config["maximumDuration"]?.let { put("maximum_duration", it) }
-                config["maximumCharactersPerRow"]?.let { put("maximum_characters_per_row", it) }
-                config["maximumRowsPerCaption"]?.let { put("maximum_rows_per_caption", it) }
-                config["style"]?.let { put("style", it) }
-            })
+            put(
+                "subtitles_config",
+                buildJsonObject {
+                    config["formats"]?.let { put("formats", it) }
+                    config["minimumDuration"]?.let { put("minimum_duration", it) }
+                    config["maximumDuration"]?.let { put("maximum_duration", it) }
+                    config["maximumCharactersPerRow"]?.let { put("maximum_characters_per_row", it) }
+                    config["maximumRowsPerCaption"]?.let { put("maximum_rows_per_caption", it) }
+                    config["style"]?.let { put("style", it) }
+                }
+            )
         }
         options["diarizationConfig"]?.jsonObjectOrNull()?.let { config ->
-            put("diarization_config", buildJsonObject {
-                config["numberOfSpeakers"]?.let { put("number_of_speakers", it) }
-                config["minSpeakers"]?.let { put("min_speakers", it) }
-                config["maxSpeakers"]?.let { put("max_speakers", it) }
-                config["enhanced"]?.let { put("enhanced", it) }
-            })
+            put(
+                "diarization_config",
+                buildJsonObject {
+                    config["numberOfSpeakers"]?.let { put("number_of_speakers", it) }
+                    config["minSpeakers"]?.let { put("min_speakers", it) }
+                    config["maxSpeakers"]?.let { put("max_speakers", it) }
+                    config["enhanced"]?.let { put("enhanced", it) }
+                }
+            )
         }
         options["translationConfig"]?.jsonObjectOrNull()?.let { config ->
-            put("translation_config", buildJsonObject {
-                config["targetLanguages"]?.let { put("target_languages", it) }
-                config["model"]?.let { put("model", it) }
-                config["matchOriginalUtterances"]?.let { put("match_original_utterances", it) }
-            })
+            put(
+                "translation_config",
+                buildJsonObject {
+                    config["targetLanguages"]?.let { put("target_languages", it) }
+                    config["model"]?.let { put("model", it) }
+                    config["matchOriginalUtterances"]?.let { put("match_original_utterances", it) }
+                }
+            )
         }
         options["summarizationConfig"]?.jsonObjectOrNull()?.let { config ->
-            put("summarization_config", buildJsonObject {
-                config["type"]?.let { put("type", it) }
-            })
+            put(
+                "summarization_config",
+                buildJsonObject {
+                    config["type"]?.let { put("type", it) }
+                }
+            )
         }
         options["customSpellingConfig"]?.jsonObjectOrNull()?.let { config ->
-            put("custom_spelling_config", buildJsonObject {
-                config["spellingDictionary"]?.let { put("spelling_dictionary", it) }
-            })
+            put(
+                "custom_spelling_config",
+                buildJsonObject {
+                    config["spellingDictionary"]?.let { put("spelling_dictionary", it) }
+                }
+            )
         }
     }
 

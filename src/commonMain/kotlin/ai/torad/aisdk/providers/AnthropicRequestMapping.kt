@@ -3,20 +3,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import dev.drewhamilton.poko.Poko
-import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -28,7 +14,6 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
 
 internal data class PreparedAnthropicRequest(
     val body: JsonObject,
@@ -155,7 +140,12 @@ internal data class PreparedAnthropicRequest(
                 samplingTemperature
             }
 
-            val preparedTools = AnthropicTools.anthropicPrepareTools(params.tools, params.toolChoice, options, params.responseFormat)
+            val preparedTools = AnthropicTools.anthropicPrepareTools(
+                params.tools,
+                params.toolChoice,
+                options,
+                params.responseFormat
+            )
             warnings += preparedTools.warnings
             betas += preparedTools.betas
             val outputConfig = anthropicOutputConfig(options, params.responseFormat)
@@ -172,7 +162,10 @@ internal data class PreparedAnthropicRequest(
                     finalTemperature?.let { put("temperature", JsonPrimitive(it)) }
                     topK?.let { put("top_k", JsonPrimitive(it)) }
                     topP?.let { put("top_p", JsonPrimitive(it)) }
-                    if (params.stopSequences.isNotEmpty()) put("stop_sequences", JsonArray(params.stopSequences.map(::JsonPrimitive)))
+                    if (params.stopSequences.isNotEmpty()) put(
+                        "stop_sequences",
+                        JsonArray(params.stopSequences.map(::JsonPrimitive))
+                    )
                     if (isThinking) {
                         put(
                             "thinking",
@@ -235,20 +228,24 @@ internal data class PreparedAnthropicRequest(
         private fun anthropicMcpServers(options: JsonObject): JsonArray? {
             val servers = JsonAccess.arr(options, "mcpServers") ?: return null
             if (servers.isEmpty()) return null
-            return JsonArray(servers.mapNotNull { server ->
-                val obj = server as? JsonObject ?: return@mapNotNull null
-                buildJsonObject {
-                    put("type", obj["type"] ?: JsonPrimitive("url"))
-                    put("name", obj["name"] ?: JsonPrimitive(""))
-                    put("url", obj["url"] ?: JsonPrimitive(""))
-                    obj["authorizationToken"]?.let { put("authorization_token", it) }
-                    JsonAccess.obj(obj, "toolConfiguration")?.let { put("tool_configuration", camelToSnakeJson(it)) }
+            return JsonArray(
+                servers.mapNotNull { server ->
+                    val obj = server as? JsonObject ?: return@mapNotNull null
+                    buildJsonObject {
+                        put("type", obj["type"] ?: JsonPrimitive("url"))
+                        put("name", obj["name"] ?: JsonPrimitive(""))
+                        put("url", obj["url"] ?: JsonPrimitive(""))
+                        obj["authorizationToken"]?.let { put("authorization_token", it) }
+                        JsonAccess.obj(obj, "toolConfiguration")?.let { put("tool_configuration", camelToSnakeJson(it)) }
+                    }
                 }
-            })
+            )
         }
 
         internal fun camelToSnakeJson(element: JsonElement): JsonElement = when (element) {
-            is JsonObject -> JsonObject(element.mapKeys { camelToSnake(it.key) }.mapValues { camelToSnakeJson(it.value) })
+            is JsonObject -> JsonObject(
+                element.mapKeys { camelToSnake(it.key) }.mapValues { camelToSnakeJson(it.value) }
+            )
             is JsonArray -> JsonArray(element.map(::camelToSnakeJson))
             else -> element
         }
@@ -294,7 +291,12 @@ internal data class AnthropicPrompt(
                         val lastTextIndex =
                             if (isLastMessage) message.content.indexOfLast { it is ContentPart.Text } else -1
                         val content = message.content.mapIndexedNotNull { index, part ->
-                            anthropicAssistantPart(part, sendReasoning, currentIndex = index, lastTextIndex = lastTextIndex)
+                            anthropicAssistantPart(
+                                part,
+                                sendReasoning,
+                                currentIndex = index,
+                                lastTextIndex = lastTextIndex
+                            )
                         }
                         if (content.isNotEmpty()) {
                             apiMessages += buildJsonObject {
@@ -310,7 +312,9 @@ internal data class AnthropicPrompt(
                                 put("tool_use_id", JsonPrimitive(result.toolCallId))
                                 put("content", anthropicToolResultContent(result))
                                 if (result.isError) put("is_error", JsonPrimitive(true))
-                                AnthropicProviderSettings.anthropicCacheControl(result.providerMetadata.toMap())?.let { put("cache_control", it) }
+                                AnthropicProviderSettings.anthropicCacheControl(
+                                    result.providerMetadata.toMap()
+                                )?.let { put("cache_control", it) }
                             }
                         }
                         if (content.isNotEmpty()) {
@@ -334,18 +338,24 @@ internal data class AnthropicPrompt(
             is ContentPart.Text -> buildJsonObject {
                 put("type", JsonPrimitive("text"))
                 put("text", JsonPrimitive(part.text))
-                AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
+                AnthropicProviderSettings.anthropicCacheControl(
+                    part.providerMetadata.toMap()
+                )?.let { put("cache_control", it) }
             }
             is ContentPart.Image -> buildJsonObject {
                 put("type", JsonPrimitive("image"))
                 put("source", anthropicMediaSource(part.url, part.mediaType, part.base64))
-                AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
+                AnthropicProviderSettings.anthropicCacheControl(
+                    part.providerMetadata.toMap()
+                )?.let { put("cache_control", it) }
             }
             is ContentPart.File -> when {
                 part.mediaType.startsWith("image/") -> buildJsonObject {
                     put("type", JsonPrimitive("image"))
                     put("source", anthropicMediaSource(part.url, part.mediaType, part.base64))
-                    AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
+                    AnthropicProviderSettings.anthropicCacheControl(
+                        part.providerMetadata.toMap()
+                    )?.let { put("cache_control", it) }
                 }
                 part.mediaType == "application/pdf" -> {
                     betas += "pdfs-2024-09-25"
@@ -353,22 +363,36 @@ internal data class AnthropicPrompt(
                         put("type", JsonPrimitive("document"))
                         put("source", anthropicMediaSource(part.url, "application/pdf", part.base64))
                         part.filename?.let { put("title", JsonPrimitive(it)) }
-                        AnthropicProviderSettings.anthropicFileOptions(part.providerMetadata.toMap())?.let { putJsonObjectFields(it) }
-                        AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
+                        AnthropicProviderSettings.anthropicFileOptions(
+                            part.providerMetadata.toMap()
+                        )?.let { putJsonObjectFields(it) }
+                        AnthropicProviderSettings.anthropicCacheControl(
+                            part.providerMetadata.toMap()
+                        )?.let { put("cache_control", it) }
                     }
                 }
                 part.mediaType == "text/plain" -> buildJsonObject {
                     put("type", JsonPrimitive("document"))
-                    put("source", buildJsonObject {
-                        put("type", JsonPrimitive("text"))
-                        put("media_type", JsonPrimitive("text/plain"))
-                        put("data", JsonPrimitive(Base64Codec.decode(part.base64).decodeToString()))
-                    })
+                    put(
+                        "source",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("text"))
+                            put("media_type", JsonPrimitive("text/plain"))
+                            put("data", JsonPrimitive(Base64Codec.decode(part.base64).decodeToString()))
+                        }
+                    )
                     part.filename?.let { put("title", JsonPrimitive(it)) }
-                    AnthropicProviderSettings.anthropicFileOptions(part.providerMetadata.toMap())?.let { putJsonObjectFields(it) }
-                    AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
+                    AnthropicProviderSettings.anthropicFileOptions(
+                        part.providerMetadata.toMap()
+                    )?.let { putJsonObjectFields(it) }
+                    AnthropicProviderSettings.anthropicCacheControl(
+                        part.providerMetadata.toMap()
+                    )?.let { put("cache_control", it) }
                 }
-                else -> throw UnsupportedFunctionalityError("file media type ${part.mediaType}", "Unsupported Anthropic file media type: ${part.mediaType}")
+                else -> throw UnsupportedFunctionalityError(
+                    "file media type ${part.mediaType}",
+                    "Unsupported Anthropic file media type: ${part.mediaType}"
+                )
             }
             is ContentPart.Reasoning,
             is ContentPart.ToolCall,
@@ -385,7 +409,11 @@ internal data class AnthropicPrompt(
          * fetches it); otherwise the inline [base64] bytes are sent. Closes the gap where
          * a ContentPart carrying only a `url` was previously serialized with empty data.
          */
-        private fun anthropicMediaSource(url: String?, mediaType: String, base64: String): JsonObject = buildJsonObject {
+        private fun anthropicMediaSource(
+            url: String?,
+            mediaType: String,
+            base64: String
+        ): JsonObject = buildJsonObject {
             if (url != null) {
                 put("type", JsonPrimitive("url"))
                 put("url", JsonPrimitive(url))
@@ -404,8 +432,15 @@ internal data class AnthropicPrompt(
         ): JsonElement? = when (part) {
             is ContentPart.Text -> buildJsonObject {
                 put("type", JsonPrimitive("text"))
-                put("text", JsonPrimitive(if (currentIndex == lastTextIndex && lastTextIndex >= 0) part.text.trim() else part.text))
-                AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
+                put(
+                    "text",
+                    JsonPrimitive(
+                        if (currentIndex == lastTextIndex && lastTextIndex >= 0) part.text.trim() else part.text
+                    )
+                )
+                AnthropicProviderSettings.anthropicCacheControl(
+                    part.providerMetadata.toMap()
+                )?.let { put("cache_control", it) }
             }
             is ContentPart.Reasoning -> when {
                 !sendReasoning -> null
@@ -421,7 +456,9 @@ internal data class AnthropicPrompt(
                 put("id", JsonPrimitive(part.toolCallId))
                 put("name", JsonPrimitive(part.toolName))
                 put("input", part.input)
-                AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
+                AnthropicProviderSettings.anthropicCacheControl(
+                    part.providerMetadata.toMap()
+                )?.let { put("cache_control", it) }
             }
             is ContentPart.ToolResult,
             is ContentPart.ToolApprovalRequest,
@@ -490,4 +527,3 @@ internal data class AnthropicPrompt(
         }
     }
 }
-

@@ -1,29 +1,20 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonElement
-import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.coroutines.cancellation.CancellationException
@@ -32,9 +23,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.TimeSource
 
 @OptIn(ExperimentalAiSdkApi::class, ExperimentalCoroutinesApi::class, InternalAiSdkApi::class)
 class MCPClientTest : MCPClientTestBase() {
@@ -96,9 +85,11 @@ class MCPClientTest : MCPClientTestBase() {
                 }
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         val toolSet = client.tools<Unit>()
         val echoTool = toolSet.byName["echo"].asJsonTool()
@@ -109,7 +100,9 @@ class MCPClientTest : MCPClientTestBase() {
             messages = emptyList(),
             toolCallId = "call_1",
         )
-        val output = (echoTool.execute(buildJsonObject { put("message", JsonPrimitive("hi")) }, echoCtx).first() as ToolResult.Success).value
+        val output = (echoTool.execute(buildJsonObject {
+            put("message", JsonPrimitive("hi"))
+        }, echoCtx).first() as ToolResult.Success).value
 
         assertEquals("echo", echoTool.name)
         assertEquals("Echo a message", echoTool.description)
@@ -146,9 +139,11 @@ class MCPClientTest : MCPClientTestBase() {
                 )
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
         val definitions = ListToolsResult(
             tools = listOf(
                 MCPToolDefinition(
@@ -177,7 +172,9 @@ class MCPClientTest : MCPClientTestBase() {
         assertEquals(setOf("weather"), toolSet.byName.keys)
         val weather = toolSet.byName["weather"].asJsonTool()
         val weatherCtx = ToolExecutionContext(Unit, AbortSignalNever, 0, emptyList(), "call_1")
-        val output = (weather.execute(buildJsonObject { put("city", JsonPrimitive("Austin")) }, weatherCtx).first() as ToolResult.Success).value.jsonObject
+        val output = (weather.execute(buildJsonObject {
+            put("city", JsonPrimitive("Austin"))
+        }, weatherCtx).first() as ToolResult.Success).value.jsonObject
 
         assertEquals(72, output["temperature"]!!.jsonPrimitive.content.toInt())
         assertTrue(
@@ -219,7 +216,9 @@ class MCPClientTest : MCPClientTestBase() {
                     json.encodeToJsonElement(
                         ListResourceTemplatesResult.serializer(),
                         ListResourceTemplatesResult(
-                            resourceTemplates = listOf(MCPResourceTemplate(uriTemplate = "file://{name}", name = "file")),
+                            resourceTemplates = listOf(
+                                MCPResourceTemplate(uriTemplate = "file://{name}", name = "file")
+                            ),
                         ),
                     ),
                 )
@@ -250,9 +249,11 @@ class MCPClientTest : MCPClientTestBase() {
                 )
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         assertEquals("a.txt", client.listResources().resources.single().name)
         assertEquals("hello", client.readResource("file://a").contents.single()["text"]!!.jsonPrimitive.content)
@@ -275,9 +276,11 @@ class MCPClientTest : MCPClientTestBase() {
                 respond(message.id, initializeResult())
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
         client.onElicitationRequest(ElicitationRequestSchema) { request ->
             assertEquals("Need confirmation", request.params.message)
             ElicitResult(
@@ -316,9 +319,11 @@ class MCPClientTest : MCPClientTestBase() {
                     fail(message.id, code = -32000, message = "boom")
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         val error = assertFailsWith<MCPClientError> { client.listTools() }
         assertEquals(-32000, error.code)
@@ -335,9 +340,11 @@ class MCPClientTest : MCPClientTestBase() {
                 )
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         val before = transport.sent.size
         val error = assertFailsWith<MCPClientError> { client.listTools() }
@@ -360,10 +367,12 @@ class MCPClientTest : MCPClientTestBase() {
                 }
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-            onUncaughtError({ uncaught += it })
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+                onUncaughtError({ uncaught += it })
+            }
+        )
 
         assertEquals("echo", client.listTools().tools.single().name)
         assertTrue(uncaught.isEmpty(), "JSON-RPC notifications are advisory and must not trip uncaught errors")
@@ -379,9 +388,11 @@ class MCPClientTest : MCPClientTestBase() {
                     respond(message.id, listToolsResult())
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
         val gate = CompletableDeferred<Unit>()
 
         val jobs = List(100) {
@@ -412,14 +423,18 @@ class MCPClientTest : MCPClientTestBase() {
                     toolsRequestId.complete(message.id)
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         val pending = backgroundScope.async {
-            client.listTools(options = MCPRequestOptions {
-                signal(controller.signal)
-            })
+            client.listTools(
+                options = MCPRequestOptions {
+                    signal(controller.signal)
+                }
+            )
         }
         runCurrent()
         waitForRealTime { toolsRequestId.isCompleted }
@@ -450,9 +465,11 @@ class MCPClientTest : MCPClientTestBase() {
                     toolsRequestId.complete(message.id)
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         val pending = backgroundScope.async { client.listTools() }
         runCurrent()
@@ -484,9 +501,11 @@ class MCPClientTest : MCPClientTestBase() {
                     respond(message.id, listToolsResult())
             }
         }
-        val client = CreateMCPClient(MCPClientConfig {
-            transport(transport)
-        })
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
 
         assertEquals("echo", client.listTools().tools.single().name)
         client.close()

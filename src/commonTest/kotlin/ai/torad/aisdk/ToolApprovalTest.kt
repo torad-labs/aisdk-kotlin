@@ -218,7 +218,9 @@ class ToolApprovalTest {
         agent.dispatchEngineAction(ToolLoopAgentAction.ApproveToolCall(pending.toolCallId))
         withContext(Dispatchers.Default) {
             withTimeout(1_000) {
-                while (seenContexts.isEmpty() || agent.engineState.value.phase == ToolLoopAgentState.Phase.Streaming) delay(10)
+                while (seenContexts.isEmpty() || agent.engineState.value.phase == ToolLoopAgentState.Phase.Streaming) delay(
+                    10
+                )
             }
         }
 
@@ -265,7 +267,9 @@ class ToolApprovalTest {
         agent.dispatchEngineAction(ToolLoopAgentAction.ApproveToolCall(pending.toolCallId))
         withContext(Dispatchers.Default) {
             withTimeout(1_000) {
-                while (seenContexts.isEmpty() || agent.engineState.value.phase == ToolLoopAgentState.Phase.Streaming) delay(10)
+                while (seenContexts.isEmpty() || agent.engineState.value.phase == ToolLoopAgentState.Phase.Streaming) delay(
+                    10
+                )
             }
         }
 

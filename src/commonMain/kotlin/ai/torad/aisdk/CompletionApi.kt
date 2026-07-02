@@ -467,12 +467,15 @@ public object CompletionApi {
 public sealed class CompletionPhase {
     /** @since 0.3.0-beta01 */
     public data object Idle : CompletionPhase()
+
     @Poko
     /** @since 0.3.0-beta01 */
     public class Streaming(public val text: String) : CompletionPhase()
+
     @Poko
     /** @since 0.3.0-beta01 */
     public class Done(public val text: String) : CompletionPhase()
+
     @Poko
     /** @since 0.3.0-beta01 */
     public class Failed(public val text: String, public val cause: Throwable) : CompletionPhase()
@@ -491,9 +494,11 @@ public data class CompletionState(
             is CompletionPhase.Done -> p.text
             is CompletionPhase.Failed -> p.text
         }
+
     /** @since 0.3.0-beta01 */
     public val error: Throwable?
         get() = (phase as? CompletionPhase.Failed)?.cause
+
     /** @since 0.3.0-beta01 */
     public val loading: Boolean
         get() = phase is CompletionPhase.Streaming
@@ -505,8 +510,10 @@ public class Completion(
 ) {
     /** @since 0.3.0-beta01 */
     public val id: String = options.id
+
     /** @since 0.3.0-beta01 */
     public val api: String = options.api
+
     /** @since 0.3.0-beta01 */
     public val streamProtocol: CompletionStreamProtocol = options.streamProtocol
 
@@ -526,10 +533,13 @@ public class Completion(
 
     /** @since 0.3.0-beta01 */
     public val completion: String get() = mutableState.value.completion
+
     /** @since 0.3.0-beta01 */
     public val input: String get() = mutableState.value.input
+
     /** @since 0.3.0-beta01 */
     public val error: Throwable? get() = mutableState.value.error
+
     /** @since 0.3.0-beta01 */
     public val loading: Boolean get() = mutableState.value.loading
 

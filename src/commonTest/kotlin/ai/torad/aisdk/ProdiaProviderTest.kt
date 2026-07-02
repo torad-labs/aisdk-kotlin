@@ -2,11 +2,12 @@
 
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.PRODIA_VERSION
+import ai.torad.aisdk.providers.Prodia
 import ai.torad.aisdk.providers.ProdiaProviderSettings
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -21,8 +22,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.Prodia
-import kotlinx.serialization.json.JsonObject
 
 class ProdiaProviderTest {
     @Test
@@ -54,17 +53,26 @@ class ProdiaProviderTest {
                 n(2)
                 size("512x768")
                 seed(9)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
-                                    "prodia" to buildJsonObject {
-                                        put("width", JsonPrimitive(640))
-                                        put("steps", JsonPrimitive(4))
-                                        put("stylePreset", JsonPrimitive("cinematic"))
-                                        put("loras", buildJsonArray {
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "prodia" to buildJsonObject {
+                                    put("width", JsonPrimitive(640))
+                                    put("steps", JsonPrimitive(4))
+                                    put("stylePreset", JsonPrimitive("cinematic"))
+                                    put(
+                                        "loras",
+                                        buildJsonArray {
                                             add(JsonPrimitive("detail-lora"))
-                                        })
-                                        put("progressive", JsonPrimitive(true))
-                                    },
-                                ))))
+                                        }
+                                    )
+                                    put("progressive", JsonPrimitive(true))
+                                },
+                            )
+                        )
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -74,7 +82,9 @@ class ProdiaProviderTest {
         assertEquals("image/png", result.images.single().mediaType)
         assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.images.single().base64)
         assertTrue(result.warnings.single().message.orEmpty().contains("one image"))
-        val metadata = result.providerMetadata.toMap()["prodia"]?.jsonObject?.get("images")?.jsonArray?.single()?.jsonObject
+        val metadata = result.providerMetadata.toMap()["prodia"]?.jsonObject?.get(
+            "images"
+        )?.jsonArray?.single()?.jsonObject
         assertEquals("job-img", metadata?.get("jobId")?.jsonPrimitive?.contentOrNull)
         assertEquals(9, metadata?.get("seed")?.jsonPrimitive?.intOrNull)
         assertEquals(1.5, metadata?.get("elapsed")?.jsonPrimitive?.doubleOrNull)
@@ -86,7 +96,9 @@ class ProdiaProviderTest {
         assertEquals("Bearer token", request.requestHeaders.headerValue(HttpHeaders.Authorization))
         assertEquals("provider", request.requestHeaders.headerValue("X-Provider"))
         assertEquals("request", request.requestHeaders.headerValue("X-Request"))
-        assertTrue(request.requestHeaders.headerValue(HttpHeaders.Accept).orEmpty().contains("multipart/form-data; image/png"))
+        assertTrue(
+            request.requestHeaders.headerValue(HttpHeaders.Accept).orEmpty().contains("multipart/form-data; image/png")
+        )
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/prodia/$PRODIA_VERSION"))
         val body = request.requestBodyJson.jsonObject
         val config = body["config"]?.jsonObject
@@ -126,20 +138,26 @@ class ProdiaProviderTest {
 
         val result = model.generate(
             LanguageModelCallParams {
-                messages(listOf(
-                    SystemMessage("System line."),
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Text("Draw this."),
-                            ContentPart.Image("image/png", "iVBORw0="),
+                messages(
+                    listOf(
+                        SystemMessage("System line."),
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Text("Draw this."),
+                                ContentPart.Image("image/png", "iVBORw0="),
+                            ),
                         ),
-                    ),
-                ))
+                    )
+                )
                 temperature(0.4f)
                 tools(listOf(LanguageModelTool("ignored", "ignored", """{"type":"object"}""")))
                 responseFormat(ResponseFormat.Json())
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("prodia" to buildJsonObject { put("aspectRatio", JsonPrimitive("16:9")) }))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(mapOf("prodia" to buildJsonObject { put("aspectRatio", JsonPrimitive("16:9")) }))
+                    )
+                )
                 headers(mapOf("X-Request" to "request"))
             },
         )
@@ -148,11 +166,17 @@ class ProdiaProviderTest {
         assertEquals("answer text", result.text)
         assertEquals(FinishReason.Stop, result.finishReason)
         assertEquals("image/png", result.content.filterIsInstance<ContentPart.File>().single().mediaType)
-        assertEquals(Base64Codec.encode(byteArrayOf(4, 5)), result.content.filterIsInstance<ContentPart.File>().single().base64)
+        assertEquals(
+            Base64Codec.encode(byteArrayOf(4, 5)),
+            result.content.filterIsInstance<ContentPart.File>().single().base64
+        )
         assertTrue(result.warnings.any { it.message.orEmpty().contains("temperature") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("tools") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("responseFormat") })
-        assertEquals("job-lang", result.providerMetadata.toMap()["prodia"]?.jsonObject?.get("jobId")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "job-lang",
+            result.providerMetadata.toMap()["prodia"]?.jsonObject?.get("jobId")?.jsonPrimitive?.contentOrNull
+        )
 
         val request = fixture.calls.single()
         assertEquals("request", request.requestHeaders.headerValue("X-Request"))
@@ -208,7 +232,11 @@ class ProdiaProviderTest {
             VideoGenerationParams {
                 prompt("camera pan")
                 seed(77)
-                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("prodia" to buildJsonObject { put("resolution", JsonPrimitive("720p")) }))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(mapOf("prodia" to buildJsonObject { put("resolution", JsonPrimitive("720p")) }))
+                    )
+                )
             },
         )
         val imageResult = model.generate(
@@ -222,9 +250,19 @@ class ProdiaProviderTest {
         assertEquals("prodia.video", model.provider)
         assertEquals(1, model.maxVideosPerCall)
         assertEquals(Base64Codec.encode(byteArrayOf(8, 9)), textResult.videos.single().base64)
-        assertEquals("job-video-json", textResult.providerMetadata.toMap()["prodia"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject?.get("jobId")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "job-video-json",
+            textResult.providerMetadata.toMap()["prodia"]?.jsonObject?.get(
+                "videos"
+            )?.jsonArray?.single()?.jsonObject?.get("jobId")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(Base64Codec.encode(byteArrayOf(10, 11)), imageResult.videos.single().base64)
-        assertEquals("job-video-multipart", imageResult.providerMetadata.toMap()["prodia"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject?.get("jobId")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "job-video-multipart",
+            imageResult.providerMetadata.toMap()["prodia"]?.jsonObject?.get(
+                "videos"
+            )?.jsonArray?.single()?.jsonObject?.get("jobId")?.jsonPrimitive?.contentOrNull
+        )
 
         val jsonBody = fixture.calls[0].requestBodyJson.jsonObject
         val jsonConfig = jsonBody["config"]?.jsonObject
@@ -244,7 +282,8 @@ class ProdiaProviderTest {
 
     @Test
     fun `unsupported Prodia surfaces and unconfigured singleton fail explicitly`() {
-        val provider = Prodia(TestServer.createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings { apiKey("token") })
+        val provider =
+            Prodia(TestServer.createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings { apiKey("token") })
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }
@@ -262,7 +301,13 @@ class ProdiaProviderTest {
         outputBytes: ByteArray,
     ): UrlResponse.Binary = prodiaMultipartResponse(
         jobJson = jobJson,
-        outputs = listOf(ProdiaOutputPart(outputMediaType, outputBytes, if (outputMediaType.startsWith("video/")) "output.mp4" else "output.png")),
+        outputs = listOf(
+            ProdiaOutputPart(
+                outputMediaType,
+                outputBytes,
+                if (outputMediaType.startsWith("video/")) "output.mp4" else "output.png"
+            )
+        ),
     )
 
     private fun prodiaMultipartResponse(
@@ -278,7 +323,10 @@ class ProdiaProviderTest {
             body += "\r\n".encodeToByteArray()
         }
         body += "--$boundary--\r\n".encodeToByteArray()
-        return UrlResponse.Binary(body, headers = mapOf(HttpHeaders.ContentType to "multipart/form-data; boundary=$boundary"))
+        return UrlResponse.Binary(
+            body,
+            headers = mapOf(HttpHeaders.ContentType to "multipart/form-data; boundary=$boundary")
+        )
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

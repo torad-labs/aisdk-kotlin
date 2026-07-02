@@ -40,12 +40,16 @@ public sealed class Output<T> {
 
     /** @since 0.3.0-beta01 */
     public abstract val schemaName: String
+
     /** @since 0.3.0-beta01 */
     public open val schemaDescription: String? = null
+
     /** @since 0.3.0-beta01 */
     public abstract val schemaJson: String
+
     /** @since 0.3.0-beta01 */
     public open val schema: JsonElement by lazy { aiSdkOutputJson.parseToJsonElement(schemaJson) }
+
     /** @since 0.3.0-beta01 */
     public abstract fun decode(text: String): T
 
@@ -214,7 +218,6 @@ public sealed class Output<T> {
             } ?: throw InvalidResponseDataError(element, "Expected a JSON object with a 'result' string")
         }
     }
-
 }
 
 // Top-level constructors + codec.

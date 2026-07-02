@@ -57,7 +57,7 @@ private const val UNICODE_ESCAPE_HEX_DIGITS = 4
 public enum class PartialJsonState { UndefinedInput, SuccessfulParse, RepairedParse, FailedParse }
 
 /** Result of [PartialJson.parsePartialJson]: [value] is non-null only on the two
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  *  success states. */
 @Poko
 public class PartialJsonResult(public val value: JsonElement?, public val state: PartialJsonState)
@@ -66,7 +66,7 @@ public class PartialJsonResult(public val value: JsonElement?, public val state:
  * Streaming-safe partial-JSON repair + parse operations. Grouped into an
  * object so the helpers stay file-local members rather than loose top-level
  * functions.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public object PartialJson {
     private val partialJsonCodec: Json = Json { ignoreUnknownKeys = true }
@@ -80,7 +80,7 @@ public object PartialJson {
      * Complete a partial/truncated JSON string so `Json.parseToJsonElement`
      * can read it. Returns `""` when nothing valid was scanned (e.g. a lone
      * `-`). See `parsePartialJson` for the parse wrapper.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     public fun fixJson(input: String): String {
@@ -393,7 +393,7 @@ public object PartialJson {
      *  - otherwise -> [PartialJsonState.FailedParse].
      *
      * The repair runs on the ORIGINAL raw text, not on intermediate output.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public fun parsePartialJson(jsonText: String?): PartialJsonResult {
         if (jsonText == null) return PartialJsonResult(null, PartialJsonState.UndefinedInput)

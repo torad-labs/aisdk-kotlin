@@ -1,12 +1,12 @@
 package ai.torad.aisdk
 
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -39,7 +39,7 @@ public interface AbortSignal {
     /**
      * Register a callback that fires exactly once on abort. If already
      * aborted, fires synchronously. Returns a handle to deregister.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public fun register(onAbort: () -> Unit): AbortRegistration
 
@@ -65,7 +65,7 @@ public val AbortSignalNever: AbortSignal = object : AbortSignal {
  * Mutable abort source — the v6 equivalent of `AbortController`. Hold the
  * controller, hand the [signal] to the agent, call [abort] from the UI's
  * stop button.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class AbortController {
@@ -142,7 +142,9 @@ public class AbortController {
  * Thrown from [AbortSignal.throwIfAborted] when the signal has fired.
  * @since 0.3.0-beta01
  */
-public class AbortError(message: String = "operation aborted") : kotlin.coroutines.cancellation.CancellationException(message)
+public class AbortError(
+    message: String = "operation aborted"
+) : kotlin.coroutines.cancellation.CancellationException(message)
 
 internal object AbortSignalRuntime {
     suspend fun <T> withAbortCancellation(signal: AbortSignal, block: suspend () -> T): T = coroutineScope {
@@ -161,7 +163,7 @@ internal object AbortSignalRuntime {
  * Bind an abort signal to a [Job] so the signal fires when the job
  * completes (cancelled or otherwise). Lets a parent scope's lifetime
  * automatically cancel anything observing the signal.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 public fun AbortSignalFromJob(job: Job): AbortSignal {
     val controller = AbortController()

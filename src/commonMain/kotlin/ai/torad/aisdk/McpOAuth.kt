@@ -266,7 +266,9 @@ public class AuthorizationServerMetadata(
     @SerialName("registration_endpoint") public val registrationEndpoint: String? = null,
     @SerialName("response_types_supported") public val responseTypesSupported: List<String>? = null,
     @SerialName("grant_types_supported") public val grantTypesSupported: List<String>? = null,
-    @SerialName("token_endpoint_auth_methods_supported") public val tokenEndpointAuthMethodsSupported: List<String>? = null,
+    @SerialName(
+        "token_endpoint_auth_methods_supported"
+    ) public val tokenEndpointAuthMethodsSupported: List<String>? = null,
     @SerialName("code_challenge_methods_supported") public val codeChallengeMethodsSupported: List<String>? = null,
 )
 

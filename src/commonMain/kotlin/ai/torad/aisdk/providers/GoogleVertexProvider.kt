@@ -9,11 +9,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
 
 public const val GOOGLE_VERTEX_VERSION: String = "4.0.142"
 
@@ -169,6 +166,7 @@ public class GoogleVertexProvider(
     public val settings: GoogleVertexProviderSettings,
 ) : Provider {
     override val providerId: String = "google-vertex"
+
     /** @since 0.3.0-beta01 */
     public val tools: GoogleTools = googleTools
 
@@ -184,19 +182,25 @@ public class GoogleVertexProvider(
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun generativeAI(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
     /** @since 0.3.0-beta01 */
     public fun embedding(modelId: ModelId): EmbeddingModel = delegate.embedding(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = delegate.image(modelId)
+
     /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = delegate.video(modelId)
 
@@ -237,6 +241,7 @@ public class GoogleVertexAnthropicProvider(
     public val settings: GoogleVertexAnthropicProviderSettings,
 ) : Provider {
     override val providerId: String = "google-vertex-anthropic"
+
     /** @since 0.3.0-beta01 */
     public val tools: AnthropicTools = anthropicTools
 
@@ -257,15 +262,22 @@ public class GoogleVertexAnthropicProvider(
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(
+        modelId: String
+    ): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel = delegate.languageModel(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(
+        modelId: String
+    ): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 
     private fun googleVertexAnthropicBody(body: JsonObject): JsonObject = buildJsonObject {
@@ -295,6 +307,7 @@ public class GoogleVertexMaasProvider(
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
@@ -326,16 +339,23 @@ public class GoogleVertexXaiProvider(
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(
+        modelId: String
+    ): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel =
         GoogleVertexXaiLanguageModel(delegate.languageModel(modelId))
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(
+        modelId: String
+    ): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 
     private fun googleVertexXaiRequestBody(body: JsonObject): JsonObject = buildJsonObject {
@@ -401,13 +421,19 @@ private class GoogleVertexXaiLanguageModel(
     override val supportedUrls: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        delegate.generate(params.toBuilder().providerOptions(googleVertexXaiProviderOptions(params.providerOptions)).build())
+        delegate.generate(
+            params.toBuilder().providerOptions(googleVertexXaiProviderOptions(params.providerOptions)).build()
+        )
 
     override fun stream(params: LanguageModelCallParams) =
-        delegate.stream(params.toBuilder().providerOptions(googleVertexXaiProviderOptions(params.providerOptions)).build())
+        delegate.stream(
+            params.toBuilder().providerOptions(googleVertexXaiProviderOptions(params.providerOptions)).build()
+        )
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
-        delegate.streamResult(params.toBuilder().providerOptions(googleVertexXaiProviderOptions(params.providerOptions)).build())
+        delegate.streamResult(
+            params.toBuilder().providerOptions(googleVertexXaiProviderOptions(params.providerOptions)).build()
+        )
 
     // Snake-cases xAI searchParameters via XaiProviderSettings.xaiSnakeCaseJson (single source of
     // truth); the former local copy drifted, lacking the `xHandles` -> `included_x_handles`

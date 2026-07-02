@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonElement
 public interface EmbeddingModel {
     /** @since 0.3.0-beta01 */
     public val modelId: String
+
     /** @since 0.3.0-beta01 */
     public val provider: String
         get() = "unknown"
@@ -15,7 +16,7 @@ public interface EmbeddingModel {
      * How many values this model accepts in a single call, if limited.
      * `embedMany` consults this to auto-split large requests into batches when the
      * caller doesn't pass an explicit `maxEmbeddingsPerCall`. Null = no limit.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val maxEmbeddingsPerCall: Int?
         get() = null
@@ -24,7 +25,7 @@ public interface EmbeddingModel {
      * Whether the model permits its embedding batches to run concurrently.
      * When true, `embedMany` fans batches out (bounded by `maxParallelCalls`)
      * instead of running them serially.
-      * @since 0.3.0-beta01
+     * @since 0.3.0-beta01
      */
     public val supportsParallelCalls: Boolean
         get() = false
@@ -287,7 +288,9 @@ public object Embedding {
             request = results.firstOrNull()?.request ?: LanguageModelRequestMetadata(),
             response = results.lastOrNull()?.response ?: LanguageModelResponseMetadata(),
             responses = results.map { it.response },
-            providerMetadata = results.fold<EmbeddingModelResult, ProviderMetadata>(ProviderMetadata.None) { acc, r -> acc + r.providerMetadata },
+            providerMetadata = results.fold<EmbeddingModelResult, ProviderMetadata>(
+                ProviderMetadata.None
+            ) { acc, r -> acc + r.providerMetadata },
         )
     }
 }

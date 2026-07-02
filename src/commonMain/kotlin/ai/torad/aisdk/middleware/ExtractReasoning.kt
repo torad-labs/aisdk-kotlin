@@ -113,13 +113,25 @@ public fun ExtractReasoningMiddleware(
                             if (openIdx < 0) {
                                 val emitLength = buffer.length - ReasoningScan.longestSuffixPrefixOf(buffer, openTag)
                                 if (emitLength > 0) {
-                                    emit(StreamEvent.TextDelta(event.id, buffer.substring(0, emitLength), event.providerMetadata))
+                                    emit(
+                                        StreamEvent.TextDelta(
+                                            event.id,
+                                            buffer.substring(0, emitLength),
+                                            event.providerMetadata
+                                        )
+                                    )
                                     buffer.deleteRange(0, emitLength)
                                 }
                                 break
                             }
                             if (openIdx > 0) {
-                                emit(StreamEvent.TextDelta(event.id, buffer.substring(0, openIdx), event.providerMetadata))
+                                emit(
+                                    StreamEvent.TextDelta(
+                                        event.id,
+                                        buffer.substring(0, openIdx),
+                                        event.providerMetadata
+                                    )
+                                )
                             }
                             buffer.deleteRange(0, openIdx + openTag.length)
                             val newReasoningId = "reasoning_${++nextReasoningIdx}"
@@ -135,17 +147,33 @@ public fun ExtractReasoningMiddleware(
                             if (closeIdx < 0) {
                                 val emitLength = buffer.length - ReasoningScan.longestSuffixPrefixOf(buffer, closeTag)
                                 if (emitLength > 0) {
-                                    emit(StreamEvent.ReasoningDelta(rid, buffer.substring(0, emitLength), event.providerMetadata))
+                                    emit(
+                                        StreamEvent.ReasoningDelta(
+                                            rid,
+                                            buffer.substring(0, emitLength),
+                                            event.providerMetadata
+                                        )
+                                    )
                                     buffer.deleteRange(0, emitLength)
                                 }
                                 break
                             }
                             if (closeIdx > 0) {
-                                emit(StreamEvent.ReasoningDelta(rid, buffer.substring(0, closeIdx), event.providerMetadata))
+                                emit(
+                                    StreamEvent.ReasoningDelta(
+                                        rid,
+                                        buffer.substring(0, closeIdx),
+                                        event.providerMetadata
+                                    )
+                                )
                             }
                             emit(StreamEvent.ReasoningEnd(rid, event.providerMetadata))
                             buffer.deleteRange(0, closeIdx + closeTag.length)
-                            if (separator.isNotEmpty()) emit(StreamEvent.TextDelta(event.id, separator, event.providerMetadata))
+                            if (separator.isNotEmpty()) {
+                                emit(
+                                    StreamEvent.TextDelta(event.id, separator, event.providerMetadata)
+                                )
+                            }
                             inReasoning = false
                             reasoningId = null
                         }

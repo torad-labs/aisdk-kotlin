@@ -15,9 +15,9 @@ import ai.torad.aisdk.providers.XaiLanguageModelResponsesOptions
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.serializer
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -97,10 +97,12 @@ class RemainingBuilderConstructsTest {
         val openResponses = OpenResponsesOptions {
             instructions("be terse")
             reasoningEffort("low")
-            allowedTools(OpenResponsesAllowedTools {
-                toolNames(listOf("search"))
-                mode("auto")
-            })
+            allowedTools(
+                OpenResponsesAllowedTools {
+                    toolNames(listOf("search"))
+                    mode("auto")
+                }
+            )
         }
         val xaiChat = XaiLanguageModelChatOptions {
             reasoningEffort("low")
@@ -140,7 +142,10 @@ class RemainingBuilderConstructsTest {
         assertEquals(clientInformation, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(clientInformation)))
         assertEquals(clientMetadata, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(clientMetadata)))
         assertEquals(configuration, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(configuration)))
-        assertEquals(elicitationCapability, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(elicitationCapability)))
+        assertEquals(
+            elicitationCapability,
+            aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(elicitationCapability))
+        )
     }
 
     @Test

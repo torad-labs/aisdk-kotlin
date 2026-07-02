@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.StreamToUiMessages
+import ai.torad.aisdk.ui.UIMessagePart
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest

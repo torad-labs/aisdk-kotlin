@@ -139,15 +139,24 @@ public class PerplexityProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(
         client,
-        settings.toCompatible("perplexity", PERPLEXITY_VERSION, capabilities = ProviderCapabilities(supportsStructuredOutputs = true)),
+        settings.toCompatible(
+            "perplexity",
+            PERPLEXITY_VERSION,
+            capabilities = ProviderCapabilities(supportsStructuredOutputs = true)
+        ),
     )
     override val providerId: String = "perplexity"
 
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
     override fun languageModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
+
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(
+        modelId: String
+    ): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(
+        modelId: String
+    ): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 

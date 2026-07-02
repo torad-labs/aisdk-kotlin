@@ -1,17 +1,17 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.providers.MockToolInput
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.serializer
 
 /**
  * Best practice #10 — lifecycle events OBSERVE but do not modify behavior.

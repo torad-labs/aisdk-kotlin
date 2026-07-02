@@ -15,12 +15,8 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlin.math.ceil
 
@@ -396,10 +392,22 @@ public class ReplicateProvider(
     override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
 
     /** @since 0.3.0-beta01 */
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
+        providerId,
+        "languageModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 }
 
 /**
@@ -630,7 +638,9 @@ private class ReplicateVideoModel(
                 ),
             ),
             response = LanguageModelResponseMetadata(modelId = modelId, headers = submitted.headers),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("replicate" to replicateVideoProviderMetadata(prediction, videoUrl)))),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(mapOf("replicate" to replicateVideoProviderMetadata(prediction, videoUrl)))
+            ),
         )
     }
 
@@ -649,7 +659,9 @@ private class ReplicateVideoModel(
             ?: DEFAULT_REPLICATE_VIDEO_POLL_INTERVAL_MS
         val pollTimeoutMs = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
             ?: DEFAULT_REPLICATE_VIDEO_POLL_TIMEOUT_MS
-        val maxPollAttempts = ceil(pollTimeoutMs.coerceAtLeast(1L).toDouble() / pollIntervalMs.coerceAtLeast(1L).toDouble())
+        val maxPollAttempts = ceil(
+            pollTimeoutMs.coerceAtLeast(1L).toDouble() / pollIntervalMs.coerceAtLeast(1L).toDouble()
+        )
             .toInt()
             .coerceAtLeast(1)
         var attempts = 0
@@ -684,9 +696,16 @@ private class ReplicateVideoModel(
             ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing status")
 
     private fun replicateVideoProviderMetadata(prediction: JsonObject, videoUrl: String): JsonElement = buildJsonObject {
-        put("videos", JsonArray(listOf(buildJsonObject {
-            put("url", JsonPrimitive(videoUrl))
-        })))
+        put(
+            "videos",
+            JsonArray(
+                listOf(
+                    buildJsonObject {
+                        put("url", JsonPrimitive(videoUrl))
+                    }
+                )
+            )
+        )
         putIfPresent(this, "predictionId", prediction["id"])
         putIfPresent(this, "metrics", prediction["metrics"])
     }

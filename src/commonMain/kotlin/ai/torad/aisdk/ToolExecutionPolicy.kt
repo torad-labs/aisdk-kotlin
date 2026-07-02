@@ -9,7 +9,7 @@ import kotlin.time.Duration
  * Defaults are deliberately bounded: a model cannot fan out into unbounded
  * coroutine creation or unbounded in-step tool execution unless the host opts
  * into larger limits explicitly.
-  * @since 0.3.0-beta01
+ * @since 0.3.0-beta01
  */
 @Poko
 public class ToolExecutionPolicy internal constructor(

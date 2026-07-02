@@ -1,12 +1,12 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.test.runTest
 
 class CompletionApiTest {
     @Test

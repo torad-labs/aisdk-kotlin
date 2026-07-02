@@ -29,8 +29,10 @@ package ai.torad.aisdk
 public interface Logger {
     /** @since 0.3.0-beta01 */
     public fun warn(message: String, throwable: Throwable? = null)
+
     /** @since 0.3.0-beta01 */
     public fun info(message: String)
+
     /** @since 0.3.0-beta01 */
     public fun debug(message: String)
 }
