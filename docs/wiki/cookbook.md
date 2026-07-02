@@ -5,20 +5,28 @@ Short examples for common AI SDK Kotlin tasks.
 ## Generate Text With A Provider
 
 ```kotlin
-val provider = createOpenAICompatible(
+val provider = OpenAICompatible(
     client = httpClient,
-    settings = OpenAICompatibleProviderSettings(
-        name = "local",
-        baseUrl = "http://localhost:11434/v1",
-        apiKey = localApiKey,
-    ),
+    settings = OpenAICompatibleProviderSettings {
+        name("local")
+        baseURL("http://localhost:11434/v1")
+        apiKey(localApiKey)
+    },
 )
 
-val result = generateText(
-    model = provider.chatModel("llama3.2"),
-    system = "Be concise.",
-    prompt = "Explain Kotlin Flow in two sentences.",
-)
+val result = TextGenerator(
+    provider.chatModel("llama3.2"),
+    CallConfig {
+        maxOutputTokens(800)
+    },
+).generate(
+    GenerationInput.Messages(
+        GenerationInput.NonEmptyMessages.of(
+            SystemMessage("Be concise."),
+            UserMessage("Explain Kotlin Flow in two sentences."),
+        ),
+    ),
+).first()
 ```
 
 Read next: [Providers And Models](providers.md), [Core](core.md).
@@ -26,20 +34,26 @@ Read next: [Providers And Models](providers.md), [Core](core.md).
 ## Set Defaults And Provider Options
 
 ```kotlin
-val settings = callSettings {
-    temperature = 0.2f
-    maxOutputTokens = 800
-    providerOptions {
-        provider("openai") {
-            put("reasoningEffort", JsonPrimitive("medium"))
-        }
-    }
+val config = CallConfig {
+    temperature(0.2f)
+    maxOutputTokens(800)
+    providerOptions(
+        ProviderOptions.ofPairs(
+            "openai" to buildJsonObject {
+                put("reasoningEffort", JsonPrimitive("medium"))
+            },
+        ),
+    )
 }
 
-val result = generateText(model = model, settings = settings) {
-    system("Answer as an SDK maintainer.")
-    prompt("Explain stream adapters.")
-}
+val result = TextGenerator(model, config).generate(
+    GenerationInput.Messages(
+        GenerationInput.NonEmptyMessages.of(
+            SystemMessage("Answer as an SDK maintainer."),
+            UserMessage("Explain stream adapters."),
+        ),
+    ),
+).first()
 ```
 
 Read next: [Settings And Provider Options](settings-and-provider-options.md).
@@ -47,22 +61,25 @@ Read next: [Settings And Provider Options](settings-and-provider-options.md).
 ## Route Through Gateway
 
 ```kotlin
-val gateway = createGateway(
-    GatewayProviderSettings(
-        apiKey = gatewayApiKey,
-        transport = KtorGatewayTransport(httpClient),
-    ),
-)
-
-val result = generateText(
-    model = gateway.languageModel("anthropic/claude-sonnet-4.5"),
-    prompt = "Compare stream adapters.",
-    providerOptions = buildProviderOptions {
-        provider("gateway") {
-            put("only", JsonArray(listOf(JsonPrimitive("anthropic"))))
-        }
+val gateway = Gateway(
+    GatewayProviderSettings {
+        apiKey(gatewayApiKey)
+        transport(KtorGatewayTransport(httpClient))
     },
 )
+
+val result = TextGenerator(
+    gateway.languageModel("anthropic/claude-sonnet-4.5"),
+    CallConfig {
+        providerOptions(
+            ProviderOptions.ofPairs(
+                "gateway" to buildJsonObject {
+                    put("only", JsonArray(listOf(JsonPrimitive("anthropic"))))
+                },
+            ),
+        )
+    },
+).generate(GenerationInput.Prompt("Compare stream adapters.")).first()
 ```
 
 Read next: [Provider Management](provider-management.md), [Providers And Models](providers.md).
@@ -72,17 +89,22 @@ Read next: [Provider Management](provider-management.md), [Providers And Models]
 ```kotlin
 val hits = docs.search(question)
 
-val answer = generateText(
-    model = model,
-    system = "Answer using retrieved docs. Cite doc ids.",
-    prompt = """
-        Question:
-        $question
+val answer = TextGenerator(model).generate(
+    GenerationInput.Messages(
+        GenerationInput.NonEmptyMessages.of(
+            SystemMessage("Answer using retrieved docs. Cite doc ids."),
+            UserMessage(
+                """
+                Question:
+                $question
 
-        Retrieved docs:
-        ${hits.joinToString("\n\n") { "[${it.id}] ${it.text}" }}
-    """.trimIndent(),
-)
+                Retrieved docs:
+                ${hits.joinToString("\n\n") { "[${it.id}] ${it.text}" }}
+                """.trimIndent(),
+            ),
+        ),
+    ),
+).first()
 ```
 
 Read next: [Prompt Engineering](prompt-engineering.md).
@@ -90,12 +112,11 @@ Read next: [Prompt Engineering](prompt-engineering.md).
 ## Stream Into UI Messages
 
 ```kotlin
-val result = streamTextResult(
-    model = model,
-    prompt = "Walk through a tool-calling loop.",
+val result = TextGenerator(model).streamResult(
+    GenerationInput.Prompt("Walk through a tool-calling loop."),
 )
 
-val messages = streamToUiMessages(
+val messages = StreamToUiMessages(
     events = result.fullStream,
     assistantMessageId = "assistant-1",
 )
@@ -103,18 +124,16 @@ val messages = streamToUiMessages(
 
 Read next: [Streaming](streaming.md), [UI And Streams](ui-and-streams.md).
 
-## Smooth A Text Stream
+## Shape A Text Stream For Display
 
 ```kotlin
-val events = smoothStream(
-    upstream = streamText(model = model, prompt = prompt),
-    chunkBy = ChunkBy.Word,
-    delayMs = 15,
-)
-
-events.collect { event ->
-    render(event)
-}
+TextGenerator(model)
+    .stream(GenerationInput.Prompt(prompt))
+    .filterIsInstance<StreamEvent.TextDelta>()
+    .map { it.text }
+    .collect { chunk ->
+        render(chunk)
+    }
 ```
 
 Read next: [Utilities](utilities.md), [Advanced Streaming](advanced-streaming.md).
@@ -122,7 +141,7 @@ Read next: [Utilities](utilities.md), [Advanced Streaming](advanced-streaming.md
 ## Create A Custom UI Message Stream
 
 ```kotlin
-val stream = createUiMessageStream {
+val stream = CreateUiMessageStream {
     write(
         UIMessage(
             id = "status-1",
@@ -145,10 +164,12 @@ Read next: [UI Stream Protocols](ui-stream-protocols.md).
 ## Create Stable UI Ids
 
 ```kotlin
-val messageId = generateId(prefix = "msg")
+val messageId = IdGenerator.generate(prefix = "msg")
 
-val toolId = createIdGenerator(prefix = "tool", size = 12)
-    .generate()
+val toolId = IdGenerator {
+    prefix("tool")
+    size(12)
+}.generate()
 ```
 
 Use stable ids when storing UI messages, tool calls, and stream state.
@@ -170,7 +191,7 @@ val agent = DocsAgent(model, ToolSet(searchDocs))
 val result = agent.generate(
     prompt = "How do I validate UI messages?",
     options = AppContext(workspaceId = "docs"),
-)
+).first()
 ```
 
 Read next: [Tools](tools.md), [Agents](agents.md).
@@ -181,6 +202,8 @@ Read next: [Tools](tools.md), [Agents](agents.md).
 val archiveProject = Tool<ArchiveInput, ArchiveResult, AppContext>(
     name = "archiveProject",
     description = "Archive a project by id.",
+    inputSerializer = serializer(),
+    outputSerializer = serializer(),
     needsApproval = { _, options ->
         options.experimental_context?.role != "admin"
     },
@@ -197,11 +220,10 @@ Read next: [Tools](tools.md), [Chatbots](chatbots.md).
 @Serializable
 data class RouteDecision(val route: String, val confidence: Double)
 
-val decision = generateText(
-    model = model,
-    prompt = "Route this request: user needs invoice copy.",
-    output = outputObj(serializer<RouteDecision>()),
-).output
+val decision = TextGenerator(model).generate(
+    GenerationInput.Prompt("Route this request: user needs invoice copy."),
+    output = Output.obj(serializer<RouteDecision>(), name = "RouteDecision"),
+).first().output
 ```
 
 Read next: [Structured Output](structured-output.md).
@@ -209,7 +231,7 @@ Read next: [Structured Output](structured-output.md).
 ## Embed And Rerank Documents
 
 ```kotlin
-val embeddings = embedMany(
+val embeddings = Embedding.embedMany(
     model = embeddingModel,
     values = docs.map { it.text },
     maxParallelCalls = 4,
@@ -217,7 +239,7 @@ val embeddings = embedMany(
 
 val candidates = vectorStore.search(queryVector, limit = 20)
 
-val reranked = rerank(
+val reranked = Reranking.rerank(
     model = rerankingModel,
     query = "How do I resume a chat stream?",
     documents = candidates.map { it.text },
@@ -230,7 +252,7 @@ Read next: [Model Families](model-families.md), [Application Patterns](applicati
 ## Generate An Image
 
 ```kotlin
-val image = generateImage(
+val image = ImageGeneration.generateImage(
     model = imageModel,
     prompt = "A clean architecture diagram for an SDK docs page.",
     aspectRatio = "16:9",
@@ -242,21 +264,24 @@ Read next: [Model Families](model-families.md).
 ## Connect MCP Tools
 
 ```kotlin
-val mcp = createMCPClient(
-    MCPClientConfig(
-        transport = createMcpTransport(
-            client = httpClient,
-            config = MCPTransportConfig(
-                type = MCPTransportKind.Http,
-                url = "https://tools.example.com/mcp",
+val mcp = CreateMCPClient(
+    MCPClientConfig {
+        transport(
+            CreateMcpTransport(
+                client = httpClient,
+                config = MCPTransportConfig {
+                    type(MCPTransportKind.Http)
+                    url("https://tools.example.com/mcp")
+                },
             ),
-        ),
-    ),
+        )
+    },
 )
 
 class McpAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
     ToolLoopAgent<AppContext, String>(
         model = model,
+        instructions = "Use MCP tools when they help.",
         tools = tools,
         stopWhen = StepCountIs(8),
     )
@@ -269,17 +294,14 @@ Read next: [Model Context Protocol](mcp.md).
 ## Test With A Custom Provider
 
 ```kotlin
-val provider = customProvider(
-    providerId = "test",
-    languageModels = mapOf(
-        "small" to mockLanguageModelTextOnly("ok"),
-    ),
-)
+val provider = CustomProvider {
+    providerId("test")
+    languageModel("small", MockLanguageModelTextOnly("ok"))
+}
 
-val result = generateText(
-    model = provider.languageModel("small"),
-    prompt = "anything",
-)
+val result = TextGenerator(provider.languageModel("small"))
+    .generate(GenerationInput.Prompt("anything"))
+    .first()
 
 assertEquals("ok", result.text)
 ```
@@ -289,18 +311,16 @@ Read next: [Testing And Release](testing-and-release.md).
 ## Observe One Agent Flow
 
 ```kotlin
-val result = agent.generate(
+agent.collectAgentEvents(
     prompt = prompt,
     options = context,
-    hooks = AgentCallHooks(
-        onStepFinish = { event ->
-            metrics.tokens(event.step.usage.totalTokens)
-        },
-        onError = { event ->
-            errors.record(event.source.name, event.error)
-        },
-    ),
-)
+) { event ->
+    when (event) {
+        is AgentEvent.StepFinished -> metrics.tokens(event.step.usage.totalTokens)
+        is AgentEvent.Errored -> errors.record(event.source.name, event.error)
+        else -> Unit
+    }
+}
 ```
 
 Read next: [Middleware And Telemetry](middleware-and-telemetry.md).
@@ -309,7 +329,7 @@ Read next: [Middleware And Telemetry](middleware-and-telemetry.md).
 
 ```kotlin
 try {
-    val result = generateText(model = model, prompt = prompt)
+    val result = TextGenerator(model).generate(GenerationInput.Prompt(prompt)).first()
     render(result.text)
 } catch (error: APICallError) {
     logger.warn("Provider call failed: ${error.statusCode}")
@@ -324,12 +344,12 @@ Read next: [Error Handling](error-handling.md).
 ## Debug A Stream
 
 ```kotlin
-streamText(model = model, prompt = prompt).collect { event ->
+TextGenerator(model).stream(GenerationInput.Prompt(prompt)).collect { event ->
     println("${event::class.simpleName}: $event")
 }
 ```
 
-For more structured diagnostics, wrap the model with `devToolsMiddleware`.
+For more structured diagnostics, wrap the model with `DevToolsMiddleware`.
 
 Read next: [Troubleshooting](troubleshooting.md), [DevTools](devtools.md), [Middleware And Telemetry](middleware-and-telemetry.md).
 
@@ -338,15 +358,15 @@ Read next: [Troubleshooting](troubleshooting.md), [DevTools](devtools.md), [Midd
 ```kotlin
 val recorder = InMemoryDevToolsRecorder()
 
-val inspected = wrapLanguageModel(
+val inspected = WrapLanguageModel(
     model = model,
-    middlewares = listOf(devToolsMiddleware(recorder)),
+    middlewares = listOf(DevToolsMiddleware(recorder)),
 )
 
-generateText(model = inspected, prompt = "Explain retries.")
+TextGenerator(inspected).generate(GenerationInput.Prompt("Explain retries.")).first()
 
 recorder.results.values.forEach { result ->
-    println("${result.stepId}: ${result.durationMs}ms")
+    println("${result.durationMs}ms")
 }
 ```
 
@@ -355,49 +375,47 @@ Read next: [DevTools](devtools.md), [Testing And Release](testing-and-release.md
 ## Observe Agent Lifecycle
 
 ```kotlin
-val result = agent.generate(
-    prompt = prompt,
-    options = context,
-    hooks = AgentCallHooks(
-        onStepFinish = { event ->
-            metrics.tokens(event.step.usage.totalTokens)
-        },
-        onFinish = { event ->
-            messageStore.save(event.messages)
-        },
-    ),
-)
+agent.events(prompt = prompt, options = context).collect { event ->
+    when (event) {
+        is AgentEvent.StepFinished -> metrics.tokens(event.step.usage.totalTokens)
+        is AgentEvent.Finished -> messageStore.save(event.messages)
+        else -> Unit
+    }
+}
 ```
 
 Read next: [Lifecycle And Events](lifecycle-and-events.md).
 
-## Use Framework-Shaped Chat Helpers
+## Use Kotlin Chat State Helpers
 
 ```kotlin
-val helpers = ai.torad.aisdk.react.useChat(
-    ai.torad.aisdk.react.UseChatOptions(
-        id = "support",
-        transport = transport,
-        initialMessages = savedMessages,
-    ),
+val session = ChatSession(
+    id = "support",
+    initialMessages = savedMessages,
+    transport = TextStreamChatTransport(handler = { request ->
+        agent.stream(messages = request.messages).filterIsInstance<StreamEvent.TextDelta>().map { it.text }
+    }),
 )
 
-helpers.sendMessage(userMessage).collect { message ->
+session.sendMessage(userMessage).collect { message ->
     render(message)
 }
 ```
 
-Read next: [Framework Facades](framework-facades.md), [Chatbots](chatbots.md).
+Read next: [Chatbots](chatbots.md), [UI And Streams](ui-and-streams.md).
 
 ## Use Completion For One Text Field
 
 ```kotlin
 val completion = Completion(
-    UseCompletionOptions(
-        transport = DirectCompletionTransport { request ->
-            flowOf("Draft for: ${request.prompt}")
-        },
-    ),
+    UseCompletionOptions(block = {
+        transport(
+            object : CompletionTransport {
+                override fun complete(request: CompletionRequest): Flow<String> =
+                    flowOf("Draft for: ${request.prompt}")
+            },
+        )
+    }),
 )
 
 val text = completion.complete("Write a release title.")
