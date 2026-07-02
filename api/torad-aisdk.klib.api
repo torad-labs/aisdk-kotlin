@@ -7502,7 +7502,7 @@ final class ai.torad.aisdk/APICallError : ai.torad.aisdk/AiSdkException { // ai.
 }
 
 final class ai.torad.aisdk/AbortController { // ai.torad.aisdk/AbortController|null[0]
-    constructor <init>() // ai.torad.aisdk/AbortController.<init>|<init>(){}[0]
+    constructor <init>(ai.torad.aisdk/Logger = ...) // ai.torad.aisdk/AbortController.<init>|<init>(ai.torad.aisdk.Logger){}[0]
 
     final val signal // ai.torad.aisdk/AbortController.signal|{}signal[0]
         final fun <get-signal>(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/AbortController.signal.<get-signal>|<get-signal>(){}[0]

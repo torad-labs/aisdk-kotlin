@@ -163,7 +163,10 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 - `interface AbortSignal { val isAborted; fun throwIfAborted(); fun register(onAbort): Registration }`
 - `val AbortSignalNever: AbortSignal`
-- `class AbortController { val signal; fun abort() }`
+- `class AbortController(logger: Logger = NoopLogger) { val signal; fun abort() }`
+  - Abort callback failures are recoverable: the controller emits one `Logger.warn` with
+    the thrown callback exception and continues delivering abort to remaining callbacks.
+    Logger failures are swallowed so observability cannot block abort delivery.
 - `class AbortError`
 - `fun abortSignalFromJob(job: Job): AbortSignal`
 
@@ -419,6 +422,8 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `DevToolsStep` and `DevToolsStepResult` are `@Poko class`
   value-semantics types; field access remains, but public `copy()` /
   `componentN()` ABI is intentionally absent.
+- `DevToolsMiddleware` synchronizes run creation and step numbering; concurrent calls
+  against one middleware instance create one run and monotonic step numbers.
 
 ### Streaming helpers
 

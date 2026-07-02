@@ -65,10 +65,15 @@ public val AbortSignalNever: AbortSignal = object : AbortSignal {
  * Mutable abort source — the v6 equivalent of `AbortController`. Hold the
  * controller, hand the [signal] to the agent, call [abort] from the UI's
  * stop button.
+ *
+ * @param logger receives a warning if a registered abort callback throws.
  * @since 0.3.0-beta01
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class AbortController {
+public class AbortController(
+    /** @since 0.3.0-beta01 */
+    private val logger: Logger = NoopLogger,
+) {
     private val backing: CompletableJob = SupervisorJob()
 
     // Copy-on-write callback list via atomic CAS. register/cancel/abort may be
@@ -87,7 +92,7 @@ public class AbortController {
         // list, and so abort() is idempotent under races.
         val snapshot = callbacks.exchange(emptyList())
         for (cb in snapshot) {
-            runCatching { cb() }
+            notifyCallback(cb)
         }
     }
 
@@ -107,6 +112,23 @@ public class AbortController {
         }
     }
 
+    private fun notifyCallback(onAbort: () -> Unit) {
+        try {
+            onAbort()
+        } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
+            logCallbackFailure(error)
+        }
+    }
+
+    private fun logCallbackFailure(error: Throwable) {
+        runCatching {
+            logger.warn(
+                "AbortSignal callback threw; continuing abort delivery to remaining callbacks.",
+                error,
+            )
+        }
+    }
+
     private inner class SignalImpl : AbortSignal {
         override val isAborted: Boolean get() = backing.isCancelled
 
@@ -116,7 +138,7 @@ public class AbortController {
 
         override fun register(onAbort: () -> Unit): AbortSignal.AbortRegistration {
             if (backing.isCancelled) {
-                runCatching { onAbort() }
+                notifyCallback(onAbort)
                 return NoopRegistration
             }
             addCallback(onAbort)
@@ -124,7 +146,7 @@ public class AbortController {
             // add; if so this callback was missed — fire any stragglers now.
             if (backing.isCancelled) {
                 for (cb in callbacks.exchange(emptyList())) {
-                    runCatching { cb() }
+                    notifyCallback(cb)
                 }
             }
             return object : AbortSignal.AbortRegistration {
