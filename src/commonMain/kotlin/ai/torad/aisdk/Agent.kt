@@ -77,6 +77,12 @@ public interface Agent<TContext, TOutput> {
      *
      * To observe lifecycle events, collect [ToolLoopAgent.events] (a
      * `Flow<AgentEvent>`) — there is no callback parameter.
+     *
+     * Cold flow: no model call or tool execution starts until collected.
+     * Each collection reruns the full generation from the beginning; for
+     * tool-loop agents that includes tool executions and their side effects,
+     * and every collection may incur provider cost/billing. One-shot callers
+     * should collect exactly one value, usually with `.first()`.
      * @since 0.3.0-beta01
      */
     public fun generate(
