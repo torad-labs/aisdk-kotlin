@@ -329,7 +329,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // store → start). The body's supersession guard (runEngineLoop) compares its own
         // job to this ref; an eager launch could begin writing state before the
         // store lands, making the new job's own early writes fail the guard.
-        val abortController = AbortController()
+        val abortController = AbortController(logger)
         val job = engineScope.launch(start = CoroutineStart.LAZY) {
             runEngineLoop(
                 prompt = text,
@@ -378,7 +378,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             )
         }
         // Build → store → start (see submitPrompt) so the guard sees this job published.
-        val abortController = AbortController()
+        val abortController = AbortController(logger)
         val job = engineScope.launch(start = CoroutineStart.LAZY) {
             // TOOL-004: use currentActiveContextRef (updated by prepareStep overrides)
             // rather than currentEngineContextRef (only set at submitPrompt time).

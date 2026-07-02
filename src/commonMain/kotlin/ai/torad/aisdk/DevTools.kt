@@ -4,6 +4,8 @@ import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
@@ -103,6 +105,7 @@ public fun DevToolsMiddleware(
     }
 
     return object : LanguageModelMiddleware {
+        private val stateMutex = Mutex()
         private var runCreated = false
         private var stepCounter = 0
 
@@ -182,18 +185,23 @@ public fun DevToolsMiddleware(
         }
 
         private suspend fun ensureRunCreated() {
-            if (!runCreated) {
-                recorder.createRun(runId)
-                runCreated = true
+            stateMutex.withLock {
+                if (!runCreated) {
+                    recorder.createRun(runId)
+                    runCreated = true
+                }
             }
         }
 
-        private fun createStep(context: MiddlewareCallContext, type: String): DevToolsStep {
-            stepCounter += 1
+        private suspend fun createStep(context: MiddlewareCallContext, type: String): DevToolsStep {
+            val stepNumber = stateMutex.withLock {
+                stepCounter += 1
+                stepCounter
+            }
             return DevToolsStep(
                 id = idGenerator(),
                 runId = runId,
-                stepNumber = stepCounter,
+                stepNumber = stepNumber,
                 type = type,
                 modelId = context.model.modelId,
                 provider = context.model.provider,

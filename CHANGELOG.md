@@ -276,6 +276,10 @@ This project follows Semantic Versioning once the first stable release is cut.
 - Telemetry observability: the loop `Logger.warn`s when an integration throw is swallowed
   (named integration, throwable attached) — a broken integration is discoverable, never
   perfectly silent. `ToolLoopAgent` gains `logger: Logger = NoopLogger`.
+- Abort callback observability: `AbortController` now accepts an optional `Logger` and warns
+  when a registered abort callback throws, while still delivering abort to remaining callbacks.
+  `ToolLoopAgent` wires its logger into its internal abort controllers, and DevTools run/step
+  counters are synchronized for concurrent middleware calls.
 - The legacy tracer/span machinery moved to `TelemetryTracing.kt` (same package — no ABI
   change); the dead `getTracer` helper was removed.
 - Removed the dead JsonElement-bag types `TelemetrySpan`/`TelemetryEvent` and the unwired
