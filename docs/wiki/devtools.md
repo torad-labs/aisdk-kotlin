@@ -8,23 +8,22 @@ development, debugging, and tests. Do not enable it in production.
 ```kotlin
 val recorder = InMemoryDevToolsRecorder()
 
-val inspectedModel = wrapLanguageModel(
+val inspectedModel = WrapLanguageModel(
     model = rawModel,
     middlewares = listOf(
-        devToolsMiddleware(
+        DevToolsMiddleware(
             recorder = recorder,
             environment = "development",
         ),
     ),
 )
 
-val result = generateText(
-    model = inspectedModel,
-    prompt = "Explain tool calling.",
-)
+val result = TextGenerator(inspectedModel)
+    .generate(GenerationInput.Prompt("Explain tool calling."))
+    .first()
 ```
 
-`devToolsMiddleware` records a run and one step per generate or stream call.
+`DevToolsMiddleware` records a run and one step per generate or stream call.
 
 ## Inspect Recorded Data
 
@@ -48,12 +47,13 @@ duration, output summary, usage, error message, and stream chunks when present.
 ## Streaming Diagnostics
 
 ```kotlin
-val model = wrapLanguageModel(
+val model = WrapLanguageModel(
     model = rawModel,
-    middlewares = listOf(devToolsMiddleware(recorder)),
+    middlewares = listOf(DevToolsMiddleware(recorder)),
 )
 
-streamText(model = model, prompt = "Stream a short answer.")
+TextGenerator(model)
+    .stream(GenerationInput.Prompt("Stream a short answer."))
     .collect { event -> render(event) }
 
 val streamResult = recorder.results.values.last()
@@ -67,7 +67,7 @@ Use this to verify event order, usage reporting, and tool-call flow.
 Passing `environment = "production"` throws immediately:
 
 ```kotlin
-devToolsMiddleware(environment = "production")
+DevToolsMiddleware(environment = "production")
 ```
 
 This guard prevents accidental production capture. Use telemetry integrations

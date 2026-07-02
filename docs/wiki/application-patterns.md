@@ -197,15 +197,15 @@ Streams are `Flow` values. Do not fan out one provider stream to several
 collectors unless you intentionally buffer or replay it.
 
 ```kotlin
-val result = streamTextResult(model = model, prompt = prompt)
+val result = TextGenerator(model).streamResult(GenerationInput.Prompt(prompt))
 
 val uiJob = scope.launch {
     result.fullStream.collect { event -> render(event) }
 }
 ```
 
-Use `streamTextResult` when adapters need a replayable stream. Use a single
-collection for the low-level `streamText` flow.
+Use `TextGenerator.streamResult` when adapters need a replayable stream. Use a
+single collection for a plain `TextGenerator.stream` flow.
 
 ## Keep Security Outside Model Choice
 
