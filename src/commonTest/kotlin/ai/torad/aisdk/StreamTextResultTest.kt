@@ -10,6 +10,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -148,7 +149,12 @@ class StreamTextResultTest {
         }
         withContext(Dispatchers.Default) { withTimeout(5_000) { firstDeltaSeen.await() } }
 
-        val second = async(Dispatchers.Default) { result.fullStream.toList() }
+        val secondStarted = CompletableDeferred<Unit>()
+        val second = async(Dispatchers.Default) {
+            result.fullStream.onEach { secondStarted.complete(Unit) }.toList()
+        }
+        // second must be registered before first is cancelled, else abandonment legitimately restarts the upstream.
+        withContext(Dispatchers.Default) { withTimeout(5_000) { secondStarted.await() } }
         first.cancelAndJoin()
         gate.complete(Unit)
 
