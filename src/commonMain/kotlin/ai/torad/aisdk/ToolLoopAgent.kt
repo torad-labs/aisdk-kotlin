@@ -66,7 +66,7 @@ import kotlin.coroutines.coroutineContext
  * fails immediately with [InvalidArgumentError] because the required model,
  * instructions, and tools are missing.
  */
-@OptIn(ExperimentalAtomicApi::class)
+@OptIn(ExperimentalAiSdkApi::class, ExperimentalAtomicApi::class)
 @Suppress("ConstructorParameterNaming", "LongParameterList", "UNCHECKED_CAST", "VariableNaming")
 /** @since 0.3.0-beta01 */
 public abstract class ToolLoopAgent<TContext, TOutput>(
@@ -169,6 +169,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * `StreamEvent.ToolError`. See [ToolCallRepairFunction].
      * @since 0.3.0-beta01
      */
+    @ExperimentalAiSdkApi
     public val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = settings.experimental_repairToolCall
 
     /**
@@ -205,6 +206,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     private val approvalCoordinator = ToolApprovalCoordinator<TContext>(toolApprovalSecretBytes, repairer)
 
     /** @since 0.3.0-beta01 */
+    @ExperimentalAiSdkApi
     public val experimental_toolApprovalSecret: ByteArray?
         get() = toolApprovalSecretBytes?.copyOf()
 

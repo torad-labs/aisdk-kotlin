@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalAiSdkApi::class)
+
 package ai.torad.aisdk
 
 import kotlin.test.Test

@@ -1,4 +1,4 @@
-@file:OptIn(LowLevelLanguageModelApi::class)
+@file:OptIn(ExperimentalAiSdkApi::class, LowLevelLanguageModelApi::class)
 
 package ai.torad.aisdk
 
