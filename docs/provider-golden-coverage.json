@@ -22,8 +22,8 @@
       "streamGolden": "AssemblyAIDefensiveParsingTest.kt"
     },
     "AzureOpenAIProvider": {
-      "requestGolden": "docs/parity/AzureOpenAI.md",
-      "streamGolden": "docs/parity/AzureOpenAI.md",
+      "requestGolden": "docs/parity/ai-sdk-azure.md",
+      "streamGolden": "docs/parity/ai-sdk-azure.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "BasetenProvider": {
@@ -31,13 +31,13 @@
       "streamGolden": "BasetenProviderTest.kt"
     },
     "BedrockAnthropicProvider": {
-      "requestGolden": "docs/parity/BedrockAnthropic.md",
-      "streamGolden": "docs/parity/BedrockAnthropic.md",
+      "requestGolden": "docs/parity/ai-sdk-amazon-bedrock.md",
+      "streamGolden": "docs/parity/ai-sdk-amazon-bedrock.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "BedrockMantleProvider": {
-      "requestGolden": "docs/parity/BedrockMantle.md",
-      "streamGolden": "docs/parity/BedrockMantle.md",
+      "requestGolden": "docs/parity/ai-sdk-amazon-bedrock.md",
+      "streamGolden": "docs/parity/ai-sdk-amazon-bedrock.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "BlackForestLabsProvider": {
@@ -49,8 +49,8 @@
       "streamGolden": "ByteDanceDefensiveParsingTest.kt"
     },
     "CerebrasProvider": {
-      "requestGolden": "docs/parity/Cerebras.md",
-      "streamGolden": "docs/parity/Cerebras.md",
+      "requestGolden": "docs/parity/ai-sdk-cerebras.md",
+      "streamGolden": "docs/parity/ai-sdk-cerebras.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "CohereProvider": {
@@ -58,13 +58,13 @@
       "streamGolden": "CohereDefensiveParsingTest.kt"
     },
     "DeepInfraProvider": {
-      "requestGolden": "docs/parity/DeepInfra.md",
-      "streamGolden": "docs/parity/DeepInfra.md",
+      "requestGolden": "docs/parity/ai-sdk-deepinfra.md",
+      "streamGolden": "docs/parity/ai-sdk-deepinfra.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "DeepSeekProvider": {
-      "requestGolden": "docs/parity/DeepSeek.md",
-      "streamGolden": "docs/parity/DeepSeek.md",
+      "requestGolden": "docs/parity/ai-sdk-deepseek.md",
+      "streamGolden": "docs/parity/ai-sdk-deepseek.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "DeepgramProvider": {
@@ -81,25 +81,26 @@
     },
     "FireworksProvider": {
       "requestGolden": "FireworksImageBatchingTest.kt",
-      "streamGolden": null
+      "streamGolden": "docs/parity/ai-sdk-fireworks.md",
+      "coverageNote": "Fireworks streaming delegates through the OpenAI-compatible facade; parity ledger covers the provider surface until a Fireworks-specific streaming golden fixture is added."
     },
     "GladiaProvider": {
       "requestGolden": "GladiaDefensiveParsingTest.kt",
       "streamGolden": "GladiaDefensiveParsingTest.kt"
     },
     "GoogleGenerativeAIProvider": {
-      "requestGolden": "docs/parity/GoogleGenerativeAI.md",
-      "streamGolden": "docs/parity/GoogleGenerativeAI.md",
+      "requestGolden": "docs/parity/ai-sdk-google.md",
+      "streamGolden": "docs/parity/ai-sdk-google.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "GoogleVertexAnthropicProvider": {
-      "requestGolden": "docs/parity/GoogleVertexAnthropic.md",
-      "streamGolden": "docs/parity/GoogleVertexAnthropic.md",
+      "requestGolden": "docs/parity/ai-sdk-google-vertex.md",
+      "streamGolden": "docs/parity/ai-sdk-google-vertex.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "GoogleVertexMaasProvider": {
-      "requestGolden": "docs/parity/GoogleVertexMaas.md",
-      "streamGolden": "docs/parity/GoogleVertexMaas.md",
+      "requestGolden": "docs/parity/ai-sdk-google-vertex.md",
+      "streamGolden": "docs/parity/ai-sdk-google-vertex.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "GoogleVertexProvider": {
@@ -107,13 +108,13 @@
       "streamGolden": "GoogleVertexProviderTest.kt"
     },
     "GoogleVertexXaiProvider": {
-      "requestGolden": "docs/parity/GoogleVertexXai.md",
-      "streamGolden": "docs/parity/GoogleVertexXai.md",
+      "requestGolden": "docs/parity/ai-sdk-google-vertex.md",
+      "streamGolden": "docs/parity/ai-sdk-google-vertex.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "GroqProvider": {
-      "requestGolden": "docs/parity/Groq.md",
-      "streamGolden": "docs/parity/Groq.md",
+      "requestGolden": "docs/parity/ai-sdk-groq.md",
+      "streamGolden": "docs/parity/ai-sdk-groq.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "HuggingFaceProvider": {
@@ -141,8 +142,8 @@
       "streamGolden": "MistralProviderTest.kt"
     },
     "MoonshotAIProvider": {
-      "requestGolden": "docs/parity/MoonshotAI.md",
-      "streamGolden": "docs/parity/MoonshotAI.md",
+      "requestGolden": "docs/parity/ai-sdk-moonshotai.md",
+      "streamGolden": "docs/parity/ai-sdk-moonshotai.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "OpenAICompatibleProvider": {
@@ -158,8 +159,8 @@
       "streamGolden": "OpenResponsesDefensiveParsingTest.kt"
     },
     "PerplexityProvider": {
-      "requestGolden": "docs/parity/Perplexity.md",
-      "streamGolden": "docs/parity/Perplexity.md",
+      "requestGolden": "docs/parity/ai-sdk-perplexity.md",
+      "streamGolden": "docs/parity/ai-sdk-perplexity.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "ProdiaProvider": {
@@ -183,8 +184,8 @@
       "streamGolden": "TogetherAIDefensiveParsingTest.kt"
     },
     "VercelProvider": {
-      "requestGolden": "docs/parity/Vercel.md",
-      "streamGolden": "docs/parity/Vercel.md",
+      "requestGolden": "docs/parity/ai-sdk-vercel.md",
+      "streamGolden": "docs/parity/ai-sdk-vercel.md",
       "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
     },
     "VoyageProvider": {
