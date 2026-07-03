@@ -69,8 +69,12 @@ jobs:
       - name: Install locked Node tooling
         run: npm ci
       - name: Architecture gate (ast-grep rules + structural checks)
+        id: architecture_gate
+        continue-on-error: true
         run: ./node_modules/.bin/ast-grep --version && PATH="$PWD/node_modules/.bin:$PATH" bash .claude/hooks/rules/ci-gate.sh
       - name: Hook self-tests
+        id: hook_self_tests
+        continue-on-error: true
         run: |
           export PATH="$PWD/node_modules/.bin:$PATH"
           python3 .claude/hooks/tests/test_kotlin_antipattern_policy.py
@@ -78,11 +82,40 @@ jobs:
           python3 .claude/hooks/tests/test_fleet_protocol_policy.py
           python3 .claude/hooks/tests/test_rule_selfcheck_policy.py
       - name: Beta readiness gate
+        id: beta_readiness
+        continue-on-error: true
         run: tools/beta-readiness-check
       - name: Verify (tests + detekt + ABI + coverage)
+        id: gradle_check
+        continue-on-error: true
         run: ./gradlew check
       - name: Verify publication metadata
+        id: publish_to_maven_local
+        continue-on-error: true
         run: ./gradlew publishToMavenLocal
+      - name: Summarize verify gates
+        if: always()
+        run: |
+          gates=(
+            "architecture_gate|Architecture gate (ast-grep rules + structural checks)|${{ steps.architecture_gate.outcome }}"
+            "hook_self_tests|Hook self-tests|${{ steps.hook_self_tests.outcome }}"
+            "beta_readiness|Beta readiness gate|${{ steps.beta_readiness.outcome }}"
+            "gradle_check|Verify (tests + detekt + ABI + coverage)|${{ steps.gradle_check.outcome }}"
+            "publish_to_maven_local|Verify publication metadata|${{ steps.publish_to_maven_local.outcome }}"
+          )
+
+          failed=0
+          printf '| Step id | Gate | Outcome |\n'
+          printf '| --- | --- | --- |\n'
+          for gate in "${gates[@]}"; do
+            IFS='|' read -r step_id name outcome <<< "$gate"
+            printf '| `%s` | %s | %s |\n' "$step_id" "$name" "$outcome"
+            if [ "$outcome" != "success" ]; then
+              failed=1
+            fi
+          done
+
+          exit "$failed"
 
   # Apple targets cannot build on Linux; without this leg the published iOS
   # frameworks were compiled/tested nowhere (kotlin.native.ignoreDisabledTargets
