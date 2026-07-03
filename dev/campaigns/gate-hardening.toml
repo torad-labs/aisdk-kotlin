@@ -596,3 +596,11 @@ verify = "fixtures mirror all 5 detekt test cases + pass all validate modes; who
 # [2026-07-03] Started detekt-semantics mirror; reading CoroutineRules implementation/tests first per tooling law
 # [2026-07-03] Detekt mirror implemented as no-runcatching-in-suspend: fixtures cover all 5 CoroutineRulesTest cases; tree diff detekt=0 ast-grep=0; validate 71/71, hook suites, ci-gate, beta-readiness PASS; final SHA in fleet report
 # [2026-07-03] VERIFIED at d105b35: orchestrator adversarially probed the load-bearing mechanism — metavariable unification of SUSPEND_NAME across the builder-body call clause and the same-file suspend-declaration clause is REAL (positive fires with the name bound once across both sites; different-name negative rejected), so the rule cannot degrade to any-call-plus-any-suspend-fun over-matching. Whole-tree 0 hits re-confirmed; detekt-baseline 0 entries for the rule confirmed; ChatConcurrencyTest launch+imported-API shape correctly not matched = faithful mirror of detekt's type-free same-file heuristic (its actual semantics, not an aspiration). Validate 71/71/71, suites 44/26/6/5, ci-gate exit 0, audit-doc row 11 gap-closed + mirror table updated. Dual-encoding tripwire in place: fixtures mirror all 5 CoroutineRulesTest cases 1:1.
+
+[[items]]
+id = "HD-08"
+phase = "hd"
+title = "Branch-coverage hardening, slice 2: the next 4 clusters from HD-02s worst-10 ranking — GoogleProvider (2/50), GatewayContentEncoder (2/38), GatewayContentDecoder (2/32), Streaming (23/264 — pick the highest-value untested when-arms/error paths, not exhaustive). Same law as HD-02: REAL behavioral assertions (wire-field values, error propagation, boundary shapes), no line-touching; use ast-grep to enumerate untested when-expressions and catch clauses in these files; before/after branch numbers in the ledger note. After gains land, ratchet the branch floor again in the SAME slice this time (HD-04 pattern: actuals-minus-2pp, probe fail direction) so the gain locks immediately."
+files = ["src/commonTest/kotlin/", "build.gradle.kts"]
+status = "todo"
+verify = "before/after branch numbers in note; new tests behavioral and passing; branch floor re-ratcheted with fail-direction probe; gradle check green; ci-gate green"
