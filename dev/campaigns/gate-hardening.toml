@@ -728,9 +728,10 @@ id = "HD-18"
 phase = "hd"
 title = "Adjudicate 35 silent else->null/{} when-arms in wire-parsing paths (audit finding 2, HD-06-style per-site table — probe rule at scratchpad audit/probes.yaml id probe-silent-else-drop-in-when, re-run to enumerate). Per site rule: (a) unknown WIRE data (SSE event types, content blocks, tool blocks) reaching else must SURFACE — StreamEvent.Raw, logged notice, or typed Unknown — never vanish; (b) layered-dispatch nulls where the CALLER surfaces unknowns (e.g. Gateway*StreamCodec chain) are compliant — verify the caller actually does and say where; (c) non-wire else->null (pure lookup/convert helpers) compliant as-is. NO blanket rewrite; behavior changes need a test proving the unknown now surfaces. Key sites: AnthropicProvider:125/159, AnthropicRequestMapping:521, AnthropicTools:393, OpenAICompatibleStreaming:45, OpenAICompatibleHttp:177/475, GoogleInteractionsMapping:577, LiteRTLanguageModelMapping:161/250, Gateway*StreamCodec x5, OpenResponsesRequestMapping:378, FalImageModel:173, DeepgramSpeechModel:176, ProdiaModels:127 + 16 more from re-run."
 files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/", "src/commonMain/kotlin/ai/torad/aisdk/protocol/", "src/commonTest/kotlin/"]
-status = "todo"
+status = "done"
 verify = "per-site adjudication table in note (surface/compliant-via-caller/compliant-nonwire); behavior changes tested; gradle check + ci-gate green"
 # [2026-07-03] LP-9 rider (2026-07-03): if adjudication finds a uniform surface-the-unknown fix shape, author the fix rule + fixExamples FIRST and prepass-apply the mechanical subset; hand-edit only exceptions, which become structural carve-outs (LP-7). The no-blanket-rewrite law still governs the ADJUDICATION (deciding classes); LP-9 governs the APPLICATION once a class is uniform.
+# [2026-07-03] HD-18 done pending commit: reconstructed probe found 36 sites (not 35; two OpenResponses action fallbacks both matched). Fixed/surfaced: CohereStreamState unknown type -> StreamEvent.Raw; GoogleInteractionsStreamState unknown event_type -> StreamEvent.Raw; AnthropicProvider unknown citation -> ContentPart.Source with raw anthropic metadata; GoogleInteractionsMapping unknown annotation -> ContentPart.Source with raw google metadata. Caller-surfaced: GatewayLifecycle/Tool/Media/Text/TerminalStreamCodec nulls feed GatewayStreamCodec raw(). Raw/fallback preservers: OpenAICompatibleStreaming error fallback, ToolResultOutput unknown tagged output fallback, OpenResponsesProvider web_search action raw fallback x2. Compliant nonwire/request/local conversions: MediaTypes, JsonAccess x2, RetryPolicy, FalImageModel, DeepgramSpeechModel, OpenResponsesRequestMapping, Anthropic max-token/provider-tool/request mapping helpers, GatewayTypes x2, ConvertToLanguageModelPrompt, StreamObjectResult, ToolJsonSchema, ProdiaModels, LiteRT options/media helpers, OpenAICompatibleHttp x2, MessageStreamReader, Output x2. Tests added for the four fixed wire/source drops; check/beta-readiness green.
 
 [[items]]
 id = "HD-19"
@@ -747,3 +748,27 @@ title = "Extend validate_rules --new with fix scaffolding (LP-3 descendant, clos
 files = [".claude/hooks/rules/validate_rules.py", ".claude/hooks/tests/"]
 status = "todo"
 verify = "--new --fix emits stubs; stub state fails loud; filled example passes; existing --new behavior unchanged; suites green"
+
+[[items]]
+id = "HD-21"
+phase = "hd"
+title = "Guard-the-guards ast-grep pack (python rules over .claude/hooks): the post-done failures all lived in the enforcement layer, which has zero structural rules. Three warning-severity rules, each encoding a bug we actually shipped: (1) py-no-direct-child-parent-eq — <path>.parent == <CONST> comparison shape, message suggests ancestor check via parents (HD-11s inert dump guard); (2) py-no-bare-relative-companion-path — module-level Path with a bare relative string literal in rules/detectors, message demands a __file__ anchor or explicit flag (F-01/F-02, two shipped instances); (3) py-no-fail-open-on-missing-resource — missing-resource guard (not X.is_dir / not X.exists) followed by return of empty list/None inside check/validate functions, message says raise (F-01s exact fail-open). PREMISE-CHECK FIRST: how validate_rules + the fixture harness handle language: python rules (manifest.json fixture law may be kotlin-assumed) — choose the smallest wiring that still gives both-direction fixtures + gate presence (own tiny section in ci-gate acceptable); rules must NOT enter the kotlin edit-time policy scan. LP-6: probe each rule against the real historical bug shape (pre-fix code from git show 4528f44 parent commit / HD-11 pre-redo) as the bad fixture."
+files = [".claude/hooks/rules/", ".claude/hooks/rules/ci-gate.sh"]
+status = "todo"
+verify = "three rules fixture-proven both directions incl. historical bug shapes as bad examples; wired into ci-gate with fail-direction probe; kotlin policy scan unaffected; suites green"
+
+[[items]]
+id = "HD-22"
+phase = "hd"
+title = "no-restated-measurements detector (kills the FR-03/HD-17 claim-drift class structurally): python detector scanning docs/*.md, CHANGELOG.md, INTERFACE_CONTRACT.md, CLAUDE.md, dev/campaigns headers for measurement-shaped literals — percentages (dd.dd%), seconds (dd.ds), token/latency counts with units, coverage triples — that do NOT sit inside a [meas: key] citation or a verbatim-quote context (ledger note quotes are exempt: lines quoting dev/campaigns notes or fixture output). Warning-only report section in ci-gate initially (measure FP rate first, promote to fail later slice if clean); allowlist file for deliberate literals with reason. Seed test: it must flag a planted raw coverage number in docs/ and NOT flag existing [meas:] citations in CHANGELOG (HD-12 wrote those correctly — they are the good fixtures)."
+files = [".claude/hooks/rules/", ".claude/hooks/rules/ci-gate.sh", "tools/gate-fixtures/"]
+status = "todo"
+verify = "planted raw number flagged; existing [meas:] citations pass; FP count on current tree reported in note; harness fixture pair added; ci-gate green"
+
+[[items]]
+id = "HD-23"
+phase = "hd"
+title = "orphan-gate detector (LP-4 static half turned inward, kills the HD-15/16 six-landing dark window class): python detector inventorying every .claude/hooks/rules/detect-*.py, tools/check-*.mjs, tools/*-check, tools/run-*-smoke and asserting each is referenced by ci-gate.sh, ci.yml, release.yml, or an explicit allowlist entry carrying a reason (e.g. CI-only, release-only, harness-invoked). Unreferenced gate = fail with pointer to wire-or-allowlist. Fixture pair via the harness (violation: a planted orphan check file; compliant: current tree). Wire into ci-gate."
+files = [".claude/hooks/rules/", ".claude/hooks/rules/ci-gate.sh", "tools/gate-fixtures/"]
+status = "todo"
+verify = "planted orphan fails; current tree passes (or real orphans found get wired/allowlisted in same slice with reasons); harness pair green; ci-gate green"
