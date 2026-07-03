@@ -704,3 +704,19 @@ status = "verified"
 verify = "drift simulation fails ci-gate (probe shown); pristine tree passes; latency delta measured and recorded; expected-gates ledger unaffected or updated consistently"
 # [2026-07-03] done: wired full tools/beta-readiness-check into ci-gate beta readiness section because measured 0.25-0.26s < 2s; fail probe lowered GoogleProviderTest budget 741->740 and ci-gate exited 1, then restored; post ci-gate samples 11.79/11.54/11.65s vs pre 11.28/12.72/11.63s, delta within noise so no ci_gate_wall_clock_s supersede; expected-gates unchanged (same architecture-gate workflow step); final SHA in fleet report
 # [2026-07-03] VERIFIED at dfe5437 (diff review; deterministic results trusted): one three-line section in the fail-accumulate idiom, full beta-readiness wired (0.25s measured — right call over budget-only: parity/api-review/capabilities checks ride along free per-commit). Fail-direction probe evidenced with exact error line (741 > 740 -> exit 1 -> restored). Latency delta noise, no supersede — correct ledger judgment. Expected-gates unchanged correctly (CI step ids unaffected). The HD-08 drift class now fails at commit time; six-landing dark windows impossible.
+
+[[items]]
+id = "HD-17"
+phase = "hd"
+title = "Close the gate scan-scope hole (audit finding 1): ci-gate error-rule scan defaults to src/commonMain/kotlin only (ci-gate.sh case block ~line 56-63) — widen the default dirs to ALL library source sets (commonMain, jvmAndAndroidMain, jvmMain, nativeMain; keep test sets out of error rules except where already included, keep the existing platform-scoped carve-outs for the 4 JVM-legit rules + camelcase list exactly as-is). Also scan the two cancellation-correctness WARNING rules (no-throwable-catch-without-rethrow, no-runcatching-in-suspend) in the gate as a non-blocking REPORT section (count + list, never fail=1 — detekt/edit-time own blocking) so drift in platform sets becomes visible per-commit. Fail-direction probe per LP-6: plant a catch(Exception) violation in a scratch copy under jvmAndAndroidMain -> gate exits 1 -> remove. Latency delta via measurements CLI supersede if material."
+files = [".claude/hooks/rules/ci-gate.sh", "dev/measurements.toml"]
+status = "todo"
+verify = "planted jvmAndAndroidMain violation fails gate (probe shown); pristine passes; warning-report section visible; latency recorded if material"
+
+[[items]]
+id = "HD-18"
+phase = "hd"
+title = "Adjudicate 35 silent else->null/{} when-arms in wire-parsing paths (audit finding 2, HD-06-style per-site table — probe rule at scratchpad audit/probes.yaml id probe-silent-else-drop-in-when, re-run to enumerate). Per site rule: (a) unknown WIRE data (SSE event types, content blocks, tool blocks) reaching else must SURFACE — StreamEvent.Raw, logged notice, or typed Unknown — never vanish; (b) layered-dispatch nulls where the CALLER surfaces unknowns (e.g. Gateway*StreamCodec chain) are compliant — verify the caller actually does and say where; (c) non-wire else->null (pure lookup/convert helpers) compliant as-is. NO blanket rewrite; behavior changes need a test proving the unknown now surfaces. Key sites: AnthropicProvider:125/159, AnthropicRequestMapping:521, AnthropicTools:393, OpenAICompatibleStreaming:45, OpenAICompatibleHttp:177/475, GoogleInteractionsMapping:577, LiteRTLanguageModelMapping:161/250, Gateway*StreamCodec x5, OpenResponsesRequestMapping:378, FalImageModel:173, DeepgramSpeechModel:176, ProdiaModels:127 + 16 more from re-run."
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/", "src/commonMain/kotlin/ai/torad/aisdk/protocol/", "src/commonTest/kotlin/"]
+status = "todo"
+verify = "per-site adjudication table in note (surface/compliant-via-caller/compliant-nonwire); behavior changes tested; gradle check + ci-gate green"
