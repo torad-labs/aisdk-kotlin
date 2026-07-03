@@ -340,6 +340,7 @@ status = "todo"
 depends = ["RR-05", "GH-17"]
 verify = "Central shows artifact; canary green; release run archived green"
 # [2026-07-02] operator decision 2026-07-03: FOLD-IN THEN TAG — wave 12 completes on beta-follow-ups, ONE PR to main, merge on green (squash, consistent with operator's RR-05 choice), then tag v0.3.0-beta01 from post-merge main; beta ships with BP-02 consumer floor + samples + all pipelines. Main's first gated run: green (all 3 jobs incl. freshness).
+# [2026-07-02] OPERATOR HOLD 2026-07-03: tagging + publishing deferred — maximize work first; fold-in PR merge also held; ledger completion triggers a FINAL REVIEW ROUND before any release motion
 
 [[items]]
 id = "RR-07"
@@ -436,5 +437,6 @@ id = "BP-10"
 phase = "bp"
 title = "Recurring consumer-boundary canary (LP-5's gate): scheduled workflow resolving latest from real Central, compiling+running README sample (JVM + native), docs-URL liveness, gh attestation verify (post BP-06), monthly klibs.io check. Failures notify owner, not a dead log."
 files = [".github/workflows/"]
-status = "todo"
+status = "in_flight"
 depends = ["RR-06"]
+# [2026-07-02] rescoped: BUILD the canary workflow now (workflow_dispatch + schedule, disabled-or-skipping until first publish); live verification remains tag-gated
