@@ -293,8 +293,10 @@ public sealed class MCPClient {
     /** @since 0.3.0-beta01 */
     public abstract val instructions: String?
 
+    @JvmSynthetic
     public abstract suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
 
+    @JvmSynthetic
     public abstract suspend fun listTools(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
@@ -305,26 +307,31 @@ public sealed class MCPClient {
         schemas: MCPToolSchemas? = null,
     ): ToolSet<TContext>
 
+    @JvmSynthetic
     public abstract suspend fun listResources(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListResourcesResult
 
+    @JvmSynthetic
     public abstract suspend fun readResource(
         uri: String,
         options: MCPRequestOptions? = null,
     ): ReadResourceResult
 
+    @JvmSynthetic
     public abstract suspend fun listResourceTemplates(
         options: MCPRequestOptions? = null,
     ): ListResourceTemplatesResult
 
+    @JvmSynthetic
     @ExperimentalAiSdkApi
     public abstract suspend fun experimental_listPrompts(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListPromptsResult
 
+    @JvmSynthetic
     @ExperimentalAiSdkApi
     public abstract suspend fun experimental_getPrompt(
         name: String,
@@ -338,6 +345,7 @@ public sealed class MCPClient {
         handler: suspend (ElicitationRequest) -> ElicitResult,
     )
 
+    @JvmSynthetic
     public abstract suspend fun close()
 }
 

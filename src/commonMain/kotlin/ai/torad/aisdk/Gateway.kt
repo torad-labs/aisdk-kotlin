@@ -283,9 +283,13 @@ public sealed class GatewayProvider : Provider {
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
 
+    @JvmSynthetic
     public abstract suspend fun getAvailableModels(): GatewayFetchMetadataResponse
+    @JvmSynthetic
     public abstract suspend fun getCredits(): GatewayCreditsResponse
+    @JvmSynthetic
     public abstract suspend fun getSpendReport(params: GatewaySpendReportParams): GatewaySpendReportResponse
+    @JvmSynthetic
     public abstract suspend fun getGenerationInfo(params: GatewayGenerationInfoParams): GatewayGenerationInfo
 }
 
