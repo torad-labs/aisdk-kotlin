@@ -31,6 +31,17 @@ synthesis), reviewed and amended by the orchestrator. All statuses OPEN.
   claim-verification pass sits between phases — verification of claims beats
   volume of claims. Keep the reviewer in the loop.
 
+- **LP-5 (new, from the ecosystem best-practices sweep) — The verification machinery
+  points inward; the product boundary is unverified territory.** Every internal
+  practice checked against the ecosystem met or exceeded the bar; every gap found
+  (stdlib coupling, attestations, discovery metadata, snapshots, docs site,
+  evolution promise) lives on the consumer side of the publish boundary. LP-1's
+  logic at product scale: the README install snippet has never been machine-executed
+  against the real Central artifact, the klibs.io listing is assumed, docs links are
+  unchecked. Consumer experience needs gates (the machine-checkable half) and dated
+  written promises (the commitment half). Operationalized by RR-06, BP-01/02/04/05/06,
+  and BP-10 below; predicts future items of both kinds.
+
 **Ground-truth findings this backlog rests on (all independently verified):**
 `validate_rules.py` (the ast-grep rule validator, parse + semantic fixture modes)
 is wired into nothing; manifest fixtures cover 50/64 rules and the 14 uncovered
@@ -117,6 +128,7 @@ Ordered: ABI-last-chances → CI stability → merge mechanics → release execu
 | BP-07 | **Target-matrix expansion evaluation**: JetBrains guidance is "publish for all targets you can support, tiered testing." Currently jvm/android/iOS×3/linuxX64. Evaluate macosArm64/X64 (near-free: toolchain already in CI), wasmJs + js (deps ktor/coroutines/serialization all support them; opens the web-adjacent KMP audience), mingwX64. Each added target = conformance surface; decide deliberately, not by default. | kotlinlang api-guidelines-build-for-multiplatform | Post-beta decision item |
 | BP-08 | **Samples beyond the smoke consumers**: a user-facing `samples/` (JVM chat CLI first; Compose host later per BL-018) in Apollo's samples-repo spirit — the compile-guarded README/wiki snippets provide the seed content. | Apollo samples repo pattern | Post-beta |
 | BP-09 | **Evaluated and rejected (recorded so they aren't re-litigated):** publishing a BOM (single-artifact library — nothing to align); migrating the hand-rolled Central Portal upload to the vanniktech plugin (ours is trust-gated and proven on two releases; revisit only if the Portal API churns). | Okio BOM; kotlinlang tutorial | — |
+| BP-10 | **Recurring consumer-boundary canary (LP-5's gate):** a scheduled workflow (weekly, or piggybacked on GH-07's nightly) that exercises the library as a CONSUMER: fresh project resolves `ai.torad:torad-aisdk:<latest>` from real Maven Central, compiles + runs the README sample (JVM + one native target), checks the docs-site URL answers, runs `gh attestation verify` once BP-06 lands, and (monthly) confirms the klibs.io listing. RR-06 is the one-shot at release; this catches post-release drift — Central regressions, transitive-dep yanks, docs rot — that no repo-side gate can see. | LP-5 (generated, not swept) | Feed failures to the orchestrator/owner, not a dead log |
 
 ## Provenance & corrections applied during synthesis
 
