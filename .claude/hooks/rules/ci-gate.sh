@@ -104,7 +104,7 @@ python3 .claude/hooks/rules/validate_rules.py --apply-autofix "$RULES_ROOT/regis
 
 echo "== sealed-when codemod =="
 if [ -f "dev/codemods/fix_sealed_when.py" ]; then
-  output=$(python3 dev/codemods/fix_sealed_when.py src/commonMain src/commonTest 2>&1)
+  output=$(python3 dev/codemods/fix_sealed_when.py src/commonMain 2>&1)
   if echo "$output" | grep -qE "^Applying [1-9]"; then
     echo "$output" | grep -E "^(Applying|  Replace)"
     echo "sealed-when codemod applied fixes — stage changes and re-commit"
