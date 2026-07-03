@@ -14,7 +14,9 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AI_SDK_REFERENCE_VERSION: 6.0.208
   AI_SDK_REFERENCE_COMMIT: 3270146267b1d82f07972bc40f09e9b4ee8bb9d3
+  # Update AST_GREP_SHA256 together with AST_GREP_VERSION; the package.json drift-check below enforces version consistency.
   AST_GREP_VERSION: 0.42.1
+  AST_GREP_SHA256: 5de8b87cba67fc8dc3e239d54b6484802ad745a7ae3de76be4fe89661dc52657
 
 jobs:
   reference-freshness:
@@ -90,6 +92,7 @@ jobs:
             curl -fsSL \
               "https://github.com/ast-grep/ast-grep/releases/download/${AST_GREP_VERSION}/app-x86_64-unknown-linux-gnu.zip" \
               -o "$tmp/ast-grep.zip"
+            echo "$AST_GREP_SHA256  $tmp/ast-grep.zip" | sha256sum -c -
             unzip -q "$tmp/ast-grep.zip" -d "$tmp/extract"
             install -m 755 "$tmp/extract/ast-grep" "$install_dir/ast-grep"
           fi
