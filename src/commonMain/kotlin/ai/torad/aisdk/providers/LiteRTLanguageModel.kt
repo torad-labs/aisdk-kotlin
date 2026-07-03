@@ -592,9 +592,12 @@ public fun LiteRTToolCall(
  *
  * [content] carries text/media/tool-response values. [toolCalls] carries model
  * requests for SDK-owned tool execution. [channels] carries provider-specific
- * reasoning or side-channel text keyed by channel name.
+ * reasoning or side-channel text keyed by channel name. Host engines can set
+ * [finishReason] and [usage] on terminal responses; when omitted, the adapter
+ * preserves the historical inferred finish reason and zero usage.
  * @since 0.3.0-beta01
  */
+@Suppress("LongParameterList")
 public class LiteRTMessage internal constructor(
     /** @since 0.3.0-beta01 */
     public val role: LiteRTMessageRole,
@@ -606,6 +609,10 @@ public class LiteRTMessage internal constructor(
     public val channels: Map<String, String> = emptyMap(),
     /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    /** @since 0.3.0-beta01 */
+    public val usage: Usage? = null,
+    /** @since 0.3.0-beta01 */
+    public val finishReason: FinishReason? = null,
 )
 
 /**
@@ -618,6 +625,8 @@ public class LiteRTMessageBuilder {
     private var toolCalls: List<LiteRTToolCall> = emptyList()
     private var channels: Map<String, String> = emptyMap()
     private var providerMetadata: ProviderMetadata = ProviderMetadata.None
+    private var usage: Usage? = null
+    private var finishReason: FinishReason? = null
 
     /** @since 0.3.0-beta01 */
     public fun role(value: LiteRTMessageRole): LiteRTMessageBuilder {
@@ -650,6 +659,18 @@ public class LiteRTMessageBuilder {
     }
 
     /** @since 0.3.0-beta01 */
+    public fun usage(value: Usage?): LiteRTMessageBuilder {
+        usage = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun finishReason(value: FinishReason?): LiteRTMessageBuilder {
+        finishReason = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
     public fun build(): LiteRTMessage =
         LiteRTMessage(
             role = requireNotNull(role) { "LiteRTMessage.role is required" },
@@ -657,6 +678,8 @@ public class LiteRTMessageBuilder {
             toolCalls = toolCalls,
             channels = channels,
             providerMetadata = providerMetadata,
+            usage = usage,
+            finishReason = finishReason,
         )
 }
 
@@ -1051,6 +1074,8 @@ private class LiteRTStreamState(
     private val openReasoning: MutableSet<String> = mutableSetOf()
     private val emittedToolCalls: MutableSet<LiteRTStreamToolCallKey> = mutableSetOf()
     private var hasToolCalls: Boolean = false
+    private var terminalUsage: Usage? = null
+    private var terminalFinishReason: FinishReason? = null
     private val textRecoveryMetadata: ProviderMetadata = ProviderMetadata.ofPairs(
         provider to JsonObject(
             mapOf(
@@ -1079,6 +1104,8 @@ private class LiteRTStreamState(
     )
 
     suspend fun accept(message: LiteRTMessage, out: FlowCollector<StreamEvent>) {
+        terminalUsage = message.usage
+        terminalFinishReason = message.finishReason
         val textParts = message.content.filterIsInstance<LiteRTContent.Text>()
         if (textParts.isNotEmpty()) {
             val text = textParts.joinToString("") { it.text }
@@ -1139,8 +1166,9 @@ private class LiteRTStreamState(
         out.emit(
             StreamEvent.Finish(
                 totalSteps = 1,
-                finishReason = if (hasToolCalls) FinishReason.ToolCalls else FinishReason.Stop,
-                usage = Usage(),
+                finishReason = terminalFinishReason
+                    ?: if (hasToolCalls) FinishReason.ToolCalls else FinishReason.Stop,
+                usage = terminalUsage ?: Usage(),
             ),
         )
     }

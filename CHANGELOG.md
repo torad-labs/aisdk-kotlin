@@ -44,6 +44,9 @@ This project follows Semantic Versioning once the first stable release is cut.
   unknown gateway content part types now surface as `ContentPart.Raw` instead
   of being silently dropped, matching the stream path's `StreamEvent.Raw`
   fallback.
+- LiteRT host bridges can now set `LiteRTMessage.finishReason` and
+  `LiteRTMessage.usage`; the adapter propagates them instead of fabricating
+  `Stop` / zero usage, while preserving the historical defaults when omitted.
 - Tool strictness is now opt-in (breaking ABI change): `ToolSchema.strict`,
   `ToolSchemaOptions.strict`, `Tool.strict`, and `LanguageModelTool.strict` are
   `Boolean?` values defaulting to `null`. OpenAI-compatible tool requests omit

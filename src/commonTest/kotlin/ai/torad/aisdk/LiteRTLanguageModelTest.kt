@@ -15,6 +15,7 @@ import ai.torad.aisdk.providers.LiteRTStreamTextMode
 import ai.torad.aisdk.providers.LiteRTToolCall
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -151,6 +152,7 @@ class LiteRTLanguageModelTest {
 
         assertEquals("answer", result.text)
         assertEquals(FinishReason.ToolCalls, result.finishReason)
+        assertEquals(Usage(), result.usage)
         assertEquals("because", result.content.filterIsInstance<ContentPart.Reasoning>().single().text)
         assertEquals("lookup", result.toolCalls.single().toolName)
         val request = factory.requests.single()
@@ -190,6 +192,30 @@ class LiteRTLanguageModelTest {
             systemText,
         )
         assertTrue(result.warnings.none { it.message.orEmpty().contains("responseFormat") })
+    }
+
+    @Test
+    fun `generate propagates LiteRT finish reason and usage`() = runTest {
+        val usage = Usage.of(promptTokens = 7, completionTokens = 11)
+        val factory = FakeLiteRTFactory(
+            sendResponse = LiteRTMessage {
+                role(LiteRTMessageRole.Model)
+                content(listOf(LiteRTContent.Text("partial")))
+                finishReason(FinishReason.Length)
+                usage(usage)
+            },
+        )
+        val model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = factory)
+
+        val result = model.generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+            },
+        )
+
+        assertEquals("partial", result.text)
+        assertEquals(FinishReason.Length, result.finishReason)
+        assertEquals(usage, result.usage)
     }
 
     @Test
@@ -346,8 +372,60 @@ class LiteRTLanguageModelTest {
         ).toList()
 
         assertEquals(listOf("Hel", "lo"), events.filterIsInstance<StreamEvent.TextDelta>().map { it.text })
-        assertEquals(FinishReason.Stop, events.filterIsInstance<StreamEvent.Finish>().single().finishReason)
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(FinishReason.Stop, finish.finishReason)
+        assertEquals(Usage(), finish.usage)
         assertEquals(1, factory.createdConversations.single().closeCalls)
+    }
+
+    @Test
+    fun `stream propagates LiteRT finish reason and usage`() = runTest {
+        val usage = Usage.of(promptTokens = 13, completionTokens = 17)
+        val factory = FakeLiteRTFactory(
+            streamResponses = listOf(
+                LiteRTMessage {
+                    role(LiteRTMessageRole.Model)
+                    content(listOf(LiteRTContent.Text("partial")))
+                    finishReason(FinishReason.Length)
+                    usage(usage)
+                },
+            ),
+        )
+        val model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = factory)
+
+        val events = model.stream(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+            },
+        ).toList()
+
+        assertEquals(listOf("partial"), events.filterIsInstance<StreamEvent.TextDelta>().map { it.text })
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(FinishReason.Length, finish.finishReason)
+        assertEquals(usage, finish.usage)
+    }
+
+    @Test
+    fun `generated truncated structured output is not decoded as success`() = runTest {
+        val factory = FakeLiteRTFactory(
+            sendResponse = LiteRTMessage {
+                role(LiteRTMessageRole.Model)
+                content(listOf(LiteRTContent.Text("""{"value":1}""")))
+                finishReason(FinishReason.Length)
+            },
+        )
+        val agent = TestToolLoopAgent<Unit, JsonElement>(
+            model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = factory),
+            instructions = "Return JSON.",
+            tools = ToolSet(),
+            output = Output.json(),
+        )
+
+        val error = assertFailsWith<NoOutputGeneratedError> {
+            agent.generate(prompt = "hello", options = Unit).first()
+        }
+
+        assertTrue(error.message.orEmpty().contains("Length"))
     }
 
     @Test

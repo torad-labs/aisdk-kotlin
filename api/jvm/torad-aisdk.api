@@ -10702,9 +10702,11 @@ public final class ai/torad/aisdk/providers/LiteRTMessage {
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getChannels ()Ljava/util/Map;
 	public final fun getContent ()Ljava/util/List;
+	public final fun getFinishReason ()Lai/torad/aisdk/FinishReason;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
 	public final fun getRole ()Lai/torad/aisdk/providers/LiteRTMessageRole;
 	public final fun getToolCalls ()Ljava/util/List;
+	public final fun getUsage ()Lai/torad/aisdk/Usage;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -10714,9 +10716,11 @@ public final class ai/torad/aisdk/providers/LiteRTMessageBuilder {
 	public final fun build ()Lai/torad/aisdk/providers/LiteRTMessage;
 	public final fun channels (Ljava/util/Map;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
 	public final fun content (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
+	public final fun finishReason (Lai/torad/aisdk/FinishReason;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
 	public final fun providerMetadata (Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
 	public final fun role (Lai/torad/aisdk/providers/LiteRTMessageRole;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
 	public final fun toolCalls (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
+	public final fun usage (Lai/torad/aisdk/Usage;)Lai/torad/aisdk/providers/LiteRTMessageBuilder;
 }
 
 public final class ai/torad/aisdk/providers/LiteRTMessageRole : java/lang/Enum {

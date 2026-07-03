@@ -282,8 +282,8 @@ internal class LiteRTResponseMapper(
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
-            finishReason = if (toolCalls.isEmpty()) FinishReason.Stop else FinishReason.ToolCalls,
-            usage = Usage(),
+            finishReason = message.finishReason ?: inferredFinishReason(toolCalls.isNotEmpty()),
+            usage = message.usage ?: Usage(),
             providerMetadata = providerMetadata(message),
             content = buildList {
                 if (text.isNotEmpty()) add(ContentPart.Text(text))
@@ -293,6 +293,9 @@ internal class LiteRTResponseMapper(
             warnings = warnings,
         )
     }
+
+    fun inferredFinishReason(hasToolCalls: Boolean): FinishReason =
+        if (hasToolCalls) FinishReason.ToolCalls else FinishReason.Stop
 
     fun text(message: LiteRTMessage): String =
         message.content.filterIsInstance<LiteRTContent.Text>().joinToString("") { it.text }

@@ -39,7 +39,7 @@
     "src/commonMain/kotlin/ai/torad/aisdk/providers/ElevenLabsProvider.kt": 539,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/GladiaProvider.kt": 766,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/KlingAIProvider.kt": 683,
-    "src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModel.kt": 1204,
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModel.kt": 1232,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/ReplicateProvider.kt": 739,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/RevaiProvider.kt": 637,
     "src/commonTest/kotlin/ai/torad/aisdk/CohereProviderTest.kt": 599,
@@ -50,7 +50,7 @@
     "src/commonTest/kotlin/ai/torad/aisdk/AnthropicProviderTest.kt": 504,
     "src/commonTest/kotlin/ai/torad/aisdk/GoogleVertexProviderTest.kt": 518,
     "src/commonTest/kotlin/ai/torad/aisdk/HuggingFaceProviderTest.kt": 501,
-    "src/commonTest/kotlin/ai/torad/aisdk/LiteRTLanguageModelTest.kt": 602,
+    "src/commonTest/kotlin/ai/torad/aisdk/LiteRTLanguageModelTest.kt": 680,
     "src/commonTest/kotlin/ai/torad/aisdk/MCPClientTest.kt": 514,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt": 554
   }
