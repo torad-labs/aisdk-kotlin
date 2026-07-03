@@ -152,9 +152,10 @@ id = "GH-12"
 phase = "gh2"
 title = "continue-on-error + step ids + final if:always() aggregator in ci.yml verify job: gates report independently, job fails via aggregator table. Do NOT touch gradle-internal task graph."
 files = [".github/workflows/ci.yml"]
-status = "done"
+status = "verified"
 verify = "forcing an early gate red still shows later gate results in the same run; job conclusion red via aggregator"
 # [2026-07-02] done in GH-12 slice (final SHA in fleet report): verify gate steps now continue-on-error with ids and final always() aggregator table
+# [2026-07-02] orchestrator verified 4502017: 5 gate steps isolated (stable ids), setup steps fail-fast per adjudication, always() aggregator; fail path simulated locally by builder; green path observed on next CI run
 
 [[items]]
 id = "GH-13"
