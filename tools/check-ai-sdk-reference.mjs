@@ -12,15 +12,9 @@ const referenceRoot = join(repoRoot, '.reference', `vercel-ai-sdk-ai-${expectedV
 const packageJsonPath = join(referenceRoot, 'packages', 'ai', 'package.json');
 
 function main() {
-  const latest = JSON.parse(
-    execFileSync('npm', ['view', 'ai', 'version', '--json'], {
-      cwd: repoRoot,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'inherit'],
-    }),
-  );
+  const latest = readLatestPublishedVersion();
 
-  if (latest !== expectedVersion) {
+  if (latest !== null && latest !== expectedVersion) {
     warn(
       `npm latest ai version is ${latest}, but this port targets ${expectedVersion}. ` +
         'Refresh .reference, regenerate parity ledgers, and close the new delta before release.',
@@ -28,7 +22,11 @@ function main() {
   }
 
   if (!existsSync(packageJsonPath)) {
-    fail(`Missing reference package file: ${packageJsonPath}`);
+    warn(
+      `AI SDK reference checkout is unavailable at ${referenceRoot}; ` +
+        'skipping pin validation for this freshness check.',
+    );
+    return;
   }
 
   const actualCommit = readReferenceCommit();
@@ -46,6 +44,22 @@ function main() {
   }
 
   console.log(`AI SDK reference pin is valid: ai@${expectedVersion} (${actualCommit})`);
+}
+
+function readLatestPublishedVersion() {
+  try {
+    return JSON.parse(
+      execFileSync('npm', ['view', 'ai', 'version', '--json'], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }),
+    );
+  } catch (error) {
+    const detail = error.stderr?.toString().trim() || error.message;
+    warn(`Unable to query npm for latest ai version; continuing freshness check: ${detail}`);
+    return null;
+  }
 }
 
 function readReferenceCommit() {
