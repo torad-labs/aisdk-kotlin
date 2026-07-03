@@ -15,6 +15,11 @@ This gate has two modes:
       python3 validate_rules.py --manifest <rules.json>
   where rules.json is a list of {id, severity, yaml, badExample, goodExample}.
 
+  HUNK mode — re-scan each fixture as an edit hunk/snippet, without package or
+  enclosing scope. Entries default to hunkExpectation="same"; scope-anchored
+  rules may declare hunkExpectation="no-match".
+      python3 validate_rules.py --hunk-mode <rules.json>
+
   SCAFFOLD mode — emit a fill-in manifest entry for an existing rule file.
       python3 validate_rules.py --new <rule-id>
 
@@ -101,20 +106,36 @@ def _write_kt(text: str) -> str:
         return f.name
 
 
+def _write_kt_hunk(text: str) -> str:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".kt", delete=False, encoding="utf-8") as f:
+        f.write(text)
+        return f.name
+
+
 def _write_yaml(text: str) -> str:
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False, encoding="utf-8") as f:
         f.write(text)
         return f.name
 
 
-def semantic_mode(binary: str, manifest_path: Path) -> int:
+def _read_manifest(manifest_path: Path) -> list[dict[str, object]] | None:
     try:
         rules = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         print(f"ERROR: cannot read manifest: {exc}")
-        return 2
+        return None
     if not isinstance(rules, list) or not rules:
         print("ERROR: manifest must be a non-empty JSON list")
+        return None
+    if not all(isinstance(r, dict) for r in rules):
+        print("ERROR: manifest entries must be JSON objects")
+        return None
+    return rules
+
+
+def semantic_mode(binary: str, manifest_path: Path) -> int:
+    rules = _read_manifest(manifest_path)
+    if rules is None:
         return 2
     failures: list[tuple[str, str]] = []
     passed = 0
@@ -154,6 +175,64 @@ def semantic_mode(binary: str, manifest_path: Path) -> int:
         print(f"({passed} passed)")
         return 1
     print(f"ok: all {len(rules)} rules match bad + skip good")
+    return 0
+
+
+def hunk_mode(binary: str, manifest_path: Path) -> int:
+    rules = _read_manifest(manifest_path)
+    if rules is None:
+        return 2
+    failures: list[tuple[str, str]] = []
+    passed = 0
+    for r in rules:
+        rid = str(r.get("id", "?"))
+        yaml_text = r.get("yaml") or ""
+        bad_ex = r.get("badExample") or ""
+        good_ex = r.get("goodExample") or ""
+        expectation = str(r.get("hunkExpectation") or "same")
+        if expectation not in {"same", "no-match"}:
+            failures.append((rid, f"invalid hunkExpectation {expectation!r}"))
+            continue
+        if _needs_examples(bad_ex, good_ex):
+            failures.append((rid, "needs examples"))
+            continue
+
+        rule_path = _write_yaml(yaml_text)
+        bad_path = _write_kt_hunk(str(bad_ex))
+        good_path = _write_kt_hunk(str(good_ex))
+        try:
+            rc_b, n_bad, err_b = _scan(binary, rule_path, bad_path)
+            if not _parses(err_b, rc_b):
+                failures.append((rid, "rule does not parse in bad hunk scan"))
+                continue
+            rc_g, n_good, err_g = _scan(binary, rule_path, good_path)
+            if not _parses(err_g, rc_g):
+                failures.append((rid, "rule does not parse in good hunk scan"))
+                continue
+            if expectation == "same":
+                if n_bad < 1:
+                    failures.append((rid, "badExample hunk NOT matched (context-fragile rule)"))
+                elif n_good > 0:
+                    failures.append((rid, f"goodExample hunk WRONGLY matched x{n_good}"))
+                else:
+                    passed += 1
+            elif n_bad > 0 or n_good > 0:
+                failures.append((rid, f"hunkExpectation=no-match but hunk matched bad={n_bad} good={n_good}"))
+            else:
+                passed += 1
+        finally:
+            for p in (rule_path, bad_path, good_path):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
+    if failures:
+        print(f"HUNK FAIL: {len(failures)}/{len(rules)} rules rejected")
+        for rid, why in failures:
+            print(f"  - {rid}: {why}")
+        print(f"({passed} passed)")
+        return 1
+    print(f"ok: all {len(rules)} rules satisfy hunk-mode expectations")
     return 0
 
 
@@ -209,6 +288,11 @@ def main() -> int:
             print("ERROR: --manifest requires a path")
             return 2
         return semantic_mode(binary, Path(args[1]))
+    if args and args[0] == "--hunk-mode":
+        if len(args) < 2:
+            print("ERROR: --hunk-mode requires a path")
+            return 2
+        return hunk_mode(binary, Path(args[1]))
     rules_dir = Path(args[0]) if args else Path(__file__).resolve().parent / "kotlin"
     if not rules_dir.is_dir():
         print(f"ERROR: rules dir not found: {rules_dir}")
