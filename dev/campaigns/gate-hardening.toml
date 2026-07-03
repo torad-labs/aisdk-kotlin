@@ -718,9 +718,10 @@ id = "HD-17"
 phase = "hd"
 title = "Close the gate scan-scope hole (audit finding 1): ci-gate error-rule scan defaults to src/commonMain/kotlin only (ci-gate.sh case block ~line 56-63) — widen the default dirs to ALL library source sets (commonMain, jvmAndAndroidMain, jvmMain, nativeMain; keep test sets out of error rules except where already included, keep the existing platform-scoped carve-outs for the 4 JVM-legit rules + camelcase list exactly as-is). Also scan the two cancellation-correctness WARNING rules (no-throwable-catch-without-rethrow, no-runcatching-in-suspend) in the gate as a non-blocking REPORT section (count + list, never fail=1 — detekt/edit-time own blocking) so drift in platform sets becomes visible per-commit. Fail-direction probe per LP-6: plant a catch(Exception) violation in a scratch copy under jvmAndAndroidMain -> gate exits 1 -> remove. Latency delta via measurements CLI supersede if material."
 files = [".claude/hooks/rules/ci-gate.sh", "dev/measurements.toml"]
-status = "done"
+status = "verified"
 verify = "planted jvmAndAndroidMain violation fails gate (probe shown); pristine passes; warning-report section visible; latency recorded if material"
 # [2026-07-03] HD-17 done pending commit: ci-gate default error-rule dirs now include commonMain/jvmMain/jvmAndAndroidMain/nativeMain; JVM carve-outs unchanged; cancellation warning report prints no-throwable/no-runcatching counts non-blockingly; LP-6 probe planted jvmAndAndroidMain no-empty-catch violation and gate failed; pristine gate passed in 11.72s, no material latency ledger update.
+# [2026-07-03] VERIFIED at 5c46edf (diff review; deterministic results trusted): default error-rule scan now covers all 4 library source sets, test sets correctly excluded, platform carve-outs byte-identical; warning report section structurally non-blocking (no fail=1 path) with site dump on nonzero; LP-6 probe used a real platform file (SecureRandom.jvmAndAndroid.kt). PRECISION RECONCILE: report claimed no existing ci-gate latency key — ci_gate_wall_clock_s exists (HD-09, 11.22s); conclusion no-supersede still correct (11.72s within 10.7-13.1 noise band), claim wrong. Style nit accepted: ag_name/ag_path indirection is redundant but harmless. Scan-scope dark-window class closed.
 
 [[items]]
 id = "HD-18"
