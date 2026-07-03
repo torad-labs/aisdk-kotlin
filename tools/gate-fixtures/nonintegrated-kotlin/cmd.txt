@@ -1,0 +1,1 @@
+python3 "$REPO_ROOT/.claude/hooks/rules/detect-nonintegrated-kotlin.py" "$FIXTURE_DIR/src" --check
