@@ -1,4 +1,71 @@
 {
   "schemaVersion": 1,
-  "entries": []
+  "entries": [
+    {
+      "path": "docs/audit-remediation-backlog.md",
+      "literal": "30ms",
+      "lineContains": "McpHttpTransportTest",
+      "reason": "code-constant-not-measurement: historical test backoff/window value, not a project metric from dev/measurements.toml."
+    },
+    {
+      "path": "docs/audit-remediation-backlog.md",
+      "literal": "15ms",
+      "lineContains": "McpHttpTransportTest",
+      "reason": "code-constant-not-measurement: historical test timing-window value, not a project metric from dev/measurements.toml."
+    },
+    {
+      "path": "docs/beta-backlog.md",
+      "literal": "10s",
+      "lineContains": "withTimeout(10s)",
+      "reason": "code-constant-not-measurement: proposed test timeout literal, not a project metric from dev/measurements.toml."
+    },
+    {
+      "path": "docs/beta-backlog.md",
+      "literal": "120s",
+      "lineContains": "default 120s ceiling",
+      "reason": "code-constant-not-measurement: documented HTTP timeout constant, not a project metric from dev/measurements.toml."
+    },
+    {
+      "path": "docs/beta-backlog.md",
+      "literal": "30s",
+      "lineContains": "cap 30s",
+      "reason": "code-constant-not-measurement: documented reconnect backoff cap constant, not a project metric from dev/measurements.toml."
+    },
+    {
+      "path": "docs/beta-backlog.md",
+      "literal": "1000ms",
+      "lineContains": "1000ms",
+      "reason": "code-constant-not-measurement: documented upstream reconnect backoff constant, not a project metric from dev/measurements.toml."
+    },
+    {
+      "path": "docs/beta-backlog.md",
+      "literal": "30s",
+      "lineContains": "only `init` passes 30s",
+      "reason": "code-constant-not-measurement: documented MCP init timeout constant, not a project metric from dev/measurements.toml."
+    },
+    {
+      "path": "docs/beta-backlog.md",
+      "literal": "120s",
+      "lineContains": "withRealTimeout(120s)",
+      "reason": "code-constant-not-measurement: documented HTTP transport timeout constant, not a project metric from dev/measurements.toml."
+    },
+    {
+      "path": "docs/beta-backlog.md",
+      "literal": "30s",
+      "lineContains": "capped at 30s",
+      "reason": "code-constant-not-measurement: documented image polling backoff cap constant, not a project metric from dev/measurements.toml."
+    },
+    {
+      "path": "docs/beta-backlog.md",
+      "literal": "500ms",
+      "lineContains": "fixed 500ms",
+      "reason": "code-constant-not-measurement: documented previous image polling interval constant, not a project metric from dev/measurements.toml."
+    },
+    {
+      "path": "docs/beta-backlog.md",
+      "literal": "60s",
+      "lineContains": "capped 60s",
+      "reason": "code-constant-not-measurement: documented Retry-After cap constant, not a project metric from dev/measurements.toml."
+    }
+  ]
 }

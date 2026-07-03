@@ -100,8 +100,8 @@ python3 .claude/hooks/rules/validate_migration_rules.py docs/migrations || fail=
 echo "== python guard-rule gate =="
 python3 .claude/hooks/rules/validate_python_guard_rules.py || fail=1
 
-echo "== restated measurement warning report =="
-python3 .claude/hooks/rules/detect-restated-measurements.py || fail=1
+echo "== restated measurement detector =="
+python3 .claude/hooks/rules/detect-restated-measurements.py --check || fail=1
 
 echo "== orphan gate detector =="
 python3 .claude/hooks/rules/detect-orphan-gates.py || fail=1
