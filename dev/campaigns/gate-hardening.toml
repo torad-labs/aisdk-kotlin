@@ -469,13 +469,15 @@ id = "FR-03"
 phase = "fr"
 title = "FINAL REVIEW stage 3 — Opus (adversarial adjudication + completeness critic). INPUT = fr02-sonnet-findings.md + fr01-haiku-inventory.md. Tasks: (a) adjudicate each Sonnet finding (real/false/needs-probe) with reasoning; (b) completeness critique: what did the pipeline NOT examine (untested interactions, unreviewed surfaces, missing verify coverage); (c) re-score the original audit's 5 criteria (API/ABI, tests, robustness, docs, release) against the tip with evidence; (d) release-readiness verdict draft with any blocking findings ranked. Output dev/campaigns/review/fr03-opus-adjudication.md."
 files = ["dev/campaigns/review/fr03-opus-adjudication.md"]
-status = "in_flight"
+status = "verified"
 verify = "adjudication file exists; every FR-02 finding dispositioned; 5-criteria re-score present with evidence per score"
+# [2026-07-03] VERIFIED: all 8 findings dispositioned (8 real, 2 severity-corrected: F-01 major->minor latent fail-open off production path, F-03 minor->info deliberate fail-closed release asymmetry), 0 false. Re-scores 8/8/9/8/9 (was 7/7/8/5/5). Verdict READY once fold-in merges green; sole recommended pre-tag ride-along = 2-line F-01/F-02 path-anchor fix. Opus independently closed 3 pipeline gaps: klib dump ctor-clean, POM Central-compliant, snapshot version auto-derives -SNAPSHOT. Corrected FR-02 imprecisions (second --manifest caller; always() aggregator does run on npm failure). Highest-value un-run proof flagged: GH-03/04 network-mask live force-red.
 
 [[items]]
 id = "FR-04"
 phase = "fr"
 title = "FINAL REVIEW stage 4 — Fable/orchestrator (NO Fable subagents). INPUT = fr03-opus-adjudication.md + both prior artifacts. Tasks: (a) hand re-probe every Opus-accepted finding before believing it; (b) dispatch fixes to builder for confirmed defects (new ledger items if needed); (c) rule on the completeness-critique items (do/defer with rationale); (d) write the final campaign report to the operator: scores, residuals, release recommendation; (e) close the ledger — campaign done only after operator reads the report. Tag/publish remain operator-gated."
 files = ["dev/campaigns/review/fr04-final-report.md"]
-status = "todo"
+status = "in_flight"
 verify = "all accepted findings probed or fixed; final report delivered to operator; ledger states reconciled"
+# [2026-07-03] OPERATOR DIRECTIVE 2026-07-03: builder session = GPT-5.5 xhigh, capability ≈ Opus 4.8. Route Opus-tier delegations (adjudication, hardest analysis) to the builder via torad-fleet instead of Opus subagents — conserves Claude tokens for Fable orchestration. Opus subagents only when the fleet is unavailable. Current FR-03 Opus run rides to completion per operator.
