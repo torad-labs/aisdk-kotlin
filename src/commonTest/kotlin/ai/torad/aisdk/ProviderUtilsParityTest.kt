@@ -173,7 +173,7 @@ class ProviderUtilsParityTest {
             Schemas.parseProviderOptions(
                 "test",
                 ProviderOptions.Raw(JsonObject(mapOf("test" to value))),
-                Schemas.jsonSchema<JsonObject>(JsonObject(emptyMap())) { throw IllegalStateException("bad") },
+                Schemas.jsonSchema<JsonObject>(JsonObject(emptyMap())) { throw InvalidArgumentError("schema", "bad") },
             )
         }
     }

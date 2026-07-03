@@ -12,7 +12,7 @@ rule:
               kind: modifiers
               has:
                 kind: annotation
-                has: { kind: type_identifier, regex: '^RequiresOptIn$', stopBy: end }
+                has: { kind: type_identifier, regex: '^(RequiresOptIn|Experimental[A-Za-z0-9_]*Api)$', stopBy: end }
     - kind: function_declaration
       all:
         - has: { kind: simple_identifier, regex: '(Experimental|Preview)' }
@@ -21,4 +21,4 @@ rule:
               kind: modifiers
               has:
                 kind: annotation
-                has: { kind: type_identifier, regex: '^RequiresOptIn$', stopBy: end }
+                has: { kind: type_identifier, regex: '^(RequiresOptIn|Experimental[A-Za-z0-9_]*Api)$', stopBy: end }

@@ -16,6 +16,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
+private const val ADD_TOOL_RESULT_REPLACEMENT = "addToolOutput(toolCallId, output, toolName)"
+
 @Poko
 /** @since 0.3.0-beta01 */
 public class ChatRequest internal constructor(
@@ -243,7 +245,7 @@ public class Chat(
 
     @Deprecated(
         "Deprecated in 0.3.0-beta01. Use addToolOutput instead.",
-        ReplaceWith("addToolOutput(toolCallId, output, toolName)"),
+        ReplaceWith(ADD_TOOL_RESULT_REPLACEMENT),
     )
     /** @since 0.3.0-beta01 */
     public fun addToolResult(

@@ -212,9 +212,9 @@ public object UiMessageStreams {
     /** @since 0.3.0-beta01 */
     public fun handleUiMessageStreamFinish(
         messages: List<UIMessage>,
-        onFinish: (List<UIMessage>) -> Unit,
+        handler: (List<UIMessage>) -> Unit,
     ) {
-        onFinish(messages)
+        handler(messages)
     }
 
     /** @since 0.3.0-beta01 */

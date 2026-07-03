@@ -221,6 +221,7 @@ public fun AzureOpenAI(
 
 @Poko
 /** @since 0.3.0-beta01 */
+@OptIn(ExperimentalAiSdkApi::class)
 public class AzureOpenAITools(
     /** @since 0.3.0-beta01 */
     public val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = OpenAITools().codeInterpreter,
