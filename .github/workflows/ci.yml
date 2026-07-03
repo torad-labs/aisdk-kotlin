@@ -68,6 +68,13 @@ jobs:
         run: npm ci
       - name: Architecture gate (ast-grep rules + structural checks)
         run: ./node_modules/.bin/ast-grep --version && PATH="$PWD/node_modules/.bin:$PATH" bash .claude/hooks/rules/ci-gate.sh
+      - name: Hook self-tests
+        run: |
+          export PATH="$PWD/node_modules/.bin:$PATH"
+          python3 .claude/hooks/tests/test_kotlin_antipattern_policy.py
+          python3 .claude/hooks/tests/test_codex_hook_adapter.py
+          python3 .claude/hooks/tests/test_fleet_protocol_policy.py
+          python3 .claude/hooks/tests/test_rule_selfcheck_policy.py
       - name: Beta readiness gate
         run: tools/beta-readiness-check
       - name: Verify (tests + detekt + ABI + coverage)
