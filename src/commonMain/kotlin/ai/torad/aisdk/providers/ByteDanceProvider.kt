@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -15,52 +16,233 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.ceil
 
 public const val BYTEDANCE_VERSION: String = "1.0.15"
 
-public typealias ByteDanceVideoModelId = String
-
 @Serializable
-public data class ByteDanceVideoProviderOptions(
-    val watermark: Boolean? = null,
-    val generateAudio: Boolean? = null,
-    val cameraFixed: Boolean? = null,
-    val returnLastFrame: Boolean? = null,
-    val serviceTier: String? = null,
-    val draft: Boolean? = null,
-    val lastFrameImage: String? = null,
-    val referenceImages: List<String>? = null,
-    val referenceVideos: List<String>? = null,
-    val referenceAudio: List<String>? = null,
-    val pollIntervalMs: Long? = null,
-    val pollTimeoutMs: Long? = null,
+@Poko
+/** @since 0.3.0-beta01 */
+public class ByteDanceVideoProviderOptions internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val watermark: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val generateAudio: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val cameraFixed: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val returnLastFrame: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val serviceTier: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val draft: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val lastFrameImage: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val referenceImages: List<String>? = null,
+    /** @since 0.3.0-beta01 */
+    public val referenceVideos: List<String>? = null,
+    /** @since 0.3.0-beta01 */
+    public val referenceAudio: List<String>? = null,
+    /** @since 0.3.0-beta01 */
+    public val pollIntervalMs: Long? = null,
+    /** @since 0.3.0-beta01 */
+    public val pollTimeoutMs: Long? = null,
 )
 
-@Serializable
-public data class ByteDanceProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://ark.ap-southeast.bytepluses.com/api/v3",
-    val headers: Map<String, String> = emptyMap(),
-)
+/** @since 0.3.0-beta01 */
+public class ByteDanceVideoProviderOptionsBuilder {
+    private var watermark: Boolean? = null
+    private var generateAudio: Boolean? = null
+    private var cameraFixed: Boolean? = null
+    private var returnLastFrame: Boolean? = null
+    private var serviceTier: String? = null
+    private var draft: Boolean? = null
+    private var lastFrameImage: String? = null
+    private var referenceImages: List<String>? = null
+    private var referenceVideos: List<String>? = null
+    private var referenceAudio: List<String>? = null
+    private var pollIntervalMs: Long? = null
+    private var pollTimeoutMs: Long? = null
 
-public interface ByteDanceProvider : Provider {
-    public fun video(modelId: ByteDanceVideoModelId): VideoModel
-    override fun videoModel(modelId: String): VideoModel = video(modelId)
+    /** @since 0.3.0-beta01 */
+    public fun watermark(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
+        watermark = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun generateAudio(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
+        generateAudio = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun cameraFixed(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
+        cameraFixed = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun returnLastFrame(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
+        returnLastFrame = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun serviceTier(value: String?): ByteDanceVideoProviderOptionsBuilder {
+        serviceTier = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun draft(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
+        draft = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun lastFrameImage(value: String?): ByteDanceVideoProviderOptionsBuilder {
+        lastFrameImage = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun referenceImages(value: List<String>?): ByteDanceVideoProviderOptionsBuilder {
+        referenceImages = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun referenceVideos(value: List<String>?): ByteDanceVideoProviderOptionsBuilder {
+        referenceVideos = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun referenceAudio(value: List<String>?): ByteDanceVideoProviderOptionsBuilder {
+        referenceAudio = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun pollIntervalMs(value: Long?): ByteDanceVideoProviderOptionsBuilder {
+        pollIntervalMs = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun pollTimeoutMs(value: Long?): ByteDanceVideoProviderOptionsBuilder {
+        pollTimeoutMs = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): ByteDanceVideoProviderOptions =
+        ByteDanceVideoProviderOptions(
+            watermark = watermark,
+            generateAudio = generateAudio,
+            cameraFixed = cameraFixed,
+            returnLastFrame = returnLastFrame,
+            serviceTier = serviceTier,
+            draft = draft,
+            lastFrameImage = lastFrameImage,
+            referenceImages = referenceImages,
+            referenceVideos = referenceVideos,
+            referenceAudio = referenceAudio,
+            pollIntervalMs = pollIntervalMs,
+            pollTimeoutMs = pollTimeoutMs,
+        )
 }
 
-public fun createByteDance(
+/** @since 0.3.0-beta01 */
+public fun ByteDanceVideoProviderOptions(
+    block: ByteDanceVideoProviderOptionsBuilder.() -> Unit = {},
+): ByteDanceVideoProviderOptions =
+    ByteDanceVideoProviderOptionsBuilder().apply(block).build()
+
+@Serializable
+@Poko
+/** @since 0.3.0-beta01 */
+public class ByteDanceProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val baseURL: String = "https://ark.ap-southeast.bytepluses.com/api/v3",
+    /** @since 0.3.0-beta01 */
+    public val headers: Map<String, String> = emptyMap(),
+) {
+    internal fun byteDanceHeaders(callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        base[HttpHeaders.ContentType] = "application/json"
+        base.putAll(headers)
+        base.putAll(callHeaders)
+        return base
+    }
+}
+
+/** @since 0.3.0-beta01 */
+public class ByteDanceProviderSettingsBuilder {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://ark.ap-southeast.bytepluses.com/api/v3"
+    private var headers: Map<String, String> = emptyMap()
+
+    /** @since 0.3.0-beta01 */
+    public fun apiKey(value: String?): ByteDanceProviderSettingsBuilder {
+        apiKey = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun baseURL(value: String): ByteDanceProviderSettingsBuilder {
+        baseURL = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun headers(value: Map<String, String>): ByteDanceProviderSettingsBuilder {
+        headers = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): ByteDanceProviderSettings =
+        ByteDanceProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun ByteDanceProviderSettings(
+    block: ByteDanceProviderSettingsBuilder.() -> Unit = {},
+): ByteDanceProviderSettings =
+    ByteDanceProviderSettingsBuilder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+public interface ByteDanceProvider : Provider {
+    /** @since 0.3.0-beta01 */
+    public fun video(modelId: ModelId): VideoModel
+    override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
+}
+
+/** @since 0.3.0-beta01 */
+public fun ByteDance(
     client: HttpClient,
     settings: ByteDanceProviderSettings = ByteDanceProviderSettings(),
 ): ByteDanceProvider = DefaultByteDanceProvider(client, settings)
 
+/** @since 0.3.0-beta01 */
 public val byteDance: ByteDanceProvider = object : ByteDanceProvider {
     override val providerId: String = "bytedance"
-    override fun video(modelId: String): VideoModel =
-        throw AiSdkException("ByteDance provider is not configured. Use createByteDance(client, settings).")
+    override fun video(modelId: ModelId): VideoModel =
+        throw UnsupportedFunctionalityError(
+            "bytedance",
+            "ByteDance provider is not configured. Use ByteDance(client, settings)."
+        )
 }
 
 private class DefaultByteDanceProvider(
@@ -68,9 +250,17 @@ private class DefaultByteDanceProvider(
     private val settings: ByteDanceProviderSettings,
 ) : ByteDanceProvider {
     override val providerId: String = "bytedance"
-    override fun video(modelId: String): VideoModel = ByteDanceVideoModel(client, settings, modelId)
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun video(modelId: ModelId): VideoModel = ByteDanceVideoModel(client, settings, modelId.value)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
+        providerId,
+        "languageModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
@@ -96,22 +286,25 @@ private class ByteDanceVideoModel(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/contents/generations/tasks",
             body = byteDanceRequestBody(modelId, params, options),
-            headers = byteDanceHeaders(settings, params.headers),
+            headers = settings.byteDanceHeaders(params.headers),
         )
-        val taskId = create.value.jsonObject["id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("No task ID returned from ByteDance API")
+        val taskId = (create.value.jsonObject["id"] as? JsonPrimitive)?.contentOrNull
+            ?: throw InvalidResponseDataError(null, "No task ID returned from ByteDance API")
         val status = byteDancePoll(
             client = client,
             settings = settings,
             taskId = taskId,
             callHeaders = params.headers,
             abortSignal = params.abortSignal,
-            pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_BYTEDANCE_POLL_INTERVAL_MS,
-            pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS,
+            pollIntervalMs = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
+                ?: DEFAULT_BYTEDANCE_POLL_INTERVAL_MS,
+            pollTimeoutMs = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
+                ?: DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS,
         )
         val statusBody = status.value.jsonObject
-        val videoUrl = statusBody["content"]?.jsonObject?.get("video_url")?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("No video URL in ByteDance response")
+        val content = JsonAccess.obj(statusBody, "content")
+        val videoUrl = (content?.get("video_url") as? JsonPrimitive)?.contentOrNull
+            ?: throw InvalidResponseDataError(null, "No video URL in ByteDance response")
         return VideoModelResult(
             videos = listOf(
                 GeneratedFile(
@@ -122,17 +315,175 @@ private class ByteDanceVideoModel(
             ),
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = status.headers, body = status.value),
-            providerMetadata = mapOf("bytedance" to buildJsonObject {
-                put("taskId", JsonPrimitive(taskId))
-                statusBody["usage"]?.takeIf { it !is JsonNull }?.let { put("usage", it) }
-            }),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "bytedance" to buildJsonObject {
+                            put("taskId", JsonPrimitive(taskId))
+                            statusBody["usage"]?.takeIf { it !is JsonNull }?.let { put("usage", it) }
+                        }
+                    )
+                )
+            ),
         )
+    }
+
+    private fun byteDanceRequestBody(
+        modelId: String,
+        params: VideoGenerationParams,
+        options: JsonObject,
+    ): JsonObject = buildJsonObject {
+        put("model", JsonPrimitive(modelId))
+        put("content", byteDanceContent(params, options))
+        params.aspectRatio?.let { put("ratio", JsonPrimitive(it)) }
+        params.durationSeconds?.let { put("duration", JsonPrimitive(it.toDouble())) }
+        params.seed?.let { put("seed", JsonPrimitive(it)) }
+        (params.resolution ?: params.size)?.let { put("resolution", JsonPrimitive(byteDanceResolutionMap[it] ?: it)) }
+        putBooleanIfPresent("watermark", options["watermark"])
+        putBooleanIfPresent("generate_audio", options["generateAudio"])
+        putBooleanIfPresent("camera_fixed", options["cameraFixed"])
+        putBooleanIfPresent("return_last_frame", options["returnLastFrame"])
+        putStringIfPresent("service_tier", options["serviceTier"])
+        putBooleanIfPresent("draft", options["draft"])
+        for ((key, value) in options) {
+            if (key !in byteDanceHandledOptions && value !is JsonNull) put(key, value)
+        }
+    }
+
+    private fun byteDanceContent(params: VideoGenerationParams, options: JsonObject): JsonArray = JsonArray(
+        buildList {
+            add(
+                buildJsonObject {
+                    put("type", JsonPrimitive("text"))
+                    put("text", JsonPrimitive(params.prompt))
+                }
+            )
+            params.image?.let { image ->
+                add(
+                    buildJsonObject {
+                        put("type", JsonPrimitive("image_url"))
+                        put("image_url", buildJsonObject { put("url", JsonPrimitive(image.byteDanceDataUri())) })
+                        if (options["lastFrameImage"] != null) put("role", JsonPrimitive("first_frame"))
+                    }
+                )
+            }
+            (options["lastFrameImage"] as? JsonPrimitive)?.contentOrNull?.let { url ->
+                add(byteDanceMediaContent("image_url", "image_url", url, "last_frame"))
+            }
+            (JsonAccess.arr(options, "referenceImages")).orEmpty().forEach { url ->
+                val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
+                add(byteDanceMediaContent("image_url", "image_url", ref, "reference_image"))
+            }
+            (JsonAccess.arr(options, "referenceVideos")).orEmpty().forEach { url ->
+                val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
+                add(byteDanceMediaContent("video_url", "video_url", ref, "reference_video"))
+            }
+            (JsonAccess.arr(options, "referenceAudio")).orEmpty().forEach { url ->
+                val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
+                add(byteDanceMediaContent("audio_url", "audio_url", ref, "reference_audio"))
+            }
+        }
+    )
+
+    private fun byteDanceMediaContent(type: String, field: String, url: String, role: String): JsonObject = buildJsonObject {
+        put("type", JsonPrimitive(type))
+        put(field, buildJsonObject { put("url", JsonPrimitive(url)) })
+        put("role", JsonPrimitive(role))
+    }
+
+    private fun GeneratedFile.byteDanceDataUri(): String {
+        url?.takeIf { it.isNotBlank() }?.let { return it }
+        return "data:$mediaType;base64,$base64"
+    }
+
+    private suspend fun byteDancePostJson(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Post,
+            headers = headers,
+            body = body,
+            requestBodyValues = body,
+            errorMessage = ::byteDanceErrorMessage,
+        )
+
+    private suspend fun byteDanceGetJson(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+    ): HttpJsonResponse {
+        abortSignal.throwIfAborted()
+        return HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Get,
+            headers = headers,
+            errorMessage = ::byteDanceErrorMessage,
+        )
+    }
+
+    private suspend fun byteDancePoll(
+        client: HttpClient,
+        settings: ByteDanceProviderSettings,
+        taskId: String,
+        callHeaders: Map<String, String>,
+        abortSignal: AbortSignal,
+        pollIntervalMs: Long,
+        pollTimeoutMs: Long,
+    ): HttpJsonResponse {
+        val interval = pollIntervalMs.coerceAtLeast(1L)
+        val maxPollAttempts = ceil(
+            pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble()
+        ).toInt().coerceAtLeast(1)
+        repeat(maxPollAttempts) { attempt ->
+            val status = byteDanceGetJson(
+                client = client,
+                url = "${settings.baseURL.trimEnd('/')}/contents/generations/tasks/$taskId",
+                headers = settings.byteDanceHeaders(callHeaders),
+                abortSignal = abortSignal,
+            )
+            val statusBody = status.value.jsonObject
+            // Terminal states must fail immediately with the real status (like KlingAI's else-throw),
+            // not fall through and re-poll until the 5-minute timeout masks them as a generic timeout.
+            when (val taskStatus = (statusBody["status"] as? JsonPrimitive)?.contentOrNull) {
+                "succeeded" -> return status
+                "failed" -> throw NoVideoGeneratedError("ByteDance video generation failed: $statusBody")
+                "canceled", "cancelled" -> throw NoVideoGeneratedError("ByteDance video generation was canceled")
+                "queued", "running", "processing", null -> Unit // still in progress — keep polling
+                else -> throw InvalidResponseDataError(statusBody, "Unknown ByteDance task status: $taskStatus")
+            }
+            if (pollIntervalMs > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMs)
+        }
+        throw NoVideoGeneratedError("ByteDance video generation timed out after ${pollTimeoutMs}ms")
+    }
+
+    private fun byteDanceOptions(providerOptions: ProviderOptions): JsonObject =
+        JsonAccess.obj(providerOptions.toMap(), "bytedance") ?: JsonObject(emptyMap())
+
+    private fun byteDanceErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: raw.ifBlank { "request failed" }
+        return "ByteDance request failed ($statusCode): $detail"
+    }
+
+    private fun JsonObjectBuilder.putBooleanIfPresent(key: String, value: JsonElement?) {
+        (value as? JsonPrimitive)?.booleanOrNull?.let { put(key, JsonPrimitive(it)) }
+    }
+
+    private fun JsonObjectBuilder.putStringIfPresent(key: String, value: JsonElement?) {
+        (value as? JsonPrimitive)?.contentOrNull?.let { put(key, JsonPrimitive(it)) }
     }
 }
 
 private const val DEFAULT_BYTEDANCE_POLL_INTERVAL_MS: Long = 3_000L
 private const val DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS: Long = 300_000L
-
 
 private val byteDanceHandledOptions = setOf(
     "watermark",
@@ -191,149 +542,3 @@ private val byteDanceResolutionMap = mapOf(
     "2176x928" to "1080p",
     "928x2176" to "1080p",
 )
-
-private fun byteDanceRequestBody(
-    modelId: String,
-    params: VideoGenerationParams,
-    options: JsonObject,
-): JsonObject = buildJsonObject {
-    put("model", JsonPrimitive(modelId))
-    put("content", byteDanceContent(params, options))
-    params.aspectRatio?.let { put("ratio", JsonPrimitive(it)) }
-    params.durationSeconds?.let { put("duration", JsonPrimitive(it.toDouble())) }
-    params.seed?.let { put("seed", JsonPrimitive(it)) }
-    (params.resolution ?: params.size)?.let { put("resolution", JsonPrimitive(byteDanceResolutionMap[it] ?: it)) }
-    putBooleanIfPresent("watermark", options["watermark"])
-    putBooleanIfPresent("generate_audio", options["generateAudio"])
-    putBooleanIfPresent("camera_fixed", options["cameraFixed"])
-    putBooleanIfPresent("return_last_frame", options["returnLastFrame"])
-    putStringIfPresent("service_tier", options["serviceTier"])
-    putBooleanIfPresent("draft", options["draft"])
-    for ((key, value) in options) {
-        if (key !in byteDanceHandledOptions && value !is JsonNull) put(key, value)
-    }
-}
-
-private fun byteDanceContent(params: VideoGenerationParams, options: JsonObject): JsonArray = JsonArray(buildList {
-    add(buildJsonObject {
-        put("type", JsonPrimitive("text"))
-        put("text", JsonPrimitive(params.prompt))
-    })
-    params.image?.let { image ->
-        add(buildJsonObject {
-            put("type", JsonPrimitive("image_url"))
-            put("image_url", buildJsonObject { put("url", JsonPrimitive(image.byteDanceDataUri())) })
-            if (options["lastFrameImage"] != null) put("role", JsonPrimitive("first_frame"))
-        })
-    }
-    options["lastFrameImage"]?.jsonPrimitive?.contentOrNull?.let { url ->
-        add(byteDanceMediaContent("image_url", "image_url", url, "last_frame"))
-    }
-    options["referenceImages"]?.jsonArray.orEmpty().forEach { url ->
-        add(byteDanceMediaContent("image_url", "image_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_image"))
-    }
-    options["referenceVideos"]?.jsonArray.orEmpty().forEach { url ->
-        add(byteDanceMediaContent("video_url", "video_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_video"))
-    }
-    options["referenceAudio"]?.jsonArray.orEmpty().forEach { url ->
-        add(byteDanceMediaContent("audio_url", "audio_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_audio"))
-    }
-})
-
-private fun byteDanceMediaContent(type: String, field: String, url: String, role: String): JsonObject = buildJsonObject {
-    put("type", JsonPrimitive(type))
-    put(field, buildJsonObject { put("url", JsonPrimitive(url)) })
-    put("role", JsonPrimitive(role))
-}
-
-private fun GeneratedFile.byteDanceDataUri(): String {
-    url?.takeIf { it.isNotBlank() }?.let { return it }
-    return "data:$mediaType;base64,$base64"
-}
-
-private suspend fun byteDancePostJson(
-    client: HttpClient,
-    url: String,
-    body: JsonObject,
-    headers: Map<String, String>,
-): HttpJsonResponse =
-    requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Post,
-        headers = headers,
-        body = body,
-        requestBodyValues = body,
-        errorMessage = ::byteDanceErrorMessage,
-    )
-
-private suspend fun byteDanceGetJson(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-    abortSignal: AbortSignal,
-): HttpJsonResponse {
-    abortSignal.throwIfAborted()
-    return requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Get,
-        headers = headers,
-        errorMessage = ::byteDanceErrorMessage,
-    )
-}
-
-private suspend fun byteDancePoll(
-    client: HttpClient,
-    settings: ByteDanceProviderSettings,
-    taskId: String,
-    callHeaders: Map<String, String>,
-    abortSignal: AbortSignal,
-    pollIntervalMs: Long,
-    pollTimeoutMs: Long,
-): HttpJsonResponse {
-    val interval = pollIntervalMs.coerceAtLeast(1L)
-    val maxPollAttempts = ceil(pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble()).toInt().coerceAtLeast(1)
-    repeat(maxPollAttempts) { attempt ->
-        val status = byteDanceGetJson(
-            client = client,
-            url = "${settings.baseURL.trimEnd('/')}/contents/generations/tasks/$taskId",
-            headers = byteDanceHeaders(settings, callHeaders),
-            abortSignal = abortSignal,
-        )
-        val statusBody = status.value.jsonObject
-        when (statusBody["status"]?.jsonPrimitive?.contentOrNull) {
-            "succeeded" -> return status
-            "failed" -> throw AiSdkException("ByteDance video generation failed: $statusBody")
-        }
-        if (pollIntervalMs > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMs)
-    }
-    throw AiSdkException("ByteDance video generation timed out after ${pollTimeoutMs}ms")
-}
-
-private fun byteDanceHeaders(settings: ByteDanceProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-    val base = linkedMapOf<String, String>()
-    settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
-    base[HttpHeaders.ContentType] = "application/json"
-    base.putAll(settings.headers)
-    base.putAll(callHeaders)
-    return base
-}
-
-private fun byteDanceOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["bytedance"] as? JsonObject ?: JsonObject(emptyMap())
-
-private fun byteDanceErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-    val obj = parsed as? JsonObject
-    val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-        ?: raw.ifBlank { "request failed" }
-    return "ByteDance request failed ($statusCode): $detail"
-}
-
-private fun JsonObjectBuilder.putBooleanIfPresent(key: String, value: JsonElement?) {
-    value?.jsonPrimitive?.booleanOrNull?.let { put(key, JsonPrimitive(it)) }
-}
-
-private fun JsonObjectBuilder.putStringIfPresent(key: String, value: JsonElement?) {
-    value?.jsonPrimitive?.contentOrNull?.let { put(key, JsonPrimitive(it)) }
-}

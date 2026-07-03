@@ -1,0 +1,5 @@
+id: prefer-kotlin-math
+language: kotlin
+severity: warning
+rule:
+  pattern: Math.$MEMBER

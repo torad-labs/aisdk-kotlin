@@ -1,149 +1,326 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
-/**
- * A typed streaming-object result — the v6 `StreamObjectResult` surface. Wraps the
- * underlying [StreamEvent] flow so callers get the object as it builds and the
- * final typed value, without hand-parsing the stream.
- *
- * The streams are cold: collecting one drives a model call, so pick a single
- * consumer (`partialObjectStream` for incremental UI, or `objectValue()` for just
- * the final result).
- */
+/** @since 0.3.0-beta01 */
 public class StreamObjectResult<TOutput> internal constructor(
-    private val events: Flow<StreamEvent>,
+    events: Flow<StreamEvent>,
     private val output: Output<TOutput>,
     private val repairText: ((String) -> String?)? = null,
 ) {
-    /**
-     * The object as it builds: each emission is the best-effort decode of the text
-     * so far (incomplete JSON is repaired via [parsePartialJson]); the final
-     * emission is the complete object. Duplicate parses are suppressed.
-     */
+    // Memoise the cold upstream: per the LanguageModel.stream() contract each collection drives a
+    // fresh API call, so partialObjectStream / textStream / elementStream / finish() collecting
+    // `events` directly would each trigger a SEPARATE (paid, possibly divergent) generation. Route
+    // every accessor through one StreamTextResult so the provider is hit at most once and replayed.
+    private val stream: Flow<StreamEvent> = StreamTextResult(events).fullStream
+
+    /** @since 0.3.0-beta01 */
     public val partialObjectStream: Flow<TOutput> = flow {
-        val accumulated = StringBuilder()
+        val textBlocks = OrderedTextBlocks()
         var lastKey: String? = null
-        events.collect { event ->
-            if (event !is StreamEvent.TextDelta) return@collect
-            accumulated.append(event.text)
-            val parsed = parsePartialJson(accumulated.toString()).value ?: return@collect
-            val key = parsed.toString()
-            if (key == lastKey) return@collect
-            val decoded = runCatching { output.decode(key) }.getOrNull() ?: return@collect
-            lastKey = key
-            emit(decoded)
+        stream.collect { event ->
+            when (event) {
+                is StreamEvent.TextStart -> textBlocks.start(event.id)
+                is StreamEvent.TextDelta -> {
+                    val text = textBlocks.append(event.id, event.text)
+                    val parsed = PartialJson.parsePartialJson(text).value ?: return@collect
+                    val key = parsed.toString()
+                    if (key == lastKey) return@collect
+                    val decoded = runCatching { output.decode(key) }.getOrNull() ?: return@collect
+                    lastKey = key
+                    emit(decoded)
+                }
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.TextEnd,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.Data,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                is StreamEvent.Finish,
+                StreamEvent.Abort,
+                is StreamEvent.Raw,
+                -> Unit
+            }
         }
     }
 
-    /** The raw text deltas as they arrive (cold — collecting drives a model call). */
-    public val textStream: Flow<String> =
-        events.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
+    /** @since 0.3.0-beta01 */
+    public val textStream: Flow<String> = flow {
+        data class TextBlock(
+            val buffer: StringBuilder = StringBuilder(),
+            var flushedLength: Int = 0,
+            var closed: Boolean = false,
+        )
 
-    /**
-     * For an array [output] (built via `Output.array`), emit each element as soon as
-     * it is complete (all elements but the in-flight last, then the last when the
-     * stream ends) — the v6 `elementStream`. Pass the same array output you streamed.
-     */
+        val blockOrder = mutableListOf<String>()
+        val blocks = linkedMapOf<String, TextBlock>()
+
+        fun block(id: String): TextBlock {
+            if (id !in blocks) {
+                blockOrder += id
+            }
+            return blocks.getOrPut(id) { TextBlock() }
+        }
+
+        suspend fun flushStableSuffixes() {
+            for (id in blockOrder) {
+                val textBlock = block(id)
+                val earlierOpen = blockOrder
+                    .takeWhile { it != id }
+                    .any { !block(it).closed }
+                if (earlierOpen) return
+                val pending = textBlock.buffer.substring(textBlock.flushedLength)
+                if (pending.isNotEmpty()) {
+                    emit(pending)
+                    textBlock.flushedLength = textBlock.buffer.length
+                }
+                if (!textBlock.closed) return
+            }
+        }
+
+        stream.collect { event ->
+            when (event) {
+                is StreamEvent.TextStart -> block(event.id)
+                is StreamEvent.TextDelta -> {
+                    block(event.id).buffer.append(event.text)
+                    flushStableSuffixes()
+                }
+                is StreamEvent.TextEnd -> {
+                    block(event.id).closed = true
+                    flushStableSuffixes()
+                }
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.Data,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                is StreamEvent.Finish,
+                StreamEvent.Abort,
+                is StreamEvent.Raw,
+                -> Unit
+            }
+        }
+        for (id in blockOrder) {
+            val textBlock = block(id)
+            val pending = textBlock.buffer.substring(textBlock.flushedLength)
+            if (pending.isNotEmpty()) {
+                emit(pending)
+                textBlock.flushedLength = textBlock.buffer.length
+            }
+        }
+    }
+
     public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
-        val accumulated = StringBuilder()
-        var emitted = 0
+        val textBlocks = OrderedTextBlocks()
+        val decoder = ElementStreamDecoder(arrayOutput)
 
-        // Returns the elements newly ready since the last call. The in-flight last
-        // element is held back until the stream completes.
-        fun ready(complete: Boolean): List<E> {
-            val elements = (parsePartialJson(accumulated.toString()).value as? JsonObject)
-                ?.get("elements") as? JsonArray ?: return emptyList()
+        stream.collect { event ->
+            when (event) {
+                is StreamEvent.TextStart -> textBlocks.start(event.id)
+                is StreamEvent.TextDelta -> {
+                    decoder.ready(textBlocks.append(event.id, event.text), complete = false).forEach { emit(it) }
+                }
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.TextEnd,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.Data,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                is StreamEvent.Finish,
+                StreamEvent.Abort,
+                is StreamEvent.Raw,
+                -> Unit
+            }
+        }
+        decoder.ready(textBlocks.joinedText(), complete = true).forEach { emit(it) }
+    }
+
+    public suspend fun finish(): StreamObjectFinish<TOutput> {
+        val textBlocks = OrderedTextBlocks()
+        var usage = Usage()
+        var finishReason = FinishReason.Stop
+        var warnings: List<CallWarning> = emptyList()
+        var response = LanguageModelResponseMetadata()
+        stream.collect { event ->
+            when (event) {
+                is StreamEvent.TextStart -> textBlocks.start(event.id)
+                is StreamEvent.TextDelta -> textBlocks.append(event.id, event.text)
+                // In-band terminal error: surface the real provider failure (preserving its cause)
+                // instead of letting it fall through to a misleading NoObjectGeneratedError below.
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
+                is StreamEvent.StreamStart -> warnings = event.warnings
+                is StreamEvent.ResponseMetadata -> response = response.merge(event.toLanguageModelResponseMetadata())
+                is StreamEvent.Finish -> {
+                    usage = event.usage
+                    finishReason = event.finishReason
+                }
+                is StreamEvent.StepStart,
+                is StreamEvent.TextEnd,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.Data,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                StreamEvent.Abort,
+                is StreamEvent.Raw,
+                -> Unit
+            }
+        }
+        return StreamObjectFinish(
+            decodeOrThrow(textBlocks.joinedText(), usage, finishReason, response),
+            usage,
+            finishReason,
+            warnings,
+            response,
+        )
+    }
+
+    public suspend fun objectValue(): TOutput = finish().value
+
+    private fun decodeOrThrow(
+        text: String,
+        usage: Usage,
+        finishReason: FinishReason,
+        response: LanguageModelResponseMetadata,
+    ): TOutput {
+        val primary = runCatching { output.decode(text) }
+        primary.getOrNull()?.let { return it }
+        repairText?.invoke(text)?.let { repaired ->
+            runCatching { output.decode(repaired) }.getOrNull()?.let { return it }
+        }
+        throw NoObjectGeneratedError(
+            "Object stream produced no parseable object",
+            text = text,
+            response = response,
+            usage = usage,
+            finishReason = finishReason,
+            // Attach the real decode failure (kotlinx SerializationException / validation error)
+            // so callers see WHY the JSON failed, not just a generic "no parseable object".
+            cause = primary.exceptionOrNull(),
+        )
+    }
+
+    private class OrderedTextBlocks {
+        private val blocks = linkedMapOf<String, StringBuilder>()
+
+        fun start(id: String) {
+            blocks.getOrPut(id) { StringBuilder() }
+        }
+
+        fun append(id: String, text: String): String {
+            blocks.getOrPut(id) { StringBuilder() }.append(text)
+            return joinedText()
+        }
+
+        fun joinedText(): String = buildString {
+            blocks.values.forEach { append(it) }
+        }
+    }
+
+    private class ElementStreamDecoder<E>(
+        private val output: Output.Arr<E>,
+    ) {
+        private var emitted = 0
+
+        fun ready(text: String, complete: Boolean): List<E> {
+            val elements = parsedElements(text) ?: return emptyList()
             val readyCount = if (complete) elements.size else (elements.size - 1).coerceAtLeast(0)
             val out = mutableListOf<E>()
             while (emitted < readyCount) {
-                runCatching {
-                    aiSdkOutputJson.decodeFromJsonElement(arrayOutput.elementSerializer, elements[emitted])
-                }.getOrNull()?.let { out.add(it) }
+                val decoded = decode(elements[emitted]) ?: break
+                out += decoded
                 emitted++
             }
             return out
         }
 
-        events.collect { event ->
-            if (event !is StreamEvent.TextDelta) return@collect
-            accumulated.append(event.text)
-            ready(complete = false).forEach { emit(it) }
-        }
-        ready(complete = true).forEach { emit(it) }
-    }
-
-    /**
-     * Collect to completion and return the final typed object plus the call's
-     * terminal metadata (usage, finishReason, warnings, response) — the awaitable
-     * side of the v6 `StreamObjectResult`. The complete text is decoded once at the
-     * end; if that fails and a [repairText] hook is set, the repaired text is retried.
-     * Throws [NoObjectGeneratedError] (carrying the raw text) if neither parses.
-     */
-    public suspend fun finish(): StreamObjectFinish<TOutput> {
-        val accumulated = StringBuilder()
-        var usage = Usage()
-        var finishReason = FinishReason.Stop
-        var warnings: List<CallWarning> = emptyList()
-        var response = LanguageModelResponseMetadata()
-        events.collect { event ->
-            when (event) {
-                is StreamEvent.TextDelta -> accumulated.append(event.text)
-                is StreamEvent.StreamStart -> warnings = event.warnings
-                is StreamEvent.ResponseMetadata -> response = LanguageModelResponseMetadata(
-                    id = event.id,
-                    timestampMillis = event.timestampMillis,
-                    modelId = event.modelId,
-                    headers = event.headers,
-                    body = event.body,
-                )
-                is StreamEvent.Finish -> {
-                    usage = event.usage
-                    finishReason = event.finishReason
-                }
-                else -> Unit
+        private fun parsedElements(text: String): JsonArray? =
+            when (val parsed = PartialJson.parsePartialJson(text).value) {
+                is JsonArray -> parsed
+                is JsonObject -> JsonAccess.arr(parsed, "elements")
+                else -> null
             }
-        }
-        return StreamObjectFinish(decodeOrThrow(accumulated.toString()), usage, finishReason, warnings, response)
-    }
 
-    /**
-     * Collect to completion and return just the final typed object (see [finish] for
-     * the call's usage / finishReason / warnings / response).
-     */
-    public suspend fun objectValue(): TOutput = finish().value
-
-    private fun decodeOrThrow(text: String): TOutput {
-        runCatching { output.decode(text) }.getOrNull()?.let { return it }
-        repairText?.invoke(text)?.let { repaired ->
-            runCatching { output.decode(repaired) }.getOrNull()?.let { return it }
-        }
-        throw NoObjectGeneratedError("Object stream produced no parseable object", text = text)
+        private fun decode(value: JsonElement): E? =
+            runCatching {
+                aiSdkOutputJson.decodeFromJsonElement(output.elementSerializer, value)
+            }.getOrNull()
     }
 }
 
-/** The final object plus terminal metadata of a [StreamObjectResult.finish]. */
-public data class StreamObjectFinish<TOutput>(
-    val value: TOutput,
-    val usage: Usage,
-    val finishReason: FinishReason,
-    val warnings: List<CallWarning>,
-    val response: LanguageModelResponseMetadata,
+@Poko
+/** @since 0.3.0-beta01 */
+public class StreamObjectFinish<TOutput>(
+    /** @since 0.3.0-beta01 */
+    public val value: TOutput,
+    /** @since 0.3.0-beta01 */
+    public val usage: Usage,
+    /** @since 0.3.0-beta01 */
+    public val finishReason: FinishReason,
+    /** @since 0.3.0-beta01 */
+    public val warnings: List<CallWarning>,
+    /** @since 0.3.0-beta01 */
+    public val response: LanguageModelResponseMetadata,
 )
 
-/**
- * Stream a structured object, returning a typed [StreamObjectResult] — the v6
- * `streamObject` surface (the older [streamObject] returns a raw event flow and is
- * deprecated). Use [StreamObjectResult.partialObjectStream] for incremental UI or
- * [StreamObjectResult.objectValue] for the final value.
- */
-public fun <TOutput> streamObjectResult(
+public fun <TOutput> StreamObjectResult(
     model: LanguageModel,
     output: Output<TOutput>,
     prompt: String? = null,
@@ -155,31 +332,41 @@ public fun <TOutput> streamObjectResult(
     maxOutputTokens: Int? = null,
     stopSequences: List<String> = emptyList(),
     seed: Int? = null,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
+    providerOptions: ProviderOptions = ProviderOptions.None,
     abortSignal: AbortSignal = AbortSignalNever,
     presencePenalty: Float? = null,
     frequencyPenalty: Float? = null,
     responseFormat: ResponseFormat = ResponseFormat.Text,
     repairText: ((String) -> String?)? = null,
-): StreamObjectResult<TOutput> = StreamObjectResult(
-    events = streamText(
-        model = model,
+): StreamObjectResult<TOutput> {
+    val effectiveResponseFormat =
+        if (responseFormat == ResponseFormat.Text) output.toResponseFormat() else responseFormat
+    val inputMessages = buildList {
+        if (system != null) add(SystemMessage(system))
+        addAll(messages)
+    }
+    val input = GenerationInput.from(
         prompt = prompt,
-        messages = messages,
-        system = system,
-        temperature = temperature,
-        topP = topP,
-        topK = topK,
-        maxOutputTokens = maxOutputTokens,
-        stopSequences = stopSequences,
-        seed = seed,
-        providerOptions = providerOptions,
-        abortSignal = abortSignal,
+        messages = inputMessages,
+    )
+    return StreamObjectResult(
+        events = TextGenerator(
+            model,
+            CallConfig {
+                temperature(temperature)
+                topP(topP)
+                topK(topK)
+                maxOutputTokens(maxOutputTokens)
+                stopSequences(stopSequences)
+                seed(seed)
+                providerOptions(providerOptions)
+                abortSignal(abortSignal)
+                presencePenalty(presencePenalty)
+                frequencyPenalty(frequencyPenalty)
+                responseFormat(effectiveResponseFormat)
+            },
+        ).stream(input),
         output = output,
-        presencePenalty = presencePenalty,
-        frequencyPenalty = frequencyPenalty,
-        responseFormat = responseFormat,
-    ),
-    output = output,
-    repairText = repairText,
-)
+        repairText = repairText,
+    )
+}

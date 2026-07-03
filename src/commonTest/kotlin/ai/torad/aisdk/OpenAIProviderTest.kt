@@ -1,15 +1,14 @@
-package ai.torad.aisdk
-import ai.torad.aisdk.providers.OpenAIProviderNotConfiguredError
-import ai.torad.aisdk.providers.OpenAIProviderSettings
-import ai.torad.aisdk.providers.VERSION
-import ai.torad.aisdk.providers.createOpenAI
-import ai.torad.aisdk.providers.openAICodeInterpreter
-import ai.torad.aisdk.providers.openAIFileSearch
-import ai.torad.aisdk.providers.openAIImageGeneration
-import ai.torad.aisdk.providers.openAIMcp
-import ai.torad.aisdk.providers.openAIWebSearch
-import ai.torad.aisdk.providers.openai
+@file:OptIn(LowLevelLanguageModelApi::class)
 
+package ai.torad.aisdk
+import ai.torad.aisdk.providers.OpenAI
+import ai.torad.aisdk.providers.OpenAICodeInterpreter
+import ai.torad.aisdk.providers.OpenAIFileSearch
+import ai.torad.aisdk.providers.OpenAIImageGeneration
+import ai.torad.aisdk.providers.OpenAIMcp
+import ai.torad.aisdk.providers.OpenAIProviderSettings
+import ai.torad.aisdk.providers.OpenAIWebSearch
+import ai.torad.aisdk.providers.VERSION
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -18,21 +17,20 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class OpenAIProviderTest {
@@ -57,17 +55,17 @@ class OpenAIProviderTest {
             },
         )
 
-        val provider = createOpenAI(
+        val provider = OpenAI(
             client,
-            OpenAIProviderSettings(
-                apiKey = "test-api-key",
-                organization = "org_123",
-                project = "proj_123",
-                headers = mapOf("x-extra" to "yes"),
-            ),
+            OpenAIProviderSettings {
+                apiKey("test-api-key")
+                organization("org_123")
+                project("proj_123")
+                headers(mapOf("x-extra" to "yes"))
+            },
         )
 
-        val result = embed(provider.embedding("text-embedding-3-small"), "hello")
+        val result = Embedding.embed(provider.embedding("text-embedding-3-small"), "hello")
 
         val request = seenRequests.single()
         assertEquals("https://api.openai.com/v1/embeddings", request.url.toString())
@@ -101,21 +99,25 @@ class OpenAIProviderTest {
                         HttpStatusCode.OK,
                         headersOf(HttpHeaders.ContentType, "application/json"),
                     )
-                    else -> respond("{}", HttpStatusCode.NotFound, headersOf(HttpHeaders.ContentType, "application/json"))
+                    else -> respond(
+                        "{}",
+                        HttpStatusCode.NotFound,
+                        headersOf(HttpHeaders.ContentType, "application/json")
+                    )
                 }
             },
         )
-        val provider = createOpenAI(
+        val provider = OpenAI(
             client,
-            OpenAIProviderSettings(
-                baseURL = "https://proxy.openai.example/v1/",
-                apiKey = "test-api-key",
-            ),
+            OpenAIProviderSettings {
+                baseURL("https://proxy.openai.example/v1/")
+                apiKey("test-api-key")
+            },
         )
 
-        val responses = generateText(provider("gpt-5"), prompt = "hi")
-        val directChat = generateText(provider.chat("gpt-5"), prompt = "hi")
-        val completion = generateText(provider.completion("davinci"), prompt = "hi")
+        val responses = TextGenerator(provider("gpt-5")).generate(GenerationInput.Prompt("hi")).first()
+        val directChat = TextGenerator(provider.chat("gpt-5")).generate(GenerationInput.Prompt("hi")).first()
+        val completion = TextGenerator(provider.completion("davinci")).generate(GenerationInput.Prompt("hi")).first()
 
         assertEquals("from responses", responses.text)
         assertEquals("ok", directChat.text)
@@ -128,22 +130,12 @@ class OpenAIProviderTest {
 
     @Test
     fun `OpenAI tools are provider-executed and expose provider tool ids`() {
-        val tools = createOpenAI(HttpClient(MockEngine { respond("{}") })).tools
+        val tools = OpenAI(HttpClient(MockEngine { respond("{}") })).tools
 
         assertProviderTool(tools.codeInterpreter, "code_interpreter", "openai.code_interpreter")
         assertProviderTool(tools.fileSearch, "file_search", "openai.file_search")
         assertProviderTool(tools.webSearch, "web_search", "openai.web_search")
         assertProviderTool(tools.toolSearch, "tool_search", "openai.tool_search")
-    }
-
-    @Test
-    fun `default openai singleton fails explicitly without a configured client`() {
-        val error = assertFailsWith<OpenAIProviderNotConfiguredError> {
-            openai.chat("gpt-5")
-        }
-
-        assertNotNull(error.message)
-        assertTrue(error.message.orEmpty().contains("createOpenAI"))
     }
 
     @Test
@@ -159,17 +151,24 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
-        generateText(
-            model = provider.chat("gpt-5"),
-            prompt = "hi",
-            providerOptions = mapOf(
-                "openai" to JsonObject(
-                    mapOf("parallel_tool_calls" to JsonPrimitive(false)),
-                ),
-            ),
-        )
+        TextGenerator(
+            provider.chat("gpt-5"),
+            CallConfig {
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "openai" to JsonObject(
+                                    mapOf("parallel_tool_calls" to JsonPrimitive(false)),
+                                ),
+                            )
+                        )
+                    )
+                )
+            },
+        ).generate(GenerationInput.Prompt("hi")).first()
 
         assertEquals(JsonPrimitive(false), seenBody.single()["parallel_tool_calls"])
     }
@@ -189,49 +188,56 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(
+        val provider = OpenAI(
             client,
-            OpenAIProviderSettings(
-                baseURL = "https://proxy.openai.example/v1/",
-                apiKey = "test-api-key",
-                organization = "org_123",
-                project = "proj_123",
-                headers = mapOf("x-extra" to "yes"),
-                name = "custom",
-                queryParams = mapOf("api-version" to "2026-06-03"),
-            ),
+            OpenAIProviderSettings {
+                baseURL("https://proxy.openai.example/v1/")
+                apiKey("test-api-key")
+                organization("org_123")
+                project("proj_123")
+                headers(mapOf("x-extra" to "yes"))
+                name("custom")
+                queryParams(mapOf("api-version" to "2026-06-03"))
+            },
         )
 
         val model = provider.responses("gpt-5")
-        val result = generateText(
-            model = model,
-            prompt = "hi",
-            providerOptions = mapOf(
-                "openai" to buildJsonObject {
-                    put("conversation", JsonPrimitive("conv_123"))
-                    put("include", JsonArray(listOf(JsonPrimitive("file_search_call.results"))))
-                    put("instructions", JsonPrimitive("continue carefully"))
-                    put("logprobs", JsonPrimitive(true))
-                    put("maxToolCalls", JsonPrimitive(4))
-                    put("metadata", buildJsonObject { put("trace", JsonPrimitive("abc")) })
-                    put("parallelToolCalls", JsonPrimitive(false))
-                    put("previousResponseId", JsonPrimitive("resp_prev"))
-                    put("promptCacheKey", JsonPrimitive("cache-key"))
-                    put("promptCacheRetention", JsonPrimitive("24h"))
-                    put("reasoningEffort", JsonPrimitive("low"))
-                    put("reasoningSummary", JsonPrimitive("concise"))
-                    put("safetyIdentifier", JsonPrimitive("user-safe"))
-                    put("serviceTier", JsonPrimitive("priority"))
-                    put("store", JsonPrimitive(false))
-                    put("strictJsonSchema", JsonPrimitive(false))
-                    put("textVerbosity", JsonPrimitive("low"))
-                    put("truncation", JsonPrimitive("disabled"))
-                    put("user", JsonPrimitive("user_123"))
-                    put("forceReasoning", JsonPrimitive(true))
-                },
-            ),
-            responseFormat = ResponseFormat.Json(schemaName = "Answer", schemaJson = JsonObject(emptyMap())),
-        )
+        val result = TextGenerator(
+            model,
+            CallConfig {
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "openai" to buildJsonObject {
+                                    put("conversation", JsonPrimitive("conv_123"))
+                                    put("include", JsonArray(listOf(JsonPrimitive("file_search_call.results"))))
+                                    put("instructions", JsonPrimitive("continue carefully"))
+                                    put("logprobs", JsonPrimitive(true))
+                                    put("maxToolCalls", JsonPrimitive(4))
+                                    put("metadata", buildJsonObject { put("trace", JsonPrimitive("abc")) })
+                                    put("parallelToolCalls", JsonPrimitive(false))
+                                    put("previousResponseId", JsonPrimitive("resp_prev"))
+                                    put("promptCacheKey", JsonPrimitive("cache-key"))
+                                    put("promptCacheRetention", JsonPrimitive("24h"))
+                                    put("reasoningEffort", JsonPrimitive("low"))
+                                    put("reasoningSummary", JsonPrimitive("concise"))
+                                    put("safetyIdentifier", JsonPrimitive("user-safe"))
+                                    put("serviceTier", JsonPrimitive("priority"))
+                                    put("store", JsonPrimitive(false))
+                                    put("strictJsonSchema", JsonPrimitive(false))
+                                    put("textVerbosity", JsonPrimitive("low"))
+                                    put("truncation", JsonPrimitive("disabled"))
+                                    put("user", JsonPrimitive("user_123"))
+                                    put("forceReasoning", JsonPrimitive(true))
+                                },
+                            )
+                        )
+                    )
+                )
+                responseFormat(ResponseFormat.Json(schemaName = "Answer", schemaJson = JsonObject(emptyMap())))
+            },
+        ).generate(GenerationInput.Prompt("hi")).first()
 
         val request = seenRequests.single()
         val body = seenBody.single()
@@ -261,7 +267,10 @@ class OpenAIProviderTest {
         assertEquals("disabled", body["truncation"]?.jsonPrimitive?.content)
         assertEquals("user_123", body["user"]?.jsonPrimitive?.content)
         assertEquals("low", body["text"]?.jsonObject?.get("verbosity")?.jsonPrimitive?.content)
-        assertEquals(false, body["text"]?.jsonObject?.get("format")?.jsonObject?.get("strict")?.jsonPrimitive?.booleanOrNull)
+        assertEquals(
+            false,
+            body["text"]?.jsonObject?.get("format")?.jsonObject?.get("strict")?.jsonPrimitive?.booleanOrNull
+        )
         val include = body["include"]!!.jsonArray.map { it.jsonPrimitive.content }
         assertTrue("file_search_call.results" in include)
         assertTrue("message.output_text.logprobs" in include)
@@ -282,29 +291,42 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
         provider.responses("gpt-5").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
-                tools = listOf(
-                    LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
-                    LanguageModelTool("code_interpreter", "Run code.", """{"type":"object"}""", providerExecuted = true),
-                    LanguageModelTool("web_search", "Search web.", """{"type":"object"}""", providerExecuted = true),
-                ),
-                toolChoice = ToolChoice.Specific("web_search"),
-                providerOptions = mapOf(
-                    "openai" to buildJsonObject {
-                        put(
-                            "allowedTools",
-                            buildJsonObject {
-                                put("toolNames", JsonArray(listOf(JsonPrimitive("lookup"))))
-                                put("mode", JsonPrimitive("required"))
-                            },
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(
+                    listOf(
+                        LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
+                        LanguageModelTool(
+                            "code_interpreter",
+                            "Run code.",
+                            """{"type":"object"}""",
+                            providerExecuted = true
+                        ),
+                        LanguageModelTool("web_search", "Search web.", """{"type":"object"}""", providerExecuted = true),
+                    )
+                )
+                toolChoice(ToolChoice.Specific("web_search"))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "openai" to buildJsonObject {
+                                    put(
+                                        "allowedTools",
+                                        buildJsonObject {
+                                            put("toolNames", JsonArray(listOf(JsonPrimitive("lookup"))))
+                                            put("mode", JsonPrimitive("required"))
+                                        },
+                                    )
+                                },
+                            )
                         )
-                    },
-                ),
-            ),
+                    )
+                )
+            },
         )
 
         val body = seenBody.single()
@@ -336,33 +358,39 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
-        val tools = toolSetOf<Any?>(
-            openAIFileSearch(
+        val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
+        val tools = ToolSet<Any?>(
+            OpenAIFileSearch(
                 buildJsonObject {
                     put("vectorStoreIds", JsonArray(listOf(JsonPrimitive("vs_1"))))
                     put("maxNumResults", JsonPrimitive(3))
                     put("ranking", buildJsonObject { put("scoreThreshold", JsonPrimitive(0.25)) })
-                    put("filters", buildJsonObject {
-                        put("key", JsonPrimitive("tenant"))
-                        put("type", JsonPrimitive("eq"))
-                        put("value", JsonPrimitive("torad"))
-                    })
+                    put(
+                        "filters",
+                        buildJsonObject {
+                            put("key", JsonPrimitive("tenant"))
+                            put("type", JsonPrimitive("eq"))
+                            put("value", JsonPrimitive("torad"))
+                        }
+                    )
                 },
             ),
-            openAICodeInterpreter(
+            OpenAICodeInterpreter(
                 buildJsonObject {
                     put("container", buildJsonObject { put("fileIds", JsonArray(listOf(JsonPrimitive("file_1")))) })
                 },
             ),
-            openAIWebSearch(
+            OpenAIWebSearch(
                 buildJsonObject {
                     put("externalWebAccess", JsonPrimitive(false))
-                    put("filters", buildJsonObject { put("allowedDomains", JsonArray(listOf(JsonPrimitive("example.com")))) })
+                    put(
+                        "filters",
+                        buildJsonObject { put("allowedDomains", JsonArray(listOf(JsonPrimitive("example.com")))) }
+                    )
                     put("searchContextSize", JsonPrimitive("high"))
                 },
             ),
-            openAIImageGeneration(
+            OpenAIImageGeneration(
                 buildJsonObject {
                     put("inputFidelity", JsonPrimitive("high"))
                     put("inputImageMask", buildJsonObject { put("fileId", JsonPrimitive("file_mask")) })
@@ -370,26 +398,32 @@ class OpenAIProviderTest {
                     put("outputFormat", JsonPrimitive("webp"))
                 },
             ),
-            openAIMcp(
+            OpenAIMcp(
                 buildJsonObject {
                     put("serverLabel", JsonPrimitive("docs"))
-                    put("allowedTools", buildJsonObject {
-                        put("readOnly", JsonPrimitive(true))
-                        put("toolNames", JsonArray(listOf(JsonPrimitive("search"))))
-                    })
-                    put("requireApproval", buildJsonObject {
-                        put("never", buildJsonObject { put("toolNames", JsonArray(listOf(JsonPrimitive("read")))) })
-                    })
+                    put(
+                        "allowedTools",
+                        buildJsonObject {
+                            put("readOnly", JsonPrimitive(true))
+                            put("toolNames", JsonArray(listOf(JsonPrimitive("search"))))
+                        }
+                    )
+                    put(
+                        "requireApproval",
+                        buildJsonObject {
+                            put("never", buildJsonObject { put("toolNames", JsonArray(listOf(JsonPrimitive("read")))) })
+                        }
+                    )
                     put("serverUrl", JsonPrimitive("https://mcp.example/sse"))
                 },
             ),
         )
 
         provider.responses("gpt-5").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
-                tools = tools.descriptors,
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(tools.descriptors)
+            },
         )
 
         val byType = seenBody.single()["tools"]!!.jsonArray.associate { tool ->
@@ -398,17 +432,37 @@ class OpenAIProviderTest {
         }
         assertEquals(JsonArray(listOf(JsonPrimitive("vs_1"))), byType["file_search"]!!["vector_store_ids"])
         assertEquals(3, byType["file_search"]!!["max_num_results"]?.jsonPrimitive?.content?.toInt())
-        assertEquals(0.25, byType["file_search"]!!["ranking_options"]?.jsonObject?.get("score_threshold")?.jsonPrimitive?.content?.toDouble())
-        assertEquals(JsonArray(listOf(JsonPrimitive("file_1"))), byType["code_interpreter"]!!["container"]?.jsonObject?.get("file_ids"))
+        assertEquals(
+            0.25,
+            byType["file_search"]!!["ranking_options"]?.jsonObject?.get(
+                "score_threshold"
+            )?.jsonPrimitive?.content?.toDouble()
+        )
+        assertEquals(
+            JsonArray(listOf(JsonPrimitive("file_1"))),
+            byType["code_interpreter"]!!["container"]?.jsonObject?.get("file_ids")
+        )
         assertEquals(false, byType["web_search"]!!["external_web_access"]?.jsonPrimitive?.booleanOrNull)
-        assertEquals(JsonArray(listOf(JsonPrimitive("example.com"))), byType["web_search"]!!["filters"]?.jsonObject?.get("allowed_domains"))
+        assertEquals(
+            JsonArray(listOf(JsonPrimitive("example.com"))),
+            byType["web_search"]!!["filters"]?.jsonObject?.get("allowed_domains")
+        )
         assertEquals("high", byType["image_generation"]!!["input_fidelity"]?.jsonPrimitive?.content)
-        assertEquals("file_mask", byType["image_generation"]!!["input_image_mask"]?.jsonObject?.get("file_id")?.jsonPrimitive?.content)
+        assertEquals(
+            "file_mask",
+            byType["image_generation"]!!["input_image_mask"]?.jsonObject?.get("file_id")?.jsonPrimitive?.content
+        )
         assertEquals(80, byType["image_generation"]!!["output_compression"]?.jsonPrimitive?.content?.toInt())
         assertEquals("webp", byType["image_generation"]!!["output_format"]?.jsonPrimitive?.content)
         assertEquals("docs", byType["mcp"]!!["server_label"]?.jsonPrimitive?.content)
-        assertEquals(JsonArray(listOf(JsonPrimitive("search"))), byType["mcp"]!!["allowed_tools"]?.jsonObject?.get("tool_names"))
-        assertEquals(JsonArray(listOf(JsonPrimitive("read"))), byType["mcp"]!!["require_approval"]?.jsonObject?.get("never")?.jsonObject?.get("tool_names"))
+        assertEquals(
+            JsonArray(listOf(JsonPrimitive("search"))),
+            byType["mcp"]!!["allowed_tools"]?.jsonObject?.get("tool_names")
+        )
+        assertEquals(
+            JsonArray(listOf(JsonPrimitive("read"))),
+            byType["mcp"]!!["require_approval"]?.jsonObject?.get("never")?.jsonObject?.get("tool_names")
+        )
         assertEquals("https://mcp.example/sse", byType["mcp"]!!["server_url"]?.jsonPrimitive?.content)
     }
 
@@ -425,22 +479,24 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
         provider.responses("gpt-4o").generate(
-            LanguageModelCallParams(
-                messages = listOf(
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Text("analyze these"),
-                            ContentPart.File("image/jpeg", "file-image123"),
-                            ContentPart.File("application/pdf", "file-pdf123", "paper.pdf"),
-                            ContentPart.File("image/png", "aW1hZ2U="),
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Text("analyze these"),
+                                ContentPart.File("image/jpeg", "file-image123"),
+                                ContentPart.File("application/pdf", "file-pdf123", "paper.pdf"),
+                                ContentPart.File("image/png", "aW1hZ2U="),
+                            ),
                         ),
-                    ),
-                ),
-            ),
+                    )
+                )
+            },
         )
 
         val content = seenBody.single()["input"]!!.jsonArray.single().jsonObject["content"]!!.jsonArray
@@ -482,18 +538,31 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
-        val result = provider.responses("gpt-4o").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val result = provider.responses("gpt-4o").generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
-        val topLevel = result.providerMetadata["openai"]!!.jsonObject
+        val topLevel = result.providerMetadata.toMap()["openai"]?.jsonObject ?: error("missing openai metadata")
         assertEquals("resp_1", topLevel["responseId"]?.jsonPrimitive?.content)
-        assertEquals("answer", topLevel["logprobs"]!!.jsonArray.single().jsonArray.single().jsonObject["token"]?.jsonPrimitive?.content)
+        assertEquals(
+            "answer",
+            topLevel["logprobs"]!!.jsonArray.single().jsonArray.single().jsonObject["token"]?.jsonPrimitive?.content
+        )
         val text = result.content.filterIsInstance<ContentPart.Text>().single()
-        val textMetadata = text.providerMetadata!!["openai"]!!.jsonObject
+        val textMetadata = text.providerMetadata.toMap()["openai"]?.jsonObject ?: error("missing openai text metadata")
         assertEquals("msg_1", textMetadata["itemId"]?.jsonPrimitive?.content)
-        assertEquals("https://example.com", textMetadata["annotations"]!!.jsonArray.single().jsonObject["url"]?.jsonPrimitive?.content)
-        assertEquals("answer", textMetadata["logprobs"]!!.jsonArray.single().jsonObject["token"]?.jsonPrimitive?.content)
+        assertEquals(
+            "https://example.com",
+            textMetadata["annotations"]!!.jsonArray.single().jsonObject["url"]?.jsonPrimitive?.content
+        )
+        assertEquals(
+            "answer",
+            textMetadata["logprobs"]!!.jsonArray.single().jsonObject["token"]?.jsonPrimitive?.content
+        )
     }
 
     private fun assertProviderTool(tool: Tool<JsonElement, JsonElement, Any?>, name: String, providerToolId: String) {

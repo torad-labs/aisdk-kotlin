@@ -23,7 +23,7 @@ class InjectJsonInstructionTest {
         val prompt = "Do the thing"
 
         // WHEN
-        val result = injectJsonInstruction(prompt = prompt)
+        val result = JsonInstruction.injectJsonInstruction(prompt = prompt)
 
         // THEN
         assertEquals("Do the thing\n\nYou MUST answer with JSON.", result)
@@ -35,7 +35,7 @@ class InjectJsonInstructionTest {
         val schema = obj("""{"type":"object"}""")
 
         // WHEN
-        val result = injectJsonInstruction(schema = schema)
+        val result = JsonInstruction.injectJsonInstruction(schema = schema)
 
         // THEN
         assertEquals(
@@ -51,7 +51,7 @@ class InjectJsonInstructionTest {
         val schema = obj("""{"type":"string"}""")
 
         // WHEN
-        val result = injectJsonInstruction(prompt = "Be precise", schema = schema)
+        val result = JsonInstruction.injectJsonInstruction(prompt = "Be precise", schema = schema)
 
         // THEN
         assertEquals(
@@ -67,7 +67,7 @@ class InjectJsonInstructionTest {
         val prompt = ""
 
         // WHEN
-        val result = injectJsonInstruction(prompt = prompt)
+        val result = JsonInstruction.injectJsonInstruction(prompt = prompt)
 
         // THEN — empty prompt contributes no line and no blank separator.
         assertEquals("You MUST answer with JSON.", result)
@@ -77,30 +77,30 @@ class InjectJsonInstructionTest {
     fun `given a leading system message when injected into messages then its text seeds the prompt`() {
         // GIVEN
         val schema = obj("""{"type":"object"}""")
-        val messages = listOf(systemMessage("Sys"), userMessage("Hi"))
+        val messages = listOf(SystemMessage("Sys"), UserMessage("Hi"))
 
         // WHEN
-        val result = injectJsonInstructionIntoMessages(messages, schema = schema)
+        val result = JsonInstruction.injectJsonInstructionIntoMessages(messages, schema = schema)
 
         // THEN
         val expectedSystem = "Sys\n\nJSON schema:\n{\"type\":\"object\"}\n" +
             "You MUST answer with a JSON object that matches the JSON schema above."
         assertEquals(2, result.size)
-        assertEquals(systemMessage(expectedSystem), result[0])
-        assertEquals(userMessage("Hi"), result[1])
+        assertEquals(SystemMessage(expectedSystem), result[0])
+        assertEquals(UserMessage("Hi"), result[1])
     }
 
     @Test
     fun `given no leading system message when injected into messages then a system message is prepended`() {
         // GIVEN
-        val messages = listOf(userMessage("Hi"))
+        val messages = listOf(UserMessage("Hi"))
 
         // WHEN
-        val result = injectJsonInstructionIntoMessages(messages)
+        val result = JsonInstruction.injectJsonInstructionIntoMessages(messages)
 
         // THEN
         assertEquals(2, result.size)
-        assertEquals(systemMessage("You MUST answer with JSON."), result[0])
-        assertEquals(userMessage("Hi"), result[1])
+        assertEquals(SystemMessage("You MUST answer with JSON."), result[0])
+        assertEquals(UserMessage("Hi"), result[1])
     }
 }

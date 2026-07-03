@@ -1,14 +1,15 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.serializer
 
 class ProviderExecutedToolLoopTest {
 
@@ -22,14 +23,16 @@ class ProviderExecutedToolLoopTest {
                             toolCallId = "call_provider",
                             toolName = "web_search",
                             inputJson = JsonPrimitive("query"),
-                            providerMetadata = mapOf("test" to JsonPrimitive("provider-executed")),
+                            providerMetadata = ProviderMetadata.Raw(
+                                JsonObject(mapOf("test" to JsonPrimitive("provider-executed")))
+                            ),
                         ),
                     ),
                     finishReason = FinishReason.Stop,
                 ),
             ),
         )
-        val hostedTool = providerExecutedTool<JsonElement, JsonElement, Unit>(
+        val hostedTool = ProviderExecutedTool<JsonElement, JsonElement, Unit>(
             name = "web_search",
             description = "Provider-hosted web search.",
             inputSerializer = serializer(),
@@ -38,7 +41,7 @@ class ProviderExecutedToolLoopTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "use hosted tools",
-            tools = toolSetOf(hostedTool),
+            tools = ToolSet(hostedTool),
         )
 
         val events = drainAllItems(agent.stream(prompt = "search", options = Unit))

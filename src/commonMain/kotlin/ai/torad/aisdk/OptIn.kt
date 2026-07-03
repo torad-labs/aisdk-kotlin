@@ -13,9 +13,8 @@ import kotlin.annotation.AnnotationTarget.TYPEALIAS
  * Marks a declaration as **experimental**: a surface whose shape may change or be
  * removed in any release without going through the normal deprecation cycle.
  *
- * Currently gates the JS-ecosystem framework-adapter shims (`react`, `svelte`,
- * `vue`, `angular`, `rsc`) and the `codemod` migration helpers. These are
- * half-ported, churning surfaces that should not be mistaken for the stable core.
+ * Currently gates surfaces that mirror upstream experimental APIs or are still
+ * churning before the stable core contract freezes.
  *
  * Consumers must opt in explicitly — either annotate the using declaration with
  * `@ExperimentalAiSdkApi`, or annotate the call site with
@@ -23,7 +22,7 @@ import kotlin.annotation.AnnotationTarget.TYPEALIAS
  */
 @RequiresOptIn(
     level = RequiresOptIn.Level.ERROR,
-    message = "This is an experimental AI SDK API (framework-adapter / migration surface). " +
+    message = "This is an experimental AI SDK API. " +
         "It may change or be removed without notice. Opt in with @OptIn(ExperimentalAiSdkApi::class).",
 )
 @Retention(BINARY)
@@ -46,3 +45,25 @@ public annotation class ExperimentalAiSdkApi
 @Retention(BINARY)
 @Target(CLASS, FUNCTION, PROPERTY, PROPERTY_GETTER, PROPERTY_SETTER, CONSTRUCTOR, TYPEALIAS)
 public annotation class InternalAiSdkApi
+
+/**
+ * Marks direct [LanguageModel] execution as low-level provider access.
+ *
+ * Application prompts should normally go through an [Agent] or another
+ * high-level SDK API so tool loops, middleware, telemetry, persistence, and
+ * output handling stay in one place. Calling the model directly is still
+ * supported for provider authors, tests, and deliberately low-level integrations,
+ * but it must be explicit via `@OptIn(LowLevelLanguageModelApi::class)`.
+ *
+ * Public concrete [LanguageModel] implementations should put this marker on
+ * their execution overrides so direct calls on the concrete type stay gated too.
+ */
+@RequiresOptIn(
+    level = RequiresOptIn.Level.ERROR,
+    message = "Direct LanguageModel execution is a low-level provider API. " +
+        "Use Agent.generate/Agent.stream or a high-level SDK API for application prompts, " +
+        "or opt in with @OptIn(LowLevelLanguageModelApi::class).",
+)
+@Retention(BINARY)
+@Target(CLASS, FUNCTION, PROPERTY, PROPERTY_GETTER, PROPERTY_SETTER, CONSTRUCTOR, TYPEALIAS)
+public annotation class LowLevelLanguageModelApi

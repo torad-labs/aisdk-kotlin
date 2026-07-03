@@ -1,12 +1,13 @@
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class ToolLoopAgentUsageAggregationTest {
 
@@ -62,7 +63,7 @@ class ToolLoopAgentUsageAggregationTest {
                 ),
             ),
         )
-        val doneTool = tool<EmptyInput, ToolOutput, Unit>(
+        val doneTool = Tool<EmptyInput, ToolOutput, Unit>(
             name = "done",
             description = "complete",
             inputSerializer = serializer(),
@@ -73,10 +74,10 @@ class ToolLoopAgentUsageAggregationTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "use tool",
-            tools = toolSetOf(doneTool),
+            tools = ToolSet(doneTool),
         )
 
-        val result = agent.generate(prompt = "run", options = Unit)
+        val result = agent.generate(prompt = "run", options = Unit).first()
 
         // totalUsage is the sum across both steps (upstream parity).
         assertEquals(30, result.totalUsage.inputTokens.total)

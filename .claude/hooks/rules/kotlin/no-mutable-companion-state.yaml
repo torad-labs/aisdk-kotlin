@@ -1,0 +1,16 @@
+id: no-mutable-companion-state
+language: kotlin
+severity: error
+# Mutable `var` PROPERTY of a companion object = process-wide shared mutable singleton state.
+# Match only DIRECT companion properties (immediate parent is the companion's class_body) — the
+# previous `inside: companion_object, stopBy: end` over-matched, flagging function-local `var`s
+# inside companion METHODS (a false positive: locals are not shared state). Mirrors the correct
+# immediate-parent form of no-var-in-object-declaration.
+rule:
+  all:
+    - kind: property_declaration
+    - has: { kind: binding_pattern_kind, regex: "^var$" }
+    - inside:
+        kind: class_body
+        stopBy: neighbor
+        inside: { kind: companion_object, stopBy: neighbor }

@@ -1,5 +1,8 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -18,16 +21,17 @@ import kotlinx.coroutines.flow.flow
  * [MiddlewareCallContext] exposing both `doGenerate` AND `doStream` so
  * a stream-wrapping middleware can synthesize a stream out of the
  * downstream `generate` result (which is exactly what
- * [ai.torad.aisdk.middleware.simulateStreamingMiddleware] needs and
+ * `ai.torad.aisdk.middleware.simulateStreamingMiddleware` needs and
  * couldn't do under the prior `(params, next)` shape that only exposed
  * the same-direction call).
  */
+/** @since 0.3.0-beta01 */
 public interface LanguageModelMiddleware {
     /**
      * Transform the call params before [wrapGenerate]/[wrapStream] run, for the
      * given [operation]. The transformed params flow into both the wrap hooks and
      * the downstream call. This is the params-only seam — a middleware can implement
-     * just this (e.g. [ai.torad.aisdk.middleware.defaultSettingsMiddleware]).
+     * just this (e.g. `ai.torad.aisdk.middleware.defaultSettingsMiddleware`).
      * Default: pass through. Mirrors v6's `transformParams({ type, params, model })`.
      */
     public suspend fun transformParams(
@@ -40,21 +44,36 @@ public interface LanguageModelMiddleware {
     public suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
         context.doGenerate(context.params)
 
-    /** Wrap the streaming call. Default: pass through. */
+    /**
+     * Wrap the streaming call. Default: pass through.
+     * @since 0.3.0-beta01
+     */
     public fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
         context.doStream(context.params)
 
-    /** Override the model id the wrapper presents (null = keep the wrapped model's). */
+    /**
+     * Override the model id the wrapper presents (null = keep the wrapped model's).
+     * @since 0.3.0-beta01
+     */
     public fun overrideModelId(model: LanguageModel): String? = null
 
-    /** Override the provider name the wrapper presents (null = keep the wrapped model's). */
+    /**
+     * Override the provider name the wrapper presents (null = keep the wrapped model's).
+     * @since 0.3.0-beta01
+     */
     public fun overrideProvider(model: LanguageModel): String? = null
 
-    /** Override the supported-URL patterns the wrapper presents (null = keep the wrapped model's). */
+    /**
+     * Override the supported-URL patterns the wrapper presents (null = keep the wrapped model's).
+     * @since 0.3.0-beta01
+     */
     public fun overrideSupportedUrls(model: LanguageModel): Map<String, List<String>>? = null
 }
 
-/** Which operation a [LanguageModelMiddleware.transformParams] call is transforming. */
+/**
+ * Which operation a [LanguageModelMiddleware.transformParams] call is transforming.
+ * @since 0.3.0-beta01
+ */
 public enum class MiddlewareOperation { Generate, Stream }
 
 /**
@@ -80,11 +99,17 @@ public enum class MiddlewareOperation { Generate, Stream }
  * generate path. This is the load-bearing property that lets
  * `simulateStreamingMiddleware` work.
  */
-public data class MiddlewareCallContext(
-    val params: LanguageModelCallParams,
-    val model: LanguageModel,
-    val doGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult,
-    val doStream: (LanguageModelCallParams) -> Flow<StreamEvent>,
+@Poko
+/** @since 0.3.0-beta01 */
+public class MiddlewareCallContext(
+    /** @since 0.3.0-beta01 */
+    public val params: LanguageModelCallParams,
+    /** @since 0.3.0-beta01 */
+    public val model: LanguageModel,
+    /** @since 0.3.0-beta01 */
+    public val doGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult,
+    /** @since 0.3.0-beta01 */
+    public val doStream: (LanguageModelCallParams) -> Flow<StreamEvent>,
 )
 
 /**
@@ -92,8 +117,9 @@ public data class MiddlewareCallContext(
  * the first middleware in the list is the outermost wrapper — `wrapGenerate`
  * runs first on the way in, last on the way out (innermost in the
  * call stack, like Express middleware).
+ * @since 0.3.0-beta01
  */
-public fun wrapLanguageModel(
+public fun WrapLanguageModel(
     model: LanguageModel,
     middlewares: List<LanguageModelMiddleware>,
 ): LanguageModel {
@@ -115,10 +141,18 @@ private class WrappedLanguageModel(
     private val chainStream: (LanguageModelCallParams) -> Flow<StreamEvent>
 
     init {
-        // Build both chains bottom-up so each middleware sees `doGenerate`
-        // and `doStream` pointing at the rest of the chain past itself
-        // (not at this middleware's own wrappers). Each middleware's
-        // transformParams runs first (for its axis), then its wrap hook.
+        val (gen, stream) = buildChains(middlewares)
+        chainGenerate = gen
+        chainStream = stream
+    }
+
+    // Build both chains bottom-up so each middleware sees `doGenerate`
+    // and `doStream` pointing at the rest of the chain past itself
+    // (not at this middleware's own wrappers). Each middleware's
+    // transformParams runs first (for its axis), then its wrap hook.
+    private fun buildChains(
+        middlewares: List<LanguageModelMiddleware>,
+    ): Pair<suspend (LanguageModelCallParams) -> LanguageModelResult, (LanguageModelCallParams) -> Flow<StreamEvent>> {
         var doGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult = inner::generate
         var doStream: (LanguageModelCallParams) -> Flow<StreamEvent> = inner::stream
         for (mw in middlewares.asReversed()) {
@@ -155,8 +189,7 @@ private class WrappedLanguageModel(
             doGenerate = outerGen
             doStream = outerStream
         }
-        chainGenerate = doGenerate
-        chainStream = doStream
+        return doGenerate to doStream
     }
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =

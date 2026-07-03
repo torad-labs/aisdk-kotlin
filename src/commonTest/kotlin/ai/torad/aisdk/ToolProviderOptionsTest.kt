@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.serializer
@@ -14,15 +15,15 @@ class ToolProviderOptionsTest {
     fun `tool providerOptions flow onto the LanguageModelTool descriptor`() {
         val cacheControl: kotlinx.serialization.json.JsonElement =
             buildJsonObject { put("cacheControl", JsonPrimitive(true)) }
-        val opts = mapOf("anthropic" to cacheControl)
-        val t = tool<Q, String, Unit>(
+        val opts = ProviderOptions.Raw(JsonObject(mapOf("anthropic" to cacheControl)))
+        val t = Tool<Q, String, Unit>(
             name = "search",
             description = "d",
             inputSerializer = serializer(),
             outputSerializer = serializer(),
             providerOptions = opts,
         ) { "ok" }
-        val descriptor = toolSetOf(t).descriptors.single()
+        val descriptor = ToolSet(t).descriptors.single()
         assertEquals(opts, descriptor.providerOptions, "providerOptions threaded to the wire descriptor")
     }
 }

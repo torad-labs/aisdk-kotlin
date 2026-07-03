@@ -12,27 +12,25 @@ Pass an `AbortSignal` through the call:
 val controller = AbortController()
 
 val job = scope.launch {
-    streamText(
-        model = model,
-        prompt = prompt,
-        abortSignal = controller.signal,
-    ).collect(::render)
+    TextGenerator(
+        model,
+        CallConfig { abortSignal(controller.signal) },
+    ).stream(GenerationInput.Prompt(prompt)).collect(::render)
 }
 
 controller.abort()
 job.cancel()
 ```
 
-For agent streams, `onAbort` receives completed steps:
+For agent streams, `events(...)` surfaces abort lifecycle events with the
+completed steps:
 
 ```kotlin
-agent.stream(
-    prompt = prompt,
-    options = context,
-    hooks = AgentCallHooks(
-        onAbort = { event -> audit.aborted(event.steps.size) },
-    ),
-)
+agent.events(prompt = prompt, options = context).collect { event ->
+    if (event is AgentEvent.Aborted) {
+        audit.aborted(event.steps.size)
+    }
+}
 ```
 
 ## Stop Versus Resume
@@ -55,7 +53,7 @@ to an active stream.
 `Flow` is lazy. Keep it lazy:
 
 ```kotlin
-val stream = streamText(model = model, prompt = prompt)
+val stream = TextGenerator(model).stream(GenerationInput.Prompt(prompt))
 
 stream.collect { event ->
     writer.write(event)
@@ -68,11 +66,12 @@ scope, and cancel that scope when the consumer goes away.
 
 ## Fanout And Replay
 
-Collecting `streamText(...)` twice starts two provider calls. Use
-`streamTextResult` when multiple adapters need the same completed stream:
+Collecting `TextGenerator.stream(...)` twice starts two provider calls. Use
+`TextGenerator.streamResult(...)` when multiple adapters need the same completed
+stream:
 
 ```kotlin
-val result = streamTextResult(model = model, prompt = prompt)
+val result = TextGenerator(model).streamResult(GenerationInput.Prompt(prompt))
 
 val uiMessages = result.toUiMessageStream("assistant-1")
 val textOnly = result.textStream

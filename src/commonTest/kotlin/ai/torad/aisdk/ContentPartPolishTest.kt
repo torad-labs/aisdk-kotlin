@@ -1,10 +1,10 @@
 package ai.torad.aisdk
 
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlinx.serialization.json.Json
 
 /**
  * Surface tests for Phase 4F #38 + #39 — [ContentPart.File] richer
@@ -64,13 +64,32 @@ class ContentPartPolishTest {
     }
 
     @Test
-    fun `given an OnStepStartEvent built old-style when read then new fields default to safe values`() {
-        // GIVEN — existing observers that construct the event with
-        // just (stepNumber, messages).
-        val ev = OnStepStartEvent(stepNumber = 2, messages = emptyList())
+    fun `given an AgentEvent StepStarted with request and priorSteps when read then they round-trip`() {
+        // GIVEN — the producer obligation: request + priorSteps are REQUIRED, so
+        // the loop must supply the data it already has in scope (no empty default).
+        val params = LanguageModelCallParams {
+            messages(listOf(UserMessage("hi")))
+        }
+        val prior = ResultConstruction.stepResult(
+            stepNumber = 1,
+            text = "step 1 text",
+            reasoning = "",
+            toolCalls = emptyList(),
+            toolResults = emptyList(),
+            toolApprovalRequests = emptyList(),
+            finishReason = FinishReason.Stop,
+            usage = Usage(),
+        )
+        val ev = AgentEvent.StepStarted(
+            stepNumber = 2,
+            messages = emptyList(),
+            request = params,
+            priorSteps = listOf(prior),
+        )
 
-        // WHEN/THEN — new fields default to null / empty.
-        assertNull(ev.request, "request defaults to null — back-compat")
-        assertTrue(ev.priorSteps.isEmpty(), "priorSteps defaults to empty")
+        // WHEN/THEN — the fields carry the real data, not a silently-empty default.
+        assertEquals(params, ev.request, "request round-trips the prepared call params")
+        assertEquals(listOf(prior), ev.priorSteps, "priorSteps round-trips the accumulated steps")
+        assertEquals("step 1 text", ev.priorSteps.single().text)
     }
 }

@@ -1,11 +1,10 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.HUME_VERSION
+import ai.torad.aisdk.providers.Hume
 import ai.torad.aisdk.providers.HumeProviderSettings
-import ai.torad.aisdk.providers.createHume
-import ai.torad.aisdk.providers.hume
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -21,7 +20,7 @@ import kotlin.test.assertTrue
 class HumeProviderTest {
     @Test
     fun `speech model sends hume request shape and returns binary audio`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.hume.ai/v0/tts/file" to UrlHandler(
                     UrlResponse.Binary(byteArrayOf(1, 2, 3), headers = mapOf(HttpHeaders.ContentType to "audio/wav")),
@@ -29,43 +28,49 @@ class HumeProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createHume(
+        val model = Hume(
             fixture.httpClient(),
-            HumeProviderSettings(apiKey = "key"),
+            HumeProviderSettings { apiKey("key") },
         ).speech()
 
         val result = model.generate(
-            SpeechGenerationParams(
-                text = "hello",
-                voice = "voice-1",
-                instructions = "calm",
-                speed = 1.1f,
-                responseFormat = "wav",
-                providerOptions = mapOf(
-                    "hume" to buildJsonObject {
-                        put(
-                            "context",
-                            buildJsonObject {
-                                put(
-                                    "utterances",
-                                    buildJsonArray {
-                                        add(
-                                            buildJsonObject {
-                                                put("text", JsonPrimitive("prior"))
-                                                put("trailingSilence", JsonPrimitive(0.2f))
-                                            },
-                                        )
-                                    },
-                                )
-                            },
+            SpeechGenerationParams {
+                text("hello")
+                voice("voice-1")
+                instructions("calm")
+                speed(1.1f)
+                responseFormat("wav")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "hume" to buildJsonObject {
+                                    put(
+                                        "context",
+                                        buildJsonObject {
+                                            put(
+                                                "utterances",
+                                                buildJsonArray {
+                                                    add(
+                                                        buildJsonObject {
+                                                            put("text", JsonPrimitive("prior"))
+                                                            put("trailingSilence", JsonPrimitive(0.2f))
+                                                        },
+                                                    )
+                                                },
+                                            )
+                                        },
+                                    )
+                                },
+                            )
                         )
-                    },
-                ),
-            ),
+                    )
+                )
+            },
         )
 
         assertEquals("hume.speech", model.provider)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), result.audio?.base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.audio?.base64)
         val request = fixture.calls.single()
         assertEquals("key", request.requestHeaders.headerValue("X-Hume-Api-Key"))
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/hume/$HUME_VERSION"))
@@ -83,7 +88,7 @@ class HumeProviderTest {
 
     @Test
     fun `speech model warns and falls back to mp3 for unsupported format`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.hume.ai/v0/tts/file" to UrlHandler(
                     UrlResponse.Binary(byteArrayOf(4, 5, 6)),
@@ -91,15 +96,25 @@ class HumeProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createHume(
+        val model = Hume(
             fixture.httpClient(),
-            HumeProviderSettings(apiKey = "key"),
+            HumeProviderSettings { apiKey("key") },
         ).speech()
 
-        val result = model.generate(SpeechGenerationParams(text = "hello", responseFormat = "flac"))
+        val result = model.generate(
+            SpeechGenerationParams {
+                text("hello")
+                responseFormat("flac")
+            }
+        )
 
         assertEquals("unsupported", result.warnings.single().type)
-        assertEquals("mp3", fixture.calls.single().requestBodyJson.jsonObject["format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "mp3",
+            fixture.calls.single().requestBodyJson.jsonObject["format"]?.jsonObject?.get(
+                "type"
+            )?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("audio/mpeg", result.audio?.mediaType)
     }
 

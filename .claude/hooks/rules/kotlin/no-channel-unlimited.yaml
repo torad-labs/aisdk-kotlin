@@ -1,0 +1,7 @@
+id: no-channel-unlimited
+language: kotlin
+severity: warning
+message: "`Channel.UNLIMITED` removes all backpressure; an unbounded buffer can grow without limit. Use a bounded capacity with an explicit `BufferOverflow` policy."
+rule:
+  kind: navigation_expression
+  pattern: Channel.UNLIMITED

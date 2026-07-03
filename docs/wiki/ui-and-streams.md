@@ -44,7 +44,7 @@ agent.stream(prompt = prompt, options = context).collect { event ->
 message snapshots and typed parts.
 
 ```kotlin
-val messages = streamToUiMessages(
+val messages = StreamToUiMessages(
     events = agent.stream(prompt = prompt, options = context),
     assistantMessageId = "assistant-$turnId",
 )
@@ -70,7 +70,7 @@ fun render(part: UIMessagePart) {
 ```
 
 Text and reasoning parts carry `Streaming` or `Done` state. Tool parts carry
-tool-call lifecycle state and can mark preliminary output from `streamingTool`.
+tool-call lifecycle state and can mark preliminary output from `StreamingTool`.
 
 ## Typed Tool UI
 
@@ -100,12 +100,12 @@ val result: SearchResult? = part.outputAs<SearchResult>()
 val chat = Chat(
     id = "support",
     transport = DirectChatTransport { request ->
-        streamToUiMessages(
+        StreamToUiMessages(
             events = agent.stream(
-                messages = convertToModelMessages(request.messages),
+                messages = ModelMessageConversion.convertToModelMessages(request.messages),
                 options = currentContext,
             ),
-            assistantMessageId = getResponseUiMessageId(request.messages),
+            assistantMessageId = UiMessageStreams.getResponseUiMessageId(request.messages),
         )
     },
 )
@@ -123,7 +123,7 @@ message ids, metadata, and host writers, see [UI Stream Protocols](ui-stream-pro
 Use `ChatSession` when a UI wants a `StateFlow<ChatState>`.
 
 ```kotlin
-val session = chatSession(
+val session = ChatSession(
     id = "support",
     transport = transport,
 )
@@ -168,7 +168,7 @@ messages, text, output, status, approvals, result, and errors in one place.
 Servers can return value objects and adapt them to their framework:
 
 ```kotlin
-val result = streamTextResult(model = model, prompt = prompt)
+val result = TextGenerator(model).streamResult(GenerationInput.Prompt(prompt))
 val response = result.toTextStreamResponse()
 ```
 
@@ -180,15 +180,16 @@ val response = result.toUiMessageStreamResponse(
 )
 ```
 
-Use `pipeTextStreamToResponse` and `pipeUiMessageStreamToResponse` with a
-host-provided `ServerResponseWriter`.
+Use `UiMessageStreams.pipeTextStreamToResponse` and
+`UiMessageStreams.pipeUiMessageStreamToResponse` with a host-provided
+`ServerResponseWriter`.
 
 ## Persistence
 
 Validate before storing or replaying UI messages:
 
 ```kotlin
-when (val checked = safeValidateUIMessages(messages)) {
+when (val checked = UiMessageStreams.safeValidateUIMessages(messages)) {
     is SafeValidateUIMessagesResult.Success -> save(checked.messages)
     is SafeValidateUIMessagesResult.Failure -> report(checked.error)
 }
@@ -197,7 +198,7 @@ when (val checked = safeValidateUIMessages(messages)) {
 Convert UI messages back to model messages when resuming:
 
 ```kotlin
-val modelMessages = convertToModelMessages(
+val modelMessages = ModelMessageConversion.convertToModelMessages(
     messages = savedMessages,
     ignoreIncompleteToolCalls = false,
 )
@@ -220,13 +221,14 @@ the shape of upstream UI hooks without depending on a web framework.
 
 For examples, see [Completion And Object UI](completion-and-object-ui.md).
 
-## Framework Facades
+## Framework Hosts
 
-The `react`, `vue`, `svelte`, `angular`, and `rsc` packages expose aliases and
-adapters for upstream package parity. They do not ship actual framework
-components. Compose, SwiftUI, and server renderers belong in host apps.
+AI SDK Kotlin exposes framework-neutral UI messages, sessions, transports, and
+stream response helpers. Compose, SwiftUI, server renderers, and any other host
+framework adapt those primitives in application code; the runtime does not ship
+web framework hook packages or components.
 
-For the exact facade surfaces and when to use them, see [Framework Facades](framework-facades.md).
+For host integration guidance, see [Framework Host Integration](framework-facades.md).
 
 ## Related
 
@@ -234,7 +236,7 @@ For the exact facade surfaces and when to use them, see [Framework Facades](fram
 - [UI Stream Protocols](ui-stream-protocols.md)
 - [Chatbots](chatbots.md)
 - [Completion And Object UI](completion-and-object-ui.md)
-- [Framework Facades](framework-facades.md)
+- [Framework Host Integration](framework-facades.md)
 - [Prompts And Messages](prompts-and-messages.md)
 - [Tools](tools.md)
 - [Agents](agents.md)

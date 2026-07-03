@@ -1,11 +1,13 @@
 package ai.torad.aisdk
 
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.coroutineScope
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.coroutineContext
 
 /**
  * Cancellation primitive matching the Vercel AI SDK v6 `AbortSignal` shape.
@@ -20,25 +22,38 @@ import kotlinx.coroutines.SupervisorJob
  * scope cancels, the signal aborts, and any subagent/tool execution
  * observing [throwIfAborted] or [register] surfaces the cancellation.
  */
+/** @since 0.3.0-beta01 */
 public interface AbortSignal {
-    /** True once any cancellation source has fired. */
+    /**
+     * True once any cancellation source has fired.
+     * @since 0.3.0-beta01
+     */
     public val isAborted: Boolean
 
-    /** Throws [AbortError] if [isAborted]. Cheap to call repeatedly. */
+    /**
+     * Throws [AbortError] if [isAborted]. Cheap to call repeatedly.
+     * @since 0.3.0-beta01
+     */
     public fun throwIfAborted()
 
     /**
      * Register a callback that fires exactly once on abort. If already
      * aborted, fires synchronously. Returns a handle to deregister.
+     * @since 0.3.0-beta01
      */
     public fun register(onAbort: () -> Unit): AbortRegistration
 
+    /** @since 0.3.0-beta01 */
     public interface AbortRegistration {
+        /** @since 0.3.0-beta01 */
         public fun cancel()
     }
 }
 
-/** A signal that is never aborted. Useful as a default. */
+/**
+ * A signal that is never aborted. Useful as a default.
+ * @since 0.3.0-beta01
+ */
 public val AbortSignalNever: AbortSignal = object : AbortSignal {
     override val isAborted: Boolean = false
     override fun throwIfAborted() = Unit
@@ -50,9 +65,15 @@ public val AbortSignalNever: AbortSignal = object : AbortSignal {
  * Mutable abort source — the v6 equivalent of `AbortController`. Hold the
  * controller, hand the [signal] to the agent, call [abort] from the UI's
  * stop button.
+ *
+ * @param logger receives a warning if a registered abort callback throws.
+ * @since 0.3.0-beta01
  */
 @OptIn(ExperimentalAtomicApi::class)
-public class AbortController {
+public class AbortController(
+    /** @since 0.3.0-beta01 */
+    private val logger: Logger = NoopLogger,
+) {
     private val backing: CompletableJob = SupervisorJob()
 
     // Copy-on-write callback list via atomic CAS. register/cancel/abort may be
@@ -60,8 +81,10 @@ public class AbortController {
     // coroutine), so a plain mutableListOf would race — and is UB on Native.
     private val callbacks = AtomicReference<List<() -> Unit>>(emptyList())
 
+    /** @since 0.3.0-beta01 */
     public val signal: AbortSignal = SignalImpl()
 
+    /** @since 0.3.0-beta01 */
     public fun abort() {
         if (backing.isCancelled) return
         backing.cancel()
@@ -69,7 +92,7 @@ public class AbortController {
         // list, and so abort() is idempotent under races.
         val snapshot = callbacks.exchange(emptyList())
         for (cb in snapshot) {
-            runCatching { cb() }
+            notifyCallback(cb)
         }
     }
 
@@ -89,6 +112,23 @@ public class AbortController {
         }
     }
 
+    private fun notifyCallback(onAbort: () -> Unit) {
+        try {
+            onAbort()
+        } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
+            logCallbackFailure(error)
+        }
+    }
+
+    private fun logCallbackFailure(error: Throwable) {
+        runCatching {
+            logger.warn(
+                "AbortSignal callback threw; continuing abort delivery to remaining callbacks.",
+                error,
+            )
+        }
+    }
+
     private inner class SignalImpl : AbortSignal {
         override val isAborted: Boolean get() = backing.isCancelled
 
@@ -98,7 +138,7 @@ public class AbortController {
 
         override fun register(onAbort: () -> Unit): AbortSignal.AbortRegistration {
             if (backing.isCancelled) {
-                runCatching { onAbort() }
+                notifyCallback(onAbort)
                 return NoopRegistration
             }
             addCallback(onAbort)
@@ -106,7 +146,7 @@ public class AbortController {
             // add; if so this callback was missed — fire any stragglers now.
             if (backing.isCancelled) {
                 for (cb in callbacks.exchange(emptyList())) {
-                    runCatching { cb() }
+                    notifyCallback(cb)
                 }
             }
             return object : AbortSignal.AbortRegistration {
@@ -120,26 +160,64 @@ public class AbortController {
     }
 }
 
-/** Thrown from [AbortSignal.throwIfAborted] when the signal has fired. */
-public class AbortError(message: String = "operation aborted") : kotlin.coroutines.cancellation.CancellationException(message)
+/**
+ * Thrown from [AbortSignal.throwIfAborted] when the signal has fired.
+ * @since 0.3.0-beta01
+ */
+public class AbortError(
+    message: String = "operation aborted"
+) : kotlin.coroutines.cancellation.CancellationException(message)
+
+internal expect object AbortErrorCancellationBridge {
+    fun AbortError.asCoroutineCancellation(): kotlinx.coroutines.CancellationException
+}
+
+internal object AbortSignalRuntime {
+    suspend fun <T> withAbortCancellation(signal: AbortSignal, block: suspend () -> T): T = coroutineScope {
+        signal.throwIfAborted()
+        val job = coroutineContext[Job]
+        val registration = signal.register {
+            job?.cancel(with(AbortErrorCancellationBridge) { AbortError().asCoroutineCancellation() })
+        }
+        try {
+            block()
+        } finally {
+            registration.cancel()
+        }
+    }
+}
 
 /**
  * Bind an abort signal to a [Job] so the signal fires when the job
  * completes (cancelled or otherwise). Lets a parent scope's lifetime
  * automatically cancel anything observing the signal.
+ * @since 0.3.0-beta01
  */
-public fun abortSignalFromJob(job: Job): AbortSignal {
+public fun AbortSignalFromJob(job: Job): AbortSignal {
     val controller = AbortController()
     job.invokeOnCompletion { controller.abort() }
     return controller.signal
 }
 
-public fun Job.asAbortSignal(): AbortSignal = abortSignalFromJob(this)
+/**
+ * Member-extensions converting coroutine handles into [AbortSignal]s.
+ * @since 0.3.0-beta01
+ */
+public object AbortSignals {
+    /** @since 0.3.0-beta01 */
+    public fun Job.asAbortSignal(): AbortSignal = AbortSignalFromJob(this)
 
-public fun CoroutineScope.asAbortSignal(): AbortSignal =
-    coroutineContext[Job]?.asAbortSignal() ?: AbortSignalNever
+    /** @since 0.3.0-beta01 */
+    public fun CoroutineScope.asAbortSignal(): AbortSignal =
+        coroutineContext[Job]?.asAbortSignal() ?: AbortSignalNever
+}
 
-public fun combineAbortSignals(vararg signals: AbortSignal): AbortSignal {
+// FunctionNaming/ReturnCount: PascalCase factory (matches AbortSignalFromJob) with intentional
+// early returns for the empty / single / already-aborted fast paths — long-standing, baselined.
+@OptIn(ExperimentalAtomicApi::class)
+@Suppress("FunctionNaming", "ReturnCount")
+/** @since 0.3.0-beta01 */
+public fun CombineAbortSignals(vararg signals: AbortSignal): AbortSignal {
     val active = signals.filterNot { it === AbortSignalNever }
     if (active.isEmpty()) return AbortSignalNever
     if (active.size == 1) return active.single()
@@ -153,13 +231,20 @@ public fun combineAbortSignals(vararg signals: AbortSignal): AbortSignal {
         return controller.signal
     }
 
-    val registrations = mutableListOf<AbortSignal.AbortRegistration>()
+    // Copy-on-write via AtomicReference (the AbortController idiom): the wiring loop CAS-appends
+    // while the teardown reads an immutable snapshot via exchange. A plain MutableList raced here —
+    // a source firing from another thread mid-wiring iterated the list while the loop mutated it
+    // (ConcurrentModificationException on JVM, memory-unsafe on Native).
+    val registrations = AtomicReference<List<AbortSignal.AbortRegistration>>(emptyList())
     // Attach teardown BEFORE the forwards, so a source that aborts
     // synchronously mid-wiring still tears down everything registered so far.
-    controller.signal.register { registrations.forEach { it.cancel() } }
+    controller.signal.register { registrations.exchange(emptyList()).forEach { it.cancel() } }
     for (signal in active) {
         val registration = signal.register { controller.abort() }
-        registrations += registration
+        while (true) {
+            val current = registrations.load()
+            if (registrations.compareAndSet(current, current + registration)) break
+        }
         // If that source fired synchronously, the teardown already ran (before
         // this registration was listed). Cancel it explicitly and stop wiring
         // the remaining sources — the controller is already terminal.

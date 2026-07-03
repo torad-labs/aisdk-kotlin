@@ -1,0 +1,30 @@
+id: no-callback-wiring-in-init
+language: kotlin
+severity: warning
+message: Registering a lambda on a collaborator inside init leaks `this` before construction completes.
+note: |
+  Assigning a lambda to a property of a constructor-supplied collaborator during
+  init (e.g. `transport.onClose = { onMessage(it) }`) hands the still-constructing
+  object's behavior to another object before the constructor returns. If that
+  collaborator invokes the callback early (or on another thread), it observes a
+  half-initialized `this`. Move wiring into an explicit `start()`/`connect()`
+  method called after construction. Tenet: explicit construction over magic.
+  Note: `this.foo = { ... }` and bare `foo = { ... }` (own-field init) do NOT match.
+  Caveat: assigning a lambda to a property of a LOCAL object built inside init
+  (a builder pattern) is not a leak; treat such a warning as a false positive.
+rule:
+  kind: anonymous_initializer
+  has:
+    stopBy: end
+    kind: assignment
+    all:
+      - has:
+          kind: directly_assignable_expression
+          all:
+            - has:
+                kind: navigation_suffix
+            - not:
+                has:
+                  kind: this_expression
+      - has:
+          kind: lambda_literal

@@ -14,7 +14,7 @@ If consuming from local Maven, publish first:
 Then confirm the consumer uses the same version:
 
 ```kotlin
-implementation("ai.torad:aisdk-kotlin:0.1.0-SNAPSHOT")
+implementation("ai.torad:torad-aisdk:0.3.0-beta01")
 ```
 
 For source checkouts, prefer a composite build with `includeBuild`.
@@ -45,14 +45,14 @@ environment maps, settings, or host-injected providers.
 
 ## Gateway Transport Is Not Configured
 
-`createGateway()` needs a `GatewayTransport` for real HTTP calls.
+`Gateway()` needs a `GatewayTransport` for real HTTP calls.
 
 ```kotlin
-val gatewayProvider = createGateway(
-    GatewayProviderSettings(
-        apiKey = key,
-        transport = KtorGatewayTransport(client),
-    ),
+val gatewayProvider = Gateway(
+    GatewayProviderSettings {
+        apiKey(key)
+        transport(KtorGatewayTransport(client))
+    },
 )
 ```
 
@@ -69,7 +69,7 @@ Inspect:
 - Whether `abortSignal` is forwarded to tools and subagents.
 - Whether a host adapter forgot to close or flush its stream.
 
-Remember that `streamText` and agent streams are cold.
+Remember that `TextGenerator.stream` and agent streams are cold.
 
 ## Tool Input Fails To Decode
 
@@ -89,7 +89,7 @@ Confirm that resume uses the returned message list plus approval responses:
 
 ```kotlin
 agent.generate(
-    messages = result.messages + toolApprovalResponseMessage(
+    messages = result.messages + ToolApprovalResponseMessage(
         toolCallId = pending.toolCallId,
         approved = true,
         approvalId = pending.approvalId,
@@ -104,7 +104,7 @@ For `AgentSession`, use `approve` or `deny` with the pending approval object.
 Run validation at persistence and API boundaries:
 
 ```kotlin
-safeValidateUIMessages(messages)
+UiMessageStreams.safeValidateUIMessages(messages)
 ```
 
 Check:

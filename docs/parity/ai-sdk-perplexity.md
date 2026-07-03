@@ -1,7 +1,7 @@
 # @ai-sdk/perplexity
 
-- Version: 3.0.35
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/perplexity`
+- Version: 3.0.36
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/perplexity`
 - Kotlin parity area: `:aisdk-provider-perplexity`
 - Current parity status: ported: createPerplexity/perplexity and provider settings are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as PERPLEXITY_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/perplexity/src/index.ts` | 5 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/perplexity/src/index.ts` | 5 |
 
 ## Public Exports
 

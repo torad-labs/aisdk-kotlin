@@ -1,7 +1,7 @@
 # @ai-sdk/groq
 
-- Version: 3.0.41
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/groq`
+- Version: 3.0.42
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/groq`
 - Kotlin parity area: `:aisdk-provider-groq`
 - Current parity status: ported: createGroq/groq, Groq tools, chat/transcription routing, provider settings, and option surfaces are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as GROQ_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/groq/src/index.ts` | 9 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/groq/src/index.ts` | 9 |
 
 ## Public Exports
 

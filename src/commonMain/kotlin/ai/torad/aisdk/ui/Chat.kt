@@ -1,33 +1,88 @@
 package ai.torad.aisdk.ui
 
-import kotlin.concurrent.Volatile
+import dev.drewhamilton.poko.Poko
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
-public data class ChatRequest(
-    val messages: List<UIMessage>,
-    val body: Map<String, JsonElement> = emptyMap(),
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+/** @since 0.3.0-beta01 */
+public class ChatRequest internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val messages: List<UIMessage>,
+    /** @since 0.3.0-beta01 */
+    public val body: Map<String, JsonElement> = emptyMap(),
+    /** @since 0.3.0-beta01 */
+    public val headers: Map<String, String> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
+public class ChatRequestBuilder {
+    private var messages: List<UIMessage>? = null
+    private var body: Map<String, JsonElement> = emptyMap()
+    private var headers: Map<String, String> = emptyMap()
+
+    /** @since 0.3.0-beta01 */
+    public fun messages(value: List<UIMessage>): ChatRequestBuilder {
+        messages = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun body(value: Map<String, JsonElement>): ChatRequestBuilder {
+        body = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun headers(value: Map<String, String>): ChatRequestBuilder {
+        headers = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): ChatRequest =
+        ChatRequest(
+            messages = requireNotNull(messages) { "ChatRequest.messages is required" },
+            body = body,
+            headers = headers,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun ChatRequest(
+    block: ChatRequestBuilder.() -> Unit = {},
+): ChatRequest =
+    ChatRequestBuilder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
 public interface ChatTransport {
+    /** @since 0.3.0-beta01 */
     public fun sendMessages(request: ChatRequest): Flow<UIMessage>
 
+    /** @since 0.3.0-beta01 */
     public fun reconnectToStream(chatId: String, headers: Map<String, String> = emptyMap()): Flow<UIMessage>? = null
 }
 
+/** @since 0.3.0-beta01 */
 public class DirectChatTransport(
     private val handler: (ChatRequest) -> Flow<UIMessage>,
 ) : ChatTransport {
     override fun sendMessages(request: ChatRequest): Flow<UIMessage> = handler(request)
 }
 
+/** @since 0.3.0-beta01 */
 public class DefaultChatTransport(
     private val delegate: ChatTransport,
 ) : ChatTransport {
@@ -38,16 +93,18 @@ public class DefaultChatTransport(
         delegate.reconnectToStream(chatId, headers)
 }
 
+/** @since 0.3.0-beta01 */
 public class TextStreamChatTransport(
     private val handler: (ChatRequest) -> Flow<String>,
     private val assistantMessageId: (ChatRequest) -> String = { request ->
-        getResponseUiMessageId(request.messages)
+        UiMessageStreams.getResponseUiMessageId(request.messages)
     },
 ) : ChatTransport {
     override fun sendMessages(request: ChatRequest): Flow<UIMessage> =
-        transformTextToUiMessageStream(handler(request), assistantMessageId(request))
+        TransformTextToUiMessageStream(handler(request), assistantMessageId(request))
 }
 
+/** @since 0.3.0-beta01 */
 public enum class ChatStatus {
     Ready,
     Submitted,
@@ -55,16 +112,18 @@ public enum class ChatStatus {
     Error,
 }
 
+@OptIn(ExperimentalAtomicApi::class)
+/** @since 0.3.0-beta01 */
 public class Chat(
+    /** @since 0.3.0-beta01 */
     public val id: String = "chat",
     initialMessages: List<UIMessage> = emptyList(),
     private val transport: ChatTransport,
 ) {
     // All chat state — messages, status, error, and the approval-id cursor —
     // lives in a single atomic holder. Every read-modify-write goes through
-    // [MutableStateFlow.update], so concurrent appends, upserts, and status
-    // transitions never interleave into a torn state (a plain MutableList +
-    // loose `var`s would race, and a racy MutableList is UB on Native).
+    // [applyState], so concurrent appends, upserts, and status transitions
+    // never interleave into a torn state.
     private val internalState = MutableStateFlow(
         InternalState(
             messages = initialMessages.toList(),
@@ -72,42 +131,70 @@ public class Chat(
         ),
     )
 
-    // @Volatile for cross-thread visibility: an in-flight sendMessage/regenerate
-    // collector reads this to decide whether it is still the active operation
-    // before writing state. A newer sendMessage or a stop() supersedes the
-    // prior op so its trailing terminal writes (Ready/Error) cannot clobber the
-    // newer op's state — mirroring AgentSession's `currentJob` identity guard.
-    @Volatile
-    private var currentOp: Any? = null
+    // Observable state view — always reflects the latest InternalState.
+    private val _state = MutableStateFlow(internalState.value.toChatState())
 
+    /** @since 0.3.0-beta01 */
+    public val state: StateFlow<ChatState> = _state.asStateFlow()
+
+    // Cross-thread visibility via AtomicReference: an in-flight sendMessage/regenerate
+    // collector reads this to decide whether it is still the active operation
+    // before writing state.
+    private val currentOpRef = AtomicReference<Any?>(null)
+    private val currentOpJobRef = AtomicReference<Job?>(null as Job?)
+
+    /** @since 0.3.0-beta01 */
     public val status: ChatStatus
         get() = internalState.value.status
 
+    /** @since 0.3.0-beta01 */
     public val error: Throwable?
         get() = internalState.value.error
 
+    /** @since 0.3.0-beta01 */
     public val messages: List<UIMessage>
         get() = internalState.value.messages
 
+    internal fun toState(): ChatState = ChatState(
+        id = id,
+        messages = messages,
+        status = status,
+        error = error,
+    )
+
+    // Atomically updates internalState and syncs the public StateFlow.
+    private fun applyState(block: InternalState.() -> InternalState): InternalState =
+        internalState.updateAndGet(block).also { _state.value = it.toChatState() }
+
+    private fun InternalState.toChatState(): ChatState = ChatState(
+        id = this@Chat.id,
+        messages = messages,
+        status = status,
+        error = error,
+    )
+
+    /** @since 0.3.0-beta01 */
     public fun setMessages(messages: List<UIMessage>) {
-        validateUiMessages(messages)
-        internalState.update {
-            it.copy(
+        UiMessageStreams.validateUiMessages(messages)
+        applyState {
+            copy(
                 messages = messages.toList(),
                 nextApprovalIndex = nextApprovalIndexAfter(messages),
             )
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clearError() {
-        internalState.update {
-            it.copy(
+        applyState {
+            copy(
                 error = null,
-                status = if (it.status == ChatStatus.Error) ChatStatus.Ready else it.status,
+                status = if (status == ChatStatus.Error) ChatStatus.Ready else status,
             )
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun addToolApprovalResponse(
         toolCallId: String,
         approved: Boolean,
@@ -120,10 +207,12 @@ public class Chat(
             state = if (approved) ToolCallState.OutputAvailable else ToolCallState.OutputDenied,
             output = JsonPrimitive(approvalId ?: toolCallId),
             error = reason,
+            approvalId = approvalId ?: toolCallId,
         )
         appendToolMessage(responsePart)
     }
 
+    /** @since 0.3.0-beta01 */
     public fun addToolOutput(
         toolCallId: String,
         output: JsonElement,
@@ -140,72 +229,91 @@ public class Chat(
     }
 
     @Deprecated("Use addToolOutput instead.")
+    /** @since 0.3.0-beta01 */
     public fun addToolResult(
         toolCallId: String,
         output: JsonElement,
         toolName: String = "tool",
     ): Unit = addToolOutput(toolCallId, output, toolName)
 
-    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
-        // The optimistic append stays inside the flow body to preserve the cold
-        // contract: collecting starts the turn; merely calling sendMessage does
-        // not mutate state. (See the L-3 note in ChatSession for why eager
-        // append belongs at the session layer, not here.) The token claims this
-        // op as the active one so a superseded collector can't write back.
+    /** @since 0.3.0-beta01 */
+    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
+        sendInternal(body) { it + message }
+
+    /** @since 0.3.0-beta01 */
+    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
+        // Re-run from the existing history with the trailing assistant turn(s) dropped. Do NOT
+        // re-append the last user message — it is already present, and appending it (as the old
+        // code did via sendMessage) duplicated its id and sent a doubled user turn to the model.
+        if (internalState.value.messages.none { it.role == UIMessageRole.User }) return emptyFlow()
+        return sendInternal(body) { msgs -> msgs.dropLastWhile { it.role == UIMessageRole.Assistant } }
+    }
+
+    private fun sendInternal(
+        body: Map<String, JsonElement>,
+        transformMessages: (List<UIMessage>) -> List<UIMessage>,
+    ): Flow<UIMessage> = flow {
         val op = Any()
-        currentOp = op
-        val request = internalState.updateAndGet {
-            it.copy(
-                messages = it.messages + message,
-                status = ChatStatus.Submitted,
-                error = null,
-            )
-        }.let { ChatRequest(messages = it.messages, body = body) }
+        val opJob = currentCoroutineContext()[Job]
+        currentOpJobRef.store(opJob)
+        currentOpRef.store(op)
+        val request = applyState {
+            copy(messages = transformMessages(messages), status = ChatStatus.Submitted, error = null)
+        }.let {
+            ChatRequest {
+                messages(it.messages)
+                body(body)
+            }
+        }
         try {
             transport.sendMessages(request).collect { response ->
-                if (currentOp === op) {
-                    internalState.update { it.copy(status = ChatStatus.Streaming).withUpsert(response) }
+                if (currentOpRef.load() === op) {
+                    applyState { copy(status = ChatStatus.Streaming).withUpsert(response) }
                 }
                 emit(response)
             }
-            if (currentOp === op) {
-                internalState.update { it.copy(status = ChatStatus.Ready) }
+            if (currentOpRef.load() === op) {
+                applyState { copy(status = ChatStatus.Ready) }
             }
-        } catch (t: Throwable) {
-            if (currentOp === op) {
-                internalState.update { it.copy(error = t, status = ChatStatus.Error) }
+        } catch (t: CancellationException) {
+            if (currentOpRef.load() === op) {
+                applyState { copy(error = null, status = ChatStatus.Ready) }
             }
             throw t
+        } catch (t: Throwable) {
+            if (currentOpRef.load() === op) {
+                applyState { copy(error = t, status = ChatStatus.Error) }
+            }
+            throw t
+        } finally {
+            if (currentOpJobRef.load() === opJob) {
+                currentOpJobRef.store(null)
+            }
         }
     }
 
-    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
-        val lastUser = internalState.value.messages.lastOrNull { it.role == UIMessageRole.User }
-            ?: return emptyFlow()
-        return sendMessage(lastUser, body)
-    }
-
+    /** @since 0.3.0-beta01 */
     public fun stop() {
-        // Supersede any in-flight op so its trailing terminal writes are ignored,
-        // then settle to Ready atomically.
-        currentOp = null
-        internalState.update { it.copy(status = ChatStatus.Ready) }
+        currentOpJobRef.load()?.cancel()
+        currentOpJobRef.store(null)
+        currentOpRef.store(null)
+        applyState { copy(status = ChatStatus.Ready) }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reconnectToStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage>? =
         transport.reconnectToStream(id, headers)
 
+    /** @since 0.3.0-beta01 */
     public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         reconnectToStream(headers) ?: emptyFlow()
 
     private fun appendToolMessage(part: UIMessagePart.ToolUI) {
-        // Allocate the id and append in one atomic update so two concurrent
-        // tool responses can't claim the same approval index.
-        internalState.update { current ->
-            val (id, nextIndex) = current.nextApprovalResponseId()
-            current.copy(
-                messages = current.messages + UIMessage(
-                    id = id,
+        applyState {
+            val (msgId, nextIndex) = nextApprovalResponseId()
+            copy(
+                messages = messages + UIMessage(
+                    id = msgId,
                     role = UIMessageRole.User,
                     parts = listOf(part),
                 ),

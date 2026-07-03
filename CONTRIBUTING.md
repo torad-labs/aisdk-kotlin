@@ -8,6 +8,14 @@ Use JDK 21 and the checked-in Gradle wrapper:
 ./gradlew jvmTest
 ```
 
+In a fresh clone, activate the committed pre-commit gates before committing:
+
+```sh
+tools/bootstrap
+```
+
+This sets the local `core.hooksPath=.githooks`; rerunning it is safe.
+
 For changes that affect Android publication, also run:
 
 ```sh

@@ -1,7 +1,11 @@
-import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.tasks.Classpath
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
+import org.gradle.process.CommandLineArgumentProvider
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
@@ -10,7 +14,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.detekt)
+    alias(libs.plugins.poko)
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
     `maven-publish`
@@ -19,6 +23,17 @@ plugins {
 
 group = providers.gradleProperty("GROUP").get()
 version = providers.gradleProperty("VERSION_NAME").get()
+
+val detektCliRuntime by configurations.creating
+val detektPluginClasspath by configurations.creating
+
+abstract class DetektPluginsArgumentProvider : CommandLineArgumentProvider {
+    @get:Classpath
+    abstract val pluginClasspath: ConfigurableFileCollection
+
+    override fun asArguments(): Iterable<String> =
+        listOf("--plugins", pluginClasspath.files.joinToString(",") { it.absolutePath })
+}
 
 kotlin {
     jvmToolchain(21)
@@ -73,12 +88,16 @@ kotlin {
         withHostTest {}
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
+            jvmDefault.set(JvmDefaultMode.ENABLE)
+            freeCompilerArgs.add("-Xjvm-expose-boxed")
         }
     }
 
     jvm {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
+            jvmDefault.set(JvmDefaultMode.ENABLE)
+            freeCompilerArgs.add("-Xjvm-expose-boxed")
         }
     }
 
@@ -105,7 +124,22 @@ kotlin {
     // artifact for server-side Kotlin/Native and CLI consumers.
     linuxX64()
 
+    // Apply the default source-set hierarchy explicitly: declaring the manual
+    // jvmAndAndroidMain dependsOn edge below otherwise disables Kotlin's auto-applied
+    // template, which is what groups the Native targets (linux + ios) under nativeMain.
+    // With it explicit, nativeMain stays wired AND the custom jvmAndAndroid group is additive.
+    applyDefaultHierarchyTemplate()
+
     sourceSets {
+        // Intermediate source set shared by the JVM and Android targets: both are
+        // JVM-backed, so their `actual`s (SecureRandom via java.security, the
+        // ProcessBuilder-backed MCP stdio transport) are identical. Declaring them
+        // once here — instead of byte-identical copies in jvmMain + androidMain —
+        // makes it a single source of truth.
+        val jvmAndAndroidMain by creating { dependsOn(commonMain.get()) }
+        jvmMain { dependsOn(jvmAndAndroidMain) }
+        androidMain { dependsOn(jvmAndAndroidMain) }
+
         commonMain.dependencies {
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.serialization.json)
@@ -117,44 +151,98 @@ kotlin {
             implementation(libs.ktor.client.mock)
             implementation(libs.turbine)
         }
+        // Konsist architecture tests run on the JVM only (Konsist is a JVM library that scans
+        // the project's .kt source from disk). They enforce the whole-codebase structural
+        // tenets that single-file lints can't see (e.g. "every data class `…Event` has a supertype").
+        jvmTest.dependencies {
+            implementation(libs.ktor.client.cio)
+            implementation(libs.konsist)
+        }
     }
+}
+
+tasks.withType<org.gradle.api.tasks.compile.JavaCompile>().configureEach {
+    options.release.set(17)
+}
+
+dependencies {
+    detektCliRuntime(libs.detekt.cli)
+    detektPluginClasspath(libs.detekt.formatting)
+    // The project's own architectural tenets as detekt rules (mirrors of the ast-grep
+    // PreToolUse hook rules), so they surface in the IDE + `check` for every developer.
+    detektPluginClasspath(project(":detekt-rules"))
 }
 
 // --- Static analysis: detekt (1.23.x) + ktlint-backed formatting rules ---
 // Runs WITHOUT type resolution: detekt 1.23.x bundles an older Kotlin front-end and
 // cannot resolve types for KMP non-JVM source sets anyway (detekt#5961), and detekt 2.0
-// is config-cache-incompatible + KMP-variant-exploding (detekt#8882). Style/formatting
-// rules are compiler-version-agnostic, so we point detekt straight at the KMP source dirs.
-detekt {
-    buildUponDefaultConfig = true
-    parallel = true
-    config.setFrom(file("$projectDir/detekt.yml"))
-    baseline = file("$projectDir/detekt-baseline.xml")
-    source.setFrom(
-        "src/commonMain/kotlin",
-        "src/jvmMain/kotlin",
-        "src/androidMain/kotlin",
-        "src/nativeMain/kotlin",
-        "src/commonTest/kotlin",
-    )
+// is still alpha. Style/formatting rules are compiler-version-agnostic, so we point
+// detekt straight at the KMP source dirs. This uses the stable CLI instead of the 1.x
+// Gradle plugin because the plugin calls a Gradle API removed in Gradle 10.
+val detektSourceDirs = listOf(
+    "src/commonMain/kotlin",
+    "src/jvmAndAndroidMain/kotlin",
+    "src/jvmMain/kotlin",
+    "src/androidMain/kotlin",
+    "src/nativeMain/kotlin",
+    "src/commonTest/kotlin",
+)
+val detektExistingSourceDirs = detektSourceDirs
+    .map { layout.projectDirectory.dir(it).asFile }
+    .filter { it.isDirectory }
+val detektConfigFile = layout.projectDirectory.file("detekt.yml")
+val detektBaselineFile = layout.projectDirectory.file("detekt-baseline.xml")
+val detektHtmlReport = layout.buildDirectory.file("reports/detekt/detekt.html")
+val detektXmlReport = layout.buildDirectory.file("reports/detekt/detekt.xml")
+val detektPluginArgumentProvider = objects.newInstance<DetektPluginsArgumentProvider>().apply {
+    pluginClasspath.from(detektPluginClasspath)
 }
 
-dependencies {
-    detektPlugins(libs.detekt.formatting)
+val detektCliArguments = listOf(
+    "--build-upon-default-config",
+    "--parallel",
+    "--jvm-target",
+    JvmTarget.JVM_17.target,
+    "--config",
+    detektConfigFile.asFile.absolutePath,
+    "--baseline",
+    detektBaselineFile.asFile.absolutePath,
+    "--input",
+    detektExistingSourceDirs.joinToString(",") { it.absolutePath },
+    "--report",
+    "html:${detektHtmlReport.get().asFile.absolutePath}",
+    "--report",
+    "xml:${detektXmlReport.get().asFile.absolutePath}",
+)
+
+val detekt by tasks.registering(JavaExec::class) {
+    description = "Runs detekt over the Kotlin source tree."
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    dependsOn(":detekt-rules:jar")
+    mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+    classpath = detektCliRuntime
+    args(detektCliArguments)
+    argumentProviders.add(detektPluginArgumentProvider)
+    inputs.files(detektExistingSourceDirs).withPropertyName("sources")
+    inputs.file(detektConfigFile).withPropertyName("config")
+    inputs.file(detektBaselineFile).withPropertyName("baseline")
+    inputs.files(detektPluginClasspath).withPropertyName("plugins").withNormalizer(ClasspathNormalizer::class)
+    outputs.file(detektHtmlReport).withPropertyName("htmlReport")
+    outputs.file(detektXmlReport).withPropertyName("xmlReport")
 }
 
-tasks.withType<Detekt>().configureEach {
-    jvmTarget = JvmTarget.JVM_17.target
-    reports {
-        html.required.set(true)
-        xml.required.set(true)
-        sarif.required.set(false)
-        md.required.set(false)
-    }
-}
-
-tasks.withType<DetektCreateBaselineTask>().configureEach {
-    jvmTarget = JvmTarget.JVM_17.target
+val detektBaseline by tasks.registering(JavaExec::class) {
+    description = "Regenerates detekt-baseline.xml using the stable detekt CLI."
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    dependsOn(":detekt-rules:jar")
+    mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+    classpath = detektCliRuntime
+    args(detektCliArguments + "--create-baseline")
+    argumentProviders.add(detektPluginArgumentProvider)
+    inputs.files(detektExistingSourceDirs).withPropertyName("sources")
+    inputs.file(detektConfigFile).withPropertyName("config")
+    inputs.files(detektPluginClasspath).withPropertyName("plugins").withNormalizer(ClasspathNormalizer::class)
+    outputs.file(detektBaselineFile).withPropertyName("baseline")
 }
 
 // --- Coverage: Kover (0.9.x). Measures the JVM target; excludes generated serializers. ---
@@ -165,8 +253,39 @@ kover {
                 classes("*\$\$serializer")
             }
         }
-        // Measurement only for now — no enforced threshold so the build is not gated.
+        verify {
+            // Current aggregate coverage from build/reports/kover/report.xml:
+            //   line 81.32%, instruction 71.95%, branch 44.01%.
+            // These beta gates leave a small ratchet margin so incidental line
+            // churn can land with tests, while material regressions fail `check`.
+            rule("line coverage ratchet") {
+                minBound(80, CoverageUnit.LINE, AggregationType.COVERED_PERCENTAGE)
+            }
+            rule("instruction coverage ratchet") {
+                minBound(70, CoverageUnit.INSTRUCTION, AggregationType.COVERED_PERCENTAGE)
+            }
+            rule("branch coverage ratchet") {
+                minBound(43, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)
+            }
+        }
     }
+}
+
+val detektBaselineBudgetCheck by tasks.registering(Exec::class) {
+    description = "Fails if detekt-baseline.xml grows beyond detekt-baseline-budget.json."
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    commandLine(layout.projectDirectory.file("tools/check-detekt-baseline-budget").asFile.absolutePath)
+    inputs.file(layout.projectDirectory.file("detekt-baseline.xml"))
+    inputs.file(layout.projectDirectory.file("detekt-baseline-budget.json"))
+    outputs.upToDateWhen { false }
+}
+
+tasks.named("check").configure {
+    // AR-34: exercise publish-path-only metadata compilation during normal check.
+    dependsOn("metadataMainClasses")
+    dependsOn("koverVerify")
+    dependsOn(detektBaselineBudgetCheck)
+    dependsOn(detekt)
 }
 
 // --- API docs: Dokka 2.x. HTML output (`./gradlew dokkaGenerate` → build/dokka/html). ---
@@ -226,6 +345,14 @@ publishing {
                 connection.set(providers.gradleProperty("POM_SCM_CONNECTION"))
                 developerConnection.set(providers.gradleProperty("POM_SCM_DEV_CONNECTION"))
             }
+            issueManagement {
+                system.set("GitHub")
+                url.set("https://github.com/torad-labs/aisdk-kotlin/issues")
+            }
+            ciManagement {
+                system.set("GitHub Actions")
+                url.set("https://github.com/torad-labs/aisdk-kotlin/actions")
+            }
             developers {
                 developer {
                     id.set(providers.gradleProperty("POM_DEVELOPER_ID"))
@@ -245,7 +372,7 @@ val publishingToRemoteRepository = providers.provider {
 }
 
 signing {
-    isRequired = publishingToRemoteRepository.get()
+    isRequired = publishingToRemoteRepository.get() && signingKey.isPresent && signingPassword.isPresent
     if (signingKey.isPresent && signingPassword.isPresent) {
         useInMemoryPgpKeys(signingKey.get(), signingPassword.get())
     }
@@ -257,6 +384,13 @@ signing {
 // mustRunAfter (not dependsOn) keeps sign tasks optional when not publishing.
 tasks.withType<PublishToMavenRepository>().configureEach {
     mustRunAfter(tasks.withType<Sign>())
+}
+
+// checkKotlinAbi reads the dump files written by updateKotlinAbi; when both tasks are
+// requested in one invocation Gradle 9 flags the shared output as an implicit dependency.
+// mustRunAfter (not dependsOn) keeps checkKotlinAbi runnable on its own.
+tasks.named("checkKotlinAbi").configure {
+    mustRunAfter(tasks.named("updateKotlinAbi"))
 }
 
 tasks.withType<PublishToMavenRepository>().configureEach {

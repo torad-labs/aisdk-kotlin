@@ -16,20 +16,29 @@ import kotlinx.coroutines.flow.Flow
  * Mirrors v6's `addToolInputExamplesMiddleware`. Pass a map of tool name
  * → list of example input JSON strings. Examples are appended in
  * "Example: <json>" form below the existing description.
+ * @since 0.3.0-beta01
  */
-public fun addToolInputExamplesMiddleware(
+public fun AddToolInputExamplesMiddleware(
     examplesByTool: Map<String, List<String>>,
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
     override suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
-        context.doGenerate(context.params.copy(tools = augment(context.params.tools)))
+        context.doGenerate(context.params.toBuilder().tools(augment(context.params.tools)).build())
 
     override fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
-        context.doStream(context.params.copy(tools = augment(context.params.tools)))
+        context.doStream(context.params.toBuilder().tools(augment(context.params.tools)).build())
 
     private fun augment(tools: List<LanguageModelTool>): List<LanguageModelTool> = tools.map { tool ->
         val examples = examplesByTool[tool.name] ?: return@map tool
         if (examples.isEmpty()) return@map tool
         val appendix = examples.joinToString(separator = "\n") { "Example: $it" }
-        tool.copy(description = "${tool.description}\n\n$appendix")
+        LanguageModelTool(
+            name = tool.name,
+            description = "${tool.description}\n\n$appendix",
+            parametersSchemaJson = tool.parametersSchemaJson,
+            providerExecuted = tool.providerExecuted,
+            metadata = tool.metadata,
+            strict = tool.strict,
+            providerOptions = tool.providerOptions,
+        )
     }
 }

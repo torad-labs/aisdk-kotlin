@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalAiSdkApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.coroutines.Dispatchers
@@ -9,13 +11,14 @@ import kotlin.coroutines.CoroutineContext
  * so the tests reach the loop machinery through this faithful forwarder (same constructor surface + defaults).
  * `internal` + test-only: it exists solely so the SDK can test its own base without re-opening it to instantiation.
  */
+@Suppress("LongParameterList")
 internal class TestToolLoopAgent<TContext, TOutput>(
     model: LanguageModel,
     instructions: String,
     tools: ToolSet<TContext>,
     activeTools: List<String>? = null,
     output: Output<TOutput>? = null,
-    stopWhen: StopCondition = stepCountIs(20),
+    stopWhen: StopCondition = StepCountIs(20),
     prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = null,
     prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = null,
     callOptionsSchema: KSerializer<TContext>? = null,
@@ -28,53 +31,44 @@ internal class TestToolLoopAgent<TContext, TOutput>(
     presencePenalty: Float? = null,
     frequencyPenalty: Float? = null,
     responseFormat: ResponseFormat = ResponseFormat.Text,
-    maxParallelToolCalls: Int = Int.MAX_VALUE,
-    onStart: (suspend OnStartEvent.() -> Unit)? = null,
-    onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null,
-    onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null,
-    onFinish: (suspend OnFinishEvent.() -> Unit)? = null,
-    onError: (suspend OnErrorEvent.() -> Unit)? = null,
-    onChunk: (suspend OnChunkEvent.() -> Unit)? = null,
-    onAbort: (suspend OnAbortEvent.() -> Unit)? = null,
-    experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null,
-    experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null,
+    maxRetries: Int = 2,
+    maxParallelToolCalls: Int = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS,
+    toolExecutionPolicy: ToolExecutionPolicy = ToolExecutionPolicy {
+        maxParallelToolCalls(maxParallelToolCalls)
+    },
     experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
     experimental_toolApprovalSecret: ByteArray? = null,
     telemetry: TelemetrySettings? = null,
     logger: Logger = NoopLogger,
     engineContext: CoroutineContext = Dispatchers.Default,
 ) : ToolLoopAgent<TContext, TOutput>(
+    settings = AgentSettings<TContext> {
+        activeTools(activeTools)
+        this.output(output)
+        this.prepareCall(prepareCall)
+        this.prepareStep(prepareStep)
+        this.callOptionsSchema(callOptionsSchema)
+        temperature(temperature)
+        topP(topP)
+        topK(topK)
+        maxOutputTokens(maxOutputTokens)
+        stopSequences(stopSequences)
+        seed(seed)
+        presencePenalty(presencePenalty)
+        frequencyPenalty(frequencyPenalty)
+        responseFormat(responseFormat)
+        maxRetries(maxRetries)
+        this.maxParallelToolCalls(maxParallelToolCalls)
+        this.toolExecutionPolicy(toolExecutionPolicy)
+        this.experimental_repairToolCall(experimental_repairToolCall)
+        this.experimental_toolApprovalSecret(experimental_toolApprovalSecret)
+        this.telemetry(telemetry)
+        this.logger(logger)
+        this.engineContext(engineContext)
+    },
     model = model,
     instructions = instructions,
     tools = tools,
-    activeTools = activeTools,
     output = output,
     stopWhen = stopWhen,
-    prepareCall = prepareCall,
-    prepareStep = prepareStep,
-    callOptionsSchema = callOptionsSchema,
-    temperature = temperature,
-    topP = topP,
-    topK = topK,
-    maxOutputTokens = maxOutputTokens,
-    stopSequences = stopSequences,
-    seed = seed,
-    presencePenalty = presencePenalty,
-    frequencyPenalty = frequencyPenalty,
-    responseFormat = responseFormat,
-    maxParallelToolCalls = maxParallelToolCalls,
-    onStart = onStart,
-    onStepStart = onStepStart,
-    onStepFinish = onStepFinish,
-    onFinish = onFinish,
-    onError = onError,
-    onChunk = onChunk,
-    onAbort = onAbort,
-    experimental_onToolCallStart = experimental_onToolCallStart,
-    experimental_onToolCallFinish = experimental_onToolCallFinish,
-    experimental_repairToolCall = experimental_repairToolCall,
-    experimental_toolApprovalSecret = experimental_toolApprovalSecret,
-    telemetry = telemetry,
-    logger = logger,
-    engineContext = engineContext,
 )

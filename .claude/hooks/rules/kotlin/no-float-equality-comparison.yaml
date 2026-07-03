@@ -1,0 +1,11 @@
+id: no-float-equality-comparison
+language: kotlin
+severity: warning
+message: >-
+  ==/!= against a floating-point literal is fragile (rounding/representation
+  error). Compare with a tolerance (abs(a - b) < epsilon), or check a typed
+  range. (Exact 0.0 guard before division? acceptable — suppress locally.)
+rule:
+  kind: equality_expression
+  has:
+    kind: real_literal

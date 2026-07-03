@@ -1,0 +1,6 @@
+id: no-flowon-main
+language: kotlin
+severity: warning
+message: "`flowOn(Dispatchers.Main)` forces the flow's upstream onto the UI thread inside library code. Let the collector choose the context, or inject a dispatcher."
+rule:
+  pattern: $X.flowOn(Dispatchers.Main)

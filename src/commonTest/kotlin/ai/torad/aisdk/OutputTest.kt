@@ -1,8 +1,5 @@
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -11,6 +8,9 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Invariants I-3 / I-6 — structured output goes through [Output] only.
@@ -23,7 +23,7 @@ class OutputTest {
     @Test
     fun `given a typed-object Output and a matching JSON string when decoded then the object s fields are populated`() {
         // GIVEN
-        val output: Output<Recipe> = outputObj(serializer())
+        val output: Output<Recipe> = OutputObj(serializer())
 
         // WHEN
         val decoded = output.decode("""{"name":"cake","ingredients":["flour","sugar"]}""")
@@ -36,7 +36,7 @@ class OutputTest {
     @Test
     fun `given an array Output and a JSON array string when decoded then a list of typed objects is returned`() {
         // GIVEN
-        val output: Output<List<Recipe>> = outputArray(serializer())
+        val output: Output<List<Recipe>> = OutputArray(serializer())
 
         // WHEN
         val decoded = output.decode("""[{"name":"a","ingredients":[]},{"name":"b","ingredients":[]}]""")
@@ -62,7 +62,7 @@ class OutputTest {
     @Test
     fun `given a typed-object Output when its schemaJson is read then it advertises an object type`() {
         // GIVEN
-        val output: Output<Recipe> = outputObj(serializer())
+        val output: Output<Recipe> = OutputObj(serializer())
 
         // WHEN
         val schema = output.schemaJson
@@ -74,7 +74,7 @@ class OutputTest {
     @Test
     fun `given an array Output when schemaJson is read then it advertises the v6 elements wrapper`() {
         // GIVEN
-        val output = outputArray<Recipe>(serializer())
+        val output = OutputArray<Recipe>(serializer())
 
         // WHEN
         val schema = Json.parseToJsonElement(output.schemaJson).jsonObject
@@ -100,7 +100,7 @@ class OutputTest {
     @Test
     fun `given a choice Output when schemaJson is read then enum values are advertised`() {
         // GIVEN
-        val output = outputChoice("yes", "no")
+        val output = OutputChoice("yes", "no")
 
         // WHEN
         val result = Json.parseToJsonElement(output.schemaJson)
@@ -130,7 +130,7 @@ class OutputTest {
     @Test
     fun `given an Output when converted to response format then schema and name are preserved`() {
         // GIVEN
-        val output = outputObj<Recipe>(
+        val output = OutputObj<Recipe>(
             serializer = serializer(),
             name = "Recipe",
             description = "A generated recipe",
@@ -144,5 +144,37 @@ class OutputTest {
         assertEquals("Recipe", responseFormat.schemaName)
         assertEquals("A generated recipe", responseFormat.schemaDescription)
         assertEquals("object", responseFormat.schemaJson?.jsonObject?.get("type")?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `typed-object Output schemaJson describes the properties not a property-less stub`() {
+        // GIVEN
+        val output = OutputObj<Recipe>(serializer())
+
+        // WHEN
+        val schema = Json.parseToJsonElement(output.schemaJson).jsonObject
+
+        // THEN — strict providers reject a property-less object; the descriptor's fields must show.
+        assertEquals("object", schema["type"]?.jsonPrimitive?.content)
+        assertEquals("false", schema["additionalProperties"]?.jsonPrimitive?.content)
+        assertEquals(setOf("name", "ingredients"), schema["properties"]?.jsonObject?.keys)
+        val required = schema["required"]?.jsonArray?.map { it.jsonPrimitive.content }
+        assertEquals(listOf("name", "ingredients"), required)
+    }
+
+    @Test
+    fun `array Output schemaJson describes the element items not a property-less stub`() {
+        // GIVEN
+        val output = OutputArray<Recipe>(serializer())
+
+        // WHEN
+        val items = Json.parseToJsonElement(output.schemaJson).jsonObject["properties"]
+            ?.jsonObject?.get("elements")
+            ?.jsonObject?.get("items")
+            ?.jsonObject
+
+        // THEN — items must describe the element, not be a property-less object stub.
+        assertEquals("object", items?.get("type")?.jsonPrimitive?.content)
+        assertTrue(items?.get("properties")?.jsonObject?.containsKey("name") == true)
     }
 }

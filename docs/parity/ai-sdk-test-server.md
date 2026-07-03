@@ -1,16 +1,16 @@
 # @ai-sdk/test-server
 
 - Version: 1.0.5
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/test-server`
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/test-server`
 - Kotlin parity area: `:aisdk-test-server`
-- Current parity status: ported: createTestServer, TestResponseController, UrlResponse, UrlHandler, and UrlHandlers are represented as a Kotlin-native in-memory server with a Ktor MockEngine bridge folded into the root module
+- Current parity status: test-only: createTestServer, UrlResponse, UrlHandler, and related Ktor MockEngine helpers live under commonTest for provider tests and are not part of the shipped runtime API
 
 ## Entrypoints
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/test-server/src/index.ts` | 5 |
-| `./with-vitest` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/test-server/src/with-vitest.ts` | 1 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/test-server/src/index.ts` | 5 |
+| `./with-vitest` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/test-server/src/with-vitest.ts` | 1 |
 
 ## Public Exports
 

@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 class AwsSigV4Test {
     @Test
     fun `signer matches AWS IAM canonical request example`() {
-        val headers = awsSigV4SignedHeaders(
+        val headers = AwsSigV4.awsSigV4SignedHeaders(
             method = "GET",
             url = "https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08",
             service = "iam",
@@ -31,7 +31,7 @@ class AwsSigV4Test {
 
     @Test
     fun `signer preserves session token and encoded path for provider requests`() {
-        val headers = awsSigV4SignedHeaders(
+        val headers = AwsSigV4.awsSigV4SignedHeaders(
             method = "POST",
             url = "https://bedrock-runtime.us-east-1.amazonaws.com/model/amazon.nova-lite-v1%3A0/converse",
             service = "bedrock",
@@ -47,8 +47,43 @@ class AwsSigV4Test {
         )
 
         assertEquals("token", headers.headerValue("x-amz-security-token"))
-        assertTrue(headers.headerValue("Authorization").orEmpty().contains("Credential=id/20260102/us-east-1/bedrock/aws4_request"))
-        assertTrue(headers.headerValue("Authorization").orEmpty().contains("SignedHeaders=content-type;host;x-amz-date;x-amz-security-token"))
+        assertTrue(
+            headers.headerValue(
+                "Authorization"
+            ).orEmpty().contains("Credential=id/20260102/us-east-1/bedrock/aws4_request")
+        )
+        assertTrue(
+            headers.headerValue(
+                "Authorization"
+            ).orEmpty().contains("SignedHeaders=content-type;host;x-amz-date;x-amz-security-token")
+        )
+    }
+
+    @Test
+    fun `signer matches boto3 Bedrock colon model id signature`() {
+        val canonicalPath = "/model/anthropic.claude-3-5-sonnet-20240620-v1%3A0/converse"
+        val headers = AwsSigV4.awsSigV4SignedHeaders(
+            method = "POST",
+            url = "https://bedrock-runtime.us-east-1.amazonaws.com$canonicalPath",
+            service = "bedrock",
+            region = "us-east-1",
+            headers = mapOf("Content-Type" to "application/json"),
+            body = """{"messages":[]}""",
+            credentials = AwsSigV4Credentials(
+                accessKeyId = "AKIDEXAMPLE",
+                secretAccessKey = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+            ),
+            amzDate = "20150830T123600Z",
+        )
+
+        assertTrue(canonicalPath.contains("%3A"))
+        assertTrue(!canonicalPath.contains("%253A"))
+        assertEquals("bedrock-runtime.us-east-1.amazonaws.com", headers.headerValue("host"))
+        assertEquals("20150830T123600Z", headers.headerValue("x-amz-date"))
+        assertEquals(
+            "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/bedrock/aws4_request, SignedHeaders=content-type;host;x-amz-date, Signature=d01a8d899a4fa4002b4b754611d4da1c824394200b23acaaa4609304bef93847",
+            headers.headerValue("Authorization"),
+        )
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

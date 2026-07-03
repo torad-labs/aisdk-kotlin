@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "devDependencies": {
+    "@ast-grep/cli": "0.42.1"
+  }
+}

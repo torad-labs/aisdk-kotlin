@@ -16,11 +16,11 @@ configured, and where provider-specific options belong.
 ## Gateway Provider
 
 ```kotlin
-val gatewayProvider = createGateway(
-    GatewayProviderSettings(
-        apiKey = gatewayApiKey,
-        transport = KtorGatewayTransport(httpClient),
-    ),
+val gatewayProvider = Gateway(
+    GatewayProviderSettings {
+        apiKey(gatewayApiKey)
+        transport(KtorGatewayTransport(httpClient))
+    },
 )
 
 val model = gatewayProvider.languageModel("anthropic/claude-sonnet-4.5")
@@ -37,13 +37,15 @@ Gateway exposes operational metadata:
 val models = gatewayProvider.getAvailableModels()
 val credits = gatewayProvider.getCredits()
 val spend = gatewayProvider.getSpendReport(
-    GatewaySpendReportParams(
-        startDate = "2026-06-01",
-        endDate = "2026-06-08",
-    ),
+    GatewaySpendReportParams {
+        startDate("2026-06-01")
+        endDate("2026-06-08")
+    },
 )
 val generation = gatewayProvider.getGenerationInfo(
-    GatewayGenerationInfoParams("gen_123"),
+    GatewayGenerationInfoParams {
+        id("gen_123")
+    },
 )
 ```
 
@@ -55,19 +57,24 @@ calling them in hot rendering paths unless the result is cached.
 Gateway routing options are provider options:
 
 ```kotlin
-val result = generateText(
-    model = gatewayProvider.languageModel("anthropic/claude-sonnet-4.5"),
-    prompt = "Explain stream adapters.",
-    providerOptions = buildProviderOptions {
-        provider("gateway") {
-            put("order", JsonArray(listOf(JsonPrimitive("vertex"), JsonPrimitive("anthropic"))))
-            put("only", JsonArray(listOf(JsonPrimitive("vertex"), JsonPrimitive("anthropic"))))
-        }
-        provider("anthropic") {
-            put("thinking", JsonPrimitive("enabled"))
-        }
+val gatewayOptions = ProviderOptions.ofPairs(
+    "gateway" to buildJsonObject {
+        put("order", JsonArray(listOf(JsonPrimitive("vertex"), JsonPrimitive("anthropic"))))
+        put("only", JsonArray(listOf(JsonPrimitive("vertex"), JsonPrimitive("anthropic"))))
+    },
+    "anthropic" to buildJsonObject {
+        put("thinking", JsonPrimitive("enabled"))
     },
 )
+
+val result = TextGenerator(
+    gatewayProvider.languageModel("anthropic/claude-sonnet-4.5"),
+    CallConfig {
+        providerOptions(gatewayOptions)
+    },
+)
+    .generate(GenerationInput.Prompt("Explain stream adapters."))
+    .first()
 ```
 
 Use the actual provider key for provider-specific options that Gateway forwards
@@ -78,7 +85,7 @@ to the selected provider.
 Use a registry when app code receives model ids from config or user choice:
 
 ```kotlin
-val registry = createProviderRegistry(
+val registry = ProviderRegistry.createProviderRegistry(
     "gateway" to gatewayProvider,
     "local" to localProvider,
     defaultProviderId = "gateway",
@@ -95,11 +102,11 @@ Apply middleware at the registry boundary when every resolved language model
 needs the same behavior:
 
 ```kotlin
-val registry = createProviderRegistry(
+val registry = ProviderRegistry.createProviderRegistry(
     "gateway" to gatewayProvider,
     languageModelMiddleware = listOf(
-        defaultSettingsMiddleware(maxOutputTokens = 1_000),
-        devToolsMiddleware(recorder),
+        DefaultSettingsMiddleware(maxOutputTokens = 1_000),
+        DevToolsMiddleware(recorder),
     ),
 )
 ```
@@ -109,15 +116,14 @@ Use this for defaults, diagnostics, JSON extraction, or stream simulation.
 ## Custom Providers
 
 ```kotlin
-val provider = customProvider(
-    providerId = "test",
-    languageModels = mapOf("small" to mockLanguageModelTextOnly("ok")),
-)
+val provider = CustomProvider {
+    providerId("test")
+    languageModel("small", MockLanguageModelTextOnly("ok"))
+}
 
-val result = generateText(
-    model = provider.languageModel("small"),
-    prompt = "Say ok.",
-)
+val result = TextGenerator(provider.languageModel("small"))
+    .generate(GenerationInput.Prompt("Say ok."))
+    .first()
 ```
 
 Custom providers are ideal for tests and internal services. Preserve warnings,

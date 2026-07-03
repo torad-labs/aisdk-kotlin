@@ -1,11 +1,11 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.test.runTest
 
 class SmoothStreamTest {
 
@@ -16,7 +16,7 @@ class SmoothStreamTest {
             emit(StreamEvent.TextDelta("t_1", "app"))
             emit(StreamEvent.TextEnd("t_1"))
         }
-        val out = drainAllItems(smoothStream(events, delayMs = 0L))
+        val out = drainAllItems(SmoothStream(events, delayMs = 0L))
         val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
         assertTrue(texts.size >= 3, "got at least three word chunks")
         val joined = texts.joinToString("")
@@ -29,9 +29,39 @@ class SmoothStreamTest {
             emit(StreamEvent.ToolCall("c1", "t", kotlinx.serialization.json.JsonObject(emptyMap())))
             emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
         }
-        val out = drainAllItems(smoothStream(events, delayMs = 0L))
+        val out = drainAllItems(SmoothStream(events, delayMs = 0L))
         assertTrue(out.any { it is StreamEvent.ToolCall })
         assertTrue(out.any { it is StreamEvent.Finish })
+    }
+
+    @Test
+    fun `terminal event flushes buffered text before finish`() = runTest {
+        val events = flow {
+            emit(StreamEvent.TextDelta("t_1", "done"))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+        }
+        val out = drainAllItems(SmoothStream(events, delayMs = 0L))
+
+        assertEquals(
+            listOf(StreamEvent.TextDelta::class, StreamEvent.Finish::class),
+            out.map { it::class },
+        )
+        assertEquals("done", out.filterIsInstance<StreamEvent.TextDelta>().single().text)
+    }
+
+    @Test
+    fun `non-text event flushes buffered text before passthrough`() = runTest {
+        val events = flow {
+            emit(StreamEvent.TextDelta("t_1", "partial"))
+            emit(StreamEvent.SourcePart("s_1", StreamEvent.SourcePart.SourceType.Url, url = "https://example.test"))
+        }
+        val out = drainAllItems(SmoothStream(events, delayMs = 0L))
+
+        assertEquals(
+            listOf(StreamEvent.TextDelta::class, StreamEvent.SourcePart::class),
+            out.map { it::class },
+        )
+        assertEquals("partial", out.filterIsInstance<StreamEvent.TextDelta>().single().text)
     }
 
     @Test
@@ -40,7 +70,7 @@ class SmoothStreamTest {
             emit(StreamEvent.TextDelta("t_1", "line one\nline two\n"))
             emit(StreamEvent.TextEnd("t_1"))
         }
-        val out = drainAllItems(smoothStream(events, delayMs = 0L, chunkBy = ChunkBy.Line))
+        val out = drainAllItems(SmoothStream(events, delayMs = 0L, chunkBy = ChunkBy.Line))
         val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
         assertEquals(listOf("line one\n", "line two\n"), texts)
     }
@@ -60,7 +90,7 @@ class SmoothStreamTest {
             }
 
             // WHEN
-            val out = drainAllItems(smoothStream(events, delayMs = 0L))
+            val out = drainAllItems(SmoothStream(events, delayMs = 0L))
             val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
             // THEN — four ideograms flush as four separate chunks.
@@ -82,7 +112,7 @@ class SmoothStreamTest {
             }
 
             // WHEN
-            val out = drainAllItems(smoothStream(events, delayMs = 0L))
+            val out = drainAllItems(SmoothStream(events, delayMs = 0L))
             val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
             // THEN — the join preserves input; the contiguous 你好
@@ -102,7 +132,7 @@ class SmoothStreamTest {
             }
 
             // WHEN
-            val out = drainAllItems(smoothStream(events, delayMs = 0L))
+            val out = drainAllItems(SmoothStream(events, delayMs = 0L))
             val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
             // THEN

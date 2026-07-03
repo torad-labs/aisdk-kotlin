@@ -5,8 +5,8 @@ public feature areas. It is not an official Vercel package and not a
 TypeScript source translation.
 
 Repository: https://github.com/torad-labs/aisdk-kotlin
-Group/artifact: ai.torad:aisdk-kotlin
-Current snapshot version: 0.1.0-SNAPSHOT
+Group/artifact: ai.torad:torad-aisdk
+Current version: 0.3.0-beta01
 Primary package: ai.torad.aisdk
 
 ## What To Read First
@@ -28,7 +28,7 @@ Primary package: ai.torad.aisdk
   streaming typed data, and object helper migration.
 - docs/wiki/tools.md: typed tools, streaming tools, approval, toModelOutput,
   dynamic tools, provider-executed tools, and input hooks.
-- docs/wiki/streaming.md: Flow<StreamEvent>, streamTextResult, adapters,
+- docs/wiki/streaming.md: Flow<StreamEvent>, streamResult, adapters,
   server responses, cancellation, tool streams, and errors.
 - docs/wiki/advanced-streaming.md: stopping, resume tradeoffs, backpressure,
   fanout, replay, caching, and cleanup.
@@ -54,8 +54,8 @@ Primary package: ai.torad.aisdk
   rendering, approvals, resume, and text-only transports.
 - docs/wiki/completion-and-object-ui.md: completion state, completion facades,
   partial structured object state, and object facades.
-- docs/wiki/framework-facades.md: React, Vue, Svelte, Angular, and RSC-shaped
-  parity surfaces.
+- docs/wiki/framework-facades.md: framework-neutral UI messages, chat and
+  agent sessions, stream responses, and host-framework integration boundaries.
 - docs/wiki/mcp.md: MCP transports, tools, resources, prompts, elicitation,
   and cleanup.
 - docs/wiki/application-patterns.md: tool organization, agent composition,
@@ -84,17 +84,21 @@ Primary package: ai.torad.aisdk
 - ToolLoopAgent: default tool-loop implementation.
 - LanguageModel, EmbeddingModel, ImageModel, SpeechModel, TranscriptionModel,
   VideoModel, RerankingModel: provider-neutral model contracts.
-- generateText and streamText: single-call text APIs.
-- Output: structured output adapter for Kotlin serializers.
-- tool, dynamicTool, ToolSet: typed and dynamic tool definitions.
+- TextGenerator.generate, TextGenerator.stream, and TextGenerator.streamResult:
+  high-level text APIs over GenerationInput and CallConfig.
+- Output and StructuredObjectGenerator: structured output adapters for Kotlin
+  serializers and schemas.
+- Tool, DynamicTool, StreamingTool, ProviderExecutedTool, and ToolSet: typed,
+  dynamic, streaming, provider-executed, and grouped tool definitions.
 - StreamEvent: low-level streaming event taxonomy.
 - UIMessage and UIMessagePart: framework-neutral render contracts.
 - Chat and ChatTransport: host-neutral chat state and transport contracts.
-- createGateway, createOpenAICompatible, createOpenAI, provider facades:
-  provider entry points.
-- createProviderRegistry and customProvider: provider routing.
-- createMCPClient: MCP client entry point.
-- devToolsMiddleware: recorder-backed development middleware.
+- Gateway, OpenAICompatible, OpenAI, and provider facades: provider entry
+  points.
+- ProviderRegistry.createProviderRegistry and CustomProvider: provider routing.
+- CreateMCPClient, MCPClientConfig, and CreateMcpTransport: MCP client and
+  transport entry points.
+- DevToolsMiddleware: recorder-backed development middleware.
 
 ## Development Commands
 

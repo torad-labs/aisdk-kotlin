@@ -1,16 +1,16 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.ui.ModelMessageConversion.convertToModelMessages
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.convertToModelMessages
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Validates `convertToModelMessages` (gap #5 from
@@ -88,6 +88,37 @@ class ConvertToModelMessagesTest {
         val toolResult = result[1].content[0] as ContentPart.ToolResult
         assertEquals("call_1", toolResult.toolCallId)
         assertEquals(JsonPrimitive("sunny"), toolResult.output)
+    }
+
+    @Test
+    fun `given a real tool named approval when converted then it remains a tool result not an approval response`() {
+        val ui = listOf(
+            UIMessage(
+                id = "u1",
+                role = UIMessageRole.User,
+                parts = listOf(
+                    UIMessagePart.ToolUI(
+                        toolCallId = "call_approval",
+                        toolName = "approval",
+                        state = ToolCallState.OutputAvailable,
+                        input = JsonPrimitive("normal input"),
+                        output = JsonPrimitive("normal output"),
+                    ),
+                ),
+            ),
+        )
+
+        val result = convertToModelMessages(ui)
+
+        assertEquals(2, result.size)
+        assertEquals(MessageRole.User, result[0].role)
+        val toolCall = result[0].content.single() as ContentPart.ToolCall
+        assertEquals("approval", toolCall.toolName)
+        assertEquals(JsonPrimitive("normal input"), toolCall.input)
+        assertEquals(MessageRole.Tool, result[1].role)
+        val toolResult = result[1].content.single() as ContentPart.ToolResult
+        assertEquals("approval", toolResult.toolName)
+        assertEquals(JsonPrimitive("normal output"), toolResult.output)
     }
 
     @Test
@@ -189,6 +220,7 @@ class ConvertToModelMessagesTest {
                     toolCallId = "call_1",
                     toolName = "approval",
                     state = ToolCallState.OutputAvailable,
+                    approvalId = "call_1",
                 ),
             ),
         )
@@ -201,6 +233,7 @@ class ConvertToModelMessagesTest {
                     toolName = "approval",
                     state = ToolCallState.OutputDenied,
                     error = "not allowed",
+                    approvalId = "call_2",
                 ),
             ),
         )
@@ -222,7 +255,7 @@ class ConvertToModelMessagesTest {
     }
 
     @Test
-    fun `given malformed approval response output when converted then it fails instead of dropping approval id`() {
+    fun `given approval marker when converted then approval id comes from the marker not the tool output`() {
         val malformed = UIMessage(
             id = "approval_bad",
             role = UIMessageRole.User,
@@ -232,13 +265,15 @@ class ConvertToModelMessagesTest {
                     toolName = "approval",
                     state = ToolCallState.OutputAvailable,
                     output = buildJsonObject { put("bad", JsonPrimitive(true)) },
+                    approvalId = "approval_1",
                 ),
             ),
         )
 
-        assertFailsWith<IllegalArgumentException> {
-            convertToModelMessages(listOf(malformed))
-        }
+        val response = convertToModelMessages(listOf(malformed)).single().content.single()
+            as ContentPart.ToolApprovalResponse
+
+        assertEquals("approval_1", response.approvalId)
     }
 
     @Test

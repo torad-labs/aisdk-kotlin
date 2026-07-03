@@ -1,12 +1,12 @@
 package ai.torad.aisdk.middleware
 
+import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.LanguageModelMiddleware
 import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.MiddlewareCallContext
+import ai.torad.aisdk.PartialJson
 import ai.torad.aisdk.PartialJsonState
-import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.StreamEvent
-import ai.torad.aisdk.parsePartialJson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.flow
  * **Truncation robustness.** A truncated generation (context exhausted,
  * max tokens, cancellation) leaves the JSON region open — `{"a":1`
  * instead of `{"a":1}`. [extractAndRepairJson] runs the extracted
- * region through [parsePartialJson] / `fixJson`, so a cut-off object is
+ * region through `parsePartialJson` / `fixJson`, so a cut-off object is
  * repaired into a parseable one rather than failing downstream
  * `Output.decode`. This is the on-device "unstable as context grows"
  * failure mode the repair layer (gap #13) exists to absorb.
@@ -37,7 +37,8 @@ import kotlinx.coroutines.flow.flow
  * streaming text is buffered until `TextEnd`, matching v6 because an
  * arbitrary transform cannot be applied incrementally.
  */
-public fun extractJsonMiddleware(
+/** @since 0.3.0-beta01 */
+public fun ExtractJsonMiddleware(
     transform: ((String) -> String)? = null,
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
 
@@ -46,9 +47,17 @@ public fun extractJsonMiddleware(
     override suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult {
         val raw = context.doGenerate(context.params)
         val text = transformText(raw.text)
-        return raw.copy(
+        return LanguageModelResult(
             text = text,
+            toolCalls = raw.toolCalls,
+            finishReason = raw.finishReason,
+            usage = raw.usage,
+            providerMetadata = raw.providerMetadata,
             content = rebuildContent(raw.content, text),
+            rawFinishReason = raw.rawFinishReason,
+            warnings = raw.warnings,
+            request = raw.request,
+            response = raw.response,
         )
     }
 
@@ -86,7 +95,29 @@ public fun extractJsonMiddleware(
                         emit(event)
                     }
                 }
-                else -> emit(event)
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.Data,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                is StreamEvent.Finish,
+                StreamEvent.Abort,
+                is StreamEvent.Error,
+                is StreamEvent.Raw,
+                -> emit(event)
             }
         }
     }
@@ -130,8 +161,12 @@ public fun extractJsonMiddleware(
                 if (prefixMatch != null) {
                     block.buffer.deleteRange(0, prefixMatch.value.length)
                     block.prefixStripped = true
+                    // Only stream once the JSON fence header is stripped. A non-JSON fence
+                    // (```python, ```sh …) yields no prefix match — transitioning to Streaming
+                    // there would flush the raw fence header and force the wrong TextEnd path;
+                    // staying Buffering lets remainingText() extract the JSON via scanBalanced.
+                    block.phase = TextPhase.Streaming
                 }
-                block.phase = TextPhase.Streaming
             }
             current.length >= 3 && !current.startsWith("```") -> {
                 block.phase = TextPhase.Streaming
@@ -166,7 +201,7 @@ public fun extractJsonMiddleware(
      */
     private fun extractAndRepairJson(text: String): String {
         val region = extractJsonRegion(text)
-        val parsed = parsePartialJson(region)
+        val parsed = PartialJson.parsePartialJson(region)
         if (parsed.state == PartialJsonState.RepairedParse && parsed.value != null) {
             return parsed.value.toString()
         }

@@ -5,21 +5,18 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /**
- * Replay a recorded list of [StreamEvent]s as a fresh cold Flow with
- * configurable inter-chunk delay. Foundation for the caching middleware
- * pattern: cache stream parts as `List<StreamEvent>`, on cache hit replay
- * via `simulateReadableStream` so the stream contract is preserved.
+ * Creates a cold [Flow] that emits [chunks] in order with [delayMillis]
+ * between chunks. The first chunk is emitted immediately; the delay applies
+ * only between consecutive chunks.
  *
- * Mirrors v6's `simulateReadableStream`.
+ * @since 0.3.0-beta01
  */
-public fun simulateReadableStream(
-    events: List<StreamEvent>,
-    initialDelayMs: Long = 0L,
-    chunkDelayMs: Long = 10L,
-): Flow<StreamEvent> = flow {
-    if (initialDelayMs > 0) delay(initialDelayMs)
-    for ((index, event) in events.withIndex()) {
-        if (index > 0 && chunkDelayMs > 0) delay(chunkDelayMs)
-        emit(event)
+public fun <T> SimulateReadableStream(
+    chunks: Iterable<T>,
+    delayMillis: Long = 0L,
+): Flow<T> = flow {
+    chunks.forEachIndexed { index, chunk ->
+        if (index > 0 && delayMillis > 0L) delay(delayMillis)
+        emit(chunk)
     }
 }

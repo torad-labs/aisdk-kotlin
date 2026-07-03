@@ -1,15 +1,15 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.MockLanguageModel
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Invariants exercised:
@@ -24,31 +24,31 @@ class ToolLoopAgentTest {
     @Test
     fun `text_only_round_trip`() = runTest {
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("hello, friend"),
+            model = MockLanguageModelTextOnly("hello, friend"),
             instructions = "be friendly",
-            tools = toolSetOf(),
+            tools = ToolSet(),
         )
-        val result = agent.generate(prompt = "hi")
+        val result = agent.generate(prompt = "hi").first()
         assertEquals("hello, friend", result.text)
         assertEquals(FinishReason.Stop, result.finishReason)
     }
 
     @Test
     fun `tool_call_then_final_text`() = runTest {
-        val pingTool = tool<Empty, String, Unit>(
+        val pingTool = Tool<Empty, String, Unit>(
             name = "ping",
             description = "respond with pong",
             inputSerializer = serializer(),
             outputSerializer = serializer(),
         ) { _ -> "pong" }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "ping",
-                toolInput = mockToolInput("unused" to ""),
+                toolInput = MockToolInput("unused" to ""),
                 finalText = "got pong, here's the answer",
             ),
             instructions = "use the ping tool then answer",
-            tools = toolSetOf(pingTool),
+            tools = ToolSet(pingTool),
         )
         val events = mutableListOf<StreamEvent>()
         agent.stream(prompt = "trigger").collect { events.add(it) }

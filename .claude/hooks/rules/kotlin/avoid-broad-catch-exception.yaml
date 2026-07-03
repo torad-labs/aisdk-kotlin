@@ -1,0 +1,10 @@
+id: avoid-broad-catch-exception
+language: kotlin
+severity: warning
+rule:
+  kind: catch_block
+  has:
+    kind: user_type
+    has:
+      kind: type_identifier
+      regex: '^Exception$'

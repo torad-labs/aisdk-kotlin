@@ -7,35 +7,41 @@ tools into normal SDK tools.
 ## Create A Client
 
 ```kotlin
-val transport = createMcpTransport(
+val transport = CreateMcpTransport(
     client = httpClient,
-    config = MCPTransportConfig(
-        type = MCPTransportKind.Http,
-        url = "https://tools.example.com/mcp",
-        headers = mapOf("Authorization" to "Bearer $token"),
-    ),
+    config = MCPTransportConfig {
+        type(MCPTransportKind.Http)
+        url("https://tools.example.com/mcp")
+        headers(mapOf("Authorization" to "Bearer $token"))
+    },
 )
 
-val mcp = createMCPClient(
-    MCPClientConfig(transport = transport),
+val mcp = CreateMCPClient(
+    MCPClientConfig {
+        transport(transport)
+    },
 )
 ```
 
 Use HTTP for production-style deployments. SSE is available for servers that
-still expose that transport. Stdio is for local process-backed servers on
-platforms where process support exists.
+still expose that transport. For local process-backed servers on JVM/Android,
+use `Experimental_StdioMCPTransport(...)`; stdio is not an
+`MCPTransportKind` value.
 
 ## Use MCP Tools
 
 ```kotlin
 val mcpTools = mcp.tools<AppContext>()
 
-val agent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Use connected tools when they are relevant.",
-    tools = mcpTools,
-    stopWhen = stepCountIs(8),
-)
+class ConnectedToolsAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Use connected tools when they are relevant.",
+        tools = tools,
+        stopWhen = StepCountIs(8),
+    )
+
+val agent = ConnectedToolsAgent(model, mcpTools)
 ```
 
 MCP tool definitions are converted to the same `ToolSet<TContext>` shape as
@@ -110,7 +116,7 @@ Close the client when the host scope ends:
 
 ```kotlin
 try {
-    agent.generate(prompt = "Use the connected server.", options = context)
+    agent.generate(prompt = "Use the connected server.", options = context).first()
 } finally {
     mcp.close()
 }

@@ -1,205 +1,217 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.json.JsonElement
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
-
-public typealias GatewayModelId = String
-public typealias GatewayEmbeddingModelId = String
-public typealias GatewayImageModelId = String
-public typealias GatewayRerankingModelId = String
-public typealias GatewayVideoModelId = String
 
 public const val AI_GATEWAY_PROTOCOL_VERSION: String = "0.0.1"
 public const val AI_GATEWAY_DEFAULT_BASE_URL: String = "https://ai-gateway.vercel.sh/v3/ai"
 public const val GATEWAY_AUTH_METHOD_HEADER: String = "ai-gateway-auth-method"
 
+/** @since 0.3.0-beta01 */
 public enum class GatewayAuthMethod(public val wireValue: String) {
     ApiKey("api-key"),
     Oidc("oidc"),
 }
 
+/** @since 0.3.0-beta01 */
 public data class GatewayAuthToken(
     val token: String,
     val authMethod: GatewayAuthMethod,
-)
+) {
+    internal companion object {
+        internal suspend fun fromSettings(settings: GatewayProviderSettings): GatewayAuthToken? {
+            val key = (settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"])?.takeIf { it.isNotBlank() }
+            if (key != null) return GatewayAuthToken(key, GatewayAuthMethod.ApiKey)
+            // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
+            // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).
+            return settings.authTokenProvider?.invoke()
+                ?: settings.environment["VERCEL_OIDC_TOKEN"]?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
+        }
+    }
+}
 
-public data class GatewayProviderSettings(
-    val baseUrl: String = AI_GATEWAY_DEFAULT_BASE_URL,
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val transport: GatewayTransport = GatewayTransportNotConfigured,
-    val metadataCacheRefreshMillis: Long = 5 * 60 * 1000L,
-    val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
-    val authTokenProvider: (suspend () -> GatewayAuthToken?)? = null,
+/** @since 0.3.0-beta01 */
+public class GatewayProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val baseUrl: String = AI_GATEWAY_DEFAULT_BASE_URL,
+    /** @since 0.3.0-beta01 */
+    public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
+    public val transport: GatewayTransport = GatewayTransportNotConfigured,
+    /** @since 0.3.0-beta01 */
+    public val metadataCacheRefreshMillis: Long = 5 * 60 * 1000L,
+    /** @since 0.3.0-beta01 */
+    public val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+    /** @since 0.3.0-beta01 */
+    public val authTokenProvider: (suspend () -> GatewayAuthToken?)? = null,
     /**
      * Host-supplied environment. When [apiKey] is null, `AI_GATEWAY_API_KEY` here
      * is used — the KMP-idiomatic equivalent of upstream's process.env lookup
      * (commonMain has no platform `getenv`; the host passes the map).
+     * @since 0.3.0-beta01
      */
-    val environment: Map<String, String> = emptyMap(),
-)
-
-public data class GatewayRequestContext(
-    val baseUrl: String,
-    val headers: Map<String, String>,
-)
-
-public data class GatewayPricing(
-    val input: String,
-    val output: String,
-    val cachedInputTokens: String? = null,
-    val cacheCreationInputTokens: String? = null,
-)
-
-public data class GatewayLanguageModelSpecification(
-    val specificationVersion: String = "v3",
-    val provider: String,
-    val modelId: String,
-)
-
-public enum class GatewayModelType {
-    Embedding,
-    Image,
-    Language,
-    Reranking,
-    Video,
+    public val environment: Map<String, String> = emptyMap(),
+) {
+    internal suspend fun gatewayHeaders(): Map<String, String> {
+        val auth = GatewayAuthToken.fromSettings(this)
+        val base = linkedMapOf<String, String>()
+        auth?.let {
+            base["Authorization"] = "Bearer ${it.token}"
+            base[GATEWAY_AUTH_METHOD_HEADER] = it.authMethod.wireValue
+        }
+        base["ai-gateway-protocol-version"] = AI_GATEWAY_PROTOCOL_VERSION
+        // Observability headers from the host environment (the KMP equivalent of
+        // upstream's getVercelObservabilityHeaders). request-id is runtime-only and omitted.
+        val o11y = mapOf(
+            "ai-o11y-deployment-id" to "VERCEL_DEPLOYMENT_ID",
+            "ai-o11y-environment" to "VERCEL_ENV",
+            "ai-o11y-region" to "VERCEL_REGION",
+            "ai-o11y-project-id" to "VERCEL_PROJECT_ID",
+        )
+        for ((header, envVar) in o11y) {
+            environment[envVar]?.let { base[header] = it }
+        }
+        base.putAll(headers)
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/gateway-kotlin")
+    }
 }
 
-public data class GatewayLanguageModelEntry(
-    val id: String,
-    val name: String,
-    val description: String? = null,
-    val pricing: GatewayPricing? = null,
-    val specification: GatewayLanguageModelSpecification,
-    val modelType: GatewayModelType? = null,
-)
+/** @since 0.3.0-beta01 */
+public class GatewayProviderSettingsBuilder {
+    private var baseUrl: String = AI_GATEWAY_DEFAULT_BASE_URL
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var transport: GatewayTransport = GatewayTransportNotConfigured
+    private var metadataCacheRefreshMillis: Long = 5 * 60 * 1000L
+    private var nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() }
+    private var authTokenProvider: (suspend () -> GatewayAuthToken?)? = null
+    private var environment: Map<String, String> = emptyMap()
+
+    /** @since 0.3.0-beta01 */
+    public fun baseUrl(value: String): GatewayProviderSettingsBuilder {
+        baseUrl = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun apiKey(value: String?): GatewayProviderSettingsBuilder {
+        apiKey = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun headers(value: Map<String, String>): GatewayProviderSettingsBuilder {
+        headers = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun transport(value: GatewayTransport): GatewayProviderSettingsBuilder {
+        transport = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun metadataCacheRefreshMillis(value: Long): GatewayProviderSettingsBuilder {
+        metadataCacheRefreshMillis = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun nowMillis(value: () -> Long): GatewayProviderSettingsBuilder {
+        nowMillis = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun authTokenProvider(value: (suspend () -> GatewayAuthToken?)?): GatewayProviderSettingsBuilder {
+        authTokenProvider = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun environment(value: Map<String, String>): GatewayProviderSettingsBuilder {
+        environment = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): GatewayProviderSettings =
+        GatewayProviderSettings(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            headers = headers,
+            transport = transport,
+            metadataCacheRefreshMillis = metadataCacheRefreshMillis,
+            nowMillis = nowMillis,
+            authTokenProvider = authTokenProvider,
+            environment = environment,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun GatewayProviderSettings(
+    block: GatewayProviderSettingsBuilder.() -> Unit = {},
+): GatewayProviderSettings =
+    GatewayProviderSettingsBuilder().apply(block).build()
 
 public typealias GatewayModelEntry = GatewayLanguageModelEntry
 
-public data class GatewayFetchMetadataResponse(
-    val models: List<GatewayLanguageModelEntry>,
-)
+/** @since 0.3.0-beta01 */
+public fun GatewaySpendReportParams(
+    block: GatewaySpendReportParamsBuilder.() -> Unit = {},
+): GatewaySpendReportParams =
+    GatewaySpendReportParamsBuilder().apply(block).build()
 
-public data class GatewayCreditsResponse(
-    val balance: String,
-    val totalUsed: String,
-)
+/** @since 0.3.0-beta01 */
+public fun GatewayGenerationInfoParams(
+    block: GatewayGenerationInfoParamsBuilder.() -> Unit = {},
+): GatewayGenerationInfoParams =
+    GatewayGenerationInfoParamsBuilder().apply(block).build()
 
-public enum class GatewaySpendReportGroupBy(public val wireValue: String) {
-    Day("day"),
-    User("user"),
-    Model("model"),
-    Tag("tag"),
-    Provider("provider"),
-    CredentialType("credential_type"),
-}
-
-public enum class GatewaySpendReportDatePart(public val wireValue: String) {
-    Day("day"),
-    Hour("hour"),
-}
-
-public enum class GatewayCredentialType(public val wireValue: String) {
-    Byok("byok"),
-    System("system"),
-}
-
-public data class GatewaySpendReportParams(
-    val startDate: String,
-    val endDate: String,
-    val groupBy: GatewaySpendReportGroupBy? = null,
-    val datePart: GatewaySpendReportDatePart? = null,
-    val userId: String? = null,
-    val model: String? = null,
-    val provider: String? = null,
-    val credentialType: GatewayCredentialType? = null,
-    val tags: List<String> = emptyList(),
-)
-
-public data class GatewaySpendReportRow(
-    val day: String? = null,
-    val hour: String? = null,
-    val user: String? = null,
-    val model: String? = null,
-    val tag: String? = null,
-    val provider: String? = null,
-    val credentialType: GatewayCredentialType? = null,
-    val totalCost: Double,
-    val marketCost: Double? = null,
-    val inputTokens: Int? = null,
-    val outputTokens: Int? = null,
-    val cachedInputTokens: Int? = null,
-    val cacheCreationInputTokens: Int? = null,
-    val reasoningTokens: Int? = null,
-    val requestCount: Int? = null,
-)
-
-public data class GatewaySpendReportResponse(
-    val results: List<GatewaySpendReportRow>,
-)
-
-public data class GatewayGenerationInfoParams(
-    val id: String,
-)
-
-public data class GatewayGenerationInfo(
-    val id: String,
-    val totalCost: Double,
-    val upstreamInferenceCost: Double,
-    val usage: Double,
-    val createdAt: String,
-    val model: String,
-    val isByok: Boolean,
-    val providerName: String,
-    val streamed: Boolean,
-    val finishReason: String,
-    val latency: Int,
-    val generationTime: Int,
-    val promptTokens: Int,
-    val completionTokens: Int,
-    val reasoningTokens: Int,
-    val cachedTokens: Int,
-    val cacheCreationTokens: Int,
-    val billableWebSearchCalls: Int,
-)
-
+/** @since 0.3.0-beta01 */
 public interface GatewayTransport {
     public suspend fun generateText(
         context: GatewayRequestContext,
-        modelId: GatewayModelId,
+        modelId: ModelId,
         params: LanguageModelCallParams,
     ): LanguageModelResult = gatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
     public fun streamText(
         context: GatewayRequestContext,
-        modelId: GatewayModelId,
+        modelId: ModelId,
         params: LanguageModelCallParams,
     ): Flow<StreamEvent> = flow { throw GatewayTransportNotConfiguredError() }
 
     public suspend fun embed(
         context: GatewayRequestContext,
-        modelId: GatewayEmbeddingModelId,
+        modelId: ModelId,
         params: EmbeddingModelCallParams,
     ): EmbeddingModelResult = gatewayTransportMissing()
 
     public suspend fun generateImage(
         context: GatewayRequestContext,
-        modelId: GatewayImageModelId,
+        modelId: ModelId,
         params: ImageGenerationParams,
     ): ImageModelResult = gatewayTransportMissing()
 
     public suspend fun generateVideo(
         context: GatewayRequestContext,
-        modelId: GatewayVideoModelId,
+        modelId: ModelId,
         params: VideoGenerationParams,
     ): VideoModelResult = gatewayTransportMissing()
 
     public suspend fun rerank(
         context: GatewayRequestContext,
-        modelId: GatewayRerankingModelId,
+        modelId: ModelId,
         params: RerankingParams,
     ): RerankingModelResult = gatewayTransportMissing()
 
@@ -218,26 +230,46 @@ public interface GatewayTransport {
         context: GatewayRequestContext,
         params: GatewayGenerationInfoParams,
     ): GatewayGenerationInfo = gatewayTransportMissing()
+
+    public companion object {
+        internal fun gatewayTransportMissing(): Nothing = throw GatewayTransportNotConfiguredError()
+    }
 }
 
+/** @since 0.3.0-beta01 */
 public data object GatewayTransportNotConfigured : GatewayTransport
 
+/** @since 0.3.0-beta01 */
 public class GatewayTransportNotConfiguredError :
     AiSdkException("Gateway transport is not configured. Provide GatewayProviderSettings.transport.")
 
-private fun gatewayTransportMissing(): Nothing = throw GatewayTransportNotConfiguredError()
-
+/** @since 0.3.0-beta01 */
 public interface GatewayProvider : Provider {
+    /** @since 0.3.0-beta01 */
     public val settings: GatewayProviderSettings
+
+    /** @since 0.3.0-beta01 */
     public val tools: GatewayTools
 
-    public operator fun invoke(modelId: GatewayModelId): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: GatewayModelId): LanguageModel = languageModel(modelId)
-    public fun embedding(modelId: GatewayEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
-    public fun image(modelId: GatewayImageModelId): ImageModel = imageModel(modelId)
-    public fun video(modelId: GatewayVideoModelId): VideoModel = videoModel(modelId)
-    public fun reranking(modelId: GatewayRerankingModelId): RerankingModel = rerankingModel(modelId)
-    public fun textEmbeddingModel(modelId: GatewayEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun embedding(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun reranking(modelId: ModelId): RerankingModel = rerankingModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
 
     public suspend fun getAvailableModels(): GatewayFetchMetadataResponse
     public suspend fun getCredits(): GatewayCreditsResponse
@@ -245,21 +277,35 @@ public interface GatewayProvider : Provider {
     public suspend fun getGenerationInfo(params: GatewayGenerationInfoParams): GatewayGenerationInfo
 }
 
-public fun createGatewayProvider(settings: GatewayProviderSettings = GatewayProviderSettings()): GatewayProvider =
+/** @since 0.3.0-beta01 */
+public fun GatewayProvider(settings: GatewayProviderSettings = GatewayProviderSettings()): GatewayProvider =
     DefaultGatewayProvider(settings)
 
-public fun createGateway(settings: GatewayProviderSettings = GatewayProviderSettings()): GatewayProvider =
-    createGatewayProvider(settings)
+/**
+ * Creates a Vercel AI Gateway provider.
+ *
+ * The returned provider resolves language, embedding, image, video, and
+ * reranking models by Gateway model id. [settings] supplies credentials,
+ * transport, metadata cache timing, and host environment values. The caller
+ * owns the transport's HTTP client and timeout behavior.
+ * @since 0.3.0-beta01
+ */
+public fun Gateway(settings: GatewayProviderSettings = GatewayProviderSettings()): GatewayProvider =
+    GatewayProvider(settings)
 
-public val gateway: GatewayProvider = createGatewayProvider()
+/** @since 0.3.0-beta01 */
+public val gateway: GatewayProvider = GatewayProvider()
 
 private class DefaultGatewayProvider(
     override val settings: GatewayProviderSettings,
 ) : GatewayProvider {
     override val providerId: String = "gateway"
     override val tools: GatewayTools = GatewayTools()
-    private var pendingMetadata: GatewayFetchMetadataResponse? = null
-    private var lastFetchTime: Long = Long.MIN_VALUE
+
+    private data class MetadataCache(val response: GatewayFetchMetadataResponse, val fetchedAtMillis: Long)
+
+    private val metadataMutex = Mutex()
+    private var metadataCache: MetadataCache? = null
 
     override fun languageModel(modelId: String): LanguageModel =
         GatewayLanguageModel(modelId, settings.transport, ::requestContext)
@@ -276,19 +322,12 @@ private class DefaultGatewayProvider(
     override fun rerankingModel(modelId: String): RerankingModel =
         GatewayRerankingModel(modelId, settings.transport, ::requestContext)
 
-    override suspend fun getAvailableModels(): GatewayFetchMetadataResponse {
+    override suspend fun getAvailableModels(): GatewayFetchMetadataResponse = metadataMutex.withLock {
         val now = settings.nowMillis()
-        val cached = pendingMetadata
-        if (cached != null &&
-            settings.metadataCacheRefreshMillis > 0 &&
-            now - lastFetchTime <= settings.metadataCacheRefreshMillis
-        ) {
-            return cached
-        }
-        return settings.transport.getAvailableModels(requestContext()).also {
-            pendingMetadata = it
-            lastFetchTime = now
-        }
+        metadataCache
+            ?.takeIf { settings.metadataCacheRefreshMillis > 0 && now - it.fetchedAtMillis <= settings.metadataCacheRefreshMillis }
+            ?.response
+            ?: settings.transport.getAvailableModels(requestContext()).also { metadataCache = MetadataCache(it, now) }
     }
 
     override suspend fun getCredits(): GatewayCreditsResponse =
@@ -302,180 +341,7 @@ private class DefaultGatewayProvider(
 
     private suspend fun requestContext(): GatewayRequestContext =
         GatewayRequestContext(
-            baseUrl = withoutTrailingSlash(settings.baseUrl) ?: AI_GATEWAY_DEFAULT_BASE_URL,
-            headers = gatewayHeaders(settings),
+            baseUrl = UrlOps.withoutTrailingSlash(settings.baseUrl) ?: AI_GATEWAY_DEFAULT_BASE_URL,
+            headers = settings.gatewayHeaders(),
         )
 }
-
-private class GatewayLanguageModel(
-    override val modelId: GatewayModelId,
-    private val transport: GatewayTransport,
-    private val context: suspend () -> GatewayRequestContext,
-) : LanguageModel {
-    override val provider: String = "gateway"
-
-    override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        transport.generateText(context(), modelId, params)
-
-    override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        emitAll(transport.streamText(context(), modelId, params))
-    }
-}
-
-private class GatewayEmbeddingModel(
-    override val modelId: GatewayEmbeddingModelId,
-    private val transport: GatewayTransport,
-    private val context: suspend () -> GatewayRequestContext,
-) : EmbeddingModel {
-    override val provider: String = "gateway"
-
-    override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult =
-        transport.embed(context(), modelId, params)
-}
-
-private class GatewayImageModel(
-    override val modelId: GatewayImageModelId,
-    private val transport: GatewayTransport,
-    private val context: suspend () -> GatewayRequestContext,
-) : ImageModel {
-    override val provider: String = "gateway"
-
-    override suspend fun generate(params: ImageGenerationParams): ImageModelResult =
-        transport.generateImage(context(), modelId, params)
-}
-
-private class GatewayVideoModel(
-    override val modelId: GatewayVideoModelId,
-    private val transport: GatewayTransport,
-    private val context: suspend () -> GatewayRequestContext,
-) : VideoModel {
-    override val provider: String = "gateway"
-
-    override suspend fun generate(params: VideoGenerationParams): VideoModelResult =
-        transport.generateVideo(context(), modelId, params)
-}
-
-private class GatewayRerankingModel(
-    override val modelId: GatewayRerankingModelId,
-    private val transport: GatewayTransport,
-    private val context: suspend () -> GatewayRequestContext,
-) : RerankingModel {
-    override val provider: String = "gateway"
-
-    override suspend fun rerank(params: RerankingParams): RerankingModelResult =
-        transport.rerank(context(), modelId, params)
-}
-
-public data class GatewayTools(
-    val parallelSearch: Tool<JsonElement, JsonElement, Any?> = providerExecutedTool(
-        name = "parallelSearch",
-        description = "Search the web using Parallel AI's Search API for LLM-optimized excerpts.",
-        inputSerializer = JsonElement.serializer(),
-        outputSerializer = JsonElement.serializer(),
-    ),
-    val perplexitySearch: Tool<JsonElement, JsonElement, Any?> = providerExecutedTool(
-        name = "perplexitySearch",
-        description = "Search the web using Perplexity's Search API for real-time information.",
-        inputSerializer = JsonElement.serializer(),
-        outputSerializer = JsonElement.serializer(),
-    ),
-)
-
-internal suspend fun getGatewayAuthToken(settings: GatewayProviderSettings): GatewayAuthToken? {
-    val key = settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"]
-    if (key != null) return GatewayAuthToken(key, GatewayAuthMethod.ApiKey)
-    // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
-    // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).
-    return settings.authTokenProvider?.invoke()
-        ?: settings.environment["VERCEL_OIDC_TOKEN"]?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
-}
-
-internal suspend fun gatewayHeaders(settings: GatewayProviderSettings): Map<String, String> {
-    val auth = getGatewayAuthToken(settings)
-    val base = linkedMapOf<String, String>()
-    auth?.let {
-        base["Authorization"] = "Bearer ${it.token}"
-        base[GATEWAY_AUTH_METHOD_HEADER] = it.authMethod.wireValue
-    }
-    base["ai-gateway-protocol-version"] = AI_GATEWAY_PROTOCOL_VERSION
-    // Observability headers from the host environment (the KMP equivalent of
-    // upstream's getVercelObservabilityHeaders). request-id is runtime-only and omitted.
-    val o11y = mapOf(
-        "ai-o11y-deployment-id" to "VERCEL_DEPLOYMENT_ID",
-        "ai-o11y-environment" to "VERCEL_ENV",
-        "ai-o11y-region" to "VERCEL_REGION",
-        "ai-o11y-project-id" to "VERCEL_PROJECT_ID",
-    )
-    for ((header, envVar) in o11y) {
-        settings.environment[envVar]?.let { base[header] = it }
-    }
-    base.putAll(settings.headers)
-    return withUserAgentSuffix(base, "ai-sdk/gateway-kotlin")
-}
-
-internal fun parseGatewayAuthMethod(headers: Map<String, String?>): GatewayAuthMethod? =
-    when (headers[GATEWAY_AUTH_METHOD_HEADER]) {
-        GatewayAuthMethod.ApiKey.wireValue -> GatewayAuthMethod.ApiKey
-        GatewayAuthMethod.Oidc.wireValue -> GatewayAuthMethod.Oidc
-        else -> null
-    }
-
-public open class GatewayError(
-    message: String,
-    public val statusCode: Int = 500,
-    public val type: String = "gateway_error",
-    public val generationId: String? = null,
-    cause: Throwable? = null,
-    public val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500,
-) : AiSdkException(if (generationId == null) message else "$message [$generationId]", cause)
-
-public class GatewayAuthenticationError(
-    message: String = "Authentication failed",
-    statusCode: Int = 401,
-    generationId: String? = null,
-    cause: Throwable? = null,
-) : GatewayError(message, statusCode, "authentication_error", generationId, cause)
-
-public class GatewayInvalidRequestError(
-    message: String = "Invalid request",
-    statusCode: Int = 400,
-    generationId: String? = null,
-    cause: Throwable? = null,
-) : GatewayError(message, statusCode, "invalid_request_error", generationId, cause)
-
-public class GatewayRateLimitError(
-    message: String = "Rate limit exceeded",
-    statusCode: Int = 429,
-    generationId: String? = null,
-    cause: Throwable? = null,
-) : GatewayError(message, statusCode, "rate_limit_exceeded", generationId, cause)
-
-public class GatewayModelNotFoundError(
-    message: String = "Model not found",
-    statusCode: Int = 404,
-    public val modelId: String? = null,
-    generationId: String? = null,
-    cause: Throwable? = null,
-) : GatewayError(message, statusCode, "model_not_found", generationId, cause)
-
-public class GatewayInternalServerError(
-    message: String = "Internal server error",
-    statusCode: Int = 500,
-    generationId: String? = null,
-    cause: Throwable? = null,
-) : GatewayError(message, statusCode, "internal_server_error", generationId, cause)
-
-public class GatewayResponseError(
-    message: String = "Invalid response from Gateway",
-    statusCode: Int = 502,
-    public val response: JsonElement? = null,
-    generationId: String? = null,
-    cause: Throwable? = null,
-) : GatewayError(message, statusCode, "response_error", generationId, cause)
-
-public class GatewayTimeoutError(
-    message: String = "Gateway request timed out",
-    statusCode: Int = 408,
-    generationId: String? = null,
-    cause: Throwable? = null,
-) : GatewayError(message, statusCode, "timeout_error", generationId, cause)

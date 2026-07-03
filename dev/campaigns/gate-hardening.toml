@@ -1,0 +1,429 @@
+# Campaign: gate-hardening + beta-release (concept #942 manifest)
+# THE MANIFEST IS THE MEMORY. Statuses live HERE and only here:
+#   todo | in_flight | done (builder reports complete) | verified (orchestrator independently verified)
+# Nothing closes outside this file. Honesty-reconciles are APPENDED as
+# `reconcile = "..."` fields, never silently edited. Commits reference item ids.
+# Full rationale/provenance: docs/gate-hardening-backlog.md (narrative record —
+# no statuses there). Fleet adaptation of #942: implementer = aisdk-builder
+# (codex via torad-fleet) in the Sonnet slot; builder commits locally (pre-commit
+# gates run in its session), NEVER pushes — the orchestrator's reviewed push is
+# the single publication gate point. Enforced by fleet_protocol_policy hooks.
+#
+# DISPATCH TEMPLATE (every fleet sendMessage carries): (1) item id(s) + full
+# item text (title = resume pointer); (2) law-sheet deltas for the slice;
+# (3) writable-scope fence (exact files/dirs); (4) premise-check order — verify
+# claims against the repo first, wrong premise is REPORTED not obeyed;
+# (5) the item's verify field = the acceptance the report must demonstrate;
+# (6) report format: id, SHA, files, verification output, QUEUE state.
+# Waves: max 2-3 FILE-DISJOINT items; shared-file items are a sequential lane.
+# Safety: worktree-not-stash; no bypass; builder reports before amending;
+# orchestrator commits ALWAYS name pathspecs (git commit <paths> -m ...) —
+# bare `git commit` sweeps the shared index (learned 978502d, both roles now).
+
+[campaign]
+name = "gate-hardening-beta-release"
+started = "2026-07-02"
+plan_of_record = "docs/gate-hardening-backlog.md"
+done_definition = "every item verified (or operator-vetoed); fully-green CI at tip; RR-06 canary green after tag"
+
+# ---------------------------------------------------------------- phase gh1: wire what exists (all S)
+
+[[items]]
+id = "GH-01"
+phase = "gh1"
+title = "Wire validate_rules.py (parse + --manifest semantic) into ci-gate.sh. Two lines, same idiom as the four detect-*.py gates (ci-gate.sh:57-67). Activates 50 dormant fixtures + parse-checks all 64 rules per commit. Highest leverage in campaign."
+files = [".claude/hooks/rules/ci-gate.sh"]
+status = "verified"
+verify = "break one manifest fixture in a scratch copy -> ci-gate.sh exits 1; pristine tree -> exits 0; both directions demonstrated in the report"
+
+[[items]]
+id = "GH-02"
+phase = "gh1"
+title = "Run the four hook self-test suites (test_kotlin_antipattern_policy, test_codex_hook_adapter, test_fleet_protocol_policy, test_rule_selfcheck_policy) as a CI step in ci.yml verify job. CI-only, NOT pre-commit (keeps commit latency flat; GH-01 covers per-commit). Adjudication: docs/gate-hardening-backlog.md §GH-02."
+files = [".github/workflows/ci.yml"]
+status = "verified"
+verify = "CI step runs all four suites; a deliberately broken assertion fails the job (demonstrate in a scratch branch run or local equivalent)"
+# [2026-07-02] done in 978502d: hook self-test CI step runs all four suites; scratch forced failure exits 1
+# [2026-07-02] orchestrator verified: step live (ci.yml:73-79), four suites green independently (34/5/26/6), fail-direction shown in builder worktree probe. ATTRIBUTION RECONCILE: the ci.yml change rode into orchestrator commit 978502d (bare git commit swept the builder's staged index in a shared-tree race); content correct, process fixed via pathspec-commit rule added to manifest header.
+
+[[items]]
+id = "GH-03"
+phase = "gh1"
+title = "Split reference-freshness (vercel/ai clone at ci.yml:38-45 + check-ai-sdk-reference + parity check) into a parallel non-blocking CI job so network failure cannot mask internal gates. The 8-day-dark vector. VERIFIED FINDING (GH-04 probe): parity check exits 1 when .reference is missing, so the parity step MUST move into this job with the clone — leaving it in verify recreates the mask one step later."
+files = [".github/workflows/ci.yml"]
+status = "verified"
+verify = "workflow YAML shows independent job; internal gates run when freshness job is forced red (yamllint + job-dependency inspection acceptable pre-merge)"
+# [2026-07-02] orchestrator verified 0437097: step-output gating (available=true/false) closes the GH-04 parity-mask reconcile completely; freshness job npm-free (parity tool stdlib-only, premise-checked)
+
+[[items]]
+id = "GH-04"
+phase = "gh1"
+title = "Freshness NETWORK failure -> warn+continue: wrap check-ai-sdk-reference.mjs npm view (lines ~14-21, no try/catch today) AND the git-clone/pin-test step; genuine pin/version mismatch stays fatal. Extends AR-03 which only demoted the newer-version case."
+files = ["tools/check-ai-sdk-reference.mjs", ".github/workflows/ci.yml"]
+status = "verified"
+verify = "unreachable-registry simulation exits 0 with ::warning::; corrupted AI_SDK_REFERENCE_COMMIT exits 1"
+reconcile = "2026-07-02 orchestrator probe: with .reference absent (simulated clone failure), generate-parity-ledger --check exits 1 -> the network mask moves one step later; residual accepted here because the parity step is inside GH-03 split scope. GH-03 title updated accordingly."
+
+[[items]]
+id = "GH-05"
+phase = "gh1"
+title = "Regression-lock run-ios-swift-smoke: in verify-apple, taking the skip branch must FAIL (REQUIRE_REAL_SMOKE=1 env in ci.yml + script honors it). Live hole already closed; this prevents silent-skip recurrence."
+files = ["tools/run-ios-swift-smoke", ".github/workflows/ci.yml"]
+status = "verified"
+verify = "script with REQUIRE_REAL_SMOKE=1 on non-Darwin exits 1; without the env exits 0 (skip); Darwin path unchanged"
+
+[[items]]
+id = "GH-06"
+phase = "gh1"
+title = "Gate-misfire protocol section in CLAUDE.md (diagnose -> fix rule + fixture -> re-run; never bypass; where fixtures live; budget re-seed rules) + cross-link from ci-gate.sh failure banner."
+files = ["CLAUDE.md", ".claude/hooks/rules/ci-gate.sh"]
+status = "verified"
+verify = "section exists; ci-gate.sh failure output names it"
+# [2026-07-02] done in GH-06 slice (final SHA in fleet report): gate-misfire protocol documented and ci-gate banner links it
+# [2026-07-02] orchestrator verified 5d383a5: section matches enforcement voice, encodes fixture law + ratchet rules; banner cross-links it; gate green
+
+[[items]]
+id = "GH-07"
+phase = "gh1"
+title = "Nightly cron full-pipeline run on main (schedule: in ci.yml). Bounds any dark window to <24h. Liveness signal for LP-4."
+files = [".github/workflows/ci.yml"]
+status = "verified"
+verify = "schedule trigger present targeting main; first scheduled run observed green after merge"
+# [2026-07-02] done in GH-07 slice (final SHA in fleet report): cron 17 8 * * * runs verify + verify-apple
+# [2026-07-02] orchestrator verified 4dcb644: schedule trigger + valid off-peak cron; scheduled runs execute on default branch by GitHub semantics. DEFERRED OBSERVATION: first green scheduled run to be confirmed post-RR-05 merge (tracked with RR-06 window).
+
+[[items]]
+id = "GH-08"
+phase = "gh1"
+title = "Fixture-authoring scaffold: validate_rules.py --new <rule-id> emits fill-in-the-blanks manifest entry (id/severity/yaml from rule file, badExample/goodExample stubs). Makes repair cheaper than dodge (LP-3). Do BEFORE GH-09."
+files = [".claude/hooks/rules/validate_rules.py"]
+status = "verified"
+verify = "--new no-camelcase-top-level-function produces an entry --manifest accepts once examples are filled; stub-state is flagged 'needs examples', not silently passing"
+# [2026-07-02] done in GH-08 slice (final SHA in fleet report): validate_rules --new scaffolds fixtures and --manifest flags stubs
+# [2026-07-02] orchestrator verified 5c54ace: --new emits real rule yaml + TODO stubs; stub state exits 1 'needs examples' (clean-probe confirmed); filled entry passes; hook-module import contract intact (selfcheck ok 6)
+
+[[items]]
+id = "GH-24"
+phase = "gh1"
+title = "Pre-commit gates are inactive on fresh clones: nothing sets core.hooksPath=.githooks and no doc mentions it (verified: only reference is inside the hook itself). Add bootstrap (tools/bootstrap or gradle task) + CONTRIBUTING/README setup note."
+files = ["CONTRIBUTING.md", "README.md", "tools/"]
+status = "verified"
+verify = "documented one-liner activates hooks on a scratch clone; CONTRIBUTING names it as required setup"
+
+# ---------------------------------------------------------------- phase gh2: coverage + de-serialization (M)
+# [2026-07-02] done in GH-24 slice (final SHA in fleet report): tools/bootstrap activates .githooks in fresh clones and docs name it
+# [2026-07-02] orchestrator verified 403c6b9: true fresh-clone probe UNSET -> .githooks, idempotent, docs mention in both files; builder's probe additionally proved the gate fires in a fresh clone (compounds GH-01)
+
+[[items]]
+id = "GH-09"
+phase = "gh2"
+title = "Manifest fixtures for the 14 uncovered ast-grep rules (list: no-camelcase-top-level-function, no-empty-string-sentinel, no-jsonnull-sentinel, no-lateinit-var, no-mutable-companion-state, no-not-null-assertion, no-nullable-prompt-messages-bag, no-provideroptions-jsonobject-cast, no-public-mutable-var, no-sealed-interface, no-secondary-constructor, no-throw-in-stream-error-fn, no-top-level-mutable-var, no-typealias-string). Use GH-08 scaffold. Also make validate_rules error on rules missing manifest entries."
+files = [".claude/hooks/rules/manifest.json", ".claude/hooks/rules/validate_rules.py"]
+status = "verified"
+depends = ["GH-01", "GH-08"]
+verify = "validate_rules --manifest reports 64/64; removing an entry fails it"
+# [2026-07-02] done in GH-09 slice (final SHA in fleet report): manifest now covers all 64 Kotlin rules and --manifest fails missing entries
+# [2026-07-02] orchestrator verified 865cacc: 64/64 both modes, removal probe exit 1, fixture quality spot-checked real. Finding for GH-11: the 4 scope-anchored rules correctly keep hunkExpectation=same (badExamples are top-level shapes); the member-fragment misfire class needs class-wrapped no-match fixtures + hunk-unsafe declaration, not expectation flips.
+
+[[items]]
+id = "GH-10"
+phase = "gh2"
+title = "Hunk/snippet-context probe mode in validate_rules.py: scan badExample/goodExample as bare member-level fragments (no package/enclosing scope) in addition to whole-file; assert match result does not flip. Root class of the AR-15 misfire."
+files = [".claude/hooks/rules/validate_rules.py"]
+status = "verified"
+verify = "--hunk-mode exists and runs in ci-gate; a deliberately context-fragile scratch rule is caught"
+# [2026-07-02] done in GH-10 slice (final SHA in fleet report): validate_rules --hunk-mode added and wired into ci-gate; scratch context-fragile rule fails hunk-mode
+# [2026-07-02] orchestrator verified ccbb95f: hunkExpectation same|no-match per-rule with default+validation; ci-gate.sh:63 wired; pass 50/50 + fail-direction (flipped expectation) exit 1 both independently confirmed
+
+[[items]]
+id = "GH-11"
+phase = "gh2"
+title = "Hunk fixtures for the 4 uncovered scope-anchored rules (no-camelcase-top-level-function, no-mutable-companion-state, no-public-mutable-var, no-top-level-mutable-var): prove each does NOT match a same-shaped class member scanned in isolation."
+files = [".claude/hooks/rules/manifest.json"]
+status = "verified"
+depends = ["GH-09", "GH-10"]
+verify = "all 4 have whole-file + hunk fixture pairs passing --hunk-mode"
+# [2026-07-02] done in GH-11 slice (final SHA in fleet report): four scope-anchored rules declare no-match hunk fixtures with zero hunk matches
+# [2026-07-02] done in GH-11 revised slice (final SHA in fleet report): added memberExample assertions; kept hunkExpectation=same; marked three bare-fragment context-dependent rules hunkUnsafe
+# [2026-07-02] orchestrator verified 058d880 under the REVISED spec (supersedes original title): memberExamples never-match fixtures on all 4 (camelcase carries class-wrapped + bare-override cases), hunkUnsafe=true declared on the 3 rule-level-unfixable rules with docstring limitation; fail-direction probe (violation-as-memberExample) exits 1. Minor: mixed memberExample/memberExamples keys — documented alias in tool, normalize under GH-20 schema contract.
+
+[[items]]
+id = "GH-12"
+phase = "gh2"
+title = "continue-on-error + step ids + final if:always() aggregator in ci.yml verify job: gates report independently, job fails via aggregator table. Do NOT touch gradle-internal task graph."
+files = [".github/workflows/ci.yml"]
+status = "verified"
+verify = "forcing an early gate red still shows later gate results in the same run; job conclusion red via aggregator"
+# [2026-07-02] done in GH-12 slice (final SHA in fleet report): verify gate steps now continue-on-error with ids and final always() aggregator table
+# [2026-07-02] orchestrator verified 4502017: 5 gate steps isolated (stable ids), setup steps fail-fast per adjudication, always() aggregator; fail path simulated locally by builder; green path observed on next CI run
+
+[[items]]
+id = "GH-13"
+phase = "gh2"
+title = "Decouple ci-gate.sh from npm ci in CI: pinned ast-grep binary via GitHub release + actions/cache (npm -g forbidden by beta-readiness workflow gate); run architecture gate before/independent of node-dependent steps."
+files = [".github/workflows/ci.yml"]
+status = "verified"
+verify = "architecture gate step precedes npm ci and passes with node steps stubbed broken"
+# [2026-07-02] done in GH-13 slice (final SHA in fleet report): CI downloads cached ast-grep 0.42.1 before npm ci; architecture and hook gates run without node_modules
+# [2026-07-02] done in GH-13 checksum follow-up (final SHA in fleet report): ast-grep release zip pinned to sha256 5de8b87cba67fc8dc3e239d54b6484802ad745a7ae3de76be4fe89661dc52657 before unzip
+# [2026-07-02] orchestrator verified 90cc6ed+9731fe1: gates decoupled from npm ci (PATH-stripped proof), binary version drift-checked vs package.json, zip sha256 pinned and verified pre-unzip — checksum independently re-derived from the release asset, exact match
+
+[[items]]
+id = "GH-14"
+phase = "gh2"
+title = "ONE shared fixture-pair harness for zero-self-test mjs/py gates: runner walks tools/gate-fixtures/<gate>/{violation,compliant}/, asserts violation->nonzero, compliant->zero. New gates = two directories, zero runner code."
+files = ["tools/run-gate-fixtures.mjs", "tools/gate-fixtures/"]
+status = "verified"
+verify = "runner wired into CI; adding a scratch gate with fixtures needs no runner edit"
+# [2026-07-02] done in GH-14 slice (final SHA in fleet report): shared gate fixture runner added and wired into ci-gate; no-fixture path lazy-skips in 17ms; scratch gate passed without runner edits
+# [2026-07-02] orchestrator verified 464dc8f: cmd.txt-per-gate contract with env injection, lazy skip 17ms, zero-runner-code proven by builder scratch gate; fire direction proven by orchestrator probe (violation-exits-0 -> harness exit 1)
+
+[[items]]
+id = "GH-15"
+phase = "gh2"
+title = "First harness tenant: detect-release-workflow-trust.py (guards release.yml, zero tests today). Violation fixture: release job missing preflight dependency or workflow-level packages:write."
+files = ["tools/gate-fixtures/release-workflow-trust/"]
+status = "verified"
+depends = ["GH-14"]
+verify = "tampered fixture fails; compliant real-shape fixture passes; runs in CI via GH-14 runner"
+# [2026-07-02] done in GH-15 slice (final SHA in fleet report): release-workflow-trust fixture tenant added; violation packages:write fails, compliant release shape passes
+# [2026-07-02] orchestrator verified 1b8eadf: violation (workflow-level packages:write) exits 1, compliant exits 0, harness reports 2 checks across 1 gate — the release-workflow detector is no longer test-free
+
+[[items]]
+id = "GH-16"
+phase = "gh2"
+title = "Resolve-or-remove inert SuspendFunSwallowedCancellation detekt rule (enabled, cannot fire without type resolution). Either wire classpath-aware detekt or remove + document the custom-rule stopgap. No enabled-but-inert rule remains."
+files = ["detekt.yml"]
+status = "verified"
+verify = "rule provably fires via fixture OR is gone with rationale comment"
+# [2026-07-02] done in GH-16 slice (final SHA in fleet report): removed inert SuspendFunSwallowedCancellation config; detekt.yml documents custom-rule stopgap and GH-21 re-enable condition
+# [2026-07-02] orchestrator verified 43bad57: inert rule removed with javap-proven type-resolution evidence; rationale comment names stopgap rules + GH-21 re-enable condition; detekt green
+
+[[items]]
+id = "GH-17"
+phase = "gh2"
+title = "Release workflow_dispatch dry-run: staging + signing + local-staging smoke, SKIP Sonatype/GH-Packages curls; logs 'would publish N artifacts'. Honest limit: cannot prove Central auth/state-machine. release.yml edits must keep detect-release-workflow-trust green."
+files = [".github/workflows/release.yml"]
+status = "verified"
+verify = "dry_run=true manual run completes green on a non-tag ref with zero publish-endpoint calls"
+# [2026-07-02] done in GH-17 slice (final SHA in fleet report): release workflow_dispatch dry_run stages/signs/smokes then logs would-publish count before publish endpoints; GitHub Packages mirror/resolve skipped
+# [2026-07-02] DRY-RUN FINDING (run 28633985138): preflight + verify-apple GREEN on tag-less dispatch; publish job failed at staging smoke — run-local-staging-smoke passes --staging-repo RAW to -PsmokeRepository, so release.yml's relative 'build/staging-deploy' resolved against smoke-tests/local-staging/ (never-executed CI call site was the only relative caller; LP-1 again). Fix slice dispatched: normalize to absolute in the script.
+# [2026-07-02] orchestrator verified via LIVE dry-run #2 (run 28634876875): preflight+verify-apple+publish all green on tag-less dispatch, 'would publish 38 artifacts', staging/signing/smoke executed end-to-end; dry-run #1's staging-path finding fixed (b4aefda) and re-proven. GATE-HARDENING PHASES COMPLETE 24/24.
+
+[[items]]
+id = "GH-23"
+phase = "gh2"
+title = "Budget ratchets must localize new debt (this week: 9 new data classes hid inside count headroom). detect-public-data-class-budget tracks the SET of declarations (like detekt baseline), so any NEW symbol surfaces for explicit acknowledgment even under budget; pure removals frictionless. Evaluate same for architecture/api-since budgets."
+files = [".claude/hooks/rules/detect-public-data-class-budget.py", "data-class-budget.json"]
+status = "verified"
+verify = "adding a new public data class while total <= budget still fails/flags until acknowledged; removal-only change passes untouched"
+
+# ---------------------------------------------------------------- phase gh3: structural (L)
+# [2026-07-02] done in GH-23 slice (final SHA in fleet report): data-class budget now tracks declaration set; new untracked symbols fail under headroom; removals pass
+# [2026-07-02] orchestrator verified 879ab0c: set-tracking catches new symbols BY NAME under count headroom (independent probe: ScratchProbeRef named with acknowledge command), removals frictionless, upward count still refused — closes the AR-07 headroom-hiding class
+
+[[items]]
+id = "GH-18"
+phase = "gh3"
+title = "Harness rollout to remaining CI-wired mjs/py gates incl. two regression-locks: golden-coverage dangling-reference fixture; api-review base-resolution fixture under CI-like shallow/detached checkout."
+files = ["tools/gate-fixtures/"]
+status = "verified"
+depends = ["GH-14"]
+verify = "every CI-wired mjs/py gate has a fixture pair in the harness; both regression fixtures fire on regression"
+# [2026-07-02] added fixture harness tenants for 12 CI-wired mjs/py gates; golden dangling-file and shallow API-review regressions fire
+# [2026-07-02] orchestrator verified 76b78fb: 12 tenants (26 checks/13 gates), both regression-locks fire (golden-coverage dangling ref by builder probe; api-review base-resolution by orchestrator probe with exact historical message); api-review fixture self-containment confirmed (tmp seed + file:// clone)
+
+[[items]]
+id = "GH-19"
+phase = "gh3"
+title = "Gate execution ledger (LP-4): each context emits {gate,status} to gate-manifest.json artifact; final step asserts EXPECTED set ran (checked-in expected-gates list = canonical what-runs-where registry). Catches gates silently dropping out of pipelines (live example: validate_rules was unwired for weeks)."
+files = [".github/workflows/ci.yml", "tools/"]
+status = "verified"
+depends = ["GH-12"]
+verify = "commenting out one gate invocation without updating expected set fails CI"
+# [2026-07-02] verify and verify-apple gate ledgers assert expected gate sets; runner strips GIT_ALTERNATE_OBJECT_DIRECTORIES
+# [2026-07-02] orchestrator verified 9b3ea5e: expected-set asserted per context (verify 5, verify-apple 2), missing+unexpected both exit 1 (true-exit probes), ran-but-failed correctly deferred to the GH-12 aggregator (presence vs success separation); env-strip rider applied. LP-4 dynamic half mechanized.
+
+[[items]]
+id = "GH-20"
+phase = "gh3"
+title = "Mechanical dual-fixture contract: rules using inside:/relational anchors MUST ship whole-file AND hunk fixtures; validate_rules fails on missing pair. Backfill all 13 existing inside: rules (not just the 4 from GH-11)."
+files = [".claude/hooks/rules/validate_rules.py", ".claude/hooks/rules/manifest.json"]
+status = "verified"
+depends = ["GH-10", "GH-11"]
+verify = "new relational rule without hunk fixture fails validation with explicit message"
+# [2026-07-02] inherits from GH-11: normalize memberExample/memberExamples key alias when formalizing the dual-fixture schema
+# [2026-07-02] relational hunk contract enforced; 17 anchored rules declare handling; memberExamples is canonical
+# [2026-07-02] orchestrator verified 71dbdee: relational-without-hunk-contract fires (probe: exit 1, message names hunkExpectation/hunkUnsafe/memberExamples options); alias normalized to plural (0 singular remain, guard at validate_rules:289); 64/64 both modes
+
+[[items]]
+id = "GH-21"
+phase = "gh3"
+title = "Extend NoRunCatchingInSuspendFunction to coroutine-builder lambdas: launch { runCatching { suspendCall() } } currently missed (rule only checks lexically-enclosing named suspend fun). Fixture proves the builder-lambda shape fires."
+files = ["detekt-rules/src/main/kotlin/ai/torad/aisdk/detekt/CoroutineRules.kt", "detekt-rules/src/test/"]
+status = "verified"
+verify = "builder-lambda fixture trips the rule in detekt-rules tests; compliant code does not"
+# [2026-07-02] builder-lambda runCatching rule catches same-file suspend calls; pure builder Result wrapping remains allowed
+# [2026-07-02] orchestrator verified 87664bf: builder-lambda runCatching flagged when same-file suspend call syntactically provable; KDoc states semantics + type-resolution limit honestly; fire + two no-flag fixtures; all-in-builder semantics rejected after detekt caught real false positive in ChatConcurrencyTest (diagnose-before-fix inside the slice)
+
+[[items]]
+id = "GH-22"
+phase = "gh3"
+title = "Apply GH-12 isolation to release.yml publish job; Maven Central publish step stays strictly fail-fast on the aggregator. Trust gate must stay green."
+files = [".github/workflows/release.yml"]
+status = "verified"
+depends = ["GH-12"]
+verify = "non-publish steps report independently; publish only runs on aggregated green"
+
+# ---------------------------------------------------------------- phase rr: release path (operator-gated where noted)
+# [2026-07-02] publish job pre-publish gates now continue independently and aggregate before any Maven Central staging/upload path
+# [2026-07-02] orchestrator verified e7d711c: 5 pre-publish gates isolated w/ COE, always() aggregator, Central publish strictly fail-fast after aggregator (unreachable past red), GH-Packages/resolve-back best-effort w/ dry-run skips, trust gate green
+
+[[items]]
+id = "RR-01"
+phase = "rr"
+title = "Demote public positional ctors on growable result types (GenerateResult Agent.kt:~108, GenerateTextResult Generate.kt:~23, StepResult Lifecycle.kt:~231, StructuredObjectFinish/Phase leaves StructuredObjectApi.kt) to internal; sanctioned test-fake construction via Mock* models or new factories. ABI-touching: updateKotlinAbi + CHANGELOG + INTERFACE_CONTRACT in-commit. AR-14 churned these once already."
+files = ["src/commonMain/kotlin/ai/torad/aisdk/"]
+status = "verified"
+verify = "JVM dump shows no public positional <init> on the named growable result types; test-fake path documented; check green"
+# [2026-07-02] demoted result/phase positional constructors to internal; internal ResultConstruction factory covers production/tests; ABI dumps/docs updated
+# [2026-07-02] orchestrator verified eeb5c79: zero public <init> on all named growable result types (dump-grepped), ResultConstruction absent from both dumps (internal), contract documents Mock*-first fake policy, CHANGELOG entry present; the last audit watch-list ABI regret is closed pre-freeze
+
+[[items]]
+id = "RR-02"
+phase = "rr"
+title = "LiteRT usage/finishReason seam (DROPPED between audit ship-list and AR backlog — recovered item): LiteRTMessage builder gains optional usage + finishReason; adapter stops fabricating Stop on truncation (currently sends decodeFinalOutput parsing truncated JSON) and zero usage. Builder-additive = ABI-safe."
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModel.kt", "src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModelMapping.kt"]
+status = "verified"
+verify = "truncated engine response maps to Length not Stop; engine-provided usage propagates; tests for both paths"
+# [2026-07-02] LiteRT terminal finishReason/usage propagation implemented; SHA pending local commit.
+# [2026-07-02] Completed in b237072: LiteRTMessage terminal finishReason/usage propagation, ABI dumps, tests, docs, budgets.
+# [2026-07-02] Supersedes prior pending/pre-amend SHA notes; final SHA is reported via fleet because same-commit self-SHA cannot be embedded.
+# [2026-07-02] orchestrator verified 53be714: LiteRTMessage carries optional usage/finishReason (engine value wins, inferred fallback preserved at Mapping:285), 16/16 tests green incl. Length propagation + structured-decode-refuses-Length; the dropped audit item is closed
+
+[[items]]
+id = "RR-03"
+phase = "rr"
+title = "Roll AR-35 deterministic-delayer across remaining real-time tests in McpHttpTransportTest (17 waitForRealTime/Dispatchers.Default refs). Zero timing-window assertions remain; bounded event-awaits only."
+files = ["src/commonTest/kotlin/ai/torad/aisdk/McpHttpTransportTest.kt"]
+status = "verified"
+verify = "grep count of waitForRealTime + Dispatchers.Default in file == 0 (bounded awaits excepted, justified per case); 3x repeated suite runs green"
+# [2026-07-02] McpHttpTransportTest real-time waits replaced with deterministic signals; final SHA reported via fleet after commit.
+# [2026-07-02] orchestrator verified 2a43172: zero real-time refs remain (was 17), deterministic delayer + CompletableDeferred signals throughout, my rerun green — the file that burned two CI runs is deflaked
+
+[[items]]
+id = "RR-04"
+phase = "rr"
+title = "OPERATOR-GATED: require verify + verify-apple as required status checks on main branch protection (verified today: required_status_checks entirely absent — red PR + 1 approval can merge). gh api PUT on branches/main/protection. Changes operator's own merge workflow — explicit go needed."
+files = []
+status = "verified"
+verify = "API shows both checks required; a red-CI scratch PR is unmergeable"
+# [2026-07-02] operator approved 2026-07-03; orchestrator applied via gh api: required_status_checks strict [verify, verify-apple] + 1-approval preserved; API GET confirms. Gates now binding at merge boundary.
+
+[[items]]
+id = "RR-05"
+phase = "rr"
+title = "OPERATOR-GATED: merge PR #10 (~370 reviewed commits). Recommendation: merge commit not squash (granular history referenced by two backlogs + this manifest). Confirm main CI green at merge commit."
+files = []
+status = "todo"
+depends = ["RR-04"]
+verify = "PR merged; main run green"
+# [2026-07-02] operator chose SQUASH merge (overrides merge-commit recommendation, locked); mitigation: refactor/ts-residue-cleanup branch is KEPT as archival ref so manifest/backlog per-item SHAs stay reachable
+
+[[items]]
+id = "RR-06"
+phase = "rr"
+title = "Release execution: GH-17 dry-run first, then tag v0.3.0-beta01 (first-ever real release-workflow run). Post-Central-propagation consumer canary: fresh project resolves ai.torad:torad-aisdk:0.3.0-beta01 from real Central, compiles + runs README sample on JVM + one native target."
+files = []
+status = "todo"
+depends = ["RR-05", "GH-17"]
+verify = "Central shows artifact; canary green; release run archived green"
+
+[[items]]
+id = "RR-07"
+phase = "rr"
+title = "GitHub Release for the tag: CHANGELOG excerpt + beta stability promise (what may change pre-1.0: @ExperimentalAiSdkApi surfaces, sealed hierarchies gain leaves per AR-33; what won't: published ABI per dumps without version bump). Link from README."
+files = ["README.md"]
+status = "todo"
+depends = ["RR-06"]
+verify = "release page live with promise; README links it"
+
+[[items]]
+id = "RR-08"
+phase = "rr"
+title = "Schedule upstream triage: ai@6.0.208 -> v7.x delta review as tracked post-beta issue/milestone with owner, so DEC-2's freshness pin has an expiry (warning fires every CI run today)."
+files = []
+status = "todo"
+verify = "tracked issue/milestone exists"
+
+# ---------------------------------------------------------------- phase bp: ecosystem (mostly post-beta)
+
+[[items]]
+id = "BP-01"
+phase = "bp"
+title = "Published evolution policy (EVOLUTION.md or contract section), Apollo-style per-stage guarantees + deprecation timeline (>=1 minor WARNING -> >=1 ERROR -> removal at major) + Kotlin-version update policy. Consolidates AR-33/RR-07."
+files = ["docs/"]
+status = "verified"
+# [2026-07-02] Evolution policy published and linked from README/interface contract; readiness and link checks passed; final SHA reported via fleet.
+# [2026-07-02] orchestrator verified 03273a6: four-stage guarantees + deprecation timeline + Kotlin policy + cross-refs (not duplication) to AR-33 rules; linked from README + contract
+
+[[items]]
+id = "BP-02"
+phase = "bp"
+title = "Kotlin consumer-compatibility policy, Okio-style: document supported consumer Kotlin range; evaluate current-compiler + older-stdlib (apiVersion/languageVersion) so JVM/Android consumers update independently; klib KGP floor documented separately."
+files = ["build.gradle.kts", "docs/"]
+status = "todo"
+
+[[items]]
+id = "BP-03"
+phase = "bp"
+title = "Snapshot channel: -SNAPSHOT to Central Portal snapshots on push to main; deliberate carve-out from refuse-SNAPSHOT publish guard (guard stays for release path)."
+files = [".github/workflows/", "build.gradle.kts"]
+status = "todo"
+
+[[items]]
+id = "BP-04"
+phase = "bp"
+title = "Dokka HTML to GitHub Pages on release + sourceLink + externalDocumentationLinks for coroutines/serialization/ktor (verified: neither configured)."
+files = ["build.gradle.kts", ".github/workflows/"]
+status = "todo"
+
+[[items]]
+id = "BP-05"
+phase = "bp"
+title = "POM enrichment: issueManagement + ciManagement blocks (verified absent), unique artifact description; verify klibs.io listing ~1 month post-beta."
+files = ["build.gradle.kts", "gradle.properties"]
+status = "verified"
+# [2026-07-02] POM issueManagement/ciManagement blocks added; publishToMavenLocal POM inspection passed; final SHA reported via fleet.
+# [2026-07-02] orchestrator verified 53ccf03: issueManagement + ciManagement present in generated POM (inspected ~/.m2), klibs.io/LLM discovery metadata complete; listing check remains post-publish (folds into BP-10 canary)
+
+[[items]]
+id = "BP-06"
+phase = "bp"
+title = "Artifact provenance attestations: actions/attest over staged release bundle (SLSA, Sigstore, free for public repos); document gh attestation verify for consumers. Trust gate stays green."
+files = [".github/workflows/release.yml"]
+status = "verified"
+# [2026-07-02] Release bundle provenance attestation added; trust gate, workflow parse, beta readiness, and api-review passed; final SHA reported via fleet.
+# [2026-07-02] orchestrator verified c07fbbc: attest-build-provenance SHA-pinned v4.1.1, id-token/attestations write scoped to publish job only (workflow stays contents:read), dry-run skip mirrors publish condition, consumer verify command in contract; trust gate green. First attested release will be the v0.3.0-beta01 tag.
+
+[[items]]
+id = "BP-07"
+phase = "bp"
+title = "Target-matrix expansion evaluation (deliberate decision, not default): macosArm64/X64 (near-free), wasmJs + js (deps support them), mingwX64. Each target = conformance surface."
+files = []
+status = "todo"
+
+[[items]]
+id = "BP-08"
+phase = "bp"
+title = "User-facing samples/ (JVM chat CLI first; Compose host later per BL-018); seed from compile-guarded README/wiki snippets."
+files = ["samples/"]
+status = "todo"
+
+[[items]]
+id = "BP-10"
+phase = "bp"
+title = "Recurring consumer-boundary canary (LP-5's gate): scheduled workflow resolving latest from real Central, compiling+running README sample (JVM + native), docs-URL liveness, gh attestation verify (post BP-06), monthly klibs.io check. Failures notify owner, not a dead log."
+files = [".github/workflows/"]
+status = "todo"
+depends = ["RR-06"]

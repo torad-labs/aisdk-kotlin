@@ -1,0 +1,5 @@
+id: no-let-elvis-run-pyramid
+language: kotlin
+severity: warning
+rule:
+  pattern: "$RECV?.let { $$$THEN } ?: run { $$$ELSE }"

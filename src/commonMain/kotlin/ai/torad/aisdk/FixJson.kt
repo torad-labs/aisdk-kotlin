@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -10,7 +11,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * Streaming-safe partial-JSON repair + parse. Faithful port of Vercel
  * AI SDK v6 `packages/ai/src/util/fix-json.ts` + `parse-partial-json.ts`.
  *
- * [fixJson] completes a truncated/partial JSON string so it parses:
+ * [PartialJson.fixJson] completes a truncated/partial JSON string so it parses:
  * a single linear forward scan with a state stack tracks the last index
  * that forms a valid prefix (truncating dangling junk like a trailing
  * `-`, `.`, `e`, `,`, or partial key), then walks the open-frame stack
@@ -18,8 +19,8 @@ import kotlinx.serialization.json.JsonPrimitive
  * tails (`tru` -> `true`). It does NOT validate JSON — a real parse runs
  * afterward.
  *
- * [parsePartialJson] is the consumer: parse the raw text; on failure run
- * [fixJson] then parse; report which path succeeded (or that both failed).
+ * [PartialJson.parsePartialJson] is the consumer: parse the raw text; on failure run
+ * [PartialJson.fixJson] then parse; report which path succeeded (or that both failed).
  * This is what lets streaming structured output render incrementally
  * instead of buffering the whole object to end-of-stream.
  */
@@ -30,6 +31,7 @@ private enum class FixJsonState {
     FINISH,
     INSIDE_STRING,
     INSIDE_STRING_ESCAPE,
+    INSIDE_STRING_UNICODE_ESCAPE,
     INSIDE_LITERAL,
     INSIDE_NUMBER,
     INSIDE_OBJECT_START,
@@ -46,320 +48,361 @@ private enum class FixJsonState {
 private const val LITERAL_FALSE = "false"
 private const val LITERAL_TRUE = "true"
 private const val LITERAL_NULL = "null"
-
-private fun isLiteralPrefix(partial: String): Boolean =
-    LITERAL_FALSE.startsWith(partial) ||
-        LITERAL_TRUE.startsWith(partial) ||
-        LITERAL_NULL.startsWith(partial)
+private const val UNICODE_ESCAPE_HEX_DIGITS = 4
 
 /**
- * Complete a partial/truncated JSON string so `Json.parseToJsonElement`
- * can read it. Returns `""` when nothing valid was scanned (e.g. a lone
- * `-`). See [parsePartialJson] for the parse wrapper.
+ * Outcome of [PartialJson.parsePartialJson], mirroring v6's four state strings.
+ * @since 0.3.0-beta01
  */
-@Suppress("CyclomaticComplexMethod", "LongMethod")
-public fun fixJson(input: String): String {
-    val stack = ArrayDeque<FixJsonState>().apply { addLast(FixJsonState.ROOT) }
-    var lastValidIndex = -1
-    var literalStart: Int? = null
-
-    // "A value can begin here": pop the expecting-value state, push the
-    // continuation (swapState) we return to once the value completes,
-    // then push the value's own state on top.
-    fun processValueStart(char: Char, i: Int, swapState: FixJsonState) {
-        fun push(value: FixJsonState) {
-            stack.removeLast()
-            stack.addLast(swapState)
-            stack.addLast(value)
-        }
-        when (char) {
-            '"' -> {
-                lastValidIndex = i
-                push(FixJsonState.INSIDE_STRING)
-            }
-            'f', 't', 'n' -> {
-                lastValidIndex = i
-                literalStart = i
-                push(FixJsonState.INSIDE_LITERAL)
-            }
-            // A lone '-' is not yet a valid prefix — do NOT advance lastValidIndex.
-            '-' -> push(FixJsonState.INSIDE_NUMBER)
-            in '0'..'9' -> {
-                lastValidIndex = i
-                push(FixJsonState.INSIDE_NUMBER)
-            }
-            '{' -> {
-                lastValidIndex = i
-                push(FixJsonState.INSIDE_OBJECT_START)
-            }
-            '[' -> {
-                lastValidIndex = i
-                push(FixJsonState.INSIDE_ARRAY_START)
-            }
-            // else (whitespace before the value) — no-op.
-        }
-    }
-
-    fun processAfterObjectValue(char: Char, i: Int) {
-        when (char) {
-            ',' -> {
-                stack.removeLast()
-                stack.addLast(FixJsonState.INSIDE_OBJECT_AFTER_COMMA)
-            }
-            '}' -> {
-                lastValidIndex = i
-                stack.removeLast()
-            }
-        }
-    }
-
-    fun processAfterArrayValue(char: Char, i: Int) {
-        when (char) {
-            ',' -> {
-                stack.removeLast()
-                stack.addLast(FixJsonState.INSIDE_ARRAY_AFTER_COMMA)
-            }
-            ']' -> {
-                lastValidIndex = i
-                stack.removeLast()
-            }
-        }
-    }
-
-    fun processNumber(char: Char, i: Int) {
-        when (char) {
-            in '0'..'9' -> lastValidIndex = i
-            // valid mid-number chars but not valid number ENDINGS — a
-            // number ending on them truncates back to the last digit.
-            'e', 'E', '-', '.' -> Unit
-            ',' -> {
-                stack.removeLast()
-                when (stack.last()) {
-                    FixJsonState.INSIDE_ARRAY_AFTER_VALUE -> processAfterArrayValue(char, i)
-                    FixJsonState.INSIDE_OBJECT_AFTER_VALUE -> processAfterObjectValue(char, i)
-                    else -> Unit
-                }
-            }
-            '}' -> {
-                stack.removeLast()
-                if (stack.last() == FixJsonState.INSIDE_OBJECT_AFTER_VALUE) {
-                    processAfterObjectValue(char, i)
-                }
-            }
-            ']' -> {
-                stack.removeLast()
-                if (stack.last() == FixJsonState.INSIDE_ARRAY_AFTER_VALUE) {
-                    processAfterArrayValue(char, i)
-                }
-            }
-            // whitespace etc. — the number ends; its last digit already set lastValidIndex.
-            else -> stack.removeLast()
-        }
-    }
-
-    fun processLiteral(char: Char, i: Int) {
-        val start = requireNotNull(literalStart) { "literalStart must be set in INSIDE_LITERAL state" }
-        val partialLiteral = input.substring(start, i + 1)
-        if (isLiteralPrefix(partialLiteral)) {
-            lastValidIndex = i
-            return
-        }
-        // The literal ended at the previous char — re-dispatch this one.
-        stack.removeLast()
-        when (stack.last()) {
-            FixJsonState.INSIDE_OBJECT_AFTER_VALUE -> processAfterObjectValue(char, i)
-            FixJsonState.INSIDE_ARRAY_AFTER_VALUE -> processAfterArrayValue(char, i)
-            else -> Unit
-        }
-    }
-
-    fun processObjectStart(char: Char, i: Int) {
-        when (char) {
-            '"' -> {
-                stack.removeLast()
-                stack.addLast(FixJsonState.INSIDE_OBJECT_KEY)
-            }
-            '}' -> {
-                lastValidIndex = i
-                stack.removeLast()
-            }
-        }
-    }
-
-    fun processString(char: Char, i: Int) {
-        when (char) {
-            '"' -> {
-                stack.removeLast()
-                lastValidIndex = i
-            }
-            '\\' -> stack.addLast(FixJsonState.INSIDE_STRING_ESCAPE)
-            else -> lastValidIndex = i
-        }
-    }
-
-    fun processArrayStart(char: Char, i: Int) {
-        if (char == ']') {
-            lastValidIndex = i
-            stack.removeLast()
-            return
-        }
-        // Do NOT advance lastValidIndex here for chars that processValueStart
-        // treats as incomplete (e.g. '-') — let processValueStart decide.
-        // Mirrors processObjectStart which never speculatively advances it.
-        processValueStart(char, i, FixJsonState.INSIDE_ARRAY_AFTER_VALUE)
-    }
-
-    fun processArrayAfterValue(char: Char, i: Int) {
-        when (char) {
-            ',' -> {
-                stack.removeLast()
-                stack.addLast(FixJsonState.INSIDE_ARRAY_AFTER_COMMA)
-            }
-            ']' -> {
-                lastValidIndex = i
-                stack.removeLast()
-            }
-            else -> lastValidIndex = i
-        }
-    }
-
-    for (i in input.indices) {
-        val char = input[i]
-        when (stack.last()) {
-            FixJsonState.ROOT -> processValueStart(char, i, FixJsonState.FINISH)
-            FixJsonState.INSIDE_OBJECT_START -> processObjectStart(char, i)
-            FixJsonState.INSIDE_OBJECT_AFTER_COMMA -> if (char == '"') {
-                stack.removeLast()
-                stack.addLast(FixJsonState.INSIDE_OBJECT_KEY)
-            }
-            FixJsonState.INSIDE_OBJECT_KEY -> if (char == '"') {
-                stack.removeLast()
-                stack.addLast(FixJsonState.INSIDE_OBJECT_AFTER_KEY)
-            }
-            FixJsonState.INSIDE_OBJECT_AFTER_KEY -> if (char == ':') {
-                stack.removeLast()
-                stack.addLast(FixJsonState.INSIDE_OBJECT_BEFORE_VALUE)
-            }
-            FixJsonState.INSIDE_OBJECT_BEFORE_VALUE ->
-                processValueStart(char, i, FixJsonState.INSIDE_OBJECT_AFTER_VALUE)
-            FixJsonState.INSIDE_OBJECT_AFTER_VALUE -> processAfterObjectValue(char, i)
-            FixJsonState.INSIDE_STRING -> processString(char, i)
-            FixJsonState.INSIDE_STRING_ESCAPE -> {
-                stack.removeLast()
-                lastValidIndex = i
-            }
-            FixJsonState.INSIDE_ARRAY_START -> processArrayStart(char, i)
-            FixJsonState.INSIDE_ARRAY_AFTER_VALUE -> processArrayAfterValue(char, i)
-            FixJsonState.INSIDE_ARRAY_AFTER_COMMA ->
-                processValueStart(char, i, FixJsonState.INSIDE_ARRAY_AFTER_VALUE)
-            FixJsonState.INSIDE_NUMBER -> processNumber(char, i)
-            FixJsonState.INSIDE_LITERAL -> processLiteral(char, i)
-            FixJsonState.FINISH -> Unit
-        }
-    }
-
-    var result = if (lastValidIndex == -1) "" else input.substring(0, lastValidIndex + 1)
-
-    // Stack-drain: close innermost frame first (walk top -> bottom).
-    for (idx in stack.indices.reversed()) {
-        val state = stack[idx]
-        // SER-003: when the scan consumed both the '\' and its escaped char
-        // (e.g. input ends with `\"`), the escape state was already popped but
-        // `result` ends with `\<char>` — an incomplete escape sequence.  Closing
-        // the string at that position produces `\""` (escaped-quote + close),
-        // which is malformed JSON.  Drop the dangling `\<char>` pair so the
-        // string closes cleanly at the last valid content character.
-        if (state == FixJsonState.INSIDE_STRING && result.length >= 2 &&
-            result[result.length - 2] == '\\'
-        ) {
-            result = result.dropLast(2)
-        }
-        result += drainClose(state, input, literalStart)
-    }
-
-    return result
-}
-
-/** The closer appended for one open stack frame during the drain phase. */
-private fun drainClose(state: FixJsonState, input: String, literalStart: Int?): String = when (state) {
-    FixJsonState.INSIDE_STRING -> "\""
-    FixJsonState.INSIDE_OBJECT_KEY,
-    FixJsonState.INSIDE_OBJECT_AFTER_KEY,
-    FixJsonState.INSIDE_OBJECT_AFTER_COMMA,
-    FixJsonState.INSIDE_OBJECT_START,
-    FixJsonState.INSIDE_OBJECT_BEFORE_VALUE,
-    FixJsonState.INSIDE_OBJECT_AFTER_VALUE,
-    -> "}"
-    FixJsonState.INSIDE_ARRAY_START,
-    FixJsonState.INSIDE_ARRAY_AFTER_COMMA,
-    FixJsonState.INSIDE_ARRAY_AFTER_VALUE,
-    -> "]"
-    FixJsonState.INSIDE_LITERAL -> literalTail(input.substring(requireNotNull(literalStart), input.length))
-    // Exhaustive (no else): a future FixJsonState variant is a compile error here.
-    FixJsonState.ROOT,
-    FixJsonState.FINISH,
-    FixJsonState.INSIDE_STRING_ESCAPE,
-    FixJsonState.INSIDE_NUMBER,
-    -> ""
-}
-
-private fun literalTail(partial: String): String = when {
-    LITERAL_TRUE.startsWith(partial) -> LITERAL_TRUE.substring(partial.length)
-    LITERAL_FALSE.startsWith(partial) -> LITERAL_FALSE.substring(partial.length)
-    LITERAL_NULL.startsWith(partial) -> LITERAL_NULL.substring(partial.length)
-    else -> ""
-}
-
-/** Outcome of [parsePartialJson], mirroring v6's four state strings. */
 public enum class PartialJsonState { UndefinedInput, SuccessfulParse, RepairedParse, FailedParse }
 
-/** Result of [parsePartialJson]: [value] is non-null only on the two
+/** Result of [PartialJson.parsePartialJson]: [value] is non-null only on the two
+ * @since 0.3.0-beta01
  *  success states. */
-public data class PartialJsonResult(val value: JsonElement?, val state: PartialJsonState)
-
-private val partialJsonCodec: Json = Json { ignoreUnknownKeys = true }
-
-// kotlinx parsing is more lenient than JS `JSON.parse`: `parseToJsonElement("")`
-// yields JsonNull, and a top-level bareword like `garbage` parses to an
-// unquoted JsonPrimitive — both of which JS rejects. Treat blank input
-// and unquoted non-literal primitives as unparseable so empty / garbage /
-// unrepairable input lands on FailedParse, matching v6.
-private fun tryParseJson(text: String): JsonElement? {
-    if (text.isBlank()) return null
-    val parsed = runCatching { partialJsonCodec.parseToJsonElement(text) }.getOrNull() ?: return null
-    return parsed.takeIf(::isStrictJsonValue)
-}
-
-private fun isStrictJsonValue(element: JsonElement): Boolean = when (element) {
-    is JsonObject, is JsonArray -> true
-    is JsonPrimitive ->
-        element.isString ||
-            element.content == "true" ||
-            element.content == "false" ||
-            element.content == "null" ||
-            // isFinite() rejects NaN / Infinity / -Infinity / 1e999 (which
-            // overflows to Infinity) — `toDoubleOrNull` accepts them but JS
-            // `JSON.parse` throws on all of them, so they must FailedParse.
-            element.content.toDoubleOrNull()?.isFinite() == true
-}
+@Poko
+public class PartialJsonResult(public val value: JsonElement?, public val state: PartialJsonState)
 
 /**
- * Parse possibly-partial JSON. Mirrors Vercel AI SDK v6 `parsePartialJson`:
- *  - `null` input -> [PartialJsonState.UndefinedInput] (note: an empty/blank
- *    string is NOT undefined-input — it falls through and fails).
- *  - raw text parses -> [PartialJsonState.SuccessfulParse].
- *  - [fixJson]-repaired text parses -> [PartialJsonState.RepairedParse].
- *  - otherwise -> [PartialJsonState.FailedParse].
- *
- * The repair runs on the ORIGINAL raw text, not on intermediate output.
+ * Streaming-safe partial-JSON repair + parse operations. Grouped into an
+ * object so the helpers stay file-local members rather than loose top-level
+ * functions.
+ * @since 0.3.0-beta01
  */
-public fun parsePartialJson(jsonText: String?): PartialJsonResult {
-    if (jsonText == null) return PartialJsonResult(null, PartialJsonState.UndefinedInput)
-    tryParseJson(jsonText)?.let { return PartialJsonResult(it, PartialJsonState.SuccessfulParse) }
-    val repaired = tryParseJson(fixJson(jsonText))
-    return if (repaired != null) {
-        PartialJsonResult(repaired, PartialJsonState.RepairedParse)
-    } else {
-        PartialJsonResult(null, PartialJsonState.FailedParse)
+public object PartialJson {
+    private val partialJsonCodec: Json = Json { ignoreUnknownKeys = true }
+
+    private fun isLiteralPrefix(partial: String): Boolean =
+        LITERAL_FALSE.startsWith(partial) ||
+            LITERAL_TRUE.startsWith(partial) ||
+            LITERAL_NULL.startsWith(partial)
+
+    /**
+     * Complete a partial/truncated JSON string so `Json.parseToJsonElement`
+     * can read it. Returns `""` when nothing valid was scanned (e.g. a lone
+     * `-`). See `parsePartialJson` for the parse wrapper.
+     * @since 0.3.0-beta01
+     */
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
+    public fun fixJson(input: String): String {
+        val stack = ArrayDeque<FixJsonState>().apply { addLast(FixJsonState.ROOT) }
+        var lastValidIndex = -1
+        var literalStart: Int? = null
+        // Hex digits seen so far inside a \uXXXX escape. lastValidIndex only advances over the
+        // escape once all 4 arrive — so a stream cut mid-escape drops the whole partial \u.
+        var unicodeEscapeDigits = 0
+
+        // "A value can begin here": pop the expecting-value state, push the
+        // continuation (swapState) we return to once the value completes,
+        // then push the value's own state on top.
+        fun processValueStart(char: Char, i: Int, swapState: FixJsonState) {
+            fun push(value: FixJsonState) {
+                stack.removeLast()
+                stack.addLast(swapState)
+                stack.addLast(value)
+            }
+            when (char) {
+                '"' -> {
+                    lastValidIndex = i
+                    push(FixJsonState.INSIDE_STRING)
+                }
+                'f', 't', 'n' -> {
+                    lastValidIndex = i
+                    literalStart = i
+                    push(FixJsonState.INSIDE_LITERAL)
+                }
+                // A lone '-' is not yet a valid prefix — do NOT advance lastValidIndex.
+                '-' -> push(FixJsonState.INSIDE_NUMBER)
+                in '0'..'9' -> {
+                    lastValidIndex = i
+                    push(FixJsonState.INSIDE_NUMBER)
+                }
+                '{' -> {
+                    lastValidIndex = i
+                    push(FixJsonState.INSIDE_OBJECT_START)
+                }
+                '[' -> {
+                    lastValidIndex = i
+                    push(FixJsonState.INSIDE_ARRAY_START)
+                }
+                // else (whitespace before the value) — no-op.
+            }
+        }
+
+        fun processAfterObjectValue(char: Char, i: Int) {
+            when (char) {
+                ',' -> {
+                    stack.removeLast()
+                    stack.addLast(FixJsonState.INSIDE_OBJECT_AFTER_COMMA)
+                }
+                '}' -> {
+                    lastValidIndex = i
+                    stack.removeLast()
+                }
+            }
+        }
+
+        fun processAfterArrayValue(char: Char, i: Int) {
+            when (char) {
+                ',' -> {
+                    stack.removeLast()
+                    stack.addLast(FixJsonState.INSIDE_ARRAY_AFTER_COMMA)
+                }
+                ']' -> {
+                    lastValidIndex = i
+                    stack.removeLast()
+                }
+            }
+        }
+
+        fun processNumber(char: Char, i: Int) {
+            when (char) {
+                in '0'..'9' -> lastValidIndex = i
+                // valid mid-number chars but not valid number ENDINGS — a
+                // number ending on them truncates back to the last digit.
+                'e', 'E', '-', '.' -> Unit
+                ',' -> {
+                    stack.removeLast()
+                    when (stack.last()) {
+                        FixJsonState.INSIDE_ARRAY_AFTER_VALUE -> processAfterArrayValue(char, i)
+                        FixJsonState.INSIDE_OBJECT_AFTER_VALUE -> processAfterObjectValue(char, i)
+                        else -> Unit
+                    }
+                }
+                '}' -> {
+                    stack.removeLast()
+                    if (stack.last() == FixJsonState.INSIDE_OBJECT_AFTER_VALUE) {
+                        processAfterObjectValue(char, i)
+                    }
+                }
+                ']' -> {
+                    stack.removeLast()
+                    if (stack.last() == FixJsonState.INSIDE_ARRAY_AFTER_VALUE) {
+                        processAfterArrayValue(char, i)
+                    }
+                }
+                // whitespace etc. — the number ends; its last digit already set lastValidIndex.
+                else -> stack.removeLast()
+            }
+        }
+
+        fun processLiteral(char: Char, i: Int) {
+            val start = requireNotNull(literalStart) { "literalStart must be set in INSIDE_LITERAL state" }
+            val partialLiteral = input.substring(start, i + 1)
+            if (isLiteralPrefix(partialLiteral)) {
+                lastValidIndex = i
+                return
+            }
+            // The literal ended at the previous char — re-dispatch this one.
+            stack.removeLast()
+            when (stack.last()) {
+                FixJsonState.INSIDE_OBJECT_AFTER_VALUE -> processAfterObjectValue(char, i)
+                FixJsonState.INSIDE_ARRAY_AFTER_VALUE -> processAfterArrayValue(char, i)
+                else -> Unit
+            }
+        }
+
+        fun processObjectStart(char: Char, i: Int) {
+            when (char) {
+                '"' -> {
+                    stack.removeLast()
+                    stack.addLast(FixJsonState.INSIDE_OBJECT_KEY)
+                }
+                '}' -> {
+                    lastValidIndex = i
+                    stack.removeLast()
+                }
+            }
+        }
+
+        fun processString(char: Char, i: Int) {
+            when (char) {
+                '"' -> {
+                    stack.removeLast()
+                    lastValidIndex = i
+                }
+                '\\' -> stack.addLast(FixJsonState.INSIDE_STRING_ESCAPE)
+                else -> lastValidIndex = i
+            }
+        }
+
+        fun processStringEscape(char: Char, i: Int) {
+            stack.removeLast()
+            if (char == 'u') {
+                // \uXXXX: enter the unicode-escape state and DON'T advance lastValidIndex until all
+                // 4 hex digits arrive (a cut mid-escape must drop the partial \u).
+                unicodeEscapeDigits = 0
+                stack.addLast(FixJsonState.INSIDE_STRING_UNICODE_ESCAPE)
+            } else {
+                // A complete single-char escape (\", \\, \n, ...): the escaped char is valid.
+                lastValidIndex = i
+            }
+        }
+
+        fun processStringUnicodeEscape(char: Char, i: Int) {
+            // A non-hex char mid-escape is malformed: ignore it (no advance) so the incomplete
+            // escape stays excluded by lastValidIndex and is dropped on drain.
+            if (!isHexDigit(char)) return
+            unicodeEscapeDigits += 1
+            if (unicodeEscapeDigits == UNICODE_ESCAPE_HEX_DIGITS) {
+                // \uXXXX is now complete — pop back to INSIDE_STRING and advance.
+                stack.removeLast()
+                lastValidIndex = i
+            }
+        }
+
+        fun processArrayStart(char: Char, i: Int) {
+            if (char == ']') {
+                lastValidIndex = i
+                stack.removeLast()
+                return
+            }
+            // Do NOT advance lastValidIndex here for chars that processValueStart
+            // treats as incomplete (e.g. '-') — let processValueStart decide.
+            // Mirrors processObjectStart which never speculatively advances it.
+            processValueStart(char, i, FixJsonState.INSIDE_ARRAY_AFTER_VALUE)
+        }
+
+        fun processArrayAfterValue(char: Char, i: Int) {
+            when (char) {
+                ',' -> {
+                    stack.removeLast()
+                    stack.addLast(FixJsonState.INSIDE_ARRAY_AFTER_COMMA)
+                }
+                ']' -> {
+                    lastValidIndex = i
+                    stack.removeLast()
+                }
+                else -> lastValidIndex = i
+            }
+        }
+
+        for (i in input.indices) {
+            val char = input[i]
+            when (stack.last()) {
+                FixJsonState.ROOT -> processValueStart(char, i, FixJsonState.FINISH)
+                FixJsonState.INSIDE_OBJECT_START -> processObjectStart(char, i)
+                FixJsonState.INSIDE_OBJECT_AFTER_COMMA -> if (char == '"') {
+                    stack.removeLast()
+                    stack.addLast(FixJsonState.INSIDE_OBJECT_KEY)
+                }
+                FixJsonState.INSIDE_OBJECT_KEY -> if (char == '"') {
+                    stack.removeLast()
+                    stack.addLast(FixJsonState.INSIDE_OBJECT_AFTER_KEY)
+                }
+                FixJsonState.INSIDE_OBJECT_AFTER_KEY -> if (char == ':') {
+                    stack.removeLast()
+                    stack.addLast(FixJsonState.INSIDE_OBJECT_BEFORE_VALUE)
+                }
+                FixJsonState.INSIDE_OBJECT_BEFORE_VALUE ->
+                    processValueStart(char, i, FixJsonState.INSIDE_OBJECT_AFTER_VALUE)
+                FixJsonState.INSIDE_OBJECT_AFTER_VALUE -> processAfterObjectValue(char, i)
+                FixJsonState.INSIDE_STRING -> processString(char, i)
+                FixJsonState.INSIDE_STRING_ESCAPE -> processStringEscape(char, i)
+                FixJsonState.INSIDE_STRING_UNICODE_ESCAPE -> processStringUnicodeEscape(char, i)
+                FixJsonState.INSIDE_ARRAY_START -> processArrayStart(char, i)
+                FixJsonState.INSIDE_ARRAY_AFTER_VALUE -> processArrayAfterValue(char, i)
+                FixJsonState.INSIDE_ARRAY_AFTER_COMMA ->
+                    processValueStart(char, i, FixJsonState.INSIDE_ARRAY_AFTER_VALUE)
+                FixJsonState.INSIDE_NUMBER -> processNumber(char, i)
+                FixJsonState.INSIDE_LITERAL -> processLiteral(char, i)
+                FixJsonState.FINISH -> Unit
+            }
+        }
+
+        var result = if (lastValidIndex == -1) "" else input.substring(0, lastValidIndex + 1)
+
+        // Stack-drain: close innermost frame first (walk top -> bottom).
+        for (idx in stack.indices.reversed()) {
+            val state = stack[idx]
+            // A string ending at a COMPLETE escape (e.g. `\"`, `\\`, `\n`) closes cleanly: `"ab\""`
+            // is valid JSON for `ab"`. The former SER-003 drop-last-2 here corrupted that into
+            // `"ab"` (losing the escaped char). A lone DANGLING `\` needs no special-casing —
+            // lastValidIndex never includes it, so it is already excluded before this drain.
+            result += drainClose(state, input, literalStart)
+        }
+
+        return result
+    }
+
+    /** The closer appended for one open stack frame during the drain phase. */
+    private fun drainClose(state: FixJsonState, input: String, literalStart: Int?): String = when (state) {
+        FixJsonState.INSIDE_STRING -> "\""
+        FixJsonState.INSIDE_OBJECT_KEY,
+        FixJsonState.INSIDE_OBJECT_AFTER_KEY,
+        FixJsonState.INSIDE_OBJECT_AFTER_COMMA,
+        FixJsonState.INSIDE_OBJECT_START,
+        FixJsonState.INSIDE_OBJECT_BEFORE_VALUE,
+        FixJsonState.INSIDE_OBJECT_AFTER_VALUE,
+        -> "}"
+        FixJsonState.INSIDE_ARRAY_START,
+        FixJsonState.INSIDE_ARRAY_AFTER_COMMA,
+        FixJsonState.INSIDE_ARRAY_AFTER_VALUE,
+        -> "]"
+        FixJsonState.INSIDE_LITERAL -> literalTail(input.substring(requireNotNull(literalStart), input.length))
+        // Exhaustive (no else): a future FixJsonState variant is a compile error here.
+        FixJsonState.ROOT,
+        FixJsonState.FINISH,
+        FixJsonState.INSIDE_STRING_ESCAPE,
+        // A dangling \ or partial \uXXXX is already excluded by lastValidIndex; the enclosing
+        // INSIDE_STRING frame still appends its closing quote, so the string closes cleanly.
+        FixJsonState.INSIDE_STRING_UNICODE_ESCAPE,
+        FixJsonState.INSIDE_NUMBER,
+        -> ""
+    }
+
+    private fun isHexDigit(char: Char): Boolean =
+        char in '0'..'9' || char in 'a'..'f' || char in 'A'..'F'
+
+    private fun literalTail(partial: String): String = when {
+        LITERAL_TRUE.startsWith(partial) -> LITERAL_TRUE.substring(partial.length)
+        LITERAL_FALSE.startsWith(partial) -> LITERAL_FALSE.substring(partial.length)
+        LITERAL_NULL.startsWith(partial) -> LITERAL_NULL.substring(partial.length)
+        else -> ""
+    }
+
+    // kotlinx parsing is more lenient than JS `JSON.parse`: `parseToJsonElement("")`
+    // yields JsonNull, and a top-level bareword like `garbage` parses to an
+    // unquoted JsonPrimitive — both of which JS rejects. Treat blank input
+    // and unquoted non-literal primitives as unparseable so empty / garbage /
+    // unrepairable input lands on FailedParse, matching v6.
+    private fun tryParseJson(text: String): JsonElement? {
+        if (text.isBlank()) return null
+        val parsed = runCatching { partialJsonCodec.parseToJsonElement(text) }.getOrNull() ?: return null
+        return parsed.takeIf(::isStrictJsonValue)
+    }
+
+    private fun isStrictJsonValue(element: JsonElement): Boolean = when (element) {
+        is JsonObject, is JsonArray -> true
+        is JsonPrimitive ->
+            element.isString ||
+                element.content == "true" ||
+                element.content == "false" ||
+                element.content == "null" ||
+                // isFinite() rejects NaN / Infinity / -Infinity / 1e999 (which
+                // overflows to Infinity) — `toDoubleOrNull` accepts them but JS
+                // `JSON.parse` throws on all of them, so they must FailedParse.
+                element.content.toDoubleOrNull()?.isFinite() == true
+    }
+
+    /**
+     * Parse possibly-partial JSON. Mirrors Vercel AI SDK v6 `parsePartialJson`:
+     *  - `null` input -> [PartialJsonState.UndefinedInput] (note: an empty/blank
+     *    string is NOT undefined-input — it falls through and fails).
+     *  - raw text parses -> [PartialJsonState.SuccessfulParse].
+     *  - `fixJson`-repaired text parses -> [PartialJsonState.RepairedParse].
+     *  - otherwise -> [PartialJsonState.FailedParse].
+     *
+     * The repair runs on the ORIGINAL raw text, not on intermediate output.
+     * @since 0.3.0-beta01
+     */
+    public fun parsePartialJson(jsonText: String?): PartialJsonResult {
+        if (jsonText == null) return PartialJsonResult(null, PartialJsonState.UndefinedInput)
+        tryParseJson(jsonText)?.let { return PartialJsonResult(it, PartialJsonState.SuccessfulParse) }
+        val repaired = tryParseJson(fixJson(jsonText))
+        return if (repaired != null) {
+            PartialJsonResult(repaired, PartialJsonState.RepairedParse)
+        } else {
+            PartialJsonResult(null, PartialJsonState.FailedParse)
+        }
     }
 }

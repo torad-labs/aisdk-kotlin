@@ -22,16 +22,25 @@ package ai.torad.aisdk
  *    these unless a debug-mode toggle is on.
  *
  * Errors are NOT routed here — those crash the loop via
- * [StreamEvent.Error] / `OnErrorEvent`, which is the typed channel
+ * [StreamEvent.Error] / `AgentEvent.Errored`, which is the typed channel
  * consumers should listen on.
  */
+/** @since 0.3.0-beta01 */
 public interface Logger {
+    /** @since 0.3.0-beta01 */
     public fun warn(message: String, throwable: Throwable? = null)
+
+    /** @since 0.3.0-beta01 */
     public fun info(message: String)
+
+    /** @since 0.3.0-beta01 */
     public fun debug(message: String)
 }
 
-/** Drop-everything logger. Default when no DI-injected impl is wired. */
+/**
+ * Drop-everything logger. Default when no DI-injected impl is wired.
+ * @since 0.3.0-beta01
+ */
 public data object NoopLogger : Logger {
     override fun warn(message: String, throwable: Throwable?): Unit = Unit
     override fun info(message: String): Unit = Unit

@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI SDK Kotlin - TypeScript Pattern Review</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2933;
+      --muted: #657282;
+      --line: #d8dee6;
+      --paper: #fbfcfd;
+      --panel: #ffffff;
+      --code: #eef2f6;
+      --high-bg: #fff1f0;
+      --high: #b42318;
+      --med-bg: #fff7e6;
+      --med: #9a5b00;
+      --low-bg: #eef7ff;
+      --low: #145a92;
+      --ok-bg: #edf7ed;
+      --ok: #256029;
+      --accent: #245b7b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+
+    header {
+      padding: 32px 36px 26px;
+      border-bottom: 1px solid var(--line);
+      background: #f4f7fa;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 24px 64px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin-top: 34px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      font-size: 22px;
+    }
+
+    h3 {
+      font-size: 17px;
+      margin-bottom: 8px;
+    }
+
+    p { margin: 8px 0 0; }
+
+    a { color: var(--accent); text-decoration-thickness: 1px; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+      background: var(--code);
+      border-radius: 4px;
+      padding: 1px 4px;
+    }
+
+    .meta {
+      color: var(--muted);
+      max-width: 920px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .metrics {
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      margin-top: 18px;
+    }
+
+    .metric, .panel, .finding {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 26px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .metric span, .note {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toc {
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      margin-top: 16px;
+    }
+
+    .finding {
+      margin-top: 14px;
+    }
+
+    .finding-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 9px;
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .high { color: var(--high); background: var(--high-bg); border-color: #f2b8b5; }
+    .medium { color: var(--med); background: var(--med-bg); border-color: #f3d08a; }
+    .low { color: var(--low); background: var(--low-bg); border-color: #b9d7ef; }
+    .ok { color: var(--ok); background: var(--ok-bg); border-color: #b8d9b8; }
+
+    dl {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 8px 12px;
+      margin: 0;
+    }
+
+    dt {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    dd { margin: 0; }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+    }
+
+    li { margin: 4px 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      background: #eef3f7;
+      font-size: 13px;
+      color: #334454;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .section-lead {
+      max-width: 920px;
+      color: var(--muted);
+    }
+
+    .compact td, .compact th { padding: 7px 8px; }
+
+    @media (max-width: 720px) {
+      header { padding: 24px 20px; }
+      main { padding: 22px 16px 48px; }
+      h1 { font-size: 26px; }
+      dl { grid-template-columns: 1fr; gap: 3px; }
+      .finding-head { display: block; }
+      .finding-head .badge { margin-top: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TypeScript and JavaScript Pattern Review</h1>
+    <p class="meta">
+      Codebase: <code>aisdk-kotlin</code>. Generated on June 20, 2026 after six parallel read-only review lanes:
+      API/modeling, nullability/type safety, singletons/global state, async/error handling, tests/docs/tooling, and structural concentration.
+    </p>
+  </header>
+
+  <main>
+    <section id="summary">
+      <h2>Executive Summary</h2>
+      <p>
+        The repo has made real Kotlin moves: sealed stream/content events, cold <code>Flow</code> APIs, explicit API mode,
+        ABI validation, kotlinx.serialization, and value classes for some IDs. The remaining TS/JS residue is concentrated in
+        compatibility surfaces, provider facades, tool/UI state, and generated parity tooling.
+      </p>
+      <p>
+        The highest leverage move is to draw a hard boundary between Kotlin-native SDK APIs and compatibility/wire adapters.
+        Right now the compatibility layer is not just present; it is shaping the stable ABI, CI gates, tests, and public docs.
+      </p>
+
+      <div class="grid metrics">
+        <div class="metric"><strong>111</strong><span><code>commonMain</code> Kotlin files scanned</span></div>
+        <div class="metric"><strong>37,970</strong><span>lines in <code>src/commonMain/kotlin</code></span></div>
+        <div class="metric"><strong>85</strong><span>public <code>typealias ... = String</code> declarations</span></div>
+        <div class="metric"><strong>2,115</strong><span><code>JsonElement</code>/<code>JsonObject</code> hits in <code>commonMain</code></span></div>
+        <div class="metric"><strong>1,263</strong><span><code>? = null</code> markers in <code>commonMain</code></span></div>
+        <div class="metric"><strong>95</strong><span>public provider/tool singleton export matches</span></div>
+      </div>
+    </section>
+
+    <section id="triage">
+      <h2>Triage Order</h2>
+      <div class="grid toc">
+        <div class="panel">
+          <h3>1. Fix Behavior Risks First</h3>
+          <p>Cancellation handling, parallel tool streaming, semaphore placement, and provider stream parser identity fallbacks are runtime correctness issues.</p>
+        </div>
+        <div class="panel">
+          <h3>2. Establish API Boundaries</h3>
+          <p>Move framework facades, generated parity names, and raw provider tool shapes behind compat/wire packages before freezing 1.0 ABI.</p>
+        </div>
+        <div class="panel">
+          <h3>3. Replace Optional-Prop Models</h3>
+          <p>Convert nullable state bags into sealed request/state/outcome types and explicit override patches.</p>
+        </div>
+        <div class="panel">
+          <h3>4. Split Barrel Modules</h3>
+          <p>Break <code>MCP.kt</code>, <code>ToolLoopAgent.kt</code>, provider mega-files, and <code>Util.kt</code> by Kotlin responsibility.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="findings">
+      <h2>Findings</h2>
+
+      <article class="finding" id="f-optional-entrypoints">
+        <div class="finding-head">
+          <h3>1. Public generation APIs mirror TS optional options objects</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>Generate.kt:20</code>, <code>Generate.kt:57</code>, <code>Generate.kt:196</code>, <code>Agent.kt:75</code>.</dd>
+          <dt>Pattern</dt>
+          <dd><code>prompt: String? = null</code> plus <code>messages: List&lt;ModelMessage&gt; = emptyList()</code>, then runtime <code>require(prompt != null || messages.isNotEmpty())</code>.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>This is the Kotlin spelling of <code>{ prompt?: string, messages?: Message[] }</code>. The required "prompt or messages" invariant is not in the type system.</dd>
+          <dt>Replacement</dt>
+          <dd>Make <code>TextGenerationRequest</code> or a sealed <code>GenerationInput</code> primary: <code>PromptText</code>, <code>MessageHistory</code>, and optionally a <code>NonEmptyMessages</code> value type. Keep long overloads as deprecated compatibility shims.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-tool-loop-config">
+        <div class="finding-head">
+          <h3>2. <code>ToolLoopAgent</code> constructor is a flattened config object</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>ToolLoopAgent.kt:61</code> through <code>ToolLoopAgent.kt:144</code> mixes model, instructions, tools, output, prepare hooks, sampler settings, lifecycle callbacks, approval secret, telemetry, logging, and engine context.</dd>
+          <dt>Pattern</dt>
+          <dd>One public initializer carries 40+ configuration knobs, many nullable.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>This is an object-literal config shape flattened into a Kotlin constructor. It makes subclassing noisy and hides domain boundaries.</dd>
+          <dt>Replacement</dt>
+          <dd>Add <code>ToolLoopAgent.Config</code> or a builder DSL with grouped types: <code>AgentIdentity</code>, <code>CallSettings</code>, <code>AgentHooks</code>, <code>ApprovalSettings</code>, <code>TelemetrySettings</code>, and <code>EngineSettings</code>.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-lifecycle-erasure">
+        <div class="finding-head">
+          <h3>3. Lifecycle extension points erase strong types</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>Lifecycle.kt:14</code>, <code>Lifecycle.kt:56</code>, <code>Lifecycle.kt:119</code>, <code>Lifecycle.kt:131</code>, <code>Agent.kt:122</code>.</dd>
+          <dt>Pattern</dt>
+          <dd><code>options: Any?</code>, <code>finalOutput: Any?</code>, <code>experimental_context: Any?</code>, <code>StepResult.experimentalContext: Any?</code>, and <code>outputJson</code>/<code>errorMessage</code> as two nullable fields.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>Hook payloads act like JS event objects. Kotlin callers lose the same <code>TContext</code>/<code>TOutput</code> safety the rest of the agent API advertises.</dd>
+          <dt>Replacement</dt>
+          <dd>Make hook/event types generic where application code consumes them: <code>AgentHooks&lt;TContext, TOutput&gt;</code>, <code>OnStartEvent&lt;TContext&gt;</code>, <code>OnFinishEvent&lt;TContext, TOutput&gt;</code>. Model tool finish as <code>Success(outputJson)</code> or <code>Failure(error)</code>.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-ui-tool-state">
+        <div class="finding-head">
+          <h3>4. UI tool state is a flattened discriminated union</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>UIMessagePart.kt:72</code>, <code>UIMessagePart.kt:199</code>, <code>ConvertToModelMessages.kt:223</code>.</dd>
+          <dt>Pattern</dt>
+          <dd><code>ToolUI</code> and <code>DynamicToolUI</code> expose <code>state</code> plus nullable <code>input</code>, <code>output</code>, <code>error</code>, <code>approvalId</code>, and <code>signature</code>. Conversion falls back to <code>JsonNull</code>.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>TS discriminated unions have been collapsed into <code>{ state, input?, output?, error? }</code>. Invalid combinations are representable.</dd>
+          <dt>Replacement</dt>
+          <dd>Use sealed state variants carrying required data: <code>InputStreaming</code>, <code>InputAvailable(input)</code>, <code>ApprovalRequested(input, approvalId, signature)</code>, <code>ApprovalResponded</code>, <code>OutputAvailable(input, output, preliminary)</code>, <code>OutputDenied(reason)</code>, <code>OutputError(error)</code>.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-provider-options">
+        <div class="finding-head">
+          <h3>5. Raw provider option bags leak across public APIs</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>LanguageModel.kt:72</code>, <code>KotlinApi.kt:21</code>, <code>Tool.kt:97</code>, <code>OpenAIProvider.kt:143</code>, <code>GoogleProvider.kt:45</code>, <code>AmazonBedrockProvider.kt:47</code>.</dd>
+          <dt>Pattern</dt>
+          <dd><code>providerOptions: Map&lt;String, JsonElement&gt;</code>, <code>metadata: Map&lt;String, JsonElement&gt;</code>, and many provider option aliases to <code>JsonObject</code>.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>This is <code>Record&lt;string, unknown&gt;</code> preserved in Kotlin. Provider-specific settings become string keys and raw JSON instead of typed values.</dd>
+          <dt>Replacement</dt>
+          <dd>Introduce a <code>ProviderOptions</code> value/sealed hierarchy with typed provider entries such as <code>ProviderOptions.OpenAI</code>, <code>ProviderOptions.Google</code>, and an explicit <code>ProviderOptions.Raw(provider, json)</code> escape hatch.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-provider-tools">
+        <div class="finding-head">
+          <h3>6. Hosted provider tools are raw JSON tools</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>OpenAIProvider.kt:143</code>, <code>OpenAIProvider.kt:156</code>, <code>GoogleProvider.kt:151</code>, <code>Gateway.kt:369</code>.</dd>
+          <dt>Pattern</dt>
+          <dd>Public hosted tools are <code>Tool&lt;JsonElement, JsonElement, Any?&gt;</code>; factories accept <code>args: JsonElement</code>.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>Provider-hosted tool inputs are dynamic object bags rather than provider-specific Kotlin data models.</dd>
+          <dt>Replacement</dt>
+          <dd>Add typed args models and builders: for example <code>OpenAIFileSearchArgs</code>, <code>OpenAICodeInterpreterArgs</code>, <code>GoogleSearchToolArgs</code>. Keep <code>rawProviderTool</code> for features not yet modeled.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-singletons">
+        <div class="finding-head">
+          <h3>7. Public provider singletons are JS module default exports in disguise</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>OpenAIProvider.kt:46</code> requires <code>HttpClient</code>, but <code>OpenAIProvider.kt:56</code> exports <code>openai</code> that throws at <code>OpenAIProvider.kt:75</code>. Same shape appears in <code>GoogleProvider.kt:112</code>, <code>AmazonBedrockProvider.kt:102</code>, <code>OpenAICompatibleProviderFacades.kt:72</code>, and many provider facade files.</dd>
+          <dt>Pattern</dt>
+          <dd>Top-level provider vals that cannot be used without runtime failure, plus callable provider operators such as <code>provider(modelId)</code>.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>They preserve npm package ergonomics: <code>import { openai } from ...</code>. Kotlin DI expects explicit construction with dependencies.</dd>
+          <dt>Replacement</dt>
+          <dd>Deprecate top-level provider vals. Prefer <code>createOpenAI(client, settings)</code> and explicit <code>.languageModel(ModelId)</code>. If a namespace is useful, make it stateless and non-Provider.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-global-state">
+        <div class="finding-head">
+          <h3>8. Some globals are mutable process state</h3>
+          <span class="badge medium">Medium</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>Telemetry.kt:146</code> exports <code>globalTelemetry</code>; <code>Telemetry.kt:148</code> mutates it; <code>Gateway.kt:254</code> exports <code>gateway</code>; <code>Gateway.kt:261</code> caches metadata.</dd>
+          <dt>Pattern</dt>
+          <dd>Library behavior changes through process-wide registries or default service instances.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>Startup-time global registration is common in JS SDKs. Kotlin libraries should be explicit and test-isolated.</dd>
+          <dt>Replacement</dt>
+          <dd>Inject telemetry through agent/provider settings. Require configured gateway transport. Keep app-wide registries in host apps, not the SDK core.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-parallel-tools">
+        <div class="finding-head">
+          <h3>9. Parallel tool execution uses Promise.all-style buffering</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>ToolLoopAgent.kt:940</code>, <code>ToolLoopAgent.kt:956</code>, <code>ToolLoopAgent.kt:985</code>, <code>ToolLoopAgent.kt:987</code>, <code>ToolLoopAgent.kt:1826</code>.</dd>
+          <dt>Pattern</dt>
+          <dd>Every tool launches via <code>async</code>, writes to <code>BufferingCollector</code>, then <code>awaitAll()</code> completes before buffered events replay.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>This matches eager <code>Promise.all</code> fan-out plus arrays. It weakens Kotlin <code>Flow</code> progress/backpressure semantics.</dd>
+          <dt>Replacement</dt>
+          <dd>Use <code>channelFlow</code> or a bounded worker <code>Channel</code> to stream preliminary events as they arrive while applying final durable message results in call order.</dd>
+          <dt>Verification</dt>
+          <dd>A fast streaming tool should emit preliminary output before a slower sibling finishes. With <code>maxParallelToolCalls = 1</code>, the second tool's start hook should not fire until the first finishes.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-execute-tool">
+        <div class="finding-head">
+          <h3>10. Public <code>executeTool</code> buffers a whole flow before emitting</h3>
+          <span class="badge medium">Medium</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>Tool.kt:841</code> through <code>Tool.kt:858</code>.</dd>
+          <dt>Pattern</dt>
+          <dd>Collects every tool output into <code>mutableListOf</code>, then emits preliminaries and final after upstream completion.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>Async iterable collected into an array before returning results.</dd>
+          <dt>Replacement</dt>
+          <dd>Implement one-step lookahead in the returned <code>Flow</code>: emit the previous value as preliminary once the next value arrives, then emit final when upstream completes.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-cancellation">
+        <div class="finding-head">
+          <h3>11. Cancellation is converted into UI errors in several paths</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>Streams.kt:109</code>, <code>Chat.kt:174</code>, <code>CompletionApi.kt:88</code>.</dd>
+          <dt>Pattern</dt>
+          <dd>Broad <code>catch (Throwable)</code> maps failures into UI error messages or error states. <code>CompletionApi</code> only handles <code>AbortError</code> separately.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>Catch-all <code>onError</code> callback semantics. Kotlin cancellation is control flow and must be rethrown.</dd>
+          <dt>Replacement</dt>
+          <dd>Catch <code>CancellationException</code> first and rethrow. Model host-initiated abort as <code>Cancelled</code>/<code>Aborted</code>, not <code>Error</code>.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-stream-parser-sentinels">
+        <div class="finding-head">
+          <h3>12. Provider stream parsers fabricate missing tool identities</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>OpenResponsesProvider.kt:936</code>, <code>OpenResponsesProvider.kt:953</code>, <code>OpenResponsesProvider.kt:954</code>. The async review also flagged <code>AnthropicProvider.kt:843</code>.</dd>
+          <dt>Pattern</dt>
+          <dd>Missing <code>item_id</code> or tool name falls back to <code>""</code>; missing call id can generate a new id.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>Mutable pending objects with optional properties are completed by sentinel values. Kotlin can represent protocol states explicitly.</dd>
+          <dt>Replacement</dt>
+          <dd>Parse into sealed, non-null states. Missing required ids/names should emit a typed protocol error and never produce <code>ToolCall("", ...)</code>.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-settings-patches">
+        <div class="finding-head">
+          <h3>13. Settings use nullable fields as partial patches</h3>
+          <span class="badge medium">Medium</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>Context.kt:36</code>, <code>Context.kt:85</code>, <code>ToolLoopAgent.kt:604</code>, <code>KotlinApi.kt:21</code>.</dd>
+          <dt>Pattern</dt>
+          <dd><code>AgentSettings</code>, <code>StepSettings</code>, and <code>CallSettings</code> use null to mean "not supplied". Some fields cannot be intentionally cleared.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>This is <code>Partial&lt;Settings&gt;</code> semantics. Kotlin has no <code>undefined</code>, so null conflates absent and clear.</dd>
+          <dt>Replacement</dt>
+          <dd>Use an explicit patch type: <code>Override.Unchanged</code>, <code>Override.Set(value)</code>, <code>Override.Clear</code>. At minimum apply it to context, tools, system, messages, and provider options.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-media-unions">
+        <div class="finding-head">
+          <h3>14. Media payloads encode unions with nullable fields and sentinels</h3>
+          <span class="badge medium">Medium</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>MediaModels.kt:8</code>, <code>MediaModels.kt:75</code>, <code>MediaModels.kt:188</code>, <code>ModelMessage.kt:184</code>.</dd>
+          <dt>Pattern</dt>
+          <dd>File/image payloads use combinations of <code>base64</code>, <code>url</code>, <code>mediaType?</code>, and empty-string defaults.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>Equivalent to <code>{ base64?: string, url?: string }</code>. It permits both missing and double-present payloads.</dd>
+          <dt>Replacement</dt>
+          <dd>Introduce <code>FilePayload.Base64</code>, <code>FilePayload.Bytes</code>, and <code>FilePayload.Url</code>. Require exactly one payload variant and map to flat wire models at serialization boundaries.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-framework-facades">
+        <div class="finding-head">
+          <h3>15. Web framework facades are first-class KMP surface</h3>
+          <span class="badge medium">Medium</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>react/React.kt:30</code>, <code>react/React.kt:75</code>, <code>vue/Vue.kt:27</code>, <code>svelte/Svelte.kt:25</code>, <code>angular/Angular.kt:5</code>.</dd>
+          <dt>Pattern</dt>
+          <dd><code>useChat</code>, <code>useCompletion</code>, <code>experimental_useObject</code>, framework package names, and mutable context maps sit in common source.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>React/Vue/Svelte/Angular hook vocabulary is being preserved as Kotlin API instead of being treated as porting compatibility.</dd>
+          <dt>Replacement</dt>
+          <dd>Lead with Kotlin surfaces: <code>Chat</code>, <code>ChatSession</code>, <code>StateFlow</code>, <code>Flow</code>, and host UI adapters. Quarantine web-shaped names under a compat artifact or explicitly experimental package excluded from stable ABI.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-parity-tooling">
+        <div class="finding-head">
+          <h3>16. Parity tooling and CI preserve npm package topology</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>.github/workflows/ci.yml:37</code>, <code>.github/workflows/ci.yml:43</code>, <code>.github/workflows/ci.yml:45</code>, <code>tools/check-ai-sdk-reference.mjs:13</code>, <code>tools/generate-parity-ledger.mjs:76</code>.</dd>
+          <dt>Pattern</dt>
+          <dd>CI clones the Vercel AI SDK reference, checks npm latest, and verifies generated package ledgers before Gradle.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>Kotlin evolution is blocked by upstream npm package/export drift. The compatibility matrix derives from TS package topology, not Kotlin capability boundaries.</dd>
+          <dt>Replacement</dt>
+          <dd>Split this into an advisory or scheduled drift job. Replace generated package-export ledgers with a curated matrix: Kotlin API, wire-compatible, compat-only, not applicable.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-abi-freeze">
+        <div class="finding-head">
+          <h3>17. ABI validation is freezing compatibility names</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>build.gradle.kts:34</code> states the ABI dump is the supported 1.0 contract. API dumps include compatibility names such as <code>generateObject</code>, <code>streamObject</code>, <code>useChat</code>, and <code>experimental_useObject</code>.</dd>
+          <dt>Pattern</dt>
+          <dd>Explicit API plus ABI validation is correct, but it currently includes TS-shaped facades.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>Deprecated and experimental compat APIs become binary promises before the Kotlin-native shape is settled.</dd>
+          <dt>Replacement</dt>
+          <dd>Move compatibility facades to a compat artifact/package, or keep them experimental and excluded from the stable 1.0 contract until the Kotlin-native API is settled.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-typealiases">
+        <div class="finding-head">
+          <h3>18. Model IDs are mostly <code>typealias String</code></h3>
+          <span class="badge low">Low/Medium</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>Gateway.kt:9</code>, <code>GoogleProvider.kt:39</code>, <code>AmazonBedrockProvider.kt:43</code>, <code>OpenAICompatibleProviderFacades.kt:102</code>. Scan found 85 public <code>typealias ... = String</code> declarations.</dd>
+          <dt>Pattern</dt>
+          <dd>Aliases look like distinct model-id types but are assignable as plain strings.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>TS type aliases can document literal unions; Kotlin typealiases add no type separation.</dd>
+          <dt>Replacement</dt>
+          <dd>Use <code>@JvmInline value class</code> wrappers where type separation matters, or a sealed known/custom model id hierarchy for stable provider APIs.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-erased-tools">
+        <div class="finding-head">
+          <h3>19. Tool execution recovers types through runtime erasure</h3>
+          <span class="badge high">High</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>ToolLoopAgent.kt:819</code>, <code>ToolLoopAgent.kt:1255</code>, <code>Tool.kt:765</code>, <code>Tool.kt:772</code>.</dd>
+          <dt>Pattern</dt>
+          <dd>Resolved tools are stored as <code>Pair&lt;Tool&lt;*, *, TContext&gt;, Any?&gt;</code>, later cast to <code>Tool&lt;Any?, Any?, TContext&gt;</code> and serializer types. <code>safeValidateTypes</code> does an unchecked cast.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>This is runtime <code>unknown</code> recovery after schema validation. Some erasure is inevitable for heterogeneous tool sets, but it should be isolated.</dd>
+          <dt>Replacement</dt>
+          <dd>Create an internal <code>ExecutableTool&lt;TContext&gt;</code> or <code>DecodedToolCall</code> abstraction that captures typed decode, approval, execute, and encode operations. Constrain <code>TInput : Any</code> and <code>TOutput : Any</code> unless null payloads are intentional.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-state-flags">
+        <div class="finding-head">
+          <h3>20. Engine state is flag-shaped instead of phase-shaped</h3>
+          <span class="badge medium">Medium</span>
+        </div>
+        <dl>
+          <dt>Evidence</dt>
+          <dd><code>ToolLoopAgentEngine.kt:19</code>.</dd>
+          <dt>Pattern</dt>
+          <dd><code>isStreaming</code>, <code>isModelLoading</code>, <code>error: String?</code>, <code>pendingApprovals</code>, and <code>lastFinishReason?</code> can encode impossible combinations.</dd>
+          <dt>Why TS/JS</dt>
+          <dd>React-style boolean flags plus nullable slots instead of a finite state machine.</dd>
+          <dt>Replacement</dt>
+          <dd>Use sealed phases: <code>Ready</code>, <code>Running</code>, <code>AwaitingApproval</code>, <code>Failed(AgentError)</code>, <code>Cancelled</code>, <code>ModelLoading</code>. Keep derived booleans as computed properties if UI wants them.</dd>
+        </dl>
+      </article>
+
+      <article class="finding" id="f-module-concentration">
+        <div class="finding-head">
+          <h3>21. Large files retain TS barrel/module organization</h3>
+          <span class="badge high">High</span>
+        </div>
+        <p class="section-lead">
+          Responsibility concentration is not cosmetic here. Security-sensitive auth, streaming protocol state, public API models,
+          HTTP details, provider transforms, and tests are often grouped by upstream package name rather than Kotlin ownership.
+        </p>
+        <table class="compact">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Lines</th>
+              <th>Responsibilities mixed</th>
+              <th>Split direction</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>MCP.kt</code></td>
+              <td>2,221</td>
+              <td>JSON-RPC models, client, OAuth, PKCE, crypto, HTTP/SSE/Stdio transports</td>
+              <td><code>mcp/JsonRpc.kt</code>, <code>McpClient.kt</code>, <code>OAuth.kt</code>, <code>Pkce.kt</code>, <code>transport/*</code></td>
+            </tr>
+            <tr>
+              <td><code>GoogleProvider.kt</code></td>
+              <td>2,044</td>
+              <td>Provider facade, five model families, wire conversion, stream state, HTTP, schema</td>
+              <td><code>providers/google/Facade.kt</code>, <code>Language.kt</code>, <code>Embedding.kt</code>, <code>Image.kt</code>, <code>Video.kt</code>, <code>Wire.kt</code></td>
+            </tr>
+            <tr>
+              <td><code>ToolLoopAgent.kt</code></td>
+              <td>1,833</td>
+              <td>Public facade, engine controller, core loop, approval security, repair, telemetry, execution</td>
+              <td><code>AgentLoopRunner</code>, <code>ToolExecutionService</code>, <code>ToolApprovalService</code>, hook/telemetry dispatch</td>
+            </tr>
+            <tr>
+              <td><code>AmazonBedrockProvider.kt</code></td>
+              <td>1,583</td>
+              <td>Provider facade, models, AWS event stream, auth/signing, modality mapping</td>
+              <td><code>BedrockWire.kt</code>, <code>BedrockEventStream.kt</code>, <code>BedrockAuth.kt</code>, per-modality models</td>
+            </tr>
+            <tr>
+              <td><code>OpenAICompatibleProviderFacades.kt</code></td>
+              <td>1,505</td>
+              <td>Ten provider facades, constants, default providers, transforms, special models, HTTP helpers</td>
+              <td>One file per provider facade plus shared <code>FacadeHttp.kt</code> and transform helpers</td>
+            </tr>
+            <tr>
+              <td><code>OpenAICompatibleProvider.kt</code></td>
+              <td>1,325</td>
+              <td>Six modalities, HTTP base, multipart, SSE parsing, result conversion, option pruning</td>
+              <td>Facade/settings, HTTP base, chat, completion, embedding, image, audio, stream state</td>
+            </tr>
+            <tr>
+              <td><code>Tool.kt</code></td>
+              <td>1,249</td>
+              <td>Tool model, DSL, validation, provider factories, execution context, result serialization</td>
+              <td><code>tool/Tool.kt</code>, <code>ToolDsl.kt</code>, <code>ToolSet.kt</code>, <code>SchemaValidation.kt</code>, <code>ProviderToolFactory.kt</code></td>
+            </tr>
+            <tr>
+              <td><code>Util.kt</code></td>
+              <td>686</td>
+              <td>JSON helpers, vector math, retry, headers, settings, URL validation, SSE, base64, provider options</td>
+              <td><code>Retry.kt</code>, <code>Headers.kt</code>, <code>DownloadUrlValidation.kt</code>, <code>SseJsonParser.kt</code>, <code>ProviderOptions.kt</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+    </section>
+
+    <section id="appropriate-patterns">
+      <h2>Patterns That Should Stay</h2>
+      <p class="section-lead">
+        Not every singleton or raw JSON use is a problem. These were explicitly treated as acceptable:
+      </p>
+      <ul>
+        <li><span class="badge ok">Keep</span> Sealed <code>data object</code> variants such as <code>ToolChoice.Auto</code> and <code>StreamEvent.Abort</code>.</li>
+        <li><span class="badge ok">Keep</span> Null/no-op objects such as <code>NoopLogger</code>, <code>NoopTelemetryTracer</code>, and <code>NoopToolStreamWriter</code>.</li>
+        <li><span class="badge ok">Keep</span> Internal cohesive utility singletons such as <code>WireDecoder</code>.</li>
+        <li><span class="badge ok">Keep</span> <code>JsonElement</code> at real wire boundaries, dynamic MCP/catalog tools, and explicit raw escape hatches.</li>
+        <li><span class="badge ok">Keep</span> Cold <code>Flow</code> as the public streaming primitive, but preserve streaming semantics instead of buffering it into lists.</li>
+      </ul>
+    </section>
+
+    <section id="replacement-plan">
+      <h2>Replacement Plan</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>Goal</th>
+            <th>Primary files</th>
+            <th>Acceptance check</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>0</td>
+            <td>Define stable Kotlin-native vs compat/wire boundary before 1.0 ABI hardens it.</td>
+            <td><code>build.gradle.kts</code>, <code>api/*</code>, <code>docs/parity/*</code>, framework facade packages</td>
+            <td>Compatibility APIs are clearly isolated, deprecated, or excluded from stable contract review.</td>
+          </tr>
+          <tr>
+            <td>1</td>
+            <td>Fix runtime behavior risks.</td>
+            <td><code>ToolLoopAgent.kt</code>, <code>Tool.kt</code>, <code>Streams.kt</code>, <code>Chat.kt</code>, provider stream parsers</td>
+            <td>Cancellation rethrows; parallel tools stream progress; malformed provider stream ids fail typed.</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Replace optional-prop models with sealed/typed models.</td>
+            <td><code>UIMessagePart.kt</code>, <code>Lifecycle.kt</code>, <code>Context.kt</code>, <code>MediaModels.kt</code>, <code>Generate.kt</code></td>
+            <td>Invalid UI/tool/media/settings states are unrepresentable in Kotlin.</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Add typed provider options and hosted tool args.</td>
+            <td>Provider files, <code>KotlinApi.kt</code>, <code>LanguageModel.kt</code>, provider tests</td>
+            <td>Normal app code can configure providers without <code>buildJsonObject</code>; raw options are explicit escape hatches.</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Split TS-style module files by Kotlin responsibility.</td>
+            <td><code>MCP.kt</code>, <code>ToolLoopAgent.kt</code>, <code>Tool.kt</code>, major provider files, <code>Util.kt</code></td>
+            <td>Each file has one clear reason to change; tests split by same ownership.</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Rebalance docs/tests away from parity-first acceptance.</td>
+            <td><code>docs/wiki/*</code>, <code>docs/parity/*</code>, <code>*ParityTest.kt</code></td>
+            <td>Docs lead with Kotlin APIs; parity tests live at wire/compat boundaries.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="review-notes">
+      <h2>Review Notes</h2>
+      <ul>
+        <li>This was a read-only review except for creating this report file.</li>
+        <li>No tests were run because the task was analysis and documentation, not behavior changes.</li>
+        <li>The strongest repeated signal across agents was not "raw JSON exists"; it was "raw JSON is too often the normal public path instead of an explicit boundary escape hatch."</li>
+        <li>The next engineering decision should be whether TS compatibility remains in the root artifact or moves to a separate compat layer before API freeze.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

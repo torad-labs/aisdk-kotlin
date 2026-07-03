@@ -1,5 +1,6 @@
 [versions]
 kotlin = "2.4.0"
+poko = "0.23.0"
 agp = "9.2.0"
 android-min-sdk = "26"
 android-compile-sdk = "36"
@@ -8,22 +9,35 @@ serialization = "1.11.0"
 turbine = "1.2.1"
 ktor = "3.5.0"
 detekt = "1.23.8"
+konsist = "0.17.3"
 kover = "0.9.8"
 dokka = "2.2.0"
+junit = "5.11.4"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+detekt-cli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
+# Konsist: whole-codebase architecture invariants as jvmTest tests (declaration-level checks
+# a single-file lint can't see). Verified to parse this Kotlin 2.4.0 source.
+konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
+# Custom detekt rule authoring + its unit-test harness (the :detekt-rules module).
+detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
+detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 
 [plugins]
 android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+poko = { id = "dev.drewhamilton.poko", version.ref = "poko" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

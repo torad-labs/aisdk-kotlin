@@ -1,6 +1,9 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
@@ -16,7 +19,15 @@ class AgentStepResultParityTest {
     private fun richModel(finish: FinishReason) = object : LanguageModel {
         override val modelId = "m"
         override suspend fun generate(params: LanguageModelCallParams) =
-            LanguageModelResult(text = "hello", finishReason = finish, usage = Usage())
+            LanguageModelResult(
+                text = "hello",
+                finishReason = finish,
+                usage = Usage(),
+                providerMetadata = ProviderMetadata.Raw(buildJsonObject { put("p", JsonPrimitive(1)) }),
+                rawFinishReason = "stop_sequence",
+                warnings = listOf(CallWarning(type = "other", message = "heads up")),
+                response = LanguageModelResponseMetadata(id = "resp_1", modelId = "m"),
+            )
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
             emit(StreamEvent.StreamStart(listOf(CallWarning(type = "other", message = "heads up"))))
             emit(StreamEvent.ResponseMetadata(id = "resp_1", modelId = "m"))
@@ -28,7 +39,7 @@ class AgentStepResultParityTest {
                     1,
                     finish,
                     Usage(),
-                    providerMetadata = buildJsonObject { put("p", JsonPrimitive(1)) },
+                    providerMetadata = ProviderMetadata.Raw(buildJsonObject { put("p", JsonPrimitive(1)) }),
                     rawFinishReason = "stop_sequence",
                 ),
             )
@@ -40,14 +51,14 @@ class AgentStepResultParityTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = richModel(FinishReason.Stop),
             instructions = "hi",
-            tools = toolSetOf(),
+            tools = ToolSet(),
         )
-        val result = agent.generate(prompt = "go", options = Unit)
+        val result = agent.generate(prompt = "go", options = Unit).first()
         val step = result.steps.single()
         assertEquals("heads up", step.warnings.single().message)
         assertEquals("resp_1", step.response.id)
         assertEquals("stop_sequence", step.rawFinishReason)
-        assertTrue(step.providerMetadata.containsKey("p"), "per-step providerMetadata captured")
+        assertTrue(step.providerMetadata.toMap().containsKey("p"), "per-step providerMetadata captured")
         assertEquals("m", step.model, "step records the model id")
         assertEquals(Unit, step.experimentalContext, "step records the live agent context")
     }
@@ -58,10 +69,10 @@ class AgentStepResultParityTest {
         val agent = TestToolLoopAgent<Unit, Holder>(
             model = richModel(FinishReason.Length),
             instructions = "hi",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             output = Output.obj(kotlinx.serialization.serializer<Holder>()),
         )
-        assertFailsWith<NoOutputGeneratedError> { agent.generate(prompt = "go", options = Unit) }
+        assertFailsWith<NoOutputGeneratedError> { agent.generate(prompt = "go", options = Unit).first() }
     }
 
     @kotlinx.serialization.Serializable

@@ -1,0 +1,8 @@
+id: no-fq-java-time-uuid-date
+language: kotlin
+severity: error
+rule:
+  any:
+    - pattern: java.util.UUID
+    - pattern: java.util.Date
+    - pattern: java.time.$$$

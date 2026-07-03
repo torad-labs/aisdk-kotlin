@@ -1,0 +1,5 @@
+id: no-secondary-constructor
+language: kotlin
+severity: error
+rule:
+  kind: secondary_constructor

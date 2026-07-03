@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "source": "detekt-baseline.xml",
+  "total": 1,
+  "byRule": {
+    "RuleA": 1
+  }
+}

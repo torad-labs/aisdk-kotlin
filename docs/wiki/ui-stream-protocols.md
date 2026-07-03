@@ -8,7 +8,7 @@ SDK Kotlin exposes both text streams and rich UI message streams.
 Use text streams for simple output:
 
 ```kotlin
-val result = streamTextResult(model = model, prompt = prompt)
+val result = TextGenerator(model).streamResult(GenerationInput.Prompt(prompt))
 val response = result.toTextStreamResponse()
 ```
 
@@ -26,8 +26,8 @@ val events = agent.stream(
     options = context,
 )
 
-val response = createUiMessageStreamResponse(
-    stream = streamToUiMessages(
+val response = CreateUiMessageStreamResponse(
+    stream = StreamToUiMessages(
         events = events,
         assistantMessageId = "assistant-${turn.id}",
     ),
@@ -41,9 +41,9 @@ frameworks adapt `UIMessageStreamResponse` or pipe it through a
 ## Pipe To A Host Writer
 
 ```kotlin
-val result = streamTextResult(model = model, prompt = prompt)
+val result = TextGenerator(model).streamResult(GenerationInput.Prompt(prompt))
 
-pipeUiMessageStreamToResponse(
+UiMessageStreams.pipeUiMessageStreamToResponse(
     stream = result.toUiMessageStream("assistant-1"),
     response = writer,
 )
@@ -55,7 +55,7 @@ helpers.
 ## Create Custom UI Streams
 
 ```kotlin
-val stream = createUiMessageStream {
+val stream = CreateUiMessageStream {
     write(
         UIMessage(
             id = "status-1",
@@ -80,16 +80,15 @@ durable chat content.
 
 ## Read UI Message Streams
 
-Use `readUiMessageStream` when a host wants to consume message snapshots
+Use `ReadUiMessageStream` when a host wants to consume message snapshots
 outside a chat helper:
 
 ```kotlin
-val stream = streamTextResult(
-    model = model,
-    prompt = "Write a short story.",
+val stream = TextGenerator(model).streamResult(
+    GenerationInput.Prompt("Write a short story."),
 ).toUiMessageStream("assistant-1")
 
-readUiMessageStream(stream).collect { message ->
+ReadUiMessageStream(stream).collect { message ->
     terminal.render(message)
 }
 ```
@@ -102,7 +101,7 @@ helpers.
 Use stable ids for persisted messages:
 
 ```kotlin
-val assistantId = getResponseUiMessageId(
+val assistantId = UiMessageStreams.getResponseUiMessageId(
     messages = priorMessages,
     createId = { idGenerator.generate() },
 )
@@ -156,7 +155,7 @@ state.
 ## Finish Handling
 
 ```kotlin
-handleUiMessageStreamFinish(messages) { finalMessages ->
+UiMessageStreams.handleUiMessageStreamFinish(messages) { finalMessages ->
     save(finalMessages)
 }
 ```

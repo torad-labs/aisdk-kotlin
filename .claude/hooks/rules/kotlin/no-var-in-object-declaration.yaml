@@ -1,0 +1,18 @@
+id: no-var-in-object-declaration
+language: kotlin
+severity: error
+rule:
+  kind: property_declaration
+  all:
+    - has:
+        kind: binding_pattern_kind
+        regex: '^var$'
+    - inside:
+        kind: class_body
+        inside:
+          kind: object_declaration
+note: >-
+  Mutable `var` inside a top-level/named `object` is process-wide shared
+  mutable singleton state — a data race and a hidden global. Model state
+  with a StateFlow/Mutex-guarded holder or pass it explicitly, not via a
+  mutable singleton field.

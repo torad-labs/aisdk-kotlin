@@ -1,536 +1,455 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsBytes
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val DEEPGRAM_VERSION: String = "2.0.33"
 
-public typealias DeepgramSpeechModelId = String
-public typealias DeepgramTranscriptionModelId = String
 public typealias DeepgramSpeechCallOptions = DeepgramSpeechModelOptions
 
 @Serializable
-public data class DeepgramSpeechModelOptions(
-    val bitRate: JsonElement? = null,
-    val container: String? = null,
-    val encoding: String? = null,
-    val sampleRate: Int? = null,
-    val callback: String? = null,
-    val callbackMethod: String? = null,
-    val mipOptOut: Boolean? = null,
-    val tag: JsonElement? = null,
+@Poko
+/** @since 0.3.0-beta01 */
+public class DeepgramSpeechModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val bitRate: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
+    public val container: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val encoding: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val sampleRate: Int? = null,
+    /** @since 0.3.0-beta01 */
+    public val callback: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val callbackMethod: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val mipOptOut: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val tag: JsonElement? = null,
 )
 
-@Serializable
-public data class DeepgramTranscriptionModelOptions(
-    val language: String? = null,
-    val detectLanguage: Boolean? = null,
-    val smartFormat: Boolean? = null,
-    val punctuate: Boolean? = null,
-    val paragraphs: Boolean? = null,
-    val summarize: JsonElement? = null,
-    val topics: Boolean? = null,
-    val intents: Boolean? = null,
-    val sentiment: Boolean? = null,
-    val detectEntities: Boolean? = null,
-    val redact: JsonElement? = null,
-    val replace: String? = null,
-    val search: String? = null,
-    val keyterm: String? = null,
-    val diarize: Boolean? = null,
-    val utterances: Boolean? = null,
-    val uttSplit: Float? = null,
-    val fillerWords: Boolean? = null,
-)
+/** @since 0.3.0-beta01 */
+public class DeepgramSpeechModelOptionsBuilder {
+    private var bitRate: JsonElement? = null
+    private var container: String? = null
+    private var encoding: String? = null
+    private var sampleRate: Int? = null
+    private var callback: String? = null
+    private var callbackMethod: String? = null
+    private var mipOptOut: Boolean? = null
+    private var tag: JsonElement? = null
 
-@Serializable
-public data class DeepgramProviderSettings(
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-)
+    /** @since 0.3.0-beta01 */
+    public fun bitRate(value: JsonElement?): DeepgramSpeechModelOptionsBuilder {
+        bitRate = value
+        return this
+    }
 
-public interface DeepgramProvider : Provider {
-    public operator fun invoke(modelId: DeepgramTranscriptionModelId = "nova-3"): TranscriptionModel = transcription(modelId)
-    public fun transcription(modelId: DeepgramTranscriptionModelId): TranscriptionModel
-    public fun speech(modelId: DeepgramSpeechModelId): SpeechModel
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    /** @since 0.3.0-beta01 */
+    public fun container(value: String?): DeepgramSpeechModelOptionsBuilder {
+        container = value
+        return this
+    }
 
-    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
+    /** @since 0.3.0-beta01 */
+    public fun encoding(value: String?): DeepgramSpeechModelOptionsBuilder {
+        encoding = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun sampleRate(value: Int?): DeepgramSpeechModelOptionsBuilder {
+        sampleRate = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun callback(value: String?): DeepgramSpeechModelOptionsBuilder {
+        callback = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun callbackMethod(value: String?): DeepgramSpeechModelOptionsBuilder {
+        callbackMethod = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun mipOptOut(value: Boolean?): DeepgramSpeechModelOptionsBuilder {
+        mipOptOut = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun tag(value: JsonElement?): DeepgramSpeechModelOptionsBuilder {
+        tag = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): DeepgramSpeechModelOptions =
+        DeepgramSpeechModelOptions(
+            bitRate = bitRate,
+            container = container,
+            encoding = encoding,
+            sampleRate = sampleRate,
+            callback = callback,
+            callbackMethod = callbackMethod,
+            mipOptOut = mipOptOut,
+            tag = tag,
+        )
 }
 
-public fun createDeepgram(
+/** @since 0.3.0-beta01 */
+public fun DeepgramSpeechModelOptions(
+    block: DeepgramSpeechModelOptionsBuilder.() -> Unit = {},
+): DeepgramSpeechModelOptions =
+    DeepgramSpeechModelOptionsBuilder().apply(block).build()
+
+@Serializable
+@Poko
+/** @since 0.3.0-beta01 */
+public class DeepgramTranscriptionModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val language: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val detectLanguage: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val smartFormat: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val punctuate: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val paragraphs: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val summarize: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
+    public val topics: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val intents: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val sentiment: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val detectEntities: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val redact: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
+    public val replace: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val search: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val keyterm: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val diarize: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val utterances: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val uttSplit: Float? = null,
+    /** @since 0.3.0-beta01 */
+    public val fillerWords: Boolean? = null,
+)
+
+/** @since 0.3.0-beta01 */
+public class DeepgramTranscriptionModelOptionsBuilder {
+    private var language: String? = null
+    private var detectLanguage: Boolean? = null
+    private var smartFormat: Boolean? = null
+    private var punctuate: Boolean? = null
+    private var paragraphs: Boolean? = null
+    private var summarize: JsonElement? = null
+    private var topics: Boolean? = null
+    private var intents: Boolean? = null
+    private var sentiment: Boolean? = null
+    private var detectEntities: Boolean? = null
+    private var redact: JsonElement? = null
+    private var replace: String? = null
+    private var search: String? = null
+    private var keyterm: String? = null
+    private var diarize: Boolean? = null
+    private var utterances: Boolean? = null
+    private var uttSplit: Float? = null
+    private var fillerWords: Boolean? = null
+
+    /** @since 0.3.0-beta01 */
+    public fun language(value: String?): DeepgramTranscriptionModelOptionsBuilder {
+        language = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun detectLanguage(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        detectLanguage = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun smartFormat(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        smartFormat = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun punctuate(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        punctuate = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun paragraphs(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        paragraphs = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun summarize(value: JsonElement?): DeepgramTranscriptionModelOptionsBuilder {
+        summarize = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun topics(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        topics = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun intents(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        intents = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun sentiment(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        sentiment = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun detectEntities(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        detectEntities = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun redact(value: JsonElement?): DeepgramTranscriptionModelOptionsBuilder {
+        redact = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun replace(value: String?): DeepgramTranscriptionModelOptionsBuilder {
+        replace = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun search(value: String?): DeepgramTranscriptionModelOptionsBuilder {
+        search = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun keyterm(value: String?): DeepgramTranscriptionModelOptionsBuilder {
+        keyterm = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun diarize(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        diarize = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun utterances(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        utterances = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun uttSplit(value: Float?): DeepgramTranscriptionModelOptionsBuilder {
+        uttSplit = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun fillerWords(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
+        fillerWords = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): DeepgramTranscriptionModelOptions =
+        DeepgramTranscriptionModelOptions(
+            language = language,
+            detectLanguage = detectLanguage,
+            smartFormat = smartFormat,
+            punctuate = punctuate,
+            paragraphs = paragraphs,
+            summarize = summarize,
+            topics = topics,
+            intents = intents,
+            sentiment = sentiment,
+            detectEntities = detectEntities,
+            redact = redact,
+            replace = replace,
+            search = search,
+            keyterm = keyterm,
+            diarize = diarize,
+            utterances = utterances,
+            uttSplit = uttSplit,
+            fillerWords = fillerWords,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun DeepgramTranscriptionModelOptions(
+    block: DeepgramTranscriptionModelOptionsBuilder.() -> Unit = {},
+): DeepgramTranscriptionModelOptions =
+    DeepgramTranscriptionModelOptionsBuilder().apply(block).build()
+
+@Serializable
+@Poko
+/** @since 0.3.0-beta01 */
+public class DeepgramProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val headers: Map<String, String> = emptyMap(),
+) {
+    internal fun deepgramHeaders(callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Token $it" }
+        base.putAll(headers)
+        base.putAll(callHeaders)
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/deepgram/$DEEPGRAM_VERSION")
+    }
+
+    internal fun deepgramOptions(providerOptions: ProviderOptions): JsonObject =
+        JsonAccess.obj(providerOptions.toMap(), "deepgram") ?: JsonObject(emptyMap())
+
+    internal fun deepgramErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
+            ?: raw.ifBlank { "request failed" }
+        return "Deepgram request failed ($statusCode): $detail"
+    }
+
+    internal fun deepgramQueryValue(value: JsonElement): String =
+        when (value) {
+            is JsonArray -> value.joinToString(",") { deepgramQueryValue(it) }
+            is JsonPrimitive -> value.contentOrNull.orEmpty()
+            else -> value.toString()
+        }
+
+    internal fun toQueryString(params: Map<String, String>): String =
+        params.entries.joinToString("&") { (key, value) -> "${UrlOps.encode(key)}=${UrlOps.encode(value)}" }
+}
+
+/** @since 0.3.0-beta01 */
+public class DeepgramProviderSettingsBuilder {
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+
+    /** @since 0.3.0-beta01 */
+    public fun apiKey(value: String?): DeepgramProviderSettingsBuilder {
+        apiKey = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun headers(value: Map<String, String>): DeepgramProviderSettingsBuilder {
+        headers = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): DeepgramProviderSettings =
+        DeepgramProviderSettings(
+            apiKey = apiKey,
+            headers = headers,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun DeepgramProviderSettings(
+    block: DeepgramProviderSettingsBuilder.() -> Unit = {},
+): DeepgramProviderSettings =
+    DeepgramProviderSettingsBuilder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+public class DeepgramProvider(
+    private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
+    public val settings: DeepgramProviderSettings,
+) : Provider {
+    override val providerId: String = "deepgram"
+
+    public operator fun invoke(modelId: ModelId = ModelId("nova-3")): TranscriptionModel = transcription(modelId)
+
+    /** @since 0.3.0-beta01 */
+    public fun transcription(modelId: ModelId): TranscriptionModel =
+        DeepgramTranscriptionModel(client, settings, modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun speech(modelId: ModelId): SpeechModel =
+        DeepgramSpeechModel(client, settings, modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
+
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
+        providerId,
+        "languageModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
+    override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
+}
+
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference pattern.
+ * @since 0.3.0-beta01
+ */
+public fun Deepgram(
     client: HttpClient,
     settings: DeepgramProviderSettings = DeepgramProviderSettings(),
-): DeepgramProvider = DefaultDeepgramProvider(client, settings)
+): DeepgramProvider = DeepgramProvider(client, settings)
 
-public val deepgram: DeepgramProvider = object : DeepgramProvider {
-    override val providerId: String = "deepgram"
-    override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkException("Deepgram provider is not configured. Use createDeepgram(client, settings).")
-    override fun speech(modelId: String): SpeechModel =
-        throw AiSdkException("Deepgram provider is not configured. Use createDeepgram(client, settings).")
-}
+internal const val DEEPGRAM_BASE_URL: String = "https://api.deepgram.com"
 
-private class DefaultDeepgramProvider(
-    private val client: HttpClient,
-    private val settings: DeepgramProviderSettings,
-) : DeepgramProvider {
-    override val providerId: String = "deepgram"
-    override fun transcription(modelId: String): TranscriptionModel = DeepgramTranscriptionModel(client, settings, modelId)
-    override fun speech(modelId: String): SpeechModel = DeepgramSpeechModel(client, settings, modelId)
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
-
-public class DeepgramSpeechModel(
-    private val client: HttpClient,
-    private val settings: DeepgramProviderSettings,
-    override val modelId: String,
-) : SpeechModel {
-    override val provider: String = "deepgram.speech"
-
-    override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
-        params.abortSignal.throwIfAborted()
-        val prepared = deepgramSpeechArgs(modelId, params)
-        val response = deepgramPostJsonBinary(
-            client = client,
-            url = "$DEEPGRAM_BASE_URL/v1/speak?${prepared.queryParams.toQueryString()}",
-            body = prepared.body,
-            headers = deepgramHeaders(settings, params.headers),
-        )
-        return SpeechModelResult(
-            audio = GeneratedFile(
-                mediaType = response.headers.headerValue(HttpHeaders.ContentType) ?: deepgramSpeechMediaType(prepared.queryParams),
-                base64 = convertByteArrayToBase64(response.bytes),
-            ),
-            warnings = prepared.warnings,
-            response = LanguageModelResponseMetadata(
-                modelId = modelId,
-                headers = response.headers,
-            ),
-        )
-    }
-}
-
-private class DeepgramTranscriptionModel(
-    private val client: HttpClient,
-    private val settings: DeepgramProviderSettings,
-    override val modelId: String,
-) : TranscriptionModel {
-    override val provider: String = "deepgram.transcription"
-
-    override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
-        params.abortSignal.throwIfAborted()
-        val prepared = deepgramTranscriptionQuery(modelId, params)
-        val response = deepgramPostBinaryJson(
-            client = client,
-            url = "$DEEPGRAM_BASE_URL/v1/listen?${prepared.queryParams.toQueryString()}",
-            bytes = convertBase64ToByteArray(params.audio.base64),
-            mediaType = params.audio.mediaType,
-            headers = deepgramHeaders(settings, params.headers),
-        )
-        val value = response.value.jsonObject
-        val firstChannel = value["results"]?.jsonObject
-            ?.get("channels")?.jsonArray?.firstOrNull()?.jsonObject
-        val firstAlternative = firstChannel
-            ?.get("alternatives")?.jsonArray?.firstOrNull()?.jsonObject
-        val words = firstAlternative?.get("words")?.jsonArray.orEmpty()
-        return TranscriptionModelResult(
-            text = firstAlternative?.get("transcript")?.jsonPrimitive?.contentOrNull.orEmpty(),
-            segments = words.map { word ->
-                val obj = word.jsonObject
-                TranscriptSegment(
-                    text = obj["word"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    startSeconds = obj["start"]?.jsonPrimitive?.floatOrNull,
-                    endSeconds = obj["end"]?.jsonPrimitive?.floatOrNull,
-                )
-            },
-            warnings = prepared.warnings,
-            response = LanguageModelResponseMetadata(
-                modelId = modelId,
-                headers = response.headers,
-                body = response.value,
-            ),
-            providerMetadata = mapOf("deepgram" to response.value),
-            language = firstChannel?.get("detected_language")?.jsonPrimitive?.contentOrNull,
-            durationInSeconds = value["metadata"]?.jsonObject?.get("duration")?.jsonPrimitive?.floatOrNull,
-        )
-    }
-}
-
-private const val DEEPGRAM_BASE_URL: String = "https://api.deepgram.com"
-
-
-private data class DeepgramSpeechArgs(
+internal data class DeepgramSpeechArgs(
     val body: JsonObject,
     val queryParams: LinkedHashMap<String, String>,
     val warnings: List<CallWarning>,
 )
 
-private data class DeepgramTranscriptionArgs(
+internal data class DeepgramTranscriptionArgs(
     val queryParams: LinkedHashMap<String, String>,
     val warnings: List<CallWarning>,
 )
 
-private data class DeepgramBinaryResponse(
+internal class DeepgramBinaryResponse(
     val bytes: ByteArray,
     val headers: Map<String, String>,
 )
-
-private fun deepgramSpeechArgs(
-    modelId: String,
-    params: SpeechGenerationParams,
-): DeepgramSpeechArgs {
-    val warnings = mutableListOf<CallWarning>()
-    val body = buildJsonObject { put("text", JsonPrimitive(params.text)) }
-    val queryParams = linkedMapOf("model" to modelId)
-    applyDeepgramOutputFormat(params.responseFormat ?: "mp3", queryParams)
-
-    val options = deepgramOptions(params.providerOptions)
-    applyDeepgramSpeechOptions(options, queryParams, warnings)
-
-    if (params.voice != null && params.voice != modelId) {
-        warnings += CallWarning(
-            type = "unsupported",
-            message = "Deepgram TTS models embed the voice in the model ID. The voice parameter \"${params.voice}\" was ignored.",
-        )
-    }
-    if (params.speed != null) {
-        warnings += CallWarning(
-            type = "unsupported",
-            message = "Deepgram TTS REST API does not support speed adjustment. Speed parameter was ignored.",
-        )
-    }
-    if (params.instructions != null) {
-        warnings += CallWarning(
-            type = "unsupported",
-            message = "Deepgram TTS REST API does not support instructions. Instructions parameter was ignored.",
-        )
-    }
-    return DeepgramSpeechArgs(body, queryParams, warnings)
-}
-
-private fun applyDeepgramOutputFormat(
-    outputFormat: String,
-    queryParams: LinkedHashMap<String, String>,
-) {
-    val formatLower = outputFormat.lowercase()
-    when (formatLower) {
-        "mp3" -> queryParams["encoding"] = "mp3"
-        "wav" -> {
-            queryParams["container"] = "wav"
-            queryParams["encoding"] = "linear16"
-        }
-        "linear16" -> {
-            queryParams["encoding"] = "linear16"
-            queryParams["container"] = "wav"
-        }
-        "mulaw" -> {
-            queryParams["encoding"] = "mulaw"
-            queryParams["container"] = "wav"
-        }
-        "alaw" -> {
-            queryParams["encoding"] = "alaw"
-            queryParams["container"] = "wav"
-        }
-        "opus", "ogg" -> {
-            queryParams["encoding"] = "opus"
-            queryParams["container"] = "ogg"
-        }
-        "flac" -> queryParams["encoding"] = "flac"
-        "aac" -> queryParams["encoding"] = "aac"
-        "pcm" -> {
-            queryParams["encoding"] = "linear16"
-            queryParams["container"] = "none"
-        }
-        else -> applyDeepgramCompoundOutputFormat(formatLower, queryParams)
-    }
-}
-
-private fun applyDeepgramCompoundOutputFormat(
-    outputFormat: String,
-    queryParams: LinkedHashMap<String, String>,
-) {
-    val parts = outputFormat.split("_")
-    if (parts.size < 2) return
-    val first = parts[0]
-    val sampleRate = parts[1].toIntOrNull()
-    if (first in setOf("linear16", "mulaw", "alaw", "mp3", "opus", "flac", "aac")) {
-        queryParams["encoding"] = first
-        if (first in setOf("linear16", "mulaw", "alaw")) queryParams["container"] = "wav"
-        if (first == "opus") queryParams["container"] = "ogg"
-        if (sampleRate != null && deepgramSampleRateAllowed(first, sampleRate)) {
-            queryParams["sample_rate"] = sampleRate.toString()
-        }
-    } else if (first in setOf("wav", "ogg")) {
-        queryParams["container"] = first
-        queryParams["encoding"] = if (first == "wav") "linear16" else "opus"
-        if (sampleRate != null) queryParams["sample_rate"] = sampleRate.toString()
-    }
-}
-
-private fun applyDeepgramSpeechOptions(
-    options: JsonObject,
-    queryParams: LinkedHashMap<String, String>,
-    warnings: MutableList<CallWarning>,
-) {
-    val encoding = options["encoding"]?.jsonPrimitive?.contentOrNull?.lowercase()
-    val container = options["container"]?.jsonPrimitive?.contentOrNull?.lowercase()
-    if (encoding != null) {
-        queryParams["encoding"] = encoding
-        if (container != null) {
-            when {
-                encoding in setOf("linear16", "mulaw", "alaw") && container in setOf("wav", "none") ->
-                    queryParams["container"] = container
-                encoding in setOf("linear16", "mulaw", "alaw") ->
-                    warnings += CallWarning("unsupported", "Encoding \"$encoding\" only supports containers \"wav\" or \"none\". Container \"$container\" was ignored.")
-                encoding == "opus" -> queryParams["container"] = "ogg"
-                encoding in setOf("mp3", "flac", "aac") -> {
-                    warnings += CallWarning("unsupported", "Encoding \"$encoding\" does not support container parameter. Container \"$container\" was ignored.")
-                    queryParams.remove("container")
-                }
-            }
-        } else {
-            when {
-                encoding in setOf("mp3", "flac", "aac") -> queryParams.remove("container")
-                encoding in setOf("linear16", "mulaw", "alaw") && queryParams["container"] == null -> queryParams["container"] = "wav"
-                encoding == "opus" -> queryParams["container"] = "ogg"
-            }
-        }
-        if (encoding in setOf("mp3", "opus", "aac")) queryParams.remove("sample_rate")
-        if (encoding in setOf("linear16", "mulaw", "alaw", "flac")) queryParams.remove("bit_rate")
-    } else if (container != null) {
-        val oldEncoding = queryParams["encoding"]?.lowercase()
-        val newEncoding = when (container) {
-            "wav" -> "linear16"
-            "ogg" -> "opus"
-            "none" -> "linear16"
-            else -> null
-        }
-        if (newEncoding != null) {
-            queryParams["container"] = container
-            if (newEncoding != oldEncoding) {
-                queryParams["encoding"] = newEncoding
-                if (newEncoding in setOf("mp3", "opus", "aac")) queryParams.remove("sample_rate")
-                if (newEncoding in setOf("linear16", "mulaw", "alaw", "flac")) queryParams.remove("bit_rate")
-            }
-        }
-    }
-
-    options["sampleRate"]?.jsonPrimitive?.intOrNull?.let { sampleRate ->
-        applyDeepgramSampleRate(sampleRate, queryParams, warnings)
-    }
-    options["bitRate"]?.let { bitRate ->
-        applyDeepgramBitRate(bitRate, queryParams, warnings)
-    }
-    options["callback"]?.jsonPrimitive?.contentOrNull?.let { queryParams["callback"] = it }
-    options["callbackMethod"]?.jsonPrimitive?.contentOrNull?.let { queryParams["callback_method"] = it }
-    options["mipOptOut"]?.jsonPrimitive?.booleanOrNull?.let { queryParams["mip_opt_out"] = it.toString() }
-    options["tag"]?.let { queryParams["tag"] = deepgramQueryValue(it) }
-}
-
-private fun applyDeepgramSampleRate(
-    sampleRate: Int,
-    queryParams: LinkedHashMap<String, String>,
-    warnings: MutableList<CallWarning>,
-) {
-    val encoding = queryParams["encoding"]?.lowercase().orEmpty()
-    when {
-        encoding == "linear16" && sampleRate !in setOf(8000, 16000, 24000, 32000, 48000) ->
-            warnings += CallWarning("unsupported", "Encoding \"linear16\" only supports sample rates: 8000, 16000, 24000, 32000, 48000. Sample rate $sampleRate was ignored.")
-        encoding in setOf("mulaw", "alaw") && sampleRate !in setOf(8000, 16000) ->
-            warnings += CallWarning("unsupported", "Encoding \"$encoding\" only supports sample rates: 8000, 16000. Sample rate $sampleRate was ignored.")
-        encoding == "flac" && sampleRate !in setOf(8000, 16000, 22050, 32000, 48000) ->
-            warnings += CallWarning("unsupported", "Encoding \"flac\" only supports sample rates: 8000, 16000, 22050, 32000, 48000. Sample rate $sampleRate was ignored.")
-        encoding in setOf("mp3", "opus", "aac") ->
-            warnings += CallWarning("unsupported", "Encoding \"$encoding\" has a fixed sample rate and does not support sample_rate parameter. Sample rate $sampleRate was ignored.")
-        else -> queryParams["sample_rate"] = sampleRate.toString()
-    }
-}
-
-private fun applyDeepgramBitRate(
-    bitRate: JsonElement,
-    queryParams: LinkedHashMap<String, String>,
-    warnings: MutableList<CallWarning>,
-) {
-    val encoding = queryParams["encoding"]?.lowercase().orEmpty()
-    val value = deepgramQueryValue(bitRate)
-    val number = value.toIntOrNull()
-    when {
-        encoding == "mp3" && number !in setOf(32000, 48000) ->
-            warnings += CallWarning("unsupported", "Encoding \"mp3\" only supports bit rates: 32000, 48000. Bit rate $value was ignored.")
-        encoding == "opus" && (number == null || number < 4000 || number > 650000) ->
-            warnings += CallWarning("unsupported", "Encoding \"opus\" supports bit rates between 4000 and 650000. Bit rate $value was ignored.")
-        encoding == "aac" && (number == null || number < 4000 || number > 192000) ->
-            warnings += CallWarning("unsupported", "Encoding \"aac\" supports bit rates between 4000 and 192000. Bit rate $value was ignored.")
-        encoding in setOf("linear16", "mulaw", "alaw", "flac") ->
-            warnings += CallWarning("unsupported", "Encoding \"$encoding\" does not support bit_rate parameter. Bit rate $value was ignored.")
-        else -> queryParams["bit_rate"] = value
-    }
-}
-
-private fun deepgramTranscriptionQuery(
-    modelId: String,
-    params: TranscriptionParams,
-): DeepgramTranscriptionArgs {
-    val queryParams = linkedMapOf(
-        "model" to modelId,
-        "diarize" to "true",
-    )
-    val options = deepgramOptions(params.providerOptions)
-    putDeepgramTranscriptionOption(options, "detectEntities", "detect_entities", queryParams)
-    putDeepgramTranscriptionOption(options, "detectLanguage", "detect_language", queryParams)
-    putDeepgramTranscriptionOption(options, "fillerWords", "filler_words", queryParams)
-    putDeepgramTranscriptionOption(options, "language", "language", queryParams)
-    if (!options.containsKey("language")) params.language?.let { queryParams["language"] = it }
-    putDeepgramTranscriptionOption(options, "punctuate", "punctuate", queryParams)
-    putDeepgramTranscriptionOption(options, "redact", "redact", queryParams)
-    putDeepgramTranscriptionOption(options, "search", "search", queryParams)
-    putDeepgramTranscriptionOption(options, "smartFormat", "smart_format", queryParams)
-    putDeepgramTranscriptionOption(options, "summarize", "summarize", queryParams)
-    putDeepgramTranscriptionOption(options, "topics", "topics", queryParams)
-    putDeepgramTranscriptionOption(options, "utterances", "utterances", queryParams)
-    putDeepgramTranscriptionOption(options, "uttSplit", "utt_split", queryParams)
-    putDeepgramTranscriptionOption(options, "diarize", "diarize", queryParams)
-    putDeepgramTranscriptionOption(options, "paragraphs", "paragraphs", queryParams)
-    putDeepgramTranscriptionOption(options, "intents", "intents", queryParams)
-    putDeepgramTranscriptionOption(options, "sentiment", "sentiment", queryParams)
-    putDeepgramTranscriptionOption(options, "replace", "replace", queryParams)
-    putDeepgramTranscriptionOption(options, "keyterm", "keyterm", queryParams)
-    return DeepgramTranscriptionArgs(queryParams = queryParams, warnings = emptyList())
-}
-
-private fun putDeepgramTranscriptionOption(
-    options: JsonObject,
-    source: String,
-    target: String,
-    queryParams: LinkedHashMap<String, String>,
-) {
-    options[source]?.let { queryParams[target] = deepgramQueryValue(it) }
-}
-
-private suspend fun deepgramPostJsonBinary(
-    client: HttpClient,
-    url: String,
-    body: JsonObject,
-    headers: Map<String, String>,
-): DeepgramBinaryResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseDeepgramBinary(url)
-}
-
-private suspend fun deepgramPostBinaryJson(
-    client: HttpClient,
-    url: String,
-    bytes: ByteArray,
-    mediaType: String,
-    headers: Map<String, String>,
-): HttpJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.parse(mediaType))
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(bytes)
-    }
-    return response.toJsonResponse(url = url, errorMessage = ::deepgramErrorMessage)
-}
-
-private suspend fun HttpResponse.parseDeepgramBinary(url: String): DeepgramBinaryResponse {
-    val bytes = bodyAsBytes()
-    val headers = flattenedHeaders()
-    if (status.value !in 200..299) {
-        val raw = bytes.decodeToString()
-        val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
-        throw apiCallError(
-            url = url,
-            statusCode = status.value,
-            rawBody = raw,
-            headers = headers,
-            message = deepgramErrorMessage(status.value, parsed, raw),
-        )
-    }
-    return DeepgramBinaryResponse(
-        bytes = bytes,
-        headers = headers,
-    )
-}
-
-private fun deepgramHeaders(settings: DeepgramProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-    val base = linkedMapOf<String, String>()
-    settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Token $it" }
-    base.putAll(settings.headers)
-    base.putAll(callHeaders)
-    return withUserAgentSuffix(base, "ai-sdk/deepgram/$DEEPGRAM_VERSION")
-}
-
-private fun deepgramOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["deepgram"] as? JsonObject ?: JsonObject(emptyMap())
-
-private fun deepgramSampleRateAllowed(encoding: String, sampleRate: Int): Boolean =
-    when (encoding) {
-        "linear16" -> sampleRate in setOf(8000, 16000, 24000, 32000, 48000)
-        "mulaw", "alaw" -> sampleRate in setOf(8000, 16000)
-        "flac" -> sampleRate in setOf(8000, 16000, 22050, 32000, 48000)
-        else -> false
-    }
-
-private fun deepgramSpeechMediaType(queryParams: Map<String, String>): String =
-    when (queryParams["encoding"]) {
-        "linear16", "mulaw", "alaw" -> if (queryParams["container"] == "wav") "audio/wav" else "application/octet-stream"
-        "opus" -> "audio/ogg"
-        "flac" -> "audio/flac"
-        "aac" -> "audio/aac"
-        else -> "audio/mpeg"
-    }
-
-private fun deepgramErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-    val obj = parsed as? JsonObject
-    val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-        ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
-        ?: raw.ifBlank { "request failed" }
-    return "Deepgram request failed ($statusCode): $detail"
-}
-
-private fun deepgramQueryValue(value: JsonElement): String =
-    when (value) {
-        is JsonArray -> value.joinToString(",") { deepgramQueryValue(it) }
-        is JsonPrimitive -> value.contentOrNull.orEmpty()
-        else -> value.toString()
-    }
-
-private fun Map<String, String>.toQueryString(): String =
-    entries.joinToString("&") { (key, value) -> "${urlEncode(key)}=${urlEncode(value)}" }
-
-
-private fun Map<String, String>.headerValue(name: String): String? =
-    entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value

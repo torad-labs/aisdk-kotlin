@@ -1,0 +1,9 @@
+id: no-system-clock-env
+language: kotlin
+severity: error
+rule:
+  any:
+    - pattern: System.currentTimeMillis()
+    - pattern: System.nanoTime()
+    - pattern: System.getenv($$$)
+    - pattern: System.getProperty($$$)

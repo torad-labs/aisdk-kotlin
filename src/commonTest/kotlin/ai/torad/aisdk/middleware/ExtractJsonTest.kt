@@ -1,14 +1,14 @@
 package ai.torad.aisdk.middleware
 
+import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.FinishReason
 import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.MiddlewareCallContext
-import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.Usage
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
-import ai.torad.aisdk.userMessage
+import ai.torad.aisdk.UserMessage
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import app.cash.turbine.test
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -28,9 +28,11 @@ import kotlin.test.assertTrue
 class ExtractJsonTest {
 
     private fun genContext(rawText: String) = MiddlewareCallContext(
-        params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
-        model = mockLanguageModelTextOnly("x"),
-        doGenerate = { LanguageModelResult(rawText, emptyList(), FinishReason.Stop, Usage(1, 1)) },
+        params = LanguageModelCallParams {
+            messages(listOf(UserMessage("x")))
+        },
+        model = MockLanguageModelTextOnly("x"),
+        doGenerate = { LanguageModelResult(rawText, emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
         doStream = { flowOf() },
     )
 
@@ -40,7 +42,7 @@ class ExtractJsonTest {
         val raw = "```json\n{\"a\":1}\n```"
 
         // WHEN
-        val result = extractJsonMiddleware().wrapGenerate(genContext(raw))
+        val result = ExtractJsonMiddleware().wrapGenerate(genContext(raw))
 
         // THEN the fence is stripped; a clean parse is returned verbatim.
         assertEquals("{\"a\":1}", result.text)
@@ -49,7 +51,7 @@ class ExtractJsonTest {
     @Test
     fun `given prose around a complete object when generate-wrapped then only the object remains`() = runTest {
         // WHEN
-        val result = extractJsonMiddleware().wrapGenerate(genContext("Here you go: {\"a\":1} thanks"))
+        val result = ExtractJsonMiddleware().wrapGenerate(genContext("Here you go: {\"a\":1} thanks"))
 
         // THEN both the leading and trailing prose are dropped.
         assertEquals("{\"a\":1}", result.text)
@@ -57,7 +59,7 @@ class ExtractJsonTest {
 
     @Test
     fun `given prose around json when generate-wrapped then content text is rebuilt`() = runTest {
-        val result = extractJsonMiddleware().wrapGenerate(genContext("Here you go: {\"a\":1} thanks"))
+        val result = ExtractJsonMiddleware().wrapGenerate(genContext("Here you go: {\"a\":1} thanks"))
 
         assertEquals("{\"a\":1}", result.text)
         assertEquals(listOf(ContentPart.Text("{\"a\":1}")), result.content)
@@ -67,7 +69,7 @@ class ExtractJsonTest {
     fun `given a truncated object when generate-wrapped then the json is repaired and closed`() = runTest {
         // GIVEN a generation cut off before the closing brace.
         // WHEN
-        val result = extractJsonMiddleware().wrapGenerate(genContext("prefix {\"a\":1"))
+        val result = ExtractJsonMiddleware().wrapGenerate(genContext("prefix {\"a\":1"))
 
         // THEN the repair layer closes it.
         assertEquals("{\"a\":1}", result.text)
@@ -78,7 +80,7 @@ class ExtractJsonTest {
         // Regression: the old no-close path returned the whole text
         // including "Sure! ". The region scan must drop the prefix.
         // WHEN
-        val result = extractJsonMiddleware().wrapGenerate(genContext("Sure! {\"name\":\"a\",\"v\":1"))
+        val result = ExtractJsonMiddleware().wrapGenerate(genContext("Sure! {\"name\":\"a\",\"v\":1"))
 
         // THEN
         assertEquals("{\"name\":\"a\",\"v\":1}", result.text)
@@ -90,7 +92,7 @@ class ExtractJsonTest {
         // inside "}" and silently drops "b". scanBalanced must track string
         // state (mirrors fixJson) so the real closing brace is found.
         // WHEN
-        val result = extractJsonMiddleware().wrapGenerate(genContext("here: {\"a\":\"}\",\"b\":2} done"))
+        val result = ExtractJsonMiddleware().wrapGenerate(genContext("here: {\"a\":\"}\",\"b\":2} done"))
 
         // THEN the whole object — including the trailing "b" — is preserved.
         assertEquals("{\"a\":\"}\",\"b\":2}", result.text)
@@ -99,7 +101,7 @@ class ExtractJsonTest {
     @Test
     fun `given a closing bracket inside a string value when generate-wrapped then the array is not truncated`() = runTest {
         // WHEN a `]` lives inside a string element of an array.
-        val result = extractJsonMiddleware().wrapGenerate(genContext("[\"a]b\",2]"))
+        val result = ExtractJsonMiddleware().wrapGenerate(genContext("[\"a]b\",2]"))
 
         // THEN the array closes at the real bracket, not the in-string one.
         assertEquals("[\"a]b\",2]", result.text)
@@ -109,22 +111,24 @@ class ExtractJsonTest {
     fun `given a truncated object streamed when stream-wrapped then a repaired json delta is emitted`() = runTest {
         // GIVEN a text block whose content is an open object.
         val ctx = MiddlewareCallContext(
-            params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
-            model = mockLanguageModelTextOnly("x"),
-            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            params = LanguageModelCallParams {
+                messages(listOf(UserMessage("x")))
+            },
+            model = MockLanguageModelTextOnly("x"),
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
                 flowOf(
                     StreamEvent.TextStart("t1"),
                     StreamEvent.TextDelta("t1", "result: {\"a\":1"),
                     StreamEvent.TextEnd("t1"),
-                    StreamEvent.StepFinish(0, FinishReason.Stop, Usage(1, 1)),
+                    StreamEvent.StepFinish(0, FinishReason.Stop, Usage.of(1, 1)),
                 )
             },
         )
 
         // WHEN / THEN — at TextEnd the buffered text is repaired and
         // emitted as one delta, then the TextEnd passes through.
-        extractJsonMiddleware().wrapStream(ctx).test {
+        ExtractJsonMiddleware().wrapStream(ctx).test {
             assertIs<StreamEvent.TextStart>(awaitItem())
             val delta = awaitItem()
             assertIs<StreamEvent.TextDelta>(delta)
@@ -138,9 +142,11 @@ class ExtractJsonTest {
     @Test
     fun `given fenced json streamed in split chunks when stream-wrapped then fences are stripped`() = runTest {
         val ctx = MiddlewareCallContext(
-            params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
-            model = mockLanguageModelTextOnly("x"),
-            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            params = LanguageModelCallParams {
+                messages(listOf(UserMessage("x")))
+            },
+            model = MockLanguageModelTextOnly("x"),
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
                 flowOf(
                     StreamEvent.TextStart("t1"),
@@ -155,7 +161,7 @@ class ExtractJsonTest {
             },
         )
 
-        val events = extractJsonMiddleware().wrapStream(ctx).toList()
+        val events = ExtractJsonMiddleware().wrapStream(ctx).toList()
         val text = events.filterIsInstance<StreamEvent.TextDelta>().joinToString("") { it.text }
 
         assertEquals("{\"value\":\"test\"}", text)
@@ -167,9 +173,11 @@ class ExtractJsonTest {
     fun `given large fenced json when stream-wrapped then text streams before text end`() = runTest {
         val largeJson = """{"data":"${"x".repeat(100)}","nested":[0,1,2,3]}"""
         val ctx = MiddlewareCallContext(
-            params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
-            model = mockLanguageModelTextOnly("x"),
-            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            params = LanguageModelCallParams {
+                messages(listOf(UserMessage("x")))
+            },
+            model = MockLanguageModelTextOnly("x"),
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
                 flowOf(
                     StreamEvent.TextStart("t1"),
@@ -181,7 +189,7 @@ class ExtractJsonTest {
             },
         )
 
-        val events = extractJsonMiddleware().wrapStream(ctx).toList()
+        val events = ExtractJsonMiddleware().wrapStream(ctx).toList()
         val firstDeltaIndex = events.indexOfFirst { it is StreamEvent.TextDelta }
         val textEndIndex = events.indexOfFirst { it is StreamEvent.TextEnd }
         val text = events.filterIsInstance<StreamEvent.TextDelta>().joinToString("") { it.text }
@@ -193,9 +201,11 @@ class ExtractJsonTest {
     @Test
     fun `given custom transform when stream-wrapped then text is buffered and transformed at text end`() = runTest {
         val ctx = MiddlewareCallContext(
-            params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
-            model = mockLanguageModelTextOnly("x"),
-            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            params = LanguageModelCallParams {
+                messages(listOf(UserMessage("x")))
+            },
+            model = MockLanguageModelTextOnly("x"),
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
                 flowOf(
                     StreamEvent.TextStart("t1"),
@@ -207,7 +217,7 @@ class ExtractJsonTest {
             },
         )
 
-        val events = extractJsonMiddleware { it.removePrefix("PREFIX").removeSuffix("SUFFIX") }
+        val events = ExtractJsonMiddleware { it.removePrefix("PREFIX").removeSuffix("SUFFIX") }
             .wrapStream(ctx)
             .toList()
 

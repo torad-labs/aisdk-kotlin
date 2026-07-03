@@ -1,7 +1,7 @@
 # @ai-sdk/gladia
 
-- Version: 2.0.35
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/gladia`
+- Version: 2.0.36
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/gladia`
 - Kotlin parity area: `:aisdk-provider-gladia`
 - Current parity status: ported: createGladia/gladia, GladiaProviderSettings, GladiaTranscriptionModelOptions, multipart upload, pre-recorded init, result polling, nested provider-option snake_case mapping, transcript failure/timeout handling, response headers/body, provider metadata, and utterance segment parsing are represented as a Kotlin facade folded into the root module; VERSION is exposed as GLADIA_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/gladia/src/index.ts` | 6 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/gladia/src/index.ts` | 6 |
 
 ## Public Exports
 

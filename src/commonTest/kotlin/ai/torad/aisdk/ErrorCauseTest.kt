@@ -1,6 +1,9 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -22,10 +25,10 @@ class ErrorCauseTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "x",
-            tools = toolSet {},
+            tools = ToolSet<Unit>(),
         )
 
-        val thrown = assertFailsWith<AiSdkException> { agent.generate(prompt = "hi") }
+        val thrown = assertFailsWith<AiSdkException> { agent.generate(prompt = "hi").first() }
         assertEquals(boom, thrown.cause)
     }
 }

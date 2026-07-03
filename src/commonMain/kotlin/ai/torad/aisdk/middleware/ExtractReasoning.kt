@@ -7,6 +7,7 @@ import ai.torad.aisdk.MiddlewareCallContext
 import ai.torad.aisdk.StreamEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlin.jvm.JvmOverloads
 
 /**
  * Extracts XML-tagged reasoning sections from generated text and
@@ -20,7 +21,9 @@ import kotlinx.coroutines.flow.flow
  * models that emit thinking inline rather than via dedicated reasoning
  * channels.
  */
-public fun extractReasoningMiddleware(
+@JvmOverloads
+/** @since 0.3.0-beta01 */
+public fun ExtractReasoningMiddleware(
     tagName: String = "reasoning",
     separator: String = "\n",
     startWithReasoning: Boolean = false,
@@ -57,7 +60,18 @@ public fun extractReasoningMiddleware(
                 cleanedText.append(clean)
             }
         }
-        return raw.copy(text = cleanedText.toString(), content = rebuilt)
+        return LanguageModelResult(
+            text = cleanedText.toString(),
+            toolCalls = raw.toolCalls,
+            finishReason = raw.finishReason,
+            usage = raw.usage,
+            providerMetadata = raw.providerMetadata,
+            content = rebuilt,
+            rawFinishReason = raw.rawFinishReason,
+            warnings = raw.warnings,
+            request = raw.request,
+            response = raw.response,
+        )
     }
 
     override fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> = flow {
@@ -97,15 +111,27 @@ public fun extractReasoningMiddleware(
                         if (!inReasoning) {
                             val openIdx = buffer.indexOf(openTag)
                             if (openIdx < 0) {
-                                val emitLength = buffer.length - buffer.longestSuffixPrefixOf(openTag)
+                                val emitLength = buffer.length - ReasoningScan.longestSuffixPrefixOf(buffer, openTag)
                                 if (emitLength > 0) {
-                                    emit(StreamEvent.TextDelta(event.id, buffer.substring(0, emitLength), event.providerMetadata))
+                                    emit(
+                                        StreamEvent.TextDelta(
+                                            event.id,
+                                            buffer.substring(0, emitLength),
+                                            event.providerMetadata
+                                        )
+                                    )
                                     buffer.deleteRange(0, emitLength)
                                 }
                                 break
                             }
                             if (openIdx > 0) {
-                                emit(StreamEvent.TextDelta(event.id, buffer.substring(0, openIdx), event.providerMetadata))
+                                emit(
+                                    StreamEvent.TextDelta(
+                                        event.id,
+                                        buffer.substring(0, openIdx),
+                                        event.providerMetadata
+                                    )
+                                )
                             }
                             buffer.deleteRange(0, openIdx + openTag.length)
                             val newReasoningId = "reasoning_${++nextReasoningIdx}"
@@ -119,19 +145,35 @@ public fun extractReasoningMiddleware(
                             }
                             val closeIdx = buffer.indexOf(closeTag)
                             if (closeIdx < 0) {
-                                val emitLength = buffer.length - buffer.longestSuffixPrefixOf(closeTag)
+                                val emitLength = buffer.length - ReasoningScan.longestSuffixPrefixOf(buffer, closeTag)
                                 if (emitLength > 0) {
-                                    emit(StreamEvent.ReasoningDelta(rid, buffer.substring(0, emitLength), event.providerMetadata))
+                                    emit(
+                                        StreamEvent.ReasoningDelta(
+                                            rid,
+                                            buffer.substring(0, emitLength),
+                                            event.providerMetadata
+                                        )
+                                    )
                                     buffer.deleteRange(0, emitLength)
                                 }
                                 break
                             }
                             if (closeIdx > 0) {
-                                emit(StreamEvent.ReasoningDelta(rid, buffer.substring(0, closeIdx), event.providerMetadata))
+                                emit(
+                                    StreamEvent.ReasoningDelta(
+                                        rid,
+                                        buffer.substring(0, closeIdx),
+                                        event.providerMetadata
+                                    )
+                                )
                             }
                             emit(StreamEvent.ReasoningEnd(rid, event.providerMetadata))
                             buffer.deleteRange(0, closeIdx + closeTag.length)
-                            if (separator.isNotEmpty()) emit(StreamEvent.TextDelta(event.id, separator, event.providerMetadata))
+                            if (separator.isNotEmpty()) {
+                                emit(
+                                    StreamEvent.TextDelta(event.id, separator, event.providerMetadata)
+                                )
+                            }
                             inReasoning = false
                             reasoningId = null
                         }
@@ -141,7 +183,30 @@ public fun extractReasoningMiddleware(
                     emitBufferedText(event.id)
                     emit(event)
                 }
-                else -> {
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.TextStart,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.Data,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                is StreamEvent.Finish,
+                StreamEvent.Abort,
+                is StreamEvent.Error,
+                is StreamEvent.Raw,
+                -> {
                     emitBufferedText(lastTextId)
                     emit(event)
                 }
@@ -167,18 +232,24 @@ public fun extractReasoningMiddleware(
     }
 }
 
-private fun StringBuilder.longestSuffixPrefixOf(value: String): Int {
-    val maxLength = minOf(length, value.length - 1)
-    for (candidateLength in maxLength downTo 1) {
-        val suffixStart = length - candidateLength
-        var matches = true
-        for (i in 0 until candidateLength) {
-            if (this[suffixStart + i] != value[i]) {
-                matches = false
-                break
+internal object ReasoningScan {
+    /**
+     * Length of the longest suffix of [builder] that is also a (strict) prefix of [value].
+     * Used to hold back a partial tag match that may complete on the next stream delta.
+     */
+    fun longestSuffixPrefixOf(builder: StringBuilder, value: String): Int {
+        val maxLength = minOf(builder.length, value.length - 1)
+        for (candidateLength in maxLength downTo 1) {
+            val suffixStart = builder.length - candidateLength
+            var matches = true
+            for (i in 0 until candidateLength) {
+                if (builder[suffixStart + i] != value[i]) {
+                    matches = false
+                    break
+                }
             }
+            if (matches) return candidateLength
         }
-        if (matches) return candidateLength
+        return 0
     }
-    return 0
 }

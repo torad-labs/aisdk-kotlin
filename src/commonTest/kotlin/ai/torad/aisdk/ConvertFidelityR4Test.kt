@@ -1,9 +1,10 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.ui.ModelMessageConversion.convertToModelMessages
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.convertToModelMessages
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
@@ -38,11 +39,15 @@ class ConvertFidelityR4Test {
             UIMessage(
                 id = "a1",
                 role = UIMessageRole.Assistant,
-                parts = listOf(UIMessagePart.Text("hi", providerMetadata = meta)),
+                parts = listOf(UIMessagePart.Text("hi", providerMetadata = ProviderMetadata.Raw(JsonObject(meta)))),
             ),
         )
         val text = convertToModelMessages(ui).single().content.single() as ContentPart.Text
-        assertEquals(meta, text.providerMetadata, "providerMetadata preserved on round-trip")
+        assertEquals(
+            ProviderMetadata.Raw(JsonObject(meta)),
+            text.providerMetadata,
+            "providerMetadata preserved on round-trip"
+        )
     }
 
     @Test
@@ -79,5 +84,7 @@ class ConvertFidelityR4Test {
         val source = convertToModelMessages(ui).single().content.single() as ContentPart.Source
         assertEquals("application/pdf", source.mediaType)
         assertEquals("spec.pdf", source.filename)
+        // sourceId must survive the round-trip so source identity isn't lost on resume.
+        assertEquals("s1", source.sourceId)
     }
 }

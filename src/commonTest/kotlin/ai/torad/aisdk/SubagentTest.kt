@@ -1,15 +1,15 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.MockLanguageModel
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 
 /**
  * Invariant I-10 — a tool that wraps a subagent must propagate the
@@ -24,7 +24,7 @@ class SubagentTest {
     fun `subagent_tool_receives_parent_abortSignal`() = runTest {
         var observedSignal: AbortSignal? = null
 
-        val subagentTool = tool<SubInput, String, Unit>(
+        val subagentTool = Tool<SubInput, String, Unit>(
             name = "subagent",
             description = "delegates to a subagent",
             inputSerializer = serializer(),
@@ -37,16 +37,16 @@ class SubagentTest {
 
         val controller = AbortController()
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "subagent",
-                toolInput = mockToolInput("text" to "hello"),
+                toolInput = MockToolInput("text" to "hello"),
                 finalText = "done",
             ),
             instructions = "x",
-            tools = toolSetOf(subagentTool),
+            tools = ToolSet(subagentTool),
         )
 
-        agent.generate("go", abortSignal = controller.signal)
+        agent.generate("go", abortSignal = controller.signal).first()
 
         assertTrue(observedSignal != null, "subagent received an abort signal")
         assertEquals(controller.signal, observedSignal, "exact same signal object — propagation, not copy")

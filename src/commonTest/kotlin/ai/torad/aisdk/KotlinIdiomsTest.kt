@@ -1,24 +1,21 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
-import ai.torad.aisdk.providers.anthropic
-import ai.torad.aisdk.providers.openai
+import ai.torad.aisdk.AbortSignals.asAbortSignal
+import ai.torad.aisdk.AgentSessions.session
+import ai.torad.aisdk.GeneratedFiles.bytes
+import ai.torad.aisdk.GeneratedFiles.fileData
+import ai.torad.aisdk.TypedJsonOps.decodeAs
+import ai.torad.aisdk.TypedJsonOps.decodeProviderMetadata
+import ai.torad.aisdk.TypedJsonOps.decodeValue
+import ai.torad.aisdk.TypedJsonOps.providerMetadataAs
+import ai.torad.aisdk.TypedJsonOps.putJson
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
+import ai.torad.aisdk.ui.UIMessageMetadata.metadataAs
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.dataAs
-import ai.torad.aisdk.ui.metadataAs
-import ai.torad.aisdk.ui.outputAs
 import kotlinx.coroutines.Job
-import kotlin.test.Test
-import kotlin.test.assertContentEquals
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -27,6 +24,14 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class KotlinIdiomsTest {
 
@@ -44,7 +49,8 @@ class KotlinIdiomsTest {
 
     @Test
     fun `provider option builder creates nested provider maps`() {
-        val settings = callSettings {
+        val settings = CallSettings {
+            maxRetries(0)
             providerOptions {
                 provider("openai") {
                     put("reasoningEffort", JsonPrimitive("high"))
@@ -53,14 +59,15 @@ class KotlinIdiomsTest {
             }
         }
 
-        assertEquals("enabled", settings.providerOptions["trace"]?.jsonPrimitive?.content)
-        val openai = assertIs<JsonObject>(settings.providerOptions["openai"])
+        assertEquals(0, settings.maxRetries)
+        assertEquals("enabled", settings.providerOptions.toMap()["trace"]?.jsonPrimitive?.content)
+        val openai = assertIs<JsonObject>(settings.providerOptions.toMap()["openai"])
         assertEquals("high", openai["reasoningEffort"]?.jsonPrimitive?.content)
     }
 
     @Test
     fun `provider option builder accepts typed serializable payloads`() {
-        val settings = callSettings {
+        val settings = CallSettings {
             providerOptions {
                 provider("openai", ProviderTuning("high"))
                 provider("anthropic") {
@@ -70,15 +77,18 @@ class KotlinIdiomsTest {
             }
         }
 
-        assertEquals("high", settings.providerOptions.decodeProviderMetadata<ProviderTuning>("openai")?.reasoningEffort)
-        assertEquals("sampled", settings.providerOptions.decodeValue<ProviderTuning>("trace")?.reasoningEffort)
-        val anthropic = assertIs<JsonObject>(settings.providerOptions["anthropic"])
+        assertEquals(
+            "high",
+            settings.providerOptions.toMap().decodeProviderMetadata<ProviderTuning>("openai")?.reasoningEffort
+        )
+        assertEquals("sampled", settings.providerOptions.toMap().decodeValue<ProviderTuning>("trace")?.reasoningEffort)
+        val anthropic = assertIs<JsonObject>(settings.providerOptions.toMap()["anthropic"])
         assertEquals("read-write", anthropic["cache"]?.decodeAs<ProviderTuning>()?.reasoningEffort)
     }
 
     @Test
     fun `output exposes structured schema while preserving schema text`() {
-        val output = outputObj<Recipe>(serializer(), name = "Recipe")
+        val output = OutputObj<Recipe>(serializer(), name = "Recipe")
 
         assertEquals("object", output.schema.jsonObject["type"]?.jsonPrimitive?.content)
         assertEquals(output.schema.toString(), output.schemaJson)
@@ -99,39 +109,44 @@ class KotlinIdiomsTest {
 
     @Test
     fun `tool set builder infers serializers and rejects duplicate tool names`() {
-        val tools = toolSet<Unit> {
-            tool<WeatherInput, WeatherOutput>(
+        val tools = ToolSet(
+            Tool<WeatherInput, WeatherOutput, Unit>(
                 name = "weather",
                 description = "Get weather.",
             ) { input ->
                 WeatherOutput(temperature = input.city.length)
             }
-        }
+        )
 
         val descriptor = tools.descriptors.single()
         assertEquals("weather", descriptor.name)
         assertEquals("object", descriptor.parametersSchema.jsonObject["type"]?.jsonPrimitive?.content)
 
         assertFailsWith<IllegalArgumentException> {
-            toolSet<Unit> {
-                add(tools.find("weather") ?: error("missing tool"))
-                add(tools.find("weather") ?: error("missing tool"))
-            }
+            val t = tools.find("weather") ?: error("missing tool")
+            ToolSet(t, t)
         }
     }
 
     @Test
     fun `file data wrappers convert to existing generated file shapes`() {
         val bytes = byteArrayOf(1, 2, 3)
-        val generated = generatedFile(
+        val generated = GeneratedFile(
             FileData.Bytes(bytes, mediaType = "application/octet-stream", filename = "data.bin"),
         )
 
         assertEquals("application/octet-stream", generated.mediaType)
         assertEquals("data.bin", generated.filename)
         assertContentEquals(bytes, generated.bytes())
+        bytes[0] = 9
+        assertContentEquals(byteArrayOf(1, 2, 3), generated.bytes())
 
-        val remote = generatedFile(FileData.Url("https://example.com/image.png", mediaType = "image/png"))
+        val fileData = FileData.Bytes(byteArrayOf(4, 5, 6))
+        val exposed = fileData.toByteArray()
+        exposed[0] = 0
+        assertContentEquals(byteArrayOf(4, 5, 6), fileData.toByteArray())
+
+        val remote = GeneratedFile(FileData.Url("https://example.com/image.png", mediaType = "image/png"))
         assertEquals("", remote.base64)
         assertEquals("https://example.com/image.png", remote.url)
         assertIs<FileData.Url>(remote.fileData())
@@ -140,9 +155,9 @@ class KotlinIdiomsTest {
     @Test
     fun `agent session uses caller scope and records generated state`() = runTest {
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("hello"),
+            model = MockLanguageModelTextOnly("hello"),
             instructions = "Be brief.",
-            tools = toolSet {},
+            tools = ToolSet<Unit>(),
         )
         val session = agent.session(this)
 
@@ -159,9 +174,9 @@ class KotlinIdiomsTest {
     @Test
     fun `agent session can collect streaming state in caller scope`() = runTest {
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("hello"),
+            model = MockLanguageModelTextOnly("hello"),
             instructions = "Be brief.",
-            tools = toolSet {},
+            tools = ToolSet<Unit>(),
         )
         val session = agent.session(this)
 
@@ -186,11 +201,13 @@ class KotlinIdiomsTest {
 
     @Test
     fun `metadata helpers decode provider payloads without raw json plumbing`() {
-        val metadata = mapOf("mock" to encodeJsonElement(ProviderTuning("cached")))
+        val metadata = ProviderMetadata.Raw(
+            JsonObject(mapOf("mock" to TypedJsonOps.encodeJsonElement(ProviderTuning("cached"))))
+        )
         val result = LanguageModelResult(
             text = "ok",
             finishReason = FinishReason.Stop,
-            usage = Usage(promptTokens = 1, completionTokens = 1),
+            usage = Usage.of(promptTokens = 1, completionTokens = 1),
             providerMetadata = metadata,
             content = listOf(ContentPart.Text("ok", providerMetadata = metadata)),
         )
@@ -203,7 +220,7 @@ class KotlinIdiomsTest {
 
     @Test
     fun `ui helpers decode typed metadata data and tool payloads`() {
-        val output = encodeJsonElement(WeatherOutput(temperature = 72))
+        val output = TypedJsonOps.encodeJsonElement(WeatherOutput(temperature = 72))
         val part = UIMessagePart.ToolUI(
             toolCallId = "call_1",
             toolName = "weather",
@@ -215,11 +232,11 @@ class KotlinIdiomsTest {
             id = "m1",
             role = UIMessageRole.Assistant,
             parts = listOf(part, data),
-            metadata = mapOf("mock" to encodeJsonElement(ProviderTuning("visible"))),
+            metadata = mapOf("mock" to TypedJsonOps.encodeJsonElement(ProviderTuning("visible"))),
         )
 
         assertEquals(72, part.outputAs<WeatherOutput>()?.temperature)
-        assertEquals(72, outputAs(part, serializer<WeatherOutput>())?.temperature)
+        assertEquals(72, part.outputAs(serializer<WeatherOutput>())?.temperature)
         assertEquals(72, data.dataAs<WeatherOutput>().temperature)
         assertEquals("visible", message.metadataAs<ProviderTuning>("mock")?.reasoningEffort)
     }

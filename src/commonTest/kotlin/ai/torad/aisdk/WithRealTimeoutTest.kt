@@ -20,7 +20,7 @@ class WithRealTimeoutTest {
         // A real-time delay far longer than a short real-time timeout must trip,
         // even though under runTest virtual time the delay would be "instant".
         assertFailsWith<TimeoutCancellationException> {
-            withRealTimeout(timeoutMs = 50) {
+            HttpTransport.withRealTimeout(timeoutMs = 50) {
                 delay(10_000)
                 "never reached"
             }
@@ -31,7 +31,7 @@ class WithRealTimeoutTest {
     fun `returns the value when the block finishes within the deadline`() = runTest {
         // A generous real-time budget around near-instant work returns normally —
         // i.e. a healthy fast request is never spuriously cancelled.
-        val result = withRealTimeout(timeoutMs = 10_000) { "ok" }
+        val result = HttpTransport.withRealTimeout(timeoutMs = 10_000) { "ok" }
         assertEquals("ok", result)
     }
 }

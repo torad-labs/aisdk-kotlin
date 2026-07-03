@@ -1,9 +1,7 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -12,6 +10,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * Validates `experimental_repairToolCall` (gap #4 from
@@ -35,7 +37,7 @@ class ToolCallRepairTest {
         runTest {
             // GIVEN: a tool requiring `{city: String}`; the model emits
             // `{location: String}` instead.
-            val weatherTool = tool<WeatherIn, String, Unit>(
+            val weatherTool = Tool<WeatherIn, String, Unit>(
                 name = "weather",
                 description = "Get weather",
                 inputSerializer = serializer(),
@@ -43,17 +45,24 @@ class ToolCallRepairTest {
             ) { input -> "sunny in ${input.city}" }
             val malformed: JsonObject = buildJsonObject { put("location", JsonPrimitive("Paris")) }
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformed,
                     finalText = "done",
                 ),
                 instructions = "",
-                tools = toolSetOf(weatherTool),
+                tools = ToolSet(weatherTool),
                 experimental_repairToolCall = { failedCall, _, _, _ ->
                     // Rewrite `location` → `city`.
                     val original = failedCall.input.jsonObject["location"]?.jsonPrimitive?.content ?: ""
-                    failedCall.copy(input = buildJsonObject { put("city", JsonPrimitive(original)) })
+                    ContentPart.ToolCall(
+                        toolCallId = failedCall.toolCallId,
+                        toolName = failedCall.toolName,
+                        input = buildJsonObject { put("city", JsonPrimitive(original)) },
+                        providerExecuted = failedCall.providerExecuted,
+                        dynamic = failedCall.dynamic,
+                        providerMetadata = failedCall.providerMetadata,
+                    )
                 },
             )
 
@@ -77,7 +86,7 @@ class ToolCallRepairTest {
     fun `given malformed args and no repair function when invoked then the loop emits ToolError`() =
         runTest {
             // GIVEN
-            val weatherTool = tool<WeatherIn, String, Unit>(
+            val weatherTool = Tool<WeatherIn, String, Unit>(
                 name = "weather",
                 description = "Get weather",
                 inputSerializer = serializer(),
@@ -85,13 +94,13 @@ class ToolCallRepairTest {
             ) { input -> "sunny in ${input.city}" }
             val malformed: JsonObject = buildJsonObject { put("location", JsonPrimitive("Paris")) }
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformed,
                     finalText = "done",
                 ),
                 instructions = "",
-                tools = toolSetOf(weatherTool),
+                tools = ToolSet(weatherTool),
                 // experimental_repairToolCall = null (default)
             )
 
@@ -110,7 +119,7 @@ class ToolCallRepairTest {
     fun `given malformed args and a repair function returning null when invoked then the loop emits ToolError`() =
         runTest {
             // GIVEN
-            val weatherTool = tool<WeatherIn, String, Unit>(
+            val weatherTool = Tool<WeatherIn, String, Unit>(
                 name = "weather",
                 description = "Get weather",
                 inputSerializer = serializer(),
@@ -119,13 +128,13 @@ class ToolCallRepairTest {
             val malformed: JsonObject = buildJsonObject { put("location", JsonPrimitive("Paris")) }
             var repairInvoked = false
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformed,
                     finalText = "done",
                 ),
                 instructions = "",
-                tools = toolSetOf(weatherTool),
+                tools = ToolSet(weatherTool),
                 experimental_repairToolCall = { _, _, _, _ ->
                     repairInvoked = true
                     null // give up
@@ -148,5 +157,104 @@ class ToolCallRepairTest {
                 events.filterIsInstance<StreamEvent.ToolResult>().size,
                 "no ToolResult when repair gives up",
             )
+        }
+
+    @Test
+    fun `given a repair reroutes to another tool when executed then the recorded result uses the repaired tool name`() =
+        runTest {
+            val weatherTool = Tool<WeatherIn, String, Unit>(
+                name = "weather",
+                description = "Get weather",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+            ) { input -> "weather:${input.city}" }
+            val forecastTool = Tool<WeatherIn, String, Unit>(
+                name = "forecast",
+                description = "Get forecast",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+            ) { input -> "forecast:${input.city}" }
+            val agent = TestToolLoopAgent<Unit, String>(
+                model = MockLanguageModelToolThenText(
+                    toolName = "weather",
+                    toolInput = buildJsonObject { put("location", JsonPrimitive("Paris")) },
+                    finalText = "done",
+                ),
+                instructions = "",
+                tools = ToolSet(weatherTool, forecastTool),
+                experimental_repairToolCall = { failedCall, _, _, _ ->
+                    ContentPart.ToolCall(
+                        toolCallId = failedCall.toolCallId,
+                        toolName = "forecast",
+                        input = buildJsonObject { put("city", JsonPrimitive("Paris")) },
+                        providerExecuted = failedCall.providerExecuted,
+                        dynamic = failedCall.dynamic,
+                        providerMetadata = failedCall.providerMetadata,
+                    )
+                },
+            )
+
+            val result = agent.generate(prompt = "weather?").first()
+            val toolResult = assertIs<ContentPart.ToolResult>(
+                result.messages.flatMap { it.content }.last { it is ContentPart.ToolResult },
+            )
+            val stepToolResults = result.steps.flatMap { it.toolResults }
+
+            assertEquals("forecast", toolResult.toolName)
+            assertEquals(
+                "forecast",
+                stepToolResults.single().toolName,
+                "the persisted step result must reflect the repaired tool name",
+            )
+        }
+
+    @Test
+    fun `given a repair reroutes to a failing tool then the recorded error uses the repaired tool name`() =
+        runTest {
+            val weatherTool = Tool<WeatherIn, String, Unit>(
+                name = "weather",
+                description = "Get weather",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+            ) { input -> "weather:${input.city}" }
+            val forecastTool = Tool<WeatherIn, String, Unit>(
+                name = "forecast",
+                description = "Get forecast",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+            ) {
+                throw AgentError.ToolExecution(
+                    toolName = "forecast",
+                    toolCallId = "dup",
+                    executorError = InvalidResponseDataError(null, "forecast unavailable"),
+                )
+            }
+            val agent = TestToolLoopAgent<Unit, String>(
+                model = MockLanguageModelToolThenText(
+                    toolName = "weather",
+                    toolInput = buildJsonObject { put("location", JsonPrimitive("Paris")) },
+                    finalText = "done",
+                ),
+                instructions = "",
+                tools = ToolSet(weatherTool, forecastTool),
+                experimental_repairToolCall = { failedCall, _, _, _ ->
+                    ContentPart.ToolCall(
+                        toolCallId = failedCall.toolCallId,
+                        toolName = "forecast",
+                        input = buildJsonObject { put("city", JsonPrimitive("Paris")) },
+                        providerExecuted = failedCall.providerExecuted,
+                        dynamic = failedCall.dynamic,
+                        providerMetadata = failedCall.providerMetadata,
+                    )
+                },
+            )
+
+            val result = agent.generate(prompt = "weather?").first()
+            val toolResult = assertIs<ContentPart.ToolResult>(
+                result.messages.flatMap { it.content }.last { it is ContentPart.ToolResult },
+            )
+
+            assertEquals("forecast", toolResult.toolName)
+            assertTrue(toolResult.isError, "the persisted repaired-tool failure must be marked as an error")
         }
 }

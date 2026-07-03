@@ -8,12 +8,12 @@ contracts can back Compose, SwiftUI, terminal apps, web servers, and tests.
 
 ```kotlin
 val transport = DirectChatTransport { request ->
-    streamToUiMessages(
+    StreamToUiMessages(
         events = agent.stream(
-            messages = convertToModelMessages(request.messages),
+            messages = ModelMessageConversion.convertToModelMessages(request.messages),
             options = currentContext,
         ),
-        assistantMessageId = getResponseUiMessageId(request.messages),
+        assistantMessageId = UiMessageStreams.getResponseUiMessageId(request.messages),
     )
 }
 
@@ -29,7 +29,7 @@ model call.
 ## StateFlow Chat Session
 
 ```kotlin
-val session = chatSession(
+val session = ChatSession(
     id = "support",
     transport = transport,
 )
@@ -59,7 +59,7 @@ status, errors, regeneration, stop, and resume.
 Validate messages before storage:
 
 ```kotlin
-val checked = safeValidateUIMessages(session.state.value.messages)
+val checked = UiMessageStreams.safeValidateUIMessages(session.state.value.messages)
 
 if (checked is SafeValidateUIMessagesResult.Success) {
     chatStore.save(chatId = session.id, messages = checked.messages)
@@ -96,7 +96,7 @@ fun renderPart(part: UIMessagePart) {
 For larger apps, register typed renderers:
 
 ```kotlin
-val handlers = buildToolPartHandlerRegistry<Node>(
+val handlers = ToolPartHandlerRegistry<Node>(
     fallback = { part -> UnknownToolNode(part.toolName) },
 ) {
     register(searchDocs) { invocation ->
@@ -141,13 +141,18 @@ call unless the host has a real stream-resume backend.
 Use `TextStreamChatTransport` when a backend only emits text:
 
 ```kotlin
-val transport = TextStreamChatTransport { request ->
-    streamText(
-        model = model,
-        messages = convertToModelMessages(request.messages),
-    ).filterIsInstance<StreamEvent.TextDelta>()
+val transport = TextStreamChatTransport(handler = { request ->
+    TextGenerator(model)
+        .stream(
+            GenerationInput.Messages(
+                GenerationInput.NonEmptyMessages.from(
+                    ModelMessageConversion.convertToModelMessages(request.messages),
+                ),
+            ),
+        )
+        .filterIsInstance<StreamEvent.TextDelta>()
         .map { it.text }
-}
+})
 ```
 
 This is useful for simple demos and CLI-like surfaces. Use UI message streams
@@ -168,6 +173,6 @@ when you need tools, files, sources, and reasoning.
 - [Completion And Object UI](completion-and-object-ui.md)
 - [Streaming](streaming.md)
 - [Advanced Streaming](advanced-streaming.md)
-- [Framework Facades](framework-facades.md)
+- [Framework Host Integration](framework-facades.md)
 - [Agents](agents.md)
 - [Tools](tools.md)

@@ -9,7 +9,7 @@ Define tools near the service they wrap, then compose them into agents.
 
 ```kotlin
 fun searchDocsTool(search: SearchService) =
-    tool<SearchInput, List<SearchResult>, AppContext>(
+    Tool<SearchInput, List<SearchResult>, AppContext>(
         name = "searchDocs",
         description = "Search product documentation.",
         inputSerializer = serializer(),
@@ -26,16 +26,19 @@ fun supportAgent(
     model: LanguageModel,
     search: SearchService,
     tickets: TicketService,
-): Agent<AppContext, String> = ToolLoopAgent(
-    model = model,
-    instructions = "Answer using current product context.",
-    tools = toolSetOf(
-        searchDocsTool(search),
-        createTicketTool(tickets),
-    ),
-    stopWhen = stepCountIs(8),
-    callOptionsSchema = serializer<AppContext>(),
+): Agent<AppContext, String> = SupportAgent(
+    model,
+    ToolSet(searchDocsTool(search), createTicketTool(tickets)),
 )
+
+private class SupportAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Answer using current product context.",
+        tools = tools,
+        stopWhen = StepCountIs(8),
+        callOptionsSchema = serializer<AppContext>(),
+    )
 ```
 
 ## Keep Call Sites Boring
@@ -91,7 +94,7 @@ Use `toModelOutput` when the UI needs a rich result but the model only needs a
 short summary for the next step.
 
 ```kotlin
-val searchDocs = tool<SearchInput, List<SearchResult>, AppContext>(
+val searchDocs = Tool<SearchInput, List<SearchResult>, AppContext>(
     name = "searchDocs",
     description = "Search product documentation.",
     inputSerializer = serializer(),
@@ -194,15 +197,15 @@ Streams are `Flow` values. Do not fan out one provider stream to several
 collectors unless you intentionally buffer or replay it.
 
 ```kotlin
-val result = streamTextResult(model = model, prompt = prompt)
+val result = TextGenerator(model).streamResult(GenerationInput.Prompt(prompt))
 
 val uiJob = scope.launch {
     result.fullStream.collect { event -> render(event) }
 }
 ```
 
-Use `streamTextResult` when adapters need a replayable stream. Use a single
-collection for the low-level `streamText` flow.
+Use `TextGenerator.streamResult` when adapters need a replayable stream. Use a
+single collection for a plain `TextGenerator.stream` flow.
 
 ## Keep Security Outside Model Choice
 
@@ -210,7 +213,7 @@ Authorization, tenancy, policy, and destructive-action checks must run in
 normal application code.
 
 ```kotlin
-val deleteRecord = tool<DeleteInput, DeleteResult, AppContext>(
+val deleteRecord = Tool<DeleteInput, DeleteResult, AppContext>(
     name = "deleteRecord",
     description = "Delete one record after host authorization.",
     needsApproval = { _, _ -> true },

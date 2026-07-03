@@ -1,19 +1,23 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import ai.torad.aisdk.ui.CreateUiMessageStream
+import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.streamToUiMessages
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Validates the v6-aligned UIMessage shape additions from
@@ -81,17 +85,17 @@ class UIMessageShapeTest {
             StreamEvent.TextStart("t1"),
             StreamEvent.TextDelta("t1", "calling tool…"),
             StreamEvent.TextEnd("t1"),
-            StreamEvent.StepFinish(1, FinishReason.ToolCalls, Usage(1, 2)),
+            StreamEvent.StepFinish(1, FinishReason.ToolCalls, Usage.of(1, 2)),
             StreamEvent.StepStart(stepNumber = 2),
             StreamEvent.TextStart("t2"),
             StreamEvent.TextDelta("t2", "got result, here's the answer"),
             StreamEvent.TextEnd("t2"),
-            StreamEvent.StepFinish(2, FinishReason.Stop, Usage(3, 4)),
-            StreamEvent.Finish(totalSteps = 2, finishReason = FinishReason.Stop, usage = Usage(4, 6)),
+            StreamEvent.StepFinish(2, FinishReason.Stop, Usage.of(3, 4)),
+            StreamEvent.Finish(totalSteps = 2, finishReason = FinishReason.Stop, usage = Usage.of(4, 6)),
         )
 
         // WHEN
-        val snapshots = drainAllItems(streamToUiMessages(events, assistantMessageId = "asst_3"))
+        val snapshots = drainAllItems(StreamToUiMessages(events, assistantMessageId = "asst_3"))
         val finalParts = snapshots.last().parts
 
         // THEN
@@ -103,6 +107,29 @@ class UIMessageShapeTest {
         assertEquals(2, textParts.size)
         assertEquals("calling tool…", textParts[0].text)
         assertEquals("got result, here's the answer", textParts[1].text)
+    }
+
+    @Test
+    fun `given an errored ToolResult when converted then it renders as OutputError not a success card`() = runTest {
+        // An MCP-style tool that returns isError=true WITHOUT being ExecutionDenied must render as
+        // OutputError with surfaced error text — not a green OutputAvailable card (error-masking).
+        val events = flowOf(
+            StreamEvent.StreamStart(),
+            StreamEvent.ToolCall("call_1", "search", JsonPrimitive("{}")),
+            StreamEvent.ToolResult(
+                toolCallId = "call_1",
+                toolName = "search",
+                outputJson = JsonPrimitive("boom: upstream 500"),
+                output = ToolResultOutput.Error("boom: upstream 500"),
+            ),
+            StreamEvent.Finish(1, FinishReason.Stop, Usage()),
+        )
+
+        val tool = drainAllItems(StreamToUiMessages(events, assistantMessageId = "asst_err"))
+            .last().parts.filterIsInstance<UIMessagePart.ToolUI>().single()
+
+        assertEquals(ToolCallState.OutputError, tool.state, "errored ToolResult must not render as OutputAvailable")
+        assertNotNull(tool.error, "errored ToolResult must surface error text")
     }
 
     @Test
@@ -129,5 +156,16 @@ class UIMessageShapeTest {
         val isDynamic = part is UIMessagePart.DynamicToolUI
         val isStatic = part is UIMessagePart.ToolUI
         assertTrue(isDynamic && !isStatic, "renderer can distinguish dynamic vs static tool parts")
+    }
+
+    @Test
+    fun `createUiMessageStream rethrows cancellation without emitting an error message`() = runTest {
+        val stream = CreateUiMessageStream {
+            throw CancellationException("cancelled")
+        }
+
+        assertFailsWith<CancellationException> {
+            stream.toList()
+        }
     }
 }

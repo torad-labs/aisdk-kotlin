@@ -22,7 +22,14 @@ local.properties
 *.litertlm
 
 # Claude Code: ignore local session state (directives, plans, todos),
-# but DO track committed skills under .claude/skills/.
+# but DO track committed skills and this repo's local hook policy.
 .claude/**
+!.claude/settings.json
+!.claude/hooks/
+!.claude/hooks/**
+.claude/hooks/**/__pycache__/
+.claude/hooks/**/*.pyc
+.codex/hooks/**/__pycache__/
+.codex/hooks/**/*.pyc
 !.claude/skills/
 !.claude/skills/**

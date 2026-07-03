@@ -1,16 +1,16 @@
 # @ai-sdk/provider-utils
 
-- Version: 4.0.29
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/provider-utils`
+- Version: 4.0.30
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/provider-utils`
 - Kotlin parity area: `:aisdk-provider-utils`
-- Current parity status: ported: schema/asSchema/lazySchema/zodSchema/valibotSchema adapters, validation helpers, dynamicTool/tool/provider-executed tool factories, provider tool factories, executeTool, tool-name mapping, id generation, headers/user-agent helpers, parseJsonEventStream, base64/Uint8Array aliases, media/download URL validation, loadApiKey/loadSetting host-env helpers, provider option parsing, retry/delay-adjacent utilities, and test stream/mock helpers are represented as KMP utilities folded into the root module; v6.0.204 adds the SSRF helpers fetchWithValidatedRedirects and isSameOrigin (download/redirect URL validation, adjacent to the existing validateDownloadUrl/isUrlSupported surface) plus isBrowserRuntime, a browser-JS runtime probe not applicable to the JVM/Android/Native/iOS targets
+- Current parity status: ported: Schema/asSchema/lazySchema-style schema wrappers, validation helpers, dynamicTool/tool/provider-executed tool factories, provider tool factories, executeTool, tool-name mapping, id generation, headers/user-agent helpers, parseJsonEventStream, base64/Uint8Array aliases, media/download URL validation, loadApiKey/loadSetting host-env helpers, provider option parsing, retry/delay-adjacent utilities, and test stream/mock helpers are represented as KMP utilities folded into the root module; TypeScript validation-library adapters are package-specific and not claimed as public Kotlin symbols; v6.0.204 adds the SSRF helpers fetchWithValidatedRedirects and isSameOrigin (download/redirect URL validation, adjacent to the existing validateDownloadUrl/isUrlSupported surface) plus isBrowserRuntime, a browser-JS runtime probe not applicable to the JVM/Android/Native/iOS targets
 
 ## Entrypoints
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/provider-utils/src/index.ts` | 107 |
-| `./test` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/provider-utils/src/test/index.ts` | 7 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/provider-utils/src/index.ts` | 108 |
+| `./test` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/provider-utils/src/test/index.ts` | 7 |
 
 ## Public Exports
 
@@ -19,6 +19,7 @@
 | `asSchema` | value | `src/schema.ts` | `.` |
 | `AssistantContent` | type | `src/types/assistant-model-message.ts` | `.` |
 | `AssistantModelMessage` | type | `src/types/assistant-model-message.ts` | `.` |
+| `cancelResponseBody` | value | `src/cancel-response-body.ts` | `.` |
 | `combineHeaders` | value | `src/combine-headers.ts` | `.` |
 | `convertArrayToAsyncIterable` | value | `src/test/convert-array-to-async-iterable.ts` | `./test` |
 | `convertArrayToReadableStream` | value | `src/test/convert-array-to-readable-stream.ts` | `./test` |

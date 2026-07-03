@@ -1,0 +1,14 @@
+id: no-deferred-wiring-comment
+language: kotlin
+severity: error
+# Catches the "declare the type surface now, wire the producer later" convention
+# that the pipeline x-ray found behind half its data-flow defects: a public
+# event/result/wire field is added with a silent default and a comment admitting
+# it isn't populated yet ("wired ... as a follow-up", "type surface is in place",
+# "the loop hasn't yet wired the field", "back-compat" null). Either wire the
+# producer now or don't declare the field — never ship a permanently-empty seam.
+rule:
+  any:
+    - kind: line_comment
+    - kind: multiline_comment
+  regex: '(?i)(wired|populate[ds]?) .{0,40}(later|follow-?up)|staged in as a follow-?up|type surface is in place|loop hasn.t yet wired|hasn.t yet wired the field|wire[ds]? the field'

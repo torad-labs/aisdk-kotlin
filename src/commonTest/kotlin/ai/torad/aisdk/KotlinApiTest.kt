@@ -1,20 +1,25 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class KotlinApiTest {
 
@@ -25,7 +30,7 @@ class KotlinApiTest {
         private val generateResult: LanguageModelResult = LanguageModelResult(
             text = "ok",
             finishReason = FinishReason.Stop,
-            usage = Usage(promptTokens = 1, completionTokens = 1),
+            usage = Usage.of(promptTokens = 1, completionTokens = 1),
         ),
     ) : LanguageModel {
         override val modelId: String = "test/native"
@@ -44,32 +49,58 @@ class KotlinApiTest {
             emit(StreamEvent.TextStart("t1"))
             emit(StreamEvent.TextDelta("t1", "ok"))
             emit(StreamEvent.TextEnd("t1"))
-            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage.of(promptTokens = 1, completionTokens = 1)))
         }
     }
 
     @Test
     fun `text generation request forwards grouped settings`() = runTest {
-        val providerOptions = mapOf("openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) })
+        val providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to buildJsonObject {
+            put("reasoningEffort", JsonPrimitive("high"))
+        })))
         val model = CapturingModel()
-        val request = TextGenerationRequest(
-            system = "be concise",
-            messages = listOf(userMessage("history")),
-            prompt = "answer",
-            settings = CallSettings(
-                temperature = 0.1f,
-                topP = 0.2f,
-                topK = 3,
-                maxOutputTokens = 200,
-                stopSequences = listOf("</done>"),
-                seed = 42,
-                providerOptions = providerOptions,
-                presencePenalty = 0.4f,
-                frequencyPenalty = 0.5f,
+        val request = TextGenerationRequest.of(
+            input = TextGenerationRequest.Input.messagesWithPrompt(
+                history = TextGenerationRequest.NonEmptyMessages.of(UserMessage("history")),
+                prompt = "answer",
             ),
+            system = "be concise",
+            settings = CallSettings {
+                temperature(0.1f)
+                topP(0.2f)
+                topK(3)
+                maxOutputTokens(200)
+                stopSequences(listOf("</done>"))
+                seed(42)
+                providerOptions(providerOptions)
+                headers(mapOf("X-Request" to "from-settings"))
+                presencePenalty(0.4f)
+                frequencyPenalty(0.5f)
+                maxRetries(4)
+            },
         )
-
-        val result = generateText(model = model, request = request)
+        val msgs = buildList<ModelMessage> {
+            if (request.system != null) add(SystemMessage(request.system))
+            addAll(request.messages)
+        }
+        val s = request.settings
+        val result = TextGenerator(
+            model,
+            CallConfig {
+                temperature(s.temperature)
+                topP(s.topP)
+                topK(s.topK)
+                maxOutputTokens(s.maxOutputTokens)
+                stopSequences(s.stopSequences ?: emptyList())
+                seed(s.seed)
+                providerOptions(s.providerOptions)
+                headers(s.headers)
+                presencePenalty(s.presencePenalty)
+                frequencyPenalty(s.frequencyPenalty)
+                responseFormat(s.responseFormat ?: ResponseFormat.Text)
+                maxRetries(s.maxRetries)
+            },
+        ).generate(GenerationInput.from(prompt = request.prompt, messages = msgs)).first()
 
         assertEquals("ok", result.text)
         val params = assertNotNull(model.generateParams)
@@ -81,47 +112,124 @@ class KotlinApiTest {
         assertEquals(listOf("</done>"), params.stopSequences)
         assertEquals(42, params.seed)
         assertEquals(providerOptions, params.providerOptions)
+        assertEquals(mapOf("X-Request" to "from-settings"), params.headers)
         assertEquals(0.4f, params.presencePenalty)
         assertEquals(0.5f, params.frequencyPenalty)
+        assertEquals(4, request.settings.maxRetries)
     }
 
     @Test
-    fun `builder settings override base settings and merge provider options`() = runTest {
+    fun `compat request constructor derives owned typed input and still executes`() = runTest {
         val model = CapturingModel()
-        val base = CallSettings(
-            temperature = 0.2f,
-            topP = 0.3f,
-            providerOptions = mapOf("base" to JsonPrimitive("yes")),
-        )
-
-        generateText(model = model, settings = base) {
+        val request = TextGenerationRequest {
+            messages(listOf(UserMessage("history")))
             prompt("answer")
-            settings {
-                temperature = 0.9f
-                providerOption("call", JsonPrimitive("yes"))
-            }
         }
+
+        val input = assertIs<TextGenerationRequest.Input.MessageHistoryWithPrompt>(request.input)
+
+        assertEquals(listOf(UserMessage("history")), input.messages)
+        assertEquals("answer", input.prompt)
+
+        val msgs = buildList<ModelMessage> {
+            if (request.system != null) add(SystemMessage(request.system))
+            addAll(request.messages)
+        }
+        TextGenerator(model).generate(GenerationInput.from(prompt = request.prompt, messages = msgs)).first()
+
+        val params = assertNotNull(model.generateParams)
+        assertEquals(listOf(MessageRole.User, MessageRole.User), params.messages.map { it.role })
+    }
+
+    @Test
+    fun `empty message history is rejected by owned request input`() {
+        assertFailsWith<IllegalArgumentException> {
+            TextGenerationRequest.NonEmptyMessages.from(emptyList())
+        }
+    }
+
+    @Test
+    fun `builder creates request with owned typed input`() {
+        val request = TextGenerationRequest {
+            prompt("answer")
+        }
+
+        val input = assertIs<TextGenerationRequest.Input.PromptText>(request.input)
+
+        assertEquals("answer", input.text)
+    }
+
+    @Test
+    fun `empty builder preserves construction compatibility and fails at execution boundary`() = runTest {
+        val request = TextGenerationRequest { }
+
+        assertEquals(null, request.prompt)
+        assertEquals(emptyList(), request.messages)
+        assertFailsWith<IllegalArgumentException> {
+            val msgs = buildList<ModelMessage> {
+                if (request.system != null) add(SystemMessage(request.system))
+                addAll(request.messages)
+            }
+            GenerationInput.from(prompt = request.prompt, messages = msgs)
+        }
+    }
+
+    @Test
+    fun `empty compat request fails at execution boundary`() = runTest {
+        val request = TextGenerationRequest {}
+
+        assertFailsWith<IllegalArgumentException> {
+            val msgs = buildList<ModelMessage> {
+                if (request.system != null) add(SystemMessage(request.system))
+                addAll(request.messages)
+            }
+            GenerationInput.from(prompt = request.prompt, messages = msgs)
+        }
+    }
+
+    @Test
+    fun `callConfig forwards settings to model`() = runTest {
+        val model = CapturingModel()
+
+        TextGenerator(
+            model,
+            CallConfig {
+                temperature(0.9f)
+                topP(0.3f)
+                headers(mapOf("X-Text" to "yes"))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "base" to JsonPrimitive("yes"),
+                                "call" to JsonPrimitive("yes"),
+                            )
+                        )
+                    )
+                )
+            },
+        ).generate(GenerationInput.Prompt("answer")).first()
 
         val params = assertNotNull(model.generateParams)
         assertEquals(0.9f, params.temperature)
         assertEquals(0.3f, params.topP)
-        assertEquals("yes", params.providerOptions["base"]?.jsonPrimitive?.content)
-        assertEquals("yes", params.providerOptions["call"]?.jsonPrimitive?.content)
+        assertEquals(mapOf("X-Text" to "yes"), params.headers)
+        assertEquals("yes", params.providerOptions.toMap()["base"]?.jsonPrimitive?.content)
+        assertEquals("yes", params.providerOptions.toMap()["call"]?.jsonPrimitive?.content)
     }
 
     @Test
-    fun `structured builder derives response format from output`() = runTest {
+    fun `generate with output derives response format from output`() = runTest {
         val model = CapturingModel(
             generateResult = LanguageModelResult(
                 text = """{"name":"cake"}""",
                 finishReason = FinishReason.Stop,
-                usage = Usage(promptTokens = 1, completionTokens = 1),
+                usage = Usage.of(promptTokens = 1, completionTokens = 1),
             ),
         )
+        val output = OutputObj<Recipe>(serializer(), name = "Recipe")
 
-        val result = generateText(model = model, output = outputObj<Recipe>(serializer(), name = "Recipe")) {
-            prompt("recipe")
-        }
+        val result = TextGenerator(model).generate(GenerationInput.Prompt("recipe"), output).first()
 
         assertEquals("cake", result.output.name)
         val responseFormat = assertIs<ResponseFormat.Json>(model.generateParams?.responseFormat)
@@ -130,15 +238,15 @@ class KotlinApiTest {
     }
 
     @Test
-    fun `stream builder remains cold and forwards settings`() = runTest {
+    fun `stream remains cold and forwards settings`() = runTest {
         val model = CapturingModel()
-        val events = streamText(model = model) {
-            prompt("answer")
-            settings {
-                presencePenalty = 0.7f
-                frequencyPenalty = 0.8f
-            }
-        }
+        val events = TextGenerator(
+            model,
+            CallConfig {
+                presencePenalty(0.7f)
+                frequencyPenalty(0.8f)
+            },
+        ).stream(GenerationInput.Prompt("answer"))
 
         assertNull(model.streamParams)
         assertEquals(4, drainAllItems(events).size)

@@ -3,8 +3,13 @@
 Agents are models plus tools plus a loop. Use them when the model needs to
 decide which actions to take, run tools, see results, and continue.
 
-For direct one-step calls, use `generateText` or `streamText`. For multi-step
-tool work, use `ToolLoopAgent`.
+For direct one-step calls, use `TextGenerator`. For multi-step tool work, use
+`ToolLoopAgent`.
+
+Application prompts and responses should cross the agent boundary, not the
+underlying `LanguageModel` execution methods. Direct model execution remains
+available for deliberate low-level integrations, but requires
+`@OptIn(LowLevelLanguageModelApi::class)`.
 
 ## Agent Contract
 
@@ -34,19 +39,22 @@ entitlements, retrieval state, or request metadata. `TOutput` is usually
 cannot run, a tool needs approval, or a stop condition is met.
 
 ```kotlin
-val agent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Answer using project tools when needed.",
-    tools = toolSetOf(searchDocs, createTicket),
-    stopWhen = anyOf(
-        stepCountIs(8),
-        hasToolCall("finalizeAnswer"),
-    ),
-    callOptionsSchema = serializer<AppContext>(),
-)
+class SupportAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Answer using project tools when needed.",
+        tools = tools,
+        stopWhen = AnyOf(
+            StepCountIs(8),
+            HasToolCall("finalizeAnswer"),
+        ),
+        callOptionsSchema = serializer<AppContext>(),
+    )
+
+val agent = SupportAgent(model, ToolSet(searchDocs, createTicket))
 ```
 
-The default stop condition is `stepCountIs(20)`. Set a domain-specific stop
+The default stop condition is `StepCountIs(20)`. Set a domain-specific stop
 condition anyway so the loop shape is obvious at the call site.
 
 ## Tools
@@ -55,7 +63,7 @@ Tools are stateless actions. They have a name, description, input serializer,
 output serializer, and executor.
 
 ```kotlin
-val searchDocs = tool<SearchInput, List<SearchResult>, AppContext>(
+val searchDocs = Tool<SearchInput, List<SearchResult>, AppContext>(
     name = "searchDocs",
     description = "Search product documentation.",
     inputSerializer = serializer(),
@@ -65,9 +73,10 @@ val searchDocs = tool<SearchInput, List<SearchResult>, AppContext>(
 }
 ```
 
-Use `dynamicTool` only when the schema or result type is not known at compile
-time. Use `providerExecuted = true` for tools run by the provider instead of
-the local executor.
+Use `DynamicTool` only when the schema or result type is not known at compile
+time. Use `ProviderExecutedTool(...)` for tools run by the provider instead of
+the local executor; custom factories can set `ToolSchemaOptions {
+providerExecuted(true) }`.
 
 Tools can also carry:
 
@@ -83,11 +92,11 @@ and provider-executed tools, see [Tools](tools.md).
 
 ## Streaming Tools
 
-Use `streamingTool` when a tool can produce useful preliminary results before
+Use `StreamingTool` when a tool can produce useful preliminary results before
 its final value.
 
 ```kotlin
-val lookup = streamingTool<Query, LookupResult, AppContext>(
+val lookup = StreamingTool<Query, LookupResult, AppContext>(
     name = "lookup",
     description = "Search records and stream progress.",
     inputSerializer = serializer(),
@@ -108,9 +117,9 @@ last emission is the final tool result that is added to the model message log.
 Stop conditions compose:
 
 ```kotlin
-stopWhen = anyOf(
-    stepCountIs(8),
-    repeatedToolCallLoop(3),
+stopWhen = AnyOf(
+    StepCountIs(8),
+    RepeatedToolCallLoop(3),
 )
 ```
 
@@ -123,14 +132,16 @@ Use `prepareCall` once per invocation for request-specific setup.
 
 ```kotlin
 prepareCall = {
-    AgentSettings(
-        instructions = instructions + "\nUse workspace ${options?.workspaceId}.",
-        providerOptions = buildProviderOptions {
-            provider("openai") {
-                put("reasoningEffort", JsonPrimitive("medium"))
-            }
-        },
-    )
+    AgentSettings {
+        instructions(instructions + "\nUse workspace ${options?.workspaceId}.")
+        providerOptions(
+            ProviderOptions.ofPairs(
+                "openai" to buildJsonObject {
+                    put("reasoningEffort", JsonPrimitive("medium"))
+                },
+            ),
+        )
+    }
 }
 ```
 
@@ -139,10 +150,10 @@ compression, or evolving context.
 
 ```kotlin
 prepareStep = {
-    StepSettings(
-        model = if (stepNumber == 1) cheapModel else strongModel,
-        activeTools = if (stepNumber == 1) listOf("classify") else null,
-    )
+    StepSettings {
+        model(if (stepNumber == 1) cheapModel else strongModel)
+        activeTools(if (stepNumber == 1) listOf("classify") else null)
+    }
 }
 ```
 
@@ -154,7 +165,7 @@ hooks.
 Use `needsApproval` for tools that affect external state or other users.
 
 ```kotlin
-val sendMessage = tool<SendInput, SendResult, AppContext>(
+val sendMessage = Tool<SendInput, SendResult, AppContext>(
     name = "sendMessage",
     description = "Send a message to a user.",
     inputSerializer = serializer(),
@@ -172,10 +183,10 @@ When approval is required, the loop returns with `pendingApprovals`. Resume by
 adding approval response messages:
 
 ```kotlin
-val first = agent.generate(prompt = prompt, options = context)
+val first = agent.generate(prompt = prompt, options = context).first()
 
 val responses = first.pendingApprovals.map { pending ->
-    toolApprovalResponseMessage(
+    ToolApprovalResponseMessage(
         toolCallId = pending.toolCallId,
         approved = approvalUi.ask(pending.toolName, pending.input),
         approvalId = pending.approvalId,
@@ -185,27 +196,33 @@ val responses = first.pendingApprovals.map { pending ->
 val resumed = agent.generate(
     messages = first.messages + responses,
     options = context,
-)
+).first()
 ```
 
 Approval state lives in the message log. Persist the messages, not a hidden
 agent process.
 
-## Lifecycle Hooks
+## Lifecycle Events
 
-Constructor hooks and per-call hooks observe the loop:
+Use the lifecycle stream to observe a single run:
 
-- `onStart`
-- `onStepStart`
-- `onStepFinish`
-- `onFinish`
-- `onError`
-- `onChunk`
-- `onAbort`
-- experimental tool-call start/finish hooks
+```kotlin
+agent.events(prompt = prompt, options = context).collect { event ->
+    when (event) {
+        is AgentEvent.Started<*> -> trace.start(event.options)
+        is AgentEvent.StepFinished -> metrics.tokens(event.step.usage.totalTokens)
+        is AgentEvent.Finished<*, *> -> save(event.messages)
+        else -> Unit
+    }
+}
+```
 
-Hook failures do not crash generation. Tool execution, model calls,
-`prepareCall`, and `prepareStep` failures do.
+`collectAgentEvents` is the same surface with a suspend handler. Event
+collection is for observation; change behavior through `prepareCall`,
+`prepareStep`, tool policy, or tools themselves.
+
+Collector failures surface as lifecycle errors. Tool execution, model calls,
+`prepareCall`, and `prepareStep` failures are generation failures.
 
 ## Sessions
 
@@ -239,7 +256,7 @@ Use a subagent when a subtask has its own loop, policy, or tool set. Expose it
 as a tool and forward context and cancellation.
 
 ```kotlin
-val researchTool = tool<ResearchInput, String, AppContext>(
+val researchTool = Tool<ResearchInput, String, AppContext>(
     name = "deepResearch",
     description = "Run a focused research agent.",
     inputSerializer = serializer(),
@@ -249,7 +266,7 @@ val researchTool = tool<ResearchInput, String, AppContext>(
         prompt = input.prompt,
         options = context,
         abortSignal = abortSignal,
-    ).text
+    ).first().text
 }
 ```
 

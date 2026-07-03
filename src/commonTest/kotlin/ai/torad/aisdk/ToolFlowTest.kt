@@ -1,19 +1,21 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * Validates the v6-aligned `Flow<TOutput>` tool executor surface (gap #2
@@ -22,7 +24,7 @@ import kotlinx.serialization.serializer
  * lookahead — emissions before the last become
  * `StreamEvent.ToolResult(preliminary = true)` (UI-only), the LAST
  * emission becomes the final `ToolResult` that feeds the model on
- * subsequent turns. Single-value tools built via the `tool(...)`
+ * subsequent turns. Single-value tools built via the `Tool(...)`
  * factory keep their existing one-shot ergonomics (the factory wraps
  * the body in a one-emission flow internally).
  */
@@ -31,26 +33,109 @@ class ToolFlowTest {
     @Serializable data class Empty(val unused: String = "")
 
     @Test
-    fun `tool content result rejects malformed isError flag`() {
-        assertFailsWith<WireDecodeException> {
-            toolResultOutputFromWire(
-                buildJsonObject {
-                    put("type", JsonPrimitive("content"))
-                    put("value", kotlinx.serialization.json.JsonArray(emptyList()))
-                    put("isError", JsonNull)
-                },
-            )
+    fun `executeTool emits preliminary output before upstream completes`() = runTest {
+        val secondEmissionReached = CompletableDeferred<Unit>()
+        val completionGate = CompletableDeferred<Unit>()
+        val preliminarySeen = CompletableDeferred<ExecuteToolResult.Preliminary<String>>()
+        val streamerTool = StreamingTool<Empty, String, Unit>(
+            name = "streamer",
+            description = "emits before completion",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            flow {
+                emit("v1")
+                emit("v2")
+                secondEmissionReached.complete(Unit)
+                completionGate.await()
+            }
         }
+        val context = ToolExecutionContext(
+            context = Unit,
+            abortSignal = AbortSignalNever,
+            stepNumber = 1,
+            messages = emptyList(),
+            toolCallId = "call_1",
+        )
+        val results = mutableListOf<ExecuteToolResult<String>>()
+        val job = launch {
+            ExecuteTool(streamerTool, Empty(), context).collect { result ->
+                results += result
+                if (result is ExecuteToolResult.Preliminary) {
+                    preliminarySeen.complete(result)
+                }
+            }
+        }
+
+        secondEmissionReached.await()
+        val preliminary = preliminarySeen.await()
+
+        assertEquals("v1", preliminary.output)
+        assertEquals(listOf<ExecuteToolResult<String>>(ExecuteToolResult.Preliminary("v1")), results)
+
+        completionGate.complete(Unit)
+        job.join()
+
+        assertEquals(
+            listOf<ExecuteToolResult<String>>(ExecuteToolResult.Preliminary("v1"), ExecuteToolResult.Final("v2")),
+            results,
+        )
     }
 
     @Test
-    fun `tagged tool result rejects missing required value`() {
-        assertFailsWith<WireDecodeException> {
-            toolResultOutputFromWire(
-                buildJsonObject {
-                    put("type", JsonPrimitive("text"))
-                },
-            )
+    fun `content tag with a non-boolean isError flag reads as non-error`() {
+        // A content tag whose `value` is a valid array is honored; a malformed (null) isError
+        // is treated as absent (false) rather than throwing a hard model-call failure.
+        val decoded = ToolResultOutputs.toolResultOutputFromWire(
+            buildJsonObject {
+                put("type", JsonPrimitive("content"))
+                put("value", kotlinx.serialization.json.JsonArray(emptyList()))
+                put("isError", JsonNull)
+            },
+        )
+        assertEquals(ToolResultOutput.Content(value = emptyList(), isError = false), decoded)
+    }
+
+    @Test
+    fun `raw success colliding on a tag discriminator is preserved verbatim not thrown`() {
+        // modelVisible defaults to the tool's RAW output. A success object that merely collides
+        // on `type` (no matching companion field) must round-trip verbatim instead of throwing
+        // (hard model-call failure) or being mis-read as a denial (data loss). Regression for
+        // OpenResponsesProvider:996 / toolResultOutputFromWire.
+        val collidesOnText = buildJsonObject {
+            put("type", JsonPrimitive("text"))
+            put("message", JsonPrimitive("hi"))
+        }
+        assertEquals(
+            ToolResultOutput.Json(collidesOnText),
+            ToolResultOutputs.toolResultOutputFromWire(collidesOnText),
+        )
+
+        val collidesOnDenial = buildJsonObject {
+            put("type", JsonPrimitive("execution-denied"))
+            put("result", JsonPrimitive("ok"))
+        }
+        // Preserved as Json (not silently re-tagged as a denial, which loses the payload).
+        assertEquals(
+            ToolResultOutput.Json(collidesOnDenial),
+            ToolResultOutputs.toolResultOutputFromWire(collidesOnDenial),
+        )
+    }
+
+    @Test
+    fun `Error ErrorJson and ExecutionDenied round-trip through toJsonElement and back`() = with(ToolResultOutputs) {
+        // The three error/denial subtypes used to serialize as bare values that the reader
+        // could not reconstruct (they fell through to Text/Json). They must now round-trip.
+        val cases = listOf(
+            ToolResultOutput.Error("bad input"),
+            ToolResultOutput.ErrorJson(buildJsonObject { put("code", JsonPrimitive(42)) }),
+            ToolResultOutput.ExecutionDenied("user said no"),
+            ToolResultOutput.ExecutionDenied(null),
+        )
+        for (original in cases) {
+            val restored = ToolResultOutputs.toolResultOutputFromWire(original.toJsonElement())
+            assertEquals(original, restored, "round-trip lost identity for $original")
+            assertTrue(restored.isToolResultError(), "$restored must still read as an error/denial")
         }
     }
 
@@ -58,20 +143,20 @@ class ToolFlowTest {
     fun `given a single-value tool when invoked then it emits exactly one final ToolResult with preliminary false`() =
         runTest {
             // GIVEN
-            val pingTool = tool<Empty, String, Unit>(
+            val pingTool = Tool<Empty, String, Unit>(
                 name = "ping",
                 description = "respond with pong",
                 inputSerializer = serializer(),
                 outputSerializer = serializer(),
             ) { _ -> "pong" }
             val streamAgent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "ping",
-                    toolInput = mockToolInput("unused" to ""),
+                    toolInput = MockToolInput("unused" to ""),
                     finalText = "done",
                 ),
                 instructions = "use ping",
-                tools = toolSetOf(pingTool),
+                tools = ToolSet(pingTool),
             )
 
             // WHEN
@@ -89,7 +174,7 @@ class ToolFlowTest {
     fun `given a streamingTool emitting three values when invoked then first two are preliminary and last is final`() =
         runTest {
             // GIVEN
-            val streamerTool = streamingTool<Empty, String, Unit>(
+            val streamerTool = StreamingTool<Empty, String, Unit>(
                 name = "streamer",
                 description = "emits 3 values",
                 inputSerializer = serializer(),
@@ -102,13 +187,13 @@ class ToolFlowTest {
                 }
             }
             val streamAgent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "streamer",
-                    toolInput = mockToolInput("unused" to ""),
+                    toolInput = MockToolInput("unused" to ""),
                     finalText = "done",
                 ),
                 instructions = "use streamer",
-                tools = toolSetOf(streamerTool),
+                tools = ToolSet(streamerTool),
             )
 
             // WHEN
@@ -132,7 +217,7 @@ class ToolFlowTest {
     @Test
     fun `given toModelOutput when tool completes then stream carries full and model-visible output shapes`() =
         runTest {
-            val pingTool = tool<Empty, String, Unit>(
+            val pingTool = Tool<Empty, String, Unit>(
                 name = "ping",
                 description = "respond with pong",
                 inputSerializer = serializer(),
@@ -142,13 +227,13 @@ class ToolFlowTest {
                 },
             ) { _ -> "pong" }
             val streamAgent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "ping",
-                    toolInput = mockToolInput("unused" to ""),
+                    toolInput = MockToolInput("unused" to ""),
                     finalText = "done",
                 ),
                 instructions = "use ping",
-                tools = toolSetOf(pingTool),
+                tools = ToolSet(pingTool),
             )
 
             val events = mutableListOf<StreamEvent>()
@@ -161,15 +246,15 @@ class ToolFlowTest {
             assertEquals(false, toolResult.isError)
 
             val generateAgent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "ping",
-                    toolInput = mockToolInput("unused" to ""),
+                    toolInput = MockToolInput("unused" to ""),
                     finalText = "done",
                 ),
                 instructions = "use ping",
-                tools = toolSetOf(pingTool),
+                tools = ToolSet(pingTool),
             )
-            val result = generateAgent.generate(prompt = "go")
+            val result = generateAgent.generate(prompt = "go").first()
             val toolMessage = result.messages.filter { it.role == MessageRole.Tool }.last()
             val toolPart = toolMessage.content.single()
             assertIs<ContentPart.ToolResult>(toolPart)
@@ -179,7 +264,7 @@ class ToolFlowTest {
     @Test
     fun `given toModelOutput error when tool completes then stream and message mark the result as error`() =
         runTest {
-            val pingTool = tool<Empty, String, Unit>(
+            val pingTool = Tool<Empty, String, Unit>(
                 name = "ping",
                 description = "respond with pong",
                 inputSerializer = serializer(),
@@ -187,13 +272,13 @@ class ToolFlowTest {
                 toModelOutput = { _, _ -> ToolResultOutput.Error("redacted failure") },
             ) { _ -> "pong" }
             val streamAgent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "ping",
-                    toolInput = mockToolInput("unused" to ""),
+                    toolInput = MockToolInput("unused" to ""),
                     finalText = "done",
                 ),
                 instructions = "use ping",
-                tools = toolSetOf(pingTool),
+                tools = ToolSet(pingTool),
             )
 
             val events = mutableListOf<StreamEvent>()
@@ -204,15 +289,15 @@ class ToolFlowTest {
             assertEquals(ToolResultOutput.Error("redacted failure"), toolResult.modelOutput)
 
             val generateAgent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "ping",
-                    toolInput = mockToolInput("unused" to ""),
+                    toolInput = MockToolInput("unused" to ""),
                     finalText = "done",
                 ),
                 instructions = "use ping",
-                tools = toolSetOf(pingTool),
+                tools = ToolSet(pingTool),
             )
-            val result = generateAgent.generate(prompt = "go")
+            val result = generateAgent.generate(prompt = "go").first()
             val toolPart = result.messages
                 .filter { it.role == MessageRole.Tool }
                 .last()
@@ -220,27 +305,40 @@ class ToolFlowTest {
                 .single()
             assertIs<ContentPart.ToolResult>(toolPart)
             assertTrue(toolPart.isError)
-            assertEquals(JsonPrimitive("Error: redacted failure"), toolPart.modelVisible)
+            // modelVisible now carries the typed discriminator (was a bare "Error: ..."
+            // string that lost its error identity on read-back).
+            assertEquals(
+                buildJsonObject {
+                    put("type", JsonPrimitive("error-text"))
+                    put("value", JsonPrimitive("redacted failure"))
+                },
+                toolPart.modelVisible,
+            )
+            // ...and it reconstructs back to Error rather than degrading to Text.
+            assertEquals(
+                ToolResultOutput.Error("redacted failure"),
+                ToolResultOutputs.toolResultOutputFromWire(toolPart.modelVisible),
+            )
         }
 
     @Test
     fun `given a streamingTool emitting one value when invoked then a single final ToolResult emits`() =
         runTest {
             // GIVEN
-            val streamerTool = streamingTool<Empty, String, Unit>(
+            val streamerTool = StreamingTool<Empty, String, Unit>(
                 name = "streamer",
                 description = "one value",
                 inputSerializer = serializer(),
                 outputSerializer = serializer(),
             ) { _ -> flow { emit("only") } }
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "streamer",
-                    toolInput = mockToolInput("unused" to ""),
+                    toolInput = MockToolInput("unused" to ""),
                     finalText = "done",
                 ),
                 instructions = "",
-                tools = toolSetOf(streamerTool),
+                tools = ToolSet(streamerTool),
             )
 
             // WHEN
@@ -257,20 +355,20 @@ class ToolFlowTest {
     fun `given a streamingTool emitting zero values when invoked then ToolError fires with empty-emission message`() =
         runTest {
             // GIVEN
-            val emptyTool = streamingTool<Empty, String, Unit>(
+            val emptyTool = StreamingTool<Empty, String, Unit>(
                 name = "empty",
                 description = "emits nothing",
                 inputSerializer = serializer(),
                 outputSerializer = serializer(),
             ) { _ -> flow { /* no emissions */ } }
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "empty",
-                    toolInput = mockToolInput("unused" to ""),
+                    toolInput = MockToolInput("unused" to ""),
                     finalText = "done",
                 ),
                 instructions = "",
-                tools = toolSetOf(emptyTool),
+                tools = ToolSet(emptyTool),
             )
 
             // WHEN

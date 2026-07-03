@@ -1,551 +1,317 @@
 package ai.torad.aisdk
 
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlinx.coroutines.CompletableDeferred
+import dev.drewhamilton.poko.Poko
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.JsonElement
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.CoroutineContext
 
-/**
- * One-shot generation — invariant I-3, the only `text` entry point in v6.
- *
- * For tool-loop agents, use [Agent.generate] instead. This is the
- * primitive for single-turn calls (no tool-loop wrapping).
- */
-public suspend fun generateText(
-    model: LanguageModel,
-    prompt: String? = null,
-    messages: List<ModelMessage> = emptyList(),
-    system: String? = null,
-    temperature: Float? = null,
-    topP: Float? = null,
-    topK: Int? = null,
-    maxOutputTokens: Int? = null,
-    stopSequences: List<String> = emptyList(),
-    seed: Int? = null,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    presencePenalty: Float? = null,
-    frequencyPenalty: Float? = null,
-    responseFormat: ResponseFormat = ResponseFormat.Text,
-): GenerateTextResult<String> =
-    generateTextImpl(
-        model = model,
-        prompt = prompt,
-        messages = messages,
-        system = system,
-        output = null,
-        temperature = temperature,
-        topP = topP,
-        topK = topK,
-        maxOutputTokens = maxOutputTokens,
-        stopSequences = stopSequences,
-        seed = seed,
-        providerOptions = providerOptions,
-        abortSignal = abortSignal,
-        presencePenalty = presencePenalty,
-        frequencyPenalty = frequencyPenalty,
-        responseFormat = responseFormat,
-        decode = { it },
-    )
-
-public suspend fun <TOutput> generateText(
-    model: LanguageModel,
-    prompt: String? = null,
-    messages: List<ModelMessage> = emptyList(),
-    system: String? = null,
-    output: Output<TOutput>,
-    temperature: Float? = null,
-    topP: Float? = null,
-    topK: Int? = null,
-    maxOutputTokens: Int? = null,
-    stopSequences: List<String> = emptyList(),
-    seed: Int? = null,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    presencePenalty: Float? = null,
-    frequencyPenalty: Float? = null,
-    responseFormat: ResponseFormat = ResponseFormat.Text,
-): GenerateTextResult<TOutput> =
-    generateTextImpl(
-        model = model,
-        prompt = prompt,
-        messages = messages,
-        system = system,
-        output = output,
-        temperature = temperature,
-        topP = topP,
-        topK = topK,
-        maxOutputTokens = maxOutputTokens,
-        stopSequences = stopSequences,
-        seed = seed,
-        providerOptions = providerOptions,
-        abortSignal = abortSignal,
-        presencePenalty = presencePenalty,
-        frequencyPenalty = frequencyPenalty,
-        responseFormat = responseFormat,
-        decode = output::decode,
-    )
-
-private suspend fun <TOutput> generateTextImpl(
-    model: LanguageModel,
-    prompt: String?,
-    messages: List<ModelMessage>,
-    system: String?,
-    output: Output<TOutput>?,
-    temperature: Float?,
-    topP: Float?,
-    topK: Int?,
-    maxOutputTokens: Int?,
-    stopSequences: List<String>,
-    seed: Int?,
-    providerOptions: Map<String, JsonElement>,
-    abortSignal: AbortSignal,
-    presencePenalty: Float?,
-    frequencyPenalty: Float?,
-    responseFormat: ResponseFormat,
-    decode: (String) -> TOutput,
-): GenerateTextResult<TOutput> {
-    require(prompt != null || messages.isNotEmpty()) {
-        "generateText: must provide either `prompt` or `messages`"
-    }
-    val effectiveMessages = buildList {
-        if (system != null) add(systemMessage(system))
-        addAll(messages)
-        if (prompt != null) add(userMessage(prompt))
-    }
-    val params = LanguageModelCallParams(
-        messages = effectiveMessages,
-        temperature = temperature,
-        topP = topP,
-        topK = topK,
-        maxOutputTokens = maxOutputTokens,
-        stopSequences = stopSequences,
-        seed = seed,
-        providerOptions = providerOptions,
-        abortSignal = abortSignal,
-        presencePenalty = presencePenalty,
-        frequencyPenalty = frequencyPenalty,
-        responseFormat = output?.let { structuredOutput ->
-            if (responseFormat == ResponseFormat.Text) structuredOutput.toResponseFormat() else responseFormat
-        } ?: responseFormat,
-    )
-    val raw = model.generate(params)
-    val typed = decode(raw.text)
-    return GenerateTextResult(
-        output = typed,
-        text = raw.text,
-        toolCalls = raw.toolCalls,
-        finishReason = raw.finishReason,
-        usage = raw.usage,
-        content = raw.content,
-        reasoning = raw.content.filterIsInstance<ContentPart.Reasoning>(),
-        files = raw.content.filterIsInstance<ContentPart.File>(),
-        sources = raw.content.filterIsInstance<ContentPart.Source>(),
-        totalUsage = raw.usage,
-        warnings = raw.warnings,
-        request = raw.request,
-        response = raw.response,
-        providerMetadata = raw.providerMetadata,
-        rawFinishReason = raw.rawFinishReason,
-    )
-}
-
-public data class GenerateTextResult<TOutput>(
-    val output: TOutput,
-    val text: String,
-    val toolCalls: List<ContentPart.ToolCall>,
-    val finishReason: FinishReason,
-    val usage: Usage,
-    val content: List<ContentPart> = buildList {
+@Poko
+/** @since 0.3.0-beta01 */
+public class GenerateTextResult<TOutput> internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val output: TOutput,
+    /** @since 0.3.0-beta01 */
+    public val text: String,
+    /** @since 0.3.0-beta01 */
+    public val toolCalls: List<ContentPart.ToolCall>,
+    /** @since 0.3.0-beta01 */
+    public val finishReason: FinishReason,
+    /** @since 0.3.0-beta01 */
+    public val usage: Usage,
+    /** @since 0.3.0-beta01 */
+    public val content: List<ContentPart> = buildList {
         if (text.isNotEmpty()) add(ContentPart.Text(text))
         addAll(toolCalls)
     },
-    val toolResults: List<ContentPart.ToolResult> = content.filterIsInstance<ContentPart.ToolResult>(),
-    val reasoning: List<ContentPart.Reasoning> = content.filterIsInstance<ContentPart.Reasoning>(),
-    val reasoningText: String? = reasoning.takeIf { it.isNotEmpty() }?.joinToString("") { it.text },
-    val files: List<ContentPart.File> = content.filterIsInstance<ContentPart.File>(),
-    val sources: List<ContentPart.Source> = content.filterIsInstance<ContentPart.Source>(),
-    val totalUsage: Usage = usage,
-    val warnings: List<CallWarning> = emptyList(),
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
-    val steps: List<StepResult> = emptyList(),
-    val rawFinishReason: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val toolResults: List<ContentPart.ToolResult> = content.filterIsInstance<ContentPart.ToolResult>(),
+    /** @since 0.3.0-beta01 */
+    public val reasoning: List<ContentPart.Reasoning> = content.filterIsInstance<ContentPart.Reasoning>(),
+    /** @since 0.3.0-beta01 */
+    public val reasoningText: String? = reasoning.takeIf { it.isNotEmpty() }?.joinToString("") { it.text },
+    /** @since 0.3.0-beta01 */
+    public val files: List<ContentPart.File> = content.filterIsInstance<ContentPart.File>(),
+    /** @since 0.3.0-beta01 */
+    public val sources: List<ContentPart.Source> = content.filterIsInstance<ContentPart.Source>(),
+    /** @since 0.3.0-beta01 */
+    public val totalUsage: Usage = usage,
+    /** @since 0.3.0-beta01 */
+    public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
+    public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    /** @since 0.3.0-beta01 */
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    /** @since 0.3.0-beta01 */
+    public val steps: List<StepResult> = emptyList(),
+    /** @since 0.3.0-beta01 */
+    public val rawFinishReason: String? = null,
 ) {
-    /** Tool calls/results against statically-typed tools (`tool(...)`), matching upstream's split. */
-    val staticToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { !it.dynamic }
+    /** @since 0.3.0-beta01 */
+    public val staticToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { !it.dynamic }
 
-    /** Tool calls/results against dynamic (runtime-typed) tools (`dynamicTool(...)`). */
-    val dynamicToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { it.dynamic }
-    val staticToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { !it.dynamic }
-    val dynamicToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { it.dynamic }
+    /** @since 0.3.0-beta01 */
+    public val dynamicToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { it.dynamic }
+
+    /** @since 0.3.0-beta01 */
+    public val staticToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { !it.dynamic }
+
+    /** @since 0.3.0-beta01 */
+    public val dynamicToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { it.dynamic }
 }
 
 /**
- * Streaming generation — invariant I-3. Returns a cold Flow that drives
- * one upstream call when collected. For tool-loop agents, use
- * [Agent.stream] instead.
+ * Streaming generation result — memoised replay. A terminal upstream run is
+ * collected at most once; later collectors replay the captured events. If every
+ * collector leaves before the upstream reaches a terminal state, that producer
+ * is cancelled, its partial buffer is discarded, and a later collector starts a
+ * fresh upstream run. To preserve full replay for a collector that attaches
+ * after the first event, the result keeps the terminal stream event sequence in
+ * memory for the result lifetime. Hosts that need minimum peak memory for a
+ * guaranteed single-consumer path can collect the model stream directly instead
+ * of using this replaying result surface.
+ *
+ * Streaming has no default deadline. High-level callers should set
+ * [CallConfig.timeout], and low-level callers should configure the underlying
+ * HTTP/on-device engine socket timeout, so a dead SSE or local engine stream
+ * cannot wait forever.
+ * @since 0.3.0-beta01
  */
-public fun streamText(
-    model: LanguageModel,
-    prompt: String? = null,
-    messages: List<ModelMessage> = emptyList(),
-    system: String? = null,
-    temperature: Float? = null,
-    topP: Float? = null,
-    topK: Int? = null,
-    maxOutputTokens: Int? = null,
-    stopSequences: List<String> = emptyList(),
-    seed: Int? = null,
-    providerOptions: Map<String, kotlinx.serialization.json.JsonElement> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    output: Output<*>? = null,
-    presencePenalty: Float? = null,
-    frequencyPenalty: Float? = null,
-    responseFormat: ResponseFormat = ResponseFormat.Text,
-): Flow<StreamEvent> = flow {
-    streamTextResult(
-        model = model,
-        prompt = prompt,
-        messages = messages,
-        system = system,
-        temperature = temperature,
-        topP = topP,
-        topK = topK,
-        maxOutputTokens = maxOutputTokens,
-        stopSequences = stopSequences,
-        seed = seed,
-        providerOptions = providerOptions,
-        abortSignal = abortSignal,
-        output = output,
-        presencePenalty = presencePenalty,
-        frequencyPenalty = frequencyPenalty,
-        responseFormat = responseFormat,
-    ).fullStream.collect { emit(it) }
-}
-
 @OptIn(ExperimentalAtomicApi::class)
 public class StreamTextResult(
     sourceStream: Flow<StreamEvent>,
+    /** @since 0.3.0-beta01 */
     public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     private val initialResponse: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
 ) {
-    private val upstream = sourceStream
+    private val capturedWarnings = AtomicReference<List<CallWarning>>(emptyList())
+    private val capturedResponse = AtomicReference(initialResponse)
+    private val replay = MemoizedStreamReplay(sourceStream, ::commit)
 
-    // The first collector becomes primary, drives the upstream live, and on
-    // successful completion publishes the captured events here; other collectors
-    // await + replay it (cancellable) instead of suspending on a lock held
-    // across the whole run. Reset to null on failure/cancel so a later
-    // collector can retry as primary.
-    private val primaryResult = AtomicReference<CompletableDeferred<List<StreamEvent>>?>(null)
-    private var capturedWarnings: List<CallWarning> = emptyList()
-    private var capturedResponse: LanguageModelResponseMetadata = initialResponse
+    /** @since 0.3.0-beta01 */
+    public val fullStream: Flow<StreamEvent> = replay.flow
 
-    /**
-     * Memoised replay of the upstream events. The upstream is collected at
-     * most once; later collectors replay the captured events. This differs
-     * from the cold top-level [streamText], which drives a fresh upstream per
-     * collection. Capture commits only on successful completion, so a
-     * cancelled collection never memoises a truncated or duplicated replay.
-     */
-    public val fullStream: Flow<StreamEvent> = flow {
-        while (true) {
-            val mine = CompletableDeferred<List<StreamEvent>>()
-            if (primaryResult.compareAndSet(null, mine)) {
-                // Primary: drive the upstream live, memoise only on success.
-                val buffer = mutableListOf<StreamEvent>()
-                try {
-                    upstream.collect { event ->
-                        currentCoroutineContext().ensureActive()
-                        buffer += event
-                        emit(event)
-                    }
-                } catch (t: Throwable) {
-                    primaryResult.compareAndSet(mine, null) // release so a retry can re-collect
-                    mine.completeExceptionally(t)
-                    throw t
-                }
-                commit(buffer)
-                mine.complete(buffer.toList())
-                return@flow
-            }
-            val existing = primaryResult.load()
-            if (existing != null) {
-                existing.await().forEach { emit(it) }
-                return@flow
-            }
-            // Primary released the slot between the CAS and the load → retry.
-        }
-    }
-
+    /** @since 0.3.0-beta01 */
     public val textStream: Flow<String> = fullStream
         .filterIsInstance<StreamEvent.TextDelta>()
         .map { it.text }
 
+    /**
+     * Warnings captured from the stream. Collecting this flow drains
+     * [fullStream] to terminal completion if the stream has not completed yet.
+     * @since 0.3.0-beta01
+     */
     public val warnings: Flow<List<CallWarning>> = flow {
         ensureCollected()
-        emit(capturedWarnings)
-    }
-
-    public val response: Flow<LanguageModelResponseMetadata> = flow {
-        ensureCollected()
-        emit(capturedResponse)
-    }
-
-    public fun toTextStreamResponse(): ai.torad.aisdk.ui.TextStreamResponse =
-        ai.torad.aisdk.ui.createTextStreamResponse(textStream)
-
-    public fun toUiMessageStream(assistantMessageId: String): Flow<ai.torad.aisdk.ui.UIMessage> =
-        ai.torad.aisdk.ui.streamToUiMessages(fullStream, assistantMessageId)
-
-    public fun toUiMessageStreamResponse(assistantMessageId: String): ai.torad.aisdk.ui.UIMessageStreamResponse =
-        ai.torad.aisdk.ui.createUiMessageStreamResponse(toUiMessageStream(assistantMessageId))
-
-    private suspend fun ensureCollected() {
-        // Drives the primary collection (or replays it); commit() has then run.
-        fullStream.collect { }
+        emit(capturedWarnings.load())
     }
 
     /**
-     * Derive the memoised warnings/response from a fully-collected buffer.
-     * Only invoked after the upstream completes normally.
+     * Response metadata captured from the stream. Collecting this flow drains
+     * [fullStream] to terminal completion if the stream has not completed yet.
+     * @since 0.3.0-beta01
      */
+    public val response: Flow<LanguageModelResponseMetadata> = flow {
+        ensureCollected()
+        emit(capturedResponse.load())
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun toTextStreamResponse(): ai.torad.aisdk.ui.TextStreamResponse =
+        ai.torad.aisdk.ui.CreateTextStreamResponse(textStream)
+
+    /** @since 0.3.0-beta01 */
+    public fun toUiMessageStream(assistantMessageId: String): Flow<ai.torad.aisdk.ui.UIMessage> =
+        ai.torad.aisdk.ui.StreamToUiMessages(fullStream, assistantMessageId)
+
+    /** @since 0.3.0-beta01 */
+    public fun toUiMessageStreamResponse(assistantMessageId: String): ai.torad.aisdk.ui.UIMessageStreamResponse =
+        ai.torad.aisdk.ui.CreateUiMessageStreamResponse(toUiMessageStream(assistantMessageId))
+
+    private suspend fun ensureCollected() {
+        fullStream.collect { }
+    }
+
     private fun commit(buffer: List<StreamEvent>) {
-        capturedWarnings = buffer.asSequence()
-            .filterIsInstance<StreamEvent.StreamStart>()
-            .map { it.warnings }
-            .firstOrNull { it.isNotEmpty() }
-            ?: emptyList()
+        capturedWarnings.store(
+            buffer.asSequence()
+                .filterIsInstance<StreamEvent.StreamStart>()
+                .map { it.warnings }
+                .firstOrNull { it.isNotEmpty() }
+                ?: emptyList(),
+        )
         var response = initialResponse
         for (event in buffer) {
             if (event is StreamEvent.ResponseMetadata) {
                 response = response.merge(event.toLanguageModelResponseMetadata())
             }
         }
-        capturedResponse = response
+        capturedResponse.store(response)
     }
 }
 
-public fun streamTextResult(
-    model: LanguageModel,
-    prompt: String? = null,
-    messages: List<ModelMessage> = emptyList(),
-    system: String? = null,
-    temperature: Float? = null,
-    topP: Float? = null,
-    topK: Int? = null,
-    maxOutputTokens: Int? = null,
-    stopSequences: List<String> = emptyList(),
-    seed: Int? = null,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    output: Output<*>? = null,
-    presencePenalty: Float? = null,
-    frequencyPenalty: Float? = null,
-    responseFormat: ResponseFormat = ResponseFormat.Text,
-): StreamTextResult {
-    val params = streamTextCallParams(
-        prompt = prompt,
-        messages = messages,
-        system = system,
-        temperature = temperature,
-        topP = topP,
-        topK = topK,
-        maxOutputTokens = maxOutputTokens,
-        stopSequences = stopSequences,
-        seed = seed,
-        providerOptions = providerOptions,
-        abortSignal = abortSignal,
-        output = output,
-        presencePenalty = presencePenalty,
-        frequencyPenalty = frequencyPenalty,
-        responseFormat = responseFormat,
-    )
-    val result = model.streamResult(params)
-    return StreamTextResult(
-        sourceStream = result.stream,
-        request = result.request,
-        initialResponse = result.response,
-    )
-}
-
-private fun streamTextCallParams(
-    prompt: String?,
-    messages: List<ModelMessage>,
-    system: String?,
-    temperature: Float?,
-    topP: Float?,
-    topK: Int?,
-    maxOutputTokens: Int?,
-    stopSequences: List<String>,
-    seed: Int?,
-    providerOptions: Map<String, JsonElement>,
-    abortSignal: AbortSignal,
-    output: Output<*>?,
-    presencePenalty: Float?,
-    frequencyPenalty: Float?,
-    responseFormat: ResponseFormat,
-): LanguageModelCallParams {
-    require(prompt != null || messages.isNotEmpty()) {
-        "streamText: must provide either `prompt` or `messages`"
-    }
-    val effectiveMessages = buildList {
-        if (system != null) add(systemMessage(system))
-        addAll(messages)
-        if (prompt != null) add(userMessage(prompt))
-    }
-    return LanguageModelCallParams(
-        messages = effectiveMessages,
-        temperature = temperature,
-        topP = topP,
-        topK = topK,
-        maxOutputTokens = maxOutputTokens,
-        stopSequences = stopSequences,
-        seed = seed,
-        providerOptions = providerOptions,
-        abortSignal = abortSignal,
-        presencePenalty = presencePenalty,
-        frequencyPenalty = frequencyPenalty,
-        responseFormat = output?.let { structuredOutput ->
-            if (responseFormat == ResponseFormat.Text) structuredOutput.toResponseFormat() else responseFormat
-        } ?: responseFormat,
-    )
-}
-
-private fun StreamEvent.ResponseMetadata.toLanguageModelResponseMetadata(): LanguageModelResponseMetadata =
-    LanguageModelResponseMetadata(
-        id = id,
-        timestampMillis = timestampMillis,
-        modelId = modelId,
-        headers = headers,
-        body = body,
-    )
-
-private fun LanguageModelResponseMetadata.merge(
-    other: LanguageModelResponseMetadata,
-): LanguageModelResponseMetadata = LanguageModelResponseMetadata(
-    id = other.id ?: id,
-    timestampMillis = other.timestampMillis ?: timestampMillis,
-    modelId = other.modelId ?: modelId,
-    headers = headers + other.headers,
-    body = other.body ?: body,
-)
-
-/**
- * Deprecated v6 compatibility helper. Prefer [generateText] with
- * `output = ...`; this wrapper exists for call sites that still use
- * the object-generation vocabulary.
- */
-@Deprecated("Use generateText(output = ...) instead.")
-public suspend fun <TOutput> generateObject(
-    model: LanguageModel,
-    output: Output<TOutput>,
-    prompt: String? = null,
-    messages: List<ModelMessage> = emptyList(),
-    system: String? = null,
-    temperature: Float? = null,
-    topP: Float? = null,
-    topK: Int? = null,
-    maxOutputTokens: Int? = null,
-    stopSequences: List<String> = emptyList(),
-    seed: Int? = null,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    presencePenalty: Float? = null,
-    frequencyPenalty: Float? = null,
-    responseFormat: ResponseFormat = ResponseFormat.Text,
-): GenerateObjectResult<TOutput> {
-    val result = generateText(
-        model = model,
-        prompt = prompt,
-        messages = messages,
-        system = system,
-        output = output,
-        temperature = temperature,
-        topP = topP,
-        topK = topK,
-        maxOutputTokens = maxOutputTokens,
-        stopSequences = stopSequences,
-        seed = seed,
-        providerOptions = providerOptions,
-        abortSignal = abortSignal,
-        presencePenalty = presencePenalty,
-        frequencyPenalty = frequencyPenalty,
-        responseFormat = responseFormat,
-    )
-    return GenerateObjectResult(
-        value = result.output,
-        text = result.text,
-        reasoning = result.reasoningText,
-        finishReason = result.finishReason,
-        usage = result.usage,
-        warnings = result.warnings,
-        request = result.request,
-        response = result.response,
-        providerMetadata = result.providerMetadata,
-    )
-}
-
-public data class GenerateObjectResult<TOutput>(
-    val value: TOutput,
-    val text: String,
-    val reasoning: String? = null,
-    val finishReason: FinishReason,
-    val usage: Usage,
-    val warnings: List<CallWarning> = emptyList(),
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+private class MemoizedStreamReplay(
+    private val upstream: Flow<StreamEvent>,
+    private val onTerminalSnapshot: (List<StreamEvent>) -> Unit,
 ) {
-    val output: TOutput get() = value
-    val generatedObject: TOutput get() = value
+    private val mutex = Mutex()
+    private val buffer = mutableListOf<StreamEvent>()
+    private val progress = MutableStateFlow(ReplayProgress())
+    private var producer: Job? = null
+    private var runId = 0L
+    private var activeCollectors = 0
+
+    val flow: Flow<StreamEvent> = flow {
+        var registered = false
+        try {
+            registerCollector(currentCoroutineContext())
+            registered = true
+            var nextIndex = 0
+            while (true) {
+                val snapshot = snapshotFrom(nextIndex)
+                for (event in snapshot.events) {
+                    emit(event)
+                    nextIndex++
+                }
+                when (val terminal = snapshot.terminal) {
+                    ReplayTerminal.Complete -> return@flow
+                    is ReplayTerminal.Error -> throw terminal.throwable
+                    null -> progress.first { it.size > nextIndex || it.terminal != null }
+                }
+            }
+        } finally {
+            if (registered) {
+                // Cleanup must run even during collector cancellation; a contended mutex would otherwise throw CE
+                // before the active collector decrement can cancel an abandoned producer.
+                withContext(NonCancellable) { unregisterCollector() }
+            }
+        }
+    }
+
+    private suspend fun registerCollector(collectionContext: CoroutineContext) {
+        mutex.withLock {
+            activeCollectors++
+            if (producer != null || progress.value.terminal != null) return
+            runId++
+            val producerRunId = runId
+            val producerContext = collectionContext.minusKey(Job)
+            val producerScope = CoroutineScope(producerContext)
+            val job = producerScope.launch(start = CoroutineStart.LAZY) {
+                collectUpstream(producerRunId)
+            }
+            producer = job
+            job.start()
+        }
+    }
+
+    private suspend fun unregisterCollector() {
+        val abandonedProducer = mutex.withLock {
+            activeCollectors--
+            check(activeCollectors >= 0) { "Stream replay collector count underflow" }
+            if (activeCollectors != 0 || progress.value.terminal != null) return@withLock null
+            val job = producer
+            producer = null
+            runId++
+            buffer.clear()
+            progress.value = ReplayProgress()
+            job
+        }
+        abandonedProducer?.cancel()
+    }
+
+    private suspend fun collectUpstream(producerRunId: Long) {
+        try {
+            upstream.collect { event ->
+                append(producerRunId, event)
+            }
+            complete(producerRunId, ReplayTerminal.Complete)
+        } catch (t: Throwable) {
+            complete(producerRunId, ReplayTerminal.Error(t))
+        }
+    }
+
+    private suspend fun append(producerRunId: Long, event: StreamEvent) {
+        mutex.withLock {
+            if (producerRunId != runId || progress.value.terminal != null) return
+            buffer += event
+            progress.value = ReplayProgress(size = buffer.size)
+        }
+    }
+
+    private suspend fun snapshotFrom(index: Int): ReplaySnapshot =
+        mutex.withLock {
+            ReplaySnapshot(
+                events = if (index < buffer.size) buffer.subList(index, buffer.size).toList() else emptyList(),
+                terminal = progress.value.terminal,
+            )
+        }
+
+    private suspend fun complete(producerRunId: Long, terminal: ReplayTerminal) {
+        mutex.withLock {
+            if (producerRunId != runId || progress.value.terminal != null) return
+            onTerminalSnapshot(buffer.toList())
+            producer = null
+            progress.value = ReplayProgress(size = buffer.size, terminal = terminal)
+        }
+    }
 }
 
-/**
- * Deprecated v6 compatibility helper. Prefer [streamText] with
- * `output = ...`; the KMP core streams typed [StreamEvent] values
- * instead of returning a browser/Node stream facade.
- */
-@Deprecated("Use streamText(output = ...) instead.")
-public fun <TOutput> streamObject(
-    model: LanguageModel,
-    output: Output<TOutput>,
-    prompt: String? = null,
-    messages: List<ModelMessage> = emptyList(),
-    system: String? = null,
-    temperature: Float? = null,
-    topP: Float? = null,
-    topK: Int? = null,
-    maxOutputTokens: Int? = null,
-    stopSequences: List<String> = emptyList(),
-    seed: Int? = null,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    presencePenalty: Float? = null,
-    frequencyPenalty: Float? = null,
-    responseFormat: ResponseFormat = ResponseFormat.Text,
-): Flow<StreamEvent> = streamText(
-    model = model,
-    prompt = prompt,
-    messages = messages,
-    system = system,
-    temperature = temperature,
-    topP = topP,
-    topK = topK,
-    maxOutputTokens = maxOutputTokens,
-    stopSequences = stopSequences,
-    seed = seed,
-    providerOptions = providerOptions,
-    abortSignal = abortSignal,
-    output = output,
-    presencePenalty = presencePenalty,
-    frequencyPenalty = frequencyPenalty,
-    responseFormat = responseFormat,
+private data class ReplayProgress(
+    val size: Int = 0,
+    val terminal: ReplayTerminal? = null,
 )
+
+private data class ReplaySnapshot(
+    val events: List<StreamEvent>,
+    val terminal: ReplayTerminal?,
+)
+
+private sealed interface ReplayTerminal {
+    data object Complete : ReplayTerminal
+    data class Error(val throwable: Throwable) : ReplayTerminal
+}
+
+@Poko
+/** @since 0.3.0-beta01 */
+public class GenerateObjectResult<TOutput>(
+    /** @since 0.3.0-beta01 */
+    public val value: TOutput,
+    /** @since 0.3.0-beta01 */
+    public val text: String,
+    /** @since 0.3.0-beta01 */
+    public val reasoning: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val finishReason: FinishReason,
+    /** @since 0.3.0-beta01 */
+    public val usage: Usage,
+    /** @since 0.3.0-beta01 */
+    public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
+    public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    /** @since 0.3.0-beta01 */
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+) {
+    /** @since 0.3.0-beta01 */
+    public val output: TOutput get() = value
+
+    /** @since 0.3.0-beta01 */
+    public val generatedObject: TOutput get() = value
+}

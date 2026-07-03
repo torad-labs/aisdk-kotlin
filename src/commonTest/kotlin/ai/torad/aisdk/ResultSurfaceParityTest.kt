@@ -20,7 +20,7 @@ class ResultSurfaceParityTest {
             result("a", dynamic = false),
             result("b", dynamic = true),
         )
-        val r = GenerateTextResult(
+        val r = ResultConstruction.generateTextResult(
             output = Unit,
             text = "hi",
             toolCalls = content.filterIsInstance<ContentPart.ToolCall>(),
@@ -38,7 +38,7 @@ class ResultSurfaceParityTest {
 
     @Test
     fun `StepResult exposes reasoningText and static-dynamic splits`() {
-        val step = StepResult(
+        val step = ResultConstruction.stepResult(
             stepNumber = 1,
             text = "t",
             reasoning = "because",
@@ -54,7 +54,23 @@ class ResultSurfaceParityTest {
         assertEquals(listOf("b"), step.dynamicToolResults.map { it.toolCallId })
         assertEquals(emptyList(), step.staticToolResults.map { it.toolCallId })
 
-        val empty = step.copy(reasoning = "")
+        val empty = ResultConstruction.stepResult(
+            stepNumber = step.stepNumber,
+            text = step.text,
+            reasoning = "",
+            toolCalls = step.toolCalls,
+            toolResults = step.toolResults,
+            toolApprovalRequests = step.toolApprovalRequests,
+            finishReason = step.finishReason,
+            usage = step.usage,
+            warnings = step.warnings,
+            request = step.request,
+            response = step.response,
+            providerMetadata = step.providerMetadata,
+            rawFinishReason = step.rawFinishReason,
+            model = step.model,
+            experimentalContext = step.experimentalContext,
+        )
         assertEquals(null, empty.reasoningText)
     }
 }

@@ -1,45 +1,39 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.CEREBRAS_VERSION
+import ai.torad.aisdk.providers.Cerebras
 import ai.torad.aisdk.providers.CerebrasProviderSettings
 import ai.torad.aisdk.providers.DEEPINFRA_VERSION
 import ai.torad.aisdk.providers.DEEPSEEK_VERSION
+import ai.torad.aisdk.providers.DeepInfra
 import ai.torad.aisdk.providers.DeepInfraProviderSettings
+import ai.torad.aisdk.providers.DeepSeek
 import ai.torad.aisdk.providers.DeepSeekProviderSettings
 import ai.torad.aisdk.providers.FIREWORKS_VERSION
+import ai.torad.aisdk.providers.Fireworks
 import ai.torad.aisdk.providers.FireworksProviderSettings
 import ai.torad.aisdk.providers.GROQ_VERSION
+import ai.torad.aisdk.providers.Groq
 import ai.torad.aisdk.providers.GroqProviderSettings
 import ai.torad.aisdk.providers.MOONSHOTAI_VERSION
+import ai.torad.aisdk.providers.MoonshotAI
 import ai.torad.aisdk.providers.MoonshotAIProviderSettings
 import ai.torad.aisdk.providers.PERPLEXITY_VERSION
+import ai.torad.aisdk.providers.Perplexity
 import ai.torad.aisdk.providers.PerplexityProviderSettings
 import ai.torad.aisdk.providers.TOGETHERAI_VERSION
+import ai.torad.aisdk.providers.TogetherAI
 import ai.torad.aisdk.providers.TogetherAIProviderSettings
 import ai.torad.aisdk.providers.VERCEL_VERSION
+import ai.torad.aisdk.providers.Vercel
 import ai.torad.aisdk.providers.VercelProviderSettings
 import ai.torad.aisdk.providers.browserSearch
-import ai.torad.aisdk.providers.cerebras
-import ai.torad.aisdk.providers.createCerebras
-import ai.torad.aisdk.providers.createDeepInfra
-import ai.torad.aisdk.providers.createDeepSeek
-import ai.torad.aisdk.providers.createFireworks
-import ai.torad.aisdk.providers.createGroq
-import ai.torad.aisdk.providers.createMoonshotAI
-import ai.torad.aisdk.providers.createPerplexity
-import ai.torad.aisdk.providers.createTogetherAI
-import ai.torad.aisdk.providers.createVercel
-import ai.torad.aisdk.providers.deepinfra
-import ai.torad.aisdk.providers.deepseek
-import ai.torad.aisdk.providers.fireworks
-import ai.torad.aisdk.providers.groq
-import ai.torad.aisdk.providers.moonshotai
-import ai.torad.aisdk.providers.perplexity
-import ai.torad.aisdk.providers.togetherai
-import ai.torad.aisdk.providers.vercel
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
@@ -61,61 +55,106 @@ class OpenAICompatibleProviderFacadesTest {
                 name = "deepseek",
                 expectedChatUrl = "https://deepseek.test/chat/completions",
                 expectedUserAgent = "ai-sdk/deepseek/$DEEPSEEK_VERSION",
-                create = { client -> createDeepSeek(client, DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test")).languageModel("model") },
+                create = { client ->
+                    DeepSeek(client, DeepSeekProviderSettings {
+                        apiKey("key")
+                        baseURL("https://deepseek.test")
+                    }).languageModel("model")
+                },
             ),
             ProviderCase(
                 name = "cerebras",
                 expectedChatUrl = "https://cerebras.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/cerebras/$CEREBRAS_VERSION",
-                create = { client -> createCerebras(client, CerebrasProviderSettings(apiKey = "key", baseURL = "https://cerebras.test/v1")).languageModel("model") },
+                create = { client ->
+                    Cerebras(client, CerebrasProviderSettings {
+                        apiKey("key")
+                        baseURL("https://cerebras.test/v1")
+                    }).languageModel("model")
+                },
             ),
             ProviderCase(
                 name = "deepinfra",
                 expectedChatUrl = "https://deepinfra.test/v1/openai/chat/completions",
                 expectedUserAgent = "ai-sdk/deepinfra/$DEEPINFRA_VERSION",
-                create = { client -> createDeepInfra(client, DeepInfraProviderSettings(apiKey = "key", baseURL = "https://deepinfra.test/v1")).languageModel("model") },
+                create = { client ->
+                    DeepInfra(client, DeepInfraProviderSettings {
+                        apiKey("key")
+                        baseURL("https://deepinfra.test/v1")
+                    }).languageModel("model")
+                },
             ),
             ProviderCase(
                 name = "fireworks",
                 expectedChatUrl = "https://fireworks.test/inference/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/fireworks/$FIREWORKS_VERSION",
-                create = { client -> createFireworks(client, FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1")).chatModel("model") },
+                create = { client ->
+                    Fireworks(client, FireworksProviderSettings {
+                        apiKey("key")
+                        baseURL("https://fireworks.test/inference/v1")
+                    }).chatModel(ModelId("model"))
+                },
             ),
             ProviderCase(
                 name = "perplexity",
                 expectedChatUrl = "https://perplexity.test/chat/completions",
                 expectedUserAgent = "ai-sdk/perplexity/$PERPLEXITY_VERSION",
-                create = { client -> createPerplexity(client, PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test")).languageModel("model") },
+                create = { client ->
+                    Perplexity(client, PerplexityProviderSettings {
+                        apiKey("key")
+                        baseURL("https://perplexity.test")
+                    }).languageModel("model")
+                },
             ),
             ProviderCase(
                 name = "moonshotai",
                 expectedChatUrl = "https://moonshot.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/moonshotai/$MOONSHOTAI_VERSION",
-                create = { client -> createMoonshotAI(client, MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1")).chatModel("model") },
+                create = { client ->
+                    MoonshotAI(client, MoonshotAIProviderSettings {
+                        apiKey("key")
+                        baseURL("https://moonshot.test/v1")
+                    }).chatModel(ModelId("model"))
+                },
             ),
             ProviderCase(
                 name = "groq",
                 expectedChatUrl = "https://groq.test/openai/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/groq/$GROQ_VERSION",
-                create = { client -> createGroq(client, GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1")).chat("model") },
+                create = { client ->
+                    Groq(client, GroqProviderSettings {
+                        apiKey("key")
+                        baseURL("https://groq.test/openai/v1")
+                    }).chat("model")
+                },
             ),
             ProviderCase(
                 name = "togetherai",
                 expectedChatUrl = "https://together.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/togetherai/$TOGETHERAI_VERSION",
-                create = { client -> createTogetherAI(client, TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1")).chatModel("model") },
+                create = { client ->
+                    TogetherAI(client, TogetherAIProviderSettings {
+                        apiKey("key")
+                        baseURL("https://together.test/v1")
+                    }).chatModel(ModelId("model"))
+                },
             ),
             ProviderCase(
                 name = "vercel",
                 expectedChatUrl = "https://vercel.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/vercel/$VERCEL_VERSION",
-                create = { client -> createVercel(client, VercelProviderSettings(apiKey = "key", baseURL = "https://vercel.test/v1")).languageModel("model") },
+                create = { client ->
+                    Vercel(client, VercelProviderSettings {
+                        apiKey("key")
+                        baseURL("https://vercel.test/v1")
+                    }).languageModel("model")
+                },
             ),
         )
 
         for (case in providers) {
             val seenRequests = mutableListOf<TestServerCall>()
-            val fixture = createTestServer(
+            val fixture = TestServer.createTestServer(
                 mutableMapOf(
                     case.expectedChatUrl to UrlHandler(
                         UrlResponse.JsonValue(
@@ -129,7 +168,11 @@ class OpenAICompatibleProviderFacadesTest {
             fixture.server.start()
 
             val model = case.create(fixture.httpClient())
-            val result = model.generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+            val result = model.generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
             seenRequests += fixture.calls
 
             assertEquals(case.name, result.text)
@@ -146,7 +189,7 @@ class OpenAICompatibleProviderFacadesTest {
     @Test
     @Suppress("LongMethod")
     fun `deepseek injects json schema system message coerces user content and maps usage`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://deepseek.test/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -170,27 +213,34 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createDeepSeek(
+        val provider = DeepSeek(
             fixture.httpClient(),
-            DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test"),
+            DeepSeekProviderSettings {
+                apiKey("key")
+                baseURL("https://deepseek.test")
+            },
         )
 
         val result = provider.chat("deepseek-chat").generate(
-            LanguageModelCallParams(
-                messages = listOf(
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Text("Return an object."),
-                            ContentPart.Image("image/png", "aW1n"),
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Text("Return an object."),
+                                ContentPart.Image("image/png", "aW1n"),
+                            ),
                         ),
-                    ),
-                ),
-                seed = 7,
-                responseFormat = ResponseFormat.Json(
-                    schemaJson = buildJsonObject { put("type", JsonPrimitive("object")) },
-                ),
-            ),
+                    )
+                )
+                seed(7)
+                responseFormat(
+                    ResponseFormat.Json(
+                        schemaJson = buildJsonObject { put("type", JsonPrimitive("object")) },
+                    )
+                )
+            },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -215,7 +265,7 @@ class OpenAICompatibleProviderFacadesTest {
     @Test
     @Suppress("LongMethod")
     fun `perplexity drops unsupported tool wire fields coerces text arrays and maps reasoning usage`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://perplexity.test/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -234,34 +284,41 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createPerplexity(
+        val provider = Perplexity(
             fixture.httpClient(),
-            PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test"),
+            PerplexityProviderSettings {
+                apiKey("key")
+                baseURL("https://perplexity.test")
+            },
         )
 
         val result = provider.languageModel("sonar").generate(
-            LanguageModelCallParams(
-                messages = listOf(
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(ContentPart.Text("A"), ContentPart.Text("B")),
-                    ),
-                    ModelMessage(
-                        MessageRole.Assistant,
-                        listOf(ContentPart.ToolCall("call_1", "lookup", buildJsonObject {})),
-                    ),
-                    ModelMessage(
-                        MessageRole.Tool,
-                        listOf(ContentPart.ToolResult("call_1", "lookup", JsonPrimitive("done"))),
-                    ),
-                ),
-                tools = listOf(
-                    LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
-                ),
-                toolChoice = ToolChoice.Required,
-                stopSequences = listOf("END"),
-                seed = 12,
-            ),
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(ContentPart.Text("A"), ContentPart.Text("B")),
+                        ),
+                        ModelMessage(
+                            MessageRole.Assistant,
+                            listOf(ContentPart.ToolCall("call_1", "lookup", buildJsonObject {})),
+                        ),
+                        ModelMessage(
+                            MessageRole.Tool,
+                            listOf(ContentPart.ToolResult("call_1", "lookup", JsonPrimitive("done"))),
+                        ),
+                    )
+                )
+                tools(
+                    listOf(
+                        LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
+                    )
+                )
+                toolChoice(ToolChoice.Required)
+                stopSequences(listOf("END"))
+                seed(12)
+            },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -280,7 +337,7 @@ class OpenAICompatibleProviderFacadesTest {
 
     @Test
     fun `moonshot maps top level cached tokens and reasoning usage`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://moonshot.test/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -304,12 +361,19 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createMoonshotAI(
+        val provider = MoonshotAI(
             fixture.httpClient(),
-            MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1"),
+            MoonshotAIProviderSettings {
+                apiKey("key")
+                baseURL("https://moonshot.test/v1")
+            },
         )
 
-        val result = provider.chatModel("kimi").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+        val result = provider.chatModel(ModelId("kimi")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         assertEquals(3, result.usage.inputTokens.cacheRead)
         assertEquals(6, result.usage.inputTokens.noCache)
@@ -319,7 +383,7 @@ class OpenAICompatibleProviderFacadesTest {
 
     @Test
     fun `groq maps browser search tool assistant reasoning and x_groq usage`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://groq.test/openai/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -338,27 +402,34 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createGroq(
+        val provider = Groq(
             fixture.httpClient(),
-            GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
+            GroqProviderSettings {
+                apiKey("key")
+                baseURL("https://groq.test/openai/v1")
+            },
         )
 
         // browser_search is only valid on the gpt-oss models, so use a supported one here.
         val result = provider.chat("openai/gpt-oss-20b").generate(
-            LanguageModelCallParams(
-                messages = listOf(
-                    userMessage("hi"),
-                    ModelMessage(MessageRole.Assistant, listOf(ContentPart.Reasoning("prior thought"))),
-                ),
-                tools = listOf(
-                    LanguageModelTool(
-                        "browserSearch",
-                        "Search.",
-                        """{"type":"object"}""",
-                        providerExecuted = true,
-                    ),
-                ),
-            ),
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        UserMessage("hi"),
+                        ModelMessage(MessageRole.Assistant, listOf(ContentPart.Reasoning("prior thought"))),
+                    )
+                )
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            "browserSearch",
+                            "Search.",
+                            """{"type":"object"}""",
+                            providerExecuted = true,
+                        ),
+                    )
+                )
+            },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -375,7 +446,7 @@ class OpenAICompatibleProviderFacadesTest {
 
     @Test
     fun `groq drops the browser_search tool on a model that does not support it`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://groq.test/openai/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -389,17 +460,22 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createGroq(
+        val provider = Groq(
             fixture.httpClient(),
-            GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
+            GroqProviderSettings {
+                apiKey("key")
+                baseURL("https://groq.test/openai/v1")
+            },
         )
         provider.chat("llama").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
-                tools = listOf(
-                    LanguageModelTool("browserSearch", "Search.", """{"type":"object"}""", providerExecuted = true),
-                ),
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(
+                    listOf(
+                        LanguageModelTool("browserSearch", "Search.", """{"type":"object"}""", providerExecuted = true),
+                    )
+                )
+            },
         )
         // browser_search was the only tool and is unsupported on llama → tools key omitted entirely.
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -408,7 +484,7 @@ class OpenAICompatibleProviderFacadesTest {
 
     @Test
     fun `deepinfra exposes completion embedding image and fixes broken reasoning usage`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://deepinfra.test/v1/openai/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -433,23 +509,40 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createDeepInfra(
+        val provider = DeepInfra(
             fixture.httpClient(),
-            DeepInfraProviderSettings(apiKey = "key", baseURL = "https://deepinfra.test/v1"),
+            DeepInfraProviderSettings {
+                apiKey("key")
+                baseURL("https://deepinfra.test/v1")
+            },
         )
 
-        val chat = provider.chatModel("model").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
-        val completion = provider.completionModel("model").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
-        val embedding = provider.textEmbeddingModel("embed").embed(EmbeddingModelCallParams(listOf("hello")))
-        val image = provider.image("black-forest-labs/FLUX-1-schnell").generate(
-            ImageGenerationParams(
-                prompt = "mountain",
-                n = 2,
-                size = "512x768",
-                aspectRatio = "1:1",
-                seed = 7,
-                providerOptions = mapOf("deepinfra" to buildJsonObject { put("scheduler", JsonPrimitive("fast")) }),
-            ),
+        val chat = provider.chatModel(ModelId("model")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
+        val completion = provider.completionModel(ModelId("model")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
+        val embedding = provider.textEmbeddingModel(ModelId("embed")).embed(
+            EmbeddingModelCallParams {
+                values(listOf("hello"))
+            }
+        )
+        val image = provider.image(ModelId("black-forest-labs/FLUX-1-schnell")).generate(
+            ImageGenerationParams {
+                prompt("mountain")
+                n(2)
+                size("512x768")
+                aspectRatio("1:1")
+                seed(7)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("deepinfra" to buildJsonObject {
+                    put("scheduler", JsonPrimitive("fast"))
+                }))))
+            },
         )
 
         assertEquals(13, chat.usage.completionTokens)
@@ -469,7 +562,7 @@ class OpenAICompatibleProviderFacadesTest {
 
     @Test
     fun `fireworks maps language options and image backends`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://fireworks.test/inference/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -485,43 +578,62 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createFireworks(
+        val provider = Fireworks(
             fixture.httpClient(),
-            FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1"),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("https://fireworks.test/inference/v1")
+            },
         )
 
-        provider.chatModel("model").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
-                providerOptions = mapOf(
-                    "fireworks" to buildJsonObject {
-                        put(
-                            "thinking",
-                            buildJsonObject {
-                                put("type", JsonPrimitive("enabled"))
-                                put("budgetTokens", JsonPrimitive(2048))
-                            },
+        provider.chatModel(ModelId("model")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "fireworks" to buildJsonObject {
+                                    put(
+                                        "thinking",
+                                        buildJsonObject {
+                                            put("type", JsonPrimitive("enabled"))
+                                            put("budgetTokens", JsonPrimitive(2048))
+                                        },
+                                    )
+                                    put("reasoningHistory", JsonPrimitive("preserved"))
+                                },
+                            )
                         )
-                        put("reasoningHistory", JsonPrimitive("preserved"))
-                    },
-                ),
-            ),
+                    )
+                )
+            },
         )
         val chatBody = fixture.calls.single { it.requestUrl.endsWith("/chat/completions") }.requestBodyJson.jsonObject
         assertEquals(2048, chatBody["thinking"]?.jsonObject?.get("budget_tokens")?.jsonPrimitive?.intOrNull)
         assertEquals("preserved", chatBody["reasoning_history"]?.jsonPrimitive?.contentOrNull)
 
-        val workflowImage = provider.image("accounts/fireworks/models/flux-1-dev-fp8").generate(
-            ImageGenerationParams(prompt = "cat", n = 1, size = "512x512", aspectRatio = "1:1"),
+        val workflowImage = provider.image(ModelId("accounts/fireworks/models/flux-1-dev-fp8")).generate(
+            ImageGenerationParams {
+                prompt("cat")
+                n(1)
+                size("512x512")
+                aspectRatio("1:1")
+            },
         )
-        val imageGenerationImage = provider.image("accounts/fireworks/models/SSD-1B").generate(
-            ImageGenerationParams(prompt = "dog", n = 1, size = "768x512", aspectRatio = "16:9"),
+        val imageGenerationImage = provider.image(ModelId("accounts/fireworks/models/SSD-1B")).generate(
+            ImageGenerationParams {
+                prompt("dog")
+                n(1)
+                size("768x512")
+                aspectRatio("16:9")
+            },
         )
 
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), workflowImage.images.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), workflowImage.images.single().base64)
         assertEquals("image/jpeg", workflowImage.images.single().mediaType)
         assertEquals("unsupported", workflowImage.warnings.single().type)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(4, 5, 6)), imageGenerationImage.images.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(4, 5, 6)), imageGenerationImage.images.single().base64)
         assertEquals("unsupported", imageGenerationImage.warnings.single().type)
         val workflowBody = fixture.calls.first { it.requestUrl.contains("text_to_image") }.requestBodyJson.jsonObject
         assertEquals("cat", workflowBody["prompt"]?.jsonPrimitive?.contentOrNull)
@@ -531,7 +643,7 @@ class OpenAICompatibleProviderFacadesTest {
 
     @Test
     fun `fireworks async image model polls and downloads result`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-kontext-pro" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req_1"}""")),
@@ -545,14 +657,21 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createFireworks(
+        val provider = Fireworks(
             fixture.httpClient(),
-            FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1"),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("https://fireworks.test/inference/v1")
+            },
         )
 
-        val image = provider.image("accounts/fireworks/models/flux-kontext-pro").generate(ImageGenerationParams(prompt = "edit"))
+        val image = provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(
+            ImageGenerationParams {
+                prompt("edit")
+            }
+        )
 
-        assertEquals(convertByteArrayToBase64(byteArrayOf(9, 8, 7)), image.images.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(9, 8, 7)), image.images.single().base64)
         assertEquals(
             listOf(
                 "https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-kontext-pro",
@@ -565,7 +684,7 @@ class OpenAICompatibleProviderFacadesTest {
 
     @Test
     fun `togetherai exposes completion embedding image and reranking`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://together.test/v1/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -588,34 +707,59 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createTogetherAI(
+        val provider = TogetherAI(
             fixture.httpClient(),
-            TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1"),
+            TogetherAIProviderSettings {
+                apiKey("key")
+                baseURL("https://together.test/v1")
+            },
         )
 
-        assertEquals("done", provider.completionModel("model").generate(LanguageModelCallParams(listOf(userMessage("hi")))).text)
-        assertEquals(listOf(0.3f, 0.4f), provider.embeddingModel("embed").embed(EmbeddingModelCallParams(listOf("hello"))).embeddings.single())
-        val image = provider.image("black-forest-labs/FLUX.1-dev").generate(
-            ImageGenerationParams(
-                prompt = "house",
-                n = 2,
-                size = "1024x768",
-                seed = 12,
-                providerOptions = mapOf(
-                    "togetherai" to buildJsonObject {
-                        put("steps", JsonPrimitive(8))
-                        put("disable_safety_checker", JsonPrimitive(true))
-                    },
-                ),
-            ),
+        assertEquals(
+            "done",
+            provider.completionModel(ModelId("model")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
         )
-        val ranking = provider.reranking("ranker").rerank(
-            RerankingParams(
-                query = "best",
-                documents = listOf("alpha", "beta"),
-                topN = 1,
-                providerOptions = mapOf("togetherai" to buildJsonObject { put("rankFields", JsonArray(listOf(JsonPrimitive("text")))) }),
-            ),
+        assertEquals(
+            listOf(0.3f, 0.4f),
+            provider.embeddingModel("embed").embed(
+                EmbeddingModelCallParams {
+                    values(listOf("hello"))
+                }
+            ).embeddings.single()
+        )
+        val image = provider.image(ModelId("black-forest-labs/FLUX.1-dev")).generate(
+            ImageGenerationParams {
+                prompt("house")
+                n(2)
+                size("1024x768")
+                seed(12)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "togetherai" to buildJsonObject {
+                                    put("steps", JsonPrimitive(8))
+                                    put("disable_safety_checker", JsonPrimitive(true))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
+        )
+        val ranking = provider.reranking(ModelId("ranker")).rerank(
+            RerankingParams {
+                query("best")
+                documents(listOf("alpha", "beta"))
+                topN(1)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("togetherai" to buildJsonObject {
+                    put("rankFields", JsonArray(listOf(JsonPrimitive("text"))))
+                }))))
+            },
         )
 
         assertEquals("aW1n", image.images.single().base64)
@@ -637,7 +781,7 @@ class OpenAICompatibleProviderFacadesTest {
 
     @Test
     fun `groq exposes transcription and browser search tool`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://groq.test/openai/v1/audio/transcriptions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -647,15 +791,18 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createGroq(
+        val provider = Groq(
             fixture.httpClient(),
-            GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
+            GroqProviderSettings {
+                apiKey("key")
+                baseURL("https://groq.test/openai/v1")
+            },
         )
 
         val transcript = provider.transcription("whisper-large-v3").transcribe(
-            TranscriptionParams(
-                audio = AudioSource(mediaType = "audio/mpeg", base64 = convertByteArrayToBase64(byteArrayOf(1, 2))),
-            ),
+            TranscriptionParams {
+                audio(AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode(byteArrayOf(1, 2))))
+            },
         )
 
         assertEquals("transcribed", transcript.text)
@@ -665,9 +812,9 @@ class OpenAICompatibleProviderFacadesTest {
 
     @Test
     fun `unsupported model families throw provider specific NoSuchModelError`() {
-        val provider = createDeepSeek(
+        val provider = DeepSeek(
             TestServer(mutableMapOf()).httpClient(),
-            DeepSeekProviderSettings(baseURL = "https://deepseek.test"),
+            DeepSeekProviderSettings { baseURL("https://deepseek.test") },
         )
 
         val error = assertFailsWith<NoSuchModelError> {
@@ -676,9 +823,9 @@ class OpenAICompatibleProviderFacadesTest {
 
         assertTrue(error.message.orEmpty().contains("deepseek"))
 
-        val vercel = createVercel(
+        val vercel = Vercel(
             TestServer(mutableMapOf()).httpClient(),
-            VercelProviderSettings(baseURL = "https://vercel.test/v1"),
+            VercelProviderSettings { baseURL("https://vercel.test/v1") },
         )
         val vercelError = assertFailsWith<NoSuchModelError> {
             vercel.imageModel("image")

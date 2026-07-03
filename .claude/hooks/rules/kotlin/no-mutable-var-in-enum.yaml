@@ -1,0 +1,10 @@
+id: no-mutable-var-in-enum
+language: kotlin
+severity: error
+rule:
+  kind: property_declaration
+  has:
+    kind: binding_pattern_kind
+    regex: '^var$'
+  inside:
+    kind: enum_class_body

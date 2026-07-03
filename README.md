@@ -8,63 +8,89 @@ This is a green-room Kotlin rewrite of the architectural contracts, not a TypeSc
 
 - Common Kotlin API for shared agent code.
 - Android library publication.
-- iOS static framework publication for `iosX64`, `iosArm64`, and `iosSimulatorArm64`.
+- iOS Kotlin Multiplatform klibs for `iosX64`, `iosArm64`, and `iosSimulatorArm64` published through Maven; the XCFramework is CI-built but not distributed.
 - JVM artifact for backend and desktop services.
+- Linux/Native `linuxX64` artifact for server-side Kotlin/Native and CLI consumers.
 
 ## Install
 
-Until the first release is published, use a source dependency or `publishToMavenLocal`:
+Use the published beta from Maven Central:
+
+```kotlin
+dependencies {
+    implementation("ai.torad:torad-aisdk:0.3.0-beta01")
+}
+```
+
+For local development against a checkout, use a source dependency or `publishToMavenLocal`:
 
 ```sh
 ./gradlew publishToMavenLocal
 ```
 
-```kotlin
-dependencies {
-    implementation("ai.torad:aisdk-kotlin:0.1.0-SNAPSHOT")
-}
-```
-
 ## Quick Start
 
+<!-- beta-readiness:readme-sample:start -->
 ```kotlin
+import ai.torad.aisdk.LanguageModel
+import ai.torad.aisdk.StepCountIs
+import ai.torad.aisdk.Tool
 import ai.torad.aisdk.ToolLoopAgent
-import ai.torad.aisdk.stepCountIs
-import ai.torad.aisdk.tool
-import ai.torad.aisdk.toolSetOf
-import ai.torad.aisdk.providers.MockLanguageModel
+import ai.torad.aisdk.ToolSet
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 
 @Serializable
 data class EmptyInput(val unused: String = "")
 
-val helloTool = tool<EmptyInput, String, Unit>(
+val helloTool = Tool<EmptyInput, String, Unit>(
     name = "hello",
     description = "Return a greeting.",
     inputSerializer = serializer(),
     outputSerializer = serializer(),
-) { "Hello from a tool." }
+) { _ -> "Hello from a tool." }
 
-val agent = ToolLoopAgent<Unit, String>(
-    model = MockLanguageModel.textOnly("Welcome."),
-    instructions = "Be brief.",
-    tools = toolSetOf(helloTool),
-    stopWhen = stepCountIs(3),
-)
+class HelloAgent(model: LanguageModel, tools: ToolSet<Unit>) :
+    ToolLoopAgent<Unit, String>(
+        model = model,
+        instructions = "Be brief.",
+        tools = tools,
+        stopWhen = StepCountIs(3),
+    )
+
+suspend fun main() {
+    val agent = HelloAgent(
+        model = MockLanguageModelTextOnly("Welcome."),
+        tools = ToolSet(helloTool),
+    )
+
+    val result = agent.generate(prompt = "Say hi").first()
+    println(result.text)
+}
 ```
+<!-- beta-readiness:readme-sample:end -->
+
+Send application prompts through `Agent.generate` / `Agent.stream`, or use
+`TextGenerator(model).generate(...)`, `TextGenerator(model).stream(...)`, and
+`TextGenerator(model).streamResult(...)` for direct text calls. Direct
+`LanguageModel.generate`, `LanguageModel.stream`, and `LanguageModel.streamResult`
+calls are still supported for provider authors and low-level integrations, but
+they require `@OptIn(LowLevelLanguageModelApi::class)`.
 
 ## What Is Included
 
 - `Agent` and `ToolLoopAgent`.
-- Typed `tool()` definitions, `dynamicTool()`, schemas, and `ToolSet`.
-- `generateText`, `streamText`, and cold `Flow<StreamEvent>` streaming.
+- Typed `Tool()` definitions, `DynamicTool()`, schemas, and `ToolSet`.
+- `TextGenerator(model).generate(...)`, `TextGenerator(model).stream(...)`, and cold `Flow<StreamEvent>` streaming.
 - Structured output through `Output.obj`, `Output.array`, `Output.choice`, and `Output.json`.
-- Deprecated v6 compatibility shims: `generateObject` and `streamObject`.
+- Structured text helpers through `TextGenerator.streamResult(...)` and `StreamTextResult`.
 - Embeddings, reranking, image generation, speech generation, transcription, and video generation model contracts.
-- Provider registry and `customProvider` routing.
-- Gateway facade with `createGateway`, `gateway`, gateway metadata APIs, gateway errors, provider-executed gateway tool descriptors, and a Ktor-backed `KtorGatewayTransport`.
-- OpenAI-compatible Ktor provider for chat, completions, embeddings, images, speech, and transcription through `createOpenAICompatible`.
+- Provider registry and `Provider(...)` routing.
+- Gateway facade with `Gateway()`, `gateway`, gateway metadata APIs, gateway errors, provider-executed gateway tool descriptors, and a Ktor-backed `KtorGatewayTransport`.
+- OpenAI-compatible Ktor provider for chat, completions, embeddings, images, speech, and transcription through `OpenAICompatible(...)`.
+- LiteRT-LM adapter for on-device Android/JVM inference via `LiteRTLanguageModel`, preserving SDK-owned generate, stream, reasoning-channel, and tool-loop routing.
 - Provider-utils parity helpers: schemas, IDs, JSON event stream parsing, headers, base64 byte helpers, media and URL validation utilities.
 - Text stream, UI message stream, and chat transport primitives for Kotlin hosts.
 - Telemetry helpers, global/local telemetry integrations, and a KMP tracer/span abstraction.
@@ -80,6 +106,7 @@ Provider facades for the AI SDK v6 package ecosystem are folded into this root a
 - [Docs wiki](docs/wiki/README.md)
 - [Local LLM context](llms.txt)
 - [Interface contract](INTERFACE_CONTRACT.md)
+- [Evolution policy](docs/EVOLUTION.md)
 - [Port notes](docs/AISDK_PORT.md)
 - [Architecture decisions](docs/AISDK_PORT_DECISIONS.md)
 - [Parity ledgers](docs/parity/README.md)
@@ -88,6 +115,7 @@ Provider facades for the AI SDK v6 package ecosystem are folded into this root a
 ## Build
 
 Use JDK 21 to build the project. JVM and Android bytecode target JVM 17.
+Run `tools/bootstrap` once in a fresh clone to activate the committed pre-commit gates.
 
 ```sh
 ./gradlew jvmTest

@@ -1,28 +1,34 @@
 # Settings And Provider Options
 
 Settings control model sampling, limits, cancellation, and provider-specific
-features. AI SDK Kotlin supports both v6-shaped named arguments and a
-Kotlin-first `CallSettings` DSL.
+features. High-level text generation takes a `CallConfig`; agents and step
+hooks use `AgentSettings` and `StepSettings` for dynamic overrides.
 
 ## Call Settings
 
 ```kotlin
-val settings = callSettings {
-    temperature = 0.2f
-    topP = 0.9f
-    maxOutputTokens = 700
-    stopSequence("</answer>")
-    presencePenalty = 0.1f
-    frequencyPenalty = 0.1f
+val config = CallConfig {
+    temperature(0.2f)
+    topP(0.9f)
+    maxOutputTokens(700)
+    stopSequences(listOf("</answer>"))
+    presencePenalty(0.1f)
+    frequencyPenalty(0.1f)
 }
 
-val result = generateText(model = model, settings = settings) {
-    system("Answer as a careful SDK maintainer.")
-    prompt("Explain provider options.")
-}
+val result = TextGenerator(model, config)
+    .generate(
+        GenerationInput.Messages(
+            GenerationInput.NonEmptyMessages.of(
+                SystemMessage("Answer as a careful SDK maintainer."),
+                UserMessage("Explain provider options."),
+            ),
+        ),
+    )
+    .first()
 ```
 
-Use `CallSettings` when a call has several optional knobs. It keeps call sites
+Use `CallConfig` when a call has several optional knobs. It keeps call sites
 readable and makes defaults easy to merge.
 
 ## Provider Options
@@ -33,17 +39,33 @@ Provider options are grouped by provider key:
 @Serializable
 data class OpenAiCallOptions(val reasoningEffort: String)
 
-val options = buildProviderOptions {
-    provider("openai", OpenAiCallOptions(reasoningEffort = "medium"))
-    provider("anthropic") {
+val openAiOptions = OpenAiCallOptions(reasoningEffort = "medium")
+val options = ProviderOptions.ofPairs(
+    "openai" to buildJsonObject {
+        put("reasoningEffort", JsonPrimitive(openAiOptions.reasoningEffort))
+    },
+    "anthropic" to buildJsonObject {
         put("thinking", JsonPrimitive("enabled"))
-    }
-}
+    },
+)
 
-val result = generateText(
-    model = model,
-    prompt = "Draft a migration plan.",
-    providerOptions = options,
+val result = TextGenerator(
+    model,
+    CallConfig {
+        providerOptions(options)
+    },
+)
+    .generate(GenerationInput.Prompt("Draft a migration plan."))
+    .first()
+```
+
+For ad hoc options, `ProviderOptions.ofPairs` is usually enough:
+
+```kotlin
+val options = ProviderOptions.ofPairs(
+    "anthropic" to buildJsonObject {
+        put("thinking", JsonPrimitive("enabled"))
+    },
 )
 ```
 
@@ -55,15 +77,17 @@ Keep provider options typed at app boundaries when the shape is stable. Use
 Use middleware when many calls need the same defaults:
 
 ```kotlin
-val modelWithDefaults = wrapLanguageModel(
+val modelWithDefaults = WrapLanguageModel(
     model = rawModel,
     middlewares = listOf(
-        defaultSettingsMiddleware(
+        DefaultSettingsMiddleware(
             temperature = 0.2f,
             maxOutputTokens = 1_000,
-            providerOptions = buildProviderOptions {
-                provider("openai", OpenAiCallOptions("medium"))
-            },
+            providerOptions = ProviderOptions.ofPairs(
+                "openai" to buildJsonObject {
+                    put("reasoningEffort", JsonPrimitive("medium"))
+                },
+            ),
         ),
     ),
 )
@@ -78,12 +102,16 @@ Use `prepareCall` for request-level decisions:
 
 ```kotlin
 prepareCall = {
-    AgentSettings(
-        instructions = instructions + "\nWorkspace: ${options?.workspaceId}",
-        providerOptions = buildProviderOptions {
-            provider("openai", OpenAiCallOptions("high"))
-        },
-    )
+    AgentSettings<AppContext> {
+        instructions(instructions + "\nWorkspace: ${options?.workspaceId}")
+        providerOptions(
+            ProviderOptions.ofPairs(
+                "openai" to buildJsonObject {
+                    put("reasoningEffort", JsonPrimitive("high"))
+                },
+            ),
+        )
+    }
 }
 ```
 
@@ -92,10 +120,10 @@ context:
 
 ```kotlin
 prepareStep = {
-    StepSettings(
-        model = if (stepNumber == 1) fastModel else strongModel,
-        activeTools = if (stepNumber == 1) listOf("classify") else null,
-    )
+    StepSettings<AppContext> {
+        model(if (stepNumber == 1) fastModel else strongModel)
+        activeTools(if (stepNumber == 1) listOf("classify") else null)
+    }
 }
 ```
 
@@ -104,15 +132,18 @@ prepareStep = {
 ```kotlin
 val controller = AbortController()
 
-val result = generateText(
-    model = model,
-    prompt = "Summarize the report.",
-    abortSignal = controller.signal,
+val result = TextGenerator(
+    model,
+    CallConfig {
+        abortSignal(controller.signal)
+    },
 )
+    .generate(GenerationInput.Prompt("Summarize the report."))
+    .first()
 ```
 
-For coroutine-owned work, derive signals from jobs with `abortSignalFromJob`
-or `abortSignalFromJobs`.
+For coroutine-owned work, derive signals from jobs with `AbortSignalFromJob`
+or `AbortSignals`.
 
 ## Result Metadata
 

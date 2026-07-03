@@ -1,46 +1,45 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.providers.MockAudioSource
 import ai.torad.aisdk.providers.MockEmbeddingModel
 import ai.torad.aisdk.providers.MockImageModel
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import ai.torad.aisdk.providers.MockRerankingModel
 import ai.torad.aisdk.providers.MockSpeechModel
 import ai.torad.aisdk.providers.MockTranscriptionModel
 import ai.torad.aisdk.providers.MockVideoModel
-import ai.torad.aisdk.providers.mockAudioSource
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import ai.torad.aisdk.ui.Chat
 import ai.torad.aisdk.ui.ChatRequest
+import ai.torad.aisdk.ui.CreateTextStreamResponse
+import ai.torad.aisdk.ui.CreateUiMessageStream
 import ai.torad.aisdk.ui.DirectChatTransport
 import ai.torad.aisdk.ui.ServerResponseWriter
+import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.TextStreamChatTransport
+import ai.torad.aisdk.ui.TextStreamFromEvents
 import ai.torad.aisdk.ui.TextUIPartState
+import ai.torad.aisdk.ui.TransformTextToUiMessageStream
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.createTextStreamResponse
-import ai.torad.aisdk.ui.createUiMessageStream
-import ai.torad.aisdk.ui.getResponseUiMessageId
-import ai.torad.aisdk.ui.lastAssistantMessageIsCompleteWithToolCalls
-import ai.torad.aisdk.ui.pipeTextStreamToResponse
-import ai.torad.aisdk.ui.textStreamFromEvents
-import ai.torad.aisdk.ui.transformTextToUiMessageStream
-import ai.torad.aisdk.ui.streamToUiMessages
-import ai.torad.aisdk.ui.validateUiMessages
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.Flow
+import ai.torad.aisdk.ui.UiMessageStreams.getResponseUiMessageId
+import ai.torad.aisdk.ui.UiMessageStreams.lastAssistantMessageIsCompleteWithToolCalls
+import ai.torad.aisdk.ui.UiMessageStreams.pipeTextStreamToResponse
+import ai.torad.aisdk.ui.UiMessageStreams.validateUiMessages
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class FullPortFeatureParityTest {
 
@@ -48,8 +47,8 @@ class FullPortFeatureParityTest {
     fun `embed and embedMany call embedding models and preserve batching settings`() = runTest {
         val model = MockEmbeddingModel(dimensions = 2)
 
-        val single = embed(model, "hello")
-        val many = embedMany(model, listOf("a", "bb", "ccc"), maxEmbeddingsPerCall = 2)
+        val single = Embedding.embed(model, "hello")
+        val many = Embedding.embedMany(model, listOf("a", "bb", "ccc"), maxEmbeddingsPerCall = 2)
 
         assertEquals(listOf(5f, 6f), single.embedding)
         assertEquals(3, many.embeddings.size)
@@ -60,53 +59,53 @@ class FullPortFeatureParityTest {
     @Test
     fun `embedding middleware applies defaults without overriding explicit params`() = runTest {
         val model = MockEmbeddingModel()
-        val wrapped = wrapEmbeddingModel(
+        val wrapped = WrapEmbeddingModel(
             model,
             listOf(
-                defaultEmbeddingSettingsMiddleware(
+                DefaultEmbeddingSettingsMiddleware(
                     maxEmbeddingsPerCall = 4,
                     truncate = true,
-                    providerOptions = mapOf("mock" to JsonPrimitive("default")),
+                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("mock" to JsonPrimitive("default")))),
                     headers = mapOf("x-default" to "yes"),
                 ),
             ),
         )
 
         wrapped.embed(
-            EmbeddingModelCallParams(
-                values = listOf("x"),
-                truncate = false,
-                providerOptions = mapOf("explicit" to JsonPrimitive(1)),
-            ),
+            EmbeddingModelCallParams {
+                values(listOf("x"))
+                truncate(false)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("explicit" to JsonPrimitive(1)))))
+            },
         )
 
         val captured = assertNotNull(model.captured)
         assertEquals(4, captured.maxEmbeddingsPerCall)
         assertEquals(false, captured.truncate)
-        assertEquals(JsonPrimitive("default"), captured.providerOptions["mock"])
-        assertEquals(JsonPrimitive(1), captured.providerOptions["explicit"])
+        assertEquals(JsonPrimitive("default"), captured.providerOptions.toMap()["mock"])
+        assertEquals(JsonPrimitive(1), captured.providerOptions.toMap()["explicit"])
         assertEquals("yes", captured.headers["x-default"])
     }
 
     @Test
     fun `media generation helpers validate inputs and expose generated files`() = runTest {
-        val image = generateImage(MockImageModel(), prompt = "logo", n = 2)
-        val speech = generateSpeech(MockSpeechModel(), text = "hello", voice = "alloy")
-        val transcript = transcribe(MockTranscriptionModel(), audio = mockAudioSource())
-        val video = generateVideo(MockVideoModel(), prompt = "launch reel")
+        val image = ImageGeneration.generateImage(MockImageModel(), prompt = "logo", n = 2)
+        val speech = SpeechGeneration.generateSpeech(MockSpeechModel(), text = "hello", voice = "alloy")
+        val transcript = Transcription.transcribe(MockTranscriptionModel(), audio = MockAudioSource())
+        val video = VideoGeneration.generateVideo(MockVideoModel(), prompt = "launch reel")
 
         assertEquals(2, image.images.size)
         assertEquals("image/png", image.image.mediaType)
         assertEquals("audio/mpeg", speech.audio.mediaType)
         assertEquals("hello world", transcript.text)
         assertEquals("video/mp4", video.video.mediaType)
-        assertFailsWith<IllegalArgumentException> { generateImage(MockImageModel(), prompt = "") }
+        assertFailsWith<IllegalArgumentException> { ImageGeneration.generateImage(MockImageModel(), prompt = "") }
     }
 
     @Test
     fun `rerank preserves provider ranking order and original indexes`() = runTest {
         val model = MockRerankingModel()
-        val result = rerank(
+        val result = Reranking.rerank(
             model = model,
             query = "kotlin",
             documents = listOf("swift ui", "kotlin multiplatform", "java"),
@@ -120,7 +119,7 @@ class FullPortFeatureParityTest {
 
     @Test
     fun `provider registry routes every model family by provider prefix`() {
-        val provider = customProvider(
+        val provider = Provider(
             providerId = "mock",
             embeddingModels = mapOf("embed" to MockEmbeddingModel()),
             imageModels = mapOf("image" to MockImageModel()),
@@ -129,7 +128,7 @@ class FullPortFeatureParityTest {
             rerankingModels = mapOf("rerank" to MockRerankingModel()),
             videoModels = mapOf("video" to MockVideoModel()),
         )
-        val registry = createProviderRegistry("mock" to provider)
+        val registry = ProviderRegistry.createProviderRegistry("mock" to provider)
 
         assertEquals("mock/embedding", registry.embeddingModel("mock:embed").modelId)
         assertEquals("mock/image", registry.imageModel("mock:image").modelId)
@@ -142,8 +141,8 @@ class FullPortFeatureParityTest {
 
     @Test
     fun `dynamic tools and schema wrappers expose provider-utils parity`() = runTest {
-        val schema = jsonSchema<JsonObject>(buildJsonObject { put("type", JsonPrimitive("object")) })
-        val tool = dynamicTool<Unit>(
+        val schema = Schemas.jsonSchema<JsonObject>(buildJsonObject { put("type", JsonPrimitive("object")) })
+        val tool = DynamicTool<Unit>(
             name = "runtimeTool",
             description = "runtime registered",
             inputSchemaJson = schema.jsonSchema.toString(),
@@ -158,22 +157,27 @@ class FullPortFeatureParityTest {
             messages = emptyList(),
             toolCallId = "call_1",
         )
-        val value = with(tool) { ctx.execute(buildJsonObject { put("value", JsonPrimitive("ok")) }) }
+        val value = (
+            tool.execute(
+                buildJsonObject { put("value", JsonPrimitive("ok")) },
+                ctx
+            ).first() as ToolResult.Success
+            ).value
 
         assertEquals("runtimeTool", tool.name)
-        assertEquals(schema, asSchema(schema))
+        assertEquals(schema, Schemas.asSchema(schema))
         assertEquals(JsonPrimitive("ok"), value.jsonObject["seen"])
     }
 
     @Test
     fun `provider executed tools advertise provider execution in model descriptors`() {
-        val tool = providerExecutedTool<JsonElement, JsonElement, Unit>(
+        val tool = ProviderExecutedTool<JsonElement, JsonElement, Unit>(
             name = "webSearch",
             description = "Hosted web search",
             inputSerializer = JsonElement.serializer(),
             outputSerializer = JsonElement.serializer(),
         )
-        val descriptors = toolSetOf(tool).descriptors
+        val descriptors = ToolSet(tool).descriptors
 
         assertEquals(true, descriptors.single().providerExecuted)
     }
@@ -181,67 +185,93 @@ class FullPortFeatureParityTest {
     @Test
     fun `image model middleware can wrap provider models`() = runTest {
         val model = MockImageModel()
-        val wrapped = wrapImageModel(
+        val wrapped = WrapImageModel(
             model,
             listOf(
                 object : ImageModelMiddleware {
                     override suspend fun wrapGenerate(context: ImageMiddlewareCallContext): ImageModelResult =
                         context.doGenerate(
-                            context.params.copy(
-                                providerOptions = context.params.providerOptions + ("wrapped" to JsonPrimitive(true)),
-                            ),
+                            ImageGenerationParams {
+                                prompt(context.params.prompt)
+                                n(context.params.n)
+                                size(context.params.size)
+                                aspectRatio(context.params.aspectRatio)
+                                seed(context.params.seed)
+                                providerOptions(
+                                    context.params.providerOptions +
+                                        ProviderOptions.Raw(JsonObject(mapOf("wrapped" to JsonPrimitive(true) as JsonElement))),
+                                )
+                                headers(context.params.headers)
+                                abortSignal(context.params.abortSignal)
+                                files(context.params.files)
+                                mask(context.params.mask)
+                            },
                         )
                 },
             ),
         )
 
-        generateImage(wrapped, "wrapped")
+        ImageGeneration.generateImage(wrapped, "wrapped")
 
-        assertEquals(JsonPrimitive(true), model.captured?.providerOptions?.get("wrapped"))
+        assertEquals(JsonPrimitive(true), model.captured?.providerOptions?.toMap()?.get("wrapped"))
     }
 
     @Test
     fun `telemetry helpers assemble names select attributes and record spans`() = runTest {
         val tracer = InMemoryTelemetryTracer()
 
-        val settings = TelemetrySettings(
-            isEnabled = true,
-            functionId = "chat",
-            metadata = mapOf("custom" to JsonPrimitive("value")),
-        )
-        val attributes = selectTelemetryAttributes(
+        val settings = TelemetrySettings {
+            isEnabled(true)
+            functionId("chat")
+            metadata(mapOf("custom" to JsonPrimitive("value")))
+            recordInputs(true)
+            recordOutputs(true)
+        }
+        val attributes = TelemetryTracing.selectTelemetryAttributes(
             telemetry = settings,
             input = JsonPrimitive("in"),
             output = JsonPrimitive("out"),
-            providerMetadata = mapOf("mock" to buildJsonObject { put("id", JsonPrimitive("1")) }),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(mapOf("mock" to buildJsonObject { put("id", JsonPrimitive("1")) }))
+            ),
         )
-        recordSpan(assembleOperationName("generateText", settings), tracer, attributes) {}
+        TelemetryTracing.recordSpan(
+            TelemetryTracing.assembleOperationName("generateText", settings),
+            tracer,
+            attributes
+        ) {}
 
         assertEquals("chat.generateText", tracer.spans.single().name)
         assertEquals(JsonPrimitive("in"), tracer.spans.single().attributes["ai.input"])
         assertTrue(tracer.spans.single().attributes["ai.providerMetadata"] is JsonObject)
-        assertEquals("out", stringifyForTelemetry(JsonPrimitive("out")))
+        assertEquals("out", TelemetryTracing.stringifyForTelemetry(JsonPrimitive("out")))
     }
 
     @Test
     fun `utility helpers cover ids media data urls retries and JSON equality`() = runTest {
         var attempts = 0
-        val retried = retryWithExponentialBackoff(RetryPolicy(maxRetries = 1, baseDelayMs = 0)) { attempt ->
+        val retried = RetryPolicy {
+            maxRetries(1)
+            baseDelayMs(0)
+        }.execute { attempt ->
             attempts += 1
-            if (attempt == 0) error("retry")
+            if (attempt == 0) {
+                throw APICallError(
+                    message = "retry",
+                    url = "https://api.test",
+                    statusCode = 500,
+                )
+            }
             "ok"
         }
 
-        val dataUrl = splitDataUrl("data:text/plain;base64,SGk=")
+        val dataUrl = DataUrl.parse("data:text/plain;base64,SGk=")
 
         assertEquals("ok", retried)
         assertEquals(2, attempts)
         assertEquals("text/plain", dataUrl.mediaType)
-        assertEquals("image/png", detectMediaType(filename = "a.png"))
-        assertTrue(generateId("test").startsWith("test-"))
-        assertTrue(isDeepEqualData(JsonPrimitive(1), JsonPrimitive(1.0)))
-        assertFalse(isDeepEqualData(JsonPrimitive(1), JsonPrimitive(2)))
-        assertEquals(listOf(listOf(1, 2), listOf(3)), splitArray(listOf(1, 2, 3), 2))
+        assertEquals("image/png", MediaTypes.detect(filename = "a.png"))
+        assertTrue(IdGenerator.generate("test").startsWith("test-"))
     }
 
     @Test
@@ -252,9 +282,9 @@ class FullPortFeatureParityTest {
             StreamEvent.TextDelta("t1", "lo"),
             StreamEvent.TextEnd("t1"),
         )
-        val text = drainAllItems(textStreamFromEvents(events))
-        val uiMessages = drainAllItems(transformTextToUiMessageStream(flowOf("he", "llo"), "a1"))
-        val response = createTextStreamResponse(flowOf("ok"))
+        val text = drainAllItems(TextStreamFromEvents(events))
+        val uiMessages = drainAllItems(TransformTextToUiMessageStream(flowOf("he", "llo"), "a1"))
+        val response = CreateTextStreamResponse(flowOf("ok"))
         val writer = CapturingWriter()
 
         pipeTextStreamToResponse(flowOf("a", "b"), writer)
@@ -270,7 +300,7 @@ class FullPortFeatureParityTest {
     @Test
     fun `raw data stream chunks become UI data parts`() = runTest {
         val messages = drainAllItems(
-            streamToUiMessages(
+            StreamToUiMessages(
                 flowOf(
                     StreamEvent.Raw(
                         buildJsonObject {
@@ -290,7 +320,7 @@ class FullPortFeatureParityTest {
 
     @Test
     fun `streamTextResult exposes text and UI response facades`() = runTest {
-        val result = streamTextResult(model = mockLanguageModelTextOnly("hello"), prompt = "hi")
+        val result = TextGenerator(MockLanguageModelTextOnly("hello")).streamResult(GenerationInput.Prompt("hi"))
         val text = drainAllItems(result.textStream)
         val ui = drainAllItems(result.toUiMessageStream("a1"))
 
@@ -303,12 +333,12 @@ class FullPortFeatureParityTest {
     @Test
     fun `create UI message stream emits writer messages and error messages`() = runTest {
         val ok = drainAllItems(
-            createUiMessageStream {
+            CreateUiMessageStream {
                 write(assistant("a1", "hello"))
             },
         )
         val failed = drainAllItems(
-            createUiMessageStream {
+            CreateUiMessageStream {
                 error("bad")
             },
         )
@@ -323,10 +353,15 @@ class FullPortFeatureParityTest {
             flowOf(assistant("assistant-1", "pong"))
         }
         val chat = Chat(id = "c1", transport = transport)
-        val emitted = drainAllItems(chat.sendMessage(UIMessage("u1", UIMessageRole.User, listOf(UIMessagePart.Text("ping")))))
+        val emitted =
+            drainAllItems(chat.sendMessage(UIMessage("u1", UIMessageRole.User, listOf(UIMessagePart.Text("ping")))))
         val textTransport = TextStreamChatTransport(handler = { flowOf("he", "llo") })
         val textMessages = drainAllItems(
-            textTransport.sendMessages(ChatRequest(listOf(UIMessage("u2", UIMessageRole.User, listOf(UIMessagePart.Text("hi")))))),
+            textTransport.sendMessages(
+                ChatRequest {
+                    messages(listOf(UIMessage("u2", UIMessageRole.User, listOf(UIMessagePart.Text("hi")))))
+                }
+            ),
         )
 
         assertEquals("pong", (emitted.single().parts.single() as UIMessagePart.Text).text)

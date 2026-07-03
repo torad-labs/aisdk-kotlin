@@ -1,17 +1,17 @@
-package ai.torad.aisdk
-import ai.torad.aisdk.providers.HuggingFaceProviderSettings
-import ai.torad.aisdk.providers.createHuggingFace
-import ai.torad.aisdk.providers.huggingface
+@file:OptIn(LowLevelLanguageModelApi::class)
 
-import ai.torad.aisdk.testing.drainAllItems
+package ai.torad.aisdk
+import ai.torad.aisdk.providers.HuggingFace
+import ai.torad.aisdk.providers.HuggingFaceProviderSettings
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -27,7 +27,7 @@ import kotlin.test.assertTrue
 class HuggingFaceProviderTest {
     @Test
     fun `responses model sends Hugging Face request and maps output parts`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://hf.test/v1/responses" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -104,78 +104,90 @@ class HuggingFaceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createHuggingFace(
+        val provider = HuggingFace(
             fixture.httpClient(),
-            HuggingFaceProviderSettings(
-                apiKey = "key",
-                baseURL = "https://hf.test/v1",
-                headers = mapOf("X-Provider" to "provider"),
-                generateId = { "generated-id" },
-            ),
+            HuggingFaceProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://hf.test/v1")
+                headers(mapOf("X-Provider" to "provider"))
+                generateId { "generated-id" }
+            }),
         )
 
-        val result = provider.responses("Qwen/Qwen3-32B").generate(
-            LanguageModelCallParams(
-                messages = listOf(
-                    systemMessage("System rules."),
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Text("Where is Paris?"),
-                            ContentPart.Image("image/png", "iVBORw0="),
-                            ContentPart.File("image/*", "abc="),
+        val result = provider.responses(ModelId("Qwen/Qwen3-32B")).generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        SystemMessage("System rules."),
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Text("Where is Paris?"),
+                                ContentPart.Image("image/png", "iVBORw0="),
+                                ContentPart.File("image/*", "abc="),
+                            ),
                         ),
-                    ),
-                    assistantMessage("Previous answer."),
-                    ModelMessage(
-                        MessageRole.Assistant,
-                        listOf(ContentPart.Reasoning("Previous reasoning.")),
-                    ),
-                    toolMessage("call-old", "old", JsonPrimitive("ignored")),
-                ),
-                tools = listOf(
-                    LanguageModelTool(
-                        name = "lookup",
-                        description = "Lookup city details.",
-                        parametersSchemaJson = objectSchema("city").toString(),
-                    ),
-                    LanguageModelTool(
-                        name = "providerHosted",
-                        description = "Provider hosted tool.",
-                        parametersSchemaJson = """{"type":"object"}""",
-                        providerExecuted = true,
-                    ),
-                ),
-                toolChoice = ToolChoice.Specific("lookup"),
-                temperature = 0.2f,
-                topP = 0.9f,
-                topK = 10,
-                maxOutputTokens = 256,
-                stopSequences = listOf("STOP"),
-                seed = 99,
-                presencePenalty = 0.1f,
-                frequencyPenalty = 0.2f,
-                responseFormat = ResponseFormat.Json(
-                    schemaName = "Answer",
-                    schemaDescription = "Structured answer.",
-                    schemaJson = objectSchema("answer"),
-                ),
-                providerOptions = mapOf(
-                    "huggingface" to buildJsonObject {
-                        put(
-                            "metadata",
-                            buildJsonObject { put("trace", JsonPrimitive("abc")) },
+                        AssistantMessage("Previous answer."),
+                        ModelMessage(
+                            MessageRole.Assistant,
+                            listOf(ContentPart.Reasoning("Previous reasoning.")),
+                        ),
+                        ToolMessage("call-old", "old", JsonPrimitive("ignored")),
+                    )
+                )
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            name = "lookup",
+                            description = "Lookup city details.",
+                            parametersSchemaJson = objectSchema("city").toString(),
+                        ),
+                        LanguageModelTool(
+                            name = "providerHosted",
+                            description = "Provider hosted tool.",
+                            parametersSchemaJson = """{"type":"object"}""",
+                            providerExecuted = true,
+                        ),
+                    )
+                )
+                toolChoice(ToolChoice.Specific("lookup"))
+                temperature(0.2f)
+                topP(0.9f)
+                topK(10)
+                maxOutputTokens(256)
+                stopSequences(listOf("STOP"))
+                seed(99)
+                presencePenalty(0.1f)
+                frequencyPenalty(0.2f)
+                responseFormat(
+                    ResponseFormat.Json(
+                        schemaName = "Answer",
+                        schemaDescription = "Structured answer.",
+                        schemaJson = objectSchema("answer"),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "huggingface" to buildJsonObject {
+                                    put(
+                                        "metadata",
+                                        buildJsonObject { put("trace", JsonPrimitive("abc")) },
+                                    )
+                                    put("instructions", JsonPrimitive("Provider instructions."))
+                                    put("strictJsonSchema", JsonPrimitive(true))
+                                    put("reasoningEffort", JsonPrimitive("medium"))
+                                },
+                            )
                         )
-                        put("instructions", JsonPrimitive("Provider instructions."))
-                        put("strictJsonSchema", JsonPrimitive(true))
-                        put("reasoningEffort", JsonPrimitive("medium"))
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
-        assertEquals("huggingface.responses", provider("Qwen/Qwen3-32B").provider)
+        assertEquals("huggingface.responses", provider(ModelId("Qwen/Qwen3-32B")).provider)
         assertEquals("Paris is in France.", result.text)
         assertEquals(FinishReason.ToolCalls, result.finishReason)
         assertEquals("tool_calls", result.rawFinishReason)
@@ -188,16 +200,35 @@ class HuggingFaceProviderTest {
         assertEquals("resp-1", result.response.id)
         assertEquals(1_780_000_000_000, result.response.timestampMillis)
         assertEquals("Qwen/Qwen3-32B", result.response.modelId)
-        assertEquals("resp-1", result.providerMetadata["huggingface"]?.jsonObject?.get("responseId")?.jsonPrimitive?.contentOrNull)
-        assertEquals("Use the cached city context.", result.content.filterIsInstance<ContentPart.Reasoning>().single().text)
+        assertEquals(
+            "resp-1",
+            result.providerMetadata.toMap()["huggingface"]?.jsonObject?.get("responseId")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            "Use the cached city context.",
+            result.content.filterIsInstance<ContentPart.Reasoning>().single().text
+        )
         assertEquals("Paris", result.content.filterIsInstance<ContentPart.Source>().single().title)
         assertEquals(listOf("lookup", "remoteLookup", "list_tools"), result.toolCalls.map { it.toolName })
         assertEquals("Paris", result.toolCalls[0].input.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
-        assertEquals(true, result.toolCalls[1].providerMetadata?.get("huggingface")?.jsonObject?.get("providerExecuted")?.jsonPrimitive?.booleanOrNull)
+        assertEquals(
+            true,
+            result.toolCalls[1].providerMetadata.toMap()["huggingface"]?.jsonObject?.get(
+                "providerExecuted"
+            )?.jsonPrimitive?.booleanOrNull
+        )
         assertEquals("docs", result.toolCalls[2].input.jsonObject["server_label"]?.jsonPrimitive?.contentOrNull)
         assertEquals(3, result.content.filterIsInstance<ContentPart.ToolResult>().size)
         assertEquals(
-            setOf("topK", "seed", "presencePenalty", "frequencyPenalty", "stopSequences", "tool messages", "provider-defined tool providerHosted"),
+            setOf(
+                "topK",
+                "seed",
+                "presencePenalty",
+                "frequencyPenalty",
+                "stopSequences",
+                "tool messages",
+                "provider-defined tool providerHosted"
+            ),
             result.warnings.mapNotNull { it.message }.toSet(),
         )
 
@@ -221,7 +252,10 @@ class HuggingFaceProviderTest {
         assertEquals(true, format?.get("strict")?.jsonPrimitive?.booleanOrNull)
         assertEquals("Answer", format?.get("name")?.jsonPrimitive?.contentOrNull)
         assertEquals("Structured answer.", format?.get("description")?.jsonPrimitive?.contentOrNull)
-        assertEquals("lookup", body["tools"]?.jsonArray?.single()?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "lookup",
+            body["tools"]?.jsonArray?.single()?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(
             "lookup",
             body["tool_choice"]?.jsonObject?.get("function")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull,
@@ -232,16 +266,28 @@ class HuggingFaceProviderTest {
         assertEquals("System rules.", input[0].jsonObject["content"]?.jsonPrimitive?.contentOrNull)
         val userContent = input[1].jsonObject["content"]?.jsonArray.orEmpty()
         assertEquals("input_text", userContent[0].jsonObject["type"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("data:image/png;base64,iVBORw0=", userContent[1].jsonObject["image_url"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("data:image/jpeg;base64,abc=", userContent[2].jsonObject["image_url"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "data:image/png;base64,iVBORw0=",
+            userContent[1].jsonObject["image_url"]?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            "data:image/jpeg;base64,abc=",
+            userContent[2].jsonObject["image_url"]?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("assistant", input[2].jsonObject["role"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("Previous answer.", input[2].jsonObject["content"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
-        assertEquals("Previous reasoning.", input[3].jsonObject["content"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "Previous answer.",
+            input[2].jsonObject["content"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            "Previous reasoning.",
+            input[3].jsonObject["content"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
     fun `stream maps Hugging Face response events`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://hf.test/v1/responses" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -274,18 +320,20 @@ class HuggingFaceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createHuggingFace(
+        val provider = HuggingFace(
             fixture.httpClient(),
-            HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"),
+            HuggingFaceProviderSettings(block = {
+                baseURL("https://hf.test/v1")
+            }),
         )
 
         val events = drainAllItems(
-            provider.responses("meta-llama/Llama-3.1-8B-Instruct").stream(
-                LanguageModelCallParams(
-                    messages = listOf(userMessage("hi")),
-                    tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())),
-                    toolChoice = ToolChoice.Required,
-                ),
+            provider.responses(ModelId("meta-llama/Llama-3.1-8B-Instruct")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                    tools(listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())))
+                    toolChoice(ToolChoice.Required)
+                },
             ),
         )
 
@@ -302,7 +350,10 @@ class HuggingFaceProviderTest {
         assertEquals(FinishReason.Stop, finish.finishReason)
         assertEquals(1, finish.usage.promptTokens)
         assertEquals(1, finish.usage.outputTokens.reasoning)
-        assertEquals("resp-stream", finish.providerMetadata?.get("huggingface")?.jsonObject?.get("responseId")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "resp-stream",
+            finish.providerMetadata.toMap()["huggingface"]?.jsonObject?.get("responseId")?.jsonPrimitive?.contentOrNull
+        )
 
         val request = fixture.calls.single()
         assertEquals(true, request.requestBodyJson.jsonObject["stream"]?.jsonPrimitive?.booleanOrNull)
@@ -312,7 +363,7 @@ class HuggingFaceProviderTest {
 
     @Test
     fun `stream surfaces Hugging Face missing output item as error`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://hf.test/v1/responses" to UrlHandler(
                     UrlResponse.StreamChunks(listOf("""data: {"type":"response.output_item.done"}""")),
@@ -320,9 +371,23 @@ class HuggingFaceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createHuggingFace(fixture.httpClient(), HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"))
+        val provider = HuggingFace(
+            fixture.httpClient(),
+            HuggingFaceProviderSettings(block = {
+                baseURL("https://hf.test/v1")
+            }),
+        )
 
-        val events = drainAllItems(provider.responses("meta-llama/Llama-3.1-8B-Instruct").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val events =
+            drainAllItems(
+                provider.responses(
+                    ModelId("meta-llama/Llama-3.1-8B-Instruct")
+                ).stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    }
+                )
+            )
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("missing item"))
@@ -330,8 +395,8 @@ class HuggingFaceProviderTest {
 
     @Test
     fun `unsupported embedding and image factories match upstream guidance`() {
-        val fixture = createTestServer(mutableMapOf())
-        val provider = createHuggingFace(fixture.httpClient())
+        val fixture = TestServer.createTestServer(mutableMapOf())
+        val provider = HuggingFace(fixture.httpClient())
 
         val embedding = assertFailsWith<NoSuchModelError> {
             provider.embeddingModel("embed")
@@ -349,7 +414,7 @@ class HuggingFaceProviderTest {
 
     @Test
     fun `tool choice none is omitted and non-image files are rejected`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://hf.test/v1/responses" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -380,17 +445,19 @@ class HuggingFaceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createHuggingFace(
+        val provider = HuggingFace(
             fixture.httpClient(),
-            HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"),
+            HuggingFaceProviderSettings(block = {
+                baseURL("https://hf.test/v1")
+            }),
         )
 
-        val result = provider("model").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
-                tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())),
-                toolChoice = ToolChoice.None,
-            ),
+        val result = provider(ModelId("model")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())))
+                toolChoice(ToolChoice.None)
+            },
         )
 
         assertEquals("ok", result.text)
@@ -398,15 +465,17 @@ class HuggingFaceProviderTest {
         assertTrue("tool_choice" !in fixture.calls.single().requestBodyJson.jsonObject)
 
         val error = assertFailsWith<AiSdkException> {
-            provider("model").generate(
-                LanguageModelCallParams(
-                    messages = listOf(
-                        ModelMessage(
-                            MessageRole.User,
-                            listOf(ContentPart.File("text/plain", "dGV4dA==", "notes.txt")),
-                        ),
-                    ),
-                ),
+            provider(ModelId("model")).generate(
+                LanguageModelCallParams {
+                    messages(
+                        listOf(
+                            ModelMessage(
+                                MessageRole.User,
+                                listOf(ContentPart.File("text/plain", "dGV4dA==", "notes.txt")),
+                            ),
+                        )
+                    )
+                },
             )
         }
         assertTrue(error.message.orEmpty().contains("text/plain"))

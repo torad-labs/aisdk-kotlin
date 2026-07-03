@@ -1,21 +1,29 @@
+@file:OptIn(ExperimentalAiSdkApi::class)
+
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModel
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
-import kotlinx.coroutines.delay
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * Best practice #8 + v6 RPC semantics — tool with `needsApproval = true`
@@ -30,12 +38,50 @@ import kotlinx.serialization.serializer
 class ToolApprovalTest {
 
     @Serializable data class SendInput(val message: String)
+
     @Serializable data class SendResult(val sent: Boolean)
+
+    @Serializable data class Receipt(val status: String)
+
+    private fun duplicateApprovalAgent(executed: MutableList<String>) = TestToolLoopAgent<Unit, String>(
+        model = MockLanguageModel(
+            responses = listOf(
+                ai.torad.aisdk.providers.ScriptedResponse(
+                    events = listOf(
+                        StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "first") }),
+                        StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "second") }),
+                    ),
+                    finishReason = FinishReason.ToolCalls,
+                ),
+                ai.torad.aisdk.providers.ScriptedResponse(
+                    events = listOf(
+                        StreamEvent.TextStart("t1"),
+                        StreamEvent.TextDelta("t1", "done"),
+                        StreamEvent.TextEnd("t1"),
+                    ),
+                ),
+            ),
+        ),
+        instructions = "use send",
+        tools = ToolSet(
+            Tool<SendInput, SendResult, Unit>(
+                name = "send",
+                description = "send message",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+                needsApproval = { _, _ -> true },
+            ) { input ->
+                executed += input.message
+                SendResult(sent = true)
+            },
+        ),
+        experimental_toolApprovalSecret = "approval-secret".encodeToByteArray(),
+    )
 
     @Test
     fun `needsApproval_returns_pending_then_resumes_on_approval_response`() = runTest {
         var executed = false
-        val sendTool = tool<SendInput, SendResult, Unit>(
+        val sendTool = Tool<SendInput, SendResult, Unit>(
             name = "send",
             description = "send message",
             inputSerializer = serializer(),
@@ -47,26 +93,26 @@ class ToolApprovalTest {
         }
 
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
-                toolInput = mockToolInput("message" to "hey friend"),
+                toolInput = MockToolInput("message" to "hey friend"),
                 finalText = "sent",
             ),
             instructions = "use send",
-            tools = toolSetOf(sendTool),
+            tools = ToolSet(sendTool),
         )
 
-        val first = agent.generate(prompt = "trigger")
+        val first = agent.generate(prompt = "trigger").first()
         assertEquals(FinishReason.ToolApprovalRequested, first.finishReason)
         assertEquals(1, first.pendingApprovals.size, "one pending approval")
         assertEquals("send", first.pendingApprovals[0].toolName)
         assertEquals(false, executed, "tool not executed before approval")
 
-        val approval = toolApprovalResponseMessage(
+        val approval = ToolApprovalResponseMessage(
             toolCallId = first.pendingApprovals[0].toolCallId,
             approved = true,
         )
-        val resumed = agent.generate(messages = first.messages + approval)
+        val resumed = agent.generate(messages = first.messages + approval).first()
         assertEquals(true, executed, "tool executed after approval")
         assertEquals("sent", resumed.text)
         assertEquals(FinishReason.Stop, resumed.finishReason)
@@ -76,7 +122,7 @@ class ToolApprovalTest {
     @Test
     fun `needsApproval_denial_records_denial_in_message_log`() = runTest {
         var executed = false
-        val sendTool = tool<SendInput, SendResult, Unit>(
+        val sendTool = Tool<SendInput, SendResult, Unit>(
             name = "send",
             description = "send message",
             inputSerializer = serializer(),
@@ -88,31 +134,31 @@ class ToolApprovalTest {
         }
 
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
-                toolInput = mockToolInput("message" to "spam"),
+                toolInput = MockToolInput("message" to "spam"),
                 finalText = "ok skipped",
             ),
             instructions = "use send",
-            tools = toolSetOf(sendTool),
+            tools = ToolSet(sendTool),
         )
 
-        val first = agent.generate(prompt = "trigger")
+        val first = agent.generate(prompt = "trigger").first()
         assertEquals(1, first.pendingApprovals.size)
 
-        val denial = toolApprovalResponseMessage(
+        val denial = ToolApprovalResponseMessage(
             toolCallId = first.pendingApprovals[0].toolCallId,
             approved = false,
             reason = "user said no",
         )
-        val resumed = agent.generate(messages = first.messages + denial)
+        val resumed = agent.generate(messages = first.messages + denial).first()
         assertEquals(false, executed, "tool NOT executed after denial")
         assertEquals("ok skipped", resumed.text)
     }
 
     @Test
     fun `approval gate malformed input emits structured tool error`() = runTest {
-        val sendTool = tool<SendInput, SendResult, Unit>(
+        val sendTool = Tool<SendInput, SendResult, Unit>(
             name = "send",
             description = "send message",
             inputSerializer = serializer(),
@@ -123,13 +169,13 @@ class ToolApprovalTest {
         }
 
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
                 toolInput = JsonObject(emptyMap()),
                 finalText = "sent",
             ),
             instructions = "use send",
-            tools = toolSetOf(sendTool),
+            tools = ToolSet(sendTool),
         )
 
         val events = agent.stream(prompt = "trigger").toList()
@@ -142,7 +188,7 @@ class ToolApprovalTest {
     @Test
     fun `engine approval resume preserves original context for approved tool`() = runTest {
         val seenContexts = mutableListOf<String?>()
-        val sendTool = tool<SendInput, SendResult, String>(
+        val sendTool = Tool<SendInput, SendResult, String>(
             name = "send",
             description = "send message",
             inputSerializer = serializer(),
@@ -154,13 +200,13 @@ class ToolApprovalTest {
         }
 
         val agent = TestToolLoopAgent<String, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
-                toolInput = mockToolInput("message" to "hey friend"),
+                toolInput = MockToolInput("message" to "hey friend"),
                 finalText = "sent",
             ),
             instructions = "use send",
-            tools = toolSetOf(sendTool),
+            tools = ToolSet(sendTool),
         )
 
         agent.dispatchEngineAction(ToolLoopAgentAction.UserSubmitPrompt("trigger", context = "request-context"))
@@ -174,10 +220,203 @@ class ToolApprovalTest {
         agent.dispatchEngineAction(ToolLoopAgentAction.ApproveToolCall(pending.toolCallId))
         withContext(Dispatchers.Default) {
             withTimeout(1_000) {
-                while (seenContexts.isEmpty() || agent.engineState.value.isStreaming) delay(10)
+                while (seenContexts.isEmpty() || agent.engineState.value.phase == ToolLoopAgentState.Phase.Streaming) delay(
+                    10
+                )
             }
         }
 
         assertEquals(listOf<String?>("request-context"), seenContexts)
+    }
+
+    @Test
+    fun `engine approval resume uses the latest prepareStep experimental context`() = runTest {
+        val seenContexts = mutableListOf<String?>()
+        val sendTool = Tool<SendInput, SendResult, String>(
+            name = "send",
+            description = "send message",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+            needsApproval = { _, _ -> true },
+        ) { _ ->
+            seenContexts += context
+            SendResult(sent = true)
+        }
+
+        val agent = TestToolLoopAgent<String, String>(
+            model = MockLanguageModelToolThenText(
+                toolName = "send",
+                toolInput = MockToolInput("message" to "hey friend"),
+                finalText = "sent",
+            ),
+            instructions = "use send",
+            tools = ToolSet(sendTool),
+            prepareStep = {
+                StepSettings {
+                    experimental_context("step-context")
+                }
+            },
+        )
+
+        agent.dispatchEngineAction(ToolLoopAgentAction.UserSubmitPrompt("trigger", context = "request-context"))
+        withContext(Dispatchers.Default) {
+            withTimeout(1_000) {
+                while (agent.engineState.value.pendingApprovals.isEmpty()) delay(10)
+            }
+        }
+
+        val pending = agent.engineState.value.pendingApprovals.single()
+        agent.dispatchEngineAction(ToolLoopAgentAction.ApproveToolCall(pending.toolCallId))
+        withContext(Dispatchers.Default) {
+            withTimeout(1_000) {
+                while (seenContexts.isEmpty() || agent.engineState.value.phase == ToolLoopAgentState.Phase.Streaming) delay(
+                    10
+                )
+            }
+        }
+
+        assertEquals(listOf<String?>("step-context"), seenContexts)
+    }
+
+    @Test
+    fun `engine approval resume preserves approval ids for duplicate signed tool calls`() = runTest {
+        val executed = mutableListOf<String>()
+        val agent = duplicateApprovalAgent(executed)
+
+        agent.dispatchEngineAction(ToolLoopAgentAction.UserSubmitPrompt("trigger"))
+        withContext(Dispatchers.Default) {
+            withTimeout(1_000) {
+                while (agent.engineState.value.pendingApprovals.size < 2) delay(10)
+            }
+        }
+
+        agent.dispatchEngineAction(ToolLoopAgentAction.ApproveToolCall("dup"))
+        withContext(Dispatchers.Default) {
+            withTimeout(1_000) {
+                while (
+                    executed.size < 2 ||
+                    agent.engineState.value.phase == ToolLoopAgentState.Phase.Streaming
+                ) {
+                    delay(10)
+                }
+            }
+        }
+
+        assertEquals(listOf("first", "second"), executed)
+        val responses = agent.engineState.value.messages
+            .flatMap { it.content }
+            .filterIsInstance<ContentPart.ToolApprovalResponse>()
+        assertEquals(2, responses.size)
+        assertTrue(responses.all { it.approvalId != null })
+    }
+
+    @Test
+    fun `approval paused structured generate keeps pending approvals and blocks output access`() =
+        runTest {
+            val sendTool = Tool<SendInput, SendResult, Unit>(
+                name = "send",
+                description = "send message",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+                needsApproval = { _, _ -> true },
+            ) { _ ->
+                SendResult(sent = true)
+            }
+
+            val agent = TestToolLoopAgent<Unit, Receipt>(
+                model = MockLanguageModelToolThenText(
+                    toolName = "send",
+                    toolInput = MockToolInput("message" to "hey friend"),
+                    finalText = """{"status":"sent"}""",
+                ),
+                instructions = "use send",
+                tools = ToolSet(sendTool),
+                output = Output.obj(serializer<Receipt>()),
+            )
+
+            val first = agent.generate(prompt = "trigger").first()
+
+            assertEquals(FinishReason.ToolApprovalRequested, first.finishReason)
+            assertEquals(1, first.pendingApprovals.size)
+            assertFailsWith<NoOutputGeneratedError> { first.output }
+        }
+
+    @Test
+    fun `engine cancel aborts the live tool signal`() = runTest {
+        val entered = CompletableDeferred<Unit>()
+        val aborted = CompletableDeferred<Boolean>()
+        val sendTool = Tool<SendInput, SendResult, Unit>(
+            name = "send",
+            description = "send message",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            entered.complete(Unit)
+            try {
+                CompletableDeferred<Unit>().await()
+                SendResult(sent = true)
+            } catch (cancelled: CancellationException) {
+                aborted.complete(abortSignal.isAborted)
+                throw cancelled
+            } finally {
+                if (!aborted.isCompleted) aborted.complete(abortSignal.isAborted)
+            }
+        }
+
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = MockLanguageModelToolThenText(
+                toolName = "send",
+                toolInput = MockToolInput("message" to "hey friend"),
+                finalText = "sent",
+            ),
+            instructions = "use send",
+            tools = ToolSet(sendTool),
+        )
+
+        agent.dispatchEngineAction(ToolLoopAgentAction.UserSubmitPrompt("trigger", context = Unit))
+        entered.await()
+        agent.dispatchEngineAction(ToolLoopAgentAction.Cancel)
+
+        withContext(Dispatchers.Default) {
+            withTimeout(1_000) {
+                assertTrue(aborted.await(), "engine cancel must flip the tool abort signal")
+            }
+        }
+    }
+
+    @Test
+    fun `engine approval resume with an unknown id preserves the real pending approvals`() = runTest {
+        val sendTool = Tool<SendInput, SendResult, Unit>(
+            name = "send",
+            description = "send message",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+            needsApproval = { _, _ -> true },
+        ) { _ ->
+            SendResult(sent = true)
+        }
+
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = MockLanguageModelToolThenText(
+                toolName = "send",
+                toolInput = MockToolInput("message" to "hey friend"),
+                finalText = "sent",
+            ),
+            instructions = "use send",
+            tools = ToolSet(sendTool),
+        )
+
+        agent.dispatchEngineAction(ToolLoopAgentAction.UserSubmitPrompt("trigger", context = Unit))
+        withContext(Dispatchers.Default) {
+            withTimeout(1_000) {
+                while (agent.engineState.value.pendingApprovals.isEmpty()) delay(10)
+            }
+        }
+
+        val originalPending = agent.engineState.value.pendingApprovals
+        agent.dispatchEngineAction(ToolLoopAgentAction.ApproveToolCall("missing-approval"))
+
+        assertEquals(originalPending, agent.engineState.value.pendingApprovals)
+        assertIs<ToolLoopAgentState.Phase.Error>(agent.engineState.value.phase)
     }
 }

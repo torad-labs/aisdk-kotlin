@@ -1,0 +1,32 @@
+id: no-mutable-collection-in-public-fun
+language: kotlin
+severity: error
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: visibility_modifier
+          regex: '^public$'
+    - any:
+        - has:
+            kind: user_type
+            all:
+              - has:
+                  kind: type_identifier
+                  regex: '^Mutable(List|Map|Set)$'
+                  stopBy: end
+              - not:
+                  precedes:
+                    regex: '^\.$'
+        - has:
+            kind: function_value_parameters
+            has:
+              kind: parameter
+              has:
+                kind: user_type
+                has:
+                  kind: type_identifier
+                  regex: '^Mutable(List|Map|Set)$'
+                  stopBy: end

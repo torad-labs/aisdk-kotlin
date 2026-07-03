@@ -1,0 +1,11 @@
+id: no-hardcoded-dispatcher-in-builder
+language: kotlin
+severity: warning
+message: "Hardcoded Dispatchers in a coroutine builder; inject a `CoroutineContext` (e.g. `context: CoroutineContext = Dispatchers.Default`) and pass it here."
+rule:
+  any:
+    - pattern: withContext(Dispatchers.$D) { $$$BODY }
+    - pattern: launch(Dispatchers.$D) { $$$BODY }
+    - pattern: async(Dispatchers.$D) { $$$BODY }
+    - pattern: $RCV.launch(Dispatchers.$D) { $$$BODY }
+    - pattern: $RCV.async(Dispatchers.$D) { $$$BODY }

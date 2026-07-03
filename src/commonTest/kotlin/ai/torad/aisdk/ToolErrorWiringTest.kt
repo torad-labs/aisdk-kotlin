@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -24,7 +24,7 @@ class ToolErrorWiringTest {
     @Serializable
     data class WeatherIn(val city: String)
 
-    private fun weatherTool(body: (WeatherIn) -> String) = tool<WeatherIn, String, Unit>(
+    private fun weatherTool(body: (WeatherIn) -> String) = Tool<WeatherIn, String, Unit>(
         name = "weather",
         description = "Get weather",
         inputSerializer = serializer(),
@@ -44,9 +44,9 @@ class ToolErrorWiringTest {
     fun `given the model calls a tool not in the set when run then ToolError carries a typed NoSuchTool`() = runTest {
         // GIVEN — the set has only "weather"; the model calls "ghost".
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(toolName = "ghost", toolInput = validInput, finalText = "done"),
+            model = MockLanguageModelToolThenText(toolName = "ghost", toolInput = validInput, finalText = "done"),
             instructions = "",
-            tools = toolSetOf(weatherTool { "sunny in ${it.city}" }),
+            tools = ToolSet(weatherTool { "sunny in ${it.city}" }),
         )
 
         // WHEN
@@ -62,9 +62,9 @@ class ToolErrorWiringTest {
     fun `given a tool executor that throws when run then ToolError carries a typed ToolExecution`() = runTest {
         // GIVEN — the tool exists, but its executor blows up.
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(toolName = "weather", toolInput = validInput, finalText = "done"),
+            model = MockLanguageModelToolThenText(toolName = "weather", toolInput = validInput, finalText = "done"),
             instructions = "",
-            tools = toolSetOf(weatherTool { error("db down") }),
+            tools = ToolSet(weatherTool { error("db down") }),
         )
 
         // WHEN
@@ -81,9 +81,9 @@ class ToolErrorWiringTest {
     fun `given malformed args and no repair when run then ToolError carries a typed InvalidToolInput`() = runTest {
         // GIVEN — model emits {location} for a tool wanting {city}; no repair fn.
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(toolName = "weather", toolInput = malformedInput, finalText = "done"),
+            model = MockLanguageModelToolThenText(toolName = "weather", toolInput = malformedInput, finalText = "done"),
             instructions = "",
-            tools = toolSetOf(weatherTool { "sunny in ${it.city}" }),
+            tools = ToolSet(weatherTool { "sunny in ${it.city}" }),
         )
 
         // WHEN
@@ -101,13 +101,13 @@ class ToolErrorWiringTest {
         runTest {
             // GIVEN — decode fails, repair runs but returns null.
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformedInput,
                     finalText = "done",
                 ),
                 instructions = "",
-                tools = toolSetOf(weatherTool { "sunny in ${it.city}" }),
+                tools = ToolSet(weatherTool { "sunny in ${it.city}" }),
                 experimental_repairToolCall = { _, _, _, _ -> null },
             )
 
@@ -128,13 +128,13 @@ class ToolErrorWiringTest {
             // (e.g. the model re-prompt failed). The stock modelRepromptRepair
             // calls model.generate(), which can throw on a constrained device.
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformedInput,
                     finalText = "done",
                 ),
                 instructions = "",
-                tools = toolSetOf(weatherTool { "sunny in ${it.city}" }),
+                tools = ToolSet(weatherTool { "sunny in ${it.city}" }),
                 experimental_repairToolCall = { _, _, _, _ -> error("repair model unreachable") },
             )
 

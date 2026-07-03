@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.coroutines.CompletableDeferred
@@ -33,7 +35,7 @@ class ToolLoopAgentSupersessionTest {
                 LanguageModelResult(
                     text = "",
                     finishReason = FinishReason.Stop,
-                    usage = Usage(promptTokens = 1, completionTokens = 1),
+                    usage = Usage.of(promptTokens = 1, completionTokens = 1),
                 )
 
             override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
@@ -42,14 +44,14 @@ class ToolLoopAgentSupersessionTest {
                 emit(StreamEvent.TextStart("t1"))
                 emit(StreamEvent.TextDelta("t1", "call$n"))
                 emit(StreamEvent.TextEnd("t1"))
-                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)))
+                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage.of(promptTokens = 1, completionTokens = 1)))
             }
         }
         // Run engine jobs on the test scheduler so submit/cancel ordering is deterministic.
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "Be brief.",
-            tools = toolSet {},
+            tools = ToolSet<Unit>(),
             engineContext = StandardTestDispatcher(testScheduler),
         )
 
@@ -70,9 +72,9 @@ class ToolLoopAgentSupersessionTest {
             .flatMap { it.content }
             .filterIsInstance<ContentPart.Text>()
             .map { it.text }
-        assertFalse(agent.engineState.value.isStreaming, "must not be stuck streaming")
+        assertEquals(ToolLoopAgentState.Phase.Idle, agent.engineState.value.phase, "must not be stuck streaming")
         assertTrue(texts.none { it.contains("call1") }, "stale superseded result must not appear: $texts")
         assertTrue(texts.any { it == "call2" }, "must converge to the latest submission: $texts")
-        assertEquals(null, agent.engineState.value.error)
+        assertFalse(agent.engineState.value.phase is ToolLoopAgentState.Phase.Error, "engine must finish without error")
     }
 }
