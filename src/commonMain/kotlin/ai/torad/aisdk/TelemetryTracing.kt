@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlin.jvm.JvmSynthetic
+
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -161,6 +163,7 @@ public interface TelemetryActiveSpan {
 
 /** @since 0.3.0-beta01 */
 public interface TelemetryTracer {
+    @JvmSynthetic
     public suspend fun <T> startActiveSpan(
         name: String,
         attributes: Map<String, JsonElement> = emptyMap(),

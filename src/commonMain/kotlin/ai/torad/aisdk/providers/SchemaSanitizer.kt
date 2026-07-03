@@ -9,30 +9,34 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 
 internal object SchemaSanitizer {
+    enum class Target {
+        Standard,
+        GoogleOpenApi,
+    }
+
     fun stripUnsupportedSchemaKeys(
         schema: JsonElement,
         dropAdditionalProperties: Boolean,
-        googleOpenApi: Boolean = false,
-    ): JsonElement = if (!googleOpenApi) {
-        when (schema) {
+        target: Target = Target.Standard,
+    ): JsonElement = when (target) {
+        Target.Standard -> when (schema) {
             is JsonArray -> JsonArray(
-                schema.map { SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties) }
+                schema.map { SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties, target) }
             )
             is JsonObject -> buildJsonObject {
                 for ((key, value) in schema) {
                     when {
                         key == "\$schema" || key == "title" -> Unit
                         dropAdditionalProperties && key == "additionalProperties" -> Unit
-                        else -> put(key, SchemaSanitizer.stripUnsupportedSchemaKeys(value, dropAdditionalProperties))
+                        else -> put(key, SchemaSanitizer.stripUnsupportedSchemaKeys(value, dropAdditionalProperties, target))
                     }
                 }
             }
             else -> schema
         }
-    } else {
-        when (schema) {
+        Target.GoogleOpenApi -> when (schema) {
             is JsonArray -> JsonArray(schema.map {
-                SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties, googleOpenApi = true)
+                SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties, Target.GoogleOpenApi)
             })
             is JsonObject -> buildJsonObject {
                 val obj = schema
@@ -66,7 +70,7 @@ internal object SchemaSanitizer {
                                     SchemaSanitizer.stripUnsupportedSchemaKeys(
                                         value,
                                         dropAdditionalProperties,
-                                        googleOpenApi = true
+                                        Target.GoogleOpenApi,
                                     )
                                 )
                             }
@@ -76,7 +80,7 @@ internal object SchemaSanitizer {
                 obj["items"]?.let {
                     put(
                         "items",
-                        SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties, googleOpenApi = true)
+                        SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties, Target.GoogleOpenApi)
                     )
                 }
                 for (combiner in listOf("allOf", "anyOf", "oneOf")) {
@@ -86,7 +90,7 @@ internal object SchemaSanitizer {
                                 SchemaSanitizer.stripUnsupportedSchemaKeys(
                                     it,
                                     dropAdditionalProperties,
-                                    googleOpenApi = true
+                                    Target.GoogleOpenApi,
                                 )
                             }))
                         } else {
@@ -96,7 +100,7 @@ internal object SchemaSanitizer {
                                     SchemaSanitizer.stripUnsupportedSchemaKeys(
                                         it,
                                         dropAdditionalProperties,
-                                        googleOpenApi = true
+                                        Target.GoogleOpenApi,
                                     )
                                 }))
                             } else {
@@ -104,7 +108,7 @@ internal object SchemaSanitizer {
                                     when (val converted = SchemaSanitizer.stripUnsupportedSchemaKeys(
                                         nonNullSchemas.single(),
                                         dropAdditionalProperties,
-                                        googleOpenApi = true
+                                        Target.GoogleOpenApi,
                                     )) {
                                         is JsonObject -> converted.forEach { (key, value) -> put(key, value) }
                                         else -> put(combiner, JsonArray(listOf(converted)))
@@ -116,7 +120,7 @@ internal object SchemaSanitizer {
                                             SchemaSanitizer.stripUnsupportedSchemaKeys(
                                                 it,
                                                 dropAdditionalProperties,
-                                                googleOpenApi = true
+                                                Target.GoogleOpenApi,
                                             )
                                         }),
                                     )

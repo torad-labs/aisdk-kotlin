@@ -36,7 +36,7 @@ class RegistryCustomProviderR5Test {
         val mw = object : LanguageModelMiddleware {
             override fun overrideModelId(model: LanguageModel) = "wrapped"
         }
-        val registry = ProviderRegistry.createProviderRegistry(
+        val registry = ProviderRegistry(
             mapOf("p" to providerWith("p", stubModel("p/inner"))),
             languageModelMiddleware = listOf(mw),
         )

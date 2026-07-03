@@ -15,6 +15,9 @@ import kotlinx.serialization.json.contentOrNull
 
 public const val GROQ_VERSION: String = "3.0.39"
 
+// Groq supports the browser_search tool only on these models; elsewhere it is dropped.
+private val GROQ_BROWSER_SEARCH_MODELS = setOf("openai/gpt-oss-20b", "openai/gpt-oss-120b")
+
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -31,7 +34,7 @@ public class GroqProviderSettings internal constructor(
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(
+        ForFacade(
             name = name,
             version = version,
             baseURL = baseURL,
@@ -107,12 +110,7 @@ public class GroqProviderSettings internal constructor(
             "completion_tokens_details",
             "reasoning_tokens"
         ).coerceAtMost(completionTokens)
-        return Usage.fromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
-    }
-
-    private companion object {
-        // Groq supports the browser_search tool only on these models; elsewhere it is dropped.
-        private val GROQ_BROWSER_SEARCH_MODELS = setOf("openai/gpt-oss-20b", "openai/gpt-oss-120b")
+        return UsageFromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
     }
 }
 

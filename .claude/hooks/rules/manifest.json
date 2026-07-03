@@ -556,5 +556,13 @@
     "hunkExpectation": "same",
     "badHunkExample": "public object ProviderModels {\n    public fun Provider.languageModel(id: ModelId): LanguageModel = languageModel(id.value)\n}\n",
     "goodHunkExample": "public object AbortSignals {\n    public fun from(job: Job): AbortSignal = AbortSignalFromJob(job)\n}\n"
+  },
+  {
+    "id": "no-companion-objects",
+    "severity": "error",
+    "yaml": "id: no-companion-objects\nlanguage: kotlin\nseverity: error\nmessage: \"Move companion object members to top-level declarations in the same file, before the class.\"\nfiles:\n  - \"**/*.kt\"\nignores:\n  - \"**/test/**\"\n  - \"**/ModelRef.kt\"\n  - \"**/TypeIds.kt\"\nrule:\n  kind: companion_object",
+    "badExample": "public class Settings {\n    companion object {\n        fun create(): Settings = Settings()\n    }\n}\n",
+    "goodExample": "public fun Settings(): Settings = Settings()\n\npublic class Settings internal constructor()\n",
+    "hunkExpectation": "same"
   }
 ]

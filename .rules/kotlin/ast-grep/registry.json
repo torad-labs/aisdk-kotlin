@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "autofix": [
+    {"id": "no-throwable-catch-without-rethrow"}
+  ]
+}

@@ -36,7 +36,7 @@ class CookbookDocSnippetTest {
             temperature(0.2f)
             maxOutputTokens(800)
             providerOptions(
-                ProviderOptions.ofPairs(
+                ProviderOptions(
                     "openai" to buildJsonObject {
                         put("reasoningEffort", JsonPrimitive("medium"))
                     },
@@ -46,12 +46,12 @@ class CookbookDocSnippetTest {
 
         val result = TextGenerator(model, config).generate(
             GenerationInput.Messages(
-                GenerationInput.NonEmptyMessages.of(
+                GenerationInputNonEmptyMessages(
                     SystemMessage("Answer as an SDK maintainer."),
                     UserMessage("Route this request: user needs invoice copy."),
                 ),
             ),
-            output = Output.obj(serializer<RouteDecision>(), name = "RouteDecision"),
+            output = OutputObj(serializer<RouteDecision>(), name = "RouteDecision"),
         ).first()
 
         assertEquals(RouteDecision("billing", 0.9), result.output)

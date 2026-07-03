@@ -1,0 +1,22 @@
+id: no-flow-collect-in-init
+language: kotlin
+severity: warning
+message: "`.collect` inside init starts flow collection during construction, before the instance has a lifecycle-scoped CoroutineScope to cancel it with. Start collection from an explicit start()/onCreate() method instead."
+note: |
+  Matches `.collect { ... }` and `.collect(...)` anywhere under an init
+  block (including inside a `launch { }`/`async { }` started in init, which
+  is the common real-world shape of this bug: the coroutine is scheduled as
+  a direct effect of construction, before the caller ever gets a reference
+  to cancel it). A `.collect` inside a lambda that is merely assigned to a
+  property for later invocation (a stored callback, not an
+  immediately-scheduled coroutine builder) is a narrower false-positive
+  risk this heuristic does not special-case; treat such a hit as a false
+  positive. Tenet: explicit construction over magic (construction should
+  not have side effects that outlive the constructor call).
+rule:
+  kind: anonymous_initializer
+  has:
+    stopBy: end
+    any:
+      - pattern: $FLOW.collect { $$$BODY }
+      - pattern: $FLOW.collect($$$ARGS)

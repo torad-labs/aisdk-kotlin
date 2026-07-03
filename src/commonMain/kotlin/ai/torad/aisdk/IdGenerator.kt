@@ -3,6 +3,13 @@ package ai.torad.aisdk
 import kotlin.random.Random
 
 /** @since 0.3.0-beta01 */
+public fun GenerateId(prefix: String? = null, random: Random = Random.Default): String =
+    IdGenerator {
+        prefix(prefix)
+        random(random)
+    }.generate()
+
+/** @since 0.3.0-beta01 */
 public class IdGenerator internal constructor(
     /** @since 0.3.0-beta01 */
     public val prefix: String? = null,
@@ -28,15 +35,6 @@ public class IdGenerator internal constructor(
             }
         }
         return prefix?.let { "$it$separator$suffix" } ?: suffix
-    }
-
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun generate(prefix: String? = null, random: Random = Random.Default): String =
-            IdGenerator {
-                prefix(prefix)
-                random(random)
-            }.generate()
     }
 }
 

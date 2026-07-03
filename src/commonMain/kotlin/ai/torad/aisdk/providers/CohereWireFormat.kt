@@ -292,7 +292,7 @@ internal object CohereWireFormat {
         val obj = call as? JsonObject ?: return null
         val function = (JsonAccess.obj(obj, "function")) ?: JsonObject(emptyMap())
         return ContentPart.ToolCall(
-            toolCallId = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
+            toolCallId = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId("call"),
             toolName = (function["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             input = cohereToolInput((function["arguments"] as? JsonPrimitive)?.contentOrNull),
         )

@@ -20,7 +20,7 @@ class ModelRefTest {
     @Test
     fun `provider registry resolves typed model references`() {
         val model = MockLanguageModelTextOnly("ok")
-        val registry = ProviderRegistry.createProviderRegistry(
+        val registry = ProviderRegistry(
             "openai" to Provider(
                 providerId = "openai",
                 languageModels = mapOf("gpt-5" to model),

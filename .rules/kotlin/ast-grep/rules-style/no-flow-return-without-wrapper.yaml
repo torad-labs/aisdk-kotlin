@@ -1,0 +1,21 @@
+id: no-flow-return-without-wrapper
+language: kotlin
+severity: warning
+message: "Public function returns Flow<...> directly. kotlinx.coroutines.Flow has no stable ABI for Java/Swift/Obj-C consumers of this KMP library — a raw Flow in the public surface forces every non-Kotlin caller to hand-roll a collector. Provide (or pair this with) a blocking/callback-friendly wrapper — a suspend function returning the terminal value, a listener-based API, or a platform-specific bridge — instead of exposing Flow as the only entry point."
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: visibility_modifier
+          regex: '^public$'
+    - has:
+        kind: user_type
+        all:
+          - has:
+              kind: type_identifier
+              regex: '^Flow$'
+          - follows:
+              kind: function_value_parameters
+              stopBy: end

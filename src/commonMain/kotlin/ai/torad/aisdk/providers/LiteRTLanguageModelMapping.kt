@@ -126,7 +126,7 @@ internal class LiteRTCallPreparer(
         if (!hasSamplerOverride(params) && settings.defaultSamplerConfig == null) {
             return null
         }
-        val base = settings.defaultSamplerConfig ?: LiteRTSamplerConfig.Default
+        val base = settings.defaultSamplerConfig ?: LiteRTSamplerConfigDefault
         return LiteRTSamplerConfig {
             topK(params.topK ?: base.topK)
             topP(params.topP?.toDouble() ?: base.topP)
@@ -195,12 +195,12 @@ internal class LiteRTRequestMessageMapper(
     fun contents(message: ModelMessage, role: MessageRole): List<LiteRTContent> =
         message.content.mapNotNull { part ->
             when (part) {
-                is ContentPart.Text -> LiteRTContent.Text(part.text)
+                is ContentPart.Text -> LiteRTContentText(part.text)
                 is ContentPart.Image -> media(part.mediaType, part.base64, part.url, image = true)
                 is ContentPart.File -> file(part)
                 is ContentPart.ToolResult ->
                     if (role == MessageRole.Tool) {
-                        LiteRTContent.ToolResponse(part.toolName, part.modelVisible)
+                        LiteRTContentToolResponse(part.toolName, part.modelVisible)
                     } else {
                         null
                     }
@@ -231,7 +231,7 @@ internal class LiteRTRequestMessageMapper(
             part.mediaType.startsWith("image/") -> media(part.mediaType, part.base64, part.url, image = true)
             part.mediaType.startsWith("audio/") -> media(part.mediaType, part.base64, part.url, image = false)
             part.mediaType == "text/plain" && part.base64.isNotEmpty() ->
-                LiteRTContent.Text(Base64Codec.decode(part.base64).decodeToString())
+                LiteRTContentText(Base64Codec.decode(part.base64).decodeToString())
             else -> throw UnsupportedFunctionalityError(
                 "LiteRT file media",
                 "LiteRTLanguageModel only supports image/*, audio/*, and base64 text/plain file parts.",
@@ -246,14 +246,14 @@ internal class LiteRTRequestMessageMapper(
     ): LiteRTContent {
         val bytes = when {
             base64.isNotEmpty() -> LiteRTBytes(Base64Codec.decode(base64))
-            url?.startsWith("data:") == true -> LiteRTBytes(Base64Codec.decode(DataUrl.parse(url).base64))
+            url?.startsWith("data:") == true -> LiteRTBytes(Base64Codec.decode(DataUrl(url).base64))
             else -> null
         }
         if (bytes != null) {
             return if (image) {
-                LiteRTContent.ImageBytes(bytes, mediaType)
+                LiteRTContentImageBytes(bytes, mediaType)
             } else {
-                LiteRTContent.AudioBytes(bytes, mediaType)
+                LiteRTContentAudioBytes(bytes, mediaType)
             }
         }
         val path = url?.takeIf { !it.contains("://") && !it.startsWith("data:") }
@@ -262,9 +262,9 @@ internal class LiteRTRequestMessageMapper(
                 "LiteRTLanguageModel requires inline base64 data or an absolute local file path for media.",
             )
         return if (image) {
-            LiteRTContent.ImageFile(path, mediaType)
+            LiteRTContentImageFile(path, mediaType)
         } else {
-            LiteRTContent.AudioFile(path, mediaType)
+            LiteRTContentAudioFile(path, mediaType)
         }
     }
 }

@@ -1,0 +1,39 @@
+id: no-companion-factory-without-invoke
+language: kotlin
+severity: warning
+message: "Companion object exposes a create()/of()/from() factory without an `operator fun invoke`; add `operator fun invoke(...)` so callers can construct with `Type(...)` instead of `Type.create(...)`."
+note: |
+  General Kotlin idiom: a companion `operator fun invoke` lets callers write
+  `Type(args)` instead of `Type.create(args)`/`Type.of(args)`, which reads
+  like ordinary construction. This repo's own construct-type convention
+  (see CLAUDE.md's builder/DSL pattern, e.g. `CohereProviderSettings { ... }`)
+  already achieves the same "looks like construction" ergonomic via a
+  top-level PascalCase factory FUNCTION rather than a companion `invoke` —
+  that pattern does not trip this rule (it has no companion `create`/`of`/
+  `from`). This rule targets the specific shape of a companion object that
+  chose the create/of/from naming without also adding invoke; it does not
+  mandate invoke over this repo's established DSL-factory convention.
+rule:
+  kind: companion_object
+  all:
+    - has:
+        kind: class_body
+        has:
+          kind: function_declaration
+          has:
+            kind: simple_identifier
+            regex: '^(create|of|from)$'
+    - not:
+        has:
+          kind: class_body
+          has:
+            kind: function_declaration
+            all:
+              - has:
+                  kind: simple_identifier
+                  regex: '^invoke$'
+              - has:
+                  kind: modifiers
+                  has:
+                    kind: function_modifier
+                    regex: '^operator$'

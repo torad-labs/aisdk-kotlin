@@ -109,7 +109,7 @@ public class AmazonBedrockProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
     /** @since 0.3.0-beta01 */
-    public val generateId: () -> String = { IdGenerator.generate() },
+    public val generateId: () -> String = { GenerateId() },
 ) {
     internal fun bedrockRuntimeBaseURL(): String =
         baseURL?.trimEnd('/')
@@ -147,7 +147,7 @@ public class AmazonBedrockProviderSettingsBuilder {
     private var baseURL: String? = null
     private var agentBaseURL: String? = null
     private var headers: Map<String, String> = emptyMap()
-    private var generateId: () -> String = { IdGenerator.generate() }
+    private var generateId: () -> String = { GenerateId() }
 
     /** @since 0.3.0-beta01 */
     public fun region(value: String?): AmazonBedrockProviderSettingsBuilder {
@@ -594,9 +594,9 @@ private class BedrockMantleChatLanguageModel(
             val toolName = (function["name"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
             val arguments = (function["arguments"] as? JsonPrimitive)?.contentOrNull
             ContentPart.ToolCall(
-                toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
+                toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId("call"),
                 toolName = toolName,
-                input = ContentPart.ToolCall.parseOpenAIToolInput(arguments),
+                input = ParseOpenAIToolInput(arguments),
             )
         }
         return LanguageModelResult(
@@ -645,7 +645,7 @@ private class BedrockMantleChatLanguageModel(
 
     private fun bedrockOpenAILikeUsage(element: JsonElement?): Usage {
         val obj = element as? JsonObject ?: return Usage()
-        return Usage.of(
+        return Usage(
             promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
             completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
         )

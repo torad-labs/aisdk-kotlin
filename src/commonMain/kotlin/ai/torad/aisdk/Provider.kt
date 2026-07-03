@@ -295,6 +295,21 @@ public fun Provider(
 }
 
 /** @since 0.3.0-beta01 */
+public fun ProviderRegistry(
+    vararg providers: Pair<String, Provider>,
+    defaultProviderId: String? = null,
+    separator: String = ":",
+    languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
+): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId, separator, languageModelMiddleware)
+
+/** @since 0.3.0-beta01 */
+public fun SplitProviderModelId(modelId: String, separator: String = ":"): Pair<String?, String> {
+    val colon = modelId.indexOf(separator)
+    if (colon <= 0) return null to modelId
+    return modelId.substring(0, colon) to modelId.substring(colon + separator.length)
+}
+
+/** @since 0.3.0-beta01 */
 public class ProviderRegistry(
     private val providers: Map<String, Provider>,
     private val defaultProviderId: String? = null,
@@ -334,7 +349,7 @@ public class ProviderRegistry(
         resolve(modelId) { provider, localId -> provider.videoModel(localId) }
 
     private fun <T> resolve(modelId: String, getter: (Provider, String) -> T): T {
-        val (providerId, localModelId) = splitProviderModelId(modelId, separator)
+        val (providerId, localModelId) = SplitProviderModelId(modelId, separator)
         val resolvedProviderId = providerId ?: defaultProviderId ?: singleProviderId()
         return getter(provider(resolvedProviderId), localModelId)
     }
@@ -345,31 +360,6 @@ public class ProviderRegistry(
             "modelId",
             "must include a provider prefix when more than one provider is registered"
         )
-    }
-
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun createProviderRegistry(
-            providers: Map<String, Provider>,
-            defaultProviderId: String? = null,
-            separator: String = ":",
-            languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
-        ): ProviderRegistry = ProviderRegistry(providers, defaultProviderId, separator, languageModelMiddleware)
-
-        /** @since 0.3.0-beta01 */
-        public fun createProviderRegistry(
-            vararg providers: Pair<String, Provider>,
-            defaultProviderId: String? = null,
-            separator: String = ":",
-            languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
-        ): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId, separator, languageModelMiddleware)
-
-        /** @since 0.3.0-beta01 */
-        public fun splitProviderModelId(modelId: String, separator: String = ":"): Pair<String?, String> {
-            val colon = modelId.indexOf(separator)
-            if (colon <= 0) return null to modelId
-            return modelId.substring(0, colon) to modelId.substring(colon + separator.length)
-        }
     }
 }
 

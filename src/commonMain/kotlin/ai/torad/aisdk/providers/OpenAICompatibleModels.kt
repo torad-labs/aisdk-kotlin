@@ -242,12 +242,12 @@ internal class OpenAICompatibleCompletionLanguageModel(
                 is ParseResult.Success -> {
                     val value = event.value.jsonObject
                     if (!emittedResponseMetadata) {
-                        StreamEvent.ResponseMetadata.fromOpenAI(value)?.let {
+                        StreamEventResponseMetadataFromOpenAI(value)?.let {
                             emit(it)
                             emittedResponseMetadata = true
                         }
                     }
-                    value["usage"]?.let { usage = Usage.fromOpenAI(it) }
+                    value["usage"]?.let { usage = UsageFromOpenAI(it) }
                     val choice = ((JsonAccess.arr(value, "choices"))?.firstOrNull() as? JsonObject)
                     val text = (choice?.get("text") as? JsonPrimitive)?.contentOrNull
                     if (!text.isNullOrEmpty()) {
@@ -258,7 +258,7 @@ internal class OpenAICompatibleCompletionLanguageModel(
                         emit(StreamEvent.TextDelta("txt-0", text))
                     }
                     (choice?.get("finish_reason") as? JsonPrimitive)?.contentOrNull?.let {
-                        finish = FinishReason.fromOpenAI(it)
+                        finish = FinishReasonFromOpenAI(it)
                         rawFinish = it
                     }
                 }
@@ -407,7 +407,7 @@ internal class OpenAICompatibleImageModel(
                 responseObject["providerMetadata"],
                 settings.name
             ).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
-            usage = ImageModelUsage.fromOpenAI(responseObject["usage"]),
+            usage = ImageModelUsageFromOpenAI(responseObject["usage"]),
         )
     }
 

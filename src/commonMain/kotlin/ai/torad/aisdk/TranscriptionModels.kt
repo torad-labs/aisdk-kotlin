@@ -3,6 +3,8 @@
 
 package ai.torad.aisdk
 
+import kotlin.jvm.JvmSynthetic
+
 import dev.drewhamilton.poko.Poko
 
 /** @since 0.3.0-beta01 */
@@ -14,6 +16,7 @@ public interface TranscriptionModel {
     public val provider: String
         get() = "unknown"
 
+    @JvmSynthetic
     public suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult
 }
 
@@ -168,6 +171,7 @@ public class TranscribeResult(
 
 /** @since 0.3.0-beta01 */
 public object Transcription {
+    @JvmSynthetic
     public suspend fun transcribe(
         model: TranscriptionModel,
         audio: AudioSource,
@@ -204,6 +208,7 @@ public object Transcription {
 
     @ExperimentalAiSdkApi
     @Suppress("FunctionNaming")
+    @JvmSynthetic
     public suspend fun experimental_transcribe(
         model: TranscriptionModel,
         audio: AudioSource,

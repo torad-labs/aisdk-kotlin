@@ -1,0 +1,17 @@
+id: no-hardcoded-baseurl
+language: kotlin
+severity: warning
+message: "A URL literal is hardcoded directly into HTTP client setup (a `baseUrl`-shaped property, or an argument to `url(...)`/`host(...)`). Hardcoding the endpoint bypasses any configurable settings surface (e.g. a provider's `baseURL` builder property) and forces a recompile to point at a different environment (staging, a proxy, a self-hosted instance). Make it a constructor/builder parameter with the literal only as its default."
+rule:
+  kind: string_literal
+  all:
+    - has: { kind: string_content, regex: '^https?://' }
+    - inside:
+        stopBy: end
+        any:
+          - kind: call_expression
+            has: { kind: simple_identifier, regex: '(?i)^(url|host|baseurl)$' }
+          - kind: property_declaration
+            has:
+              kind: variable_declaration
+              has: { kind: simple_identifier, regex: '(?i)(base.?url|endpoint|apiurl)' }

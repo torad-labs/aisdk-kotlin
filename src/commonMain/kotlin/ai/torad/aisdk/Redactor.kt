@@ -70,6 +70,11 @@ public fun RedactionOptions(
 ): RedactionOptions =
     RedactionOptionsBuilder().apply(block).build()
 
+private val TOKEN_PATTERNS: List<Regex> = listOf(
+    Regex("\\b(Bearer|Basic)\\s+[-._~+/=A-Za-z0-9]+", RegexOption.IGNORE_CASE),
+    Regex("\\b(api[-_ ]?key|token|secret)\\s*[:=]\\s*[-._~+/=A-Za-z0-9]+", RegexOption.IGNORE_CASE),
+)
+
 /** @since 0.3.0-beta01 */
 public class DefaultRedactor(
     private val options: RedactionOptions = RedactionOptions {},
@@ -126,13 +131,6 @@ public class DefaultRedactor(
         } else {
             redactJson(value)
         }
-    }
-
-    private companion object {
-        private val TOKEN_PATTERNS: List<Regex> = listOf(
-            Regex("\\b(Bearer|Basic)\\s+[-._~+/=A-Za-z0-9]+", RegexOption.IGNORE_CASE),
-            Regex("\\b(api[-_ ]?key|token|secret)\\s*[:=]\\s*[-._~+/=A-Za-z0-9]+", RegexOption.IGNORE_CASE),
-        )
     }
 }
 

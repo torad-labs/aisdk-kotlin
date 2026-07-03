@@ -292,7 +292,14 @@ internal object GoogleInteractions {
                     put("type", JsonPrimitive("text"))
                     put("mime_type", JsonPrimitive("application/json"))
                     responseFormat.schemaJson?.let {
-                        put("schema", SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties = true, googleOpenApi = true))
+                        put(
+                            "schema",
+                            SchemaSanitizer.stripUnsupportedSchemaKeys(
+                                it,
+                                dropAdditionalProperties = true,
+                                target = SchemaSanitizer.Target.GoogleOpenApi,
+                            ),
+                        )
                     }
                 }
             }
@@ -327,7 +334,7 @@ internal object GoogleInteractions {
                         SchemaSanitizer.stripUnsupportedSchemaKeys(
                             aiSdkJson.parseToJsonElement(tool.parametersSchemaJson),
                             dropAdditionalProperties = true,
-                            googleOpenApi = true,
+                            target = SchemaSanitizer.Target.GoogleOpenApi,
                         ),
                     )
                 }
@@ -496,7 +503,7 @@ internal object GoogleInteractions {
                 "function_call" -> {
                     hasFunctionCall = true
                     content += ContentPart.ToolCall(
-                        toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
+                        toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
                         // Fail loudly on a missing/blank function_call name instead of fabricating "".
                         toolName = WireDecoder.requiredString(step, "name", "google", "interactions response", "$.function_call"),
                         input = step["arguments"] ?: JsonObject(emptyMap()),
@@ -510,7 +517,7 @@ internal object GoogleInteractions {
                     if (type != null && type.endsWith("_call")) {
                         hasFunctionCall = true
                         content += ContentPart.ToolCall(
-                            toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
+                            toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
                             toolName = if (type == "mcp_server_tool_call") {
                                 (step["name"] as? JsonPrimitive)?.contentOrNull ?: "mcp_server_tool"
                             } else {
@@ -523,7 +530,7 @@ internal object GoogleInteractions {
                         )
                     } else if (type != null && type.endsWith("_result")) {
                         content += ContentPart.ToolResult(
-                            toolCallId = (step["call_id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
+                            toolCallId = (step["call_id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
                             toolName = if (type == "mcp_server_tool_result") {
                                 (step["name"] as? JsonPrimitive)?.contentOrNull ?: "mcp_server_tool"
                             } else {
@@ -561,7 +568,7 @@ internal object GoogleInteractions {
                 providerMetadata = metadata?.let {
                     ProviderMetadata.Raw(JsonObject(it))
                 } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
-                    put("id", JsonPrimitive(IdGenerator.generate()))
+                    put("id", JsonPrimitive(GenerateId()))
                 }))),
             )
             "file_citation" -> ContentPart.Source(
@@ -571,7 +578,7 @@ internal object GoogleInteractions {
                 providerMetadata = metadata?.let {
                     ProviderMetadata.Raw(JsonObject(it))
                 } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
-                    put("id", JsonPrimitive(IdGenerator.generate()))
+                    put("id", JsonPrimitive(GenerateId()))
                 }))),
             )
             else -> googleUnknownAnnotationSource(annotation, url, metadata)
@@ -601,7 +608,7 @@ internal object GoogleInteractions {
         metadata: Map<String, JsonElement>?,
     ): ProviderMetadata {
         val base = metadata.orEmpty()
-        val google = (base["google"] as? JsonObject)
+        val google = JsonAccess.obj(base, "google")
             ?.let { JsonObject(it + ("annotation" to annotation)) }
             ?: annotation
         return ProviderMetadata.Raw(JsonObject(base + ("google" to google)))

@@ -34,6 +34,77 @@ internal data class GoogleConvertedMessages(
     val warnings: List<CallWarning>,
 )
 
+private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
+
+internal fun GoogleUsage(element: JsonElement?): Usage {
+    val obj = element as? JsonObject ?: return Usage()
+    val prompt = (obj["promptTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
+    val candidates = (obj["candidatesTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
+    val thoughts = (obj["thoughtsTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
+    val cached = (obj["cachedContentTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
+    // Match upstream: output total = candidates + thoughts (not clamped); cached input
+    // tokens map to cacheRead with noCache = prompt - cached.
+    return Usage(
+        inputTokens = Usage.InputTokenBreakdown(
+            total = prompt,
+            noCache = prompt - cached,
+            cacheRead = cached,
+        ),
+        outputTokens = Usage.OutputTokenBreakdown(
+            total = candidates + thoughts,
+            reasoning = thoughts,
+            text = candidates,
+        ),
+        raw = element,
+    )
+}
+
+internal fun MapGoogleFinishReason(reason: String?, hasToolCalls: Boolean): FinishReason =
+    if (reason == "STOP" && hasToolCalls) {
+        FinishReason.ToolCalls
+    } else {
+        when (reason) {
+            "STOP" -> FinishReason.Stop
+            "MAX_TOKENS" -> FinishReason.Length
+            "SAFETY", "IMAGE_SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII",
+            -> FinishReason.ContentFilter
+            // Upstream maps MALFORMED_FUNCTION_CALL to 'error', not content-filter.
+            "MALFORMED_FUNCTION_CALL" -> FinishReason.Error
+            else -> FinishReason.Other
+        }
+    }
+
+internal fun GooglePartMetadata(part: JsonObject): Map<String, JsonElement>? {
+    val metadata = buildJsonObject {
+        part["thought"]?.let { put("thought", it) }
+        part["thoughtSignature"]?.let { put("thoughtSignature", it) }
+    }
+    return if (metadata.isEmpty()) null else mapOf("google" to metadata)
+}
+
+internal fun GoogleSources(candidate: JsonObject, generateId: () -> String): List<ContentPart.Source> {
+    val groundingMetadata = JsonAccess.obj(candidate, "groundingMetadata")
+    val chunks = (groundingMetadata?.get("groundingChunks") as? JsonArray).orEmpty()
+    return chunks.mapNotNull { chunk ->
+        val web = ((chunk as? JsonObject)?.get("web") as? JsonObject) ?: return@mapNotNull null
+        ContentPart.Source(
+            sourceType = StreamEvent.SourcePart.SourceType.Url,
+            url = (web["uri"] as? JsonPrimitive)?.contentOrNull,
+            title = (web["title"] as? JsonPrimitive)?.contentOrNull,
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "google" to buildJsonObject {
+                            put("id", JsonPrimitive(GenerateId()))
+                            put("groundingChunk", chunk)
+                        }
+                    )
+                )
+            ),
+        )
+    }
+}
+
 internal class GoogleGenerativeAILanguageModel(
     private val client: HttpClient,
     private val settings: GoogleGenerativeAIProviderSettings,
@@ -444,7 +515,7 @@ internal class GoogleGenerativeAILanguageModel(
                 lastCodeExecutionId = null
             }
             (obj["text"] as? JsonPrimitive)?.contentOrNull?.let { text ->
-                val metadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None
+                val metadata = GooglePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None
                 content += if ((obj["thought"] as? JsonPrimitive)?.booleanOrNull == true) {
                     ContentPart.Reasoning(text, metadata)
                 } else {
@@ -465,7 +536,7 @@ internal class GoogleGenerativeAILanguageModel(
                         "$.functionCall"
                     ),
                     input = callObj["args"] ?: JsonObject(emptyMap()),
-                    providerMetadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
+                    providerMetadata = GooglePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
                 )
                 content += call
                 toolCalls += call
@@ -474,11 +545,11 @@ internal class GoogleGenerativeAILanguageModel(
                 content += ContentPart.File(
                     mediaType = (data["mimeType"] as? JsonPrimitive)?.contentOrNull ?: "application/octet-stream",
                     base64 = (data["data"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
-                    providerMetadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
+                    providerMetadata = GooglePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
                 )
             }
         }
-        googleSources(candidate, settings.generateId).forEach { content += it }
+        GoogleSources(candidate, settings.generateId).forEach { content += it }
         val text = content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
         val finish = (candidate["finishReason"] as? JsonPrimitive)?.contentOrNull
         val metadata = buildJsonObject {
@@ -492,8 +563,8 @@ internal class GoogleGenerativeAILanguageModel(
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
-            finishReason = mapGoogleFinishReason(finish, toolCalls.isNotEmpty()),
-            usage = googleUsage(response["usageMetadata"]),
+            finishReason = MapGoogleFinishReason(finish, toolCalls.isNotEmpty()),
+            usage = GoogleUsage(response["usageMetadata"]),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to metadata))),
             content = content,
             rawFinishReason = finish,
@@ -516,7 +587,7 @@ internal class GoogleGenerativeAILanguageModel(
         return SchemaSanitizer.stripUnsupportedSchemaKeys(
             element,
             dropAdditionalProperties = true,
-            googleOpenApi = true
+            target = SchemaSanitizer.Target.GoogleOpenApi,
         )
     }
 
@@ -530,79 +601,6 @@ internal class GoogleGenerativeAILanguageModel(
 
     private fun JsonObjectBuilder.putJsonObjectFields(fields: JsonObject, excluded: Set<String> = emptySet()) {
         fields.forEach { (key, value) -> if (value !is JsonNull && key !in excluded) put(key, value) }
-    }
-
-    internal companion object {
-        private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
-
-        internal fun googleUsage(element: JsonElement?): Usage {
-            val obj = element as? JsonObject ?: return Usage()
-            val prompt = (obj["promptTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
-            val candidates = (obj["candidatesTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
-            val thoughts = (obj["thoughtsTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
-            val cached = (obj["cachedContentTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
-            // Match upstream: output total = candidates + thoughts (not clamped); cached input
-            // tokens map to cacheRead with noCache = prompt - cached.
-            return Usage(
-                inputTokens = Usage.InputTokenBreakdown(
-                    total = prompt,
-                    noCache = prompt - cached,
-                    cacheRead = cached,
-                ),
-                outputTokens = Usage.OutputTokenBreakdown(
-                    total = candidates + thoughts,
-                    reasoning = thoughts,
-                    text = candidates,
-                ),
-                raw = element,
-            )
-        }
-
-        internal fun mapGoogleFinishReason(reason: String?, hasToolCalls: Boolean): FinishReason =
-            if (reason == "STOP" && hasToolCalls) {
-                FinishReason.ToolCalls
-            } else {
-                when (reason) {
-                    "STOP" -> FinishReason.Stop
-                    "MAX_TOKENS" -> FinishReason.Length
-                    "SAFETY", "IMAGE_SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII",
-                    -> FinishReason.ContentFilter
-                    // Upstream maps MALFORMED_FUNCTION_CALL to 'error', not content-filter.
-                    "MALFORMED_FUNCTION_CALL" -> FinishReason.Error
-                    else -> FinishReason.Other
-                }
-            }
-
-        internal fun googlePartMetadata(part: JsonObject): Map<String, JsonElement>? {
-            val metadata = buildJsonObject {
-                part["thought"]?.let { put("thought", it) }
-                part["thoughtSignature"]?.let { put("thoughtSignature", it) }
-            }
-            return if (metadata.isEmpty()) null else mapOf("google" to metadata)
-        }
-
-        internal fun googleSources(candidate: JsonObject, generateId: () -> String): List<ContentPart.Source> {
-            val groundingMetadata = JsonAccess.obj(candidate, "groundingMetadata")
-            val chunks = (groundingMetadata?.get("groundingChunks") as? JsonArray).orEmpty()
-            return chunks.mapNotNull { chunk ->
-                val web = ((chunk as? JsonObject)?.get("web") as? JsonObject) ?: return@mapNotNull null
-                ContentPart.Source(
-                    sourceType = StreamEvent.SourcePart.SourceType.Url,
-                    url = (web["uri"] as? JsonPrimitive)?.contentOrNull,
-                    title = (web["title"] as? JsonPrimitive)?.contentOrNull,
-                    providerMetadata = ProviderMetadata.Raw(
-                        JsonObject(
-                            mapOf(
-                                "google" to buildJsonObject {
-                                    put("id", JsonPrimitive(IdGenerator.generate()))
-                                    put("groundingChunk", chunk)
-                                }
-                            )
-                        )
-                    ),
-                )
-            }
-        }
     }
 }
 
@@ -624,7 +622,7 @@ private class GoogleStreamState(
         value["promptFeedback"]?.let { providerMetadata["promptFeedback"] = it }
         value["usageMetadata"]?.let {
             providerMetadata["usageMetadata"] = it
-            usage = GoogleGenerativeAILanguageModel.googleUsage(it)
+            usage = GoogleUsage(it)
         }
         val candidate = ((JsonAccess.arr(value, "candidates"))?.firstOrNull() as? JsonObject) ?: return events
         candidate["groundingMetadata"]?.let { providerMetadata["groundingMetadata"] = it }
@@ -662,9 +660,9 @@ private class GoogleStreamState(
                     }
                     if (reasoningId == null) {
                         reasoningId = (blockCounter++).toString()
-                        events += StreamEvent.ReasoningStart(reasoningId.orEmpty(), GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
+                        events += StreamEvent.ReasoningStart(reasoningId.orEmpty(), GooglePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
                     }
-                    events += StreamEvent.ReasoningDelta(reasoningId.orEmpty(), it, GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
+                    events += StreamEvent.ReasoningDelta(reasoningId.orEmpty(), it, GooglePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
                 } else {
                     if (reasoningId != null) {
                         events += StreamEvent.ReasoningEnd(reasoningId.orEmpty())
@@ -672,9 +670,9 @@ private class GoogleStreamState(
                     }
                     if (textId == null) {
                         textId = (blockCounter++).toString()
-                        events += StreamEvent.TextStart(textId.orEmpty(), GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
+                        events += StreamEvent.TextStart(textId.orEmpty(), GooglePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
                     }
-                    events += StreamEvent.TextDelta(textId.orEmpty(), it, GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
+                    events += StreamEvent.TextDelta(textId.orEmpty(), it, GooglePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
                 }
             }
             obj["functionCall"]?.let { callElement ->
@@ -688,7 +686,7 @@ private class GoogleStreamState(
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
-                val id = (call["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate()
+                val id = (call["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId()
                 val name = try {
                     WireDecoder.requiredString(
                         call,
@@ -702,7 +700,7 @@ private class GoogleStreamState(
                 }
                 val input = call["args"] ?: JsonObject(emptyMap())
                 hasToolCalls = true
-                val partMetadata = GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let {
+                val partMetadata = GooglePartMetadata(obj)?.let {
                     ProviderMetadata.Raw(JsonObject(it))
                 } ?: ProviderMetadata.None
                 events += StreamEvent.ToolInputStart(id, name, partMetadata)
@@ -722,20 +720,20 @@ private class GoogleStreamState(
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
                 events += StreamEvent.FilePart(
-                    id = IdGenerator.generate(),
+                    id = GenerateId(),
                     mediaType = (data["mimeType"] as? JsonPrimitive)?.contentOrNull ?: "application/octet-stream",
                     base64 = try {
                         WireDecoder.requiredString(data, "data", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")
                     } catch (error: WireDecodeException) {
                         return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                     },
-                    providerMetadata = GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let {
+                    providerMetadata = GooglePartMetadata(obj)?.let {
                         ProviderMetadata.Raw(JsonObject(it))
                     } ?: ProviderMetadata.None,
                 )
             }
         }
-        GoogleGenerativeAILanguageModel.googleSources(candidate, generateId).forEach { source ->
+        GoogleSources(candidate, generateId).forEach { source ->
             val googleMeta = JsonAccess.obj(source.providerMetadata.toMap(), "google")
             val sourceKey = source.url
                 ?: googleMeta?.get("groundingChunk")?.toString()
@@ -744,7 +742,7 @@ private class GoogleStreamState(
             if (!emittedSourceKeys.add(sourceKey)) return@forEach
             events += StreamEvent.SourcePart(
                 id = (googleMeta?.get("id") as? JsonPrimitive)?.contentOrNull
-                    ?: IdGenerator.generate(),
+                    ?: GenerateId(),
                 sourceType = source.sourceType,
                 url = source.url,
                 title = source.title,
@@ -753,7 +751,7 @@ private class GoogleStreamState(
         }
         (candidate["finishReason"] as? JsonPrimitive)?.contentOrNull?.let {
             rawFinishReason = it
-            finishReason = GoogleGenerativeAILanguageModel.mapGoogleFinishReason(it, hasToolCalls)
+            finishReason = MapGoogleFinishReason(it, hasToolCalls)
         }
         return events
     }

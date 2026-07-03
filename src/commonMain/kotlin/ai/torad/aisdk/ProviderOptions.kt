@@ -4,6 +4,17 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
 /**
+ * Build [ProviderOptions] from provider-name / JSON-object pairs.
+ * @since 0.3.0-beta01
+ */
+public fun ProviderOptions(vararg pairs: Pair<String, JsonObject>): ProviderOptions =
+    if (pairs.isEmpty()) {
+        ProviderOptions.None
+    } else {
+        ProviderOptions.Raw(JsonObject(pairs.associate { (k, v) -> k to (v as JsonElement) }))
+    }
+
+/**
  * Typed provider-options boundary (tenet T2).
  *
  * The full options map is wrapped in [Raw] (key = provider name, value = provider JSON).
@@ -63,18 +74,5 @@ public sealed class ProviderOptions {
             merged[key] = if (existing is JsonObject && value is JsonObject) deepMerge(existing, value) else value
         }
         return JsonObject(merged)
-    }
-
-    public companion object {
-        /**
-         * Build [ProviderOptions] from provider-name / JSON-object pairs.
-         * @since 0.3.0-beta01
-         */
-        public fun ofPairs(vararg pairs: Pair<String, JsonObject>): ProviderOptions =
-            if (pairs.isEmpty()) {
-                None
-            } else {
-                Raw(JsonObject(pairs.associate { (k, v) -> k to (v as JsonElement) }))
-            }
     }
 }

@@ -108,7 +108,7 @@ internal class CohereRerankingModel(
         val searchUnits = (billedUnits?.get("search_units") as? JsonPrimitive)?.intOrNull ?: 0
         return RerankingModelResult(
             results = results,
-            usage = Usage.of(promptTokens = searchUnits, completionTokens = 0),
+            usage = Usage(promptTokens = searchUnits, completionTokens = 0),
             response = LanguageModelResponseMetadata(
                 id = (value["id"] as? JsonPrimitive)?.contentOrNull,
                 headers = response.headers,

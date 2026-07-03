@@ -186,7 +186,7 @@ class RetryBackoffTest {
         val result429 = RetryPolicy {
             maxRetries(1)
             baseDelayMs(100)
-            delayGenerator(RetryDelayGenerator.deterministic(0))
+            delayGenerator(RetryDelayGeneratorDeterministic(0))
         }.execute<String> {
             attempts += 1
             if (attempts == 1) throw apiError(429)
@@ -198,7 +198,7 @@ class RetryBackoffTest {
         val result500 = RetryPolicy {
             maxRetries(1)
             baseDelayMs(100)
-            delayGenerator(RetryDelayGenerator.deterministic(0))
+            delayGenerator(RetryDelayGeneratorDeterministic(0))
         }.execute<String> {
             attempts += 1
             if (attempts == 1) throw apiError(500)
@@ -259,7 +259,7 @@ class RetryBackoffTest {
             maxRetries(1)
             baseDelayMs(100)
             maxDelayMs(1_000)
-            delayGenerator(RetryDelayGenerator.deterministic(37))
+            delayGenerator(RetryDelayGeneratorDeterministic(37))
         }.execute<String> {
             if (attempt++ == 0) throw apiError(500)
             "ok"
@@ -315,7 +315,7 @@ class RetryBackoffTest {
             RetryPolicy {
                 maxRetries(10)
                 baseDelayMs(100)
-                delayGenerator(RetryDelayGenerator.deterministic(90))
+                delayGenerator(RetryDelayGeneratorDeterministic(90))
                 totalTimeoutMs(250)
             }.execute<String> {
                 throw apiError(500)

@@ -1,0 +1,34 @@
+id: no-when-subject-mutation
+language: kotlin
+severity: warning
+message: "Reassigning the `when` subject inside a branch has no effect on branch selection (the subject is evaluated once); the mutation reads as if it changes matching but it doesn't. Use a separate local for the new value."
+note: |
+  Matches `when (subject) { ... }` where some branch body assigns back to
+  `subject`. Uses an ast-grep shared metavariable ($SUBJECT) to require the
+  when-subject identifier and the assignment target identifier be the exact
+  same name, so mutating an unrelated variable inside a branch does not
+  match. `when` without a subject (the boolean-branches form,
+  `when { cond -> ... }`) has no `when_subject` node and never matches.
+  This is purely a readability/intent trap, not a runtime bug: Kotlin
+  evaluates the subject once up front, so the mutation is dead as far as
+  branch dispatch is concerned — but it reads to a maintainer as if later
+  branches (or a hypothetical loop) would see the new value.
+rule:
+  kind: when_expression
+  all:
+    - has:
+        kind: when_subject
+        has:
+          kind: simple_identifier
+          pattern: $SUBJECT
+    - has:
+        stopBy: end
+        kind: when_entry
+        has:
+          stopBy: end
+          kind: assignment
+          has:
+            kind: directly_assignable_expression
+            has:
+              kind: simple_identifier
+              pattern: $SUBJECT

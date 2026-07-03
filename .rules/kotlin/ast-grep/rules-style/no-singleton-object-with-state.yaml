@@ -1,0 +1,23 @@
+id: no-singleton-object-with-state
+language: kotlin
+severity: warning
+message: "A property inside an `object` singleton is mutable (`var`) or holds a mutable collection (`MutableList`/`MutableMap`/...). Every property of an `object` is process-wide shared state — mutating it is a hidden global and a data race under concurrent access. Model the state with a StateFlow/Mutex-guarded holder, or pass it explicitly instead of storing it on the singleton."
+rule:
+  kind: property_declaration
+  inside:
+    kind: class_body
+    inside: { kind: object_declaration }
+  any:
+    - has: { kind: binding_pattern_kind, regex: '^var$' }
+    - has:
+        kind: variable_declaration
+        has:
+          kind: user_type
+          has:
+            kind: type_identifier
+            regex: '^(MutableList|MutableMap|MutableSet|MutableCollection|ArrayList|HashMap|LinkedHashMap|HashSet|LinkedHashSet)$'
+note: >-
+  Overlaps by design with the LAW-tier `no-var-in-object-declaration` rule (which
+  blocks the `var` case with severity: error) — this style rule additionally covers
+  the mutable-collection-`val` case for the same "singleton state" concern, and is
+  meant to be run as a single combined check rather than a replacement for the LAW rule.

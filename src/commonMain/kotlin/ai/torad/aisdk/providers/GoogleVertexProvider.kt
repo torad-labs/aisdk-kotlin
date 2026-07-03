@@ -36,7 +36,7 @@ public class GoogleVertexProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
     /** @since 0.3.0-beta01 */
-    public val generateId: () -> String = { IdGenerator.generate() },
+    public val generateId: () -> String = { GenerateId() },
 ) {
     internal fun googleVertexPublisherBaseURL(): String =
         baseURL?.trimEnd('/')
@@ -96,7 +96,7 @@ public class GoogleVertexProviderSettingsBuilder {
     private var accessToken: String? = null
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
-    private var generateId: () -> String = { IdGenerator.generate() }
+    private var generateId: () -> String = { GenerateId() }
 
     /** @since 0.3.0-beta01 */
     public fun project(value: String?): GoogleVertexProviderSettingsBuilder {
@@ -435,7 +435,7 @@ private class GoogleVertexXaiLanguageModel(
             params.toBuilder().providerOptions(googleVertexXaiProviderOptions(params.providerOptions)).build()
         )
 
-    // Snake-cases xAI searchParameters via XaiProviderSettings.xaiSnakeCaseJson (single source of
+    // Snake-cases xAI searchParameters via XaiSnakeCaseJson (single source of
     // truth); the former local copy drifted, lacking the `xHandles` -> `included_x_handles`
     // special-case and the `index > 0` leading-underscore guard.
     private fun googleVertexXaiProviderOptions(options: ProviderOptions): ProviderOptions {
@@ -449,7 +449,7 @@ private class GoogleVertexXaiLanguageModel(
                         put("top_logprobs", value)
                         if ("logprobs" !in xai) put("logprobs", JsonPrimitive(true))
                     }
-                    "searchParameters" -> put("search_parameters", XaiProviderSettings.xaiSnakeCaseJson(value))
+                    "searchParameters" -> put("search_parameters", XaiSnakeCaseJson(value))
                     else -> put(key, value)
                 }
             }

@@ -9,11 +9,12 @@ import kotlinx.serialization.json.JsonObject
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.update
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Telemetry settings for an agent or call (upstream v7 `telemetry`, the
  * stabilized `experimental_telemetry`). With the v7 revamp, telemetry is
- * opt-out: once an integration is registered via [Telemetry.registerTelemetry], every
+ * opt-out: once an integration is registered via [RegisterTelemetry], every
  * agent invocation emits events to it automatically.
  *
  * What the v7 INTEGRATION path honors:
@@ -144,6 +145,43 @@ public class TelemetryCall(
 )
 
 /**
+ * Telemetry registration + per-call resolution procedures. These are genuine
+ * procedures (not loose top-level funs in spirit): [RegisterTelemetry]/[ClearGlobalTelemetry]
+ * mutate the [globalTelemetry] registry; [ResolveTelemetry] computes the effective
+ * integration for one call.
+ */
+/** @since 0.3.0-beta01 */
+public fun RegisterTelemetry(integration: Telemetry) {
+    globalTelemetry.register(integration)
+}
+
+/** @since 0.3.0-beta01 */
+public fun ClearGlobalTelemetry() {
+    globalTelemetry.clear()
+}
+
+/**
+ * Effective integration for one call: an explicit `isEnabled = false` opts the call out
+ * entirely (upstream "opt out of a specific call"); otherwise per-call
+ * [TelemetrySettings.integrations] REPLACE the global registrations when non-empty
+ * (upstream per-call semantics); null when nothing is registered (zero-overhead path).
+ * [logger] receives one warn per swallowed integration throw — a dead integration is
+ * discoverable, never perfectly silent.
+ */
+internal fun ResolveTelemetry(settings: TelemetrySettings?, logger: Logger = NoopLogger): Telemetry? {
+    if (settings?.isEnabled == false) return null
+    val privacy = settings ?: TelemetrySettings()
+    val perCall = settings?.integrations.orEmpty()
+    val effective = perCall.ifEmpty { globalTelemetry.list() }
+    val resolved = when {
+        effective.isEmpty() -> null
+        effective.size == 1 -> effective.single()
+        else -> CompositeTelemetry(effective, logger)
+    }
+    return resolved?.let { RedactingTelemetry(it, privacy) }
+}
+
+/**
  * The v7 telemetry integration seam: implement it ONCE and the loop feeds it every
  * lifecycle event of every invocation through a single [onEvent] call — agent
  * start/finish, step start/finish, model-call start/finish, tool-call start/finish
@@ -165,46 +203,8 @@ public interface Telemetry {
     public val name: String
 
     /** Receives one lifecycle [event] for this [call]. Dispatch with `when (event)`. */
+    @JvmSynthetic
     public suspend fun onEvent(call: TelemetryCall, event: AgentEvent)
-
-    /**
-     * Telemetry registration + per-call resolution procedures. These are genuine
-     * procedures (not loose top-level funs): `registerTelemetry`/[clearGlobalTelemetry]
-     * mutate the [globalTelemetry] registry; [resolveTelemetry] computes the effective
-     * integration for one call.
-     */
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun registerTelemetry(integration: Telemetry) {
-            globalTelemetry.register(integration)
-        }
-
-        /** @since 0.3.0-beta01 */
-        public fun clearGlobalTelemetry() {
-            globalTelemetry.clear()
-        }
-
-        /**
-         * Effective integration for one call: an explicit `isEnabled = false` opts the call out
-         * entirely (upstream "opt out of a specific call"); otherwise per-call
-         * [TelemetrySettings.integrations] REPLACE the global registrations when non-empty
-         * (upstream per-call semantics); null when nothing is registered (zero-overhead path).
-         * [logger] receives one warn per swallowed integration throw — a dead integration is
-         * discoverable, never perfectly silent.
-         */
-        internal fun resolveTelemetry(settings: TelemetrySettings?, logger: Logger = NoopLogger): Telemetry? {
-            if (settings?.isEnabled == false) return null
-            val privacy = settings ?: TelemetrySettings()
-            val perCall = settings?.integrations.orEmpty()
-            val effective = perCall.ifEmpty { globalTelemetry.list() }
-            val resolved = when {
-                effective.isEmpty() -> null
-                effective.size == 1 -> effective.single()
-                else -> CompositeTelemetry(effective, logger)
-            }
-            return resolved?.let { RedactingTelemetry(it, privacy) }
-        }
-    }
 }
 
 /**
@@ -255,6 +255,7 @@ public val globalTelemetry: TelemetryRegistry = TelemetryRegistry()
 
 /** One telemetry notification, delivered to each integration of a [CompositeTelemetry]. */
 private fun interface TelemetryNotify {
+    @JvmSynthetic
     public suspend fun notify(integration: Telemetry)
 }
 

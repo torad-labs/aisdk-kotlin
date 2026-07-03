@@ -1,0 +1,20 @@
+# expect suspend functions are exempt: @JvmSynthetic has no bytecode to attach to on a
+# body-less expect declaration (same reasoning as no-jvmoverloads-on-expect /
+# no-jvmstatic-on-expect) — the actual implementation is where it would matter.
+id: no-public-suspend-without-jvmsynthetic
+language: kotlin
+severity: warning
+message: "Public suspend fun without @JvmSynthetic — Java callers see the raw Continuation<T> parameter, which is an ugly, unusable signature from Java. Add @JvmSynthetic to hide it from Java entirely, or provide a Java-friendly overload."
+rule:
+  kind: function_declaration
+  has:
+    kind: modifiers
+    all:
+      - has: { kind: visibility_modifier, regex: '^public$' }
+      - has: { kind: function_modifier, regex: '^suspend$' }
+      - not:
+          has:
+            kind: annotation
+            has: { kind: type_identifier, regex: '^JvmSynthetic$', stopBy: end }
+      - not:
+          has: { kind: platform_modifier, regex: '^expect$' }

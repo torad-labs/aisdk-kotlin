@@ -331,11 +331,20 @@ def _has_declared_hunk_handling(rule: dict[str, object], member_examples: list[s
 
 
 def _missing_manifest_entries(manifest_path: Path, rules: list[dict[str, object]]) -> list[str]:
-    rules_dir = Path(__file__).resolve().parent / "kotlin"
-    if not rules_dir.is_dir():
-        raise RuntimeError(f"canonical rules dir not found: {rules_dir}")
+    # torad-toolkit layout: rules are in .rules/kotlin/ast-grep/{rules,rules-style}/
+    # Only LAW rules (rules/) require manifest entries; rules-style/ is opt-in
+    repo_root = Path(__file__).resolve().parents[3]
+    rules_root = repo_root / ".rules" / "kotlin" / "ast-grep"
+    law_rules_dir = rules_root / "rules"
+    if not law_rules_dir.is_dir():
+        # fallback to legacy location
+        legacy = Path(__file__).resolve().parent / "kotlin"
+        if legacy.is_dir():
+            law_rules_dir = legacy
+        else:
+            raise RuntimeError(f"canonical rules dir not found: {law_rules_dir}")
     manifest_ids = {str(r.get("id")) for r in rules}
-    rule_ids = {p.stem for p in rules_dir.glob("*.yaml")}
+    rule_ids = {p.stem for p in law_rules_dir.glob("*.yaml")}
     return sorted(rule_ids - manifest_ids)
 
 
@@ -359,10 +368,17 @@ def _read_registry(registry_path: Path) -> tuple[list[str] | None, str | None]:
         return [], None
     except (OSError, json.JSONDecodeError) as exc:
         return None, f"cannot read autofix registry: {exc}"
-    if not isinstance(payload, list):
-        return None, "autofix registry must be a JSON list"
+    # torad-toolkit format: {"version": 1, "autofix": [...]}
+    if isinstance(payload, dict) and "autofix" in payload:
+        entries = payload.get("autofix", [])
+    elif isinstance(payload, list):
+        entries = payload  # legacy format
+    else:
+        return None, "autofix registry must be a JSON list or {autofix: [...]}"
+    if not isinstance(entries, list):
+        return None, "autofix 'autofix' field must be a list"
     ids: list[str] = []
-    for index, entry in enumerate(payload, start=1):
+    for index, entry in enumerate(entries, start=1):
         if isinstance(entry, str):
             rid = entry
         elif isinstance(entry, dict) and isinstance(entry.get("id"), str):
@@ -486,13 +502,25 @@ def apply_autofix_mode(binary: str, registry_path: Path, targets: list[str]) -> 
         print("ERROR: --apply-autofix requires at least one target path")
         return 2
 
-    rules_dir = registry_path.resolve().parent / "kotlin"
+    # torad-toolkit layout: registry.json is at .rules/kotlin/ast-grep/registry.json
+    # and rules are in rules/ and rules-style/ subdirectories
+    registry_parent = registry_path.resolve().parent
+    rule_search_dirs = [
+        registry_parent / "rules",
+        registry_parent / "rules-style",
+        registry_parent / "kotlin",  # legacy fallback
+    ]
     applied: list[tuple[str, int]] = []
     failures: list[tuple[str, str]] = []
     for rid in ids:
-        rule_path = rules_dir / f"{rid}.yaml"
-        if not rule_path.is_file():
-            failures.append((rid, f"rule file not found: {rule_path}"))
+        rule_path: Path | None = None
+        for rule_dir in rule_search_dirs:
+            candidate = rule_dir / f"{rid}.yaml"
+            if candidate.is_file():
+                rule_path = candidate
+                break
+        if rule_path is None:
+            failures.append((rid, f"rule file not found in {[str(d) for d in rule_search_dirs]}"))
             continue
         before = _count_tree_hits(binary, rule_path, targets)
         if before < 1:

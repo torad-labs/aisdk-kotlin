@@ -1,0 +1,11 @@
+id: no-primitive-amount
+language: kotlin
+severity: warning
+message: "Parameter named `amount`/`price`/`duration` is typed as a raw Long/Double/Int. A bare primitive carries no unit or currency, so callers can pass cents where dollars were expected, or milliseconds where seconds were expected, and the compiler won't catch it. Wrap it in a value class that encodes the unit (e.g. `@JvmInline value class Cents(val value: Long)`, `@JvmInline value class Duration(val millis: Long)`, or `kotlin.time.Duration` for durations)."
+rule:
+  kind: parameter
+  all:
+    - has: { kind: simple_identifier, regex: '^(amount|price|duration)$' }
+    - has:
+        kind: user_type
+        has: { kind: type_identifier, regex: '^(Long|Double|Int)$' }

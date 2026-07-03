@@ -54,7 +54,7 @@ internal class XaiChatLanguageModel(
                     "logprobs" -> {
                         put(key, value)
                     }
-                    "searchParameters" -> put("search_parameters", XaiProviderSettings.xaiSnakeCaseJson(value))
+                    "searchParameters" -> put("search_parameters", XaiSnakeCaseJson(value))
                     else -> put(key, value)
                 }
             }

@@ -1,0 +1,17 @@
+id: no-public-const-val-object
+language: kotlin
+severity: warning
+message: "const val inside a public object is inlined at every call site (not a companion — those are exempt). Bumping the value later doesn't take effect for already-compiled callers until they recompile — a silent binary-compat trap for a public constant."
+rule:
+  kind: property_declaration
+  all:
+    - has:
+        kind: modifiers
+        has: { kind: property_modifier, regex: '^const$' }
+    - inside:
+        kind: class_body
+        inside:
+          kind: object_declaration
+          has:
+            kind: modifiers
+            has: { kind: visibility_modifier, regex: '^public$' }

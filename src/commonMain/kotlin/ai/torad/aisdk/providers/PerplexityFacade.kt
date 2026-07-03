@@ -31,7 +31,7 @@ public class PerplexityProviderSettings internal constructor(
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(
+        ForFacade(
             name = name,
             version = version,
             baseURL = baseURL,
@@ -89,7 +89,7 @@ public class PerplexityProviderSettings internal constructor(
         val promptTokens = obj.intField("prompt_tokens")
         val completionTokens = obj.intField("completion_tokens")
         val reasoning = obj.intField("reasoning_tokens").coerceAtMost(completionTokens)
-        return Usage.fromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
+        return UsageFromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
     }
 }
 

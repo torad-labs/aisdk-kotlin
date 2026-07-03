@@ -436,7 +436,7 @@ private class ReplicateImageModel(
         params.abortSignal.throwIfAborted()
         val warnings = mutableListOf<CallWarning>()
         val options = settings.replicateOptions(params.providerOptions)
-        val model = ReplicateModelRef.fromModelId(modelId)
+        val model = FromModelId(modelId)
         val input = buildJsonObject {
             put("prompt", JsonPrimitive(params.prompt))
             params.aspectRatio?.let { put("aspect_ratio", JsonPrimitive(it)) }
@@ -590,7 +590,7 @@ private class ReplicateVideoModel(
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         params.abortSignal.throwIfAborted()
         val options = settings.replicateOptions(params.providerOptions)
-        val model = ReplicateModelRef.fromModelId(modelId)
+        val model = FromModelId(modelId)
         val input = buildJsonObject {
             put("prompt", JsonPrimitive(params.prompt))
             params.image?.let { put("image", JsonPrimitive(replicateDataUri(it))) }
@@ -715,21 +715,19 @@ private class ReplicateVideoModel(
     }
 }
 
+internal fun FromModelId(modelId: String): ReplicateModelRef {
+    val colon = modelId.indexOf(':')
+    return if (colon < 0) {
+        ReplicateModelRef(ownerModel = modelId, version = null)
+    } else {
+        ReplicateModelRef(ownerModel = modelId.substring(0, colon), version = modelId.substring(colon + 1))
+    }
+}
+
 internal data class ReplicateModelRef(
     val ownerModel: String,
     val version: String?,
-) {
-    companion object {
-        internal fun fromModelId(modelId: String): ReplicateModelRef {
-            val colon = modelId.indexOf(':')
-            return if (colon < 0) {
-                ReplicateModelRef(ownerModel = modelId, version = null)
-            } else {
-                ReplicateModelRef(ownerModel = modelId.substring(0, colon), version = modelId.substring(colon + 1))
-            }
-        }
-    }
-}
+)
 
 private val replicateImageExcludedOptionKeys = setOf("maxWaitTimeInSeconds")
 private val replicateVideoExcludedOptionKeys = setOf("pollIntervalMs", "pollTimeoutMs", "maxWaitTimeInSeconds")

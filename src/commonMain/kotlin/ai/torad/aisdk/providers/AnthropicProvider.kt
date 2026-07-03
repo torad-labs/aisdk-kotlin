@@ -32,6 +32,42 @@ public typealias AnthropicToolOptions = JsonObject
 public typealias AnthropicMessageMetadata = JsonObject
 public typealias AnthropicUsageIteration = JsonObject
 
+internal fun AnthropicCacheControl(metadata: Map<String, JsonElement>?): JsonElement? =
+    (metadata?.get("anthropic") as? JsonObject)?.let { it["cacheControl"] ?: it["cache_control"] }
+
+internal fun AnthropicFileOptions(metadata: Map<String, JsonElement>?): JsonObject? {
+    val options = metadata?.get("anthropic") as? JsonObject ?: return null
+    return buildJsonObject {
+        (JsonAccess.obj(options, "citations"))?.let { put("citations", it) }
+        options["title"]?.let { put("title", it) }
+        options["context"]?.let { put("context", it) }
+    }.takeIf { it.isNotEmpty() }
+}
+
+internal val anthropicRejectsSamplingParameterModelFragments: Set<String> =
+    setOf("claude-opus-4-8", "claude-opus-4-7", "claude-fable-5")
+
+/**
+ * The default `max_tokens` for a Claude model when the caller omits maxOutputTokens.
+ * Ports upstream's getModelCapabilities table — hardcoding 4096 truncated output on
+ * every modern Claude model.
+ */
+@Suppress("MagicNumber") // the values ARE the per-model max-output-token limits
+internal fun AnthropicMaxOutputTokensOrNull(modelId: String): Int? = when {
+    modelId.contains("claude-opus-4-8") || modelId.contains("claude-opus-4-7") -> 128_000
+    modelId.contains("claude-sonnet-4-6") || modelId.contains("claude-opus-4-6") -> 128_000
+    modelId.contains("claude-sonnet-4-5") || modelId.contains("claude-opus-4-5") ||
+        modelId.contains("claude-haiku-4-5") -> 64_000
+    modelId.contains("claude-opus-4-1") -> 32_000
+    modelId.contains("claude-sonnet-4-") -> 64_000
+    modelId.contains("claude-opus-4-") -> 32_000
+    modelId.contains("claude-3-haiku") -> 4_096
+    else -> null
+}
+
+internal fun AnthropicMaxOutputTokensForModel(modelId: String): Int =
+    AnthropicMaxOutputTokensOrNull(modelId) ?: 4_096
+
 /** @since 0.3.0-beta01 */
 public class AnthropicProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
@@ -52,7 +88,7 @@ public class AnthropicProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val supportedUrls: Map<String, List<String>>? = null,
     /** @since 0.3.0-beta01 */
-    public val generateId: () -> String = { IdGenerator.generate() },
+    public val generateId: () -> String = { GenerateId() },
     /** @since 0.3.0-beta01 */
     public val name: String = "anthropic.messages",
 ) {
@@ -137,44 +173,6 @@ public class AnthropicProviderSettings internal constructor(
                 ?: (citation["document_title"] as? JsonPrimitive)?.contentOrNull,
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to citation))),
         )
-
-    internal companion object {
-        internal fun anthropicCacheControl(metadata: Map<String, JsonElement>?): JsonElement? =
-            (metadata?.get("anthropic") as? JsonObject)?.let { it["cacheControl"] ?: it["cache_control"] }
-
-        internal fun anthropicFileOptions(metadata: Map<String, JsonElement>?): JsonObject? {
-            val options = metadata?.get("anthropic") as? JsonObject ?: return null
-            return buildJsonObject {
-                (JsonAccess.obj(options, "citations"))?.let { put("citations", it) }
-                options["title"]?.let { put("title", it) }
-                options["context"]?.let { put("context", it) }
-            }.takeIf { it.isNotEmpty() }
-        }
-
-        internal val anthropicRejectsSamplingParameterModelFragments: Set<String> =
-            setOf("claude-opus-4-8", "claude-opus-4-7", "claude-fable-5")
-
-        /**
-         * The default `max_tokens` for a Claude model when the caller omits maxOutputTokens.
-         * Ports upstream's getModelCapabilities table — hardcoding 4096 truncated output on
-         * every modern Claude model.
-         */
-        @Suppress("MagicNumber") // the values ARE the per-model max-output-token limits
-        internal fun anthropicMaxOutputTokensOrNull(modelId: String): Int? = when {
-            modelId.contains("claude-opus-4-8") || modelId.contains("claude-opus-4-7") -> 128_000
-            modelId.contains("claude-sonnet-4-6") || modelId.contains("claude-opus-4-6") -> 128_000
-            modelId.contains("claude-sonnet-4-5") || modelId.contains("claude-opus-4-5") ||
-                modelId.contains("claude-haiku-4-5") -> 64_000
-            modelId.contains("claude-opus-4-1") -> 32_000
-            modelId.contains("claude-sonnet-4-") -> 64_000
-            modelId.contains("claude-opus-4-") -> 32_000
-            modelId.contains("claude-3-haiku") -> 4_096
-            else -> null
-        }
-
-        internal fun anthropicMaxOutputTokensForModel(modelId: String): Int =
-            anthropicMaxOutputTokensOrNull(modelId) ?: 4_096
-    }
 }
 
 /** @since 0.3.0-beta01 */
@@ -188,7 +186,7 @@ public class AnthropicProviderSettingsBuilder {
     private var buildRequestUrl: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)? = null
     private var transformRequestBody: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)? = null
     private var supportedUrls: Map<String, List<String>>? = null
-    private var generateId: () -> String = { IdGenerator.generate() }
+    private var generateId: () -> String = { GenerateId() }
     private var name: String = "anthropic.messages"
 
     /** @since 0.3.0-beta01 */
@@ -335,6 +333,34 @@ public fun Anthropic(
 ): AnthropicProvider = AnthropicProvider(client, settings)
 
 /** @since 0.3.0-beta01 */
+public fun ForwardAnthropicContainerIdFromLastStep(
+    steps: List<Map<String, JsonElement>>,
+): Map<String, JsonElement>? {
+    for (step in steps.asReversed()) {
+        val containerObj = (JsonAccess.obj(step, "anthropic"))?.get("container") as? JsonObject
+        val idElement = containerObj?.get("id")
+        val containerId = (idElement as? JsonPrimitive)?.contentOrNull
+        if (!containerId.isNullOrBlank()) {
+            return mapOf(
+                "anthropic" to buildJsonObject {
+                    put("container", buildJsonObject { put("id", JsonPrimitive(containerId)) })
+                },
+            )
+        }
+    }
+    return null
+}
+
+internal fun AnthropicErrorMessage(parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject ?: return raw
+    val error = JsonAccess.obj(obj, "error")
+    return (error?.get("message") as? JsonPrimitive)?.contentOrNull
+        ?: (error?.get("type") as? JsonPrimitive)?.contentOrNull
+        ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
+        ?: raw
+}
+
+/** @since 0.3.0-beta01 */
 public class AnthropicMessagesLanguageModel(
     private val client: HttpClient,
     private val settings: AnthropicProviderSettings,
@@ -347,7 +373,7 @@ public class AnthropicMessagesLanguageModel(
     )
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val prepared = PreparedAnthropicRequest.anthropicRequestBody(settings, modelId, params, stream = false)
+        val prepared = PreparedAnthropicRequest(settings, modelId, params, stream = false)
         val response = anthropicPost(prepared.body, prepared.betas, params.headers)
         return anthropicGenerateResult(
             response = response.value.jsonObject,
@@ -361,7 +387,7 @@ public class AnthropicMessagesLanguageModel(
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        val prepared = PreparedAnthropicRequest.anthropicRequestBody(settings, modelId, params, stream = true)
+        val prepared = PreparedAnthropicRequest(settings, modelId, params, stream = true)
         val state = AnthropicStreamState(settings, aiSdkJson)
         var sseHeaders: Map<String, String> = emptyMap()
         val rawLines = anthropicStreamSse(prepared.body, prepared.betas, params.headers) { sseHeaders = it }
@@ -394,7 +420,7 @@ public class AnthropicMessagesLanguageModel(
                     val errorType = (error["type"] as? JsonPrimitive)?.contentOrNull
                     val statusCode = if (errorType == "overloaded_error") 529 else 500
                     throw APICallError(
-                        message = anthropicErrorMessage(obj["error"] ?: obj, obj.toString()),
+                        message = AnthropicErrorMessage(obj["error"] ?: obj, obj.toString()),
                         url = requestUrl,
                         requestBodyValues = prepared.body,
                         statusCode = statusCode,
@@ -418,7 +444,7 @@ public class AnthropicMessagesLanguageModel(
     }
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult {
-        val prepared = PreparedAnthropicRequest.anthropicRequestBody(settings, modelId, params, stream = true)
+        val prepared = PreparedAnthropicRequest(settings, modelId, params, stream = true)
         return LanguageModelStreamResult(stream = stream(params), request = LanguageModelRequestMetadata(prepared.body))
     }
 
@@ -444,7 +470,7 @@ public class AnthropicMessagesLanguageModel(
                 url = url,
                 parseJson = true,
                 requestBodyValues = requestBody,
-                errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
+                errorMessage = { _, parsed, raw -> AnthropicErrorMessage(parsed, raw) },
             )
         }
     }
@@ -472,7 +498,7 @@ public class AnthropicMessagesLanguageModel(
                 body = requestBody,
                 json = aiSdkJson,
                 requestBodyValues = requestBody,
-                errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
+                errorMessage = { _, parsed, raw -> AnthropicErrorMessage(parsed, raw) },
                 onResponse = onResponse,
             ),
         )
@@ -597,19 +623,19 @@ public class AnthropicMessagesLanguageModel(
         }
 
         val stopReason = (response["stop_reason"] as? JsonPrimitive)?.contentOrNull
-        val usage = Usage.fromAnthropic(response["usage"])
+        val usage = UsageFromAnthropic(response["usage"])
         val text = content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
         val metadata = buildJsonObject {
             response["usage"]?.let { put("usage", it) }
             put("cacheCreationInputTokens", JsonPrimitive(usage.inputTokens.cacheWrite))
             response["stop_sequence"]?.let { put("stopSequence", it) }
-            response["container"]?.let { put("container", PreparedAnthropicRequest.camelToSnakeJson(it)) }
+            response["container"]?.let { put("container", CamelToSnakeJson(it)) }
             response["context_management"]?.let { put("contextManagement", it) }
         }
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
-            finishReason = FinishReason.fromAnthropicStopReason(stopReason),
+            finishReason = FinishReasonFromAnthropicStopReason(stopReason),
             usage = usage,
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to metadata))),
             content = content,
@@ -623,36 +649,6 @@ public class AnthropicMessagesLanguageModel(
                 body = responseBody,
             ),
         )
-    }
-
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun forwardAnthropicContainerIdFromLastStep(
-            steps: List<Map<String, JsonElement>>,
-        ): Map<String, JsonElement>? {
-            for (step in steps.asReversed()) {
-                val containerObj = (JsonAccess.obj(step, "anthropic"))?.get("container") as? JsonObject
-                val idElement = containerObj?.get("id")
-                val containerId = (idElement as? JsonPrimitive)?.contentOrNull
-                if (!containerId.isNullOrBlank()) {
-                    return mapOf(
-                        "anthropic" to buildJsonObject {
-                            put("container", buildJsonObject { put("id", JsonPrimitive(containerId)) })
-                        },
-                    )
-                }
-            }
-            return null
-        }
-
-        internal fun anthropicErrorMessage(parsed: JsonElement?, raw: String): String {
-            val obj = parsed as? JsonObject ?: return raw
-            val error = JsonAccess.obj(obj, "error")
-            return (error?.get("message") as? JsonPrimitive)?.contentOrNull
-                ?: (error?.get("type") as? JsonPrimitive)?.contentOrNull
-                ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
-                ?: raw
-        }
     }
 }
 
@@ -696,7 +692,7 @@ private class AnthropicStreamState(
                 }
                 responseId = (message["id"] as? JsonPrimitive)?.contentOrNull
                 modelId = (message["model"] as? JsonPrimitive)?.contentOrNull
-                usage = Usage.fromAnthropic(message["usage"])
+                usage = UsageFromAnthropic(message["usage"])
                 events += StreamEvent.ResponseMetadata(id = responseId, modelId = modelId)
             }
             "content_block_start" -> {
@@ -858,11 +854,11 @@ private class AnthropicStreamState(
             "message_delta" -> {
                 val delta = (JsonAccess.obj(obj, "delta")) ?: JsonObject(emptyMap())
                 rawStopReason = (delta["stop_reason"] as? JsonPrimitive)?.contentOrNull
-                finishReason = FinishReason.fromAnthropicStopReason(rawStopReason)
+                finishReason = FinishReasonFromAnthropicStopReason(rawStopReason)
                 // Merge onto the message_start usage (delta usually has only output_tokens).
-                usage = Usage.mergeAnthropic(usage, obj["usage"])
+                usage = UsageMergeAnthropic(usage, obj["usage"])
             }
-            "error" -> events += StreamEvent.Error(AnthropicMessagesLanguageModel.anthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
+            "error" -> events += StreamEvent.Error(AnthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
         }
         return events
     }

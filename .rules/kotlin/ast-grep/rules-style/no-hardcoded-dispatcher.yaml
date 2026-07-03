@@ -1,0 +1,23 @@
+# Broader superset of `no-hardcoded-dispatcher-in-builder.yaml` (which only catches
+# Dispatchers.$D as a direct argument to withContext/launch/async). This rule catches ANY
+# other direct reference — property initializers, val assignments, non-builder call sites —
+# while excluding the sanctioned injection pattern this package's own message recommends:
+# a CoroutineContext/CoroutineDispatcher parameter defaulted to Dispatchers.$D
+# (`context: CoroutineContext = Dispatchers.Default`), for both plain functions and
+# constructor parameters. Running both rules together will double-report the builder-call
+# case; that's expected overlap between a narrow and a broad tenet, not silent duplication.
+id: no-hardcoded-dispatcher
+language: kotlin
+severity: warning
+message: "Hardcoded Dispatchers.IO/Main/Default reference; inject a CoroutineContext/CoroutineDispatcher parameter instead so callers (and tests) can supply their own."
+rule:
+  kind: navigation_expression
+  all:
+    - has: { kind: simple_identifier, regex: '^Dispatchers$' }
+    - has:
+        kind: navigation_suffix
+        has: { kind: simple_identifier, regex: '^(IO|Main|Default)$' }
+  not:
+    any:
+      - inside: { kind: function_value_parameters }
+      - inside: { kind: class_parameter }

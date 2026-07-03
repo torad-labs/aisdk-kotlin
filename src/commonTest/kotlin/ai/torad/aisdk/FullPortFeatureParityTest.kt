@@ -128,7 +128,7 @@ class FullPortFeatureParityTest {
             rerankingModels = mapOf("rerank" to MockRerankingModel()),
             videoModels = mapOf("video" to MockVideoModel()),
         )
-        val registry = ProviderRegistry.createProviderRegistry("mock" to provider)
+        val registry = ProviderRegistry("mock" to provider)
 
         assertEquals("mock/embedding", registry.embeddingModel("mock:embed").modelId)
         assertEquals("mock/image", registry.imageModel("mock:image").modelId)
@@ -265,13 +265,13 @@ class FullPortFeatureParityTest {
             "ok"
         }
 
-        val dataUrl = DataUrl.parse("data:text/plain;base64,SGk=")
+        val dataUrl = DataUrl("data:text/plain;base64,SGk=")
 
         assertEquals("ok", retried)
         assertEquals(2, attempts)
         assertEquals("text/plain", dataUrl.mediaType)
         assertEquals("image/png", MediaTypes.detect(filename = "a.png"))
-        assertTrue(IdGenerator.generate("test").startsWith("test-"))
+        assertTrue(GenerateId("test").startsWith("test-"))
     }
 
     @Test

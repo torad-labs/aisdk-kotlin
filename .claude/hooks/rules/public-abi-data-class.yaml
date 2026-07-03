@@ -25,6 +25,13 @@ rule:
       - inside:
           stopBy: end
           kind: function_declaration
+      # NOTE: Changed from `lambda_literal` to `annotated_lambda` (2026-07-03).
+      # ast-grep 0.44.0 has a Kotlin grammar regression where sealed class bodies
+      # containing `companion object` are misparsed as bare `lambda_literal` under
+      # an `infix_expression`, causing false negatives on 5 tracked public data
+      # classes. Real function-local lambdas (like `flow { data class X(...) }`)
+      # are wrapped in `call_suffix > annotated_lambda > lambda_literal`, so
+      # matching `annotated_lambda` excludes those while not matching the misparse.
       - inside:
           stopBy: end
-          kind: lambda_literal
+          kind: annotated_lambda

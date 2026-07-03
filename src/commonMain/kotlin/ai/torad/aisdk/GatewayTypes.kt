@@ -35,6 +35,17 @@ public class GatewayLanguageModelSpecification(
     public val modelId: String,
 )
 
+internal fun GatewayModelTypeFromWire(value: String?): GatewayModelType? = when (value) {
+    "embedding" -> GatewayModelType.Embedding
+    "image" -> GatewayModelType.Image
+    "language" -> GatewayModelType.Language
+    "reranking" -> GatewayModelType.Reranking
+    "speech" -> GatewayModelType.Speech
+    "transcription" -> GatewayModelType.Transcription
+    "video" -> GatewayModelType.Video
+    else -> null
+}
+
 /** @since 0.3.0-beta01 */
 public enum class GatewayModelType {
     Embedding,
@@ -44,20 +55,6 @@ public enum class GatewayModelType {
     Speech,
     Transcription,
     Video,
-    ;
-
-    internal companion object {
-        internal fun fromWire(value: String?): GatewayModelType? = when (value) {
-            "embedding" -> Embedding
-            "image" -> Image
-            "language" -> Language
-            "reranking" -> Reranking
-            "speech" -> Speech
-            "transcription" -> Transcription
-            "video" -> Video
-            else -> null
-        }
-    }
 }
 
 @Poko
@@ -109,19 +106,16 @@ public enum class GatewaySpendReportDatePart(public val wireValue: String) {
     Hour("hour"),
 }
 
+internal fun GatewayCredentialTypeFromWire(value: String?): GatewayCredentialType? = when (value) {
+    "byok" -> GatewayCredentialType.Byok
+    "system" -> GatewayCredentialType.System
+    else -> null
+}
+
 /** @since 0.3.0-beta01 */
 public enum class GatewayCredentialType(public val wireValue: String) {
     Byok("byok"),
     System("system"),
-    ;
-
-    internal companion object {
-        internal fun fromWire(value: String?): GatewayCredentialType? = when (value) {
-            "byok" -> Byok
-            "system" -> System
-            else -> null
-        }
-    }
 }
 
 @Poko

@@ -1,0 +1,28 @@
+id: no-extension-on-platform-type
+language: kotlin
+severity: warning
+message: "Extension function receiver is a Java platform type (nullability unknown to Kotlin) declared without `?`; a Java caller can pass null and crash inside the extension. Mark the receiver nullable (`Date?`) and handle null explicitly."
+note: |
+  Kotlin cannot spell "platform type" in source (it is the compiler's
+  internal `T!` for a value whose nullness Kotlin can't verify because it
+  came from Java); this rule is a structural proxy that flags an extension
+  function whose receiver type resolves to a well-known JDK class — either
+  referenced by FQN (`java.util.Date`, detected via a `java` segment in the
+  receiver's `user_type`) or by a curated list of common ambiguous-null JDK
+  types (Date, File, BigDecimal, UUID, Optional, Thread, ...) — declared
+  without the explicit `?` Kotlin uses to force a null check. A receiver
+  already written `Date?` is excluded (the nullable case parses as
+  `nullable_type` wrapping `user_type`, a different direct child of
+  `receiver_type`, so it never matches `has: kind: user_type`). Kotlin
+  stdlib-aliased types (`String`, `Int`, ...) are not in the curated list
+  and are unaffected.
+rule:
+  kind: function_declaration
+  has:
+    field: receiver
+    kind: receiver_type
+    has:
+      kind: user_type
+      any:
+        - has: { kind: type_identifier, regex: '^java$' }
+        - has: { kind: type_identifier, regex: '^(Date|File|BigDecimal|BigInteger|UUID|Pattern|Optional|Thread|Random|Scanner|Properties|Calendar|TimeZone|URL|URI|Locale|Matcher)$' }

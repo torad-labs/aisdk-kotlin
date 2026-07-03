@@ -3,7 +3,6 @@
 
 package ai.torad.aisdk
 
-import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonString
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
@@ -54,6 +53,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
 import kotlin.math.pow
 import kotlin.math.roundToLong
+import kotlin.jvm.JvmSynthetic
 
 public const val MCP_PACKAGE_VERSION: String = "1.0.46"
 public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
@@ -98,70 +98,68 @@ public class MCPClientError(
     cause: Throwable? = null,
 ) : AiSdkException(message, cause)
 
-@Serializable
-/** @since 0.3.0-beta01 */
-public sealed interface JSONRPCMessage {
-    public companion object {
-        internal fun JSONRPCMessage.toJsonElement(): JsonObject = when (this) {
-            is JSONRPCRequest -> mcpJson.encodeToJsonElement(JSONRPCRequest.serializer(), this).jsonObject
-            is JSONRPCNotification -> mcpJson.encodeToJsonElement(JSONRPCNotification.serializer(), this).jsonObject
-            is JSONRPCResponse -> mcpJson.encodeToJsonElement(JSONRPCResponse.serializer(), this).jsonObject
-            is JSONRPCError -> mcpJson.encodeToJsonElement(JSONRPCError.serializer(), this).jsonObject
-        }
+internal fun ToJsonElement(message: JSONRPCMessage): JsonObject = when (message) {
+    is JSONRPCRequest -> mcpJson.encodeToJsonElement(JSONRPCRequest.serializer(), message).jsonObject
+    is JSONRPCNotification -> mcpJson.encodeToJsonElement(JSONRPCNotification.serializer(), message).jsonObject
+    is JSONRPCResponse -> mcpJson.encodeToJsonElement(JSONRPCResponse.serializer(), message).jsonObject
+    is JSONRPCError -> mcpJson.encodeToJsonElement(JSONRPCError.serializer(), message).jsonObject
+}
 
-        internal fun JSONRPCMessage.toJsonString(): String = toJsonElement().toString()
+internal fun ToJsonString(message: JSONRPCMessage): String = ToJsonElement(message).toString()
 
-        internal fun fromJson(text: String): JSONRPCMessage {
-            val obj = WireDecoder.parseObject(text, provider = "mcp", operation = "json-rpc message")
-            val envelope = WireDecoder.decode(
-                JSONRPCEnvelope.serializer(),
-                obj,
-                provider = "mcp",
-                operation = "json-rpc message",
-            )
-            if (envelope.jsonrpc != JSONRPC_VERSION) {
-                WireDecoder.fail(
-                    provider = "mcp",
-                    operation = "json-rpc message",
-                    path = "$.jsonrpc",
-                    message = "expected JSON-RPC version $JSONRPC_VERSION",
-                    value = obj["jsonrpc"],
-                )
-            }
-            val hasId = "id" in obj
-            return when {
-                envelope.method != null && hasId -> WireDecoder.decode(
-                    JSONRPCRequest.serializer(),
-                    obj,
-                    "mcp",
-                    "json-rpc request"
-                )
-                envelope.method != null -> WireDecoder.decode(
-                    JSONRPCNotification.serializer(),
-                    obj,
-                    "mcp",
-                    "json-rpc notification"
-                )
-                hasId && envelope.error == null -> WireDecoder.decode(
-                    JSONRPCResponse.serializer(),
-                    obj,
-                    "mcp",
-                    "json-rpc response"
-                )
-                hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
-                else -> WireDecoder.fail("mcp", "json-rpc message", "$", "invalid JSON-RPC envelope", obj)
-            }
-        }
-
-        internal fun fromJsonBatch(text: String): List<JSONRPCMessage> {
-            val element = mcpJson.parseToJsonElement(text)
-            return when (element) {
-                is JsonArray -> element.map { fromJson(it.toString()) }
-                else -> listOf(fromJson(element.toString()))
-            }
-        }
+internal fun ParseJSONRPCMessage(text: String): JSONRPCMessage {
+    val obj = WireDecoder.parseObject(text, provider = "mcp", operation = "json-rpc message")
+    val envelope = WireDecoder.decode(
+        JSONRPCEnvelope.serializer(),
+        obj,
+        provider = "mcp",
+        operation = "json-rpc message",
+    )
+    if (envelope.jsonrpc != JSONRPC_VERSION) {
+        WireDecoder.fail(
+            provider = "mcp",
+            operation = "json-rpc message",
+            path = "$.jsonrpc",
+            message = "expected JSON-RPC version $JSONRPC_VERSION",
+            value = obj["jsonrpc"],
+        )
+    }
+    val hasId = "id" in obj
+    return when {
+        envelope.method != null && hasId -> WireDecoder.decode(
+            JSONRPCRequest.serializer(),
+            obj,
+            "mcp",
+            "json-rpc request"
+        )
+        envelope.method != null -> WireDecoder.decode(
+            JSONRPCNotification.serializer(),
+            obj,
+            "mcp",
+            "json-rpc notification"
+        )
+        hasId && envelope.error == null -> WireDecoder.decode(
+            JSONRPCResponse.serializer(),
+            obj,
+            "mcp",
+            "json-rpc response"
+        )
+        hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
+        else -> WireDecoder.fail("mcp", "json-rpc message", "$", "invalid JSON-RPC envelope", obj)
     }
 }
+
+internal fun ParseJSONRPCMessageBatch(text: String): List<JSONRPCMessage> {
+    val element = mcpJson.parseToJsonElement(text)
+    return when (element) {
+        is JsonArray -> element.map { ParseJSONRPCMessage(it.toString()) }
+        else -> listOf(ParseJSONRPCMessage(element.toString()))
+    }
+}
+
+@Serializable
+/** @since 0.3.0-beta01 */
+public sealed interface JSONRPCMessage
 
 @Serializable
 private data class JSONRPCEnvelope(
@@ -191,8 +189,11 @@ public interface MCPTransport {
     /** @since 0.3.0-beta01 */
     public fun setProtocolVersion(version: String?)
 
+    @JvmSynthetic
     public suspend fun start()
+    @JvmSynthetic
     public suspend fun send(message: JSONRPCMessage)
+    @JvmSynthetic
     public suspend fun close()
 }
 
@@ -343,10 +344,12 @@ public sealed class MCPClient {
 @ExperimentalAiSdkApi
 public typealias experimental_MCPClient = MCPClient
 
+@JvmSynthetic
 public suspend fun CreateMCPClient(config: MCPClientConfig): MCPClient =
     DefaultMCPClient(config).also { it.init() }
 
 @ExperimentalAiSdkApi
+@JvmSynthetic
 public suspend fun Experimental_CreateMCPClient(config: MCPClientConfig): MCPClient =
     CreateMCPClient(config)
 
@@ -619,8 +622,9 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient() {
             options?.signal?.throwIfAborted()
             val result = deferred.await()
             options?.signal?.throwIfAborted()
+            val resultElement = result ?: throw MCPClientError("Server response returned null result for $method")
             return try {
-                mcpJson.decodeFromJsonElement(serializer, result ?: JsonNull)
+                mcpJson.decodeFromJsonElement(serializer, resultElement)
             } catch (error: Throwable) {
                 throw MCPClientError("Failed to parse server response", cause = error)
             }
@@ -746,7 +750,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient() {
     private suspend fun onResponse(response: JSONRPCResponse) {
         val handler = responseHandlersMutex.withLock { responseHandlers[rpcIdKey(response.id)] }
             ?: throw MCPClientError(
-                "Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}"
+                "Protocol error: Received a response for an unknown message ID: ${ToJsonString(response)}"
             )
         handler.complete(response.result)
     }
@@ -754,7 +758,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient() {
     private suspend fun onResponse(response: JSONRPCError) {
         val handler = responseHandlersMutex.withLock { responseHandlers[rpcIdKey(response.id)] }
             ?: throw MCPClientError(
-                "Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}"
+                "Protocol error: Received a response for an unknown message ID: ${ToJsonString(response)}"
             )
         handler.completeExceptionally(
             MCPClientError(
@@ -855,18 +859,30 @@ public interface OAuthClientProvider {
     /** @since 0.3.0-beta01 */
     public val clientMetadata: OAuthClientMetadata
 
+    @JvmSynthetic
     public suspend fun tokens(): OAuthTokens?
+    @JvmSynthetic
     public suspend fun saveTokens(tokens: OAuthTokens)
+    @JvmSynthetic
     public suspend fun redirectToAuthorization(authorizationUrl: String)
+    @JvmSynthetic
     public suspend fun saveCodeVerifier(codeVerifier: String)
+    @JvmSynthetic
     public suspend fun codeVerifier(): String
+    @JvmSynthetic
     public suspend fun clientInformation(): OAuthClientInformation?
 
+    @JvmSynthetic
     public suspend fun saveClientInformation(clientInformation: OAuthClientInformation): Unit = Unit
+    @JvmSynthetic
     public suspend fun invalidateCredentials(scope: String): Unit = Unit
+    @JvmSynthetic
     public suspend fun state(): String? = null
+    @JvmSynthetic
     public suspend fun saveState(state: String): Unit = Unit
+    @JvmSynthetic
     public suspend fun storedState(): String? = null
+    @JvmSynthetic
     public suspend fun validateResourceURL(serverUrl: String, resource: String?): String? {
         if (resource == null) return null
         val requestedResource = McpResourceUrl.fromServerUrl(serverUrl)
@@ -875,6 +891,7 @@ public interface OAuthClientProvider {
         }
         return McpResourceUrl.stripSlash(resource)
     }
+    @JvmSynthetic
     public suspend fun addClientAuthentication(
         headers: Map<String, String>,
         params: Map<String, String>,
@@ -991,7 +1008,7 @@ internal object McpAuth {
 
         // OAuth state (CSRF) and PKCE code_verifier must come from a CSPRNG, not the
         // seeded Random.Default — RFC 7636 §4.1 requires high-entropy cryptographic random.
-        val state = provider.state() ?: IdGenerator.generate(prefix = "mcp", random = SecureRandom())
+        val state = provider.state() ?: GenerateId(prefix = "mcp", random = SecureRandom())
         provider.saveState(state)
         val codeVerifier = IdGenerator {
             prefix("mcp-verifier")
@@ -1291,6 +1308,12 @@ internal class McpConnectionLifecycle {
     }
 }
 
+private fun BearerAccessToken(headers: Map<String, String>): String? =
+    headers.entries.firstOrNull { it.key.equals(HttpHeaders.Authorization, ignoreCase = true) }
+        ?.value
+        ?.removePrefix("Bearer ")
+        ?.takeIf { it.isNotBlank() }
+
 private class McpOAuthReauthorizer(
     private val authProvider: OAuthClientProvider?,
     private val serverUrl: String,
@@ -1354,14 +1377,6 @@ private class McpOAuthReauthorizer(
                 if (inFlight === result) inFlight = null
             }
         }
-    }
-
-    companion object {
-        fun bearerAccessToken(headers: Map<String, String>): String? =
-            headers.entries.firstOrNull { it.key.equals(HttpHeaders.Authorization, ignoreCase = true) }
-                ?.value
-                ?.removePrefix("Bearer ")
-                ?.takeIf { it.isNotBlank() }
     }
 }
 
@@ -1452,12 +1467,12 @@ public class HttpMCPTransport(
                 HttpHeaders.Accept to "application/json, text/event-stream",
             ),
         )
-        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
+        val requestAccessToken = BearerAccessToken(requestHeaders)
         val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             requestHeaders.forEach { (name, value) -> header(name, value) }
-            setBody(message.toJsonString())
+            setBody(ToJsonString(message))
         }
         mcpSessionId(response)?.let { sessionId.store(it) }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
@@ -1493,7 +1508,7 @@ public class HttpMCPTransport(
         when {
             contentType.contains("application/json", ignoreCase = true) -> {
                 val text = with(HttpTransport) { response.bodyAsTextCapped(url) }
-                JSONRPCMessage.fromJsonBatch(text).forEach { onMessage?.invoke(it) }
+                ParseJSONRPCMessageBatch(text).forEach { onMessage?.invoke(it) }
             }
             contentType.contains("text/event-stream", ignoreCase = true) -> launchPostResponseSse(response)
             else -> {
@@ -1515,13 +1530,13 @@ public class HttpMCPTransport(
         val activeScope = lifecycle.scopeOrNull() ?: return
         activeScope.launch(start = CoroutineStart.UNDISPATCHED) {
             try {
-                McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+                ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
                     if (event.event == "message") {
                         // Isolate per-message handling (mirrors readInboundSse): a malformed/
                         // unknown-ID frame is a NON-fatal protocol error routed to onError, not
                         // an unwind that kills the rest of the stream.
                         try {
-                            onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                            onMessage?.invoke(ParseJSONRPCMessage(event.data))
                         } catch (error: Throwable) {
                             if (error is CancellationException) throw error
                             onError?.invoke(error)
@@ -1569,7 +1584,7 @@ public class HttpMCPTransport(
                     }
                 },
             )
-            val firstAccessToken = McpOAuthReauthorizer.bearerAccessToken(firstHeaders)
+            val firstAccessToken = BearerAccessToken(firstHeaders)
             val firstResponse = client.request(url) {
                 method = HttpMethod.Get
                 firstHeaders.forEach { (name, value) -> header(name, value) }
@@ -1606,7 +1621,7 @@ public class HttpMCPTransport(
                 return
             }
             val receivedEvent = booleanArrayOf(false)
-            McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+            ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
                 event.id?.let { id -> lastInboundEventId.store(id.takeIf { it.isNotEmpty() }) }
                 if (!receivedEvent[0]) {
                     receivedEvent[0] = true
@@ -1615,9 +1630,9 @@ public class HttpMCPTransport(
                 if (event.event == "message") {
                     // Isolate per-message handling (mirrors the stdio reader): a malformed/unknown-ID
                     // frame is a NON-fatal protocol error routed to onError — it must not unwind
-                    // parseStream and kill the inbound reader (dropping all later messages).
+                    // ParseSseStream and kill the inbound reader (dropping all later messages).
                     try {
-                        onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                        onMessage?.invoke(ParseJSONRPCMessage(event.data))
                     } catch (error: Throwable) {
                         if (error is CancellationException) throw error
                         onError?.invoke(error)
@@ -1767,7 +1782,7 @@ public class SseMCPTransport(
                         "MCP SSE Transport Error: ${response.status.value} ${response.status.description}$hint",
                     )
                 }
-                McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+                ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
                     when (event.event) {
                         "endpoint" -> {
                             val resolvedEndpoint = McpUrl.resolve(event.data, url)
@@ -1785,7 +1800,7 @@ public class SseMCPTransport(
                         // unknown-ID frame is a NON-fatal protocol error routed to onError. Only the
                         // "message" branch is guarded — an "endpoint" handshake error stays fatal.
                         "message" -> try {
-                            onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                            onMessage?.invoke(ParseJSONRPCMessage(event.data))
                         } catch (error: Throwable) {
                             if (error is CancellationException) throw error
                             onError?.invoke(error)
@@ -1828,7 +1843,7 @@ public class SseMCPTransport(
 
     private suspend fun openSseConnection(triedAuth: Boolean): HttpResponse {
         val requestHeaders = mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream"))
-        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
+        val requestAccessToken = BearerAccessToken(requestHeaders)
         val response = client.request(url) {
             method = HttpMethod.Get
             requestHeaders.forEach { (name, value) -> header(name, value) }
@@ -1852,12 +1867,12 @@ public class SseMCPTransport(
         val requestHeaders = mcpCommonHeaders(
             mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString())
         )
-        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
+        val requestAccessToken = BearerAccessToken(requestHeaders)
         val response = client.request(destination) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             requestHeaders.forEach { (name, value) -> header(name, value) }
-            setBody(message.toJsonString())
+            setBody(ToJsonString(message))
         }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
             if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
@@ -1900,14 +1915,41 @@ public class SseMCPTransport(
     }
 }
 
+internal suspend fun ParseSseStream(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
+    val frame = McpSseFrame.FrameBuffer()
+    while (true) {
+        val line = channel.readLine() ?: break
+        when {
+            line.isEmpty() -> frame.flush(onEvent)
+            line.startsWith("event:") -> frame.setEvent(line.removePrefix("event:").trimStart())
+            line.startsWith("data:") -> frame.addData(line.removePrefix("data:").trimStart())
+            line.startsWith("id:") -> frame.setId(line.removePrefix("id:").trimStart())
+        }
+    }
+    frame.flush(onEvent)
+}
+
+/**
+ * [ParseSseStream] that ALWAYS releases the channel on EOF/error/cancel — on some Ktor engines
+ * the connection only closes when the body channel is explicitly cancelled (mirrors
+ * HttpTransport.streamSse). Used by the MCP SSE read sites so the release isn't duplicated.
+ */
+internal suspend fun ParseSseStreamReleasing(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
+    try {
+        ParseSseStream(channel, onEvent)
+    } finally {
+        channel.cancel(null)
+    }
+}
+
 internal data class McpSseFrame(
     val event: String,
     val data: String,
     val id: String? = null,
 ) {
     // Per-frame accumulator for the SSE line parser. Holds the mutable
-    // event/id/data state so the companion's parseStream stays var-free.
-    private class FrameBuffer {
+    // event/id/data state so ParseSseStream stays var-free.
+    internal class FrameBuffer {
         private var eventName: String = "message"
         private var eventId: String? = null
         private val data: MutableList<String> = mutableListOf()
@@ -1936,35 +1978,6 @@ internal data class McpSseFrame(
             eventName = "message"
             eventId = null
             data.clear()
-        }
-    }
-
-    internal companion object {
-        suspend fun parseStream(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
-            val frame = FrameBuffer()
-            while (true) {
-                val line = channel.readLine() ?: break
-                when {
-                    line.isEmpty() -> frame.flush(onEvent)
-                    line.startsWith("event:") -> frame.setEvent(line.removePrefix("event:").trimStart())
-                    line.startsWith("data:") -> frame.addData(line.removePrefix("data:").trimStart())
-                    line.startsWith("id:") -> frame.setId(line.removePrefix("id:").trimStart())
-                }
-            }
-            frame.flush(onEvent)
-        }
-
-        /**
-         * [parseStream] that ALWAYS releases the channel on EOF/error/cancel — on some Ktor engines
-         * the connection only closes when the body channel is explicitly cancelled (mirrors
-         * HttpTransport.streamSse). Used by the MCP SSE read sites so the release isn't duplicated.
-         */
-        suspend fun parseStreamReleasing(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
-            try {
-                parseStream(channel, onEvent)
-            } finally {
-                channel.cancel(null)
-            }
         }
     }
 }
@@ -2097,7 +2110,7 @@ public class Experimental_StdioMCPTransport(
                     while (true) {
                         val line = started.readLine() ?: break
                         try {
-                            onMessage?.invoke(JSONRPCMessage.fromJson(line))
+                            onMessage?.invoke(ParseJSONRPCMessage(line))
                         } catch (error: Throwable) {
                             if (error is CancellationException) throw error
                             onError?.invoke(error)
@@ -2127,7 +2140,7 @@ public class Experimental_StdioMCPTransport(
     override suspend fun send(message: JSONRPCMessage) {
         val active = process ?: throw MCPClientError("StdioClientTransport not connected")
         try {
-            active.writeLine(message.toJsonString())
+            active.writeLine(ToJsonString(message))
         } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {

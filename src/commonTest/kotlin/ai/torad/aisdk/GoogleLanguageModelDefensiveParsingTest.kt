@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.GoogleGenerativeAILanguageModel
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -19,7 +18,7 @@ class GoogleLanguageModelDefensiveParsingTest {
             put("promptTokenCount", buildJsonObject { put("x", JsonPrimitive(1)) })
         }
 
-        val usage = GoogleGenerativeAILanguageModel.googleUsage(element)
+        val usage = ai.torad.aisdk.providers.GoogleUsage(element)
 
         assertEquals(0, usage.inputTokens.total, "a non-primitive promptTokenCount degrades to 0, no crash")
     }

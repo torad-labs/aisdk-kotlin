@@ -88,7 +88,7 @@ class ProviderUtilsParityTest {
 
     @Test
     fun `provider util helpers match v6 defaults`() {
-        val generated = IdGenerator.generate()
+        val generated = GenerateId()
         val prefixed = IdGenerator {
             prefix("msg")
             size(4)
@@ -274,10 +274,10 @@ class ProviderUtilsParityTest {
 
     @Test
     fun `generated file and experimental media aliases preserve v6 compatibility`() = runTest {
-        val fileFromBytes = DefaultGeneratedFile.fromBytes(byteArrayOf(1, 2, 3), "application/octet-stream")
-        val fileFromBase64 = DefaultGeneratedFile.fromBase64(fileFromBytes.base64, "application/octet-stream")
+        val fileFromBytes = DefaultGeneratedFile(byteArrayOf(1, 2, 3), "application/octet-stream")
+        val fileFromBase64 = DefaultGeneratedFile(fileFromBytes.base64, "application/octet-stream")
         val mutableBytes = byteArrayOf(7, 8, 9)
-        val copiedFile = DefaultGeneratedFile.fromBytes(mutableBytes, "application/octet-stream")
+        val copiedFile = DefaultGeneratedFile(mutableBytes, "application/octet-stream")
         mutableBytes[0] = 0
         val exposedBytes = copiedFile.byteArray
         exposedBytes[1] = 0
@@ -379,7 +379,7 @@ class ProviderUtilsParityTest {
             cause = IllegalArgumentException("bad"),
             context = TypeValidationContext(field = "message.parts[0]", entityName = "message", entityId = "m1"),
         )
-        val wrapped = TypeValidationError.wrap(JsonPrimitive("bad"), validation, validation.context)
+        val wrapped = WrapTypeValidationError(JsonPrimitive("bad"), validation, validation.context)
         val unsupported = UnsupportedFunctionalityError("tool-result repair")
 
         assertEquals("search", invalidToolInput.toolName)

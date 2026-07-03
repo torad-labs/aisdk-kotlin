@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 class TelemetryParityTest {
     @AfterTest
     fun clearTelemetry() {
-        Telemetry.clearGlobalTelemetry()
+        ClearGlobalTelemetry()
     }
 
     @Test
@@ -60,9 +60,9 @@ class TelemetryParityTest {
     @Test
     fun `global telemetry integrations broadcast in registration order`() = runTest {
         val calls = mutableListOf<String>()
-        Telemetry.registerTelemetry(OrderedIntegration("first", calls))
-        Telemetry.registerTelemetry(OrderedIntegration("second", calls))
-        val composite = Telemetry.resolveTelemetry(null)
+        RegisterTelemetry(OrderedIntegration("first", calls))
+        RegisterTelemetry(OrderedIntegration("second", calls))
+        val composite = ResolveTelemetry(null)
         checkNotNull(composite)
         val call = TelemetryCall(callId = "c1", agentId = "agent")
 

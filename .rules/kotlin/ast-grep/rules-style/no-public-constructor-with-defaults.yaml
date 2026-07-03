@@ -1,0 +1,34 @@
+id: no-public-constructor-with-defaults
+language: kotlin
+severity: warning
+message: "Public class has a public constructor parameter with a default value. A public positional constructor with defaults freezes the parameter list into the ABI: appending, reordering, or removing a defaulted param is binary-incompatible for already-compiled callers, and @JvmOverloads/default-args don't rescue it. Front construction with a builder/DSL factory instead (internal constructor + Builder class + factory function) so the constructor itself is never part of the public contract."
+rule:
+  kind: class_parameter
+  all:
+    - has:
+        follows:
+          any:
+            - kind: user_type
+            - kind: nullable_type
+    - not:
+        has:
+          kind: visibility_modifier
+          regex: '^(private|internal|protected)$'
+          stopBy: end
+    - inside:
+        kind: primary_constructor
+        not:
+          has:
+            kind: modifiers
+            has:
+              kind: visibility_modifier
+              regex: '^(private|internal)$'
+    - inside:
+        stopBy: end
+        kind: class_declaration
+        not:
+          has:
+            kind: modifiers
+            has:
+              kind: visibility_modifier
+              regex: '^(private|internal)$'

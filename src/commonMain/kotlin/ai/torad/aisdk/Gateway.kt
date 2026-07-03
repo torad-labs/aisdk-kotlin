@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
+import kotlin.jvm.JvmSynthetic
 
 public const val AI_GATEWAY_PROTOCOL_VERSION: String = "0.0.1"
 public const val AI_GATEWAY_DEFAULT_BASE_URL: String = "https://ai-gateway.vercel.sh/v3/ai"
@@ -18,22 +19,20 @@ public enum class GatewayAuthMethod(public val wireValue: String) {
     Oidc("oidc"),
 }
 
+internal suspend fun GatewayAuthTokenFromSettings(settings: GatewayProviderSettings): GatewayAuthToken? {
+    val key = (settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"])?.takeIf { it.isNotBlank() }
+    if (key != null) return GatewayAuthToken(key, GatewayAuthMethod.ApiKey)
+    // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
+    // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).
+    return settings.authTokenProvider?.invoke()
+        ?: settings.environment["VERCEL_OIDC_TOKEN"]?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
+}
+
 /** @since 0.3.0-beta01 */
 public data class GatewayAuthToken(
     val token: String,
     val authMethod: GatewayAuthMethod,
-) {
-    internal companion object {
-        internal suspend fun fromSettings(settings: GatewayProviderSettings): GatewayAuthToken? {
-            val key = (settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"])?.takeIf { it.isNotBlank() }
-            if (key != null) return GatewayAuthToken(key, GatewayAuthMethod.ApiKey)
-            // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
-            // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).
-            return settings.authTokenProvider?.invoke()
-                ?: settings.environment["VERCEL_OIDC_TOKEN"]?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
-        }
-    }
-}
+)
 
 /** @since 0.3.0-beta01 */
 public class GatewayProviderSettings internal constructor(
@@ -60,7 +59,7 @@ public class GatewayProviderSettings internal constructor(
     public val environment: Map<String, String> = emptyMap(),
 ) {
     internal suspend fun gatewayHeaders(): Map<String, String> {
-        val auth = GatewayAuthToken.fromSettings(this)
+        val auth = GatewayAuthTokenFromSettings(this)
         val base = linkedMapOf<String, String>()
         auth?.let {
             base["Authorization"] = "Bearer ${it.token}"
@@ -176,13 +175,16 @@ public fun GatewayGenerationInfoParams(
 ): GatewayGenerationInfoParams =
     GatewayGenerationInfoParamsBuilder().apply(block).build()
 
+internal fun GatewayTransportMissing(): Nothing = throw GatewayTransportNotConfiguredError()
+
 /** @since 0.3.0-beta01 */
 public interface GatewayTransport {
+    @JvmSynthetic
     public suspend fun generateText(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: LanguageModelCallParams,
-    ): LanguageModelResult = gatewayTransportMissing()
+    ): LanguageModelResult = GatewayTransportMissing()
 
     /** @since 0.3.0-beta01 */
     public fun streamText(
@@ -191,49 +193,53 @@ public interface GatewayTransport {
         params: LanguageModelCallParams,
     ): Flow<StreamEvent> = flow { throw GatewayTransportNotConfiguredError() }
 
+    @JvmSynthetic
     public suspend fun embed(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: EmbeddingModelCallParams,
-    ): EmbeddingModelResult = gatewayTransportMissing()
+    ): EmbeddingModelResult = GatewayTransportMissing()
 
+    @JvmSynthetic
     public suspend fun generateImage(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: ImageGenerationParams,
-    ): ImageModelResult = gatewayTransportMissing()
+    ): ImageModelResult = GatewayTransportMissing()
 
+    @JvmSynthetic
     public suspend fun generateVideo(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: VideoGenerationParams,
-    ): VideoModelResult = gatewayTransportMissing()
+    ): VideoModelResult = GatewayTransportMissing()
 
+    @JvmSynthetic
     public suspend fun rerank(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: RerankingParams,
-    ): RerankingModelResult = gatewayTransportMissing()
+    ): RerankingModelResult = GatewayTransportMissing()
 
+    @JvmSynthetic
     public suspend fun getAvailableModels(context: GatewayRequestContext): GatewayFetchMetadataResponse =
-        gatewayTransportMissing()
+        GatewayTransportMissing()
 
+    @JvmSynthetic
     public suspend fun getCredits(context: GatewayRequestContext): GatewayCreditsResponse =
-        gatewayTransportMissing()
+        GatewayTransportMissing()
 
+    @JvmSynthetic
     public suspend fun getSpendReport(
         context: GatewayRequestContext,
         params: GatewaySpendReportParams,
-    ): GatewaySpendReportResponse = gatewayTransportMissing()
+    ): GatewaySpendReportResponse = GatewayTransportMissing()
 
+    @JvmSynthetic
     public suspend fun getGenerationInfo(
         context: GatewayRequestContext,
         params: GatewayGenerationInfoParams,
-    ): GatewayGenerationInfo = gatewayTransportMissing()
-
-    public companion object {
-        internal fun gatewayTransportMissing(): Nothing = throw GatewayTransportNotConfiguredError()
-    }
+    ): GatewayGenerationInfo = GatewayTransportMissing()
 }
 
 /** @since 0.3.0-beta01 */

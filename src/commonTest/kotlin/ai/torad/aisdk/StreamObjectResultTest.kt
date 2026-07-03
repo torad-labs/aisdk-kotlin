@@ -60,7 +60,7 @@ class StreamObjectResultTest {
     fun `objectValue returns the final typed object from the stream`() = runTest {
         val result = StreamObjectResult(
             model = streamingModel("""{"name":"An""", """n","age":30}"""),
-            output = Output.obj(serializer<Person>()),
+            output = OutputObj(serializer<Person>()),
             prompt = "make a person",
         )
         assertEquals(Person("Ann", 30), result.objectValue())
@@ -70,7 +70,7 @@ class StreamObjectResultTest {
     fun `partialObjectStream emits the object as it builds and ends at the complete value`() = runTest {
         val result = StreamObjectResult(
             model = streamingModel("""{"name":"Bo""", """b",""", """"age":7}"""),
-            output = Output.obj(serializer<Person>()),
+            output = OutputObj(serializer<Person>()),
             prompt = "make a person",
         )
         val partials = result.partialObjectStream.toList()
@@ -85,7 +85,7 @@ class StreamObjectResultTest {
         val result = StreamObjectResult(
             // The model wrapped the JSON in a ```json fence — invalid as-is.
             model = streamingModel("```json\n", """{"name":"Cy","age":9}""", "\n```"),
-            output = Output.obj(serializer<Person>()),
+            output = OutputObj(serializer<Person>()),
             prompt = "make a person",
             repairText = { raw ->
                 val start = raw.indexOf('{')
@@ -109,7 +109,7 @@ class StreamObjectResultTest {
                 emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage(), rawFinishReason = "stop"))
             }
         }
-        val finish = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go").finish()
+        val finish = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go").finish()
         assertEquals(Person("Zed", 5), finish.value)
         assertEquals(FinishReason.ToolCalls, finish.finishReason)
     }
@@ -149,7 +149,7 @@ class StreamObjectResultTest {
             }
         }
 
-        val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
+        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go")
         assertEquals(Person("Ann", 30), result.objectValue())
     }
 
@@ -157,7 +157,7 @@ class StreamObjectResultTest {
     fun `finish respects TextStart block order when later block delta arrives first`() = runTest {
         val result = StreamObjectResult(
             outOfOrderDeltaModel("b" to "}", "a" to """{"name":"Ann","age":30"""),
-            Output.obj(serializer<Person>()),
+            OutputObj(serializer<Person>()),
             prompt = "go",
         )
 
@@ -168,7 +168,7 @@ class StreamObjectResultTest {
     fun `partialObjectStream respects TextStart block order when deltas are out of order`() = runTest {
         val result = StreamObjectResult(
             outOfOrderDeltaModel("b" to "}", "a" to """{"name":"Bea","age":4"""),
-            Output.obj(serializer<Person>()),
+            OutputObj(serializer<Person>()),
             prompt = "go",
         )
 
@@ -224,7 +224,7 @@ class StreamObjectResultTest {
                 emit(StreamEvent.Error("provider failed", IllegalStateException("root cause")))
             }
         }
-        val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
+        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go")
 
         assertFailsWith<UiMessageStreamError> { result.partialObjectStream.toList() }
         val second = assertFailsWith<UiMessageStreamError> { result.objectValue() }
@@ -252,7 +252,7 @@ class StreamObjectResultTest {
                 emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
             }
         }
-        val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
+        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go")
 
         val first = async(Dispatchers.Default) {
             result.partialObjectStream.collect {
@@ -291,7 +291,7 @@ class StreamObjectResultTest {
             }
         }
 
-        val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
+        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go")
         assertEquals(listOf("{\"name\":\"Ann\"", ",\"age\":30", "}"), result.textStream.toList())
     }
 
@@ -311,7 +311,7 @@ class StreamObjectResultTest {
             }
         }
 
-        val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
+        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go")
 
         assertEquals(listOf("""{"name":"Bea","age":4}"""), result.textStream.toList())
     }
@@ -330,7 +330,7 @@ class StreamObjectResultTest {
                     emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
                 }
             },
-            output = Output.obj(serializer<Person>()),
+            output = OutputObj(serializer<Person>()),
             prompt = "go",
         )
 
@@ -354,7 +354,7 @@ class StreamObjectResultTest {
             }
         }
 
-        val finish = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go").finish()
+        val finish = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go").finish()
 
         assertEquals("resp_1", finish.response.id)
         assertEquals("test-model", finish.response.modelId)
