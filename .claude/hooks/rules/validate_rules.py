@@ -15,6 +15,9 @@ This gate has two modes:
       python3 validate_rules.py --manifest <rules.json>
   where rules.json is a list of {id, severity, yaml, badExample, goodExample}.
 
+  SCAFFOLD mode — emit a fill-in manifest entry for an existing rule file.
+      python3 validate_rules.py --new <rule-id>
+
 Exit 0 if all checks pass; 1 listing offenders; 2 on environment error.
 """
 from __future__ import annotations
@@ -29,6 +32,8 @@ from pathlib import Path
 
 PARSE_ERROR_MARKERS = ("Cannot parse", "not a valid ast-grep rule", "Rule must specify", "is not a valid")
 PROBE = "package probe\n\npublic class Probe {\n    public fun run(): Int = 0\n}\n"
+STUB_BAD_EXAMPLE = "TODO: replace with code that MUST match this rule"
+STUB_GOOD_EXAMPLE = "TODO: replace with code that MUST NOT match this rule"
 
 
 def ast_grep_binary() -> str | None:
@@ -118,6 +123,9 @@ def semantic_mode(binary: str, manifest_path: Path) -> int:
         yaml_text = r.get("yaml") or ""
         bad_ex = r.get("badExample") or ""
         good_ex = r.get("goodExample") or ""
+        if _needs_examples(bad_ex, good_ex):
+            failures.append((rid, "needs examples"))
+            continue
         rule_path = _write_yaml(yaml_text)
         bad_path = _write_kt(bad_ex)
         good_path = _write_kt(good_ex)
@@ -149,12 +157,53 @@ def semantic_mode(binary: str, manifest_path: Path) -> int:
     return 0
 
 
+def _needs_examples(bad_ex: object, good_ex: object) -> bool:
+    return (
+        not isinstance(bad_ex, str)
+        or not isinstance(good_ex, str)
+        or bad_ex.strip() in {"", STUB_BAD_EXAMPLE}
+        or good_ex.strip() in {"", STUB_GOOD_EXAMPLE}
+    )
+
+
+def new_entry_mode(rule_id: str, rules_dir: Path) -> int:
+    rule_path = rules_dir / f"{rule_id}.yaml"
+    try:
+        yaml_text = rule_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"ERROR: cannot read rule file {rule_path}: {exc}", file=sys.stderr)
+        return 2
+    entry = {
+        "id": rule_id,
+        "severity": _severity_for_rule(yaml_text),
+        "yaml": yaml_text,
+        "badExample": STUB_BAD_EXAMPLE,
+        "goodExample": STUB_GOOD_EXAMPLE,
+    }
+    print(json.dumps(entry, indent=2))
+    return 0
+
+
+def _severity_for_rule(yaml_text: str) -> str:
+    for line in yaml_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("severity:"):
+            return stripped.split(":", 1)[1].strip().strip("\"'")
+    return "warning"
+
+
 def main() -> int:
+    args = sys.argv[1:]
+    if args and args[0] == "--new":
+        if len(args) < 2:
+            print("ERROR: --new requires a rule id")
+            return 2
+        return new_entry_mode(args[1], Path(__file__).resolve().parent / "kotlin")
+
     binary = ast_grep_binary()
     if binary is None:
         print("ERROR: ast-grep not found on PATH")
         return 2
-    args = sys.argv[1:]
     if args and args[0] == "--manifest":
         if len(args) < 2:
             print("ERROR: --manifest requires a path")
