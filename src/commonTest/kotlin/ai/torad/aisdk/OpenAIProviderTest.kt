@@ -31,6 +31,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class OpenAIProviderTest {
@@ -546,14 +547,20 @@ class OpenAIProviderTest {
             }
         )
 
-        val topLevel = result.providerMetadata.toMap()["openai"]?.jsonObject ?: error("missing openai metadata")
+        val topLevel = assertNotNull(
+            result.providerMetadata.toMap()["openai"]?.jsonObject,
+            "missing openai metadata",
+        )
         assertEquals("resp_1", topLevel["responseId"]?.jsonPrimitive?.content)
         assertEquals(
             "answer",
             topLevel["logprobs"]!!.jsonArray.single().jsonArray.single().jsonObject["token"]?.jsonPrimitive?.content
         )
         val text = result.content.filterIsInstance<ContentPart.Text>().single()
-        val textMetadata = text.providerMetadata.toMap()["openai"]?.jsonObject ?: error("missing openai text metadata")
+        val textMetadata = assertNotNull(
+            text.providerMetadata.toMap()["openai"]?.jsonObject,
+            "missing openai text metadata",
+        )
         assertEquals("msg_1", textMetadata["itemId"]?.jsonPrimitive?.content)
         assertEquals(
             "https://example.com",

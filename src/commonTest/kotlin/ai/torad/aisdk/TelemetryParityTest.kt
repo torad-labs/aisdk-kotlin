@@ -11,6 +11,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class TelemetryParityTest {
+    private class SpanFailure(message: String) : IllegalStateException(message)
+
     @AfterTest
     fun clearTelemetry() {
         ClearGlobalTelemetry()
@@ -89,9 +91,9 @@ class TelemetryParityTest {
         assertEquals(JsonPrimitive("gpt-test"), tracer.spans.single().attributes["ai.model.id"])
         assertEquals(JsonPrimitive("ok"), tracer.spans.single().attributes["custom"])
 
-        val error = assertFailsWith<IllegalStateException> {
+        val error = assertFailsWith<SpanFailure> {
             TelemetryTracing.recordSpan(name = "ai.fail", tracer = tracer) {
-                error("boom")
+                throw SpanFailure("boom")
             }
         }
 

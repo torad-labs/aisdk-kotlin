@@ -10,6 +10,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.fail
 
 /**
  * Validates the v6-aligned approval-flow additions from
@@ -103,7 +104,7 @@ class ApprovalIdTest {
                 when {
                     event is app.cash.turbine.Event.Item<*> -> latest = event.value as ai.torad.aisdk.ui.UIMessage
                     event is app.cash.turbine.Event.Complete -> break
-                    else -> error("unexpected event: $event")
+                    else -> fail("unexpected event: $event")
                 }
             }
             finalToolUi = latest.parts
@@ -132,7 +133,7 @@ class ApprovalIdTest {
                 when {
                     event is app.cash.turbine.Event.Item<*> -> latest = event.value as ai.torad.aisdk.ui.UIMessage
                     event is app.cash.turbine.Event.Complete -> break
-                    else -> error("unexpected event: $event")
+                    else -> fail("unexpected event: $event")
                 }
             }
             finalUi = latest

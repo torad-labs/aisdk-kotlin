@@ -16,6 +16,8 @@ import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryBackoffTest {
+    private class RetryTestFailure(message: String) : IllegalStateException(message)
+
     private class FixedClock(private val instant: Instant) : Clock {
         override fun now(): Instant = instant
     }
@@ -147,8 +149,8 @@ class RetryBackoffTest {
             }.execute<String>(
                 shouldRetry = { it.message != "fatal" },
             ) {
-                if (attempt++ == 0) error("transient")
-                error("fatal")
+                if (attempt++ == 0) throw RetryTestFailure("transient")
+                throw RetryTestFailure("fatal")
             }
         }
         assertEquals(RetryErrorReason.ErrorNotRetryable, failure.reason)
@@ -164,7 +166,7 @@ class RetryBackoffTest {
             }.execute<String>(
                 shouldRetry = { false },
             ) {
-                error("first-try fatal")
+                throw RetryTestFailure("first-try fatal")
             }
         }
     }
@@ -175,7 +177,7 @@ class RetryBackoffTest {
             RetryPolicy {
                 maxRetries(0)
             }.execute<String> {
-                error("no retries")
+                throw RetryTestFailure("no retries")
             }
         }
     }

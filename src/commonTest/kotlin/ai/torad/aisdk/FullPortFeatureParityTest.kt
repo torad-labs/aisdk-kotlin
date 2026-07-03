@@ -339,7 +339,7 @@ class FullPortFeatureParityTest {
         )
         val failed = drainAllItems(
             CreateUiMessageStream {
-                error("bad")
+                this.error("bad")
             },
         )
 

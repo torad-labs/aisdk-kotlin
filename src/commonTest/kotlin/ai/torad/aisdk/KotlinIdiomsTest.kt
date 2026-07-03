@@ -118,7 +118,7 @@ class KotlinIdiomsTest {
         assertEquals("object", descriptor.parametersSchema.jsonObject["type"]?.jsonPrimitive?.content)
 
         assertFailsWith<IllegalArgumentException> {
-            val t = tools.find("weather") ?: error("missing tool")
+            val t = assertNotNull(tools.find("weather"), "missing tool")
             ToolSet(t, t)
         }
     }

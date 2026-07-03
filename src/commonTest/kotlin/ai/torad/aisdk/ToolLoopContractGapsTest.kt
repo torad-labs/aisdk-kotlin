@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
  *   #21 `ToolStreamWriter` write-back into the active output stream
  */
 class ToolLoopContractGapsTest {
+    private class PreWarmFailure(message: String) : IllegalStateException(message)
 
     @Serializable
     data class Empty(val unused: String = "")
@@ -124,7 +125,7 @@ class ToolLoopContractGapsTest {
             description = "throwing pre-warm",
             inputSerializer = serializer(),
             outputSerializer = serializer(),
-            onInputStart = { error("pre-warm boom") },
+            onInputStart = { throw PreWarmFailure("pre-warm boom") },
         ) { _ -> "ok" }
         val agent = TestToolLoopAgent<Unit, String>(
             model = MockLanguageModelToolThenText("probe", MockToolInput("unused" to ""), "done"),
