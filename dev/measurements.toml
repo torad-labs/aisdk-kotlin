@@ -156,3 +156,14 @@ command = "python3 .claude/hooks/tests/test_rule_selfcheck_policy.py"
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
 status = "current"
 note = "script output: ok 6."
+
+[[measurement]]
+key = "pretooluse_edit_hook_latency_direct_ms"
+value = 251
+unit = "milliseconds, median of 7 violating Write payloads"
+date = "2026-07-03"
+head = "7d92f99"
+command = "python3 inline benchmark invoking .claude/hooks/orchestrator/pretooluse.py directly (no codex adapter)"
+tool_versions = "Python 3.13.7; ast-grep 0.42.1"
+status = "current"
+note = "Direct-orchestrator surface (Claude-session edits). Companion to [meas: pretooluse_edit_hook_latency_ms] which measures the codex-adapter surface (builder-session edits); the ~230ms delta is adapter overhead. samples min 245 max 261."
