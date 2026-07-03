@@ -373,8 +373,9 @@ id = "BP-02"
 phase = "bp"
 title = "Kotlin consumer-compatibility policy, Okio-style: document supported consumer Kotlin range; evaluate current-compiler + older-stdlib (apiVersion/languageVersion) so JVM/Android consumers update independently; klib KGP floor documented separately."
 files = ["build.gradle.kts", "docs/"]
-status = "done"
+status = "verified"
 # [2026-07-02] Kotlin stdlib/API floor decoupled to 2.3.21 for JVM/Android consumers; klib KGP floor documented; final SHA reported via fleet.
+# [2026-07-02] orchestrator verified 99e426d: Okio-style decoupling live — POMs publish stdlib 2.3.21 (inspected), source pinned to 2.3 language/api with the tradeoff documented, dependency floor coherence stated, api/ unchanged; JVM/Android consumers on Kotlin 2.3.21+ supported one release early
 
 [[items]]
 id = "BP-03"
