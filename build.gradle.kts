@@ -272,8 +272,8 @@ kover {
             }
         }
         verify {
-            // Actuals: run ./gradlew koverXmlReport; do not restate numbers here.
-            // Stale copied coverage numbers misled FR-03.
+            // Actuals: run ./gradlew koverXmlReport, then update dev/measurements.toml
+            // through dev/measurements_ledger.py (coverage_* keys). Do not restate numbers here.
             // These beta gates leave a small ratchet margin so incidental line
             // churn can land with tests, while material regressions fail `check`.
             rule("line coverage ratchet") {

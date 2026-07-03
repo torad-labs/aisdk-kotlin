@@ -614,8 +614,10 @@ id = "HD-09"
 phase = "hd"
 title = "Measurements ledger (qgre steal, #944 §6): dev/measurements.toml + dev/measurements_ledger.py CLI adapted from /home/marcos/Documents/dev/qgre/qgre-main/dev/ (read the originals — header comments carry the law: measured-only, supersede-never-delete, provenance per entry = date/HEAD/command, docs cite keys never restate values; the HD-04 stale-comment incident is OUR proof of the class). Adapt provenance fields for this repo (no GPU/clocks; HEAD + command + gradle/tool versions). SEED with current measured values: coverage line/instruction/branch (84.14/78.87/49.95 at 733a1df — re-measure at seed HEAD), ci-gate wall-clock, per-edit hook latency (245ms at HD-05 verify), rule count 71, data-class floor 40, hook suite counts. Wire a pointer from build.gradle.kts kover comment + CLAUDE.md to the ledger. Run the CLI selftest against the new file before first use."
 files = ["dev/measurements.toml", "dev/measurements_ledger.py", "build.gradle.kts", "CLAUDE.md"]
-status = "todo"
+status = "done"
 verify = "CLI selftest green; seeded entries carry full provenance; supersede flow probed (add then supersede one key); docs point at keys not numbers; ci-gate green"
+# [2026-07-03] Started measurements ledger adaptation; qgre originals read; seed values measured at HEAD 2deca6e
+# [2026-07-03] done: added dev/measurements ledger+CLI; seeded 13 current measured entries at 2deca6e; selftest/list/tomllib PASS; ci-gate and gradle check PASS; final SHA in fleet report
 
 [[items]]
 id = "HD-11"

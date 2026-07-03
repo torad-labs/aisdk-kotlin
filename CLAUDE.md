@@ -94,11 +94,12 @@ Kotlin/JVM SDKs do, including the two most directly comparable to this one:
 declarations in `src/commonMain/kotlin` and **fails if the count rises above the
 budget** — so a new public `data class` is blocked with a pointer back to this
 section. The budget is a one-way ratchet: re-seed it *downward only* with
-`--update` after demoting a type to `@Poko`. The current enforced floor is 40
-true public-ABI declarations; nested/internal/function-local data classes are not
-budgeted as public ABI. The grandfathered existing set is being migrated
-case-by-case (see `docs/data-class-audit.md` / backlog BL-058/A1). Never raise
-the budget to land a new data class; demote one instead.
+`--update` after demoting a type to `@Poko`. The current enforced floor is
+recorded in the measurements ledger as `[meas: public_data_class_floor]`;
+nested/internal/function-local data classes are not budgeted as public ABI. The
+grandfathered existing set is being migrated case-by-case (see
+`docs/data-class-audit.md` / backlog BL-058/A1). Never raise the budget to land
+a new data class; demote one instead.
 
 ## Gate misfires — fix the gate, not the result
 
@@ -123,6 +124,16 @@ downward. The public data-class ratchet lives at repo-root
 `data-class-budget.json`; ast-grep fixtures live under `.claude/hooks/rules/`.
 Never raise a budget to hide accidental drift, and never use `--no-verify` or a
 skip env to get past a budget failure.
+
+## Measurements — one ledger, measured-only
+
+Measured project numbers live in `dev/measurements.toml` and are changed only
+through `dev/measurements_ledger.py`. Do not copy coverage, gate latency, rule
+counts, or budget floors into prose; cite keys such as
+`[meas: coverage_branch_percent]` or `[meas: ci_gate_wall_clock_s]`. If a value
+changes, supersede the current entry and add the new measured entry with date,
+HEAD, exact command, and tool-version provenance. Estimates stay out of the
+ledger.
 
 ## Ast-grep rule authoring — discovery, dedupe, and codemod discipline
 
