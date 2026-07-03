@@ -119,10 +119,11 @@ id = "GH-09"
 phase = "gh2"
 title = "Manifest fixtures for the 14 uncovered ast-grep rules (list: no-camelcase-top-level-function, no-empty-string-sentinel, no-jsonnull-sentinel, no-lateinit-var, no-mutable-companion-state, no-not-null-assertion, no-nullable-prompt-messages-bag, no-provideroptions-jsonobject-cast, no-public-mutable-var, no-sealed-interface, no-secondary-constructor, no-throw-in-stream-error-fn, no-top-level-mutable-var, no-typealias-string). Use GH-08 scaffold. Also make validate_rules error on rules missing manifest entries."
 files = [".claude/hooks/rules/manifest.json", ".claude/hooks/rules/validate_rules.py"]
-status = "done"
+status = "verified"
 depends = ["GH-01", "GH-08"]
 verify = "validate_rules --manifest reports 64/64; removing an entry fails it"
 # [2026-07-02] done in GH-09 slice (final SHA in fleet report): manifest now covers all 64 Kotlin rules and --manifest fails missing entries
+# [2026-07-02] orchestrator verified 865cacc: 64/64 both modes, removal probe exit 1, fixture quality spot-checked real. Finding for GH-11: the 4 scope-anchored rules correctly keep hunkExpectation=same (badExamples are top-level shapes); the member-fragment misfire class needs class-wrapped no-match fixtures + hunk-unsafe declaration, not expectation flips.
 
 [[items]]
 id = "GH-10"
@@ -139,9 +140,10 @@ id = "GH-11"
 phase = "gh2"
 title = "Hunk fixtures for the 4 uncovered scope-anchored rules (no-camelcase-top-level-function, no-mutable-companion-state, no-public-mutable-var, no-top-level-mutable-var): prove each does NOT match a same-shaped class member scanned in isolation."
 files = [".claude/hooks/rules/manifest.json"]
-status = "in_flight"
+status = "done"
 depends = ["GH-09", "GH-10"]
 verify = "all 4 have whole-file + hunk fixture pairs passing --hunk-mode"
+# [2026-07-02] done in GH-11 slice (final SHA in fleet report): four scope-anchored rules declare no-match hunk fixtures with zero hunk matches
 
 [[items]]
 id = "GH-12"
