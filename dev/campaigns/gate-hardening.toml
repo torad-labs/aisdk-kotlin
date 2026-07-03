@@ -373,7 +373,8 @@ id = "BP-02"
 phase = "bp"
 title = "Kotlin consumer-compatibility policy, Okio-style: document supported consumer Kotlin range; evaluate current-compiler + older-stdlib (apiVersion/languageVersion) so JVM/Android consumers update independently; klib KGP floor documented separately."
 files = ["build.gradle.kts", "docs/"]
-status = "todo"
+status = "done"
+# [2026-07-02] Kotlin stdlib/API floor decoupled to 2.3.21 for JVM/Android consumers; klib KGP floor documented; final SHA reported via fleet.
 
 [[items]]
 id = "BP-03"
@@ -419,7 +420,7 @@ id = "BP-08"
 phase = "bp"
 title = "User-facing samples/ (JVM chat CLI first; Compose host later per BL-018); seed from compile-guarded README/wiki snippets."
 files = ["samples/"]
-status = "todo"
+status = "in_flight"
 
 [[items]]
 id = "BP-10"

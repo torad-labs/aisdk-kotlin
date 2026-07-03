@@ -7,6 +7,7 @@ import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
@@ -37,6 +38,11 @@ abstract class DetektPluginsArgumentProvider : CommandLineArgumentProvider {
 
 kotlin {
     jvmToolchain(21)
+
+    compilerOptions {
+        languageVersion.set(KotlinVersion.KOTLIN_2_3)
+        apiVersion.set(KotlinVersion.KOTLIN_2_3)
+    }
 
     // Phase 3 (Kotlin modernization): STRICT explicit API mode — every public
     // declaration must carry an explicit visibility modifier and an explicit
@@ -141,6 +147,9 @@ kotlin {
         androidMain { dependsOn(jvmAndAndroidMain) }
 
         commonMain.dependencies {
+            // Keep JVM/Android consumers on the oldest stdlib accepted by our public
+            // dependency floor; klib consumers still need this artifact's producer KGP.
+            api(kotlin("stdlib", "2.3.21"))
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.serialization.json)
             api(libs.ktor.client.core)
