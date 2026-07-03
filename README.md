@@ -114,6 +114,7 @@ Provider facades for the AI SDK v6 package ecosystem are folded into this root a
 ## Build
 
 Use JDK 21 to build the project. JVM and Android bytecode target JVM 17.
+Run `tools/bootstrap` once in a fresh clone to activate the committed pre-commit gates.
 
 ```sh
 ./gradlew jvmTest
