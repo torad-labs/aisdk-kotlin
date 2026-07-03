@@ -417,7 +417,9 @@ id = "BP-07"
 phase = "bp"
 title = "Target-matrix expansion evaluation (deliberate decision, not default): macosArm64/X64 (near-free), wasmJs + js (deps support them), mingwX64. Each target = conformance surface."
 files = []
-status = "todo"
+status = "done"
+# [2026-07-02] Added target expansion matrix decision doc; commit pending
+# [2026-07-02] Target expansion matrix decision doc complete; final SHA reported via fleet after commit
 
 [[items]]
 id = "BP-08"
