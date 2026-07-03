@@ -73,6 +73,7 @@ python3 .claude/hooks/rules/detect-release-workflow-trust.py .github/workflows/r
 if [ "$fail" != 0 ]; then
   echo ""
   echo "ARCHITECTURE GATE FAILED — fix the violations above (do not bypass)."
+  echo "See CLAUDE.md 'Gate misfires — fix the gate, not the result' for the repair protocol."
   exit 1
 fi
 echo "architecture gate: PASS"

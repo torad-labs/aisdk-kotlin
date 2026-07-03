@@ -98,6 +98,28 @@ budget is a one-way ratchet: re-seed it *downward only* with
 being migrated case-by-case (see `docs/data-class-audit.md` / backlog BL-058/A1).
 Never raise the budget to land a new data class; demote one instead.
 
+## Gate misfires — fix the gate, not the result
+
+A gate misfire is a defect in the trust boundary. It is not permission to route
+around the gate, weaken the test, or land a fake-green commit. Misfires invite
+dodges; the sanctioned repair path is:
+
+1. Reproduce the exact false positive or inert rule in the smallest fixture.
+2. Fix the rule, hook, or detector that made the wrong claim.
+3. Add or update the fixture that proves both directions.
+4. Re-run `bash .claude/hooks/rules/ci-gate.sh` and the relevant hook suite.
+
+Ast-grep rule fixtures live in `.claude/hooks/rules/manifest.json` and are
+validated by `.claude/hooks/rules/validate_rules.py` in both parse mode and
+`--manifest` semantic mode. A rule edit without a fixture is not complete; an
+enabled rule that cannot match its bad example is dead code.
+
+Budget gates are one-way ratchets. If a legitimate change grows a tracked file
+or exhausts a public-surface budget, re-seed the budget in the same commit as
+the growth, with the smallest reviewed increase; when reducing debt, re-seed
+downward. Never raise a budget to hide accidental drift, and never use
+`--no-verify` or a skip env to get past a budget failure.
+
 ## API shape — idiomatic Kotlin, not a Vercel transliteration
 
 This is a green-room Kotlin port, not a TypeScript translation. **No loose
