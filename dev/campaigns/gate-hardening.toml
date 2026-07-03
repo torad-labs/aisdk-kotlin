@@ -39,7 +39,7 @@ id = "GH-02"
 phase = "gh1"
 title = "Run the four hook self-test suites (test_kotlin_antipattern_policy, test_codex_hook_adapter, test_fleet_protocol_policy, test_rule_selfcheck_policy) as a CI step in ci.yml verify job. CI-only, NOT pre-commit (keeps commit latency flat; GH-01 covers per-commit). Adjudication: docs/gate-hardening-backlog.md §GH-02."
 files = [".github/workflows/ci.yml"]
-status = "todo"
+status = "in_flight"
 verify = "CI step runs all four suites; a deliberately broken assertion fails the job (demonstrate in a scratch branch run or local equivalent)"
 
 [[items]]
@@ -47,7 +47,7 @@ id = "GH-03"
 phase = "gh1"
 title = "Split reference-freshness (vercel/ai clone at ci.yml:38-45 + check-ai-sdk-reference + parity check) into a parallel non-blocking CI job so network failure cannot mask internal gates. The 8-day-dark vector. VERIFIED FINDING (GH-04 probe): parity check exits 1 when .reference is missing, so the parity step MUST move into this job with the clone — leaving it in verify recreates the mask one step later."
 files = [".github/workflows/ci.yml"]
-status = "todo"
+status = "in_flight"
 verify = "workflow YAML shows independent job; internal gates run when freshness job is forced red (yamllint + job-dependency inspection acceptable pre-merge)"
 
 [[items]]
@@ -64,7 +64,7 @@ id = "GH-05"
 phase = "gh1"
 title = "Regression-lock run-ios-swift-smoke: in verify-apple, taking the skip branch must FAIL (REQUIRE_REAL_SMOKE=1 env in ci.yml + script honors it). Live hole already closed; this prevents silent-skip recurrence."
 files = ["tools/run-ios-swift-smoke", ".github/workflows/ci.yml"]
-status = "in_flight"
+status = "verified"
 verify = "script with REQUIRE_REAL_SMOKE=1 on non-Darwin exits 1; without the env exits 0 (skip); Darwin path unchanged"
 
 [[items]]
@@ -80,7 +80,7 @@ id = "GH-07"
 phase = "gh1"
 title = "Nightly cron full-pipeline run on main (schedule: in ci.yml). Bounds any dark window to <24h. Liveness signal for LP-4."
 files = [".github/workflows/ci.yml"]
-status = "todo"
+status = "in_flight"
 verify = "schedule trigger present targeting main; first scheduled run observed green after merge"
 
 [[items]]
