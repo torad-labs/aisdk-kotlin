@@ -152,7 +152,7 @@ id = "GH-12"
 phase = "gh2"
 title = "continue-on-error + step ids + final if:always() aggregator in ci.yml verify job: gates report independently, job fails via aggregator table. Do NOT touch gradle-internal task graph."
 files = [".github/workflows/ci.yml"]
-status = "todo"
+status = "in_flight"
 verify = "forcing an early gate red still shows later gate results in the same run; job conclusion red via aggregator"
 
 [[items]]
@@ -160,7 +160,7 @@ id = "GH-13"
 phase = "gh2"
 title = "Decouple ci-gate.sh from npm ci in CI: pinned ast-grep binary via GitHub release + actions/cache (npm -g forbidden by beta-readiness workflow gate); run architecture gate before/independent of node-dependent steps."
 files = [".github/workflows/ci.yml"]
-status = "todo"
+status = "in_flight"
 verify = "architecture gate step precedes npm ci and passes with node steps stubbed broken"
 
 [[items]]
@@ -168,7 +168,7 @@ id = "GH-14"
 phase = "gh2"
 title = "ONE shared fixture-pair harness for zero-self-test mjs/py gates: runner walks tools/gate-fixtures/<gate>/{violation,compliant}/, asserts violation->nonzero, compliant->zero. New gates = two directories, zero runner code."
 files = ["tools/run-gate-fixtures.mjs", "tools/gate-fixtures/"]
-status = "todo"
+status = "in_flight"
 verify = "runner wired into CI; adding a scratch gate with fixtures needs no runner edit"
 
 [[items]]
@@ -185,9 +185,10 @@ id = "GH-16"
 phase = "gh2"
 title = "Resolve-or-remove inert SuspendFunSwallowedCancellation detekt rule (enabled, cannot fire without type resolution). Either wire classpath-aware detekt or remove + document the custom-rule stopgap. No enabled-but-inert rule remains."
 files = ["detekt.yml"]
-status = "done"
+status = "verified"
 verify = "rule provably fires via fixture OR is gone with rationale comment"
 # [2026-07-02] done in GH-16 slice (final SHA in fleet report): removed inert SuspendFunSwallowedCancellation config; detekt.yml documents custom-rule stopgap and GH-21 re-enable condition
+# [2026-07-02] orchestrator verified 43bad57: inert rule removed with javap-proven type-resolution evidence; rationale comment names stopgap rules + GH-21 re-enable condition; detekt green
 
 [[items]]
 id = "GH-17"
