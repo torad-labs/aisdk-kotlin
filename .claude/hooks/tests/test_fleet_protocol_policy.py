@@ -16,6 +16,8 @@ OWNED = ROOT / "docs" / "audit-remediation-backlog.md"
 CAMPAIGN_LEDGER = ROOT / "dev" / "campaigns" / "gate-hardening.toml"
 MEASUREMENTS_LEDGER = ROOT / "dev" / "measurements.toml"
 NEW_CAMPAIGN_LEDGER = ROOT / "dev" / "campaigns" / "seed-once-test.toml"
+API_DUMP = ROOT / "api" / "torad-aisdk.klib.api"
+KOTLIN_TARGET = ROOT / "src" / "commonMain" / "kotlin" / "ai" / "torad" / "aisdk" / "ShellWriteTarget.kt"
 
 failures: list[str] = []
 ran = 0
@@ -198,6 +200,102 @@ with tempfile.TemporaryDirectory() as tmp:
             "tool_input": {"file_path": str(existing_bad), "content": "print('still ok')\n"},
         })),
     )
+
+# 3c — Bash-routed source writes bypass the edit layer and are blocked; the
+# sanctioned structural rewrite and ABI-regeneration commands remain allowed.
+check(
+    "cat heredoc write to Kotlin source is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": f"cat <<'EOF' > {KOTLIN_TARGET}\npackage x\nEOF"},
+    })),
+)
+check(
+    "python heredoc write to Kotlin source is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {
+            "command": (
+                "python3 - <<'PY'\n"
+                "from pathlib import Path\n"
+                f"Path('{KOTLIN_TARGET}').write_text('package x\\n')\n"
+                "PY"
+            ),
+        },
+    })),
+)
+check(
+    "tee write to Kotlin source is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": f"printf 'package x\\n' | tee {KOTLIN_TARGET}"},
+    })),
+)
+check(
+    "env-prefixed sed inplace write to Kotlin source is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": f"env LC_ALL=C sed -i 's/a/b/' {KOTLIN_TARGET}"},
+    })),
+)
+check(
+    "source file read through Bash is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "cat src/commonMain/kotlin/ai/torad/aisdk/Generate.kt"},
+    })),
+)
+check(
+    "source file read through nested shell is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "bash -c 'cat src/commonMain/kotlin/ai/torad/aisdk/Generate.kt'"},
+    })),
+)
+check(
+    "ast-grep rewrite command is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {
+            "command": (
+                "ast-grep run --pattern 'println($A)' --rewrite 'logger.info($A)' "
+                "src/commonMain/kotlin"
+            ),
+        },
+    })),
+)
+check(
+    "ast-grep update-all command is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "ast-grep scan --update-all src/commonMain/kotlin"},
+    })),
+)
+check(
+    "direct Edit on ABI dump is blocked",
+    blocked(run_target({
+        "tool_name": "Edit",
+        "tool_input": {
+            "file_path": str(API_DUMP),
+            "old_string": "old",
+            "new_string": "new",
+        },
+    })),
+)
+check(
+    "bash redirect to ABI dump is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": f"cat <<'EOF' > {API_DUMP}\napi\nEOF"},
+    })),
+)
+check(
+    "gradle updateKotlinAbi command is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "./gradlew updateKotlinAbi"},
+    })),
+)
 
 # 4 — builder staging an owned file is blocked; staging normal files is not.
 check(

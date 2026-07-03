@@ -151,6 +151,19 @@ with tempfile.TemporaryDirectory() as tmp:
         '"decision": "block"' not in ledger_seed_result.stdout,
     )
 
+    api_dump_patch = """*** Begin Patch
+*** Update File: api/torad-aisdk.klib.api
+@@
+-old
++new
+*** End Patch
+"""
+    api_dump_result = run_adapter(api_dump_patch)
+    check(
+        "adapter synthetic MultiEdit blocks ABI dump update",
+        '"decision": "block"' in api_dump_result.stdout,
+    )
+
 if failures:
     print(f"FAILED {ran - len(failures)}/{ran}")
     for failure in failures:
