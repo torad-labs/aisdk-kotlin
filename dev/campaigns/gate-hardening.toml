@@ -385,16 +385,18 @@ id = "BP-03"
 phase = "bp"
 title = "Snapshot channel: -SNAPSHOT to Central Portal snapshots on push to main; deliberate carve-out from refuse-SNAPSHOT publish guard (guard stays for release path)."
 files = [".github/workflows/", "build.gradle.kts"]
-status = "done"
+status = "verified"
 # [2026-07-02] Snapshot publishing path added for CentralSnapshots with SNAPSHOT_PUBLISH gate; local snapshot publish and structural checks passed; live main push observation deferred.
+# [2026-07-02] VERIFIED: guard carve-out scoped to CentralSnapshots only (triple require: SNAPSHOT_PUBLISH=1 + -SNAPSHOT version + creds); all other repos still refuse SNAPSHOT; signing auto-skips without keys; SONATYPE_* secrets confirmed present in repo. WATCH: first live run fires on fold-in merge push to main.
 
 [[items]]
 id = "BP-04"
 phase = "bp"
 title = "Dokka HTML to GitHub Pages on release + sourceLink + externalDocumentationLinks for coroutines/serialization/ktor (verified: neither configured)."
 files = ["build.gradle.kts", ".github/workflows/"]
-status = "done"
+status = "verified"
 # [2026-07-02] Dokka source/external links configured and release-success Pages deployment workflow added; dokkaGenerate and generated-link checks passed.
+# [2026-07-02] VERIFIED: event==push filter correctly excludes dry-run workflow_dispatch from deploying docs; sourceLink v$version matches tag pattern. ORCHESTRATOR ACTION: GitHub Pages was NOT enabled (404) — enabled build_type=workflow via API; first deploy would have failed otherwise.
 
 [[items]]
 id = "BP-05"
@@ -419,9 +421,10 @@ id = "BP-07"
 phase = "bp"
 title = "Target-matrix expansion evaluation (deliberate decision, not default): macosArm64/X64 (near-free), wasmJs + js (deps support them), mingwX64. Each target = conformance surface."
 files = []
-status = "done"
+status = "verified"
 # [2026-07-02] Added target expansion matrix decision doc; commit pending
 # [2026-07-02] Target expansion matrix decision doc complete; final SHA reported via fleet after commit
+# [2026-07-02] VERIFIED: expect/actual seam inventory exact (4/4 commonMain expects named); current-target list matches build.gradle.kts; mingwX64 /dev/urandom blocker is real. Decision doc only, no build changes — matches item intent.
 
 [[items]]
 id = "BP-08"
@@ -437,7 +440,40 @@ id = "BP-10"
 phase = "bp"
 title = "Recurring consumer-boundary canary (LP-5's gate): scheduled workflow resolving latest from real Central, compiling+running README sample (JVM + native), docs-URL liveness, gh attestation verify (post BP-06), monthly klibs.io check. Failures notify owner, not a dead log."
 files = [".github/workflows/"]
-status = "done"
+status = "verified"
 depends = ["RR-06"]
 # [2026-07-02] rescoped: BUILD the canary workflow now (workflow_dispatch + schedule, disabled-or-skipping until first publish); live verification remains tag-gated
 # [2026-07-02] Consumer-boundary canary workflow added; Central/docs/attestation guards wait cleanly for first release; final SHA via fleet
+# [2026-07-02] VERIFIED: orchestrator compiled+ran the embedded consumer source verbatim against mavenLocal 0.3.0-beta01 (prints Welcome., check passes) — closes LP-1 unexercised-main-path risk builder verification could not cover pre-release. MockLanguageModelTextOnly confirmed in JVM ABI dump. RESIDUALS (post-release enhancements, deliberate build-now scope cut): native-consumer leg, klibs.io monthly check, BP-02 floor-version (2.3.21) consumer probe — canary pins consumer KGP 2.4.0 only.
+
+[[items]]
+id = "FR-01"
+phase = "fr"
+title = "FINAL REVIEW stage 1 — Haiku (gather only, model-tier law: expect false positives, orchestrator judges). Input: full campaign diff da3d7d2..beta-follow-ups tip + dev/campaigns/gate-hardening.toml. Produce dev/campaigns/review/fr01-haiku-inventory.md: (a) every changed subsystem with file/line counts; (b) complete inventory of gates/workflows/hooks/budgets at tip; (c) every claim asserted in manifest notes (verbatim list with item ids); (d) timing: wall-clock of bash .claude/hooks/rules/ci-gate.sh cold and warm, per-section. NO judgments — lists only."
+files = ["dev/campaigns/review/fr01-haiku-inventory.md"]
+status = "todo"
+verify = "inventory file exists, covers all four sections, claims list matches manifest note count"
+
+[[items]]
+id = "FR-02"
+phase = "fr"
+title = "FINAL REVIEW stage 2 — Sonnet (analysis). INPUT = fr01-haiku-inventory.md + the manifest. Tasks: (a) verify-at-tip for every heavy verify field (gradle check, publishToMavenLocal, sample run, workflow dry-run structure) — the cheap 10 already re-passed at 3136a8c; (b) cross-slice interaction hunt: do late slices undermine early ones (e.g. BP-02 language-level pin vs newer-syntax code, RR-01 internal ctors vs test fakes, gate additions vs commit latency); (c) claims-vs-reality: sample 15 manifest claims from the FR-01 list and reproduce each. Output dev/campaigns/review/fr02-sonnet-findings.md: findings with file:line evidence, severity, repro commands; explicit 'holds' list for verified claims."
+files = ["dev/campaigns/review/fr02-sonnet-findings.md"]
+status = "todo"
+verify = "findings file exists; every finding carries a repro command; heavy verifies all executed with results stated"
+
+[[items]]
+id = "FR-03"
+phase = "fr"
+title = "FINAL REVIEW stage 3 — Opus (adversarial adjudication + completeness critic). INPUT = fr02-sonnet-findings.md + fr01-haiku-inventory.md. Tasks: (a) adjudicate each Sonnet finding (real/false/needs-probe) with reasoning; (b) completeness critique: what did the pipeline NOT examine (untested interactions, unreviewed surfaces, missing verify coverage); (c) re-score the original audit's 5 criteria (API/ABI, tests, robustness, docs, release) against the tip with evidence; (d) release-readiness verdict draft with any blocking findings ranked. Output dev/campaigns/review/fr03-opus-adjudication.md."
+files = ["dev/campaigns/review/fr03-opus-adjudication.md"]
+status = "todo"
+verify = "adjudication file exists; every FR-02 finding dispositioned; 5-criteria re-score present with evidence per score"
+
+[[items]]
+id = "FR-04"
+phase = "fr"
+title = "FINAL REVIEW stage 4 — Fable/orchestrator (NO Fable subagents). INPUT = fr03-opus-adjudication.md + both prior artifacts. Tasks: (a) hand re-probe every Opus-accepted finding before believing it; (b) dispatch fixes to builder for confirmed defects (new ledger items if needed); (c) rule on the completeness-critique items (do/defer with rationale); (d) write the final campaign report to the operator: scores, residuals, release recommendation; (e) close the ledger — campaign done only after operator reads the report. Tag/publish remain operator-gated."
+files = ["dev/campaigns/review/fr04-final-report.md"]
+status = "todo"
+verify = "all accepted findings probed or fixed; final report delivered to operator; ledger states reconciled"
