@@ -144,7 +144,7 @@ internal class GoogleInteractionsStreamState(
         -> acceptStatus(event)
         "interaction.completed" -> acceptInteractionCompleted(event)
         "error" -> acceptError(event)
-        else -> emptyList()
+        else -> listOf(StreamEvent.Raw(event))
     }
 
     fun synthesize(response: JsonObject): List<StreamEvent> {

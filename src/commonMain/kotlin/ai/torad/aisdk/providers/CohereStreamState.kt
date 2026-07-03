@@ -38,7 +38,7 @@ internal class CohereChatStreamState(
             "tool-call-delta" -> acceptToolCallDelta(value)
             "tool-call-end" -> acceptToolCallEnd(value)
             "message-end" -> acceptMessageEnd(value)
-            else -> emptyList()
+            else -> listOf(StreamEvent.Raw(value))
         }
 
     fun markError() {

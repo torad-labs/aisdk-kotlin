@@ -16,11 +16,29 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class AnthropicProviderTest {
+    @Test
+    fun `unknown citation type surfaces as raw source metadata`() {
+        val citation = buildJsonObject {
+            put("type", "future_citation")
+            put("url", "https://source.test")
+            put("title", "Future source")
+        }
+        val settings = AnthropicProviderSettings { baseURL("https://anthropic.test/v1") }
+
+        val source = assertIs<ContentPart.Source>(settings.anthropicCitationSource(citation))
+
+        assertEquals(StreamEvent.SourcePart.SourceType.Url, source.sourceType)
+        assertEquals("https://source.test", source.url)
+        assertEquals(citation, source.providerMetadata.toMap()["anthropic"])
+    }
+
     @Test
     fun `messages model sends Anthropic request and maps response content`() = runTest {
         val fixture = TestServer.createTestServer(

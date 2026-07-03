@@ -122,8 +122,21 @@ public class AnthropicProviderSettings internal constructor(
                 title = (citation["document_title"] as? JsonPrimitive)?.contentOrNull,
                 providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to citation))),
             )
-            else -> null
+            else -> anthropicUnknownCitationSource(citation)
         }
+
+    private fun anthropicUnknownCitationSource(citation: JsonObject): ContentPart.Source =
+        ContentPart.Source(
+            sourceType = if (citation["url"] != null) {
+                StreamEvent.SourcePart.SourceType.Url
+            } else {
+                StreamEvent.SourcePart.SourceType.Document
+            },
+            url = (citation["url"] as? JsonPrimitive)?.contentOrNull,
+            title = (citation["title"] as? JsonPrimitive)?.contentOrNull
+                ?: (citation["document_title"] as? JsonPrimitive)?.contentOrNull,
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to citation))),
+        )
 
     internal companion object {
         internal fun anthropicCacheControl(metadata: Map<String, JsonElement>?): JsonElement? =
