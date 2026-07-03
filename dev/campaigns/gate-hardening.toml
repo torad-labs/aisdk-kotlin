@@ -45,7 +45,7 @@ verify = "CI step runs all four suites; a deliberately broken assertion fails th
 [[items]]
 id = "GH-03"
 phase = "gh1"
-title = "Split reference-freshness (vercel/ai clone at ci.yml:38-45 + check-ai-sdk-reference + parity check) into a parallel non-blocking CI job so network failure cannot mask internal gates. The 8-day-dark vector."
+title = "Split reference-freshness (vercel/ai clone at ci.yml:38-45 + check-ai-sdk-reference + parity check) into a parallel non-blocking CI job so network failure cannot mask internal gates. The 8-day-dark vector. VERIFIED FINDING (GH-04 probe): parity check exits 1 when .reference is missing, so the parity step MUST move into this job with the clone — leaving it in verify recreates the mask one step later."
 files = [".github/workflows/ci.yml"]
 status = "todo"
 verify = "workflow YAML shows independent job; internal gates run when freshness job is forced red (yamllint + job-dependency inspection acceptable pre-merge)"
@@ -55,8 +55,9 @@ id = "GH-04"
 phase = "gh1"
 title = "Freshness NETWORK failure -> warn+continue: wrap check-ai-sdk-reference.mjs npm view (lines ~14-21, no try/catch today) AND the git-clone/pin-test step; genuine pin/version mismatch stays fatal. Extends AR-03 which only demoted the newer-version case."
 files = ["tools/check-ai-sdk-reference.mjs", ".github/workflows/ci.yml"]
-status = "in_flight"
+status = "verified"
 verify = "unreachable-registry simulation exits 0 with ::warning::; corrupted AI_SDK_REFERENCE_COMMIT exits 1"
+reconcile = "2026-07-02 orchestrator probe: with .reference absent (simulated clone failure), generate-parity-ledger --check exits 1 -> the network mask moves one step later; residual accepted here because the parity step is inside GH-03 split scope. GH-03 title updated accordingly."
 
 [[items]]
 id = "GH-05"
