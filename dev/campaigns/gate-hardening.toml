@@ -539,5 +539,6 @@ id = "HD-02"
 phase = "hd"
 title = "Branch-coverage hardening, slice 1 (measure then lift). Kover actuals 81.32 line / 71.95 instruction / 44.01 branch vs floors 80/70/43 — branch is the thin spot and margins are ~1pp. (a) Generate the kover XML/HTML report at tip; (b) rank the 10 worst branch-covered production classes (exclude generated/serializer noise) and record the ranking in the ledger note; (c) land targeted tests for the top 3 clusters exercising untested branches (error paths, when-arms, boundary conditions) — REAL behavioral assertions, not line-touching; (d) re-measure and report new branch %; floor ratchet is a LATER slice once gains land. Use ast-grep to find untested branch shapes where useful (e.g. when-expressions and catch clauses in the worst classes)."
 files = ["src/commonTest/kotlin/", "build.gradle.kts"]
-status = "todo"
+status = "done"
 verify = "ranking recorded; new tests pass and demonstrably raise branch coverage (before/after numbers in note); gradle check green; no floor changes this slice"
+# [2026-07-03] before branch 49.70% (12343/24834); worst10: GatewayMediaContentEncoder 0/26, VercelFacade 0/22 generated-settings noise excluded, IsLoopFinished 0/10, AddToolInputExamples 0/4, ChatSession 0/4, InferAgentMessage 0/4, GoogleProvider 2/50, GatewayContentEncoder 2/38, GatewayContentDecoder 2/32, Streaming 23/264; tested actionable top3 GatewayMedia/IsLoopFinished/AddToolInputExamples; after branch 49.95% (12404/24834), targets 24/26, 10/10, 4/4; gradle check and ci-gate green; final SHA in fleet report
