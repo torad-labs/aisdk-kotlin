@@ -729,3 +729,20 @@ title = "Adjudicate 35 silent else->null/{} when-arms in wire-parsing paths (aud
 files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/", "src/commonMain/kotlin/ai/torad/aisdk/protocol/", "src/commonTest/kotlin/"]
 status = "todo"
 verify = "per-site adjudication table in note (surface/compliant-via-caller/compliant-nonwire); behavior changes tested; gradle check + ci-gate green"
+# [2026-07-03] LP-9 rider (2026-07-03): if adjudication finds a uniform surface-the-unknown fix shape, author the fix rule + fixExamples FIRST and prepass-apply the mechanical subset; hand-edit only exceptions, which become structural carve-outs (LP-7). The no-blanket-rewrite law still governs the ADJUDICATION (deciding classes); LP-9 governs the APPLICATION once a class is uniform.
+
+[[items]]
+id = "HD-19"
+phase = "hd"
+title = "Consumer migration codemod pack, seeded with a REAL exemplar (LP-10). Create docs/migrations/: README (what it is, how consumers run rules: ast-grep scan --update-all --rule <file> <their-src>; version-pair naming convention <from>-to-<to>-<topic>.yaml) + first rule 0.3.0-alpha01-to-beta01-result-constructors.yaml migrating the RR-01 break: public positional ctor calls on the demoted result types -> the replacement construction path consumers should use (READ the RR-01 ledger notes + api dumps + ResultConstruction.kt first to determine the exact consumer-facing replacement; if a type has NO public construction path by design, the rule must MATCH and emit a message explaining the migration instead of a fix — detection-only entry is correct there, state which per type). Fixtures: these rules do NOT enter manifest.json (consumer-tree rules, not repo invariants) — give the pack its own tiny fixture runner or reuse validate_rules in a docs/migrations mode, whichever is smaller; each rule must prove match-bad + skip-good + (where fix present) idempotence. Wire the runner into ci-gate so shipped migration rules can never rot (LP-1)."
+files = ["docs/migrations/", ".claude/hooks/rules/", ".claude/hooks/rules/ci-gate.sh"]
+status = "todo"
+verify = "exemplar rule proven both directions on consumer-shaped fixtures; runner wired into ci-gate with fail-direction probe; README documents the consumer invocation"
+
+[[items]]
+id = "HD-20"
+phase = "hd"
+title = "Extend validate_rules --new with fix scaffolding (LP-3 descendant, closes the HD-05-era gap): --new <rule-id> --fix additionally emits a fix template stub in the rule yaml and fixExamples stubs (before/after/idempotent) in the manifest entry, wired so the stub state fails the registry gate with a needs-examples message exactly like detection stubs do today. Read GH-08s --new implementation + HD-05s fixExamples validator first; keep the no-fix default unchanged."
+files = [".claude/hooks/rules/validate_rules.py", ".claude/hooks/tests/"]
+status = "todo"
+verify = "--new --fix emits stubs; stub state fails loud; filled example passes; existing --new behavior unchanged; suites green"
