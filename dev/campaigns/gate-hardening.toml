@@ -460,15 +460,16 @@ id = "FR-02"
 phase = "fr"
 title = "FINAL REVIEW stage 2 — Sonnet (analysis). INPUT = fr01-haiku-inventory.md + the manifest. Tasks: (a) verify-at-tip for every heavy verify field (gradle check, publishToMavenLocal, sample run, workflow dry-run structure) — the cheap 10 already re-passed at 3136a8c; (b) cross-slice interaction hunt: do late slices undermine early ones (e.g. BP-02 language-level pin vs newer-syntax code, RR-01 internal ctors vs test fakes, gate additions vs commit latency); (c) claims-vs-reality: sample 15 manifest claims from the FR-01 list and reproduce each. Output dev/campaigns/review/fr02-sonnet-findings.md: findings with file:line evidence, severity, repro commands; explicit 'holds' list for verified claims."
 files = ["dev/campaigns/review/fr02-sonnet-findings.md"]
-status = "in_flight"
+status = "verified"
 verify = "findings file exists; every finding carries a repro command; heavy verifies all executed with results stated"
+# [2026-07-03] VERIFIED: artifact meets verify field — 8 findings (0 blocker/1 major F-01 validate_rules --manifest fails-open off-canonical-path/4 minor/3 info) all evidence-backed, 24 holds, heavy verifies executed (gradle check PASS 39 tasks, publishToMavenLocal PASS 7 publications, sample PASS incl. ambient-API-key adversarial probe, release.yml structure read). Timing anomaly resolved as machine load (hold 9). Operational: new workflows dark until fold-in (hold 12) — consistent with fold-in-then-tag RR-06 order. Adjudication deferred to FR-03 per pipeline design.
 
 [[items]]
 id = "FR-03"
 phase = "fr"
 title = "FINAL REVIEW stage 3 — Opus (adversarial adjudication + completeness critic). INPUT = fr02-sonnet-findings.md + fr01-haiku-inventory.md. Tasks: (a) adjudicate each Sonnet finding (real/false/needs-probe) with reasoning; (b) completeness critique: what did the pipeline NOT examine (untested interactions, unreviewed surfaces, missing verify coverage); (c) re-score the original audit's 5 criteria (API/ABI, tests, robustness, docs, release) against the tip with evidence; (d) release-readiness verdict draft with any blocking findings ranked. Output dev/campaigns/review/fr03-opus-adjudication.md."
 files = ["dev/campaigns/review/fr03-opus-adjudication.md"]
-status = "todo"
+status = "in_flight"
 verify = "adjudication file exists; every FR-02 finding dispositioned; 5-criteria re-score present with evidence per score"
 
 [[items]]
