@@ -18,7 +18,11 @@ This gate has two modes:
   HUNK mode — re-scan each fixture as an edit hunk/snippet, without package or
   enclosing scope. Entries default to hunkExpectation="same"; scope-anchored
   rules may declare hunkExpectation="no-match" and optional badHunkExample /
-  goodHunkExample fragments.
+  goodHunkExample fragments. Entries may also declare memberExample or
+  memberExamples fragments that must never match when scanned as isolated
+  class-member context probes. hunkUnsafe=true documents rules that require
+  adapter-preserved enclosing context because tree-sitter cannot distinguish
+  some bare class-body fragments from real source_file declarations.
       python3 validate_rules.py --hunk-mode <rules.json>
 
   SCAFFOLD mode — emit a fill-in manifest entry for an existing rule file.
@@ -202,6 +206,14 @@ def hunk_mode(binary: str, manifest_path: Path) -> int:
         if expectation not in {"same", "no-match"}:
             failures.append((rid, f"invalid hunkExpectation {expectation!r}"))
             continue
+        hunk_unsafe = r.get("hunkUnsafe", False)
+        if not isinstance(hunk_unsafe, bool):
+            failures.append((rid, "hunkUnsafe must be a boolean"))
+            continue
+        member_examples, member_error = _member_examples(r)
+        if member_error:
+            failures.append((rid, member_error))
+            continue
         if _needs_examples(bad_ex, good_ex):
             failures.append((rid, "needs examples"))
             continue
@@ -226,12 +238,23 @@ def hunk_mode(binary: str, manifest_path: Path) -> int:
                     failures.append((rid, "badExample hunk NOT matched (context-fragile rule)"))
                 elif n_good > 0:
                     failures.append((rid, f"goodExample hunk WRONGLY matched x{n_good}"))
-                else:
-                    passed += 1
             elif n_bad > 0 or n_good > 0:
                 failures.append((rid, f"hunkExpectation=no-match but hunk matched bad={n_bad} good={n_good}"))
+            for index, member_example in enumerate(member_examples, start=1):
+                member_path = _write_kt_hunk(member_example)
+                try:
+                    rc_m, n_member, err_m = _scan(binary, rule_path, member_path)
+                finally:
+                    os.unlink(member_path)
+                if not _parses(err_m, rc_m):
+                    failures.append((rid, f"memberExample[{index}] does not parse in hunk scan"))
+                    break
+                if n_member > 0:
+                    failures.append((rid, f"memberExample[{index}] WRONGLY matched x{n_member}"))
+                    break
             else:
-                passed += 1
+                if not any(existing_rid == rid for existing_rid, _ in failures):
+                    passed += 1
         finally:
             for p in (rule_path, bad_path, good_path):
                 try:
@@ -246,6 +269,21 @@ def hunk_mode(binary: str, manifest_path: Path) -> int:
         return 1
     print(f"ok: all {len(rules)} rules satisfy hunk-mode expectations")
     return 0
+
+
+def _member_examples(rule: dict[str, object]) -> tuple[list[str], str | None]:
+    member_examples = rule.get("memberExamples")
+    member_example = rule.get("memberExample")
+    if member_examples is None and member_example is None:
+        return [], None
+    if member_examples is not None and member_example is not None:
+        return [], "use memberExample or memberExamples, not both"
+    value = member_examples if member_examples is not None else member_example
+    if isinstance(value, str):
+        return [value], None
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value, None
+    return [], "memberExample(s) must be strings"
 
 
 def _missing_manifest_entries(manifest_path: Path, rules: list[dict[str, object]]) -> list[str]:

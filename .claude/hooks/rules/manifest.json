@@ -354,7 +354,11 @@
     "severity": "error",
     "yaml": "id: no-camelcase-top-level-function\nlanguage: kotlin\nseverity: error\nrule:\n  all:\n    - kind: function_declaration\n    - inside: { kind: source_file }\n    - has: { kind: simple_identifier, regex: '^[a-z]', stopBy: neighbor }\n    # `override` cannot appear on a genuine top-level function, but the PreToolUse\n    # hook scans edit snippets in isolation where a member override parses at\n    # source_file level \u2014 exclude it so the gate is snippet-safe (AR-15 misfire).\n    - not:\n        has:\n          kind: modifiers\n          has: { kind: member_modifier, regex: '^override$', stopBy: end }\n",
     "badExample": "public fun generateText(): Unit = Unit\n",
-    "goodExample": "public fun GenerateText(): Unit = Unit\n"
+    "goodExample": "public fun GenerateText(): Unit = Unit\n",
+    "memberExamples": [
+      "class Agent {\n    public fun generateText(): Unit = Unit\n}\n",
+      "override fun generateText(): Unit = Unit\n"
+    ]
   },
   {
     "id": "no-empty-string-sentinel",
@@ -382,7 +386,9 @@
     "severity": "error",
     "yaml": "id: no-mutable-companion-state\nlanguage: kotlin\nseverity: error\n# Mutable `var` PROPERTY of a companion object = process-wide shared mutable singleton state.\n# Match only DIRECT companion properties (immediate parent is the companion's class_body) \u2014 the\n# previous `inside: companion_object, stopBy: end` over-matched, flagging function-local `var`s\n# inside companion METHODS (a false positive: locals are not shared state). Mirrors the correct\n# immediate-parent form of no-var-in-object-declaration.\nrule:\n  all:\n    - kind: property_declaration\n    - has: { kind: binding_pattern_kind, regex: \"^var$\" }\n    - inside:\n        kind: class_body\n        stopBy: neighbor\n        inside: { kind: companion_object, stopBy: neighbor }\n",
     "badExample": "class Provider {\n    companion object {\n        var cached: String? = null\n    }\n}\n",
-    "goodExample": "class Provider {\n    companion object {\n        val cached: String? = null\n        fun next(): Int {\n            var local = 0\n            return local\n        }\n    }\n}\n"
+    "goodExample": "class Provider {\n    companion object {\n        val cached: String? = null\n        fun next(): Int {\n            var local = 0\n            return local\n        }\n    }\n}\n",
+    "memberExample": "class Provider {\n    var cached: String? = null\n}\n",
+    "hunkUnsafe": true
   },
   {
     "id": "no-not-null-assertion",
@@ -410,7 +416,9 @@
     "severity": "error",
     "yaml": "id: no-public-mutable-var\nlanguage: kotlin\nseverity: error\nrule:\n  all:\n    - kind: property_declaration\n    - has: { kind: binding_pattern_kind, regex: \"^var$\" }\n    - inside: { kind: class_body }\n  not:\n    has: { kind: visibility_modifier, regex: \"^(private|internal|protected)$\", stopBy: end }\n",
     "badExample": "class Session {\n    public var status: String = \"\"\n}\n",
-    "goodExample": "class Session {\n    private var status: String = \"\"\n}\n"
+    "goodExample": "class Session {\n    private var status: String = \"\"\n}\n",
+    "memberExample": "class Session {\n    private var status: String = \"\"\n}\n",
+    "hunkUnsafe": true
   },
   {
     "id": "no-sealed-interface",
@@ -438,7 +446,9 @@
     "severity": "error",
     "yaml": "id: no-top-level-mutable-var\nlanguage: kotlin\nseverity: error\nrule:\n  all:\n    - kind: property_declaration\n    - has: { kind: binding_pattern_kind, regex: \"^var$\" }\n    - inside: { kind: source_file }\n",
     "badExample": "public var globalState: String = \"\"\n",
-    "goodExample": "public val globalState: String = \"\"\n"
+    "goodExample": "public val globalState: String = \"\"\n",
+    "memberExample": "class Session {\n    public var globalState: String = \"\"\n}\n",
+    "hunkUnsafe": true
   },
   {
     "id": "no-typealias-string",
