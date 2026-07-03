@@ -39,8 +39,9 @@ id = "GH-02"
 phase = "gh1"
 title = "Run the four hook self-test suites (test_kotlin_antipattern_policy, test_codex_hook_adapter, test_fleet_protocol_policy, test_rule_selfcheck_policy) as a CI step in ci.yml verify job. CI-only, NOT pre-commit (keeps commit latency flat; GH-01 covers per-commit). Adjudication: docs/gate-hardening-backlog.md §GH-02."
 files = [".github/workflows/ci.yml"]
-status = "in_flight"
+status = "done"
 verify = "CI step runs all four suites; a deliberately broken assertion fails the job (demonstrate in a scratch branch run or local equivalent)"
+# [2026-07-02] done in 978502d: hook self-test CI step runs all four suites; scratch forced failure exits 1
 
 [[items]]
 id = "GH-03"
