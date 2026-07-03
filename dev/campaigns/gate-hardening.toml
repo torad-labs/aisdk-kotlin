@@ -107,18 +107,19 @@ id = "GH-24"
 phase = "gh1"
 title = "Pre-commit gates are inactive on fresh clones: nothing sets core.hooksPath=.githooks and no doc mentions it (verified: only reference is inside the hook itself). Add bootstrap (tools/bootstrap or gradle task) + CONTRIBUTING/README setup note."
 files = ["CONTRIBUTING.md", "README.md", "tools/"]
-status = "done"
+status = "verified"
 verify = "documented one-liner activates hooks on a scratch clone; CONTRIBUTING names it as required setup"
 
 # ---------------------------------------------------------------- phase gh2: coverage + de-serialization (M)
 # [2026-07-02] done in GH-24 slice (final SHA in fleet report): tools/bootstrap activates .githooks in fresh clones and docs name it
+# [2026-07-02] orchestrator verified 403c6b9: true fresh-clone probe UNSET -> .githooks, idempotent, docs mention in both files; builder's probe additionally proved the gate fires in a fresh clone (compounds GH-01)
 
 [[items]]
 id = "GH-09"
 phase = "gh2"
 title = "Manifest fixtures for the 14 uncovered ast-grep rules (list: no-camelcase-top-level-function, no-empty-string-sentinel, no-jsonnull-sentinel, no-lateinit-var, no-mutable-companion-state, no-not-null-assertion, no-nullable-prompt-messages-bag, no-provideroptions-jsonobject-cast, no-public-mutable-var, no-sealed-interface, no-secondary-constructor, no-throw-in-stream-error-fn, no-top-level-mutable-var, no-typealias-string). Use GH-08 scaffold. Also make validate_rules error on rules missing manifest entries."
 files = [".claude/hooks/rules/manifest.json", ".claude/hooks/rules/validate_rules.py"]
-status = "todo"
+status = "in_flight"
 depends = ["GH-01", "GH-08"]
 verify = "validate_rules --manifest reports 64/64; removing an entry fails it"
 
@@ -127,7 +128,7 @@ id = "GH-10"
 phase = "gh2"
 title = "Hunk/snippet-context probe mode in validate_rules.py: scan badExample/goodExample as bare member-level fragments (no package/enclosing scope) in addition to whole-file; assert match result does not flip. Root class of the AR-15 misfire."
 files = [".claude/hooks/rules/validate_rules.py"]
-status = "todo"
+status = "in_flight"
 verify = "--hunk-mode exists and runs in ci-gate; a deliberately context-fragile scratch rule is caught"
 
 [[items]]
@@ -135,7 +136,7 @@ id = "GH-11"
 phase = "gh2"
 title = "Hunk fixtures for the 4 uncovered scope-anchored rules (no-camelcase-top-level-function, no-mutable-companion-state, no-public-mutable-var, no-top-level-mutable-var): prove each does NOT match a same-shaped class member scanned in isolation."
 files = [".claude/hooks/rules/manifest.json"]
-status = "todo"
+status = "in_flight"
 depends = ["GH-09", "GH-10"]
 verify = "all 4 have whole-file + hunk fixture pairs passing --hunk-mode"
 
@@ -177,7 +178,7 @@ id = "GH-16"
 phase = "gh2"
 title = "Resolve-or-remove inert SuspendFunSwallowedCancellation detekt rule (enabled, cannot fire without type resolution). Either wire classpath-aware detekt or remove + document the custom-rule stopgap. No enabled-but-inert rule remains."
 files = ["detekt.yml"]
-status = "todo"
+status = "in_flight"
 verify = "rule provably fires via fixture OR is gone with rationale comment"
 
 [[items]]
