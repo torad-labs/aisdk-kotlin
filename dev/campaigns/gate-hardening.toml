@@ -508,5 +508,6 @@ id = "FX-03"
 phase = "fx"
 title = "FR hardening pair: (1) ci-gate.sh ast-grep version parity (F-05) — read @ast-grep/cli version from package.json and compare to $AG --version; mismatch = fail with pointer to GH-13 pin (keeps local pre-commit honest vs CI checksum-pinned 0.42.1); (2) snapshots.yml concurrency group (F-08) — concurrency: group snapshots-main, cancel-in-progress: false (queue, do not cancel a mid-flight publish)."
 files = [".claude/hooks/rules/ci-gate.sh", ".github/workflows/snapshots.yml"]
-status = "todo"
+status = "done"
 verify = "version-mismatch simulation fails ci-gate with clear message; matching version passes; snapshots.yml parses; ci-gate green"
+# [2026-07-03] Ast-grep version parity added to ci-gate and snapshots publish concurrency queued; mismatch/match simulations and ci-gate passed; final SHA via fleet

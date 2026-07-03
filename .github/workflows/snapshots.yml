@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: snapshots-main
+  cancel-in-progress: false
+
 jobs:
   publish-snapshot:
     runs-on: ubuntu-latest
