@@ -769,8 +769,9 @@ id = "HD-22"
 phase = "hd"
 title = "no-restated-measurements detector (kills the FR-03/HD-17 claim-drift class structurally): python detector scanning docs/*.md, CHANGELOG.md, INTERFACE_CONTRACT.md, CLAUDE.md, dev/campaigns headers for measurement-shaped literals — percentages (dd.dd%), seconds (dd.ds), token/latency counts with units, coverage triples — that do NOT sit inside a [meas: key] citation or a verbatim-quote context (ledger note quotes are exempt: lines quoting dev/campaigns notes or fixture output). Warning-only report section in ci-gate initially (measure FP rate first, promote to fail later slice if clean); allowlist file for deliberate literals with reason. Seed test: it must flag a planted raw coverage number in docs/ and NOT flag existing [meas:] citations in CHANGELOG (HD-12 wrote those correctly — they are the good fixtures)."
 files = [".claude/hooks/rules/", ".claude/hooks/rules/ci-gate.sh", "tools/gate-fixtures/"]
-status = "todo"
+status = "done"
 verify = "planted raw number flagged; existing [meas:] citations pass; FP count on current tree reported in note; harness fixture pair added; ci-gate green"
+# [2026-07-03] HD-22 done: warning-only no-restated-measurements detector wired into ci-gate with allowlist schema; fixture pair proves planted raw 51.47% fails and CHANGELOG [meas:] citations pass; current-tree probe was 21 warnings with 5 HTTP-status-plural FPs filtered, committed report is 16 warnings / 0 allowlisted; SHA in fleet report.
 
 [[items]]
 id = "HD-23"
