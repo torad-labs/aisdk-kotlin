@@ -106,6 +106,7 @@ Provider facades for the AI SDK v6 package ecosystem are folded into this root a
 - [Docs wiki](docs/wiki/README.md)
 - [Local LLM context](llms.txt)
 - [Interface contract](INTERFACE_CONTRACT.md)
+- [Evolution policy](docs/EVOLUTION.md)
 - [Port notes](docs/AISDK_PORT.md)
 - [Architecture decisions](docs/AISDK_PORT_DECISIONS.md)
 - [Parity ledgers](docs/parity/README.md)
