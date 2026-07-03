@@ -30,6 +30,7 @@ WATCHED = {"Write", "Edit", "MultiEdit"}
 
 HOOKS_ROOT = Path(__file__).resolve().parents[2]
 RULES_DIR = HOOKS_ROOT / "rules" / "kotlin"
+AUTOFIX_REGISTRY = HOOKS_ROOT / "rules" / "autofix-registry.json"
 SCAN_TIMEOUT = 5
 
 
@@ -47,6 +48,13 @@ class Change:
     file_path: str
     old_text: str
     new_text: str
+
+
+@dataclass(frozen=True)
+class AutofixSuggestion:
+    file_path: str
+    fixed_text: str
+    counts: dict[str, int]
 
 
 # Rules that ban JVM-only APIs purely for multiplatform (commonMain / Kotlin-Native /
@@ -120,6 +128,11 @@ def run(data: dict) -> Optional[HookResult]:
         return None
 
     severities = _rule_severities(rule_files)
+    autofix_ids, autofix_error = _autofix_rule_ids()
+    if autofix_error:
+        return _incomplete(autofix_error)
+
+    autofix_suggestions: list[AutofixSuggestion] = []
     block_hits: list[tuple[str, Hit]] = []
     warn_hits: list[tuple[str, Hit]] = []
 
@@ -129,10 +142,27 @@ def run(data: dict) -> Optional[HookResult]:
         if not _is_library_source(change.file_path):
             continue
         applicable = _rules_for_path(rule_files, change.file_path)
+        autofix_rules = [rule for rule in applicable if rule.stem in autofix_ids]
+        if autofix_rules:
+            introduced_fix_hits = _introduced(binary, autofix_rules, severities, change.old_text, change.new_text)
+            if introduced_fix_hits:
+                suggestion, error = _autofix_suggestion(binary, autofix_rules, change)
+                if error:
+                    return _incomplete(error)
+                if suggestion is not None:
+                    autofix_suggestions.append(suggestion)
+                    applicable = [rule for rule in applicable if rule.stem not in autofix_ids]
+
         for hit in _introduced(binary, applicable, severities, change.old_text, change.new_text):
             target = block_hits if hit.severity == "error" else warn_hits
             target.append((change.file_path, hit))
 
+    if autofix_suggestions:
+        return HookResult(
+            kind="block",
+            payload=_autofix_message(autofix_suggestions, block_hits, warn_hits),
+            module_name="kotlin_antipattern_policy",
+        )
     if block_hits:
         return HookResult(kind="block", payload=_block_message(block_hits, warn_hits), module_name="kotlin_antipattern_policy")
     if warn_hits:
@@ -324,6 +354,70 @@ def _ast_grep_binary() -> Optional[str]:
     return None
 
 
+def _autofix_rule_ids(registry_path: Path | None = None) -> tuple[set[str], str | None]:
+    registry_path = registry_path or AUTOFIX_REGISTRY
+    try:
+        payload = json.loads(registry_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return set(), None
+    except (OSError, json.JSONDecodeError) as exc:
+        return set(), f"Malformed Kotlin autofix registry: {exc}"
+    if not isinstance(payload, list):
+        return set(), "Malformed Kotlin autofix registry: expected a JSON list."
+    ids: set[str] = set()
+    for index, entry in enumerate(payload, start=1):
+        if isinstance(entry, str):
+            rule_id = entry
+        elif isinstance(entry, dict) and isinstance(entry.get("id"), str):
+            rule_id = str(entry["id"])
+        else:
+            return set(), f"Malformed Kotlin autofix registry: entry {index} must name a rule id."
+        if rule_id in ids:
+            return set(), f"Malformed Kotlin autofix registry: duplicate rule id {rule_id}."
+        ids.add(rule_id)
+    return ids, None
+
+
+def _autofix_suggestion(
+    binary: str,
+    rule_files: list[Path],
+    change: Change,
+) -> tuple[AutofixSuggestion | None, str | None]:
+    code_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".kt", delete=False, encoding="utf-8") as code_file:
+            code_file.write(change.new_text)
+            code_path = code_file.name
+        counts: dict[str, int] = {}
+        for rule_file in rule_files:
+            before = _scan(binary, [rule_file], {rule_file.stem: "error"}, change.new_text)
+            if not before:
+                continue
+            completed = subprocess.run(
+                [binary, "scan", "--rule", str(rule_file), "--update-all", code_path],
+                capture_output=True,
+                text=True,
+                timeout=SCAN_TIMEOUT,
+            )
+            if completed.returncode not in (0, 1):
+                return None, f"ast-grep autofix failed for {rule_file.stem}."
+            counts[rule_file.stem] = len(before)
+        if not counts:
+            return None, None
+        fixed_text = Path(code_path).read_text(encoding="utf-8")
+        if fixed_text == change.new_text:
+            return None, "autofix registry rule matched but did not change the proposed Kotlin content."
+        return AutofixSuggestion(change.file_path, fixed_text, counts), None
+    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+        return None, f"ast-grep autofix failed: {exc}"
+    finally:
+        if code_path:
+            try:
+                os.unlink(code_path)
+            except OSError:
+                pass
+
+
 # --- messaging -------------------------------------------------------------------
 
 def _incomplete(detail: str) -> HookResult:
@@ -364,4 +458,38 @@ def _warn_message(warn_hits: list[tuple[str, Hit]]) -> str:
     ]
     for file_path, hit in warn_hits:
         lines.append("  - " + _loc(file_path, hit))
+    return "\n".join(lines)
+
+
+def _autofix_message(
+    suggestions: list[AutofixSuggestion],
+    block_hits: list[tuple[str, Hit]],
+    warn_hits: list[tuple[str, Hit]],
+) -> str:
+    lines = [
+        "REPO KOTLIN ANTI-PATTERN POLICY — AUTOFIX AVAILABLE",
+        "",
+        "A registry-approved ast-grep fix can rewrite this edit, but this hook channel cannot mutate the pending tool input.",
+        "Use the corrected content below, then retry the edit. Pre-commit applies the same registry fixes and fails for review/restage.",
+        "",
+        "Autofixable introduced sites:",
+    ]
+    for suggestion in suggestions:
+        for rule_id, count in sorted(suggestion.counts.items()):
+            lines.append(f"  - {suggestion.file_path}: [{rule_id}] fixed {count} site(s)")
+        lines.append("")
+        lines.append(f"Corrected content for {suggestion.file_path}:")
+        lines.append("```kotlin")
+        lines.append(suggestion.fixed_text.rstrip())
+        lines.append("```")
+    if block_hits:
+        lines.append("")
+        lines.append("Other introduced blocking violations still need manual repair:")
+        for file_path, hit in block_hits:
+            lines.append("  - " + _loc(file_path, hit))
+    if warn_hits:
+        lines.append("")
+        lines.append("Also flagged (non-blocking, but please address):")
+        for file_path, hit in warn_hits:
+            lines.append("  - " + _loc(file_path, hit))
     return "\n".join(lines)
