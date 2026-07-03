@@ -115,6 +115,42 @@ with tempfile.TemporaryDirectory() as tmp:
         '"decision": "block"' in two_file_rule_result.stdout,
     )
 
+    versioned_file_patch = """*** Begin Patch
+*** Add File: src/commonMain/kotlin/ai/torad/aisdk/Foo_v2.kt
++package ai.torad.aisdk
+*** End Patch
+"""
+    versioned_file_result = run_adapter(versioned_file_patch)
+    check(
+        "adapter synthetic Write blocks v2 Kotlin file creation",
+        '"decision": "block"' in versioned_file_result.stdout,
+    )
+
+    ledger_patch = """*** Begin Patch
+*** Update File: dev/measurements.toml
+@@
+-old
++new
+*** End Patch
+"""
+    ledger_result = run_adapter(ledger_patch)
+    check(
+        "adapter synthetic MultiEdit blocks raw ledger update",
+        '"decision": "block"' in ledger_result.stdout,
+    )
+
+    ledger_seed_patch = """*** Begin Patch
+*** Add File: dev/campaigns/adapter-seed-once-test.toml
++[[items]]
++id = "seed"
+*** End Patch
+"""
+    ledger_seed_result = run_adapter(ledger_seed_patch)
+    check(
+        "adapter synthetic Write allows seed-new ledger creation",
+        '"decision": "block"' not in ledger_seed_result.stdout,
+    )
+
 if failures:
     print(f"FAILED {ran - len(failures)}/{ran}")
     for failure in failures:
