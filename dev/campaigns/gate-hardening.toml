@@ -498,9 +498,10 @@ id = "FX-02"
 phase = "fx"
 title = "FR doc corrections: (1) CLAUDE.md enforcement section — budget json lives at REPO ROOT (data-class-budget.json), wording currently implies .claude/hooks/rules/; (2) release.yml comment stating the DELIBERATE fail-closed asymmetry vs ci.yml GH-13 decoupling (F-03 adjudicated by-design, document it); (3) samples/jvm-chat-cli README or CONTRIBUTING dev-loop note: republishing the same non-SNAPSHOT version to mavenLocal may serve stale bytes — use ./gradlew --refresh-dependencies (F-06)."
 files = ["CLAUDE.md", ".github/workflows/release.yml", "samples/jvm-chat-cli/"]
-status = "done"
+status = "verified"
 verify = "wording matches reality (budget path, asymmetry rationale present, refresh-dependencies note present); trust gate + ci-gate green"
 # [2026-07-03] Doc corrections landed: repo-root data-class budget wording, release fail-closed npm/tooling rationale, sample refresh-dependencies cache note; final SHA via fleet
+# [2026-07-03] VERIFIED at b5b9cab: all three corrections accurate (repo-root budget wording in both CLAUDE.md sections; release.yml fail-closed rationale comment placed at the npm ci step, correctly contrasts GH-13; sample README refresh-dependencies note matches F-06). ci-gate exit 0, trust gate OK on comment-only release.yml change.
 
 [[items]]
 id = "FX-03"
