@@ -65,7 +65,7 @@
   - `fun close()`
 - `data class ToolLoopAgentState(messages, streamingAssistantText, currentToolCalls, pendingApprovals, phase, totalSteps, lastFinishReason)` — state-holder surface for long-lived hosts; remains a data class for `StateFlow.update { it.copy(...) }` MVI usage. `ToolLoopAgentState.Phase.Error` is an `@Poko class` value-semantics leaf.
 - `sealed class ToolLoopAgentAction<TContext>` — `UserSubmitPrompt`, `ApproveToolCall`, `DenyToolCall`, `Cancel`, `Reset`
-- `@Poko class GenerateResult<TOutput>(output, text, steps, finishReason, usage, pendingApprovals = [], messages = [])`
+- `@Poko class GenerateResult<TOutput>` — field access/value semantics for agent results; the positional constructor is not public. Consumers receive instances from `Agent.generate`; test fakes should prefer the shipped `Mock*` models.
 - `AgentEvent` is the public lifecycle event hierarchy for observation. `prepareCall` / `prepareStep` in `AgentSettings<TContext>` are the public behavior hooks; telemetry integrations use `Telemetry`.
 
 ### Tool definition
@@ -123,7 +123,9 @@ and repaired values are byte-identical to the JS SDK.
   `StructuredObjectFinish`, `StructuredObjectPhase.Streaming` / `Done`, and
   `StreamObjectFinish`) are `@Poko class` value-semantics types; field access
   remains, model stream warnings are exposed through `warnings`, but public
-  `copy()` / `componentN()` ABI is intentionally absent.
+  positional constructors and `copy()` / `componentN()` ABI are intentionally
+  absent. Consumers receive them from `StructuredObject` /
+  `StructuredObjectGenerator` calls.
 - `fun fixJson(input: String): String` — close a truncated JSON fragment
   (drains the open-frame stack, completes literals/numbers/strings).
 - `fun parsePartialJson(jsonText: String?): PartialJsonResult`
@@ -156,10 +158,12 @@ and repaired values are byte-identical to the JS SDK.
 - `data class OnChunkEvent(event: StreamEvent, stepNumber)`
 - `data class OnToolCallStartEvent(toolCallId, toolName, input, stepNumber, messages)`
 - `data class OnToolCallFinishEvent(toolCallId, toolName, outputJson?, errorMessage?, stepNumber)`
-- `@Poko class StepResult(stepNumber, text, reasoning, toolCalls, toolResults, toolApprovalRequests, finishReason, usage)`
+- `@Poko class StepResult` — field access/value semantics for completed loop
+  steps; the positional constructor is not public.
 - `AgentEvent` leaves, nested `ToolCallFinished.Outcome` leaves, and
   `StepResult` are `@Poko class` value-semantics types; field access remains,
-  but public `copy()` / `componentN()` ABI is intentionally absent.
+  but public positional constructors and `copy()` / `componentN()` ABI are
+  intentionally absent.
 
 ### Prepare scopes
 

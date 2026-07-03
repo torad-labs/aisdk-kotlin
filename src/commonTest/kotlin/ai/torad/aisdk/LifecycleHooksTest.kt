@@ -25,7 +25,7 @@ class LifecycleHooksTest {
 
     @Test
     fun `lifecycle Poko types keep value semantics`() {
-        val step = StepResult(
+        val step = ResultConstruction.stepResult(
             stepNumber = 1,
             text = "done",
             reasoning = "because",
@@ -35,7 +35,7 @@ class LifecycleHooksTest {
             finishReason = FinishReason.Stop,
             usage = Usage.of(promptTokens = 1, completionTokens = 2),
         )
-        val equalStep = StepResult(
+        val equalStep = ResultConstruction.stepResult(
             stepNumber = 1,
             text = "done",
             reasoning = "because",
@@ -45,7 +45,7 @@ class LifecycleHooksTest {
             finishReason = FinishReason.Stop,
             usage = Usage.of(promptTokens = 1, completionTokens = 2),
         )
-        val differentStep = StepResult(
+        val differentStep = ResultConstruction.stepResult(
             stepNumber = 1,
             text = "different",
             reasoning = "because",

@@ -29,7 +29,7 @@
     "src/commonMain/kotlin/ai/torad/aisdk/CompletionApi.kt": 631,
     "src/commonMain/kotlin/ai/torad/aisdk/McpOAuth.kt": 749,
     "src/commonMain/kotlin/ai/torad/aisdk/Streaming.kt": 584,
-    "src/commonMain/kotlin/ai/torad/aisdk/StructuredObjectApi.kt": 587,
+    "src/commonMain/kotlin/ai/torad/aisdk/StructuredObjectApi.kt": 594,
     "src/commonMain/kotlin/ai/torad/aisdk/Telemetry.kt": 685,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/AlibabaProvider.kt": 755,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt": 662,

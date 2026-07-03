@@ -192,6 +192,12 @@ This project follows Semantic Versioning once the first stable release is cut.
   approval signing, telemetry, logging, and engine context move through
   regular `AgentSettingsBuilder` setter methods, removing the old 26-parameter
   constructor from frozen public ABI.
+  Growable generated-result holders (`GenerateResult`, `GenerateTextResult`,
+  `StepResult`, `StructuredObjectFinish`, and `StructuredObjectPhase.Streaming`
+  / `Done`) now keep field access/value semantics but hide their positional
+  constructors from public ABI. Consumers observe them from agent/generator
+  calls; test fakes should use the shipped `Mock*` models instead of direct
+  result instantiation.
   LiteRT wire types now use internal constructors plus public builders/DSL
   factories (`LiteRTChannel { ... }`, `LiteRTToolCall { ... }`,
   `LiteRTMessage { ... }`, and `LiteRTContent.Text { ... }` etc.); their public

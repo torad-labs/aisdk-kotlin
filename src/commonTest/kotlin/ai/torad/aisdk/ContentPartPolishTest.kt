@@ -70,7 +70,7 @@ class ContentPartPolishTest {
         val params = LanguageModelCallParams {
             messages(listOf(UserMessage("hi")))
         }
-        val prior = StepResult(
+        val prior = ResultConstruction.stepResult(
             stepNumber = 1,
             text = "step 1 text",
             reasoning = "",

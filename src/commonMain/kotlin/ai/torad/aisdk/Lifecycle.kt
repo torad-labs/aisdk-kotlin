@@ -228,7 +228,7 @@ public sealed class AgentEvent {
  * @since 0.3.0-beta01
  */
 @Poko
-public class StepResult(
+public class StepResult internal constructor(
     /** @since 0.3.0-beta01 */
     public val stepNumber: Int,
     /** @since 0.3.0-beta01 */

@@ -98,7 +98,7 @@ public class TextGenerator @JvmOverloads constructor(
                 model.generate(params)
             }
         }
-        return GenerateTextResult(
+        return ResultConstruction.generateTextResult(
             output = decode(raw.text),
             text = raw.text,
             toolCalls = raw.toolCalls,

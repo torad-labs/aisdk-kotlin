@@ -22,7 +22,7 @@ import kotlin.coroutines.CoroutineContext
 
 @Poko
 /** @since 0.3.0-beta01 */
-public class GenerateTextResult<TOutput>(
+public class GenerateTextResult<TOutput> internal constructor(
     /** @since 0.3.0-beta01 */
     public val output: TOutput,
     /** @since 0.3.0-beta01 */

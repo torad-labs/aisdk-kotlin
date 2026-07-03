@@ -17,18 +17,19 @@ class StopConditionTest {
         toolCallsAllSteps = calls.map { ContentPart.ToolCall("call_$it", it, JsonPrimitive("")) },
     )
 
-    private fun stepWithCall(stepNum: Int, toolName: String, input: JsonElement): StepResult = StepResult(
-        stepNumber = stepNum,
-        text = "",
-        reasoning = "",
-        toolCalls = listOf(ContentPart.ToolCall("call_${stepNum}_$toolName", toolName, input)),
-        toolResults = emptyList(),
-        toolApprovalRequests = emptyList(),
-        finishReason = FinishReason.ToolCalls,
-        usage = Usage(),
-    )
+    private fun stepWithCall(stepNum: Int, toolName: String, input: JsonElement): StepResult =
+        ResultConstruction.stepResult(
+            stepNumber = stepNum,
+            text = "",
+            reasoning = "",
+            toolCalls = listOf(ContentPart.ToolCall("call_${stepNum}_$toolName", toolName, input)),
+            toolResults = emptyList(),
+            toolApprovalRequests = emptyList(),
+            finishReason = FinishReason.ToolCalls,
+            usage = Usage(),
+        )
 
-    private fun emptyStep(stepNum: Int): StepResult = StepResult(
+    private fun emptyStep(stepNum: Int): StepResult = ResultConstruction.stepResult(
         stepNumber = stepNum,
         text = "",
         reasoning = "",

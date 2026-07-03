@@ -336,8 +336,8 @@ class AgentSessionTest {
             ): Flow<GenerateResult<String>> = flow {
                 gate.await()
                 emit(
-                    GenerateResult(
-                        "done",
+                    ResultConstruction.generateResult(
+                        rawOutput = "done",
                         text = "done",
                         steps = emptyList(),
                         finishReason = FinishReason.Stop,
