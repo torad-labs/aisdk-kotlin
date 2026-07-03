@@ -769,9 +769,10 @@ id = "HD-22"
 phase = "hd"
 title = "no-restated-measurements detector (kills the FR-03/HD-17 claim-drift class structurally): python detector scanning docs/*.md, CHANGELOG.md, INTERFACE_CONTRACT.md, CLAUDE.md, dev/campaigns headers for measurement-shaped literals — percentages (dd.dd%), seconds (dd.ds), token/latency counts with units, coverage triples — that do NOT sit inside a [meas: key] citation or a verbatim-quote context (ledger note quotes are exempt: lines quoting dev/campaigns notes or fixture output). Warning-only report section in ci-gate initially (measure FP rate first, promote to fail later slice if clean); allowlist file for deliberate literals with reason. Seed test: it must flag a planted raw coverage number in docs/ and NOT flag existing [meas:] citations in CHANGELOG (HD-12 wrote those correctly — they are the good fixtures)."
 files = [".claude/hooks/rules/", ".claude/hooks/rules/ci-gate.sh", "tools/gate-fixtures/"]
-status = "done"
+status = "verified"
 verify = "planted raw number flagged; existing [meas:] citations pass; FP count on current tree reported in note; harness fixture pair added; ci-gate green"
 # [2026-07-03] HD-22 done: warning-only no-restated-measurements detector wired into ci-gate with allowlist schema; fixture pair proves planted raw 51.47% fails and CHANGELOG [meas:] citations pass; current-tree probe was 21 warnings with 5 HTTP-status-plural FPs filtered, committed report is 16 warnings / 0 allowlisted; SHA in fleet report.
+# [2026-07-03] VERIFIED at 77d59a3 (diff review; deterministic results trusted): detector logic sound (citation regex, 7 pattern kinds, allowlist schema requires path/literal/lineContains/reason), harness 28/14, warning-only wiring correct, builder pre-filtered HTTP-status plural FPs thoughtfully. FOURTH first-run live catch: the 16 warnings include docs/beta-readiness.md restating the STALE 44.01/81.32/71.95 coverage numbers — the exact figures that misled FR-03; the detector found its founding class immediately. Adjudication split for HD-25: (a) beta-readiness.md + beta-backlog.md stale coverage restatements -> supersede with [meas:] citations or mark the doc point-in-time; (b) code-constant references (30s/120s/500ms timeout caps, poll intervals) -> allowlist with reason code-constant-not-measurement; then promote detector to fail=1.
 
 [[items]]
 id = "HD-23"
@@ -790,3 +791,11 @@ status = "verified"
 verify = "nested existing ledger raw-Edit blocked; nested seed Write allowed; direct-child warning count 0; suites + ci-gate green"
 # [2026-07-03] HD-24 done: ledger_cli_only_policy now treats nested dev/campaigns/*.toml descendants as ledgers; nested existing Edit blocks, nested seed Write allows; python guard warning count returned to 0; SHA in fleet report.
 # [2026-07-03] VERIFIED at 1e1e67d (diff review; deterministic results trusted): exact one-line ancestor fix, carve-outs untouched, nested block + nested seed cases in suite (fleet ok 56), guard-rule warning count back to 0. HD-21s live catch closed same-day.
+
+[[items]]
+id = "HD-25"
+phase = "hd"
+title = "Adjudicate the 16 restated-measurement warnings and promote the detector to blocking. Two classes from orchestrator review: (a) STALE COVERAGE RESTATEMENTS (docs/beta-readiness.md lines ~80-82/169-170 carry the pre-campaign 44.01/81.32/71.95 that misled FR-03; check beta-backlog.md for similar) — replace with [meas: coverage_*_percent] citations, or where the doc is a dated point-in-time audit record add ONE header line stating numbers are historical as-of-date and allowlist the file section with that reason; (b) CODE-CONSTANT REFERENCES (30s/120s/500ms timeout caps, poll intervals, retry caps in beta-backlog.md problem descriptions) — allowlist with reason code-constant-not-measurement (citing [meas:] would be wrong; they describe code values). After adjudication: warning count 0, then flip the ci-gate section from warning-only to fail=1 with an LP-6 fail probe (planted raw number in docs -> gate exits 1 -> removed)."
+files = ["docs/", ".claude/hooks/rules/restated-measurements-allowlist.json", ".claude/hooks/rules/ci-gate.sh"]
+status = "todo"
+verify = "warning count 0 after adjudication; every allowlist entry carries a reason; planted-number probe fails gate then passes after removal; ci-gate + suites green"
