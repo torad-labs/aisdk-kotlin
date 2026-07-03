@@ -16,7 +16,8 @@ OWNED = ROOT / "docs" / "audit-remediation-backlog.md"
 CAMPAIGN_LEDGER = ROOT / "dev" / "campaigns" / "gate-hardening.toml"
 MEASUREMENTS_LEDGER = ROOT / "dev" / "measurements.toml"
 NEW_CAMPAIGN_LEDGER = ROOT / "dev" / "campaigns" / "seed-once-test.toml"
-API_DUMP = ROOT / "api" / "torad-aisdk.klib.api"
+API_KLIB_DUMP = ROOT / "api" / "torad-aisdk.klib.api"
+API_JVM_DUMP = ROOT / "api" / "jvm" / "torad-aisdk.api"
 KOTLIN_TARGET = ROOT / "src" / "commonMain" / "kotlin" / "ai" / "torad" / "aisdk" / "ShellWriteTarget.kt"
 
 failures: list[str] = []
@@ -225,6 +226,20 @@ check(
     })),
 )
 check(
+    "python heredoc that only mentions Kotlin source is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {
+            "command": (
+                "python3 - <<'PY'\n"
+                "target = 'src/commonMain/kotlin/ai/torad/aisdk/Generate.kt'\n"
+                "print(target)\n"
+                "PY"
+            ),
+        },
+    })),
+)
+check(
     "tee write to Kotlin source is blocked",
     blocked(run_target({
         "tool_name": "Bash",
@@ -272,21 +287,39 @@ check(
     })),
 )
 check(
-    "direct Edit on ABI dump is blocked",
+    "direct Edit on direct-child ABI dump is blocked",
     blocked(run_target({
         "tool_name": "Edit",
         "tool_input": {
-            "file_path": str(API_DUMP),
+            "file_path": str(API_KLIB_DUMP),
             "old_string": "old",
             "new_string": "new",
         },
     })),
 )
 check(
-    "bash redirect to ABI dump is blocked",
+    "direct Edit on nested JVM ABI dump is blocked",
+    blocked(run_target({
+        "tool_name": "Edit",
+        "tool_input": {
+            "file_path": str(API_JVM_DUMP),
+            "old_string": "old",
+            "new_string": "new",
+        },
+    })),
+)
+check(
+    "bash redirect to direct-child ABI dump is blocked",
     blocked(run_target({
         "tool_name": "Bash",
-        "tool_input": {"command": f"cat <<'EOF' > {API_DUMP}\napi\nEOF"},
+        "tool_input": {"command": f"cat <<'EOF' > {API_KLIB_DUMP}\napi\nEOF"},
+    })),
+)
+check(
+    "bash redirect to nested JVM ABI dump is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": f"cat <<'EOF' >> {API_JVM_DUMP}\napi\nEOF"},
     })),
 )
 check(

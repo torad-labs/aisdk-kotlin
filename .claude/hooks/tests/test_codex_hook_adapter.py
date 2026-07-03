@@ -160,8 +160,21 @@ with tempfile.TemporaryDirectory() as tmp:
 """
     api_dump_result = run_adapter(api_dump_patch)
     check(
-        "adapter synthetic MultiEdit blocks ABI dump update",
+        "adapter synthetic MultiEdit blocks direct-child ABI dump update",
         '"decision": "block"' in api_dump_result.stdout,
+    )
+
+    jvm_api_dump_patch = """*** Begin Patch
+*** Update File: api/jvm/torad-aisdk.api
+@@
+-old
++new
+*** End Patch
+"""
+    jvm_api_dump_result = run_adapter(jvm_api_dump_patch)
+    check(
+        "adapter synthetic MultiEdit blocks nested JVM ABI dump update",
+        '"decision": "block"' in jvm_api_dump_result.stdout,
     )
 
 if failures:
