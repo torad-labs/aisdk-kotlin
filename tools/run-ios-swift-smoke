@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 if [[ "$(uname -s)" != "Darwin" ]]; then
+  if [[ "${REQUIRE_REAL_SMOKE:-}" = "1" ]]; then
+    echo "iOS Swift smoke requires macOS, but REQUIRE_REAL_SMOKE=1 forbids skipping" >&2
+    exit 1
+  fi
   echo "iOS Swift smoke skipped: requires macOS"
   exit 0
 fi
