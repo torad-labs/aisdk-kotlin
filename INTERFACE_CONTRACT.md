@@ -193,7 +193,8 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
     the thrown callback exception and continues delivering abort to remaining callbacks.
     Logger failures are swallowed so observability cannot block abort delivery.
 - `class AbortError`
-- `fun abortSignalFromJob(job: Job): AbortSignal`
+- `fun AbortSignalFromJob(job: Job): AbortSignal`
+- `object AbortSignals { fun from(job: Job): AbortSignal; fun from(scope: CoroutineScope): AbortSignal }`
 
 Cancellation is structural. SDK recovery paths that catch broad failures
 rethrow `CancellationException` rather than converting it into retry decisions,

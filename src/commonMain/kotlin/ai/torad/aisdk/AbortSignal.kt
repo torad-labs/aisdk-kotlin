@@ -204,16 +204,22 @@ public fun AbortSignalFromJob(job: Job): AbortSignal {
 }
 
 /**
- * Member-extensions converting coroutine handles into [AbortSignal]s.
+ * Factory functions converting coroutine handles into [AbortSignal]s.
  * @since 0.3.0-beta01
  */
 public object AbortSignals {
     /** @since 0.3.0-beta01 */
-    public fun Job.asAbortSignal(): AbortSignal = AbortSignalFromJob(this)
+    public fun from(job: Job): AbortSignal = AbortSignalFromJob(job)
 
-    /** @since 0.3.0-beta01 */
-    public fun CoroutineScope.asAbortSignal(): AbortSignal =
-        coroutineContext[Job]?.asAbortSignal() ?: AbortSignalNever
+    /**
+     * Binds to [scope]'s job. Returns [AbortSignalNever] if the scope's
+     * context has no [Job].
+     * @since 0.3.0-beta01
+     */
+    public fun from(scope: CoroutineScope): AbortSignal {
+        val job = scope.coroutineContext[Job] ?: return AbortSignalNever
+        return from(job)
+    }
 }
 
 // FunctionNaming/ReturnCount: PascalCase factory (matches AbortSignalFromJob) with intentional

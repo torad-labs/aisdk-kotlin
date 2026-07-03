@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.AbortSignals.asAbortSignal
 import ai.torad.aisdk.AgentSessions.session
 import ai.torad.aisdk.GeneratedFiles.bytes
 import ai.torad.aisdk.GeneratedFiles.fileData
@@ -192,7 +191,7 @@ class KotlinIdiomsTest {
     @Test
     fun `job abort signal follows coroutine cancellation`() {
         val job = Job()
-        val signal = job.asAbortSignal()
+        val signal = AbortSignals.from(job)
 
         assertFalse(signal.isAborted)
         job.cancel()

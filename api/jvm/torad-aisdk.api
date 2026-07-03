@@ -41,8 +41,8 @@ public final class ai/torad/aisdk/AbortSignalKt {
 
 public final class ai/torad/aisdk/AbortSignals {
 	public static final field INSTANCE Lai/torad/aisdk/AbortSignals;
-	public final fun asAbortSignal (Lkotlinx/coroutines/CoroutineScope;)Lai/torad/aisdk/AbortSignal;
-	public final fun asAbortSignal (Lkotlinx/coroutines/Job;)Lai/torad/aisdk/AbortSignal;
+	public final fun from (Lkotlinx/coroutines/CoroutineScope;)Lai/torad/aisdk/AbortSignal;
+	public final fun from (Lkotlinx/coroutines/Job;)Lai/torad/aisdk/AbortSignal;
 }
 
 public abstract interface class ai/torad/aisdk/Agent {
