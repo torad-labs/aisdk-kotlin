@@ -437,6 +437,7 @@ id = "BP-10"
 phase = "bp"
 title = "Recurring consumer-boundary canary (LP-5's gate): scheduled workflow resolving latest from real Central, compiling+running README sample (JVM + native), docs-URL liveness, gh attestation verify (post BP-06), monthly klibs.io check. Failures notify owner, not a dead log."
 files = [".github/workflows/"]
-status = "in_flight"
+status = "done"
 depends = ["RR-06"]
 # [2026-07-02] rescoped: BUILD the canary workflow now (workflow_dispatch + schedule, disabled-or-skipping until first publish); live verification remains tag-gated
+# [2026-07-02] Consumer-boundary canary workflow added; Central/docs/attestation guards wait cleanly for first release; final SHA via fleet
