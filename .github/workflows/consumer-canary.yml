@@ -1,0 +1,191 @@
+name: Consumer Canary
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "37 9 * * 1"
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  GROUP_ID: ai.torad
+  ARTIFACT_ID: torad-aisdk
+  DOCS_URL: https://torad-labs.github.io/aisdk-kotlin/
+
+jobs:
+  consumer-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - name: Discover latest Maven Central release
+        id: central
+        run: |
+          set -euo pipefail
+          query="g:%22${GROUP_ID}%22%20AND%20a:%22${ARTIFACT_ID}%22"
+          url="https://search.maven.org/solrsearch/select?q=${query}&rows=1&wt=json"
+          response="$(curl -fsSL --retry 3 --retry-delay 2 "$url")"
+          version="$(python3 - "$response" <<'PY'
+          import json
+          import sys
+
+          data = json.loads(sys.argv[1])
+          docs = data.get("response", {}).get("docs", [])
+          print(docs[0].get("latestVersion", "") if docs else "")
+          PY
+          )"
+
+          if [ -z "$version" ]; then
+            echo "::notice title=waiting on first release::Maven Central has no ${GROUP_ID}:${ARTIFACT_ID} yet; consumer canary stays green until the first release publishes."
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "published=true" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Latest Central version: ${GROUP_ID}:${ARTIFACT_ID}:${version}"
+      - name: Compile and run README-shaped JVM consumer
+        if: steps.central.outputs.published == 'true'
+        env:
+          AISDK_VERSION: ${{ steps.central.outputs.version }}
+        run: |
+          set -euo pipefail
+          project="$RUNNER_TEMP/aisdk-consumer-canary"
+          rm -rf "$project"
+          mkdir -p "$project/src/main/kotlin"
+
+          cat > "$project/settings.gradle.kts" <<'EOF'
+          pluginManagement {
+              repositories {
+                  gradlePluginPortal()
+                  mavenCentral()
+                  google()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  mavenCentral()
+                  google()
+              }
+          }
+
+          rootProject.name = "aisdk-consumer-canary"
+          EOF
+
+          cat > "$project/build.gradle.kts" <<'EOF'
+          import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+          plugins {
+              kotlin("jvm") version "2.4.0"
+              kotlin("plugin.serialization") version "2.4.0"
+              application
+          }
+
+          val aisdkVersion = providers.gradleProperty("aisdkVersion").get()
+
+          dependencies {
+              implementation("ai.torad:torad-aisdk:$aisdkVersion")
+          }
+
+          java {
+              sourceCompatibility = JavaVersion.VERSION_17
+              targetCompatibility = JavaVersion.VERSION_17
+          }
+
+          kotlin {
+              jvmToolchain(21)
+              compilerOptions {
+                  jvmTarget.set(JvmTarget.JVM_17)
+              }
+          }
+
+          application {
+              mainClass.set("CanaryKt")
+          }
+          EOF
+
+          cat > "$project/src/main/kotlin/Canary.kt" <<'EOF'
+          import ai.torad.aisdk.LanguageModel
+          import ai.torad.aisdk.StepCountIs
+          import ai.torad.aisdk.Tool
+          import ai.torad.aisdk.ToolLoopAgent
+          import ai.torad.aisdk.ToolSet
+          import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+          import kotlinx.coroutines.flow.first
+          import kotlinx.serialization.Serializable
+          import kotlinx.serialization.serializer
+
+          @Serializable
+          data class EmptyInput(val unused: String = "")
+
+          val helloTool = Tool<EmptyInput, String, Unit>(
+              name = "hello",
+              description = "Return a greeting.",
+              inputSerializer = serializer(),
+              outputSerializer = serializer(),
+          ) { _ -> "Hello from a tool." }
+
+          class HelloAgent(model: LanguageModel, tools: ToolSet<Unit>) :
+              ToolLoopAgent<Unit, String>(
+                  model = model,
+                  instructions = "Be brief.",
+                  tools = tools,
+                  stopWhen = StepCountIs(3),
+              )
+
+          suspend fun main() {
+              val agent = HelloAgent(
+                  model = MockLanguageModelTextOnly("Welcome."),
+                  tools = ToolSet(helloTool),
+              )
+
+              val result = agent.generate(prompt = "Say hi").first()
+              check(result.text == "Welcome.") { "Unexpected generated text: ${result.text}" }
+              println(result.text)
+          }
+          EOF
+
+          ./gradlew -p "$project" --no-daemon run -PaisdkVersion="$AISDK_VERSION"
+      - name: Check docs site
+        run: |
+          set -euo pipefail
+          status="$(curl -sS -L -o /dev/null -w '%{http_code}' "$DOCS_URL" || true)"
+          if [ "$status" = "404" ] || [ "$status" = "000" ]; then
+            echo "::notice title=waiting on first release::Docs site ${DOCS_URL} is not published yet (HTTP ${status}); canary will enforce it after Pages exists."
+            exit 0
+          fi
+          if [ "${status#2}" != "$status" ] || [ "${status#3}" != "$status" ]; then
+            echo "Docs site ${DOCS_URL} responded with HTTP ${status}"
+            exit 0
+          fi
+          echo "::error::Docs site ${DOCS_URL} responded with HTTP ${status}"
+          exit 1
+      - name: Verify release bundle attestation
+        if: steps.central.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AISDK_VERSION: ${{ steps.central.outputs.version }}
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          if ! gh release download "v${AISDK_VERSION}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --pattern bundle.zip \
+              --dir "$tmp" \
+              --clobber; then
+            echo "::notice title=waiting on first release::No downloadable bundle.zip found for v${AISDK_VERSION}; attestation canary will verify once an attested release bundle is available."
+            exit 0
+          fi
+
+          gh attestation verify "$tmp/bundle.zip" --repo "$GITHUB_REPOSITORY"
