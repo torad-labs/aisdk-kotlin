@@ -4,14 +4,16 @@
     "severity": "warn",
     "yaml": "id: no-public-mutable-collection-val\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: property_declaration\n  all:\n    - has:\n        kind: variable_declaration\n        has:\n          kind: user_type\n          has:\n            kind: type_identifier\n            regex: '^(MutableList|MutableMap|MutableSet|MutableCollection|ArrayList|HashMap|LinkedHashMap|HashSet|LinkedHashSet)$'\n    - not:\n        has:\n          kind: visibility_modifier\n          regex: '^(private|internal|protected)$'\n          stopBy: end\n    - inside:\n        kind: class_body\n    - not:\n        inside:\n          kind: class_declaration\n          stopBy: end\n          has:\n            kind: modifiers\n            has:\n              kind: visibility_modifier\n              regex: '^(private|internal)$'\nnote: >-\n  Public property exposes a mutable collection (MutableList/MutableMap/...).\n  Callers can mutate it behind your back. Expose the read-only interface\n  (List/Map/Set) via a public getter backed by a private mutable field.",
     "badExample": "public class Recorder {\n    public val runs: MutableList<String> = mutableListOf()\n}",
-    "goodExample": "public class Recorder {\n    private val _runs: MutableList<String> = mutableListOf()\n    public val runs: List<String> get() = _runs\n}"
+    "goodExample": "public class Recorder {\n    private val _runs: MutableList<String> = mutableListOf()\n    public val runs: List<String> get() = _runs\n}",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-var-in-object-declaration",
     "severity": "block",
     "yaml": "id: no-var-in-object-declaration\nlanguage: kotlin\nseverity: error\nrule:\n  kind: property_declaration\n  all:\n    - has:\n        kind: binding_pattern_kind\n        regex: '^var$'\n    - inside:\n        kind: class_body\n        inside:\n          kind: object_declaration\nnote: >-\n  Mutable `var` inside a top-level/named `object` is process-wide shared\n  mutable singleton state \u2014 a data race and a hidden global. Model state\n  with a StateFlow/Mutex-guarded holder or pass it explicitly, not via a\n  mutable singleton field.",
     "badExample": "object Counters {\n    var requestCount = 0\n}",
-    "goodExample": "object Counters {\n    private val _requestCount = MutableStateFlow(0)\n    val requestCount: StateFlow<Int> = _requestCount.asStateFlow()\n}"
+    "goodExample": "object Counters {\n    private val _requestCount = MutableStateFlow(0)\n    val requestCount: StateFlow<Int> = _requestCount.asStateFlow()\n}",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-volatile-var",
@@ -25,7 +27,8 @@
     "severity": "warn",
     "yaml": "id: no-public-mutable-collection-ctor-prop\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: class_parameter\n  all:\n    - has:\n        kind: binding_pattern_kind\n    - has:\n        kind: user_type\n        has:\n          kind: type_identifier\n          regex: '^(MutableList|MutableMap|MutableSet|MutableCollection|ArrayList|HashMap|LinkedHashMap|HashSet|LinkedHashSet)$'\n    - not:\n        has:\n          kind: visibility_modifier\n          regex: '^(private|internal|protected)$'\n          stopBy: end\n    - inside:\n        kind: primary_constructor\n    - not:\n        inside:\n          kind: class_declaration\n          stopBy: end\n          has:\n            kind: modifiers\n            has:\n              kind: visibility_modifier\n              regex: '^(private|internal)$'\nnote: >-\n  Public constructor property of a public class exposes a mutable\n  collection. Take a read-only collection (List/Map/Set) in the\n  constructor and keep any mutable copy private to the class.",
     "badExample": "public class AIContext(\n    public val completions: MutableMap<String, Completion> = linkedMapOf(),\n)",
-    "goodExample": "public class AIContext(\n    completions: Map<String, Completion> = emptyMap(),\n) {\n    private val _completions = completions.toMutableMap()\n    public val completions: Map<String, Completion> get() = _completions\n}"
+    "goodExample": "public class AIContext(\n    completions: Map<String, Completion> = emptyMap(),\n) {\n    private val _completions = completions.toMutableMap()\n    public val completions: Map<String, Completion> get() = _completions\n}",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-loop-in-init",
@@ -46,21 +49,24 @@
     "severity": "warn",
     "yaml": "id: no-try-catch-in-init\nlanguage: kotlin\nseverity: warning\nmessage: try/catch inside an init block performs fallible work during construction and tends to swallow failures.\nnote: |\n  A try/catch executed directly in init means the constructor is doing work that\n  can fail (I/O, parsing, decoding) and is deciding how to recover at construction\n  time \u2014 often by fabricating a fallback (`catch { \"\" }`), which violates the\n  no-sentinel rule. Construction should be total and cheap; move fallible work\n  into a suspend factory that can fail explicitly or return a typed result.\n  Tenet: explicit construction over magic; no sentinel fabrication.\n  (A try/catch inside a lambda/callback defined in init runs at call time, not\n  construction time, and is intentionally NOT matched.)\nrule:\n  kind: try_expression\n  inside:\n    kind: anonymous_initializer\n    stopBy: end\n  not:\n    inside:\n      any:\n        - kind: lambda_literal\n        - kind: anonymous_function\n      stopBy: end\n",
     "badExample": "class Config(path: String) {\n    private val data: String\n    init {\n        data = try { readFile(path) } catch (e: Exception) { \"\" }\n    }\n}",
-    "goodExample": "class Config private constructor(val data: String)\nsuspend fun loadConfig(path: String): Config = Config(readFile(path)) // failure propagates"
+    "goodExample": "class Config private constructor(val data: String)\nsuspend fun loadConfig(path: String): Config = Config(readFile(path)) // failure propagates",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-any-typed-public-property",
     "severity": "warn",
     "yaml": "id: no-any-typed-public-property\nlanguage: kotlin\nseverity: warning\nrule:\n  all:\n    - kind: type_identifier\n      regex: '^Any$'\n    - inside:\n        kind: user_type\n        inside:\n          any:\n            - kind: class_parameter\n            - kind: variable_declaration\n            - kind: nullable_type\n              inside:\n                any:\n                  - kind: class_parameter\n                  - kind: variable_declaration\n    - inside:\n        stopBy: end\n        any:\n          - kind: class_parameter\n            all:\n              - has: { kind: binding_pattern_kind }\n              - not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal|protected' } } }\n              - inside:\n                  kind: primary_constructor\n                  inside:\n                    kind: class_declaration\n                    not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal' } } }\n          - kind: property_declaration\n            all:\n              - has: { kind: binding_pattern_kind }\n              - not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal|protected' } } }\n              - inside:\n                  kind: class_body\n                  inside:\n                    kind: class_declaration\n                    not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal' } } }",
     "badExample": "public class APICallError(public val data: Any? = null)",
-    "goodExample": "public class APICallError(public val data: JsonElement? = null)"
+    "goodExample": "public class APICallError(public val data: JsonElement? = null)",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-mutable-var-in-enum",
     "severity": "block",
     "yaml": "id: no-mutable-var-in-enum\nlanguage: kotlin\nseverity: error\nrule:\n  kind: property_declaration\n  has:\n    kind: binding_pattern_kind\n    regex: '^var$'\n  inside:\n    kind: enum_class_body",
     "badExample": "enum class Mode { A, B; var current: Int = 0 }",
-    "goodExample": "enum class Mode { A, B }  // carry mutable state outside the enum"
+    "goodExample": "enum class Mode { A, B }  // carry mutable state outside the enum",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-else-in-sealed-when",
@@ -74,7 +80,8 @@
     "severity": "warn",
     "yaml": "id: no-multiple-boolean-params\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: parameter\n  has:\n    kind: user_type\n    has: { kind: type_identifier, regex: '^Boolean$' }\n  follows:\n    kind: parameter\n    stopBy: end\n    has:\n      kind: user_type\n      has: { kind: type_identifier, regex: '^Boolean$' }",
     "badExample": "fun configure(includeUsage: Boolean, supportsStructuredOutputs: Boolean) {}",
-    "goodExample": "fun configure(options: Set<ConfigFlag>) {}  // or distinct enum/value-class params"
+    "goodExample": "fun configure(options: Set<ConfigFlag>) {}  // or distinct enum/value-class params",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-generate-id-sentinel",
@@ -95,7 +102,8 @@
     "severity": "block",
     "yaml": "id: no-globalscope\nlanguage: kotlin\nseverity: error\nmessage: \"GlobalScope is unstructured concurrency \u2014 coroutines launched here outlive every caller and cannot be cancelled.\"\nnote: \"Inject a CoroutineScope (or use coroutineScope { }/supervisorScope { }) so work is bound to a lifecycle.\"\nrule:\n  kind: simple_identifier\n  regex: '^GlobalScope$'\n  not:\n    inside:\n      kind: import_header\n      stopBy: end\n",
     "badExample": "GlobalScope.launch { drainPendingRequests() }",
-    "goodExample": "private val clientScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)\n// ...\nclientScope.launch { drainPendingRequests() }"
+    "goodExample": "private val clientScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)\n// ...\nclientScope.launch { drainPendingRequests() }",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-runblocking-in-common",
@@ -116,7 +124,8 @@
     "severity": "warn",
     "yaml": "id: no-suspend-fun-returning-flow\nlanguage: kotlin\nseverity: warning\nmessage: \"A `suspend fun` returning a cold `Flow` is redundant and confusing; drop `suspend` (the Flow is already lazy) or return the value the caller actually needs.\"\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: function_modifier\n          regex: '^suspend$'\n    - has:\n        kind: user_type\n        all:\n          - has:\n              kind: type_identifier\n              regex: '^Flow$'\n          - follows:\n              kind: function_value_parameters\n              stopBy: end",
     "badExample": "suspend fun events(): Flow<Event> = flow { emitAll(source) }",
-    "goodExample": "fun events(): Flow<Event> = flow { emitAll(source) }"
+    "goodExample": "fun events(): Flow<Event> = flow { emitAll(source) }",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-channel-unlimited",
@@ -256,7 +265,8 @@
     "severity": "warn",
     "yaml": "id: no-inline-json-instance\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: call_expression\n  all:\n    - has:\n        kind: simple_identifier\n        regex: '^Json$'\n    - has:\n        kind: call_suffix\n        has:\n          kind: annotated_lambda\n    - inside:\n        kind: function_body\n        stopBy: end\n",
     "badExample": "fun decode(text: String): Foo {\n    val json = Json { ignoreUnknownKeys = true }\n    return json.decodeFromString(text)\n}",
-    "goodExample": "private val fooJson = Json { ignoreUnknownKeys = true }\n\nfun decode(text: String): Foo = fooJson.decodeFromString(text)"
+    "goodExample": "private val fooJson = Json { ignoreUnknownKeys = true }\n\nfun decode(text: String): Foo = fooJson.decodeFromString(text)",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-open-serializable-polymorphic-base",
@@ -270,14 +280,16 @@
     "severity": "block",
     "yaml": "id: no-mutable-collection-in-public-fun\nlanguage: kotlin\nseverity: error\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: visibility_modifier\n          regex: '^public$'\n    - any:\n        - has:\n            kind: user_type\n            all:\n              - has:\n                  kind: type_identifier\n                  regex: '^Mutable(List|Map|Set)$'\n                  stopBy: end\n              - not:\n                  precedes:\n                    regex: '^\\.$'\n        - has:\n            kind: function_value_parameters\n            has:\n              kind: parameter\n              has:\n                kind: user_type\n                has:\n                  kind: type_identifier\n                  regex: '^Mutable(List|Map|Set)$'\n                  stopBy: end",
     "badExample": "public suspend fun addClientAuthentication(headers: MutableMap<String, String>, params: MutableMap<String, String>): Unit = Unit",
-    "goodExample": "public suspend fun addClientAuthentication(headers: Map<String, String>, params: Map<String, String>): Map<String, String> = headers + params"
+    "goodExample": "public suspend fun addClientAuthentication(headers: Map<String, String>, params: Map<String, String>): Map<String, String> = headers + params",
+    "hunkExpectation": "same"
   },
   {
     "id": "prefer-list-over-array-return-in-public-fun",
     "severity": "warn",
     "yaml": "id: prefer-list-over-array-return-in-public-fun\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: visibility_modifier\n          regex: '^public$'\n    - has:\n        kind: user_type\n        all:\n          - has:\n              kind: type_identifier\n              regex: '^Array$'\n              stopBy: end\n          - not:\n              precedes:\n                regex: '^\\.$'",
     "badExample": "public fun toolNames(): Array<String> = names.toTypedArray()",
-    "goodExample": "public fun toolNames(): List<String> = names.toList()"
+    "goodExample": "public fun toolNames(): List<String> = names.toList()",
+    "hunkExpectation": "same"
   },
   {
     "id": "prefer-value-class-over-typealias-primitive",
@@ -347,7 +359,8 @@
     "severity": "error",
     "yaml": "id: no-flat-lifecycle-event\nlanguage: kotlin\nseverity: error\n# A top-level `data class \u2026Event` MUST be a subtype of the sealed `AgentEvent`\n# hierarchy (have a `: AgentEvent()` supertype), never a free-floating flat\n# struct dispatched via nullable callbacks. Activated with the AgentEvent redesign.\nrule:\n  all:\n    - kind: class_declaration\n    - inside: { kind: source_file }\n    - has: { kind: type_identifier, regex: 'Event$', stopBy: neighbor }\n    - has: { kind: modifiers, has: { kind: class_modifier, regex: 'data' } }\n    - not: { has: { kind: delegation_specifier, stopBy: neighbor } }",
     "badExample": "public data class OnFooEvent(val x: Int)",
-    "goodExample": "public sealed class AgentEvent {\n    public data class Foo(val x: Int) : AgentEvent()\n}"
+    "goodExample": "public sealed class AgentEvent {\n    public data class Foo(val x: Int) : AgentEvent()\n}",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-camelcase-top-level-function",
@@ -387,8 +400,10 @@
     "yaml": "id: no-mutable-companion-state\nlanguage: kotlin\nseverity: error\n# Mutable `var` PROPERTY of a companion object = process-wide shared mutable singleton state.\n# Match only DIRECT companion properties (immediate parent is the companion's class_body) \u2014 the\n# previous `inside: companion_object, stopBy: end` over-matched, flagging function-local `var`s\n# inside companion METHODS (a false positive: locals are not shared state). Mirrors the correct\n# immediate-parent form of no-var-in-object-declaration.\nrule:\n  all:\n    - kind: property_declaration\n    - has: { kind: binding_pattern_kind, regex: \"^var$\" }\n    - inside:\n        kind: class_body\n        stopBy: neighbor\n        inside: { kind: companion_object, stopBy: neighbor }\n",
     "badExample": "class Provider {\n    companion object {\n        var cached: String? = null\n    }\n}\n",
     "goodExample": "class Provider {\n    companion object {\n        val cached: String? = null\n        fun next(): Int {\n            var local = 0\n            return local\n        }\n    }\n}\n",
-    "memberExample": "class Provider {\n    var cached: String? = null\n}\n",
-    "hunkUnsafe": true
+    "hunkUnsafe": true,
+    "memberExamples": [
+      "class Provider {\n    var cached: String? = null\n}\n"
+    ]
   },
   {
     "id": "no-not-null-assertion",
@@ -417,8 +432,10 @@
     "yaml": "id: no-public-mutable-var\nlanguage: kotlin\nseverity: error\nrule:\n  all:\n    - kind: property_declaration\n    - has: { kind: binding_pattern_kind, regex: \"^var$\" }\n    - inside: { kind: class_body }\n  not:\n    has: { kind: visibility_modifier, regex: \"^(private|internal|protected)$\", stopBy: end }\n",
     "badExample": "class Session {\n    public var status: String = \"\"\n}\n",
     "goodExample": "class Session {\n    private var status: String = \"\"\n}\n",
-    "memberExample": "class Session {\n    private var status: String = \"\"\n}\n",
-    "hunkUnsafe": true
+    "hunkUnsafe": true,
+    "memberExamples": [
+      "class Session {\n    private var status: String = \"\"\n}\n"
+    ]
   },
   {
     "id": "no-sealed-interface",
@@ -447,8 +464,10 @@
     "yaml": "id: no-top-level-mutable-var\nlanguage: kotlin\nseverity: error\nrule:\n  all:\n    - kind: property_declaration\n    - has: { kind: binding_pattern_kind, regex: \"^var$\" }\n    - inside: { kind: source_file }\n",
     "badExample": "public var globalState: String = \"\"\n",
     "goodExample": "public val globalState: String = \"\"\n",
-    "memberExample": "class Session {\n    public var globalState: String = \"\"\n}\n",
-    "hunkUnsafe": true
+    "hunkUnsafe": true,
+    "memberExamples": [
+      "class Session {\n    public var globalState: String = \"\"\n}\n"
+    ]
   },
   {
     "id": "no-typealias-string",
