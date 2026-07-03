@@ -608,6 +608,7 @@ verify = "before/after branch numbers in note; new tests behavioral and passing;
 # [2026-07-03] done: branch coverage 49.92% (12418/24878) -> 50.71% (12615/24878); Google 16/50, GatewayContentEncoder 34/38, GatewayContentDecoder 23/32, Streaming 172/284; floor raised to 49; commit pending
 # [2026-07-03] verification: branch 49.92% (12418/24878) -> 50.71% (12615/24878); target counters Google 16/50, encoder 34/38, decoder 23/32, Streaming 172/284; floor 49 with fail probe; final SHA in fleet report
 # [2026-07-03] VERIFIED at 2deca6e: orchestrator re-measured BRANCH 12615/24878 = 50.71% exact match (before-delta vs HD-02 explained: HD-06 code growth raised total 24834->24878); floor 49 live with fail-probe evidence (kover-verify basis 50.58 vs XML 50.71 — known dual-basis, margin ~1.6pp); ci-gate + koverVerify green on my run. Test quality: StreamEventWireFormatTest asserts serial-name stability (streaming wire contract) + polymorphic Poko-leaf round-trips — retroactively deepens the D1 Poko+Serializable canary. Cluster gains: Encoder 34/38, Decoder 23/32, Streaming 172/284, Google 16/50. Branch coverage journey this campaign: 44-era floors -> 50.71% actual / 49 floor.
+# [2026-07-03] RECONCILE 2026-07-03 (appended, HD-12 discovery): this slice grew GoogleProviderTest.kt past its architecture budget (740 vs 659) and added HardeningBranchCoverageTest.kt (503 lines) without a budget entry — the reseed-in-same-commit-as-growth law was missed by builder AND by orchestrator verification (neither ran tools/beta-readiness-check; ci-gate does not include it). Red discovered by HD-12s extra check. Remediation: HD-15 reseed + HD-16 gate wiring.
 
 [[items]]
 id = "HD-09"
@@ -647,9 +648,10 @@ id = "HD-12"
 phase = "hd"
 title = "CHANGELOG + INTERFACE_CONTRACT entries for HD-06s observable behavior change: cancellation is no longer swallowed by broad catch(Throwable) sites — CancellationException now propagates through telemetry dispatch, generate replay, retry classification, completion fallback, agent submit (settles Cancelled), smooth-stream flush, structured-object phases, tool loop paths, MCP elicitation, repair fallback, UI stream wrapper; safeValidateUIMessages narrowed from catch(Throwable) to catch(IllegalArgumentException) (non-IAE now propagates); parallel tool executor distinguishes worker cancellation from user abort. Zero signature changes (ABI dumps untouched) but consumers observe different exception flow — beta-pending CHANGELOG must say so. Also add a one-paragraph HD-era hardening summary (coverage floors, new gates) to CHANGELOG under Unreleased. Cite measurement keys, do not restate numbers (per dev/measurements.toml law)."
 files = ["CHANGELOG.md", "INTERFACE_CONTRACT.md"]
-status = "done"
+status = "verified"
 verify = "entries accurate against the 2d52974 diff; no restated numbers (keys cited); ci-gate green"
 # [2026-07-03] done: documented HD-06 cancellation propagation, safeValidateUIMessages narrowing, worker-cancel vs abort distinction, and Unreleased hardening summary using measurement keys; ci-gate PASS; beta-readiness red is pre-existing architecture-budget drift outside docs-only slice
+# [2026-07-03] VERIFIED at c872f18 (code review only per new cadence — builder gate results trusted): CHANGELOG Unreleased + INTERFACE_CONTRACT cancellation-contract sections accurate against the 2d52974 diff reviewed at HD-06; safeValidateUIMessages contract note precise; all metric mentions are ledger-key citations (spot-checked keys exist). BUILDER EXTRA-CHECK FINDING accepted as real: beta-readiness RED from architecture-budget drift introduced by HD-08 test growth (GoogleProviderTest 740 vs 659 budget; HardeningBranchCoverageTest 503 unbudgeted) — invisible since 2deca6e because the budget check runs only in CI beta_readiness (never fires on branch pushes) and is NOT in ci-gate.sh. Spawns HD-15 (reseed) + HD-16 (wire into per-commit gate).
 
 [[items]]
 id = "HD-13"
@@ -666,3 +668,19 @@ title = "Branch-coverage slice 3: GoogleProvider (16/50 after HD-08, weakest rem
 files = ["src/commonTest/kotlin/", "build.gradle.kts", "dev/measurements.toml"]
 status = "todo"
 verify = "before/after via measurements CLI supersede; behavioral tests pass; floor re-ratcheted with probe if gains; gradle check + ci-gate green"
+
+[[items]]
+id = "HD-15"
+phase = "hd"
+title = "Clear the beta-readiness RED: reseed architecture-budget.json for HD-08s legitimate test growth — GoogleProviderTest.kt to its current line count (740 at c872f18) and a new entry for HardeningBranchCoverageTest.kt (503) — smallest reviewed increase, per the ratchet law that HD-08 missed (reconcile on HD-08). Use the budget tools own update mechanism if it has one (read tools/check-architecture-budget.mjs first); otherwise hand-edit the json to exact current counts. tools/beta-readiness-check must go RED->GREEN in your verification; state exact before/after entry values in the ledger note. ONE mechanism, docs/json only, no source changes."
+files = ["architecture-budget.json"]
+status = "todo"
+verify = "beta-readiness-check exits 0; budget entries equal current line counts exactly (no headroom padding); ci-gate green"
+
+[[items]]
+id = "HD-16"
+phase = "hd"
+title = "Close the LP-1 gap HD-12 surfaced: the architecture-budget ratchet (and the rest of tools/beta-readiness-check if cheap) runs ONLY in CIs beta_readiness step, which never fires on branch pushes — drift stays invisible locally (proven: HD-08s growth rode 6 landings undetected). Wire the architecture-budget check into ci-gate.sh as a per-commit section (same idiom as the data-class budget gate line); measure the latency delta and append it as a measurements-ledger supersede of ci_gate_wall_clock_s if it moves the number materially; if the FULL beta-readiness-check is fast enough (<2s), prefer wiring the whole tool and state which you chose and why in the note. Fail-direction probe: temporarily lower one budget entry -> ci-gate exits 1 -> restore. ONE mechanism, one slice."
+files = [".claude/hooks/rules/ci-gate.sh", "dev/measurements.toml"]
+status = "todo"
+verify = "drift simulation fails ci-gate (probe shown); pristine tree passes; latency delta measured and recorded; expected-gates ledger unaffected or updated consistently"
