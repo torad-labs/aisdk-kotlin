@@ -1,0 +1,8 @@
+id: py-no-direct-child-parent-eq
+language: python
+severity: warning
+message: "Path.parent == ROOT only matches direct children; use ROOT in path.parents when nested descendants must be guarded."
+rule:
+  any:
+    - pattern: $PATH.parent == $ROOT
+    - pattern: $ROOT == $PATH.parent
