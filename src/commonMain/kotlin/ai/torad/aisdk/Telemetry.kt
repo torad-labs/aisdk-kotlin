@@ -269,6 +269,7 @@ private object TelemetryBroadcast {
             } catch (ce: CancellationException) {
                 throw ce
             } catch (t: Throwable) {
+                CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
                 logger.warn("telemetry integration '${integration.name}' threw — event dropped for it", t)
             }
         }

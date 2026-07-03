@@ -1,0 +1,25 @@
+id: no-core-import-providers
+language: kotlin
+severity: error
+message: "Non-provider code imports ai.torad.aisdk.providers — core/protocol/ui/middleware must not depend on provider implementations (Konsist: 'core agent protocol and ui layers do not import provider implementations')."
+note: >-
+  A file whose package is NOT ai.torad.aisdk.providers (or a providers
+  subpackage) imports ai.torad.aisdk.providers. Provider implementations are
+  a leaf layer: everything else (core agent runtime, protocol codecs, ui,
+  middleware) depends on the provider-agnostic Provider/LanguageModel
+  abstractions, never a concrete provider class. Mirrors the whole-codebase
+  Konsist test `core agent protocol and ui layers do not import provider
+  implementations` (src/jvmTest/kotlin/ai/torad/aisdk/arch/KonsistArchitectureTest.kt),
+  adding edit-time (Claude) protection for an invariant Konsist only catches
+  at `./gradlew check` time.
+rule:
+  kind: import_header
+  has: { kind: identifier, regex: '^ai\.torad\.aisdk\.providers(\.|$)', stopBy: end }
+  inside:
+    kind: source_file
+    stopBy: end
+    not:
+      has:
+        kind: package_header
+        stopBy: end
+        has: { kind: identifier, regex: '^ai\.torad\.aisdk\.providers(\.|$)', stopBy: end }

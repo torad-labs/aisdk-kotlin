@@ -1,5 +1,8 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
@@ -87,7 +90,6 @@ internal object ToolLoopParallelExecution {
         applyCompletion: suspend (OrderedToolCompletion) -> Unit,
     ): Boolean {
         if (toolCalls.isEmpty()) return false
-
         var sawAbort = false
         coroutineScope {
             val signals = Channel<ParallelToolSignal>(policy.progressBufferCapacity)
@@ -104,26 +106,7 @@ internal object ToolLoopParallelExecution {
                 }
             }
 
-            val workers = List(workerCount) {
-                launch {
-                    for (item in work) {
-                        try {
-                            val progressOut = ChannelToolEventCollector(signals)
-                            signals.send(ParallelToolSignal.Completed(executeCall(item.index, item.call, progressOut)))
-                        } catch (abort: AbortError) {
-                            // AbortError is a cooperative user stop, not a structural failure of the
-                            // scheduler. Send the terminal marker while unwinding so the parent count
-                            // completes and the loop can emit exactly one StreamEvent.Abort.
-                            withContext(NonCancellable) {
-                                signals.send(
-                                    ParallelToolSignal.Completed(OrderedToolCompletion.Aborted(item.index)),
-                                )
-                            }
-                            throw abort
-                        }
-                    }
-                }
-            }
+            val workers = startWorkers(workerCount, work, signals, executeCall)
             // The collector is driven by worker-pool shutdown, not by total queued call count:
             // abort can end every worker while unstarted calls remain in `work`.
             launch {
@@ -151,5 +134,43 @@ internal object ToolLoopParallelExecution {
             if (nextToApply < toolCalls.size) sawAbort = true
         }
         return sawAbort
+    }
+
+    private fun CoroutineScope.startWorkers(
+        workerCount: Int,
+        work: Channel<IndexedToolCall>,
+        signals: Channel<ParallelToolSignal>,
+        executeCall: suspend (Int, ContentPart.ToolCall, FlowCollector<StreamEvent>) -> OrderedToolCompletion,
+    ): List<Job> = List(workerCount) {
+        launch {
+            for (item in work) {
+                try {
+                    val progressOut = ChannelToolEventCollector(signals)
+                    signals.send(ParallelToolSignal.Completed(executeCall(item.index, item.call, progressOut)))
+                } catch (abort: AbortError) {
+                    // AbortError is a cooperative user stop, not a structural failure of the
+                    // scheduler. Send the terminal marker while unwinding so the parent count
+                    // completes and the loop can emit exactly one StreamEvent.Abort.
+                    withContext(NonCancellable) {
+                        signals.send(
+                            ParallelToolSignal.Completed(OrderedToolCompletion.Aborted(item.index)),
+                        )
+                    }
+                    throw abort
+                } catch (cancellation: CancellationException) {
+                    throw signals.closeWithStructuralCancellation(cancellation)
+                }
+            }
+        }
+    }
+
+    private fun Channel<ParallelToolSignal>.closeWithStructuralCancellation(
+        cause: CancellationException,
+    ): CancellationException {
+        // Child CancellationException is otherwise normal child completion in coroutineScope;
+        // closing with the cause makes the parent collector rethrow instead of treating a
+        // missing completion as cooperative abort.
+        close(cause)
+        return cause
     }
 }

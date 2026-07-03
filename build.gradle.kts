@@ -7,6 +7,7 @@ import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
@@ -22,7 +23,16 @@ plugins {
 }
 
 group = providers.gradleProperty("GROUP").get()
-version = providers.gradleProperty("VERSION_NAME").get()
+val releaseVersion = providers.gradleProperty("VERSION_NAME").get()
+val snapshotPublishEnabled = providers.environmentVariable("SNAPSHOT_PUBLISH").map {
+    it == "1" || it.equals("true", ignoreCase = true)
+}.orElse(false)
+version = if (snapshotPublishEnabled.get()) {
+    providers.environmentVariable("SNAPSHOT_VERSION").orNull
+        ?: "${releaseVersion.removeSuffix("-SNAPSHOT")}-SNAPSHOT"
+} else {
+    releaseVersion
+}
 
 val detektCliRuntime by configurations.creating
 val detektPluginClasspath by configurations.creating
@@ -37,6 +47,11 @@ abstract class DetektPluginsArgumentProvider : CommandLineArgumentProvider {
 
 kotlin {
     jvmToolchain(21)
+
+    compilerOptions {
+        languageVersion.set(KotlinVersion.KOTLIN_2_3)
+        apiVersion.set(KotlinVersion.KOTLIN_2_3)
+    }
 
     // Phase 3 (Kotlin modernization): STRICT explicit API mode — every public
     // declaration must carry an explicit visibility modifier and an explicit
@@ -141,6 +156,9 @@ kotlin {
         androidMain { dependsOn(jvmAndAndroidMain) }
 
         commonMain.dependencies {
+            // Keep JVM/Android consumers on the oldest stdlib accepted by our public
+            // dependency floor; klib consumers still need this artifact's producer KGP.
+            api(kotlin("stdlib", "2.3.21"))
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.serialization.json)
             api(libs.ktor.client.core)
@@ -254,18 +272,18 @@ kover {
             }
         }
         verify {
-            // Current aggregate coverage from build/reports/kover/report.xml:
-            //   line 81.32%, instruction 71.95%, branch 44.01%.
+            // Actuals: run ./gradlew koverXmlReport, then update dev/measurements.toml
+            // through dev/measurements_ledger.py (coverage_* keys). Do not restate numbers here.
             // These beta gates leave a small ratchet margin so incidental line
             // churn can land with tests, while material regressions fail `check`.
             rule("line coverage ratchet") {
-                minBound(80, CoverageUnit.LINE, AggregationType.COVERED_PERCENTAGE)
+                minBound(82, CoverageUnit.LINE, AggregationType.COVERED_PERCENTAGE)
             }
             rule("instruction coverage ratchet") {
-                minBound(70, CoverageUnit.INSTRUCTION, AggregationType.COVERED_PERCENTAGE)
+                minBound(76, CoverageUnit.INSTRUCTION, AggregationType.COVERED_PERCENTAGE)
             }
             rule("branch coverage ratchet") {
-                minBound(43, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)
+                minBound(50, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)
             }
         }
     }
@@ -296,6 +314,22 @@ tasks.named("check").configure {
 // the publication itself is finalized in the later publishing pass.
 dokka {
     moduleName.set(providers.gradleProperty("POM_NAME"))
+    dokkaSourceSets.configureEach {
+        sourceLink {
+            localDirectory.set(file("src"))
+            remoteUrl("https://github.com/torad-labs/aisdk-kotlin/blob/v$version/src")
+            remoteLineSuffix.set("#L")
+        }
+        externalDocumentationLinks.register("kotlinx-coroutines") {
+            url("https://kotlinlang.org/api/kotlinx.coroutines/")
+        }
+        externalDocumentationLinks.register("kotlinx-serialization") {
+            url("https://kotlinlang.org/api/kotlinx.serialization/")
+        }
+        externalDocumentationLinks.register("ktor") {
+            url("https://api.ktor.io/")
+        }
+    }
 }
 
 val dokkaJavadocJar by tasks.registering(Jar::class) {
@@ -320,6 +354,17 @@ publishing {
         maven {
             name = "LocalStaging"
             url = uri(layout.buildDirectory.dir("staging-deploy"))
+        }
+        // Deliberate snapshot channel for main-branch nightlies. Release/staging
+        // repositories below still reject SNAPSHOT versions unless this repository
+        // is explicitly selected with SNAPSHOT_PUBLISH=1.
+        maven {
+            name = "CentralSnapshots"
+            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+            credentials {
+                username = providers.environmentVariable("SONATYPE_USERNAME").orNull
+                password = providers.environmentVariable("SONATYPE_PASSWORD").orNull
+            }
         }
     }
 
@@ -396,7 +441,24 @@ tasks.named("checkKotlinAbi").configure {
 tasks.withType<PublishToMavenRepository>().configureEach {
     doFirst {
         val repoName = repository.name
-        require(!version.toString().endsWith("-SNAPSHOT")) {
+        val isSnapshotRepository = repoName == "CentralSnapshots"
+        val isSnapshotVersion = version.toString().endsWith("-SNAPSHOT")
+        if (isSnapshotRepository) {
+            require(snapshotPublishEnabled.get()) {
+                "Publication to CentralSnapshots requires SNAPSHOT_PUBLISH=1 so snapshots are deliberate."
+            }
+            require(isSnapshotVersion) {
+                "Publication to CentralSnapshots requires a -SNAPSHOT version; got $version."
+            }
+            require(
+                providers.environmentVariable("SONATYPE_USERNAME").isPresent &&
+                    providers.environmentVariable("SONATYPE_PASSWORD").isPresent,
+            ) {
+                "Publication to CentralSnapshots requires SONATYPE_USERNAME and SONATYPE_PASSWORD credentials."
+            }
+            return@doFirst
+        }
+        require(!isSnapshotVersion) {
             "Publication to $repoName requires a stable VERSION_NAME; refusing to publish SNAPSHOT version $version."
         }
         require(signingKey.isPresent && signingPassword.isPresent) {

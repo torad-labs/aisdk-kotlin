@@ -1,0 +1,22 @@
+id: no-public-expect-declaration
+language: kotlin
+severity: error
+message: "A public (or non-internal) expect declaration leaks a platform bridge into the public ABI; every existing expect/actual seam in this SDK is internal."
+note: >-
+  expect/actual seams are platform-bridge implementation details, not
+  consumer-facing API. The Kotlin compiler already enforces
+  actual-exists-per-target on its own (a missing actual is a compile error,
+  not something ast-grep needs to check) — but it does not enforce visibility
+  discipline. All 4 existing commonMain expect declarations (SecureRandom.kt's
+  SecureRandom, MCP.kt's CreateMCPStdioProcess, JvmInteropAnnotations.kt's
+  AiSdkJvmStatic, AbortSignal.kt's AbortErrorCancellationBridge) are internal;
+  keep new ones internal too so a platform bridge never becomes an ABI
+  commitment across every target.
+rule:
+  kind: modifiers
+  all:
+    - has: { kind: platform_modifier, regex: '^expect$' }
+    - not:
+        has:
+          kind: visibility_modifier
+          regex: '^(private|internal|protected)$'

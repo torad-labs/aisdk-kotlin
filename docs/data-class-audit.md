@@ -10,7 +10,11 @@ ratchet that blocks new public `data class`es and ratchets down as types migrate
 - **Approach:** `@Poko class` for growable read-only types; builders for
   construct-types; `data class` only for genuinely-frozen small value types.
 - **Scope:** audit all public `data class`es case-by-case.
-- **Current budget:** `378` public `data class` declarations in commonMain (seed).
+- **Current enforced budget:** `40` true public-ABI `data class` declarations in
+  commonMain, measured by the scope-aware ast-grep rule
+  `.claude/hooks/rules/public-abi-data-class.yaml`.
+- **Historical audit seed:** the original regex pass found `378` declarations,
+  including non-public nested/local artifacts and pre-remediation candidates.
 
 ## D11 reclassification (owner-overridable) — 2026-06-30
 
@@ -39,8 +43,8 @@ _Generated 2026-06-30 by an automated classification pass over `src/commonMain/k
 | **BUILDER-front** | 139 | Consumer-built construct types (settings / options / params / config / credentials) — front with a builder/DSL; backing class becomes internal. |
 | **KEEP `data class`** | 34 | Genuinely-frozen small value/ref/wire-fixed types (2D-point carve-out). |
 | **REVIEW** | 10 | Genuine uncertainty — decide per-type before migrating (concern noted). |
-| **NON-PUBLIC (gate artifact)** | 17 | Counted by the budget regex but nested in `internal`/`private`/function-local scope — **not real public ABI**. De-`data`'ing them reclaims budget at zero ABI risk. |
-| **TOTAL** | 378 | Matches the `data-class-budget.json` seed. |
+| **NON-PUBLIC (resolved instrument artifact)** | 17 | Counted by the original budget regex but nested in `internal`/`private`/function-local scope — **not real public ABI**. The scope-aware gate no longer counts these. |
+| **TOTAL** | 378 | Matched the original regex audit seed; the current enforced budget is the 40 true public-ABI KEEP floor. |
 
 Legend in tables: **f** = primary-ctor arity (approx; lambda/arrow types may skew by ±1). **Ser** ✅ = `@Serializable`. **⟳** = its `copy()` is used internally, so demotion requires rewriting those call sites to fresh-construct.
 
@@ -569,9 +573,15 @@ generation-input/prompt/content sealed leaves, `Raw`/`Json`/`Pattern` leaves,
 
 _No remaining REVIEW rows after the Batch 18 KEEP-floor audit._
 
-### NON-PUBLIC gate artifacts (17) — not real public ABI
+### NON-PUBLIC gate artifacts (17) — resolved by scope-aware measurement
 
-These match the budget regex but are nested in `internal`/`private`/function-local scope, so demoting them gives **zero ABI benefit** — but converting them off `data` (or `@Poko`) is a **free, risk-less budget reduction**. Optional pre-batch ("Batch D0").
+These matched the original budget regex but are nested in
+`internal`/`private`/function-local scope, so demoting them gives **zero ABI
+benefit**. HD-01 replaced the regex instrument with the scope-aware ast-grep
+measurement rule `.claude/hooks/rules/public-abi-data-class.yaml`, so these rows
+are no longer counted by `data-class-budget.json`; the enforced budget ratcheted
+from 57 to 40 in the same commit. The table remains as a historical record of
+the false-positive class.
 
 | File | Line | Type | f | Why non-public |
 |---|---:|---|---:|---|

@@ -14,8 +14,24 @@ set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT"
 RULES_DIR=".claude/hooks/rules/kotlin"
-AG="$(command -v ast-grep || echo "$HOME/.local/bin/ast-grep")"
+if [ -z "${AG:-}" ]; then
+  if [ -x "$ROOT/node_modules/.bin/ast-grep" ]; then
+    AG="$ROOT/node_modules/.bin/ast-grep"
+  else
+    AG="$(command -v ast-grep || echo "$HOME/.local/bin/ast-grep")"
+  fi
+fi
 [ -x "$AG" ] || { echo "ci-gate: ast-grep not found"; exit 2; }
+expected_ag_version="$(node -e "const v = require('./package.json').devDependencies['@ast-grep/cli']; if (!v) process.exit(1); console.log(v)")" || {
+  echo "ci-gate: cannot read package.json @ast-grep/cli version"
+  exit 2
+}
+actual_ag_version="$("$AG" --version 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+[.][0-9]+[.][0-9]+$' | tail -1)"
+if [ "$actual_ag_version" != "$expected_ag_version" ]; then
+  echo "ci-gate: ast-grep version mismatch: $AG reports ${actual_ag_version:-unknown}, package.json pins @ast-grep/cli=$expected_ag_version."
+  echo "Use the GH-13-pinned ast-grep version locally (for example, run npm ci) or update package.json together with the CI AST_GREP_VERSION/AST_GREP_SHA256 pin."
+  exit 1
+fi
 
 fail=0
 
@@ -43,7 +59,7 @@ for f in "$RULES_DIR"/*.yaml; do
     no-camelcase-top-level-function)
       dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin src/commonTest/kotlin" ;;
     *)
-      dirs="src/commonMain/kotlin" ;;
+      dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin" ;;
   esac
   n=$(count "$f" "$dirs")
   if [ "$n" -gt 0 ] 2>/dev/null; then
@@ -54,20 +70,50 @@ for f in "$RULES_DIR"/*.yaml; do
 done
 [ "$fail" = 0 ] && echo "  ok: 0 error-rule violations"
 
+echo "== cancellation correctness warning report =="
+warning_dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin"
+ag_name=AG
+ag_path="${!ag_name}"
+for warning_rule in no-throwable-catch-without-rethrow no-runcatching-in-suspend; do
+  warning_file=".claude/hooks/rules/kotlin/$warning_rule.yaml"
+  n=$(count "$warning_file" "$warning_dirs")
+  echo "  $warning_rule: $n warning(s)"
+  if [ "$n" -gt 0 ] 2>/dev/null; then
+    "$ag_path" scan --rule "$warning_file" $warning_dirs 2>/dev/null | head -12
+  fi
+done
+
 echo "== non-integrated (internal, cross-file) gate =="
 python3 .claude/hooks/rules/detect-nonintegrated-kotlin.py src --check || fail=1
 
 echo "== ast-grep rule self-test gate =="
 python3 .claude/hooks/rules/validate_rules.py "$RULES_DIR" || fail=1
-python3 .claude/hooks/rules/validate_rules.py --manifest .claude/hooks/rules/manifest.json || fail=1
+python3 .claude/hooks/rules/validate_rules.py --manifest .claude/hooks/rules/manifest.json --autofix-registry .claude/hooks/rules/autofix-registry.json || fail=1
 python3 .claude/hooks/rules/validate_rules.py --hunk-mode .claude/hooks/rules/manifest.json || fail=1
+echo "== ast-grep autofix pre-pass =="
+python3 .claude/hooks/rules/validate_rules.py --apply-autofix .claude/hooks/rules/autofix-registry.json src/commonMain/kotlin src/commonTest/kotlin || exit 1
 node tools/run-gate-fixtures.mjs || fail=1
+
+echo "== consumer migration rule gate =="
+python3 .claude/hooks/rules/validate_migration_rules.py docs/migrations || fail=1
+
+echo "== python guard-rule gate =="
+python3 .claude/hooks/rules/validate_python_guard_rules.py || fail=1
+
+echo "== restated measurement detector =="
+python3 .claude/hooks/rules/detect-restated-measurements.py --check || fail=1
+
+echo "== orphan gate detector =="
+python3 .claude/hooks/rules/detect-orphan-gates.py || fail=1
 
 echo "== tool occurrence identity gate =="
 python3 .claude/hooks/rules/detect-tool-identity-regressions.py src/commonMain/kotlin --check || fail=1
 
 echo "== public data-class budget gate =="
 python3 .claude/hooks/rules/detect-public-data-class-budget.py src/commonMain/kotlin --check || fail=1
+
+echo "== beta readiness gate =="
+tools/beta-readiness-check || fail=1
 
 echo "== release workflow trust gate =="
 python3 .claude/hooks/rules/detect-release-workflow-trust.py .github/workflows/release.yml --check || fail=1

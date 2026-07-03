@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.GoogleInteractions
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -24,5 +25,24 @@ class GoogleInteractionsDefensiveParsingTest {
         val usage = GoogleInteractions.googleInteractionsUsage(element)
 
         assertEquals(0, usage.inputTokens.total, "a non-primitive token count degrades to 0, no crash")
+    }
+
+    @Test
+    fun `unknown annotation type surfaces as raw source metadata`() {
+        val annotation = buildJsonObject {
+            put("type", "future_citation")
+            put("url", "https://source.test")
+            put("title", "Future source")
+        }
+
+        val source = GoogleInteractions.googleInteractionsAnnotationSources(
+            JsonArray(listOf(annotation)),
+            generateId = { "source-1" },
+            metadata = null,
+        ).single()
+
+        assertEquals(StreamEvent.SourcePart.SourceType.Url, source.sourceType)
+        assertEquals("https://source.test", source.url)
+        assertEquals(annotation, source.providerMetadata.toMap()["google"])
     }
 }

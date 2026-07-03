@@ -47,10 +47,31 @@ but must be explained in the changelog.
 
 ## Kotlin Version Policy
 
-The SDK publishes Kotlin Multiplatform artifacts, so Kotlin compiler, standard
-library, and Gradle plugin compatibility is part of the consumer contract. The
-exact supported consumer Kotlin range and update cadence are planned in BP-02;
-until that lands, do not infer a compatibility range from this document.
+The SDK is built with the current Kotlin producer toolchain, but JVM and
+Android consumers should not be forced to update their Kotlin plugin solely
+because this project did. The build disables Kotlin Gradle Plugin's default
+stdlib dependency and publishes the oldest stdlib accepted by the public
+dependency floor.
+
+For `0.3.0-beta01`, JVM and Android consumers are supported with Kotlin
+`2.3.21` or newer. The artifact is produced with Kotlin `2.4.0`, but the SDK
+source is compiled with Kotlin `2.3` language/API settings and publishes
+`kotlin-stdlib:2.3.21`. The public dependency floor is compatible with that
+choice: Ktor `3.5.0` declares `kotlin-stdlib:2.3.21`, kotlinx.serialization
+`1.11.0` declares `2.3.20`, and kotlinx.coroutines `1.11.0` declares `2.2.20`.
+Library source cannot use Kotlin `2.4` language features while this pin is in
+place; that failure is intentional because it protects the documented consumer
+floor.
+
+Kotlin Multiplatform klib consumers are separate: they need the Kotlin Gradle
+Plugin version that can consume this release's klib metadata. For
+`0.3.0-beta01`, that floor is Kotlin `2.4.0` or a compatible newer KGP because
+the published klibs are produced by Kotlin `2.4.0`.
+
+Raising the JVM/Android consumer Kotlin floor, changing the klib KGP floor, or
+moving the producer toolchain in a way that changes published metadata is a
+consumer-visible compatibility event. It must be called out in the changelog
+and this policy.
 
 ## Related Compatibility Rules
 

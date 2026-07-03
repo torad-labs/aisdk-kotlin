@@ -1,5 +1,6 @@
 package ai.torad.aisdk.ui
 
+import ai.torad.aisdk.CancellationExceptions
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.aiSdkOutputJson
 import dev.drewhamilton.poko.Poko
@@ -104,6 +105,7 @@ public fun CreateUiMessageStream(
     } catch (t: CancellationException) {
         throw t
     } catch (t: Throwable) {
+        CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
         send(onError(t))
     }
 }
@@ -228,8 +230,8 @@ public object UiMessageStreams {
             require(messages != null) { "messages parameter must be provided" }
             validateUiMessages(messages)
             SafeValidateUIMessagesResult.Success(messages)
-        } catch (t: Throwable) {
-            SafeValidateUIMessagesResult.Failure(t)
+        } catch (error: IllegalArgumentException) {
+            SafeValidateUIMessagesResult.Failure(error)
         }
 
     /** @since 0.3.0-beta01 */

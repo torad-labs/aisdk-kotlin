@@ -4,6 +4,25 @@ All notable changes to this project will be documented here.
 
 This project follows Semantic Versioning once the first stable release is cut.
 
+## Unreleased
+
+- Cancellation hardening: broad `catch(Throwable)` paths no longer swallow
+  coroutine cancellation in telemetry dispatch, memoized stream replay, retry
+  classification, completion fallback, agent submit, smooth-stream flushing,
+  structured-object phases, tool-loop model/prepare/tool paths, MCP elicitation,
+  tool-call repair fallback, provider stream parsing, or UI stream wrappers.
+  `safeValidateUIMessages` now converts only `IllegalArgumentException` into a
+  safe validation failure; unexpected non-validation failures propagate. Parallel
+  tool execution also distinguishes cooperative user abort from structurally
+  cancelled worker coroutines, so worker cancellation no longer completes a step
+  as a normal abort turn.
+- HD-era hardening summary: measured coverage, gate, and ratchet state now lives
+  in `dev/measurements.toml` and is cited by key instead of copied into docs:
+  `[meas: coverage_line_percent]`, `[meas: coverage_instruction_percent]`,
+  `[meas: coverage_branch_percent]`, `[meas: kover_branch_floor_percent]`,
+  `[meas: ast_grep_rule_count]`, `[meas: gate_fixture_harness_checks]`,
+  `[meas: public_data_class_floor]`, and `[meas: ci_gate_wall_clock_s]`.
+
 ## 0.3.0-beta01
 
 - Beta-readiness hardening: tool execution now uses an explicit bounded `ToolExecutionPolicy` (default `maxParallelToolCalls=8`, `maxToolCallsPerStep=128`) so a model cannot create unbounded child coroutines or in-step tool work. The loop now surfaces typed `AgentError.MaxToolCallsPerStepExceeded` and `AgentError.ToolExecutionTimedOut` failures.
