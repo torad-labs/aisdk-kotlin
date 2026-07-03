@@ -363,7 +363,7 @@ id = "BP-01"
 phase = "bp"
 title = "Published evolution policy (EVOLUTION.md or contract section), Apollo-style per-stage guarantees + deprecation timeline (>=1 minor WARNING -> >=1 ERROR -> removal at major) + Kotlin-version update policy. Consolidates AR-33/RR-07."
 files = ["docs/"]
-status = "todo"
+status = "in_flight"
 
 [[items]]
 id = "BP-02"
@@ -391,14 +391,14 @@ id = "BP-05"
 phase = "bp"
 title = "POM enrichment: issueManagement + ciManagement blocks (verified absent), unique artifact description; verify klibs.io listing ~1 month post-beta."
 files = ["build.gradle.kts", "gradle.properties"]
-status = "todo"
+status = "in_flight"
 
 [[items]]
 id = "BP-06"
 phase = "bp"
 title = "Artifact provenance attestations: actions/attest over staged release bundle (SLSA, Sigstore, free for public repos); document gh attestation verify for consumers. Trust gate stays green."
 files = [".github/workflows/release.yml"]
-status = "todo"
+status = "in_flight"
 
 [[items]]
 id = "BP-07"
