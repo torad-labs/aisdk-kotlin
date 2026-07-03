@@ -62,6 +62,11 @@ def main() -> int:
 
 
 def _run_pretooluse(target: Path, data: dict[str, Any]) -> int:
+    # Events arriving through this adapter are, by construction, the builder
+    # session's tool calls. Stamp them so repo policy modules can enforce the
+    # fleet protocol (orchestrator-owned files, no builder pushes) structurally.
+    data = dict(data)
+    data["fleet_role"] = "builder"
     first = _run_once(target, data)
     if _forward_if_blocking(first) or _fail_closed_if_nonzero(first, target):
         return 0
