@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -62,8 +63,7 @@ class ToolMetadataTest {
         val ts: ToolSet<Unit> = ToolSet(t)
 
         // WHEN — consumers reach into the toolset for the metadata bag.
-        val found = ts.find("telemetry")
-            ?: error("toolset must surface the tool by name")
+        val found = assertNotNull(ts.find("telemetry"), "toolset must surface the tool by name")
 
         // THEN
         assertEquals(JsonPrimitive(0.1), found.metadata["sample-rate"])

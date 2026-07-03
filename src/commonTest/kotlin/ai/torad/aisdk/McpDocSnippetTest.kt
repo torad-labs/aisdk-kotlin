@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.fail
 
 /** Compiles and executes the MCP wiki snippets that do not require a live MCP server. */
 class McpDocSnippetTest : MCPClientTestBase() {
@@ -13,7 +14,7 @@ class McpDocSnippetTest : MCPClientTestBase() {
     fun `mcp wiki transport config and client factory snippets compile and run`() = runTest {
         val httpClient = HttpClient(
             MockEngine {
-                error("MCP documentation snippets should not make network requests.")
+                fail("MCP documentation snippets should not make network requests.")
             },
         )
         val token = "token"

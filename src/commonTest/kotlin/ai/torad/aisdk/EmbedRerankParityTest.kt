@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 class EmbedRerankParityTest {
     @Test
@@ -140,7 +141,7 @@ class EmbedRerankParityTest {
         val model = object : RerankingModel {
             override val modelId = "test/rerank"
             override suspend fun rerank(params: RerankingParams): RerankingModelResult =
-                error("must not be called for empty documents")
+                fail("must not be called for empty documents")
         }
         val result = Reranking.rerank(model, "q", emptyList())
         assertTrue(result.results.isEmpty())

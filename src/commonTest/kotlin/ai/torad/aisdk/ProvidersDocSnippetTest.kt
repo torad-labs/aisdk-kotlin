@@ -28,6 +28,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.fail
 
 /** Compiles and executes the provider wiki snippets against the real provider APIs. */
 class ProvidersDocSnippetTest {
@@ -130,7 +131,7 @@ class ProvidersDocSnippetTest {
 
     private fun noNetworkClient(): HttpClient = HttpClient(
         MockEngine {
-            error("Provider documentation snippets should not make network requests.")
+            fail("Provider documentation snippets should not make network requests.")
         },
     )
 

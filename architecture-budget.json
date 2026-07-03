@@ -27,7 +27,7 @@
     "src/commonTest/kotlin/ai/torad/aisdk/McpHttpTransportTest.kt": 685,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenAICompatibleProviderFacadesTest.kt": 847,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenAICompatibleProviderTest.kt": 627,
-    "src/commonTest/kotlin/ai/torad/aisdk/OpenAIProviderTest.kt": 581,
+    "src/commonTest/kotlin/ai/torad/aisdk/OpenAIProviderTest.kt": 588,
     "src/commonMain/kotlin/ai/torad/aisdk/CompletionApi.kt": 645,
     "src/commonMain/kotlin/ai/torad/aisdk/McpOAuth.kt": 749,
     "src/commonMain/kotlin/ai/torad/aisdk/Streaming.kt": 614,

@@ -20,6 +20,8 @@ import kotlin.test.assertTrue
  * internal failures surface as [AgentEvent.Errored] rather than propagating.
  */
 class LifecycleHooksTest {
+    private class PrepareCallFailure(message: String) : IllegalStateException(message)
+
     @Serializable
     private data class Empty(val unused: String = "")
 
@@ -142,7 +144,7 @@ class LifecycleHooksTest {
             model = MockLanguageModelTextOnly("ok"),
             instructions = "x",
             tools = ToolSet(),
-            prepareCall = { error("boom from prepareCall") },
+            prepareCall = { throw PrepareCallFailure("boom from prepareCall") },
         )
         agent.collectAgentEvents(prompt = "go") { event ->
             when (event) {
