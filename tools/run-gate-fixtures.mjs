@@ -54,6 +54,7 @@ for (const gate of gateDirs) {
       if (
         key === "GIT_DIR" || key === "GIT_WORK_TREE" || key === "GIT_INDEX_FILE" ||
         key === "GIT_PREFIX" || key === "GIT_OBJECT_DIRECTORY" ||
+        key === "GIT_ALTERNATE_OBJECT_DIRECTORIES" ||
         key.startsWith("GIT_AUTHOR_") || key.startsWith("GIT_COMMITTER_")
       ) {
         delete fixtureEnv[key];
