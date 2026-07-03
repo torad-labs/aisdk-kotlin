@@ -8,6 +8,15 @@
 # (codex via torad-fleet) in the Sonnet slot; builder commits locally (pre-commit
 # gates run in its session), NEVER pushes — the orchestrator's reviewed push is
 # the single publication gate point. Enforced by fleet_protocol_policy hooks.
+#
+# DISPATCH TEMPLATE (every fleet sendMessage carries): (1) item id(s) + full
+# item text (title = resume pointer); (2) law-sheet deltas for the slice;
+# (3) writable-scope fence (exact files/dirs); (4) premise-check order — verify
+# claims against the repo first, wrong premise is REPORTED not obeyed;
+# (5) the item's verify field = the acceptance the report must demonstrate;
+# (6) report format: id, SHA, files, verification output, QUEUE state.
+# Waves: max 2-3 FILE-DISJOINT items; shared-file items are a sequential lane.
+# Safety: worktree-not-stash; no bypass; builder reports before amending.
 
 [campaign]
 name = "gate-hardening-beta-release"
@@ -22,7 +31,7 @@ id = "GH-01"
 phase = "gh1"
 title = "Wire validate_rules.py (parse + --manifest semantic) into ci-gate.sh. Two lines, same idiom as the four detect-*.py gates (ci-gate.sh:57-67). Activates 50 dormant fixtures + parse-checks all 64 rules per commit. Highest leverage in campaign."
 files = [".claude/hooks/rules/ci-gate.sh"]
-status = "todo"
+status = "in_flight"
 verify = "break one manifest fixture in a scratch copy -> ci-gate.sh exits 1; pristine tree -> exits 0; both directions demonstrated in the report"
 
 [[items]]
@@ -46,7 +55,7 @@ id = "GH-04"
 phase = "gh1"
 title = "Freshness NETWORK failure -> warn+continue: wrap check-ai-sdk-reference.mjs npm view (lines ~14-21, no try/catch today) AND the git-clone/pin-test step; genuine pin/version mismatch stays fatal. Extends AR-03 which only demoted the newer-version case."
 files = ["tools/check-ai-sdk-reference.mjs", ".github/workflows/ci.yml"]
-status = "todo"
+status = "in_flight"
 verify = "unreachable-registry simulation exits 0 with ::warning::; corrupted AI_SDK_REFERENCE_COMMIT exits 1"
 
 [[items]]
@@ -54,7 +63,7 @@ id = "GH-05"
 phase = "gh1"
 title = "Regression-lock run-ios-swift-smoke: in verify-apple, taking the skip branch must FAIL (REQUIRE_REAL_SMOKE=1 env in ci.yml + script honors it). Live hole already closed; this prevents silent-skip recurrence."
 files = ["tools/run-ios-swift-smoke", ".github/workflows/ci.yml"]
-status = "todo"
+status = "in_flight"
 verify = "script with REQUIRE_REAL_SMOKE=1 on non-Darwin exits 1; without the env exits 0 (skip); Darwin path unchanged"
 
 [[items]]
