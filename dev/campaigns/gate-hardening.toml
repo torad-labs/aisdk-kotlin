@@ -165,6 +165,7 @@ files = [".github/workflows/ci.yml"]
 status = "done"
 verify = "architecture gate step precedes npm ci and passes with node steps stubbed broken"
 # [2026-07-02] done in GH-13 slice (final SHA in fleet report): CI downloads cached ast-grep 0.42.1 before npm ci; architecture and hook gates run without node_modules
+# [2026-07-02] done in GH-13 checksum follow-up (final SHA in fleet report): ast-grep release zip pinned to sha256 5de8b87cba67fc8dc3e239d54b6484802ad745a7ae3de76be4fe89661dc52657 before unzip
 
 [[items]]
 id = "GH-14"
