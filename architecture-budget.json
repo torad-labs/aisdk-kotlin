@@ -22,7 +22,7 @@
     "src/commonMain/kotlin/ai/torad/aisdk/ui/MessageStreamReader.kt": 550,
     "src/commonTest/kotlin/ai/torad/aisdk/AmazonBedrockProviderTest.kt": 922,
     "src/commonTest/kotlin/ai/torad/aisdk/GoogleProviderTest.kt": 659,
-    "src/commonTest/kotlin/ai/torad/aisdk/McpHttpTransportTest.kt": 660,
+    "src/commonTest/kotlin/ai/torad/aisdk/McpHttpTransportTest.kt": 680,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenAICompatibleProviderFacadesTest.kt": 847,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenAICompatibleProviderTest.kt": 627,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenAIProviderTest.kt": 581,
