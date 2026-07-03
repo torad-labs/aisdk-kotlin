@@ -759,8 +759,9 @@ id = "HD-21"
 phase = "hd"
 title = "Guard-the-guards ast-grep pack (python rules over .claude/hooks): the post-done failures all lived in the enforcement layer, which has zero structural rules. Three warning-severity rules, each encoding a bug we actually shipped: (1) py-no-direct-child-parent-eq — <path>.parent == <CONST> comparison shape, message suggests ancestor check via parents (HD-11s inert dump guard); (2) py-no-bare-relative-companion-path — module-level Path with a bare relative string literal in rules/detectors, message demands a __file__ anchor or explicit flag (F-01/F-02, two shipped instances); (3) py-no-fail-open-on-missing-resource — missing-resource guard (not X.is_dir / not X.exists) followed by return of empty list/None inside check/validate functions, message says raise (F-01s exact fail-open). PREMISE-CHECK FIRST: how validate_rules + the fixture harness handle language: python rules (manifest.json fixture law may be kotlin-assumed) — choose the smallest wiring that still gives both-direction fixtures + gate presence (own tiny section in ci-gate acceptable); rules must NOT enter the kotlin edit-time policy scan. LP-6: probe each rule against the real historical bug shape (pre-fix code from git show 4528f44 parent commit / HD-11 pre-redo) as the bad fixture."
 files = [".claude/hooks/rules/", ".claude/hooks/rules/ci-gate.sh"]
-status = "todo"
+status = "done"
 verify = "three rules fixture-proven both directions incl. historical bug shapes as bad examples; wired into ci-gate with fail-direction probe; kotlin policy scan unaffected; suites green"
+# [2026-07-03] HD-21 done: isolated language: python guard pack with three historical-bug fixtures, dedicated runner in ci-gate, warning-only live report; Kotlin edit-time scan remains 71-rule kotlin directory; SHA in fleet report.
 
 [[items]]
 id = "HD-22"

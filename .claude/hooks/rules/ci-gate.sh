@@ -97,6 +97,9 @@ node tools/run-gate-fixtures.mjs || fail=1
 echo "== consumer migration rule gate =="
 python3 .claude/hooks/rules/validate_migration_rules.py docs/migrations || fail=1
 
+echo "== python guard-rule gate =="
+python3 .claude/hooks/rules/validate_python_guard_rules.py || fail=1
+
 echo "== tool occurrence identity gate =="
 python3 .claude/hooks/rules/detect-tool-identity-regressions.py src/commonMain/kotlin --check || fail=1
 
