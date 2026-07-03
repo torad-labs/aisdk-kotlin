@@ -207,6 +207,7 @@ files = [".github/workflows/release.yml"]
 status = "done"
 verify = "dry_run=true manual run completes green on a non-tag ref with zero publish-endpoint calls"
 # [2026-07-02] done in GH-17 slice (final SHA in fleet report): release workflow_dispatch dry_run stages/signs/smokes then logs would-publish count before publish endpoints; GitHub Packages mirror/resolve skipped
+# [2026-07-02] DRY-RUN FINDING (run 28633985138): preflight + verify-apple GREEN on tag-less dispatch; publish job failed at staging smoke — run-local-staging-smoke passes --staging-repo RAW to -PsmokeRepository, so release.yml's relative 'build/staging-deploy' resolved against smoke-tests/local-staging/ (never-executed CI call site was the only relative caller; LP-1 again). Fix slice dispatched: normalize to absolute in the script.
 
 [[items]]
 id = "GH-23"
@@ -225,9 +226,10 @@ id = "GH-18"
 phase = "gh3"
 title = "Harness rollout to remaining CI-wired mjs/py gates incl. two regression-locks: golden-coverage dangling-reference fixture; api-review base-resolution fixture under CI-like shallow/detached checkout."
 files = ["tools/gate-fixtures/"]
-status = "in_flight"
+status = "done"
 depends = ["GH-14"]
 verify = "every CI-wired mjs/py gate has a fixture pair in the harness; both regression fixtures fire on regression"
+# [2026-07-02] added fixture harness tenants for 12 CI-wired mjs/py gates; golden dangling-file and shallow API-review regressions fire
 
 [[items]]
 id = "GH-19"
