@@ -17,7 +17,8 @@ This gate has two modes:
 
   HUNK mode — re-scan each fixture as an edit hunk/snippet, without package or
   enclosing scope. Entries default to hunkExpectation="same"; scope-anchored
-  rules may declare hunkExpectation="no-match".
+  rules may declare hunkExpectation="no-match" and optional badHunkExample /
+  goodHunkExample fragments.
       python3 validate_rules.py --hunk-mode <rules.json>
 
   SCAFFOLD mode — emit a fill-in manifest entry for an existing rule file.
@@ -137,6 +138,12 @@ def semantic_mode(binary: str, manifest_path: Path) -> int:
     rules = _read_manifest(manifest_path)
     if rules is None:
         return 2
+    missing = _missing_manifest_entries(manifest_path, rules)
+    if missing:
+        print(f"SEMANTIC FAIL: {len(missing)} rule files have no manifest entry")
+        for rid in missing:
+            print(f"  - {rid}: missing manifest entry")
+        return 1
     failures: list[tuple[str, str]] = []
     passed = 0
     for r in rules:
@@ -189,6 +196,8 @@ def hunk_mode(binary: str, manifest_path: Path) -> int:
         yaml_text = r.get("yaml") or ""
         bad_ex = r.get("badExample") or ""
         good_ex = r.get("goodExample") or ""
+        bad_hunk = r.get("badHunkExample", bad_ex)
+        good_hunk = r.get("goodHunkExample", good_ex)
         expectation = str(r.get("hunkExpectation") or "same")
         if expectation not in {"same", "no-match"}:
             failures.append((rid, f"invalid hunkExpectation {expectation!r}"))
@@ -196,10 +205,13 @@ def hunk_mode(binary: str, manifest_path: Path) -> int:
         if _needs_examples(bad_ex, good_ex):
             failures.append((rid, "needs examples"))
             continue
+        if not isinstance(bad_hunk, str) or not isinstance(good_hunk, str):
+            failures.append((rid, "hunk examples must be strings"))
+            continue
 
         rule_path = _write_yaml(yaml_text)
-        bad_path = _write_kt_hunk(str(bad_ex))
-        good_path = _write_kt_hunk(str(good_ex))
+        bad_path = _write_kt_hunk(bad_hunk)
+        good_path = _write_kt_hunk(good_hunk)
         try:
             rc_b, n_bad, err_b = _scan(binary, rule_path, bad_path)
             if not _parses(err_b, rc_b):
@@ -234,6 +246,15 @@ def hunk_mode(binary: str, manifest_path: Path) -> int:
         return 1
     print(f"ok: all {len(rules)} rules satisfy hunk-mode expectations")
     return 0
+
+
+def _missing_manifest_entries(manifest_path: Path, rules: list[dict[str, object]]) -> list[str]:
+    rules_dir = manifest_path.resolve(strict=False).parent / "kotlin"
+    if not rules_dir.is_dir():
+        return []
+    manifest_ids = {str(r.get("id")) for r in rules}
+    rule_ids = {p.stem for p in rules_dir.glob("*.yaml")}
+    return sorted(rule_ids - manifest_ids)
 
 
 def _needs_examples(bad_ex: object, good_ex: object) -> bool:
