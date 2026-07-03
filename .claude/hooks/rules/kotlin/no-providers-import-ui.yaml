@@ -1,0 +1,23 @@
+id: no-providers-import-ui
+language: kotlin
+severity: error
+message: "providers/ imports ai.torad.aisdk.ui — a layer-boundary inversion (Konsist: 'providers do not depend on ui or framework layer')."
+note: >-
+  A file whose package is ai.torad.aisdk.providers (or a providers
+  subpackage) imports ai.torad.aisdk.ui. Provider implementations must not
+  depend on the UI message-stream layer — the dependency runs the other way
+  (ui may use provider output types; providers stay UI-agnostic). Mirrors the
+  whole-codebase Konsist test `providers do not depend on ui or framework
+  layer` (src/jvmTest/kotlin/ai/torad/aisdk/arch/KonsistArchitectureTest.kt),
+  adding edit-time (Claude) protection for an invariant Konsist only catches
+  at `./gradlew check` time.
+rule:
+  kind: import_header
+  has: { kind: identifier, regex: '^ai\.torad\.aisdk\.ui(\.|$)', stopBy: end }
+  inside:
+    kind: source_file
+    stopBy: end
+    has:
+      kind: package_header
+      stopBy: end
+      has: { kind: identifier, regex: '^ai\.torad\.aisdk\.providers(\.|$)', stopBy: end }

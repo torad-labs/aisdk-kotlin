@@ -1,0 +1,24 @@
+id: no-protocol-import-ui-or-middleware
+language: kotlin
+severity: error
+message: "protocol/ imports ai.torad.aisdk.ui or ai.torad.aisdk.middleware — protocol codecs stay below the agent runtime and ui layers (Konsist: 'protocol codecs stay below agent runtime and ui layers')."
+note: >-
+  A file whose package is ai.torad.aisdk.protocol imports ai.torad.aisdk.ui or
+  ai.torad.aisdk.middleware. The Gateway/UI wire-codec layer is a low-level
+  serialization boundary that must not reach upward into the UI
+  message-stream layer or the middleware layer. (The providers half of this
+  same Konsist assertion is already covered by no-core-import-providers.)
+  Mirrors the whole-codebase Konsist test `protocol codecs stay below agent
+  runtime and ui layers` (src/jvmTest/kotlin/ai/torad/aisdk/arch/KonsistArchitectureTest.kt),
+  adding edit-time (Claude) protection for an invariant Konsist only catches
+  at `./gradlew check` time.
+rule:
+  kind: import_header
+  has: { kind: identifier, regex: '^ai\.torad\.aisdk\.(ui|middleware)(\.|$)', stopBy: end }
+  inside:
+    kind: source_file
+    stopBy: end
+    has:
+      kind: package_header
+      stopBy: end
+      has: { kind: identifier, regex: '^ai\.torad\.aisdk\.protocol(\.|$)', stopBy: end }
