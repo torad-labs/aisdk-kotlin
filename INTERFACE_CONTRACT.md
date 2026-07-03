@@ -402,7 +402,11 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   not carry a tool-call id. `LiteRTLanguageModel` applies
   `JsonInstruction.injectJsonInstructionIntoMessages` for
   `ResponseFormat.Json`, so on-device engines receive the same schema prompt
-  guidance as the shared structured-output utilities.
+  guidance as the shared structured-output utilities. `LiteRTMessage.usage`
+  and `LiteRTMessage.finishReason` are optional host-engine terminal metadata;
+  when present they are propagated to `LanguageModelResult` /
+  `StreamEvent.Finish`, and when absent the adapter preserves the existing
+  inferred finish reason and zero-usage defaults.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`

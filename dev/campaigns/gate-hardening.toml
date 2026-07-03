@@ -294,8 +294,11 @@ id = "RR-02"
 phase = "rr"
 title = "LiteRT usage/finishReason seam (DROPPED between audit ship-list and AR backlog — recovered item): LiteRTMessage builder gains optional usage + finishReason; adapter stops fabricating Stop on truncation (currently sends decodeFinalOutput parsing truncated JSON) and zero usage. Builder-additive = ABI-safe."
 files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModel.kt", "src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModelMapping.kt"]
-status = "in_flight"
+status = "done"
 verify = "truncated engine response maps to Length not Stop; engine-provided usage propagates; tests for both paths"
+# [2026-07-02] LiteRT terminal finishReason/usage propagation implemented; SHA pending local commit.
+# [2026-07-02] Completed in b237072: LiteRTMessage terminal finishReason/usage propagation, ABI dumps, tests, docs, budgets.
+# [2026-07-02] Supersedes prior pending/pre-amend SHA notes; final SHA is reported via fleet because same-commit self-SHA cannot be embedded.
 
 [[items]]
 id = "RR-03"

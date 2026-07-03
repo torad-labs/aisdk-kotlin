@@ -5307,12 +5307,16 @@ final class ai.torad.aisdk.providers/LiteRTMessage { // ai.torad.aisdk.providers
         final fun <get-channels>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/LiteRTMessage.channels.<get-channels>|<get-channels>(){}[0]
     final val content // ai.torad.aisdk.providers/LiteRTMessage.content|{}content[0]
         final fun <get-content>(): kotlin.collections/List<ai.torad.aisdk.providers/LiteRTContent> // ai.torad.aisdk.providers/LiteRTMessage.content.<get-content>|<get-content>(){}[0]
+    final val finishReason // ai.torad.aisdk.providers/LiteRTMessage.finishReason|{}finishReason[0]
+        final fun <get-finishReason>(): ai.torad.aisdk/FinishReason? // ai.torad.aisdk.providers/LiteRTMessage.finishReason.<get-finishReason>|<get-finishReason>(){}[0]
     final val providerMetadata // ai.torad.aisdk.providers/LiteRTMessage.providerMetadata|{}providerMetadata[0]
         final fun <get-providerMetadata>(): ai.torad.aisdk/ProviderMetadata // ai.torad.aisdk.providers/LiteRTMessage.providerMetadata.<get-providerMetadata>|<get-providerMetadata>(){}[0]
     final val role // ai.torad.aisdk.providers/LiteRTMessage.role|{}role[0]
         final fun <get-role>(): ai.torad.aisdk.providers/LiteRTMessageRole // ai.torad.aisdk.providers/LiteRTMessage.role.<get-role>|<get-role>(){}[0]
     final val toolCalls // ai.torad.aisdk.providers/LiteRTMessage.toolCalls|{}toolCalls[0]
         final fun <get-toolCalls>(): kotlin.collections/List<ai.torad.aisdk.providers/LiteRTToolCall> // ai.torad.aisdk.providers/LiteRTMessage.toolCalls.<get-toolCalls>|<get-toolCalls>(){}[0]
+    final val usage // ai.torad.aisdk.providers/LiteRTMessage.usage|{}usage[0]
+        final fun <get-usage>(): ai.torad.aisdk/Usage? // ai.torad.aisdk.providers/LiteRTMessage.usage.<get-usage>|<get-usage>(){}[0]
 
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/LiteRTMessage.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/LiteRTMessage.hashCode|hashCode(){}[0]
@@ -5325,9 +5329,11 @@ final class ai.torad.aisdk.providers/LiteRTMessageBuilder { // ai.torad.aisdk.pr
     final fun build(): ai.torad.aisdk.providers/LiteRTMessage // ai.torad.aisdk.providers/LiteRTMessageBuilder.build|build(){}[0]
     final fun channels(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk.providers/LiteRTMessageBuilder // ai.torad.aisdk.providers/LiteRTMessageBuilder.channels|channels(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
     final fun content(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTContent>): ai.torad.aisdk.providers/LiteRTMessageBuilder // ai.torad.aisdk.providers/LiteRTMessageBuilder.content|content(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTContent>){}[0]
+    final fun finishReason(ai.torad.aisdk/FinishReason?): ai.torad.aisdk.providers/LiteRTMessageBuilder // ai.torad.aisdk.providers/LiteRTMessageBuilder.finishReason|finishReason(ai.torad.aisdk.FinishReason?){}[0]
     final fun providerMetadata(ai.torad.aisdk/ProviderMetadata): ai.torad.aisdk.providers/LiteRTMessageBuilder // ai.torad.aisdk.providers/LiteRTMessageBuilder.providerMetadata|providerMetadata(ai.torad.aisdk.ProviderMetadata){}[0]
     final fun role(ai.torad.aisdk.providers/LiteRTMessageRole): ai.torad.aisdk.providers/LiteRTMessageBuilder // ai.torad.aisdk.providers/LiteRTMessageBuilder.role|role(ai.torad.aisdk.providers.LiteRTMessageRole){}[0]
     final fun toolCalls(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTToolCall>): ai.torad.aisdk.providers/LiteRTMessageBuilder // ai.torad.aisdk.providers/LiteRTMessageBuilder.toolCalls|toolCalls(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTToolCall>){}[0]
+    final fun usage(ai.torad.aisdk/Usage?): ai.torad.aisdk.providers/LiteRTMessageBuilder // ai.torad.aisdk.providers/LiteRTMessageBuilder.usage|usage(ai.torad.aisdk.Usage?){}[0]
 }
 
 final class ai.torad.aisdk.providers/LiteRTSamplerConfig { // ai.torad.aisdk.providers/LiteRTSamplerConfig|null[0]
