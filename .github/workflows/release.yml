@@ -107,20 +107,55 @@ jobs:
           actual_commit="$(git -C .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION} rev-parse HEAD)"
           test "${actual_commit}" = "${AI_SDK_REFERENCE_COMMIT}"
       - name: Verify AI SDK reference version
+        id: ai_sdk_reference
+        continue-on-error: true
         run: node tools/check-ai-sdk-reference.mjs
       - name: Verify parity ledgers
+        id: parity_ledgers
+        continue-on-error: true
         run: node tools/generate-parity-ledger.mjs --check
       - name: Install locked Node tooling
         run: npm ci
       - name: Architecture gate (ast-grep rules + structural checks)
+        id: architecture_gate
+        continue-on-error: true
         run: ./node_modules/.bin/ast-grep --version && PATH="$PWD/node_modules/.bin:$PATH" bash .claude/hooks/rules/ci-gate.sh
       - name: Beta readiness gate
+        id: beta_readiness
+        continue-on-error: true
         run: tools/beta-readiness-check
       - name: Verify checks
+        id: gradle_check
+        continue-on-error: true
         run: ./gradlew check
+      - name: Summarize pre-publish gates
+        if: always()
+        run: |
+          gates=(
+            "ai_sdk_reference|Verify AI SDK reference version|${{ steps.ai_sdk_reference.outcome }}"
+            "parity_ledgers|Verify parity ledgers|${{ steps.parity_ledgers.outcome }}"
+            "architecture_gate|Architecture gate (ast-grep rules + structural checks)|${{ steps.architecture_gate.outcome }}"
+            "beta_readiness|Beta readiness gate|${{ steps.beta_readiness.outcome }}"
+            "gradle_check|Verify checks|${{ steps.gradle_check.outcome }}"
+          )
+
+          failed=0
+          printf '| Step id | Gate | Outcome |\n'
+          printf '| --- | --- | --- |\n'
+          for gate in "${gates[@]}"; do
+            IFS='|' read -r step_id name outcome <<< "$gate"
+            printf '| `%s` | %s | %s |\n' "$step_id" "$name" "$outcome"
+            if [ "$outcome" != "success" ]; then
+              failed=1
+            fi
+          done
+
+          exit "$failed"
       # Maven Central is the release target. The Central Portal takes a single zip
       # in Maven Repository Layout, validates it asynchronously, and (with
       # publishingType=AUTOMATIC) syncs to Maven Central if validation passes.
+      # This step also stages/signs/bundles the artifacts and intentionally stays
+      # fail-fast after the pre-publish gate aggregator above.
       - name: Publish to Maven Central
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
