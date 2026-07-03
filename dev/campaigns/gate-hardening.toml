@@ -370,6 +370,7 @@ verify = "Central shows artifact; canary green; release run archived green"
 # [2026-07-03] FR-03 completeness item folded in: post-tag, bump VERSION_NAME so snapshots.yml tracks the next unreleased version instead of re-snapshotting frozen 0.3.0-beta01 (snapshot version auto-derives from VERSION_NAME, build.gradle.kts:30-32). Also: R4 network-mask live proof running as draft PR #12 (scratch branch, never merges) during FR-04.
 # [2026-07-03] FOLD-IN EXECUTION 2026-07-03 (operator: merge to main, no distributions yet): snapshots.yml push-trigger parked to workflow_dispatch-only in the same fold-in (re-arm instructions in the workflow comment) so the merge cannot fire the first snapshot publish; docs.yml inert without a Release run; consumer-canary arms read-only (green-with-notices pre-release by design). Tag + Central release + GitHub Release remain held.
 # [2026-07-03] FOLD-IN MERGED 2026-07-03: PR #13 squash-merged to main as 318f03d after verify+verify-apple+reference-freshness green (8m27s/5m39s/14s). All 5 workflows now registered on main; Snapshot fired ZERO runs (trigger parked as designed — hold verified live, not assumed); Docs inert; Canary armed read-only (next cron Monday 09:37). beta-follow-ups kept as archival. REMAINING for release go: re-arm snapshots push trigger, tag v0.3.0-beta01, RR-07 release page.
+# [2026-07-03] Main push CI at 318f03d: success — fold-in fully green on the default branch. Repo is release-ready on operator go.
 
 [[items]]
 id = "RR-07"
