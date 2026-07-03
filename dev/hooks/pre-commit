@@ -1,0 +1,5 @@
+#!/bin/bash
+# Pre-commit hook - runs the CI gate (which includes all codemods)
+# Install: ln -sf ../../dev/hooks/pre-commit .git/hooks/pre-commit
+
+exec bash .claude/hooks/rules/ci-gate.sh
