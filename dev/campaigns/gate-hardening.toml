@@ -140,11 +140,12 @@ id = "GH-11"
 phase = "gh2"
 title = "Hunk fixtures for the 4 uncovered scope-anchored rules (no-camelcase-top-level-function, no-mutable-companion-state, no-public-mutable-var, no-top-level-mutable-var): prove each does NOT match a same-shaped class member scanned in isolation."
 files = [".claude/hooks/rules/manifest.json"]
-status = "done"
+status = "verified"
 depends = ["GH-09", "GH-10"]
 verify = "all 4 have whole-file + hunk fixture pairs passing --hunk-mode"
 # [2026-07-02] done in GH-11 slice (final SHA in fleet report): four scope-anchored rules declare no-match hunk fixtures with zero hunk matches
 # [2026-07-02] done in GH-11 revised slice (final SHA in fleet report): added memberExample assertions; kept hunkExpectation=same; marked three bare-fragment context-dependent rules hunkUnsafe
+# [2026-07-02] orchestrator verified 058d880 under the REVISED spec (supersedes original title): memberExamples never-match fixtures on all 4 (camelcase carries class-wrapped + bare-override cases), hunkUnsafe=true declared on the 3 rule-level-unfixable rules with docstring limitation; fail-direction probe (violation-as-memberExample) exits 1. Minor: mixed memberExample/memberExamples keys — documented alias in tool, normalize under GH-20 schema contract.
 
 [[items]]
 id = "GH-12"
@@ -231,6 +232,7 @@ files = [".claude/hooks/rules/validate_rules.py", ".claude/hooks/rules/manifest.
 status = "todo"
 depends = ["GH-10", "GH-11"]
 verify = "new relational rule without hunk fixture fails validation with explicit message"
+# [2026-07-02] inherits from GH-11: normalize memberExample/memberExamples key alias when formalizing the dual-fixture schema
 
 [[items]]
 id = "GH-21"
