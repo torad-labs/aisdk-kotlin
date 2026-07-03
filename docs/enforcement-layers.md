@@ -17,7 +17,7 @@ every contributor.
 
 ## Layer 1 — ast-grep PreToolUse hooks (`.claude/hooks/`)
 
-64 ast-grep rules under `.claude/hooks/rules/kotlin/`, run by the orchestrator
+71 ast-grep rules under `.claude/hooks/rules/kotlin/`, run by the orchestrator
 (`.claude/hooks/orchestrator/pretooluse.py` → `modules/pretooluse/kotlin_antipattern_policy.py`)
 **before an edit is written**. This is the fastest possible feedback — the bad code never
 lands — but it only sees **Claude's** edits, and only one file at a time.
@@ -52,6 +52,7 @@ block in `detekt.yml`. Each rule has a `detekt-test` unit test.
 | `PreferTypedErrorOverErrorCall` | `prefer-typed-error-over-error-call` |
 | `PreferTypedErrorOverCheckNotNull` | `prefer-typed-error-over-checknotnull` |
 | `PreferTypedErrorOverGenericThrow` | `prefer-typed-error-over-generic-throw` |
+| `NoRunCatchingInSuspendFunction` | `no-runcatching-in-suspend` |
 
 A handful of tenets are detekt **built-ins** (no custom rule needed — enabled via
 `buildUponDefaultConfig` + `detekt.yml`): `EmptyCatchBlock`, `PrintStackTrace`,
