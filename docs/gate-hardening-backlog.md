@@ -89,6 +89,21 @@ fresh clones have no local gates at all.
 - **Cache the pinned vercel/ai checkout** — pure latency; GH-03/04 already remove the correctness risk. Revisit if CI minutes bite.
 - **Pre-push hook with fast detekt** — pre-commit already runs the architecture gate; CI backstops detekt/ABI. Keep as documented opt-in, not a commitment.
 
+## RR — Beta release readiness (added 2026-07-02; the path from this branch to a shipped 0.3.0-beta01)
+
+Ordered: ABI-last-chances → CI stability → merge mechanics → release execution → post-beta.
+
+| ID | Item | Accept | Notes |
+|----|------|--------|-------|
+| RR-01 | Demote public positional constructors on growable result types (`GenerateResult`, `GenerateTextResult`, `StepResult`, `StructuredObjectFinish`/`Phase` leaves) to `internal`; sanctioned construction for test-fake authors goes through the shipped `Mock*` models or new factories. AR-14 already churned these ctors once this week — post-beta every field addition is a break for anyone constructing them. Last cheap moment is before the merge. | No growable result type exposes a public positional `<init>` in the JVM dump; test-fake construction path documented; dumps/CHANGELOG/contract updated. | ABI; pre-merge |
+| RR-02 | **Dropped-in-translation item (audit ship-list → AR backlog):** LiteRT usage/finishReason seam. `LiteRTMessage` (builder-additive, ABI-safe) gains optional `usage` + `finishReason`; adapter stops fabricating `Stop` on truncation (which sends `decodeFinalOutput` parsing truncated JSON) and zero token usage. | A truncated engine response maps to `Length`, not `Stop`; reported usage reflects engine-provided counts when present; tests for both. | ABI-additive; pre-merge preferred |
+| RR-03 | Roll the AR-35 deterministic-delayer pattern across the remaining real-time tests in `McpHttpTransportTest` (17 `waitForRealTime`/`Dispatchers.Default` refs remain) — pre-empt release-window CI flakes from the known-worst file. | Zero timing-window assertions remain in the file; bounded event-awaits only. | CI stability |
+| RR-04 | **Main branch protection has NO required status checks** (verified via API: PR review required, but `required_status_checks` absent) — a red PR can merge with one approval, making every gate advisory at the merge boundary. Require `verify` + `verify-apple` (+ up-to-date branch) on main. | API shows both checks in `required_status_checks`; a red-CI PR is unmergeable. | Do before merging PR #10 |
+| RR-05 | Merge PR #10 (the ~350-commit remediation branch). Recommend a merge commit over squash — the granular history is individually reviewed and referenced by two backlogs. Confirm the merge commit's CI on main is green. | PR merged; main CI green at the merge commit. | |
+| RR-06 | Release execution: run the GH-17 dry-run first (once landed), then tag `v0.3.0-beta01` — the release workflow's first-ever real execution. After Central propagation, run a consumer canary: a fresh project resolving `ai.torad:torad-aisdk:0.3.0-beta01` from Maven Central (not staging) compiles and runs the README sample on JVM + one native target. | Central shows the artifact; canary green; release workflow run archived green. | The real AR-04 of releases |
+| RR-07 | GitHub Release for the tag: CHANGELOG excerpt + a short beta stability promise (what may change before 1.0: `@ExperimentalAiSdkApi` surfaces, sealed hierarchies gain leaves per AR-33 policy, `else`-branch guidance; what won't: published ABI per the dumps without a version bump). | Release page exists with the promise; linked from README. | Sets consumer expectations |
+| RR-08 | Schedule the upstream triage DEC-2 deferred: ai@6.0.208 → v7.x delta review as a post-beta milestone with an owner, so the freshness pin doesn't become permanent amnesia (the warning fires on every CI run today). | A tracked issue/milestone exists for the v7 parity triage. | Post-beta |
+
 ## Provenance & corrections applied during synthesis
 
 - Haiku inventory misclassified 6 CI-wired gates as orphaned (indirection through
