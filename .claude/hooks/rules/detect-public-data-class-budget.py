@@ -23,24 +23,19 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_BUDGET_FILE = Path(__file__).resolve().parents[3] / "data-class-budget.json"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_BUDGET_FILE = REPO_ROOT / "data-class-budget.json"
+DEFAULT_RULE_FILE = Path(__file__).resolve().parent / "public-abi-data-class.yaml"
 BUDGET_KEY = "publicDataClassesCommonMain"
 TRACKED_KEY = "trackedPublicDataClassesCommonMain"
 
-# Modifiers that may sit between an (optional) annotation block and `class`.
-_CLASS_DECL = re.compile(
-    r"(?m)^[ \t]*"
-    r"((?:@[\w.]+(?:\([^\n]*?\))?[ \t]*\n?[ \t]*)*)"   # leading annotations (best-effort)
-    r"((?:(?:public|private|internal|protected|abstract|open|sealed|final|"
-    r"inner|expect|actual|data|value|annotation|enum)[ \t]+)*)"
-    r"class\b"
-)
-_CLASS_NAME = re.compile(r"\bclass\s+([A-Za-z_][A-Za-z0-9_]*)")
-_NON_PUBLIC = re.compile(r"\b(private|internal|protected)\b")
+_CLASS_NAME = re.compile(r"\bdata\s+class\s+([A-Za-z_][A-Za-z0-9_]*)")
 
 
 @dataclass(frozen=True)
@@ -49,33 +44,80 @@ class DataClassDeclaration:
     line: int
 
 
-def collect_public_data_classes(root: Path) -> list[DataClassDeclaration]:
-    declarations: list[tuple[Path, str, int]] = []
-    for path in sorted(root.rglob("*.kt")):
-        text = path.read_text(encoding="utf-8")
-        for match in _CLASS_DECL.finditer(text):
-            modifiers = match.group(2)
-            if "data " not in modifiers:
-                continue
-            if _NON_PUBLIC.search(modifiers):
-                continue
-            name_match = _CLASS_NAME.search(text, match.start(), min(len(text), match.end() + 120))
-            if name_match is None:
-                continue
-            declarations.append((path, name_match.group(1), text.count("\n", 0, match.start()) + 1))
+def ast_grep_binary() -> str | None:
+    candidates = [REPO_ROOT / "node_modules" / ".bin" / "ast-grep"]
+    path_candidate = shutil.which("ast-grep")
+    if path_candidate:
+        candidates.append(Path(path_candidate))
+    candidates.append(Path.home() / ".local" / "bin" / "ast-grep")
+    for candidate in candidates:
+        if candidate.is_file() and candidate.stat().st_mode & 0o111:
+            return str(candidate)
+    return None
 
+
+def collect_public_data_classes(
+    root: Path,
+    *,
+    rule_file: Path = DEFAULT_RULE_FILE,
+    binary: str | None = None,
+) -> list[DataClassDeclaration]:
+    binary = binary or ast_grep_binary()
+    if binary is None:
+        raise RuntimeError("ast-grep not found")
+    if not rule_file.is_file():
+        raise RuntimeError(f"measurement rule not found: {rule_file}")
+
+    root = root.resolve(strict=False)
+    cp = subprocess.run(
+        [binary, "scan", "--rule", str(rule_file), str(root), "--json=compact"],
+        capture_output=True,
+        text=True,
+    )
+    if cp.returncode not in (0, 1):
+        stderr = (cp.stderr or "").strip()
+        raise RuntimeError(f"ast-grep scan failed with exit {cp.returncode}: {stderr}")
+    try:
+        matches = json.loads((cp.stdout or "").strip() or "[]")
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"ast-grep returned invalid JSON: {exc}") from exc
+    if not isinstance(matches, list):
+        raise RuntimeError("ast-grep returned a non-list JSON payload")
+
+    declarations: list[tuple[Path, str, int]] = []
+    for match in matches:
+        if not isinstance(match, dict):
+            continue
+        text = str(match.get("text") or "")
+        name_match = _CLASS_NAME.search(text)
+        if name_match is None:
+            raise RuntimeError("ast-grep matched a data class but class name could not be read")
+        line = int(((match.get("range") or {}).get("start") or {}).get("line", 0)) + 1
+        declarations.append((_relative_match_path(root, str(match.get("file") or "")), name_match.group(1), line))
+
+    declarations.sort(key=lambda item: (item[0].as_posix(), item[2], item[1]))
     occurrence: dict[tuple[str, str], int] = {}
     tracked: list[DataClassDeclaration] = []
     for path, name, line in declarations:
-        relative = path.relative_to(root).as_posix()
+        relative = path.as_posix()
         key = (relative, name)
         occurrence[key] = occurrence.get(key, 0) + 1
         tracked.append(DataClassDeclaration(symbol=f"{relative}:{name}#{occurrence[key]}", line=line))
     return tracked
 
 
-def count_public_data_classes(root: Path) -> int:
-    return len(collect_public_data_classes(root))
+def _relative_match_path(root: Path, raw_file: str) -> Path:
+    path = Path(raw_file)
+    absolute = path if path.is_absolute() else (Path.cwd() / path)
+    absolute = absolute.resolve(strict=False)
+    try:
+        return absolute.relative_to(root)
+    except ValueError:
+        return Path(raw_file)
+
+
+def count_public_data_classes(root: Path, *, rule_file: Path = DEFAULT_RULE_FILE) -> int:
+    return len(collect_public_data_classes(root, rule_file=rule_file))
 
 
 def read_budget(budget_file: Path) -> dict[str, object]:
@@ -107,9 +149,18 @@ def main() -> int:
         default=str(DEFAULT_BUDGET_FILE),
         help="budget JSON path (default: repo-root data-class-budget.json)",
     )
+    parser.add_argument(
+        "--rule",
+        default=str(DEFAULT_RULE_FILE),
+        help="ast-grep measurement rule path (default: public-abi-data-class.yaml beside this script)",
+    )
     args = parser.parse_args()
 
-    declarations = collect_public_data_classes(Path(args.root))
+    try:
+        declarations = collect_public_data_classes(Path(args.root), rule_file=Path(args.rule).resolve(strict=False))
+    except RuntimeError as exc:
+        print(f"data-class budget gate: {exc}")
+        return 2
     count = len(declarations)
     current_symbols = {declaration.symbol for declaration in declarations}
     budget_file = Path(args.budget).resolve(strict=False)
