@@ -306,8 +306,9 @@ id = "RR-03"
 phase = "rr"
 title = "Roll AR-35 deterministic-delayer across remaining real-time tests in McpHttpTransportTest (17 waitForRealTime/Dispatchers.Default refs). Zero timing-window assertions remain; bounded event-awaits only."
 files = ["src/commonTest/kotlin/ai/torad/aisdk/McpHttpTransportTest.kt"]
-status = "in_flight"
+status = "done"
 verify = "grep count of waitForRealTime + Dispatchers.Default in file == 0 (bounded awaits excepted, justified per case); 3x repeated suite runs green"
+# [2026-07-02] McpHttpTransportTest real-time waits replaced with deterministic signals; final SHA reported via fleet after commit.
 
 [[items]]
 id = "RR-04"
