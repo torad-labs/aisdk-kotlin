@@ -345,8 +345,106 @@
   {
     "id": "no-flat-lifecycle-event",
     "severity": "error",
-    "yaml": "id: no-flat-lifecycle-event\nlanguage: kotlin\nseverity: error\n# A top-level `data class …Event` MUST be a subtype of the sealed `AgentEvent`\n# hierarchy (have a `: AgentEvent()` supertype), never a free-floating flat\n# struct dispatched via nullable callbacks. Activated with the AgentEvent redesign.\nrule:\n  all:\n    - kind: class_declaration\n    - inside: { kind: source_file }\n    - has: { kind: type_identifier, regex: 'Event$', stopBy: neighbor }\n    - has: { kind: modifiers, has: { kind: class_modifier, regex: 'data' } }\n    - not: { has: { kind: delegation_specifier, stopBy: neighbor } }",
+    "yaml": "id: no-flat-lifecycle-event\nlanguage: kotlin\nseverity: error\n# A top-level `data class \u2026Event` MUST be a subtype of the sealed `AgentEvent`\n# hierarchy (have a `: AgentEvent()` supertype), never a free-floating flat\n# struct dispatched via nullable callbacks. Activated with the AgentEvent redesign.\nrule:\n  all:\n    - kind: class_declaration\n    - inside: { kind: source_file }\n    - has: { kind: type_identifier, regex: 'Event$', stopBy: neighbor }\n    - has: { kind: modifiers, has: { kind: class_modifier, regex: 'data' } }\n    - not: { has: { kind: delegation_specifier, stopBy: neighbor } }",
     "badExample": "public data class OnFooEvent(val x: Int)",
     "goodExample": "public sealed class AgentEvent {\n    public data class Foo(val x: Int) : AgentEvent()\n}"
+  },
+  {
+    "id": "no-camelcase-top-level-function",
+    "severity": "error",
+    "yaml": "id: no-camelcase-top-level-function\nlanguage: kotlin\nseverity: error\nrule:\n  all:\n    - kind: function_declaration\n    - inside: { kind: source_file }\n    - has: { kind: simple_identifier, regex: '^[a-z]', stopBy: neighbor }\n    # `override` cannot appear on a genuine top-level function, but the PreToolUse\n    # hook scans edit snippets in isolation where a member override parses at\n    # source_file level \u2014 exclude it so the gate is snippet-safe (AR-15 misfire).\n    - not:\n        has:\n          kind: modifiers\n          has: { kind: member_modifier, regex: '^override$', stopBy: end }\n",
+    "badExample": "public fun generateText(): Unit = Unit\n",
+    "goodExample": "public fun GenerateText(): Unit = Unit\n"
+  },
+  {
+    "id": "no-empty-string-sentinel",
+    "severity": "warning",
+    "yaml": "id: no-empty-string-sentinel\nlanguage: kotlin\nseverity: warning\nrule:\n  pattern: '$X ?: \"\"'\n",
+    "badExample": "val content = maybeText ?: \"\"\n",
+    "goodExample": "val content = maybeText ?: fallbackText\n"
+  },
+  {
+    "id": "no-jsonnull-sentinel",
+    "severity": "warning",
+    "yaml": "id: no-jsonnull-sentinel\nlanguage: kotlin\nseverity: warning\nrule:\n  pattern: '$X ?: JsonNull'\n",
+    "badExample": "val value = element ?: JsonNull\n",
+    "goodExample": "val value = element ?: JsonObject(emptyMap())\n"
+  },
+  {
+    "id": "no-lateinit-var",
+    "severity": "error",
+    "yaml": "id: no-lateinit-var\nlanguage: kotlin\nseverity: error\nrule:\n  all:\n    - kind: property_declaration\n    - has: { kind: member_modifier, regex: \"^lateinit$\", stopBy: end }\n",
+    "badExample": "lateinit var client: HttpClient\n",
+    "goodExample": "var client: HttpClient? = null\n"
+  },
+  {
+    "id": "no-mutable-companion-state",
+    "severity": "error",
+    "yaml": "id: no-mutable-companion-state\nlanguage: kotlin\nseverity: error\n# Mutable `var` PROPERTY of a companion object = process-wide shared mutable singleton state.\n# Match only DIRECT companion properties (immediate parent is the companion's class_body) \u2014 the\n# previous `inside: companion_object, stopBy: end` over-matched, flagging function-local `var`s\n# inside companion METHODS (a false positive: locals are not shared state). Mirrors the correct\n# immediate-parent form of no-var-in-object-declaration.\nrule:\n  all:\n    - kind: property_declaration\n    - has: { kind: binding_pattern_kind, regex: \"^var$\" }\n    - inside:\n        kind: class_body\n        stopBy: neighbor\n        inside: { kind: companion_object, stopBy: neighbor }\n",
+    "badExample": "class Provider {\n    companion object {\n        var cached: String? = null\n    }\n}\n",
+    "goodExample": "class Provider {\n    companion object {\n        val cached: String? = null\n        fun next(): Int {\n            var local = 0\n            return local\n        }\n    }\n}\n"
+  },
+  {
+    "id": "no-not-null-assertion",
+    "severity": "error",
+    "yaml": "id: no-not-null-assertion\nlanguage: kotlin\nseverity: error\nrule:\n  pattern: '$X!!'\n",
+    "badExample": "val value = maybe!!\n",
+    "goodExample": "val value = requireNotNull(maybe)\n"
+  },
+  {
+    "id": "no-nullable-prompt-messages-bag",
+    "severity": "error",
+    "yaml": "id: no-nullable-prompt-messages-bag\nlanguage: kotlin\nseverity: error\nrule:\n  any:\n    - pattern: require($A != null || $B.isNotEmpty())\n    - pattern: 'require($A != null || $B.isNotEmpty()) { $$$MSG }'\n",
+    "badExample": "require(prompt != null || messages.isNotEmpty())\n",
+    "goodExample": "require(prompt != null) { \"prompt is required\" }\n"
+  },
+  {
+    "id": "no-provideroptions-jsonobject-cast",
+    "severity": "warning",
+    "yaml": "id: no-provideroptions-jsonobject-cast\nlanguage: kotlin\nseverity: warning\nrule:\n  any:\n    - pattern: providerOptions[$KEY] as? JsonObject\n    - pattern: providerOptions[$KEY] as JsonObject\n",
+    "badExample": "val options = providerOptions[\"openai\"] as? JsonObject\n",
+    "goodExample": "val options = providerOptions[\"openai\"]?.jsonObject\n"
+  },
+  {
+    "id": "no-public-mutable-var",
+    "severity": "error",
+    "yaml": "id: no-public-mutable-var\nlanguage: kotlin\nseverity: error\nrule:\n  all:\n    - kind: property_declaration\n    - has: { kind: binding_pattern_kind, regex: \"^var$\" }\n    - inside: { kind: class_body }\n  not:\n    has: { kind: visibility_modifier, regex: \"^(private|internal|protected)$\", stopBy: end }\n",
+    "badExample": "class Session {\n    public var status: String = \"\"\n}\n",
+    "goodExample": "class Session {\n    private var status: String = \"\"\n}\n"
+  },
+  {
+    "id": "no-sealed-interface",
+    "severity": "error",
+    "yaml": "id: no-sealed-interface\nlanguage: kotlin\nseverity: error\n# Tenet: a sealed hierarchy's root is a sealed CLASS, not a sealed interface \u2014 EXCEPT two\n# carve-outs the user approved (2026-06-22):\n#   - `@Serializable` polymorphic wire types \u2014 sealed interface is the idiomatic kotlinx\n#     pattern (a variant can be a data class/object that also implements other interfaces).\n#   - `private` sealed interfaces \u2014 internal state machines, not public API.\n#\n# The previous pattern-based form (`pattern: sealed interface $NAME`, \u2026) had a GAP: it\n# missed sealed interfaces carrying annotations/visibility modifiers, so it silently passed\n# 5 real cases in commonMain (caught by the Konsist whole-codebase layer). This kind+has rule\n# matches a class_declaration that (a) is an interface (`interface` keyword child) and (b)\n# carries the `sealed` class_modifier, then carves out @Serializable + private.\nrule:\n  all:\n    - kind: class_declaration\n    - has: { regex: '^interface$', stopBy: neighbor }\n    - has:\n        kind: modifiers\n        has: { kind: class_modifier, regex: '^sealed$' }\n  not:\n    any:\n      - has: { kind: modifiers, has: { kind: annotation, regex: 'Serializable' } }\n      - has: { kind: modifiers, has: { kind: visibility_modifier, regex: '^private$' } }\n",
+    "badExample": "public sealed interface StreamEvent\n",
+    "goodExample": "private sealed interface StreamEvent\n"
+  },
+  {
+    "id": "no-secondary-constructor",
+    "severity": "error",
+    "yaml": "id: no-secondary-constructor\nlanguage: kotlin\nseverity: error\nrule:\n  kind: secondary_constructor\n",
+    "badExample": "class Client {\n    constructor(name: String)\n}\n",
+    "goodExample": "class Client(val name: String)\n"
+  },
+  {
+    "id": "no-throw-in-stream-error-fn",
+    "severity": "error",
+    "yaml": "id: no-throw-in-stream-error-fn\nlanguage: kotlin\nseverity: error\nrule:\n  any:\n    - pattern: |\n        public suspend fun error($P: Throwable) {\n            throw $P\n        }\n    - pattern: |\n        suspend fun error($P: Throwable) {\n            throw $P\n        }\n",
+    "badExample": "public suspend fun error(cause: Throwable) {\n    throw cause\n}\n",
+    "goodExample": "public suspend fun error(cause: Throwable) {\n    emit(StreamEvent.Error(cause))\n}\n"
+  },
+  {
+    "id": "no-top-level-mutable-var",
+    "severity": "error",
+    "yaml": "id: no-top-level-mutable-var\nlanguage: kotlin\nseverity: error\nrule:\n  all:\n    - kind: property_declaration\n    - has: { kind: binding_pattern_kind, regex: \"^var$\" }\n    - inside: { kind: source_file }\n",
+    "badExample": "public var globalState: String = \"\"\n",
+    "goodExample": "public val globalState: String = \"\"\n"
+  },
+  {
+    "id": "no-typealias-string",
+    "severity": "warning",
+    "yaml": "id: no-typealias-string\nlanguage: kotlin\nseverity: warning\nrule:\n  any:\n    - pattern: public typealias $NAME = String\n    - pattern: typealias $NAME = String\n",
+    "badExample": "public typealias UserId = String\n",
+    "goodExample": "@JvmInline\nvalue class UserId(val value: String)\n"
   }
 ]
