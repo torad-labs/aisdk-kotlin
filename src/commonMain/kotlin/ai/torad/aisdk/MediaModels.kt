@@ -171,22 +171,20 @@ public typealias Experimental_SpeechResult = GenerateSpeechResult
 public typealias Experimental_TranscriptionResult = TranscribeResult
 
 /** @since 0.3.0-beta01 */
-public class DefaultGeneratedFile private constructor(
+public fun DefaultGeneratedFile(data: String, mediaType: String): DefaultGeneratedFile =
+    DefaultGeneratedFile(base64Data = data, byteArrayData = null, mediaType = mediaType)
+
+/** @since 0.3.0-beta01 */
+public fun DefaultGeneratedFile(data: ByteArray, mediaType: String): DefaultGeneratedFile =
+    DefaultGeneratedFile(base64Data = null, byteArrayData = data.copyOf(), mediaType = mediaType)
+
+/** @since 0.3.0-beta01 */
+public class DefaultGeneratedFile internal constructor(
     private var base64Data: String?,
     private var byteArrayData: ByteArray?,
     /** @since 0.3.0-beta01 */
     public val mediaType: String,
 ) {
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun fromBase64(data: String, mediaType: String): DefaultGeneratedFile =
-            DefaultGeneratedFile(base64Data = data, byteArrayData = null, mediaType = mediaType)
-
-        /** @since 0.3.0-beta01 */
-        public fun fromBytes(data: ByteArray, mediaType: String): DefaultGeneratedFile =
-            DefaultGeneratedFile(base64Data = null, byteArrayData = data.copyOf(), mediaType = mediaType)
-    }
-
     /** @since 0.3.0-beta01 */
     public val base64: String
         get() {

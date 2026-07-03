@@ -133,6 +133,33 @@ public class TooManyEmbeddingValuesForCallError(
         "$maxEmbeddingsPerCall values per call, but ${values.size} values were provided.",
 )
 
+/** @since 0.3.0-beta01 */
+public fun WrapTypeValidationError(
+    value: JsonElement?,
+    cause: Throwable,
+    context: TypeValidationContext? = null,
+): TypeValidationError =
+    if (cause is TypeValidationError && cause.value == value && cause.context == context) {
+        cause
+    } else {
+        TypeValidationError(value, cause, context)
+    }
+
+internal fun BuildTypeValidationMessage(
+    value: JsonElement?,
+    cause: Throwable,
+    context: TypeValidationContext?,
+): String {
+    val entityQualifier: String? = buildList {
+        context?.entityName?.let { add(it) }
+        context?.entityId?.let { add("id: \"$it\"") }
+    }.takeIf { it.isNotEmpty() }?.joinToString(", ")?.let { " ($it)" }
+    val fieldQualifier: String? = context?.field?.let { " for $it" }
+    return "Type validation failed${fieldQualifier.orEmpty()}${entityQualifier.orEmpty()}: Value: $value.\nError message: ${ErrorMessages.of(
+        cause
+    )}"
+}
+
 @Poko
 /** @since 0.3.0-beta01 */
 public class TypeValidationContext(
@@ -151,36 +178,7 @@ public class TypeValidationError(
     cause: Throwable,
     /** @since 0.3.0-beta01 */
     public val context: TypeValidationContext? = null,
-) : AiSdkException(buildTypeValidationMessage(value, cause, context), cause) {
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun wrap(
-            value: JsonElement?,
-            cause: Throwable,
-            context: TypeValidationContext? = null,
-        ): TypeValidationError =
-            if (cause is TypeValidationError && cause.value == value && cause.context == context) {
-                cause
-            } else {
-                TypeValidationError(value, cause, context)
-            }
-
-        internal fun buildTypeValidationMessage(
-            value: JsonElement?,
-            cause: Throwable,
-            context: TypeValidationContext?,
-        ): String {
-            val entityQualifier: String? = buildList {
-                context?.entityName?.let { add(it) }
-                context?.entityId?.let { add("id: \"$it\"") }
-            }.takeIf { it.isNotEmpty() }?.joinToString(", ")?.let { " ($it)" }
-            val fieldQualifier: String? = context?.field?.let { " for $it" }
-            return "Type validation failed${fieldQualifier.orEmpty()}${entityQualifier.orEmpty()}: Value: $value.\nError message: ${ErrorMessages.of(
-                cause
-            )}"
-        }
-    }
-}
+) : AiSdkException(BuildTypeValidationMessage(value, cause, context), cause)
 
 /** @since 0.3.0-beta01 */
 public class UnsupportedFunctionalityError(

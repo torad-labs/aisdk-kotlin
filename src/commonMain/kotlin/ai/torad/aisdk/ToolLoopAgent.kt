@@ -26,6 +26,7 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Abstract base [Agent] implementation — the canonical v6 ToolLoopAgent. **Extend it; do not instantiate it.**
@@ -150,7 +151,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     public val maxRetries: Int = settings.maxRetries ?: 2
 
     private val requestedMaxParallelToolCalls =
-        settings.maxParallelToolCalls ?: ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS
+        settings.maxParallelToolCalls ?: DEFAULT_MAX_PARALLEL_TOOL_CALLS
 
     /**
      * Explicit bounded policy for per-step tool execution. Defaults cap both concurrent
@@ -174,7 +175,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
 
     /**
      * Telemetry for this agent's invocations (upstream v7 `telemetry`).
-     * [Telemetry] integrations registered globally via `registerTelemetry`
+     * [Telemetry] integrations registered globally via [RegisterTelemetry]
      * observe every generate/stream call automatically; this setting adds
      * call metadata ([TelemetrySettings.functionId]) or per-agent
      * [TelemetrySettings.integrations] — which, when non-empty, REPLACE the
@@ -614,7 +615,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         val usage = steps.lastOrNull()?.usage ?: totalUsage
         if (output != null && pausedForApproval) {
             emit(
-                GenerateResult.unavailable(
+                GenerateResultUnavailable(
                     outputUnavailableReason = "No object generated: the run is paused for tool approval.",
                     text = text,
                     steps = steps,
@@ -712,6 +713,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * Convenience over [events]: collect the lifecycle stream with one suspend handler —
      * `agent.collectAgentEvents { when (it) { is AgentEvent.Chunk -> … } }`.
      */
+    @JvmSynthetic
     public suspend fun collectAgentEvents(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
@@ -738,11 +740,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         onActiveContextChanged?.invoke(validatedOptions)
         // v7 telemetry: resolve the effective integration once per invocation and
         // stamp every event of this call with one TelemetryCall envelope.
-        val feed = Telemetry.resolveTelemetry(telemetry, logger)?.let { tele ->
+        val feed = ResolveTelemetry(telemetry, logger)?.let { tele ->
             TelemetryFeed(
                 tele = tele,
                 call = TelemetryCall(
-                    callId = IdGenerator.generate("call"),
+                    callId = GenerateId("call"),
                     agentId = id,
                     agentVersion = version,
                     modelId = model.modelId,

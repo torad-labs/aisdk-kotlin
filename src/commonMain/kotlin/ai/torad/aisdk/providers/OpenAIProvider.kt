@@ -245,6 +245,22 @@ private class OpenAIImageModel(
 private const val OPENAI_SINGLE_IMAGE_PER_CALL: Int = 1
 private const val OPENAI_MULTI_IMAGE_PER_CALL: Int = 10
 
+internal fun OpenAIProviderTool(
+    id: String,
+    description: String,
+    args: JsonElement = JsonObject(emptyMap()),
+): Tool<JsonElement, JsonElement, Any?> =
+    ProviderExecutedTool(
+        name = id.substringAfter("openai."),
+        description = description,
+        inputSerializer = JsonElement.serializer(),
+        outputSerializer = JsonElement.serializer(),
+        metadata = mapOf(
+            "providerToolId" to JsonPrimitive(id),
+            "providerToolArgs" to args,
+        ),
+    )
+
 @Poko
 /** @since 0.3.0-beta01 */
 public class OpenAITools(
@@ -268,62 +284,44 @@ public class OpenAITools(
     public val mcp: Tool<JsonElement, JsonElement, Any?> = OpenAIMcp(),
     /** @since 0.3.0-beta01 */
     public val toolSearch: Tool<JsonElement, JsonElement, Any?> = OpenAIToolSearch(),
-) {
-    internal companion object {
-        internal fun providerTool(
-            id: String,
-            description: String,
-            args: JsonElement = JsonObject(emptyMap()),
-        ): Tool<JsonElement, JsonElement, Any?> =
-            ProviderExecutedTool(
-                name = id.substringAfter("openai."),
-                description = description,
-                inputSerializer = JsonElement.serializer(),
-                outputSerializer = JsonElement.serializer(),
-                metadata = mapOf(
-                    "providerToolId" to JsonPrimitive(id),
-                    "providerToolArgs" to args,
-                ),
-            )
-    }
-}
+)
 
 /** @since 0.3.0-beta01 */
 public fun OpenAIApplyPatch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    OpenAITools.providerTool("openai.apply_patch", "Apply structured file patches proposed by the model.", args)
+    OpenAIProviderTool("openai.apply_patch", "Apply structured file patches proposed by the model.", args)
 
 /** @since 0.3.0-beta01 */
 public fun OpenAICodeInterpreter(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    OpenAITools.providerTool("openai.code_interpreter", "Run Python code in OpenAI's hosted code interpreter.", args)
+    OpenAIProviderTool("openai.code_interpreter", "Run Python code in OpenAI's hosted code interpreter.", args)
 
 /** @since 0.3.0-beta01 */
 public fun OpenAIFileSearch(args: JsonElement): Tool<JsonElement, JsonElement, Any?> =
-    OpenAITools.providerTool("openai.file_search", "Search OpenAI vector stores through the Responses API.", args)
+    OpenAIProviderTool("openai.file_search", "Search OpenAI vector stores through the Responses API.", args)
 
 /** @since 0.3.0-beta01 */
 public fun OpenAIImageGeneration(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    OpenAITools.providerTool("openai.image_generation", "Generate images with OpenAI's hosted image tool.", args)
+    OpenAIProviderTool("openai.image_generation", "Generate images with OpenAI's hosted image tool.", args)
 
 /** @since 0.3.0-beta01 */
 public fun OpenAILocalShell(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    OpenAITools.providerTool("openai.local_shell", "Request local shell execution through a host integration.", args)
+    OpenAIProviderTool("openai.local_shell", "Request local shell execution through a host integration.", args)
 
 /** @since 0.3.0-beta01 */
 public fun OpenAIShell(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    OpenAITools.providerTool("openai.shell", "Request controlled shell command execution.", args)
+    OpenAIProviderTool("openai.shell", "Request controlled shell command execution.", args)
 
 /** @since 0.3.0-beta01 */
 public fun OpenAIWebSearchPreview(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    OpenAITools.providerTool("openai.web_search_preview", "Search the web with OpenAI's preview web search tool.", args)
+    OpenAIProviderTool("openai.web_search_preview", "Search the web with OpenAI's preview web search tool.", args)
 
 /** @since 0.3.0-beta01 */
 public fun OpenAIWebSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    OpenAITools.providerTool("openai.web_search", "Search the web with OpenAI's web search tool.", args)
+    OpenAIProviderTool("openai.web_search", "Search the web with OpenAI's web search tool.", args)
 
 /** @since 0.3.0-beta01 */
 public fun OpenAIMcp(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    OpenAITools.providerTool("openai.mcp", "Call remote MCP tools exposed to OpenAI Responses.", args)
+    OpenAIProviderTool("openai.mcp", "Call remote MCP tools exposed to OpenAI Responses.", args)
 
 /** @since 0.3.0-beta01 */
 public fun OpenAIToolSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    OpenAITools.providerTool("openai.tool_search", "Let the model search deferred tools dynamically.", args)
+    OpenAIProviderTool("openai.tool_search", "Let the model search deferred tools dynamically.", args)

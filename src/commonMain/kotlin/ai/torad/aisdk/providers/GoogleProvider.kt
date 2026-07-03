@@ -55,7 +55,7 @@ public class GoogleGenerativeAIProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
     /** @since 0.3.0-beta01 */
-    public val generateId: () -> String = { IdGenerator.generate() },
+    public val generateId: () -> String = { GenerateId() },
     /** @since 0.3.0-beta01 */
     public val name: String = "google.generative-ai",
     /** @since 0.3.0-beta01 */
@@ -81,7 +81,7 @@ public class GoogleGenerativeAIProviderSettingsBuilder {
     private var baseURL: String = "https://generativelanguage.googleapis.com/v1beta"
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
-    private var generateId: () -> String = { IdGenerator.generate() }
+    private var generateId: () -> String = { GenerateId() }
     private var name: String = "google.generative-ai"
     private var videoPollIntervalMillis: Long = 1_000L
     private var videoMaxPollAttempts: Int = 120
@@ -220,50 +220,48 @@ public fun GoogleGenerativeAI(
     settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings(),
 ): GoogleGenerativeAIProvider = GoogleGenerativeAIProvider(client, settings)
 
+internal fun GoogleProviderTool(
+    name: String,
+    id: String,
+    description: String,
+): Tool<JsonElement, JsonElement, Any?> =
+    ProviderExecutedTool(
+        name = name,
+        description = description,
+        inputSerializer = JsonElement.serializer(),
+        outputSerializer = JsonElement.serializer(),
+        metadata = mapOf("providerToolId" to JsonPrimitive(id)),
+    )
+
 @Poko
 /** @since 0.3.0-beta01 */
 public class GoogleTools(
     /** @since 0.3.0-beta01 */
     public val googleSearch: Tool<JsonElement, JsonElement, Any?> =
-        providerTool("google_search", "google.google_search", "Ground responses with Google Search."),
+        GoogleProviderTool("google_search", "google.google_search", "Ground responses with Google Search."),
     /** @since 0.3.0-beta01 */
     public val enterpriseWebSearch: Tool<JsonElement, JsonElement, Any?> =
-        providerTool(
+        GoogleProviderTool(
             "enterprise_web_search",
             "google.enterprise_web_search",
             "Ground responses with Enterprise Web Search."
         ),
     /** @since 0.3.0-beta01 */
     public val googleMaps: Tool<JsonElement, JsonElement, Any?> =
-        providerTool("google_maps", "google.google_maps", "Ground responses with Google Maps."),
+        GoogleProviderTool("google_maps", "google.google_maps", "Ground responses with Google Maps."),
     /** @since 0.3.0-beta01 */
     public val urlContext: Tool<JsonElement, JsonElement, Any?> =
-        providerTool("url_context", "google.url_context", "Fetch URL context through Google."),
+        GoogleProviderTool("url_context", "google.url_context", "Fetch URL context through Google."),
     /** @since 0.3.0-beta01 */
     public val fileSearch: Tool<JsonElement, JsonElement, Any?> =
-        providerTool("file_search", "google.file_search", "Use Gemini File Search."),
+        GoogleProviderTool("file_search", "google.file_search", "Use Gemini File Search."),
     /** @since 0.3.0-beta01 */
     public val codeExecution: Tool<JsonElement, JsonElement, Any?> =
-        providerTool("code_execution", "google.code_execution", "Use Google hosted code execution."),
+        GoogleProviderTool("code_execution", "google.code_execution", "Use Google hosted code execution."),
     /** @since 0.3.0-beta01 */
     public val vertexRagStore: Tool<JsonElement, JsonElement, Any?> =
-        providerTool("vertex_rag_store", "google.vertex_rag_store", "Use Vertex RAG Store."),
-) {
-    internal companion object {
-        internal fun providerTool(
-            name: String,
-            id: String,
-            description: String,
-        ): Tool<JsonElement, JsonElement, Any?> =
-            ProviderExecutedTool(
-                name = name,
-                description = description,
-                inputSerializer = JsonElement.serializer(),
-                outputSerializer = JsonElement.serializer(),
-                metadata = mapOf("providerToolId" to JsonPrimitive(id)),
-            )
-    }
-}
+        GoogleProviderTool("vertex_rag_store", "google.vertex_rag_store", "Use Vertex RAG Store."),
+)
 
 /** @since 0.3.0-beta01 */
 public val googleTools: GoogleTools = GoogleTools()

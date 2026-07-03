@@ -479,7 +479,7 @@ private class OpenResponsesLanguageModel(
     override val supportedUrls: Map<String, List<String>> = settings.supportedUrls
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val prepared = PreparedOpenResponsesRequest.from(
+        val prepared = PreparedOpenResponsesRequest(
             params,
             stream = false,
             providerOptionsName = settings.providerOptionsName ?: settings.name,
@@ -499,7 +499,7 @@ private class OpenResponsesLanguageModel(
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        val prepared = PreparedOpenResponsesRequest.from(
+        val prepared = PreparedOpenResponsesRequest(
             params,
             stream = true,
             providerOptionsName = settings.providerOptionsName ?: settings.name,
@@ -526,7 +526,7 @@ private class OpenResponsesLanguageModel(
     }
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult {
-        val prepared = PreparedOpenResponsesRequest.from(
+        val prepared = PreparedOpenResponsesRequest(
             params,
             stream = true,
             providerOptionsName = settings.providerOptionsName ?: settings.name,
@@ -734,7 +734,7 @@ private class OpenResponsesLanguageModel(
                             obj["id"],
                         )
                     }
-                    val action = obj["action"] as? JsonObject
+                    val action = JsonAccess.obj(obj, "action")
                     val output = when ((action?.get("type") as? JsonPrimitive)?.contentOrNull) {
                         "search" -> buildJsonObject {
                             put(
@@ -951,7 +951,7 @@ private class OpenResponsesLanguageModel(
                         }
                         "web_search_call" -> {
                             val itemId = itemIdFromItem(item, obj) ?: return listOf(missingIdentityError(type, "item_id"))
-                            val action = item["action"] as? JsonObject
+                            val action = JsonAccess.obj(item, "action")
                             val output = when ((action?.get("type") as? JsonPrimitive)?.contentOrNull) {
                                 "search" -> buildJsonObject {
                                     put(

@@ -59,7 +59,7 @@ internal object BedrockResponse {
                     content += ContentPart.Text((tool["input"] ?: JsonObject(emptyMap())).toString())
                 } else {
                     val call = ContentPart.ToolCall(
-                        toolCallId = (tool["toolUseId"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
+                        toolCallId = (tool["toolUseId"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
                         toolName = name,
                         input = tool["input"] ?: JsonObject(emptyMap()),
                     )
@@ -200,7 +200,7 @@ internal class BedrockStreamState(
             val index = (start["contentBlockIndex"] as? JsonPrimitive)?.intOrNull ?: return@let
             val toolUse = (JsonAccess.obj(start, "start"))?.get("toolUse") as? JsonObject
             if (toolUse != null) {
-                val id = (toolUse["toolUseId"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate()
+                val id = (toolUse["toolUseId"] as? JsonPrimitive)?.contentOrNull ?: GenerateId()
                 val name = (toolUse["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 val isJsonTool = usesJsonResponseTool && name == "json"
                 blocks[index] = BedrockStreamBlock.Tool(id, name, "", isJsonTool)

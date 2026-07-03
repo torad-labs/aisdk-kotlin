@@ -3,6 +3,8 @@
 
 package ai.torad.aisdk
 
+import kotlin.jvm.JvmSynthetic
+
 import dev.drewhamilton.poko.Poko
 
 /** @since 0.3.0-beta01 */
@@ -14,6 +16,7 @@ public interface SpeechModel {
     public val provider: String
         get() = "unknown"
 
+    @JvmSynthetic
     public suspend fun generate(params: SpeechGenerationParams): SpeechModelResult
 }
 
@@ -159,6 +162,7 @@ public class GenerateSpeechResult(
 
 /** @since 0.3.0-beta01 */
 public object SpeechGeneration {
+    @JvmSynthetic
     public suspend fun generateSpeech(
         model: SpeechModel,
         text: String,
@@ -198,6 +202,7 @@ public object SpeechGeneration {
 
     @ExperimentalAiSdkApi
     @Suppress("FunctionNaming")
+    @JvmSynthetic
     public suspend fun experimental_generateSpeech(
         model: SpeechModel,
         text: String,

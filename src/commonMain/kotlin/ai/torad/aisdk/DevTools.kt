@@ -11,6 +11,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.jvm.JvmOverloads
+import kotlin.jvm.JvmSynthetic
 import kotlin.time.TimeSource
 
 @Poko
@@ -58,8 +59,11 @@ public class DevToolsStepResult(
 @ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public interface DevToolsRecorder {
+    @JvmSynthetic
     public suspend fun createRun(runId: String)
+    @JvmSynthetic
     public suspend fun createStep(step: DevToolsStep)
+    @JvmSynthetic
     public suspend fun updateStepResult(stepId: String, result: DevToolsStepResult)
 }
 
@@ -98,8 +102,8 @@ public class InMemoryDevToolsRecorder : DevToolsRecorder {
 public fun DevToolsMiddleware(
     recorder: DevToolsRecorder = InMemoryDevToolsRecorder(),
     environment: String = "development",
-    runId: String = IdGenerator.generate(prefix = "run"),
-    idGenerator: () -> String = { IdGenerator.generate(prefix = "step") },
+    runId: String = GenerateId(prefix = "run"),
+    idGenerator: () -> String = { GenerateId(prefix = "step") },
 ): LanguageModelMiddleware {
     if (environment == "production") {
         throw UnsupportedFunctionalityError(

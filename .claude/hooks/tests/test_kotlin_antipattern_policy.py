@@ -395,6 +395,38 @@ smoke_allowed = policy.run({"tool_name": "Write", "tool_input": {
 }})
 check("smoke-tests/ Kotlin is exempt from library rules", smoke_allowed is None or smoke_allowed.kind != "block")
 
+# Test-source scoping (2026-07-03 misfire): ci-gate.sh never feeds src/commonTest or
+# src/jvmTest to no-core-import-providers (its default `dirs` list has no Test
+# directory), so a provider-under-test file legitimately importing
+# ai.torad.aisdk.providers must not be blocked here either. commonMain stays guarded.
+provider_import_kt = (
+    "package ai.torad.aisdk\n\nimport ai.torad.aisdk.providers.OpenAIProvider\n\ninternal class Foo\n"
+)
+common_test_allowed = policy.run({"tool_name": "Write", "tool_input": {
+    "file_path": str(ROOT / "src" / "commonTest" / "kotlin" / "ai" / "torad" / "aisdk" / "ScopeSample.kt"),
+    "content": provider_import_kt,
+}})
+check(
+    "commonTest provider import is exempt from no-core-import-providers",
+    common_test_allowed is None or common_test_allowed.kind != "block",
+)
+jvm_test_allowed = policy.run({"tool_name": "Write", "tool_input": {
+    "file_path": str(ROOT / "src" / "jvmTest" / "kotlin" / "ai" / "torad" / "aisdk" / "ScopeSample.kt"),
+    "content": provider_import_kt,
+}})
+check(
+    "jvmTest provider import is exempt (ci-gate.sh never scans jvmTest at all)",
+    jvm_test_allowed is None or jvm_test_allowed.kind != "block",
+)
+common_main_blocked = policy.run({"tool_name": "Write", "tool_input": {
+    "file_path": str(ROOT / "src" / "commonMain" / "kotlin" / "ai" / "torad" / "aisdk" / "ScopeSample.kt"),
+    "content": provider_import_kt,
+}})
+check(
+    "commonMain provider import is still blocked where ci-gate.sh actually scans",
+    bool(common_main_blocked and common_main_blocked.kind == "block"),
+)
+
 if failures:
     print(f"FAILED {ran - len(failures)}/{ran}")
     for failure in failures:

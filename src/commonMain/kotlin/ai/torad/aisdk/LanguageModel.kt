@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlin.jvm.JvmSynthetic
+
 import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -58,6 +60,7 @@ public interface LanguageModel {
 
     /** One-shot completion. Requires explicit low-level opt-in at direct call sites. */
     @LowLevelLanguageModelApi
+    @JvmSynthetic
     public suspend fun generate(params: LanguageModelCallParams): LanguageModelResult
 
     /**

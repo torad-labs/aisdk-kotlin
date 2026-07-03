@@ -1,0 +1,11 @@
+id: no-public-inline-calling-internal
+language: kotlin
+severity: warning
+message: "Public inline fun found — inline function bodies are copied into every call site, so any internal/private member they reference must be @PublishedApi (or the reference is a compile error at the call site's module boundary). Manually verify this body doesn't reach for an internal declaration without @PublishedApi."
+rule:
+  kind: function_declaration
+  has:
+    kind: modifiers
+    all:
+      - has: { kind: visibility_modifier, regex: '^public$' }
+      - has: { kind: function_modifier, regex: '^inline$' }

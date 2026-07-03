@@ -28,7 +28,7 @@ internal data class ProviderCapabilities(
 // Shared JSON field readers for the OpenAI-compatible provider facades
 // (FacadeSupport) plus the raw HTTP transport used by the image/reranking models
 // (FacadeHttp). The settings builder and usage construction now live on their
-// owning types (OpenAICompatibleProviderSettings.forFacade, Usage.fromParts);
+// owning types (ForFacade, UsageFromParts);
 // these readers stay here because they are generic JsonObject/JsonArray accessors
 // with several unrelated facade consumers and no single owning type.
 internal object FacadeSupport {

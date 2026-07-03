@@ -327,7 +327,7 @@ private class VoyageRerankingModel(
             ?: 0
         return RerankingModelResult(
             results = results,
-            usage = Usage.of(promptTokens = totalTokens, completionTokens = 0),
+            usage = Usage(promptTokens = totalTokens, completionTokens = 0),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
         )
     }

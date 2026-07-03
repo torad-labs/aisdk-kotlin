@@ -45,7 +45,7 @@ class SimulateStreamingTest {
                 text = text,
                 toolCalls = toolCalls,
                 finishReason = FinishReason.Stop,
-                usage = Usage.of(promptTokens = PROMPT_TOK_FIXTURE, completionTokens = text.length),
+                usage = Usage(promptTokens = PROMPT_TOK_FIXTURE, completionTokens = text.length),
             )
 
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {

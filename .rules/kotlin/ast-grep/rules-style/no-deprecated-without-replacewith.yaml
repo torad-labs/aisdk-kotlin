@@ -1,0 +1,10 @@
+id: no-deprecated-without-replacewith
+language: kotlin
+severity: warning
+message: "@Deprecated is missing ReplaceWith — add ReplaceWith(\"...\") so IDEs can auto-migrate callers, or explain why no mechanical replacement exists."
+rule:
+  kind: annotation
+  all:
+    - has: { kind: type_identifier, regex: '^Deprecated$', stopBy: end }
+    - not:
+        has: { kind: simple_identifier, regex: '^ReplaceWith$', stopBy: end }

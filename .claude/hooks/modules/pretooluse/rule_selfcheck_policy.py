@@ -31,8 +31,9 @@ WRITE_TOOLS = {"Write", "Edit", "MultiEdit"}
 
 HOOKS_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = HOOKS_ROOT.parents[1]
-RULES_DIR = HOOKS_ROOT / "rules" / "kotlin"
-MANIFEST_PATH = HOOKS_ROOT / "rules" / "manifest.json"
+RULES_ROOT = REPO_ROOT / ".rules" / "kotlin" / "ast-grep"
+RULES_DIRS = [RULES_ROOT / "rules", RULES_ROOT / "rules-style"]
+MANIFEST_PATH = HOOKS_ROOT / "rules" / "manifest.json"  # legacy, may migrate later
 SELFCHECK_SCAN_TIMEOUT = 2.0
 
 
@@ -93,10 +94,14 @@ def _resolve_event_path(data: dict, raw: str) -> Path:
 def _is_checked_path(path: Path) -> bool:
     if path == MANIFEST_PATH.resolve(strict=False):
         return True
-    try:
-        return path.suffix == ".yaml" and path.is_relative_to(RULES_DIR.resolve(strict=False))
-    except ValueError:
+    if path.suffix != ".yaml":
         return False
+    resolved = path.resolve(strict=False)
+    return any(
+        resolved.is_relative_to(rd.resolve(strict=False))
+        for rd in RULES_DIRS
+        if rd.is_dir()
+    )
 
 
 def _post_edit_content(data: dict, path: Path) -> str | None:
@@ -211,7 +216,7 @@ def _check_manifest(post: str) -> HookResult | None:
     dangling = [
         str(e.get("id"))
         for e in entries
-        if isinstance(e, dict) and not (RULES_DIR / f"{e.get('id')}.yaml").is_file()
+        if isinstance(e, dict) and not _rule_file_exists(str(e.get("id", "")))
     ]
     if dangling:
         return _block(
@@ -219,6 +224,14 @@ def _check_manifest(post: str) -> HookResult | None:
             "files: " + ", ".join(dangling[:5]) + ". Fix the ids or add the rules."
         )
     return None
+
+
+def _rule_file_exists(rule_id: str) -> bool:
+    """Check if a rule file exists in any of the rules directories."""
+    for rule_dir in RULES_DIRS:
+        if (rule_dir / f"{rule_id}.yaml").is_file():
+            return True
+    return False
 
 
 def _manifest_entry(rule_id: str) -> dict | None:

@@ -13,7 +13,9 @@ set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT"
-RULES_DIR=".claude/hooks/rules/kotlin"
+RULES_ROOT=".rules/kotlin/ast-grep"
+RULES_DIR="$RULES_ROOT/rules"           # LAW rules (blocking, severity: error)
+STYLE_DIR="$RULES_ROOT/rules-style"     # opt-in tenets (non-blocking, severity: warning)
 if [ -z "${AG:-}" ]; then
   if [ -x "$ROOT/node_modules/.bin/ast-grep" ]; then
     AG="$ROOT/node_modules/.bin/ast-grep"
@@ -44,8 +46,10 @@ try: print(len(json.load(sys.stdin)))
 except Exception: print(0)'
 }
 
-echo "== architecture gate: error-severity ast-grep rules =="
+echo "== architecture gate: error-severity ast-grep rules (LAW) =="
+# Scan rules/ directory (LAW rules - blocking)
 for f in "$RULES_DIR"/*.yaml; do
+  [ -f "$f" ] || continue
   base=$(basename "$f" .yaml)
   # Honor the `disabled_` convention (same as the Claude PreToolUse policy): staged
   # rules are not enforced until renamed to activate.
@@ -72,26 +76,31 @@ done
 
 echo "== cancellation correctness warning report =="
 warning_dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin"
-ag_name=AG
-ag_path="${!ag_name}"
 for warning_rule in no-throwable-catch-without-rethrow no-runcatching-in-suspend; do
-  warning_file=".claude/hooks/rules/kotlin/$warning_rule.yaml"
-  n=$(count "$warning_file" "$warning_dirs")
-  echo "  $warning_rule: $n warning(s)"
-  if [ "$n" -gt 0 ] 2>/dev/null; then
-    "$ag_path" scan --rule "$warning_file" $warning_dirs 2>/dev/null | head -12
-  fi
+  # Check both rules/ (LAW) and rules-style/ (opt-in)
+  for rule_subdir in "$RULES_DIR" "$STYLE_DIR"; do
+    warning_file="$rule_subdir/$warning_rule.yaml"
+    [ -f "$warning_file" ] || continue
+    n=$(count "$warning_file" "$warning_dirs")
+    echo "  $warning_rule: $n warning(s)"
+    if [ "$n" -gt 0 ] 2>/dev/null; then
+      "$AG" scan --rule "$warning_file" $warning_dirs 2>/dev/null | head -12
+    fi
+    break  # found, don't check the other dir
+  done
 done
 
 echo "== non-integrated (internal, cross-file) gate =="
 python3 .claude/hooks/rules/detect-nonintegrated-kotlin.py src --check || fail=1
 
 echo "== ast-grep rule self-test gate =="
+# Validate both LAW rules and style rules
 python3 .claude/hooks/rules/validate_rules.py "$RULES_DIR" || fail=1
-python3 .claude/hooks/rules/validate_rules.py --manifest .claude/hooks/rules/manifest.json --autofix-registry .claude/hooks/rules/autofix-registry.json || fail=1
+python3 .claude/hooks/rules/validate_rules.py "$STYLE_DIR" || fail=1
+python3 .claude/hooks/rules/validate_rules.py --manifest .claude/hooks/rules/manifest.json --autofix-registry "$RULES_ROOT/registry.json" || fail=1
 python3 .claude/hooks/rules/validate_rules.py --hunk-mode .claude/hooks/rules/manifest.json || fail=1
 echo "== ast-grep autofix pre-pass =="
-python3 .claude/hooks/rules/validate_rules.py --apply-autofix .claude/hooks/rules/autofix-registry.json src/commonMain/kotlin src/commonTest/kotlin || exit 1
+python3 .claude/hooks/rules/validate_rules.py --apply-autofix "$RULES_ROOT/registry.json" src/commonMain/kotlin src/commonTest/kotlin || exit 1
 node tools/run-gate-fixtures.mjs || fail=1
 
 echo "== consumer migration rule gate =="

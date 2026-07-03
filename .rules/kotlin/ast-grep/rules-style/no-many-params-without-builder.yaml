@@ -1,0 +1,18 @@
+id: no-many-params-without-builder
+language: kotlin
+severity: warning
+message: "Class constructor has 5 or more parameters. A long positional parameter list is error-prone at call sites (easy to transpose two same-typed args) and freezes a wide surface into the ABI the moment it's public. Front construction with a DSL builder instead: a private-var-backed Builder class with public setter methods + an internal primary constructor + a factory function (see CLAUDE.md's construct-type pattern), so fields can be added later without breaking callers."
+rule:
+  kind: class_parameter
+  follows:
+    kind: class_parameter
+    stopBy: end
+    follows:
+      kind: class_parameter
+      stopBy: end
+      follows:
+        kind: class_parameter
+        stopBy: end
+        follows:
+          kind: class_parameter
+          stopBy: end

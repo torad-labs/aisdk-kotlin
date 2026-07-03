@@ -1,7 +1,7 @@
 package ai.torad.aisdk.ui
 
 import ai.torad.aisdk.StreamEvent
-import ai.torad.aisdk.StreamEvent.Companion.toUIMessageChunk
+import ai.torad.aisdk.ToUIMessageChunk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.JsonObject
@@ -18,4 +18,4 @@ import kotlinx.serialization.json.JsonObject
  * @since 0.3.0-beta01
  */
 public fun ToUIMessageStream(events: Flow<StreamEvent>): Flow<JsonObject> =
-    events.mapNotNull { it.toUIMessageChunk() }
+    events.mapNotNull { it.ToUIMessageChunk() }

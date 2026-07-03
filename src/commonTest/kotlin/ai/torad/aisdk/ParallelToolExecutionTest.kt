@@ -198,13 +198,13 @@ class ParallelToolExecutionTest {
         val release = CompletableDeferred<Unit>()
         val startedIds = mutableListOf<String>()
         val abortAwareTool = AbortAwareTool(
-            firstWaveSize = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS,
+            firstWaveSize = DEFAULT_MAX_PARALLEL_TOOL_CALLS,
             firstWaveStarted = firstWaveStarted,
             release = release,
             startedIds = startedIds,
         )
         val agent = TestToolLoopAgent<Unit, String>(
-            model = ManyToolsThenText(toolCallCount = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS + 1),
+            model = ManyToolsThenText(toolCallCount = DEFAULT_MAX_PARALLEL_TOOL_CALLS + 1),
             instructions = "x",
             tools = ToolSet(abortAwareTool),
         )
@@ -220,7 +220,7 @@ class ParallelToolExecutionTest {
 
         val events = eventsDeferred.await()
         assertEquals(
-            (0 until ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS).map { "c_$it" }.toSet(),
+            (0 until DEFAULT_MAX_PARALLEL_TOOL_CALLS).map { "c_$it" }.toSet(),
             startedIds.toSet(),
         )
         assertEquals(1, events.count { it == StreamEvent.Abort }, "aborted default-cap step emits one terminal Abort")

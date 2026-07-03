@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlin.jvm.JvmSynthetic
+
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -20,6 +22,7 @@ import dev.drewhamilton.poko.Poko
 /** @since 0.3.0-beta01 */
 public fun interface StopCondition {
     /** True if the loop should stop after the just-completed step. */
+    @JvmSynthetic
     public suspend fun shouldStop(state: LoopState): Boolean
 }
 

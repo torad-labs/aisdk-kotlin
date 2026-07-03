@@ -23,7 +23,7 @@ public class CerebrasProviderSettings internal constructor(
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
+        ForFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
 /** @since 0.3.0-beta01 */

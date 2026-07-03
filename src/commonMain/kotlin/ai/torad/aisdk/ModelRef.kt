@@ -16,6 +16,8 @@ public value class ProviderId(public val value: String) {
     override fun toString(): String = value
 
     public companion object {
+        public operator fun invoke(value: String): ProviderId = of(value)
+
         @JvmExposeBoxed
         @AiSdkJvmStatic
         /** @since 0.3.0-beta01 */
@@ -34,11 +36,22 @@ public value class ModelId(public val value: String) {
     override fun toString(): String = value
 
     public companion object {
+        public operator fun invoke(value: String): ModelId = of(value)
+
         @JvmExposeBoxed
         @AiSdkJvmStatic
         /** @since 0.3.0-beta01 */
         public fun of(value: String): ModelId = ModelId(value)
     }
+}
+
+/** @since 0.3.0-beta01 */
+public fun ParseModelRef(value: String): ModelRef {
+    val (providerId, modelId) = SplitProviderModelId(value)
+    return ModelRef(
+        modelId = ModelId(modelId),
+        providerId = providerId?.let(::ProviderId),
+    )
 }
 
 /** @since 0.3.0-beta01 */
@@ -50,17 +63,6 @@ public data class ModelRef(
         get() = providerId?.let { "${it.value}:${modelId.value}" } ?: modelId.value
 
     override fun toString(): String = qualifiedName
-
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun parse(value: String): ModelRef {
-            val (providerId, modelId) = ProviderRegistry.splitProviderModelId(value)
-            return ModelRef(
-                modelId = ModelId(modelId),
-                providerId = providerId?.let(::ProviderId),
-            )
-        }
-    }
 }
 
 /**
@@ -79,7 +81,7 @@ public object ModelIdentifiers {
 }
 
 /** @since 0.3.0-beta01 */
-public fun ModelRef(value: String): ModelRef = ModelRef.parse(value)
+public fun ModelRef(value: String): ModelRef = ParseModelRef(value)
 
 /** @since 0.3.0-beta01 */
 public fun ModelRef(providerId: ProviderId, modelId: ModelId): ModelRef =

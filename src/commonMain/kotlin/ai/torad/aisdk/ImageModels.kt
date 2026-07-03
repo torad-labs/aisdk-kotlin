@@ -3,6 +3,8 @@
 
 package ai.torad.aisdk
 
+import kotlin.jvm.JvmSynthetic
+
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -28,6 +30,7 @@ public interface ImageModel {
     public val maxImagesPerCall: Int?
         get() = null
 
+    @JvmSynthetic
     public suspend fun generate(params: ImageGenerationParams): ImageModelResult
 }
 
@@ -163,6 +166,23 @@ public class ImageGenerationFile(
     public val filename: String? = null,
 )
 
+/** Sum image usage across n-batched calls; a field stays null only if every call left it null. */
+internal fun ImageModelUsageSum(usages: List<ImageModelUsage>): ImageModelUsage {
+    fun sum(selector: (ImageModelUsage) -> Int?): Int? =
+        usages.mapNotNull(selector).takeIf { it.isNotEmpty() }?.sum()
+    return ImageModelUsage(sum { it.inputTokens }, sum { it.outputTokens }, sum { it.totalTokens })
+}
+
+/** Image usage from an OpenAI-compatible image response `usage` object. */
+internal fun ImageModelUsageFromOpenAI(value: JsonElement?): ImageModelUsage {
+    val obj = value as? JsonObject ?: return ImageModelUsage()
+    return ImageModelUsage(
+        inputTokens = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull,
+        outputTokens = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull,
+        totalTokens = (obj["total_tokens"] as? JsonPrimitive)?.intOrNull,
+    )
+}
+
 /**
  * Token usage reported by an image model, when available. Mirrors v6's `ImageModelUsage`.
  * @since 0.3.0-beta01
@@ -175,26 +195,7 @@ public class ImageModelUsage(
     public val outputTokens: Int? = null,
     /** @since 0.3.0-beta01 */
     public val totalTokens: Int? = null,
-) {
-    public companion object {
-        /** Sum image usage across n-batched calls; a field stays null only if every call left it null. */
-        internal fun sum(usages: List<ImageModelUsage>): ImageModelUsage {
-            fun sum(selector: (ImageModelUsage) -> Int?): Int? =
-                usages.mapNotNull(selector).takeIf { it.isNotEmpty() }?.sum()
-            return ImageModelUsage(sum { it.inputTokens }, sum { it.outputTokens }, sum { it.totalTokens })
-        }
-
-        /** Image usage from an OpenAI-compatible image response `usage` object. */
-        internal fun fromOpenAI(value: JsonElement?): ImageModelUsage {
-            val obj = value as? JsonObject ?: return ImageModelUsage()
-            return ImageModelUsage(
-                inputTokens = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull,
-                outputTokens = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull,
-                totalTokens = (obj["total_tokens"] as? JsonPrimitive)?.intOrNull,
-            )
-        }
-    }
-}
+)
 
 @Poko
 /** @since 0.3.0-beta01 */
@@ -237,6 +238,7 @@ public class GenerateImageResult(
 /** @since 0.3.0-beta01 */
 public object ImageGeneration {
     @Suppress("LongParameterList")
+    @JvmSynthetic
     public suspend fun generateImage(
         model: ImageModel,
         prompt: String,
@@ -293,12 +295,13 @@ public object ImageGeneration {
                 (it.providerMetadata as? ProviderMetadata.Raw)
             } ?: ProviderMetadata.None,
             responses = results.map { it.response },
-            usage = ImageModelUsage.sum(results.map { it.usage }),
+            usage = ImageModelUsageSum(results.map { it.usage }),
         )
     }
 
     @ExperimentalAiSdkApi
     @Suppress("FunctionNaming", "LongParameterList")
+    @JvmSynthetic
     public suspend fun experimental_generateImage(
         model: ImageModel,
         prompt: String,
@@ -330,6 +333,7 @@ public object ImageGeneration {
 
 /** @since 0.3.0-beta01 */
 public interface ImageModelMiddleware {
+    @JvmSynthetic
     public suspend fun wrapGenerate(context: ImageMiddlewareCallContext): ImageModelResult =
         context.doGenerate(context.params)
 }

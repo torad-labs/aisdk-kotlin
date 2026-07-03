@@ -166,7 +166,7 @@ class D14ErrorsParsersTelemetryOAuthPokoTest {
         val result = DevToolsStepResult(
             durationMs = 10,
             output = JsonPrimitive("done"),
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
             error = null,
             rawRequest = JsonPrimitive("request"),
             rawResponse = JsonPrimitive("response"),
@@ -175,7 +175,7 @@ class D14ErrorsParsersTelemetryOAuthPokoTest {
         val equalResult = DevToolsStepResult(
             durationMs = 10,
             output = JsonPrimitive("done"),
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
             error = null,
             rawRequest = JsonPrimitive("request"),
             rawResponse = JsonPrimitive("response"),
@@ -184,7 +184,7 @@ class D14ErrorsParsersTelemetryOAuthPokoTest {
         val differentResult = DevToolsStepResult(
             durationMs = 11,
             output = JsonPrimitive("done"),
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
             error = null,
             rawRequest = JsonPrimitive("request"),
             rawResponse = JsonPrimitive("response"),

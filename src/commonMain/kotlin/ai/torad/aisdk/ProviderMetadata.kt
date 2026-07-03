@@ -12,6 +12,14 @@ import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 
+/** @since 0.3.0-beta01 */
+public fun ProviderMetadata(vararg pairs: Pair<String, JsonObject>): ProviderMetadata =
+    if (pairs.isEmpty()) {
+        ProviderMetadata.None
+    } else {
+        ProviderMetadata.Raw(JsonObject(pairs.associate { (k, v) -> k to (v as JsonElement) }))
+    }
+
 @Serializable(with = ProviderMetadataSerializer::class)
 /** @since 0.3.0-beta01 */
 public sealed class ProviderMetadata {
@@ -34,16 +42,6 @@ public sealed class ProviderMetadata {
         this is None -> other
         this is Raw && other is Raw -> Raw(JsonObject(metadata + other.metadata))
         else -> other
-    }
-
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun ofPairs(vararg pairs: Pair<String, JsonObject>): ProviderMetadata =
-            if (pairs.isEmpty()) {
-                None
-            } else {
-                Raw(JsonObject(pairs.associate { (k, v) -> k to (v as JsonElement) }))
-            }
     }
 }
 

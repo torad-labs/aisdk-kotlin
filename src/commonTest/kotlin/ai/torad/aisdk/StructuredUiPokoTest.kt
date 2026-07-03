@@ -18,21 +18,21 @@ class StructuredUiPokoTest {
     fun `D12 structured object Poko result types keep value semantics`() {
         val finish = StreamObjectFinish(
             value = mapOf("city" to "Paris"),
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
             finishReason = FinishReason.Stop,
             warnings = listOf(CallWarning(type = "other", message = "heads up")),
             response = LanguageModelResponseMetadata(id = "resp_1", modelId = "model"),
         )
         val equalFinish = StreamObjectFinish(
             value = mapOf("city" to "Paris"),
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
             finishReason = FinishReason.Stop,
             warnings = listOf(CallWarning(type = "other", message = "heads up")),
             response = LanguageModelResponseMetadata(id = "resp_1", modelId = "model"),
         )
         val differentFinish = StreamObjectFinish(
             value = mapOf("city" to "Rome"),
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
             finishReason = FinishReason.Stop,
             warnings = listOf(CallWarning(type = "other", message = "heads up")),
             response = LanguageModelResponseMetadata(id = "resp_1", modelId = "model"),

@@ -34,7 +34,7 @@ public class AnthropicAwsProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null,
     /** @since 0.3.0-beta01 */
-    public val generateId: () -> String = { IdGenerator.generate() },
+    public val generateId: () -> String = { GenerateId() },
 ) {
     internal fun anthropicAwsBaseURL(): String =
         baseURL?.trimEnd('/')
@@ -94,7 +94,7 @@ public class AnthropicAwsProviderSettingsBuilder {
     private var baseURL: String? = null
     private var headers: Map<String, String> = emptyMap()
     private var credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null
-    private var generateId: () -> String = { IdGenerator.generate() }
+    private var generateId: () -> String = { GenerateId() }
 
     /** @since 0.3.0-beta01 */
     public fun region(value: String?): AnthropicAwsProviderSettingsBuilder {

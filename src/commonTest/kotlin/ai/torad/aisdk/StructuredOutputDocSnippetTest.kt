@@ -44,24 +44,24 @@ class StructuredOutputDocSnippetTest {
             ),
         ).generate(
             GenerationInput.Prompt("Generate a simple soup recipe."),
-            Output.obj(serializer<Recipe>(), name = "Recipe"),
+            OutputObj(serializer<Recipe>(), name = "Recipe"),
         ).first().output
 
         val findings = TextGenerator(
             MockLanguageModelTextOnly("""[{"title":"Latency","severity":"high"}]"""),
         ).generate(
             GenerationInput.Prompt("List likely issues in this bug report."),
-            Output.array(serializer<Finding>(), name = "FindingList"),
+            OutputArray(serializer<Finding>(), name = "FindingList"),
         ).first().output
 
         val priority = TextGenerator(MockLanguageModelTextOnly(""""high"""")).generate(
             GenerationInput.Prompt("Classify this ticket: production checkout is down."),
-            Output.choice("low", "medium", "high", name = "Priority"),
+            OutputChoice("low", "medium", "high", name = "Priority"),
         ).first().output
 
         val json = TextGenerator(MockLanguageModelTextOnly("""{"summary":"checkout down"}""")).generate(
             GenerationInput.Prompt("Return a small JSON object with the issue summary."),
-            Output.json(name = "IssueSummary"),
+            OutputJson(name = "IssueSummary"),
         ).first().output
 
         assertEquals(Recipe("Soup", listOf("water"), listOf("heat")), recipe)
@@ -73,7 +73,7 @@ class StructuredOutputDocSnippetTest {
     @Test
     fun `structured object generator snippet streams to a final typed value`() = runTest {
         val schema = Schemas.jsonSchema(
-            schema = Output.array(serializer<ChecklistItem>()).schema,
+            schema = OutputArray(serializer<ChecklistItem>()).schema,
             validate = { element ->
                 aiSdkOutputJson.decodeFromJsonElement(
                     ListSerializer(serializer<ChecklistItem>()),

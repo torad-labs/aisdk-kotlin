@@ -467,36 +467,34 @@ public fun Prodia(
     settings: ProdiaProviderSettings = ProdiaProviderSettings(),
 ): ProdiaProvider = ProdiaProvider(client, settings)
 
+internal suspend fun FromGeneratedFile(client: HttpClient, file: GeneratedFile): ProdiaInputFile {
+    val bytes = file.url?.takeIf { it.isNotBlank() }
+        ?.let { url ->
+            // Ktor isn't configured with expectSuccess, so check the status manually (every
+            // sibling download helper does) — otherwise a 404/500 error page is uploaded as
+            // the input image, surfacing as a confusing downstream Prodia rejection.
+            val response = client.request(url)
+            val body = response.bodyAsBytes()
+            if (response.status.value !in 200..299) {
+                throw ApiCallError(
+                    url = url,
+                    statusCode = response.status.value,
+                    rawBody = body.decodeToString(),
+                    headers = with(HttpTransport) { response.flattenedHeaders() },
+                    message = "Prodia input file download failed with status ${response.status.value}",
+                )
+            }
+            body
+        }
+        ?: Base64Codec.decode(file.base64)
+    return ProdiaInputFile(file.mediaType, bytes, file.filename)
+}
+
 internal class ProdiaInputFile(
     val mediaType: String,
     val bytes: ByteArray,
     val filename: String? = null,
-) {
-    companion object {
-        internal suspend fun fromGeneratedFile(client: HttpClient, file: GeneratedFile): ProdiaInputFile {
-            val bytes = file.url?.takeIf { it.isNotBlank() }
-                ?.let { url ->
-                    // Ktor isn't configured with expectSuccess, so check the status manually (every
-                    // sibling download helper does) — otherwise a 404/500 error page is uploaded as
-                    // the input image, surfacing as a confusing downstream Prodia rejection.
-                    val response = client.request(url)
-                    val body = response.bodyAsBytes()
-                    if (response.status.value !in 200..299) {
-                        throw ApiCallError(
-                            url = url,
-                            statusCode = response.status.value,
-                            rawBody = body.decodeToString(),
-                            headers = with(HttpTransport) { response.flattenedHeaders() },
-                            message = "Prodia input file download failed with status ${response.status.value}",
-                        )
-                    }
-                    body
-                }
-                ?: Base64Codec.decode(file.base64)
-            return ProdiaInputFile(file.mediaType, bytes, file.filename)
-        }
-    }
-}
+)
 
 private class ProdiaMultipartPart(
     val headers: Map<String, String>,

@@ -33,7 +33,7 @@ class LifecycleHooksTest {
             toolResults = emptyList(),
             toolApprovalRequests = emptyList(),
             finishReason = FinishReason.Stop,
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
         )
         val equalStep = ResultConstruction.stepResult(
             stepNumber = 1,
@@ -43,7 +43,7 @@ class LifecycleHooksTest {
             toolResults = emptyList(),
             toolApprovalRequests = emptyList(),
             finishReason = FinishReason.Stop,
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
         )
         val differentStep = ResultConstruction.stepResult(
             stepNumber = 1,
@@ -53,7 +53,7 @@ class LifecycleHooksTest {
             toolResults = emptyList(),
             toolApprovalRequests = emptyList(),
             finishReason = FinishReason.Stop,
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
         )
         assertEquals(step, equalStep)
         assertEquals(step.hashCode(), equalStep.hashCode())
@@ -84,19 +84,19 @@ class LifecycleHooksTest {
         val finished = AgentEvent.Finished<Unit, String>(
             output = "done",
             totalSteps = 1,
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
             messages = listOf(AssistantMessage("done")),
         )
         val equalFinished = AgentEvent.Finished<Unit, String>(
             output = "done",
             totalSteps = 1,
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
             messages = listOf(AssistantMessage("done")),
         )
         val differentFinished = AgentEvent.Finished<Unit, String>(
             output = "different",
             totalSteps = 1,
-            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            usage = Usage(promptTokens = 1, completionTokens = 2),
             messages = listOf(AssistantMessage("done")),
         )
         assertEquals(finished, equalFinished)

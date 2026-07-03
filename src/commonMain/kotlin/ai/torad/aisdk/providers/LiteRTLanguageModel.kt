@@ -3,8 +3,11 @@
 
 package ai.torad.aisdk.providers
 
+import kotlin.jvm.JvmSynthetic
+
 import ai.torad.aisdk.CallWarning
 import ai.torad.aisdk.FinishReason
+import ai.torad.aisdk.GenerateId
 import ai.torad.aisdk.IdGenerator
 import ai.torad.aisdk.LanguageModel
 import ai.torad.aisdk.LanguageModelCallParams
@@ -75,13 +78,20 @@ public class LiteRTBytes(bytes: ByteArray) {
     public fun toByteArray(): ByteArray = value.copyOf()
 }
 
+/** @since 0.3.0-beta01 */
+public val LiteRTSamplerConfigDefault: LiteRTSamplerConfig = LiteRTSamplerConfig(
+    topK = 40,
+    topP = 0.95,
+    temperature = 1.0,
+)
+
 @Poko
 /**
  * LiteRT sampling configuration passed to the host engine.
  *
  * Values mirror the common per-call sampling knobs. When a call does not
  * provide an override, [LiteRTLanguageModelSettings.defaultSamplerConfig] or
- * [Default] supplies the base values.
+ * [LiteRTSamplerConfigDefault] supplies the base values.
  * @since 0.3.0-beta01
  */
 public class LiteRTSamplerConfig internal constructor(
@@ -93,21 +103,12 @@ public class LiteRTSamplerConfig internal constructor(
     public val temperature: Double,
     /** @since 0.3.0-beta01 */
     public val seed: Int = 0,
-) {
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public val Default: LiteRTSamplerConfig = LiteRTSamplerConfig(
-            topK = 40,
-            topP = 0.95,
-            temperature = 1.0,
-        )
-    }
-}
+)
 
 /**
  * Builder for [LiteRTSamplerConfig].
  *
- * Empty blocks are valid and resolve to [LiteRTSamplerConfig.Default].
+ * Empty blocks are valid and resolve to [LiteRTSamplerConfigDefault].
  * @since 0.3.0-beta01
  */
 public class LiteRTSamplerConfigBuilder {
@@ -143,9 +144,9 @@ public class LiteRTSamplerConfigBuilder {
     /** @since 0.3.0-beta01 */
     public fun build(): LiteRTSamplerConfig =
         LiteRTSamplerConfig(
-            topK = topK ?: LiteRTSamplerConfig.Default.topK,
-            topP = topP ?: LiteRTSamplerConfig.Default.topP,
-            temperature = temperature ?: LiteRTSamplerConfig.Default.temperature,
+            topK = topK ?: LiteRTSamplerConfigDefault.topK,
+            topP = topP ?: LiteRTSamplerConfigDefault.topP,
+            temperature = temperature ?: LiteRTSamplerConfigDefault.temperature,
             seed = seed,
         )
 }
@@ -222,6 +223,65 @@ public fun LiteRTChannel(
 ): LiteRTChannel =
     LiteRTChannelBuilder().apply(block).build()
 
+// Top-level content factories.
+// Naming: `LiteRTContent<Variant>(...)` mirrors the nested `LiteRTContent.<Variant>` type.
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentText(text: String): LiteRTContent.Text = LiteRTContent.Text(text)
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentText(block: LiteRTContent.Text.Builder.() -> Unit): LiteRTContent.Text =
+    LiteRTContent.Text.Builder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentImageBytes(
+    bytes: LiteRTBytes,
+    mediaType: String? = null,
+): LiteRTContent.ImageBytes = LiteRTContent.ImageBytes(bytes, mediaType)
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentImageBytes(block: LiteRTContent.ImageBytes.Builder.() -> Unit): LiteRTContent.ImageBytes =
+    LiteRTContent.ImageBytes.Builder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentImageFile(
+    absolutePath: String,
+    mediaType: String? = null,
+): LiteRTContent.ImageFile = LiteRTContent.ImageFile(absolutePath, mediaType)
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentImageFile(block: LiteRTContent.ImageFile.Builder.() -> Unit): LiteRTContent.ImageFile =
+    LiteRTContent.ImageFile.Builder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentAudioBytes(
+    bytes: LiteRTBytes,
+    mediaType: String? = null,
+): LiteRTContent.AudioBytes = LiteRTContent.AudioBytes(bytes, mediaType)
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentAudioBytes(block: LiteRTContent.AudioBytes.Builder.() -> Unit): LiteRTContent.AudioBytes =
+    LiteRTContent.AudioBytes.Builder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentAudioFile(
+    absolutePath: String,
+    mediaType: String? = null,
+): LiteRTContent.AudioFile = LiteRTContent.AudioFile(absolutePath, mediaType)
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentAudioFile(block: LiteRTContent.AudioFile.Builder.() -> Unit): LiteRTContent.AudioFile =
+    LiteRTContent.AudioFile.Builder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentToolResponse(name: String, response: JsonElement): LiteRTContent.ToolResponse =
+    LiteRTContent.ToolResponse(name, response)
+
+/** @since 0.3.0-beta01 */
+public fun LiteRTContentToolResponse(
+    block: LiteRTContent.ToolResponse.Builder.() -> Unit,
+): LiteRTContent.ToolResponse = LiteRTContent.ToolResponse.Builder().apply(block).build()
+
 /**
  * Content value exchanged with a [LiteRTConversation].
  *
@@ -241,16 +301,6 @@ public sealed class LiteRTContent {
         /** @since 0.3.0-beta01 */
         public val text: String,
     ) : LiteRTContent() {
-        /** @since 0.3.0-beta01 */
-        public companion object {
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(text: String): Text = Text(text)
-
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(block: Builder.() -> Unit): Text =
-                Builder().apply(block).build()
-        }
-
         /** @since 0.3.0-beta01 */
         public class Builder {
             private var text: String? = null
@@ -278,17 +328,6 @@ public sealed class LiteRTContent {
         /** @since 0.3.0-beta01 */
         public val mediaType: String? = null,
     ) : LiteRTContent() {
-        /** @since 0.3.0-beta01 */
-        public companion object {
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(bytes: LiteRTBytes, mediaType: String? = null): ImageBytes =
-                ImageBytes(bytes, mediaType)
-
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(block: Builder.() -> Unit): ImageBytes =
-                Builder().apply(block).build()
-        }
-
         /** @since 0.3.0-beta01 */
         public class Builder {
             private var bytes: LiteRTBytes? = null
@@ -327,17 +366,6 @@ public sealed class LiteRTContent {
         public val mediaType: String? = null,
     ) : LiteRTContent() {
         /** @since 0.3.0-beta01 */
-        public companion object {
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(absolutePath: String, mediaType: String? = null): ImageFile =
-                ImageFile(absolutePath, mediaType)
-
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(block: Builder.() -> Unit): ImageFile =
-                Builder().apply(block).build()
-        }
-
-        /** @since 0.3.0-beta01 */
         public class Builder {
             private var absolutePath: String? = null
             private var mediaType: String? = null
@@ -375,17 +403,6 @@ public sealed class LiteRTContent {
         public val mediaType: String? = null,
     ) : LiteRTContent() {
         /** @since 0.3.0-beta01 */
-        public companion object {
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(bytes: LiteRTBytes, mediaType: String? = null): AudioBytes =
-                AudioBytes(bytes, mediaType)
-
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(block: Builder.() -> Unit): AudioBytes =
-                Builder().apply(block).build()
-        }
-
-        /** @since 0.3.0-beta01 */
         public class Builder {
             private var bytes: LiteRTBytes? = null
             private var mediaType: String? = null
@@ -422,17 +439,6 @@ public sealed class LiteRTContent {
         /** @since 0.3.0-beta01 */
         public val mediaType: String? = null,
     ) : LiteRTContent() {
-        /** @since 0.3.0-beta01 */
-        public companion object {
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(absolutePath: String, mediaType: String? = null): AudioFile =
-                AudioFile(absolutePath, mediaType)
-
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(block: Builder.() -> Unit): AudioFile =
-                Builder().apply(block).build()
-        }
-
         /** @since 0.3.0-beta01 */
         public class Builder {
             private var absolutePath: String? = null
@@ -475,17 +481,6 @@ public sealed class LiteRTContent {
         /** @since 0.3.0-beta01 */
         public val response: JsonElement,
     ) : LiteRTContent() {
-        /** @since 0.3.0-beta01 */
-        public companion object {
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(name: String, response: JsonElement): ToolResponse =
-                ToolResponse(name, response)
-
-            /** @since 0.3.0-beta01 */
-            public operator fun invoke(block: Builder.() -> Unit): ToolResponse =
-                Builder().apply(block).build()
-        }
-
         /** @since 0.3.0-beta01 */
         public class Builder {
             private var name: String? = null
@@ -836,6 +831,7 @@ public fun LiteRTConversationRequest(
  * @since 0.3.0-beta01
  */
 public fun interface LiteRTConversationFactory {
+    @JvmSynthetic
     public suspend fun create(request: LiteRTConversationRequest): LiteRTConversation
 }
 
@@ -849,6 +845,7 @@ public fun interface LiteRTConversationFactory {
  */
 public interface LiteRTConversation {
     /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun send(message: LiteRTMessage, extraContext: Map<String, JsonElement> = emptyMap()): LiteRTMessage
 
     /** @since 0.3.0-beta01 */
@@ -899,7 +896,7 @@ public class LiteRTLanguageModelSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val extraContext: Map<String, JsonElement> = emptyMap(),
     /** @since 0.3.0-beta01 */
-    public val toolCallIdGenerator: () -> String = { IdGenerator.generate("call") },
+    public val toolCallIdGenerator: () -> String = { GenerateId("call") },
 )
 
 /**
@@ -915,7 +912,7 @@ public class LiteRTLanguageModelSettingsBuilder {
     private var assistantReasoningChannelName: String = "thinking"
     private var channels: List<LiteRTChannel>? = null
     private var extraContext: Map<String, JsonElement> = emptyMap()
-    private var toolCallIdGenerator: () -> String = { IdGenerator.generate("call") }
+    private var toolCallIdGenerator: () -> String = { GenerateId("call") }
 
     /** @since 0.3.0-beta01 */
     public fun provider(value: String): LiteRTLanguageModelSettingsBuilder {
@@ -1076,7 +1073,7 @@ private class LiteRTStreamState(
     private var hasToolCalls: Boolean = false
     private var terminalUsage: Usage? = null
     private var terminalFinishReason: FinishReason? = null
-    private val textRecoveryMetadata: ProviderMetadata = ProviderMetadata.ofPairs(
+    private val textRecoveryMetadata: ProviderMetadata = ProviderMetadata(
         provider to JsonObject(
             mapOf(
                 "cumulativeRecovery" to JsonObject(
@@ -1089,7 +1086,7 @@ private class LiteRTStreamState(
             ),
         ),
     )
-    private val reasoningRecoveryMetadata: ProviderMetadata = ProviderMetadata.ofPairs(
+    private val reasoningRecoveryMetadata: ProviderMetadata = ProviderMetadata(
         provider to JsonObject(
             mapOf(
                 "cumulativeRecovery" to JsonObject(

@@ -119,6 +119,36 @@ public interface Agent<TContext, TOutput> {
     )
 }
 
+private object OutputUnavailablePlaceholder
+
+@Suppress("UNCHECKED_CAST")
+private fun <TOutput> UnavailableOutputPlaceholder(): TOutput =
+    OutputUnavailablePlaceholder as TOutput
+
+@Suppress("LongParameterList")
+internal fun <TOutput> GenerateResultUnavailable(
+    outputUnavailableReason: String,
+    text: String,
+    steps: List<StepResult>,
+    finishReason: FinishReason,
+    usage: Usage,
+    totalUsage: Usage = usage,
+    pendingApprovals: List<PendingApproval> = emptyList(),
+    messages: List<ModelMessage> = emptyList(),
+): GenerateResult<TOutput> =
+    GenerateResult<TOutput>(
+        rawOutput = UnavailableOutputPlaceholder<TOutput>(),
+        text = text,
+        steps = steps,
+        finishReason = finishReason,
+        usage = usage,
+        totalUsage = totalUsage,
+        pendingApprovals = pendingApprovals,
+        messages = messages,
+    ).also {
+        it.outputUnavailableReason = outputUnavailableReason
+    }
+
 /**
  * Final output of [Agent.generate]. When [pendingApprovals] is non-empty,
  * the loop paused on tool approval — call [Agent.generate] again with
@@ -155,7 +185,7 @@ public class GenerateResult<TOutput> internal constructor(
      */
     public val messages: List<ModelMessage> = emptyList(),
 ) {
-    private var outputUnavailableReason: String? = null
+    internal var outputUnavailableReason: String? = null
 
     /** @since 0.3.0-beta01 */
     public val output: TOutput
@@ -167,38 +197,6 @@ public class GenerateResult<TOutput> internal constructor(
             }
             return rawOutput
         }
-
-    internal companion object {
-        private object OutputUnavailablePlaceholder
-
-        @Suppress("UNCHECKED_CAST")
-        private fun <TOutput> unavailableOutputPlaceholder(): TOutput =
-            OutputUnavailablePlaceholder as TOutput
-
-        @Suppress("LongParameterList")
-        internal fun <TOutput> unavailable(
-            outputUnavailableReason: String,
-            text: String,
-            steps: List<StepResult>,
-            finishReason: FinishReason,
-            usage: Usage,
-            totalUsage: Usage = usage,
-            pendingApprovals: List<PendingApproval> = emptyList(),
-            messages: List<ModelMessage> = emptyList(),
-        ): GenerateResult<TOutput> =
-            GenerateResult<TOutput>(
-                rawOutput = unavailableOutputPlaceholder<TOutput>(),
-                text = text,
-                steps = steps,
-                finishReason = finishReason,
-                usage = usage,
-                totalUsage = totalUsage,
-                pendingApprovals = pendingApprovals,
-                messages = messages,
-            ).also {
-                it.outputUnavailableReason = outputUnavailableReason
-            }
-    }
 }
 
 /**

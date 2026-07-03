@@ -57,14 +57,14 @@ class GatewayDefensiveParsingTest {
     }
 
     /**
-     * Regression (Wave 7, the sibling-accessor hole the M4 leaf-fix missed): GatewayError.fromResponse
+     * Regression (Wave 7, the sibling-accessor hole the M4 leaf-fix missed): GatewayErrorFromResponse
      * read `error` via `?.jsonObject`, which throws on `{"error":"plain string"}` (a primitive) — the
      * `?.` guards null, not type, so the leaf `as? JsonPrimitive` was never reached. The safe
      * `(parsed?.get("error") as? JsonObject)` degrades to the raw-body message instead of crashing.
      */
     @Test
     fun `fromResponse degrades on a primitive error field instead of crashing`() {
-        val error = GatewayError.fromResponse(400, """{"error":"plain string message"}""")
+        val error = GatewayErrorFromResponse(400, """{"error":"plain string message"}""")
         assertTrue(
             error.message?.contains("plain string message") == true,
             "a primitive error field degrades to the raw-body message, not an ISE from ?.jsonObject",

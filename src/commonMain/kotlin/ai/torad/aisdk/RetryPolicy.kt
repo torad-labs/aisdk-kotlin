@@ -6,35 +6,72 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 import kotlin.time.Clock
+import kotlin.jvm.JvmSynthetic
+
+/** @since 0.3.0-beta01 */
+public fun RetryDelayGeneratorFullJitter(random: Random = Random.Default): RetryDelayGenerator =
+    RetryDelayGenerator { maxDelayMs ->
+        when {
+            maxDelayMs <= 0L -> 0L
+            maxDelayMs == Long.MAX_VALUE -> random.nextLong(Long.MAX_VALUE)
+            else -> random.nextLong(maxDelayMs + 1L)
+        }
+    }
+
+/** @since 0.3.0-beta01 */
+public fun RetryDelayGeneratorDeterministic(vararg delaysMs: Long): RetryDelayGenerator =
+    object : RetryDelayGenerator {
+        private var index: Int = 0
+        override fun nextDelayMs(maxDelayMs: Long): Long {
+            val raw = delaysMs.getOrNull(index) ?: delaysMs.lastOrNull() ?: 0L
+            index += 1
+            return raw.coerceIn(0L, maxDelayMs.coerceAtLeast(0L))
+        }
+    }
 
 /** @since 0.3.0-beta01 */
 public fun interface RetryDelayGenerator {
     /** @since 0.3.0-beta01 */
     public fun nextDelayMs(maxDelayMs: Long): Long
-
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun fullJitter(random: Random = Random.Default): RetryDelayGenerator =
-            RetryDelayGenerator { maxDelayMs ->
-                when {
-                    maxDelayMs <= 0L -> 0L
-                    maxDelayMs == Long.MAX_VALUE -> random.nextLong(Long.MAX_VALUE)
-                    else -> random.nextLong(maxDelayMs + 1L)
-                }
-            }
-
-        /** @since 0.3.0-beta01 */
-        public fun deterministic(vararg delaysMs: Long): RetryDelayGenerator =
-            object : RetryDelayGenerator {
-                private var index: Int = 0
-                override fun nextDelayMs(maxDelayMs: Long): Long {
-                    val raw = delaysMs.getOrNull(index) ?: delaysMs.lastOrNull() ?: 0L
-                    index += 1
-                    return raw.coerceIn(0L, maxDelayMs.coerceAtLeast(0L))
-                }
-            }
-    }
 }
+
+private const val MILLIS_PER_SECOND: Long = 1_000L
+private const val SECONDS_PER_MINUTE: Long = 60L
+private const val SECONDS_PER_HOUR: Long = 60L * SECONDS_PER_MINUTE
+private const val SECONDS_PER_DAY: Long = 24L * SECONDS_PER_HOUR
+private const val DAYS_PER_ERA: Long = 146_097L
+private const val DAYS_FROM_CIVIL_TO_UNIX_EPOCH: Long = 719_468L
+private const val MAX_RETRY_AFTER_MS: Long = 60L * 1_000L
+private val HTTP_DATE_REGEX =
+    Regex("^[A-Za-z]{3}, (\\d{2}) ([A-Za-z]{3}) (\\d{4}) (\\d{2}):(\\d{2}):(\\d{2}) GMT$")
+
+private fun IsDefaultRetryable(t: Throwable): Boolean =
+    (t as? APICallError)?.isRetryable == true ||
+        (t as? GatewayError)?.isRetryable == true ||
+        t is RetryPolicy.RetryAttemptTimeoutException ||
+        (
+            t !is CancellationException &&
+                (
+                    t::class.qualifiedName.orEmpty() == "io.ktor.client.plugins.HttpRequestTimeoutException" ||
+                        t::class.qualifiedName.orEmpty() == "io.ktor.client.network.sockets.ConnectTimeoutException" ||
+                        t::class.qualifiedName.orEmpty() == "io.ktor.utils.io.errors.IOException" ||
+                        t::class.qualifiedName.orEmpty() == "kotlinx.io.IOException" ||
+                        t::class.qualifiedName.orEmpty() == "java.io.IOException" ||
+                        t::class.qualifiedName.orEmpty().endsWith(".IOException") ||
+                        t::class.simpleName.orEmpty() in transientNetworkExceptionNames
+                    )
+            )
+
+private val transientNetworkExceptionNames = setOf(
+    "ConnectException",
+    "ConnectionResetException",
+    "EOFException",
+    "NoRouteToHostException",
+    "ProtocolException",
+    "SocketException",
+    "SocketTimeoutException",
+    "UnknownHostException",
+)
 
 @Suppress("TooManyFunctions")
 /** @since 0.3.0-beta01 */
@@ -54,7 +91,7 @@ public class RetryPolicy internal constructor(
     /** @since 0.3.0-beta01 */
     public val clock: Clock = Clock.System,
     /** @since 0.3.0-beta01 */
-    public val delayGenerator: RetryDelayGenerator = RetryDelayGenerator.fullJitter(),
+    public val delayGenerator: RetryDelayGenerator = RetryDelayGeneratorFullJitter(),
     /** @since 0.3.0-beta01 */
     public val totalTimeoutMs: Long? = null,
     /** @since 0.3.0-beta01 */
@@ -78,8 +115,9 @@ public class RetryPolicy internal constructor(
      * - a non-retryable error on a later attempt → [RetryError] (`ErrorNotRetryable`);
      * - retries exhausted → [RetryError] (`MaxRetriesExceeded`).
      */
+    @JvmSynthetic
     public suspend fun <T> execute(
-        shouldRetry: (Throwable) -> Boolean = RetryPolicy::isDefaultRetryable,
+        shouldRetry: (Throwable) -> Boolean = ::IsDefaultRetryable,
         block: suspend (attempt: Int) -> T,
     ): T = if (totalTimeoutMs == null) {
         executeLoop(shouldRetry, block)
@@ -201,7 +239,7 @@ public class RetryPolicy internal constructor(
 
     private class RetryAttemptValue<T>(val value: T)
 
-    private class RetryAttemptTimeoutException(timeoutMs: Long) :
+    internal class RetryAttemptTimeoutException(timeoutMs: Long) :
         RuntimeException("Retry attempt timed out after ${timeoutMs}ms")
 
     @Suppress("ReturnCount", "MagicNumber", "ComplexCondition")
@@ -250,46 +288,6 @@ public class RetryPolicy internal constructor(
         val dayOfEra = yearOfEra * 365 + yearOfEra / 4 - yearOfEra / 100 + dayOfYear
         return era.toLong() * DAYS_PER_ERA + dayOfEra.toLong() - DAYS_FROM_CIVIL_TO_UNIX_EPOCH
     }
-
-    private companion object {
-        private const val MILLIS_PER_SECOND: Long = 1_000L
-        private const val SECONDS_PER_MINUTE: Long = 60L
-        private const val SECONDS_PER_HOUR: Long = 60L * SECONDS_PER_MINUTE
-        private const val SECONDS_PER_DAY: Long = 24L * SECONDS_PER_HOUR
-        private const val DAYS_PER_ERA: Long = 146_097L
-        private const val DAYS_FROM_CIVIL_TO_UNIX_EPOCH: Long = 719_468L
-        private const val MAX_RETRY_AFTER_MS: Long = 60L * 1_000L
-        private val HTTP_DATE_REGEX =
-            Regex("^[A-Za-z]{3}, (\\d{2}) ([A-Za-z]{3}) (\\d{4}) (\\d{2}):(\\d{2}):(\\d{2}) GMT$")
-
-        private fun isDefaultRetryable(t: Throwable): Boolean =
-            (t as? APICallError)?.isRetryable == true ||
-                (t as? GatewayError)?.isRetryable == true ||
-                t is RetryAttemptTimeoutException ||
-                (
-                    t !is CancellationException &&
-                        (
-                            t::class.qualifiedName.orEmpty() == "io.ktor.client.plugins.HttpRequestTimeoutException" ||
-                                t::class.qualifiedName.orEmpty() == "io.ktor.client.network.sockets.ConnectTimeoutException" ||
-                                t::class.qualifiedName.orEmpty() == "io.ktor.utils.io.errors.IOException" ||
-                                t::class.qualifiedName.orEmpty() == "kotlinx.io.IOException" ||
-                                t::class.qualifiedName.orEmpty() == "java.io.IOException" ||
-                                t::class.qualifiedName.orEmpty().endsWith(".IOException") ||
-                                t::class.simpleName.orEmpty() in transientNetworkExceptionNames
-                            )
-                    )
-
-        private val transientNetworkExceptionNames = setOf(
-            "ConnectException",
-            "ConnectionResetException",
-            "EOFException",
-            "NoRouteToHostException",
-            "ProtocolException",
-            "SocketException",
-            "SocketTimeoutException",
-            "UnknownHostException",
-        )
-    }
 }
 
 /** @since 0.3.0-beta01 */
@@ -298,7 +296,7 @@ public class RetryPolicyBuilder {
     private var baseDelayMs: Long = 100L
     private var maxDelayMs: Long = 2_000L
     private var clock: Clock = Clock.System
-    private var delayGenerator: RetryDelayGenerator = RetryDelayGenerator.fullJitter()
+    private var delayGenerator: RetryDelayGenerator = RetryDelayGeneratorFullJitter()
     private var totalTimeoutMs: Long? = null
     private var perAttemptTimeoutMs: Long? = null
 

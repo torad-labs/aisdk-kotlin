@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import ai.torad.aisdk.middleware.LoggingMiddleware
 import ai.torad.aisdk.providers.LiteRTChannel
 import ai.torad.aisdk.providers.LiteRTContent
+import ai.torad.aisdk.providers.LiteRTContentText
 import ai.torad.aisdk.providers.LiteRTConversation
 import ai.torad.aisdk.providers.LiteRTConversationFactory
 import ai.torad.aisdk.providers.LiteRTConversationRequest
@@ -65,7 +66,7 @@ class ProvidersDocSnippetTest {
             check(extraContext.isEmpty())
             return LiteRTMessage {
                 role(LiteRTMessageRole.Model)
-                content(listOf(LiteRTContent.Text("local answer")))
+                content(listOf(LiteRTContentText("local answer")))
             }
         }
 
@@ -75,7 +76,7 @@ class ProvidersDocSnippetTest {
             return flowOf(
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("local answer")))
+                    content(listOf(LiteRTContentText("local answer")))
                 },
             )
         }
@@ -171,7 +172,7 @@ class ProvidersDocSnippetTest {
         val params = LanguageModelCallParams {
             messages(listOf(UserMessage("Plan the next step.")))
             providerOptions(
-                ProviderOptions.ofPairs(
+                ProviderOptions(
                     "litert" to buildJsonObject {
                         put("enableThinking", JsonPrimitive(true))
                         put(

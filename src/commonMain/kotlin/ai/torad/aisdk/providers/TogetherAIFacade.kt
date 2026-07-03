@@ -141,7 +141,7 @@ public class TogetherAIProviderSettings internal constructor(
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
+        ForFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
 /** @since 0.3.0-beta01 */
@@ -336,7 +336,7 @@ public class TogetherAIRerankingModel(
 
     private fun togetherAIUsage(value: JsonElement?): Usage {
         val obj = value as? JsonObject ?: return Usage()
-        return Usage.of(
+        return Usage(
             promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
             completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
         )

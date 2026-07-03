@@ -1,0 +1,11 @@
+id: no-jvmoverloads-on-expect
+language: kotlin
+severity: warning
+message: "@JvmOverloads on an expect declaration has no effect — expect declares only a signature with no body, so there's no bytecode to generate overloads for. Move @JvmOverloads to the actual implementation(s) that need it."
+rule:
+  kind: modifiers
+  all:
+    - has:
+        kind: annotation
+        has: { kind: type_identifier, regex: '^JvmOverloads$', stopBy: end }
+    - has: { kind: platform_modifier, regex: '^expect$' }

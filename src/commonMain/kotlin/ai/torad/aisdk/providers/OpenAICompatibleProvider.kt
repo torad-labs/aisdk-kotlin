@@ -6,6 +6,34 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
+/** Build settings for an OpenAI-compatible provider facade (Groq, DeepSeek, …). */
+@Suppress("LongParameterList")
+internal fun ForFacade(
+    name: String,
+    version: String,
+    baseURL: String,
+    apiKey: String?,
+    headers: Map<String, String>,
+    capabilities: ProviderCapabilities = ProviderCapabilities(),
+    transformChatRequestBody: ((JsonObject) -> JsonObject)? = null,
+    convertUsage: ((JsonElement?) -> Usage)? = null,
+    transformChatResponse: ((JsonObject) -> JsonObject)? = null,
+): OpenAICompatibleProviderSettings =
+    OpenAICompatibleProviderSettings {
+        name(name)
+        baseUrl(baseURL.trimEnd('/'))
+        apiKey(apiKey)
+        headers(ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/$name/$version"))
+        // UA already embedded in headers above — null out the default suffix so commonHeaders()
+        // doesn't APPEND "ai-sdk/openai-compatible-kotlin" again (double User-Agent).
+        userAgentSuffix(null)
+        includeUsage(capabilities.includeUsage)
+        supportsStructuredOutputs(capabilities.supportsStructuredOutputs)
+        transformChatRequestBody(transformChatRequestBody)
+        convertUsage(convertUsage)
+        transformChatResponse(transformChatResponse)
+    }
+
 /** @since 0.3.0-beta01 */
 public class OpenAICompatibleProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
@@ -44,37 +72,7 @@ public class OpenAICompatibleProviderSettings internal constructor(
     public val convertUsage: ((JsonElement?) -> Usage)? = null,
     /** @since 0.3.0-beta01 */
     public val transformChatResponse: ((JsonObject) -> JsonObject)? = null,
-) {
-    internal companion object {
-        /** Build settings for an OpenAI-compatible provider facade (Groq, DeepSeek, …). */
-        @Suppress("LongParameterList")
-        fun forFacade(
-            name: String,
-            version: String,
-            baseURL: String,
-            apiKey: String?,
-            headers: Map<String, String>,
-            capabilities: ProviderCapabilities = ProviderCapabilities(),
-            transformChatRequestBody: ((JsonObject) -> JsonObject)? = null,
-            convertUsage: ((JsonElement?) -> Usage)? = null,
-            transformChatResponse: ((JsonObject) -> JsonObject)? = null,
-        ): OpenAICompatibleProviderSettings =
-            OpenAICompatibleProviderSettings {
-                name(name)
-                baseUrl(baseURL.trimEnd('/'))
-                apiKey(apiKey)
-                headers(ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/$name/$version"))
-                // UA already embedded in headers above — null out the default suffix so commonHeaders()
-                // doesn't APPEND "ai-sdk/openai-compatible-kotlin" again (double User-Agent).
-                userAgentSuffix(null)
-                includeUsage(capabilities.includeUsage)
-                supportsStructuredOutputs(capabilities.supportsStructuredOutputs)
-                transformChatRequestBody(transformChatRequestBody)
-                convertUsage(convertUsage)
-                transformChatResponse(transformChatResponse)
-            }
-    }
-}
+)
 
 /** @since 0.3.0-beta01 */
 public class OpenAICompatibleProviderSettingsBuilder {

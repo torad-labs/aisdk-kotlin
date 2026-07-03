@@ -1,0 +1,31 @@
+id: no-either-without-fold
+language: kotlin
+severity: warning
+message: "Reading `.left`/`.right` directly assumes which branch is present; prefer `fold`/`map`/`getOrElse` so both branches are handled explicitly."
+note: |
+  Flags a property read shaped `$X.left` / `$X.right` (an `Either`/`Result`-
+  style discriminated union accessed positionally instead of exhaustively).
+  Structural matching cannot see declared types, so this is a name-based
+  heuristic: `.left()`/`.right()` method calls are excluded (different
+  shape: `navigation_expression` wrapped in a `call_expression` with a
+  `call_suffix`), and assignment targets (`x.left = value`) are excluded
+  (Kotlin parses those as `directly_assignable_expression`, not
+  `navigation_expression`, so they never reach this rule). A type that
+  legitimately has `left`/`right` fields (e.g. a UI/geometry rect or
+  margin/padding holder) will false-positive here; that is expected for a
+  name-only heuristic — suppress or ignore such call sites.
+rule:
+  kind: navigation_expression
+  all:
+    - has:
+        kind: navigation_suffix
+        has:
+          kind: simple_identifier
+          regex: '^(left|right)$'
+    - not:
+        inside:
+          kind: call_expression
+          stopBy: neighbor
+          has:
+            kind: call_suffix
+            stopBy: neighbor

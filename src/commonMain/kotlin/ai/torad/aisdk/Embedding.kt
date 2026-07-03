@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlin.jvm.JvmSynthetic
+
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
 
@@ -30,6 +32,7 @@ public interface EmbeddingModel {
     public val supportsParallelCalls: Boolean
         get() = false
 
+    @JvmSynthetic
     public suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult
 }
 
@@ -200,6 +203,7 @@ public object Embedding {
         return chunked(chunkSize)
     }
 
+    @JvmSynthetic
     public suspend fun embed(
         model: EmbeddingModel,
         value: String,
@@ -234,6 +238,7 @@ public object Embedding {
     }
 
     @Suppress("LongParameterList")
+    @JvmSynthetic
     public suspend fun embedMany(
         model: EmbeddingModel,
         values: List<String>,
@@ -297,6 +302,7 @@ public object Embedding {
 
 /** @since 0.3.0-beta01 */
 public interface EmbeddingModelMiddleware {
+    @JvmSynthetic
     public suspend fun wrapEmbed(context: EmbeddingMiddlewareCallContext): EmbeddingModelResult =
         context.doEmbed(context.params)
 }

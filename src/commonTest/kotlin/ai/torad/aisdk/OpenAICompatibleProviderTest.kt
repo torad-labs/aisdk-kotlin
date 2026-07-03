@@ -601,8 +601,8 @@ class OpenAICompatibleProviderTest {
                 "choices" to JsonArray(
                     choices.map { choice ->
                         val choiceObj = choice.jsonObject
-                        val message = (choiceObj["message"] as? JsonObject)?.let(::rewriteWireContentPart)
-                        val delta = (choiceObj["delta"] as? JsonObject)?.let(::rewriteWireContentPart)
+                        val message = JsonAccess.obj(choiceObj, "message")?.let(::rewriteWireContentPart)
+                        val delta = JsonAccess.obj(choiceObj, "delta")?.let(::rewriteWireContentPart)
                         JsonObject(
                             choiceObj +
                                 listOfNotNull(

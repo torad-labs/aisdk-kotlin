@@ -221,7 +221,7 @@ internal class ProdiaVideoModel(
                 }
             )
         }
-        val input = params.image?.let { ProdiaInputFile.fromGeneratedFile(client, it) }
+        val input = params.image?.let { FromGeneratedFile(client, it) }
         val response = if (input == null) {
             settings.prodiaPostJsonForMultipart(
                 client = client,

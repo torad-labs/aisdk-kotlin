@@ -10,6 +10,138 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 
 /**
+ * Legacy flat `(promptTokens, completionTokens)` factory — replaces the old
+ * secondary constructor. Unambiguous because BOTH params are required; the
+ * primary constructor's `Usage()` no-arg path goes through default breakdown
+ * defaults.
+ * @since 0.3.0-beta01
+ */
+public fun Usage(promptTokens: Int, completionTokens: Int): Usage = Usage(
+    inputTokens = Usage.InputTokenBreakdown(total = promptTokens),
+    outputTokens = Usage.OutputTokenBreakdown(total = completionTokens),
+)
+
+/**
+ * Usage from an OpenAI-compatible `usage` JSON object: prompt/completion
+ * totals plus cached- and reasoning-token breakdowns. Shared by the
+ * chat/completion models and the streaming state.
+ */
+internal fun UsageFromOpenAI(value: JsonElement?): Usage {
+    val obj = (value as? JsonObject) ?: return Usage()
+    val promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+    val completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+    val cachedTokens = (((JsonAccess.obj(obj, "prompt_tokens_details"))?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        .coerceIn(0, promptTokens)
+    val reasoningTokens = (((JsonAccess.obj(obj, "completion_tokens_details"))?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        .coerceAtLeast(0)
+    val outputTotal = if (reasoningTokens > completionTokens) {
+        completionTokens + reasoningTokens
+    } else {
+        completionTokens
+    }
+    return Usage(
+        inputTokens = Usage.InputTokenBreakdown(
+            total = promptTokens,
+            noCache = promptTokens - cachedTokens,
+            cacheRead = cachedTokens,
+        ),
+        outputTokens = Usage.OutputTokenBreakdown(
+            total = outputTotal,
+            text = outputTotal - reasoningTokens,
+            reasoning = reasoningTokens,
+        ),
+        raw = value,
+    )
+}
+
+/**
+ * Usage from already-extracted token counts — the building block for
+ * OpenAI-compatible facade `convertUsage` overrides.
+ */
+internal fun UsageFromParts(
+    promptTokens: Int,
+    completionTokens: Int,
+    cacheRead: Int,
+    reasoningTokens: Int,
+    raw: JsonElement?,
+): Usage = Usage(
+    inputTokens = Usage.InputTokenBreakdown(
+        total = promptTokens,
+        noCache = promptTokens - cacheRead,
+        cacheRead = cacheRead,
+    ),
+    outputTokens = Usage.OutputTokenBreakdown(
+        total = completionTokens,
+        text = completionTokens - reasoningTokens,
+        reasoning = reasoningTokens,
+    ),
+    raw = raw,
+)
+
+/**
+ * Usage from an Anthropic `usage` JSON object: base input/output plus cache
+ * write/read counts, summing executor `iterations` (compaction/message) when present.
+ */
+internal fun UsageFromAnthropic(element: JsonElement?): Usage {
+    val obj = element as? JsonObject ?: return Usage()
+    val baseInput = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+    val baseOutput = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+    val cacheWrite = (obj["cache_creation_input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+    val cacheRead = (obj["cache_read_input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+    val iterations = JsonAccess.arr(obj, "iterations")
+    val executorIterations = iterations.orEmpty().mapNotNull { it as? JsonObject }
+        .filter { (it["type"] as? JsonPrimitive)?.contentOrNull in setOf("compaction", "message") }
+    val input = if (executorIterations.isNotEmpty()) {
+        executorIterations.sumOf { (it["input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0 }
+    } else {
+        baseInput
+    }
+    val output = if (executorIterations.isNotEmpty()) {
+        executorIterations.sumOf { (it["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0 }
+    } else {
+        baseOutput
+    }
+    return Usage(
+        inputTokens = Usage.InputTokenBreakdown(
+            total = input + cacheWrite + cacheRead,
+            noCache = input,
+            cacheRead = cacheRead,
+            cacheWrite = cacheWrite,
+        ),
+        outputTokens = Usage.OutputTokenBreakdown(total = output),
+        raw = element,
+    )
+}
+
+/**
+ * Merge a streaming `message_delta` usage object onto the usage captured at
+ * `message_start`. Anthropic's message_delta usually carries only output_tokens, so a
+ * full replace (the prior behavior) dropped the input/cache counts to 0 — upstream
+ * mutates in place: keep prior input/cache when the delta omits them, update what it
+ * provides.
+ */
+internal fun UsageMergeAnthropic(existing: Usage, deltaElement: JsonElement?): Usage {
+    val obj = deltaElement as? JsonObject ?: return existing
+    val base = existing.raw as? JsonObject
+    val merged = if (base == null) {
+        buildJsonObject {
+            put("input_tokens", JsonPrimitive(existing.inputTokens.noCache))
+            put("output_tokens", JsonPrimitive(existing.outputTokens.total))
+            if (existing.inputTokens.cacheRead != 0) {
+                put("cache_read_input_tokens", JsonPrimitive(existing.inputTokens.cacheRead))
+            }
+            if (existing.inputTokens.cacheWrite != 0) {
+                put("cache_creation_input_tokens", JsonPrimitive(existing.inputTokens.cacheWrite))
+            }
+            obj.forEach { (key, value) -> put(key, value) }
+        }
+    } else {
+        JsonObject(base + obj)
+    }
+    return UsageFromAnthropic(merged)
+}
+
+/**
  * Token-usage tracking, surfaced on completed steps and final results.
  * Per historical parity gap #19, the shape mirrors v6's rich tree —
  * input tokens split into `noCache / cacheRead / cacheWrite` and
@@ -37,140 +169,6 @@ public class Usage(
     /** @since 0.3.0-beta01 */
     public val raw: JsonElement? = null,
 ) {
-    public companion object {
-        /**
-         * Legacy flat `(promptTokens, completionTokens)` factory —
-         * replaces the old secondary constructor. Unambiguous because
-         * BOTH params are required; the primary constructor's `Usage()`
-         * no-arg path goes through default breakdown defaults.
-         * @since 0.3.0-beta01
-         */
-        public fun of(promptTokens: Int, completionTokens: Int): Usage = Usage(
-            inputTokens = InputTokenBreakdown(total = promptTokens),
-            outputTokens = OutputTokenBreakdown(total = completionTokens),
-        )
-
-        /**
-         * Usage from an OpenAI-compatible `usage` JSON object: prompt/completion
-         * totals plus cached- and reasoning-token breakdowns. Shared by the
-         * chat/completion models and the streaming state.
-         */
-        internal fun fromOpenAI(value: JsonElement?): Usage {
-            val obj = (value as? JsonObject) ?: return Usage()
-            val promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-            val completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-            val cachedTokens = (((JsonAccess.obj(obj, "prompt_tokens_details"))?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
-                .coerceIn(0, promptTokens)
-            val reasoningTokens = (((JsonAccess.obj(obj, "completion_tokens_details"))?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
-                .coerceAtLeast(0)
-            val outputTotal = if (reasoningTokens > completionTokens) {
-                completionTokens + reasoningTokens
-            } else {
-                completionTokens
-            }
-            return Usage(
-                inputTokens = InputTokenBreakdown(
-                    total = promptTokens,
-                    noCache = promptTokens - cachedTokens,
-                    cacheRead = cachedTokens,
-                ),
-                outputTokens = OutputTokenBreakdown(
-                    total = outputTotal,
-                    text = outputTotal - reasoningTokens,
-                    reasoning = reasoningTokens,
-                ),
-                raw = value,
-            )
-        }
-
-        /**
-         * Usage from already-extracted token counts — the building block for
-         * OpenAI-compatible facade `convertUsage` overrides.
-         */
-        internal fun fromParts(
-            promptTokens: Int,
-            completionTokens: Int,
-            cacheRead: Int,
-            reasoningTokens: Int,
-            raw: JsonElement?,
-        ): Usage = Usage(
-            inputTokens = InputTokenBreakdown(
-                total = promptTokens,
-                noCache = promptTokens - cacheRead,
-                cacheRead = cacheRead,
-            ),
-            outputTokens = OutputTokenBreakdown(
-                total = completionTokens,
-                text = completionTokens - reasoningTokens,
-                reasoning = reasoningTokens,
-            ),
-            raw = raw,
-        )
-
-        /**
-         * Usage from an Anthropic `usage` JSON object: base input/output plus cache
-         * write/read counts, summing executor `iterations` (compaction/message) when present.
-         */
-        internal fun fromAnthropic(element: JsonElement?): Usage {
-            val obj = element as? JsonObject ?: return Usage()
-            val baseInput = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-            val baseOutput = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-            val cacheWrite = (obj["cache_creation_input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-            val cacheRead = (obj["cache_read_input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-            val iterations = JsonAccess.arr(obj, "iterations")
-            val executorIterations = iterations.orEmpty().mapNotNull { it as? JsonObject }
-                .filter { (it["type"] as? JsonPrimitive)?.contentOrNull in setOf("compaction", "message") }
-            val input = if (executorIterations.isNotEmpty()) {
-                executorIterations.sumOf { (it["input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0 }
-            } else {
-                baseInput
-            }
-            val output = if (executorIterations.isNotEmpty()) {
-                executorIterations.sumOf { (it["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0 }
-            } else {
-                baseOutput
-            }
-            return Usage(
-                inputTokens = InputTokenBreakdown(
-                    total = input + cacheWrite + cacheRead,
-                    noCache = input,
-                    cacheRead = cacheRead,
-                    cacheWrite = cacheWrite,
-                ),
-                outputTokens = OutputTokenBreakdown(total = output),
-                raw = element,
-            )
-        }
-
-        /**
-         * Merge a streaming `message_delta` usage object onto the usage captured at
-         * `message_start`. Anthropic's message_delta usually carries only output_tokens, so a
-         * full replace (the prior behavior) dropped the input/cache counts to 0 — upstream
-         * mutates in place: keep prior input/cache when the delta omits them, update what it
-         * provides.
-         */
-        internal fun mergeAnthropic(existing: Usage, deltaElement: JsonElement?): Usage {
-            val obj = deltaElement as? JsonObject ?: return existing
-            val base = existing.raw as? JsonObject
-            val merged = if (base == null) {
-                buildJsonObject {
-                    put("input_tokens", JsonPrimitive(existing.inputTokens.noCache))
-                    put("output_tokens", JsonPrimitive(existing.outputTokens.total))
-                    if (existing.inputTokens.cacheRead != 0) {
-                        put("cache_read_input_tokens", JsonPrimitive(existing.inputTokens.cacheRead))
-                    }
-                    if (existing.inputTokens.cacheWrite != 0) {
-                        put("cache_creation_input_tokens", JsonPrimitive(existing.inputTokens.cacheWrite))
-                    }
-                    obj.forEach { (key, value) -> put(key, value) }
-                }
-            } else {
-                JsonObject(base + obj)
-            }
-            return fromAnthropic(merged)
-        }
-    }
-
     /**
      * Legacy flat accessor — `inputTokens.total`.
      * @since 0.3.0-beta01
@@ -270,6 +268,24 @@ public class Usage(
     }
 }
 
+/** Map an OpenAI-compatible `finish_reason` wire string to a [FinishReason]. */
+internal fun FinishReasonFromOpenAI(value: String?): FinishReason = when (value) {
+    "stop" -> FinishReason.Stop
+    "length" -> FinishReason.Length
+    "tool_calls", "function_call" -> FinishReason.ToolCalls
+    "content_filter" -> FinishReason.ContentFilter
+    else -> FinishReason.Other
+}
+
+/** Map an Anthropic `stop_reason` wire string to a [FinishReason]. */
+internal fun FinishReasonFromAnthropicStopReason(reason: String?): FinishReason = when (reason) {
+    "pause_turn", "end_turn", "stop_sequence" -> FinishReason.Stop
+    "refusal" -> FinishReason.ContentFilter
+    "tool_use" -> FinishReason.ToolCalls
+    "max_tokens", "model_context_window_exceeded" -> FinishReason.Length
+    else -> FinishReason.Other
+}
+
 /**
  * Why a generation step ended.
  *
@@ -290,25 +306,4 @@ public enum class FinishReason {
     /** v6: generation paused because tool(s) need approval. */
     ToolApprovalRequested,
     Other,
-    ;
-
-    public companion object {
-        /** Map an OpenAI-compatible `finish_reason` wire string to a [FinishReason]. */
-        internal fun fromOpenAI(value: String?): FinishReason = when (value) {
-            "stop" -> Stop
-            "length" -> Length
-            "tool_calls", "function_call" -> ToolCalls
-            "content_filter" -> ContentFilter
-            else -> Other
-        }
-
-        /** Map an Anthropic `stop_reason` wire string to a [FinishReason]. */
-        internal fun fromAnthropicStopReason(reason: String?): FinishReason = when (reason) {
-            "pause_turn", "end_turn", "stop_sequence" -> Stop
-            "refusal" -> ContentFilter
-            "tool_use" -> ToolCalls
-            "max_tokens", "model_context_window_exceeded" -> Length
-            else -> Other
-        }
-    }
 }

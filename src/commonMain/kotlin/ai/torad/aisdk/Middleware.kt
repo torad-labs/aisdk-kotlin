@@ -2,6 +2,8 @@
 
 package ai.torad.aisdk
 
+import kotlin.jvm.JvmSynthetic
+
 import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
@@ -34,6 +36,7 @@ public interface LanguageModelMiddleware {
      * just this (e.g. `ai.torad.aisdk.middleware.defaultSettingsMiddleware`).
      * Default: pass through. Mirrors v6's `transformParams({ type, params, model })`.
      */
+    @JvmSynthetic
     public suspend fun transformParams(
         operation: MiddlewareOperation,
         params: LanguageModelCallParams,
@@ -41,6 +44,7 @@ public interface LanguageModelMiddleware {
     ): LanguageModelCallParams = params
 
     /** Wrap the one-shot generate call. Default: pass through. */
+    @JvmSynthetic
     public suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
         context.doGenerate(context.params)
 

@@ -331,7 +331,7 @@ class ToolApprovalTest {
                 ),
                 instructions = "use send",
                 tools = ToolSet(sendTool),
-                output = Output.obj(serializer<Receipt>()),
+                output = OutputObj(serializer<Receipt>()),
             )
 
             val first = agent.generate(prompt = "trigger").first()

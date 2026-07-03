@@ -22,6 +22,7 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.serializer
 import kotlin.jvm.JvmOverloads
+import kotlin.jvm.JvmSynthetic
 
 /**
  * LLM-visible metadata for a [Tool]. Separates schema from executor.
@@ -265,6 +266,17 @@ internal class LambdaStreamingTool<TInput, TOutput, TContext>(
     ) { inputAvailableFn?.invoke(toolCallId, input) }
 }
 
+internal fun <TContext> RequireUniqueToolNames(
+    tools: List<Tool<*, *, TContext>>,
+): Map<String, Tool<*, *, TContext>> {
+    val byName = linkedMapOf<String, Tool<*, *, TContext>>()
+    for (tool in tools) {
+        require(tool.name !in byName) { "Duplicate tool name `${tool.name}`." }
+        byName[tool.name] = tool
+    }
+    return byName
+}
+
 /**
  * Erased map of tools indexed by name. Application code constructs via the [ToolSet] factory.
  * @since 0.3.0-beta01
@@ -301,24 +313,11 @@ public class ToolSet<TContext>(
         }
         return ToolSet(byName + other.byName)
     }
-
-    public companion object {
-        internal fun <TContext> requireUniqueToolNames(
-            tools: List<Tool<*, *, TContext>>,
-        ): Map<String, Tool<*, *, TContext>> {
-            val byName = linkedMapOf<String, Tool<*, *, TContext>>()
-            for (tool in tools) {
-                require(tool.name !in byName) { "Duplicate tool name `${tool.name}`." }
-                byName[tool.name] = tool
-            }
-            return byName
-        }
-    }
 }
 
 /** Construct a [ToolSet] from individual tools. Throws on duplicate names. */
 public fun <TContext> ToolSet(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
-    ToolSet(ToolSet.requireUniqueToolNames(tools.toList()))
+    ToolSet(RequireUniqueToolNames(tools.toList()))
 
 @AiSdkDsl
 /** @since 0.3.0-beta01 */
@@ -623,7 +622,7 @@ public object Schemas {
             ValidationResult.Success(validated as T, value)
         } catch (error: Throwable) {
             CancellationExceptions.asCancellationExceptionOrNull(error)?.let { throw it }
-            ValidationResult.Failure(TypeValidationError.wrap(value, error, context), value)
+            ValidationResult.Failure(WrapTypeValidationError(value, error, context), value)
         }
 
     private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any? {
@@ -786,7 +785,9 @@ public sealed class ToolChoice {
  * Distinct from the streaming-tool mechanism — pushes arbitrary [StreamEvent]s.
  */
 public interface ToolStreamWriter {
+    @JvmSynthetic
     public suspend fun write(event: StreamEvent)
+    @JvmSynthetic
     public suspend fun writeData(value: JsonElement)
 }
 

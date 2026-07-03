@@ -47,7 +47,7 @@ public class HuggingFaceProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
     /** @since 0.3.0-beta01 */
-    public val generateId: () -> String = { IdGenerator.generate() },
+    public val generateId: () -> String = { GenerateId() },
 ) {
     internal fun huggingFaceHeaders(extra: Map<String, String>): Map<String, String> {
         val merged = linkedMapOf<String, String?>()
@@ -127,7 +127,7 @@ public class HuggingFaceProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://router.huggingface.co/v1"
     private var headers: Map<String, String> = emptyMap()
-    private var generateId: () -> String = { IdGenerator.generate() }
+    private var generateId: () -> String = { GenerateId() }
 
     /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): HuggingFaceProviderSettingsBuilder {

@@ -1,0 +1,24 @@
+id: no-experimental-without-optin
+language: kotlin
+severity: warning
+message: "Class/function name reads as Experimental/Preview but carries no @RequiresOptIn. If this IS the opt-in marker annotation class, add @RequiresOptIn to it; otherwise annotate it with the project's opt-in marker so consumers must explicitly acknowledge the instability."
+rule:
+  any:
+    - kind: class_declaration
+      all:
+        - has: { kind: type_identifier, regex: '(Experimental|Preview)' }
+        - not:
+            has:
+              kind: modifiers
+              has:
+                kind: annotation
+                has: { kind: type_identifier, regex: '^RequiresOptIn$', stopBy: end }
+    - kind: function_declaration
+      all:
+        - has: { kind: simple_identifier, regex: '(Experimental|Preview)' }
+        - not:
+            has:
+              kind: modifiers
+              has:
+                kind: annotation
+                has: { kind: type_identifier, regex: '^RequiresOptIn$', stopBy: end }

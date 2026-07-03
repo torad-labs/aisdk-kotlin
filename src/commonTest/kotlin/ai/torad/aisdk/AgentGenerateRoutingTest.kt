@@ -44,13 +44,13 @@ class AgentGenerateRoutingTest {
                         text = "",
                         toolCalls = listOf(call),
                         finishReason = FinishReason.ToolCalls,
-                        usage = Usage.of(promptTokens = 3, completionTokens = 2),
+                        usage = Usage(promptTokens = 3, completionTokens = 2),
                     )
                 }
                 else -> LanguageModelResult(
                     text = "done",
                     finishReason = FinishReason.Stop,
-                    usage = Usage.of(promptTokens = 4, completionTokens = 1),
+                    usage = Usage(promptTokens = 4, completionTokens = 1),
                 )
             }
         }

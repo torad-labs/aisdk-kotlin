@@ -116,6 +116,15 @@ public enum class ChatStatus {
     Error,
 }
 
+private const val TOOL_APPROVAL_RESPONSE_ID_PREFIX = "tool_approval_"
+
+private fun NextApprovalIndexAfter(messages: List<UIMessage>): Int =
+    messages.mapNotNull { message ->
+        message.id.removePrefix(TOOL_APPROVAL_RESPONSE_ID_PREFIX)
+            .takeIf { it != message.id }
+            ?.toIntOrNull()
+    }.maxOrNull()?.plus(1) ?: 1
+
 @OptIn(ExperimentalAtomicApi::class)
 /** @since 0.3.0-beta01 */
 public class Chat(
@@ -131,7 +140,7 @@ public class Chat(
     private val internalState = MutableStateFlow(
         InternalState(
             messages = initialMessages.toList(),
-            nextApprovalIndex = nextApprovalIndexAfter(initialMessages),
+            nextApprovalIndex = NextApprovalIndexAfter(initialMessages),
         ),
     )
 
@@ -183,7 +192,7 @@ public class Chat(
         applyState {
             copy(
                 messages = messages.toList(),
-                nextApprovalIndex = nextApprovalIndexAfter(messages),
+                nextApprovalIndex = NextApprovalIndexAfter(messages),
             )
         }
     }
@@ -232,7 +241,10 @@ public class Chat(
         )
     }
 
-    @Deprecated("Use addToolOutput instead.")
+    @Deprecated(
+        "Deprecated in 0.3.0-beta01. Use addToolOutput instead.",
+        ReplaceWith("addToolOutput(toolCallId, output, toolName)"),
+    )
     /** @since 0.3.0-beta01 */
     public fun addToolResult(
         toolCallId: String,
@@ -353,16 +365,5 @@ public class Chat(
                 if (candidate !in existingIds) return candidate to index
             }
         }
-    }
-
-    private companion object {
-        const val TOOL_APPROVAL_RESPONSE_ID_PREFIX = "tool_approval_"
-
-        fun nextApprovalIndexAfter(messages: List<UIMessage>): Int =
-            messages.mapNotNull { message ->
-                message.id.removePrefix(TOOL_APPROVAL_RESPONSE_ID_PREFIX)
-                    .takeIf { it != message.id }
-                    ?.toIntOrNull()
-            }.maxOrNull()?.plus(1) ?: 1
     }
 }

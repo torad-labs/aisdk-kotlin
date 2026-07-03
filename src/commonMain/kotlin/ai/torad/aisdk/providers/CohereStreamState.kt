@@ -97,7 +97,7 @@ internal class CohereChatStreamState(
         val index = streamIndex(value)
         val toolCall = streamToolCall(value) ?: return emptyList()
         val function = JsonAccess.obj(toolCall, "function") ?: JsonObject(emptyMap())
-        val id = (toolCall["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call")
+        val id = (toolCall["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId("call")
         val name = (function["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
         val arguments = (function["arguments"] as? JsonPrimitive)?.contentOrNull.orEmpty()
         pendingToolCallOccurrences[index] = PendingToolCall(id = id, name = name, arguments = arguments)
