@@ -674,8 +674,9 @@ id = "HD-15"
 phase = "hd"
 title = "Clear the beta-readiness RED: reseed architecture-budget.json for HD-08s legitimate test growth — GoogleProviderTest.kt to its current line count (740 at c872f18) and a new entry for HardeningBranchCoverageTest.kt (503) — smallest reviewed increase, per the ratchet law that HD-08 missed (reconcile on HD-08). Use the budget tools own update mechanism if it has one (read tools/check-architecture-budget.mjs first); otherwise hand-edit the json to exact current counts. tools/beta-readiness-check must go RED->GREEN in your verification; state exact before/after entry values in the ledger note. ONE mechanism, docs/json only, no source changes."
 files = ["architecture-budget.json"]
-status = "todo"
+status = "done"
 verify = "beta-readiness-check exits 0; budget entries equal current line counts exactly (no headroom padding); ci-gate green"
+# [2026-07-03] done: architecture-budget reseed exact to checker counts; GoogleProviderTest.kt 659 -> 741, HardeningBranchCoverageTest.kt untracked -> 504; beta-readiness RED->GREEN, ci-gate PASS; final SHA in fleet report
 
 [[items]]
 id = "HD-16"
