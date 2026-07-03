@@ -354,10 +354,11 @@ id = "RR-08"
 phase = "rr"
 title = "Schedule upstream triage: ai@6.0.208 -> v7.x delta review as tracked post-beta issue/milestone with owner, so DEC-2's freshness pin has an expiry (warning fires every CI run today)."
 files = []
-status = "todo"
+status = "verified"
 verify = "tracked issue/milestone exists"
 
 # ---------------------------------------------------------------- phase bp: ecosystem (mostly post-beta)
+# [2026-07-02] orchestrator created the tracked issue directly (see repo issues); pin now has an expiry ticket
 
 [[items]]
 id = "BP-01"
