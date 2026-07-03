@@ -89,4 +89,6 @@ jobs:
       - name: Verify Apple targets (compile all, test simulator)
         run: ./gradlew iosSimulatorArm64Test compileKotlinIosArm64 compileKotlinIosX64
       - name: Verify Swift import smoke
+        env:
+          REQUIRE_REAL_SMOKE: "1"
         run: tools/run-ios-swift-smoke
