@@ -391,7 +391,8 @@ id = "BP-05"
 phase = "bp"
 title = "POM enrichment: issueManagement + ciManagement blocks (verified absent), unique artifact description; verify klibs.io listing ~1 month post-beta."
 files = ["build.gradle.kts", "gradle.properties"]
-status = "in_flight"
+status = "done"
+# [2026-07-02] POM issueManagement/ciManagement blocks added; publishToMavenLocal POM inspection passed; final SHA reported via fleet.
 
 [[items]]
 id = "BP-06"
