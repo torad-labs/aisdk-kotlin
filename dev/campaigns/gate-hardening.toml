@@ -225,7 +225,7 @@ id = "GH-18"
 phase = "gh3"
 title = "Harness rollout to remaining CI-wired mjs/py gates incl. two regression-locks: golden-coverage dangling-reference fixture; api-review base-resolution fixture under CI-like shallow/detached checkout."
 files = ["tools/gate-fixtures/"]
-status = "todo"
+status = "in_flight"
 depends = ["GH-14"]
 verify = "every CI-wired mjs/py gate has a fixture pair in the harness; both regression fixtures fire on regression"
 
@@ -243,7 +243,7 @@ id = "GH-20"
 phase = "gh3"
 title = "Mechanical dual-fixture contract: rules using inside:/relational anchors MUST ship whole-file AND hunk fixtures; validate_rules fails on missing pair. Backfill all 13 existing inside: rules (not just the 4 from GH-11)."
 files = [".claude/hooks/rules/validate_rules.py", ".claude/hooks/rules/manifest.json"]
-status = "todo"
+status = "in_flight"
 depends = ["GH-10", "GH-11"]
 verify = "new relational rule without hunk fixture fails validation with explicit message"
 # [2026-07-02] inherits from GH-11: normalize memberExample/memberExamples key alias when formalizing the dual-fixture schema
@@ -253,7 +253,7 @@ id = "GH-21"
 phase = "gh3"
 title = "Extend NoRunCatchingInSuspendFunction to coroutine-builder lambdas: launch { runCatching { suspendCall() } } currently missed (rule only checks lexically-enclosing named suspend fun). Fixture proves the builder-lambda shape fires."
 files = ["detekt-rules/src/main/kotlin/ai/torad/aisdk/detekt/CoroutineRules.kt", "detekt-rules/src/test/"]
-status = "todo"
+status = "in_flight"
 verify = "builder-lambda fixture trips the rule in detekt-rules tests; compliant code does not"
 
 [[items]]
