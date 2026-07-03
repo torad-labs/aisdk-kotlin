@@ -14,6 +14,7 @@ import kotlin.jvm.JvmOverloads
 import kotlin.time.TimeSource
 
 @Poko
+@ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public class DevToolsStep(
     /** @since 0.3.0-beta01 */
@@ -35,6 +36,7 @@ public class DevToolsStep(
 )
 
 @Poko
+@ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public class DevToolsStepResult(
     /** @since 0.3.0-beta01 */
@@ -53,6 +55,7 @@ public class DevToolsStepResult(
     public val rawChunks: List<JsonElement> = emptyList(),
 )
 
+@ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public interface DevToolsRecorder {
     public suspend fun createRun(runId: String)
@@ -60,6 +63,7 @@ public interface DevToolsRecorder {
     public suspend fun updateStepResult(stepId: String, result: DevToolsStepResult)
 }
 
+@ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public class InMemoryDevToolsRecorder : DevToolsRecorder {
     private val _runs: MutableList<String> = mutableListOf()
@@ -89,6 +93,7 @@ public class InMemoryDevToolsRecorder : DevToolsRecorder {
 }
 
 @JvmOverloads
+@ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public fun DevToolsMiddleware(
     recorder: DevToolsRecorder = InMemoryDevToolsRecorder(),

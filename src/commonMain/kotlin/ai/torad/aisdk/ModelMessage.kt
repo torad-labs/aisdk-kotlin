@@ -63,7 +63,11 @@ public fun ToolApprovalResponseMessage(
 )
 
 @Serializable
-/** @since 0.3.0-beta01 */
+/**
+ * This enum may gain variants in future releases. Consumers must not rely on
+ * exhaustiveness — include an `else` branch when matching.
+ * @since 0.3.0-beta01
+ */
 public enum class MessageRole { System, User, Assistant, Tool }
 
 /**
@@ -88,6 +92,21 @@ public enum class MessageRole { System, User, Assistant, Tool }
 @JsonClassDiscriminator("type")
 /** @since 0.3.0-beta01 */
 public sealed class ContentPart {
+
+    /** @since 0.3.0-beta01 */
+    public val metadata: ProviderMetadata
+        get() = when (this) {
+            is Text -> providerMetadata
+            is Reasoning -> providerMetadata
+            is ToolCall -> providerMetadata
+            is ToolResult -> providerMetadata
+            is ToolApprovalRequest -> providerMetadata
+            is ToolApprovalResponse -> ProviderMetadata.None
+            is Source -> providerMetadata
+            is File -> providerMetadata
+            is Image -> providerMetadata
+            is Raw -> ProviderMetadata.None
+        }
 
     @Serializable
     @SerialName("text")

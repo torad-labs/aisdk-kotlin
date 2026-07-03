@@ -123,7 +123,7 @@ class ToolFlowTest {
     }
 
     @Test
-    fun `Error ErrorJson and ExecutionDenied round-trip through toJsonElement and back`() = with(ToolResultOutputs) {
+    fun `Error ErrorJson and ExecutionDenied round-trip through toJsonElement and back`() {
         // The three error/denial subtypes used to serialize as bare values that the reader
         // could not reconstruct (they fell through to Text/Json). They must now round-trip.
         val cases = listOf(

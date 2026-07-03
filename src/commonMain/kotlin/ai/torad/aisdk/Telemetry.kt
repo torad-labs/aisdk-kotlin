@@ -305,6 +305,7 @@ private object TelemetryRedaction {
         event.safeTelemetryProjection(settings, redactor)
 
     @Suppress("CyclomaticComplexMethod")
+    @OptIn(ExperimentalAiSdkApi::class)
     private fun AgentEvent.safeTelemetryProjection(settings: TelemetrySettings, redactor: Redactor): AgentEvent =
         when (this) {
             is AgentEvent.Started<*> -> AgentEvent.Started<Any?>(

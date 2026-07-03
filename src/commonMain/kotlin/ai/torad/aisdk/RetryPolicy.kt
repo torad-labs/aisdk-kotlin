@@ -41,9 +41,9 @@ public fun interface RetryDelayGenerator {
 public class RetryPolicy internal constructor(
     /**
      * Defaults to 2. If your own transport/middleware already retries transient
-     * failures, composing both retries the same failure `(1 + maxRetries) *
-     * (1 + middlewareRetries)` times — set this to `0` to let the middleware own
-     * retry behavior entirely.
+     * failures, composing both means the same failing call is attempted
+     * `(1 + maxRetries) * (1 + middlewareRetries)` times — set this to `0` to
+     * let the middleware own retry behavior entirely.
      * @since 0.3.0-beta01
      */
     public val maxRetries: Int = 2,

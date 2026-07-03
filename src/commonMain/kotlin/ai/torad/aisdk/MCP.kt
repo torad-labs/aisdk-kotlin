@@ -278,60 +278,66 @@ public fun MCPClientConfig(
 @ExperimentalAiSdkApi
 public typealias experimental_MCPClientConfig = MCPClientConfig
 
-/** @since 0.3.0-beta01 */
-public interface MCPClient {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class MCPClient {
     /** @since 0.3.0-beta01 */
-    public val serverInfo: Configuration
+    public abstract val serverInfo: Configuration
 
     /** @since 0.3.0-beta01 */
-    public val instructions: String?
+    public abstract val instructions: String?
 
-    public suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
+    public abstract suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
 
-    public suspend fun listTools(
+    public abstract suspend fun listTools(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListToolsResult
 
-    public fun <TContext> toolsFromDefinitions(
+    public abstract fun <TContext> toolsFromDefinitions(
         definitions: ListToolsResult,
         schemas: MCPToolSchemas? = null,
     ): ToolSet<TContext>
 
-    public suspend fun listResources(
+    public abstract suspend fun listResources(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListResourcesResult
 
-    public suspend fun readResource(
+    public abstract suspend fun readResource(
         uri: String,
         options: MCPRequestOptions? = null,
     ): ReadResourceResult
 
-    public suspend fun listResourceTemplates(
+    public abstract suspend fun listResourceTemplates(
         options: MCPRequestOptions? = null,
     ): ListResourceTemplatesResult
 
     @ExperimentalAiSdkApi
-    public suspend fun experimental_listPrompts(
+    public abstract suspend fun experimental_listPrompts(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListPromptsResult
 
     @ExperimentalAiSdkApi
-    public suspend fun experimental_getPrompt(
+    public abstract suspend fun experimental_getPrompt(
         name: String,
         arguments: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): GetPromptResult
 
     /** @since 0.3.0-beta01 */
-    public fun onElicitationRequest(
+    public abstract fun onElicitationRequest(
         schema: ElicitationRequestSchema,
         handler: suspend (ElicitationRequest) -> ElicitResult,
     )
 
-    public suspend fun close()
+    public abstract suspend fun close()
 }
 
 @ExperimentalAiSdkApi
@@ -345,7 +351,7 @@ public suspend fun Experimental_CreateMCPClient(config: MCPClientConfig): MCPCli
     CreateMCPClient(config)
 
 @OptIn(ExperimentalAtomicApi::class)
-private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
+private class DefaultMCPClient(config: MCPClientConfig) : MCPClient() {
     private val transport: MCPTransport = config.transport
     private val onUncaughtError = config.onUncaughtError
     private val clientInfo = Configuration {

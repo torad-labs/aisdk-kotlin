@@ -41,6 +41,8 @@ public enum class GatewayModelType {
     Image,
     Language,
     Reranking,
+    Speech,
+    Transcription,
     Video,
     ;
 
@@ -50,6 +52,8 @@ public enum class GatewayModelType {
             "image" -> Image
             "language" -> Language
             "reranking" -> Reranking
+            "speech" -> Speech
+            "transcription" -> Transcription
             "video" -> Video
             else -> null
         }

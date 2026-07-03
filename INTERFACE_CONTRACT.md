@@ -52,13 +52,17 @@
   (`-Xjvm-expose-boxed` errors on them by design). `GatewayProvider` and
   `AnthropicAwsProvider`'s `ModelId`-typed shorthand (`chat(ModelId)`,
   `image(ModelId)`, `video(ModelId)`, etc.) stay mangled when called through
-  the interface type. This is not a functional gap: each has a
-  never-mangled `String`-typed sibling on the same interface
-  (`languageModel(String)`, `imageModel(String)`, `videoModel(String)`,
-  etc.) that Java callers should use instead when holding an
-  interface-typed reference. Concrete provider classes (e.g.
-  `BlackForestLabsProvider`) still expose their own boxed `ModelId`
-  overloads directly.
+  the (now `sealed class`, formerly interface) facade type. This is not a
+  functional gap: each has a never-mangled `String`-typed sibling on the same
+  type (`languageModel(String)`, `imageModel(String)`, `videoModel(String)`,
+  etc.) that Java callers should use instead when holding a facade-typed
+  reference. Concrete provider classes (e.g. `BlackForestLabsProvider`) still
+  expose their own boxed `ModelId` overloads directly.
+- **Sealed facades:** `MCPClient`, `AnthropicAwsProvider`,
+  `BlackForestLabsProvider`, `ByteDanceProvider`, `OpenAICompatibleProvider`,
+  `OpenResponsesProvider`, and `GatewayProvider` are `sealed class` (not
+  `interface`) — each has exactly one in-module implementation and is not
+  designed for external implementation.
 
 ### Agent
 
@@ -173,6 +177,8 @@ and repaired values are byte-identical to the JS SDK.
   `StepResult` are `@Poko class` value-semantics types; field access remains,
   but public positional constructors and `copy()` / `componentN()` ABI are
   intentionally absent.
+- `AgentEvent.Finished.output` requires `@ExperimentalAiSdkApi`; it is always
+  `null` today (the typed output flows through `generate(): TOutput` instead).
 
 ### Prepare scopes
 
@@ -186,14 +192,13 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 ### Cancellation
 
-- `interface AbortSignal { val isAborted; fun throwIfAborted(); fun register(onAbort): Registration }`
+- `interface AbortSignal { val isAborted; fun throwIfAborted(); fun register(onAbort): Registration }` — intentionally not sealed; consumer implementations (e.g. bridging a platform cancellation source) are supported.
 - `val AbortSignalNever: AbortSignal`
 - `class AbortController(logger: Logger = NoopLogger) { val signal; fun abort() }`
   - Abort callback failures are recoverable: the controller emits one `Logger.warn` with
     the thrown callback exception and continues delivering abort to remaining callbacks.
     Logger failures are swallowed so observability cannot block abort delivery.
 - `class AbortError`
-- `fun AbortSignalFromJob(job: Job): AbortSignal`
 - `object AbortSignals { fun from(job: Job): AbortSignal; fun from(scope: CoroutineScope): AbortSignal }`
 
 Cancellation is structural. SDK recovery paths that catch broad failures
@@ -278,7 +283,7 @@ of producing a normal abort completion for the step.
 
 ### MCP
 
-- `MCPTransport`, `MCPClientConfig`, `MCPClient`, `CreateMCPClient(config)`.
+- `MCPTransport`, `MCPClientConfig`, `MCPClient`, `CreateMCPClient(config)`. `MCPClient` is a `sealed class` (its sole implementation is in-module), not an interface — see the "Sealed facades" note below.
 - `MCPReconnectionOptions { initialReconnectionDelayMillis(1000); reconnectionDelayGrowFactor(1.5); maxReconnectionDelayMillis(30000); maxRetries(2) }` — `@Poko` HTTP inbound SSE reconnect policy; `maxRetries = 0` disables automatic error reconnects. The positional constructor, `copy()`, and `componentN()` are not public.
 - `MCPTransportConfig { reconnectionOptions(MCPReconnectionOptions { ... }) }`, `@InternalAiSdkApi HttpMCPTransport(..., reconnectionOptions = MCPReconnectionOptions { ... })`, `@InternalAiSdkApi SseMCPTransport(...)`, and `StdioConfig { command("..."); args([...]) }`. The concrete HTTP/SSE transports stay public for advanced custom transport work but are internal, unstable SDK surface that requires explicit opt-in. `StdioConfig` remains `@Serializable` and is an `@Poko` value-semantics class with no public positional constructor, `copy()`, or `componentN()`.
 - `MCPClient` resource/tool APIs: `tools`, `toolsFromDefinitions`, `listTools`, `listResources`, `readResource`, `listResourceTemplates`, `onElicitationRequest`, `close`.
@@ -307,6 +312,7 @@ of producing a normal abort completion for the step.
   types; field access remains, but public `copy()` / `componentN()` ABI is
   intentionally absent. Gateway settings and call params stay on the
   builder/data-class track.
+- `enum GatewayModelType { Embedding, Image, Language, Reranking, Speech, Transcription, Video }` — covers all 7 first-class model kinds (`Speech`/`Transcription` added alongside `SpeechModel`/`TranscriptionModel`).
 - Provider tool-namespace holders such as `OpenAITools`, `AnthropicTools`,
   `GoogleTools`, `XaiTools`, `AzureOpenAITools`, and `GroqTools` are
   `@Poko class` value-semantics types; field access remains, but public
@@ -460,10 +466,14 @@ of producing a normal abort completion for the step.
 - `cosineSimilarity`, `splitArray`, `asArray`, `mergeJsonObjects`, `isDeepEqualData`.
 - `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`. `DataUrl` remains public because data URL parsing is documented general utility surface and `DataUrl.parse(...)` returns the consumer-facing value.
 - `RetryPolicy { maxRetries(2); baseDelayMs(100); maxDelayMs(2000); clock(Clock.System); delayGenerator(...); totalTimeoutMs(null); perAttemptTimeoutMs(null) }`, `RetryDelayGenerator`, `RetryAttemptDetail`, `retryWithExponentialBackoff`, `SerialJobExecutor`. Defaults retry only typed retryable `APICallError` / `GatewayError`, honor `Retry-After`, use full jitter, and preserve attempt history in `RetryError.attempts`. `RetryPolicy` is a regular builder-backed class because delay generators may be stateful; the positional constructor, `copy()`, and `componentN()` are not public.
-- `mergeAbortSignals`, `abortSignalFromJobs`.
+- `CombineAbortSignals`, `AbortSignals.from`.
 
 ### DevTools
 
+- The DevTools public surface (`DevToolsStep`, `DevToolsStepResult`,
+  `DevToolsRecorder`, `InMemoryDevToolsRecorder`, `DevToolsMiddleware`)
+  requires `@ExperimentalAiSdkApi` — it is a newer subsystem still being
+  shaped.
 - `DevToolsStep` and `DevToolsStepResult` are `@Poko class`
   value-semantics types; field access remains, but public `copy()` /
   `componentN()` ABI is intentionally absent.
@@ -495,8 +505,8 @@ of producing a normal abort completion for the step.
 
 - `@Serializable @Poko class ModelMessage(role, content: List<ContentPart>)`
 - Top-level factories: `SystemMessage(text)`, `UserMessage(text)`, `AssistantMessage(text)`, `ToolMessage(callId, name, output)`, `ToolApprovalResponseMessage(callId, approved, reason?, approvalId?)`
-- `enum MessageRole { System, User, Assistant, Tool }`
-- `sealed class ContentPart`
+- `enum MessageRole { System, User, Assistant, Tool }` — may gain variants in future releases; consumers must not rely on exhaustive `when`.
+- `sealed class ContentPart` — `val metadata: ProviderMetadata` is a member (derived from `providerMetadata` per leaf, `ProviderMetadata.None` where absent); no longer a top-level extension.
   - `@Serializable @Poko class Text(text)`
   - `@Serializable @Poko class Reasoning(text)`
   - `@Serializable @Poko class ToolCall(callId, name, input)`
@@ -514,7 +524,7 @@ of producing a normal abort completion for the step.
   - JSON field names and `ContentPart` discriminators remain unchanged, while
     public `copy()` / `componentN()` ABI is intentionally absent for these
     message/content/usage value types.
-- `enum FinishReason { Stop, Length, ToolCalls, ContentFilter, Error, ToolApprovalRequested, Other }`
+- `enum FinishReason { Stop, Length, ToolCalls, ContentFilter, Error, ToolApprovalRequested, Other }` — new provider-agnostic outcomes may be added as named variants; provider-specific ones route through `Other`.
 - `enum ToolChoice { Auto, None, Required, Specific(toolName) }` (sealed)
 
 ### Streaming events — v6 block-aware
@@ -523,6 +533,8 @@ of producing a normal abort completion for the step.
   - Public leaves are `@Poko class` value-semantics types; serialization and
     field access remain, but public `copy()` / `componentN()` ABI is
     intentionally absent.
+  - `val metadata: ProviderMetadata` is a member (derived per leaf); no
+    longer a top-level extension.
   - `StreamStart`
   - `StepStart(stepNumber)`
   - `TextStart(id) / TextDelta(id, text) / TextEnd(id)`
@@ -557,7 +569,7 @@ of producing a normal abort completion for the step.
   messages and lets other failures, including cancellation, propagate.
 
 - `data class UIMessage(id, role, parts: List<UIMessagePart>, createdAtMs?, metadata: Map<String, JsonElement>? = null)` — `metadata` is the monomorphic substitute for v6's `<METADATA, DATA_PARTS, TOOLS>` generics; apps can attach source-agent identity or routing metadata under their own namespaced keys.
-- `enum UIMessageRole { System, User, Assistant }`
+- `enum UIMessageRole { System, User, Assistant }` — may gain variants in future releases; consumers must not rely on exhaustive `when`.
 - `sealed interface UIMessagePart { Text; ToolUI; DynamicToolUI; Reasoning; SourceUrl; SourceDocument; File; Error; Data; StepStart }`
   - Public leaves are `@Poko class` value-semantics types; serialization and
     field access remain, but public `copy()` / `componentN()` ABI is
@@ -569,7 +581,7 @@ of producing a normal abort completion for the step.
   - `File(mediaType, base64)`
   - `Data(type, data, id?, transient = false)` — typed custom `data-*` UI part; `StreamEvent.Data(name, ...)` is the encoder-side source for these chunks.
   - **+ `providerMetadata: Map<String, JsonElement>? = null`** on `Text`, `ToolUI`, `DynamicToolUI`, `Reasoning`, `SourceUrl`, `SourceDocument`, `File` (not `Error` / `StepStart` — terminal / boundary). gap #11.
-- `enum ToolCallState { InputStreaming, InputAvailable, ApprovalRequested, ApprovalResponded, OutputAvailable, OutputError, OutputDenied }` — v6's full 7-state taxonomy. Renames: `ApprovalRequired → ApprovalRequested`, `Error → OutputError`. New states: `ApprovalResponded` (user answered, tool not yet run), `OutputDenied` (approval was denied).
+- `enum ToolCallState { InputStreaming, InputAvailable, ApprovalRequested, ApprovalResponded, OutputAvailable, OutputError, OutputDenied }` — v6's full 7-state taxonomy. Renames: `ApprovalRequired → ApprovalRequested`, `Error → OutputError`. New states: `ApprovalResponded` (user answered, tool not yet run), `OutputDenied` (approval was denied). May gain variants in future releases; consumers must not rely on exhaustive `when`.
 - `UIMessagePart.ToolUI.outputAs(serializer)` / `inputAs(serializer)` plus reified overloads
 - `UIMessagePart.DynamicToolUI.outputAs(serializer)` / `inputAs(serializer)` plus reified overloads
 - `fun StreamToUiMessages(events: Flow<StreamEvent>, assistantMessageId): Flow<UIMessage>`

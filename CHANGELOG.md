@@ -6,15 +6,63 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+- Pre-tag ABI-evolvability hardening (see `docs/reports/pre-beta-abi-audit.md`):
+  - `MCPClient`, `AnthropicAwsProvider`, `BlackForestLabsProvider`,
+    `ByteDanceProvider`, `OpenAICompatibleProvider`, `OpenResponsesProvider`,
+    and `GatewayProvider` are now `sealed class` (not `interface`) — each had
+    exactly one in-module implementation and no plausible external
+    implementer, so the SDK keeps the freedom to add members later without
+    breaking a third party. (`sealed class`, not `sealed interface`, per this
+    repo's `no-sealed-interface` tenet.)
+  - `ContentPart.metadata` and `StreamEvent.metadata`, the last 2 public
+    top-level extension declarations, are now members of the respective
+    sealed base class — completes the "no public extensions" migration.
+  - `Schema`, `MiddlewareCallContext`, `EmbeddingMiddlewareCallContext`, and
+    `ImageMiddlewareCallContext` are no longer `@Poko`: all 4 hold a closure
+    or provider-instance field, so value equality on them was meaningless;
+    they are now plain regular classes with identity equality.
+  - Removed the duplicate top-level `AbortSignalFromJob(job: Job)` — use
+    `AbortSignals.from(job)`, which now holds the implementation directly.
+  - `GatewayModelType` gained `Speech` and `Transcription` variants, matching
+    the SDK's existing `SpeechModel`/`TranscriptionModel` interfaces.
+  - `AgentEvent.Finished.output` and the public DevTools surface
+    (`DevToolsStep`, `DevToolsStepResult`, `DevToolsRecorder`,
+    `InMemoryDevToolsRecorder`, `DevToolsMiddleware`) are now
+    `@ExperimentalAiSdkApi`.
+  - `PruneReasoning` is now a `sealed class` with `data object` leaves
+    (`All`/`BeforeLastMessage`/`None`), matching `PruneToolCalls`'s shape.
+  - `MessageRole`, `UIMessageRole`, `ToolCallState`, `ChatStatus`,
+    `RetryErrorReason`, and `FinishReason` now document a forward-compat
+    contract: consumers must not rely on exhaustive `when` over these enums.
 - `AbortSignals` is now plain factory functions instead of member-extensions:
   `AbortSignals.from(job: Job)` / `AbortSignals.from(scope: CoroutineScope)`
   replace `Job.asAbortSignal()` / `CoroutineScope.asAbortSignal()`, so a call
-  site no longer needs `with(AbortSignals) { ... }`.
+  site no longer needs `with(AbortSignals) { ... }` or a member-extension
+  import.
+- Seven more public member-extension functions parked inside public `object`s
+  moved onto the type they extend, so call sites no longer need a
+  member-extension import or `with(Object) { ... }`:
+  - `ProviderModels.provider/languageModel/embeddingModel/imageModel/speechModel/transcriptionModel/rerankingModel/videoModel`
+    (typed `ProviderId`/`ModelId`/`ModelRef` overloads) are now default methods
+    on `Provider` itself, alongside the existing `String`-typed overloads.
+  - `GeneratedFiles.fileData/bytes/bytesOrNull` are now members of
+    `GeneratedFile`.
+  - `AgentSessions.session` is now a default method on `Agent`.
+  - `ChatSessionFactory.asSession` is now a member of `Chat`.
+  - `ToolResultOutputs.isToolResultError/toJsonElement` are now members of
+    `ToolResultOutput`; `ToolResultOutputs` itself is now `internal` (it kept
+    only internal wire-codec helpers).
+  - `UsageArithmetic.plus` is now the member operator `Usage.plus`, so
+    `a + b` works directly without importing or scoping into `UsageArithmetic`.
+  - `UIMessageMetadata.metadataAs` (both overloads) are now members of
+    `UIMessage`.
+  - A new ast-grep rule, `no-public-member-extension-in-object`, blocks the
+    pattern from re-entering the public API.
 - **Upgrader callout:** `RetryPolicy.maxRetries` defaults to `2`. If you already
   retry transient failures in your own transport/middleware, composing both
-  retries the same failure `(1 + maxRetries) * (1 + middlewareRetries)` times.
-  Pass `maxRetries(0)` on the `RetryPolicy` builder if your middleware already
-  owns retry behavior.
+  means the same failing call is attempted `(1 + maxRetries) *
+  (1 + middlewareRetries)` times. Pass `maxRetries(0)` on the `RetryPolicy`
+  builder if your middleware already owns retry behavior.
 - Cancellation hardening: broad `catch(Throwable)` paths no longer swallow
   coroutine cancellation in telemetry dispatch, memoized stream replay, retry
   classification, completion fallback, agent submit, smooth-stream flushing,

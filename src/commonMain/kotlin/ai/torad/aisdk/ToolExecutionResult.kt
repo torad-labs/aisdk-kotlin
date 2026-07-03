@@ -21,7 +21,7 @@ internal sealed class ToolExecutionResult {
         val modelOutput: ToolResultOutput = output,
         val modelVisible: JsonElement = outputJson,
     ) : ToolExecutionResult() {
-        val isError: Boolean = with(ToolResultOutputs) { modelOutput.isToolResultError() }
+        val isError: Boolean = modelOutput.isToolResultError()
     }
 
     data class Failure(

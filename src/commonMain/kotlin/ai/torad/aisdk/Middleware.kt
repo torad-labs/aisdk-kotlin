@@ -99,7 +99,6 @@ public enum class MiddlewareOperation { Generate, Stream }
  * generate path. This is the load-bearing property that lets
  * `simulateStreamingMiddleware` work.
  */
-@Poko
 /** @since 0.3.0-beta01 */
 public class MiddlewareCallContext(
     /** @since 0.3.0-beta01 */

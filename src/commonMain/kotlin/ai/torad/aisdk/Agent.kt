@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -102,6 +103,20 @@ public interface Agent<TContext, TOutput> {
         options: TContext? = null,
         abortSignal: AbortSignal = AbortSignalNever,
     ): Flow<StreamEvent>
+
+    /**
+     * Wraps this agent in an [AgentSession] bound to [scope], replaying
+     * [initialMessages] as the starting history.
+     * @since 0.3.0-beta01
+     */
+    public fun session(
+        scope: CoroutineScope,
+        initialMessages: List<ModelMessage> = emptyList(),
+    ): AgentSession<TContext, TOutput> = AgentSession(
+        scope = scope,
+        agent = this,
+        initialMessages = initialMessages,
+    )
 }
 
 /**

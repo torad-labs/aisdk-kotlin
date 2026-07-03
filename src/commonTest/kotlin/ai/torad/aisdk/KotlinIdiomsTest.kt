@@ -1,8 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.AgentSessions.session
-import ai.torad.aisdk.GeneratedFiles.bytes
-import ai.torad.aisdk.GeneratedFiles.fileData
 import ai.torad.aisdk.TypedJsonOps.decodeAs
 import ai.torad.aisdk.TypedJsonOps.decodeProviderMetadata
 import ai.torad.aisdk.TypedJsonOps.decodeValue
@@ -11,7 +8,6 @@ import ai.torad.aisdk.TypedJsonOps.putJson
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
-import ai.torad.aisdk.ui.UIMessageMetadata.metadataAs
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
 import kotlinx.coroutines.Job

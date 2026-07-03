@@ -2,7 +2,6 @@
 
 package ai.torad.aisdk
 
-import ai.torad.aisdk.AgentSessions.session
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.providers.MockToolInput
 import kotlinx.coroutines.CancellationException
@@ -196,7 +195,7 @@ class AgentSessionTest {
                 abortSignal: AbortSignal,
             ): Flow<StreamEvent> = flow {
                 val denied = ToolResultOutput.ExecutionDenied("no")
-                val deniedJson = with(ToolResultOutputs) { denied.toJsonElement() }
+                val deniedJson = denied.toJsonElement()
                 emit(StreamEvent.ReasoningStart("r1"))
                 emit(StreamEvent.ReasoningDelta("r1", "thinking"))
                 emit(StreamEvent.ReasoningEnd("r1"))

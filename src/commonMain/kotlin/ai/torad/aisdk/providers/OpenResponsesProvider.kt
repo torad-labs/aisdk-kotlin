@@ -437,8 +437,14 @@ public fun OpenResponsesAllowedTools(
 ): OpenResponsesAllowedTools =
     OpenResponsesAllowedToolsBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
-public interface OpenResponsesProvider : Provider {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class OpenResponsesProvider : Provider {
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
 
     /** @since 0.3.0-beta01 */
@@ -456,7 +462,7 @@ private class KtorOpenResponsesProvider(
     private val client: HttpClient,
     private val settings: OpenResponsesProviderSettings,
     private val json: Json,
-) : OpenResponsesProvider {
+) : OpenResponsesProvider() {
     override val providerId: String = settings.name
 
     override fun languageModel(modelId: String): LanguageModel =

@@ -189,6 +189,26 @@ public class Usage(
      */
     public val totalTokens: Int get() = promptTokens + completionTokens
 
+    /**
+     * Sums token counts (and breakdown fields) from both sides; [other]'s
+     * [raw] wins when present.
+     * @since 0.3.0-beta01
+     */
+    public operator fun plus(other: Usage): Usage = Usage(
+        inputTokens = InputTokenBreakdown(
+            total = inputTokens.total + other.inputTokens.total,
+            noCache = inputTokens.noCache + other.inputTokens.noCache,
+            cacheRead = inputTokens.cacheRead + other.inputTokens.cacheRead,
+            cacheWrite = inputTokens.cacheWrite + other.inputTokens.cacheWrite,
+        ),
+        outputTokens = OutputTokenBreakdown(
+            total = outputTokens.total + other.outputTokens.total,
+            text = outputTokens.text + other.outputTokens.text,
+            reasoning = outputTokens.reasoning + other.outputTokens.reasoning,
+        ),
+        raw = other.raw ?: raw,
+    )
+
     @Serializable
     @Poko
     /** @since 0.3.0-beta01 */
@@ -251,30 +271,12 @@ public class Usage(
 }
 
 /**
- * Arithmetic over [Usage]. The `+` operator lives here as a member-extension
- * (decision-C: no loose top-level funs). Call sites bring it into scope with
- * `with(UsageArithmetic) { a + b }` or a member import.
- * @since 0.3.0-beta01
- */
-public object UsageArithmetic {
-    public operator fun Usage.plus(other: Usage): Usage = Usage(
-        inputTokens = Usage.InputTokenBreakdown(
-            total = inputTokens.total + other.inputTokens.total,
-            noCache = inputTokens.noCache + other.inputTokens.noCache,
-            cacheRead = inputTokens.cacheRead + other.inputTokens.cacheRead,
-            cacheWrite = inputTokens.cacheWrite + other.inputTokens.cacheWrite,
-        ),
-        outputTokens = Usage.OutputTokenBreakdown(
-            total = outputTokens.total + other.outputTokens.total,
-            text = outputTokens.text + other.outputTokens.text,
-            reasoning = outputTokens.reasoning + other.outputTokens.reasoning,
-        ),
-        raw = other.raw ?: raw,
-    )
-}
-
-/**
  * Why a generation step ended.
+ *
+ * New provider-agnostic outcomes may be added as named variants in future
+ * releases; provider-specific ones route through [Other]. Consumers must not
+ * rely on exhaustiveness — include an `else` branch (or branch through
+ * [Other]) when matching.
  * @since 0.3.0-beta01
  */
 @Serializable
