@@ -255,9 +255,10 @@ id = "GH-21"
 phase = "gh3"
 title = "Extend NoRunCatchingInSuspendFunction to coroutine-builder lambdas: launch { runCatching { suspendCall() } } currently missed (rule only checks lexically-enclosing named suspend fun). Fixture proves the builder-lambda shape fires."
 files = ["detekt-rules/src/main/kotlin/ai/torad/aisdk/detekt/CoroutineRules.kt", "detekt-rules/src/test/"]
-status = "done"
+status = "verified"
 verify = "builder-lambda fixture trips the rule in detekt-rules tests; compliant code does not"
 # [2026-07-02] builder-lambda runCatching rule catches same-file suspend calls; pure builder Result wrapping remains allowed
+# [2026-07-02] orchestrator verified 87664bf: builder-lambda runCatching flagged when same-file suspend call syntactically provable; KDoc states semantics + type-resolution limit honestly; fire + two no-flag fixtures; all-in-builder semantics rejected after detekt caught real false positive in ChatConcurrencyTest (diagnose-before-fix inside the slice)
 
 [[items]]
 id = "GH-22"
