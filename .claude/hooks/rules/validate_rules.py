@@ -18,11 +18,14 @@ This gate has two modes:
   HUNK mode — re-scan each fixture as an edit hunk/snippet, without package or
   enclosing scope. Entries default to hunkExpectation="same"; scope-anchored
   rules may declare hunkExpectation="no-match" and optional badHunkExample /
-  goodHunkExample fragments. Entries may also declare memberExample or
-  memberExamples fragments that must never match when scanned as isolated
-  class-member context probes. hunkUnsafe=true documents rules that require
-  adapter-preserved enclosing context because tree-sitter cannot distinguish
-  some bare class-body fragments from real source_file declarations.
+  goodHunkExample fragments. Entries may also declare memberExamples fragments
+  that must never match when scanned as isolated class-member context probes.
+  hunkUnsafe=true documents rules that require adapter-preserved enclosing
+  context because tree-sitter cannot distinguish some bare class-body fragments
+  from real source_file declarations. Rules using ast-grep relational anchors
+  (inside:/precedes:/follows:) must explicitly declare hunk handling through
+  hunkExpectation, hunkUnsafe=true, or memberExamples, so future hunk-scanning
+  consumers cannot accidentally rely on whole-file-only behavior.
       python3 validate_rules.py --hunk-mode <rules.json>
 
   SCAFFOLD mode — emit a fill-in manifest entry for an existing rule file.
@@ -34,6 +37,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -44,6 +48,7 @@ PARSE_ERROR_MARKERS = ("Cannot parse", "not a valid ast-grep rule", "Rule must s
 PROBE = "package probe\n\npublic class Probe {\n    public fun run(): Int = 0\n}\n"
 STUB_BAD_EXAMPLE = "TODO: replace with code that MUST match this rule"
 STUB_GOOD_EXAMPLE = "TODO: replace with code that MUST NOT match this rule"
+RELATIONAL_ANCHOR_RE = re.compile(r"(?m)^\s*-?\s*(inside|precedes|follows):")
 
 
 def ast_grep_binary() -> str | None:
@@ -214,6 +219,15 @@ def hunk_mode(binary: str, manifest_path: Path) -> int:
         if member_error:
             failures.append((rid, member_error))
             continue
+        if _uses_relational_anchor(yaml_text) and not _has_declared_hunk_handling(r, member_examples):
+            failures.append(
+                (
+                    rid,
+                    "relational rule must declare hunk handling "
+                    "(hunkExpectation, hunkUnsafe=true, or memberExamples)",
+                )
+            )
+            continue
         if _needs_examples(bad_ex, good_ex):
             failures.append((rid, "needs examples"))
             continue
@@ -272,18 +286,26 @@ def hunk_mode(binary: str, manifest_path: Path) -> int:
 
 
 def _member_examples(rule: dict[str, object]) -> tuple[list[str], str | None]:
+    if "memberExample" in rule:
+        return [], "memberExample is deprecated; use memberExamples"
     member_examples = rule.get("memberExamples")
-    member_example = rule.get("memberExample")
-    if member_examples is None and member_example is None:
+    if member_examples is None:
         return [], None
-    if member_examples is not None and member_example is not None:
-        return [], "use memberExample or memberExamples, not both"
-    value = member_examples if member_examples is not None else member_example
-    if isinstance(value, str):
-        return [value], None
-    if isinstance(value, list) and all(isinstance(item, str) for item in value):
-        return value, None
-    return [], "memberExample(s) must be strings"
+    if isinstance(member_examples, list) and all(isinstance(item, str) for item in member_examples):
+        return member_examples, None
+    return [], "memberExamples must be a list of strings"
+
+
+def _uses_relational_anchor(yaml_text: object) -> bool:
+    return isinstance(yaml_text, str) and bool(RELATIONAL_ANCHOR_RE.search(yaml_text))
+
+
+def _has_declared_hunk_handling(rule: dict[str, object], member_examples: list[str]) -> bool:
+    return (
+        "hunkExpectation" in rule
+        or rule.get("hunkUnsafe") is True
+        or bool(member_examples)
+    )
 
 
 def _missing_manifest_entries(manifest_path: Path, rules: list[dict[str, object]]) -> list[str]:

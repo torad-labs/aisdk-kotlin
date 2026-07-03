@@ -243,10 +243,11 @@ id = "GH-20"
 phase = "gh3"
 title = "Mechanical dual-fixture contract: rules using inside:/relational anchors MUST ship whole-file AND hunk fixtures; validate_rules fails on missing pair. Backfill all 13 existing inside: rules (not just the 4 from GH-11)."
 files = [".claude/hooks/rules/validate_rules.py", ".claude/hooks/rules/manifest.json"]
-status = "in_flight"
+status = "done"
 depends = ["GH-10", "GH-11"]
 verify = "new relational rule without hunk fixture fails validation with explicit message"
 # [2026-07-02] inherits from GH-11: normalize memberExample/memberExamples key alias when formalizing the dual-fixture schema
+# [2026-07-02] relational hunk contract enforced; 17 anchored rules declare handling; memberExamples is canonical
 
 [[items]]
 id = "GH-21"
