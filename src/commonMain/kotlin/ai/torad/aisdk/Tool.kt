@@ -158,6 +158,7 @@ public abstract class Tool<TInput, TOutput, TContext> {
     public val providerOptions: ProviderOptions get() = schema.providerOptions
 
     /** Approval gate — return true to pause the loop for host approval. Default: never gates. */
+    @JvmSynthetic
     public open suspend fun needsApproval(input: TInput, options: ToolPredicateOptions<TContext>): Boolean = false
 
     /**
@@ -166,8 +167,11 @@ public abstract class Tool<TInput, TOutput, TContext> {
      */
     public open fun toModelOutput(output: TOutput, options: ToolPredicateOptions<TContext>): ToolResultOutput? = null
 
+    @JvmSynthetic
     public open suspend fun onInputStart(streamingId: String): Unit = Unit
+    @JvmSynthetic
     public open suspend fun onInputDelta(streamingId: String, delta: String): Unit = Unit
+    @JvmSynthetic
     public open suspend fun onInputAvailable(toolCallId: String, input: TInput): Unit = Unit
 
     /** Internal bridge for ToolLoopAgent — returns raw Flow<TOutput> via execute() unwrap. */
