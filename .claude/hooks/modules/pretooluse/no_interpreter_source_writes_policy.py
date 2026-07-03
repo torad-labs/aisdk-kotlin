@@ -248,7 +248,7 @@ def _is_guarded_source(path: Path) -> bool:
 
 
 def _is_api_dump(path: Path) -> bool:
-    return path.parent == _API_DIR and path.name.endswith(".api")
+    return _API_DIR in path.parents and path.name.endswith(".api")
 
 
 def _is_allowed_ast_grep_rewrite(tokens: tuple[str, ...]) -> bool:
