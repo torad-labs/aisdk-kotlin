@@ -9,6 +9,11 @@ publishing locally:
 ./gradlew -p samples/jvm-chat-cli run --args="Explain the SDK in one sentence."
 ```
 
+When republishing the same non-SNAPSHOT version to `mavenLocal()`, Gradle may
+serve cached bytes from the previous local artifact. Use
+`./gradlew --refresh-dependencies -p samples/jvm-chat-cli run ...` after
+republishing a fixed version with the same coordinate.
+
 By default the sample uses `MockLanguageModelTextOnly`, so it runs without
 network access or credentials even if provider credentials are present in the
 shell. To use an OpenAI-compatible endpoint instead:
