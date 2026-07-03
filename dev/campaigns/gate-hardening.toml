@@ -383,7 +383,8 @@ id = "BP-03"
 phase = "bp"
 title = "Snapshot channel: -SNAPSHOT to Central Portal snapshots on push to main; deliberate carve-out from refuse-SNAPSHOT publish guard (guard stays for release path)."
 files = [".github/workflows/", "build.gradle.kts"]
-status = "todo"
+status = "done"
+# [2026-07-02] Snapshot publishing path added for CentralSnapshots with SNAPSHOT_PUBLISH gate; local snapshot publish and structural checks passed; live main push observation deferred.
 
 [[items]]
 id = "BP-04"
