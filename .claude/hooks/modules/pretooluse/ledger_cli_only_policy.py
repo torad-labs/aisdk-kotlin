@@ -90,7 +90,7 @@ def _raw_file_paths(tool_input: object) -> list[str]:
 def _is_ledger(path: Path) -> bool:
     if path == _MEASUREMENTS:
         return True
-    return path.parent == _CAMPAIGNS_DIR and path.suffix == ".toml"
+    return _CAMPAIGNS_DIR in path.parents and path.suffix == ".toml"
 
 
 def _resolve(raw: str, cwd: Path) -> Path:

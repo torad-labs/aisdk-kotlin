@@ -104,6 +104,30 @@ check(
         "tool_input": {"file_path": str(NEW_CAMPAIGN_LEDGER), "content": "[[items]]\n"},
     })),
 )
+with tempfile.TemporaryDirectory(dir=ROOT / "dev" / "campaigns") as tmp:
+    nested_existing = Path(tmp) / "nested" / "x.toml"
+    nested_existing.parent.mkdir()
+    nested_existing.write_text("[[items]]\n", encoding="utf-8")
+    check(
+        "nested existing campaign ledger Edit is blocked",
+        blocked(run_target({
+            "tool_name": "Edit",
+            "tool_input": {
+                "file_path": str(nested_existing),
+                "old_string": "x",
+                "new_string": "y",
+            },
+        })),
+    )
+    nested_seed = Path(tmp) / "nested" / "seed-once.toml"
+    check("nested seed Write fixture path does not exist", not nested_seed.exists())
+    check(
+        "nested seed-new campaign ledger Write is allowed once",
+        not blocked(run_target({
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(nested_seed), "content": "[[items]]\n"},
+        })),
+    )
 override_result = run_target(
     {
         "tool_name": "Write",

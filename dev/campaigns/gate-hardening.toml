@@ -785,5 +785,6 @@ id = "HD-24"
 phase = "hd"
 title = "Fix the HD-21 live catch: ledger_cli_only_policy._is_ledger (line ~93) uses path.parent == _CAMPAIGNS_DIR — widen to ancestor (_CAMPAIGNS_DIR in path.parents, keep suffix==.toml and the seed-once + override carve-outs exactly), so nested campaign ledgers (manifest.py manages them via its path arg) cannot escape the raw-edit guard. Extend the policy tests with a nested-path block case (dev/campaigns/sub/x.toml existing -> raw Edit blocked) and a nested seed-allow case (not existing -> Write allowed). After the fix the py-no-direct-child-parent-eq warning count over hooks returns to 0 — state it."
 files = [".claude/hooks/modules/pretooluse/ledger_cli_only_policy.py", ".claude/hooks/tests/"]
-status = "todo"
+status = "done"
 verify = "nested existing ledger raw-Edit blocked; nested seed Write allowed; direct-child warning count 0; suites + ci-gate green"
+# [2026-07-03] HD-24 done: ledger_cli_only_policy now treats nested dev/campaigns/*.toml descendants as ledgers; nested existing Edit blocks, nested seed Write allows; python guard warning count returned to 0; SHA in fleet report.
