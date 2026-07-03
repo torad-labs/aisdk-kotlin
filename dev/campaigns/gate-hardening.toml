@@ -479,9 +479,10 @@ id = "FR-04"
 phase = "fr"
 title = "FINAL REVIEW stage 4 — Fable/orchestrator (NO Fable subagents). INPUT = fr03-opus-adjudication.md + both prior artifacts. Tasks: (a) hand re-probe every Opus-accepted finding before believing it; (b) dispatch fixes to builder for confirmed defects (new ledger items if needed); (c) rule on the completeness-critique items (do/defer with rationale); (d) write the final campaign report to the operator: scores, residuals, release recommendation; (e) close the ledger — campaign done only after operator reads the report. Tag/publish remain operator-gated."
 files = ["dev/campaigns/review/fr04-final-report.md"]
-status = "in_flight"
+status = "verified"
 verify = "all accepted findings probed or fixed; final report delivered to operator; ledger states reconciled"
 # [2026-07-03] OPERATOR DIRECTIVE 2026-07-03: builder session = GPT-5.5 xhigh, capability ≈ Opus 4.8. Route Opus-tier delegations (adjudication, hardest analysis) to the builder via torad-fleet instead of Opus subagents — conserves Claude tokens for Fable orchestration. Opus subagents only when the fleet is unavailable. Current FR-03 Opus run rides to completion per operator.
+# [2026-07-03] CLOSED with final report at dev/campaigns/review/fr04-final-report.md. Re-probes: F-01 own-repro confirmed then FX-01 fix confirmed (exit 1); klib ctor-clean (anchored grep); fixture-cwd trap caught in Opus fix spec; network-mask probes A+B OBSERVED live (PR #12, closed+deleted): A=freshness green-with-warning on network failure, B=freshness red on pin mismatch with verify+verify-apple completing both times. FX-03 parity gate caught real 0.44.0 drift on first run. Verdict READY: tag after operator-gated fold-in merges green. R3/R4 closed; R1/R2/R5/R6 open-by-design. 46/48 verified; RR-06/RR-07 await operator.
 
 [[items]]
 id = "FX-01"
