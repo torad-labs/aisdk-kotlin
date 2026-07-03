@@ -84,6 +84,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -154,15 +156,15 @@ jobs:
       # Maven Central is the release target. The Central Portal takes a single zip
       # in Maven Repository Layout, validates it asynchronously, and (with
       # publishingType=AUTOMATIC) syncs to Maven Central if validation passes.
-      # This step also stages/signs/bundles the artifacts and intentionally stays
-      # fail-fast after the pre-publish gate aggregator above.
-      - name: Publish to Maven Central
+      # This step stages/signs/bundles the artifacts and intentionally stays
+      # fail-fast after the pre-publish gate aggregator above. Dry-run proves
+      # local staging/signing/smoke only; it cannot prove Central auth or the
+      # Central Portal state machine.
+      - name: Build Maven Central release bundle
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
           set -euo pipefail
           # Stage every KMP publication (jvm, android, ios*, linux, and the root
@@ -179,11 +181,22 @@ jobs:
           find build/staging-deploy -name 'maven-metadata.xml*' -delete
           ( cd build/staging-deploy && zip -q -r ../../bundle.zip . )
           artifact_count=$(find build/staging-deploy -type f \( -name '*.aar' -o -name '*.jar' -o -name '*.klib' -o -name '*.module' -o -name '*.pom' \) | wc -l | tr -d '[:space:]')
-          # Dry-run proves local staging/signing/smoke only; it cannot prove Central auth or the Central Portal state machine.
           if [ "${DRY_RUN}" = "true" ]; then
             echo "DRY RUN: would publish ${artifact_count} artifacts"
-            exit 0
           fi
+          echo "artifact_count=${artifact_count}" >> "${GITHUB_OUTPUT}"
+      - name: Attest Maven Central bundle provenance
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: bundle.zip
+      - name: Publish to Maven Central
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: |
+          set -euo pipefail
           token=$(printf '%s:%s' "${SONATYPE_USERNAME}" "${SONATYPE_PASSWORD}" | base64 -w 0)
           # Upload. The response body is the deployment id (a UUID).
           if ! deployment_id=$(curl --fail-with-body --silent --show-error --request POST \
