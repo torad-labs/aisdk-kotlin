@@ -400,7 +400,8 @@ id = "BP-06"
 phase = "bp"
 title = "Artifact provenance attestations: actions/attest over staged release bundle (SLSA, Sigstore, free for public repos); document gh attestation verify for consumers. Trust gate stays green."
 files = [".github/workflows/release.yml"]
-status = "in_flight"
+status = "done"
+# [2026-07-02] Release bundle provenance attestation added; trust gate, workflow parse, beta readiness, and api-review passed; final SHA reported via fleet.
 
 [[items]]
 id = "BP-07"

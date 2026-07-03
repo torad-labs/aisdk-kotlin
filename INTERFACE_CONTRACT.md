@@ -19,6 +19,12 @@
   application intentionally recompiles and audits exhaustiveness on every SDK
   release.
 
+### Publishing and Artifact Verification
+
+- Release bundles on the real publish path are attested with GitHub artifact
+  provenance. Consumers who receive `bundle.zip` can verify it with
+  `gh attestation verify bundle.zip --repo torad-labs/aisdk-kotlin`.
+
 ### Java Interop
 
 - JVM and Android bytecode expose boxed Java-callable overloads for SDK ID
