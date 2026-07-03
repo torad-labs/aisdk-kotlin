@@ -52,7 +52,7 @@ public interface LanguageModelMiddleware {
      * Wrap the streaming call. Default: pass through.
      * @since 0.3.0-beta01
      */
-    public fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
+    @JvmSynthetic public fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
         context.doStream(context.params)
 
     /**

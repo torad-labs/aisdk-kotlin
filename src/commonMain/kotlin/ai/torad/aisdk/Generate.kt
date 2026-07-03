@@ -137,7 +137,7 @@ public class StreamTextResult(
         ai.torad.aisdk.ui.CreateTextStreamResponse(textStream)
 
     /** @since 0.3.0-beta01 */
-    public fun toUiMessageStream(assistantMessageId: String): Flow<ai.torad.aisdk.ui.UIMessage> =
+    @JvmSynthetic public fun toUiMessageStream(assistantMessageId: String): Flow<ai.torad.aisdk.ui.UIMessage> =
         ai.torad.aisdk.ui.StreamToUiMessages(fullStream, assistantMessageId)
 
     /** @since 0.3.0-beta01 */

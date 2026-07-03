@@ -26,7 +26,7 @@ internal object EventStreamParser {
     // A streaming SSE line-state machine (framing + the non-SSE-body detection): branchy by nature,
     // and detekt sums its local flush/recordNonSse/processLine helpers into the count.
     @Suppress("CyclomaticComplexMethod")
-    public fun <T> parse(
+    @JvmSynthetic public fun <T> parse(
         chunks: Flow<String>,
         schema: Schema<T>,
         json: Json = Json,

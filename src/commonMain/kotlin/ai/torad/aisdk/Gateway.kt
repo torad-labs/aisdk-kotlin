@@ -187,7 +187,7 @@ public interface GatewayTransport {
     ): LanguageModelResult = GatewayTransportMissing()
 
     /** @since 0.3.0-beta01 */
-    public fun streamText(
+    @JvmSynthetic public fun streamText(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: LanguageModelCallParams,

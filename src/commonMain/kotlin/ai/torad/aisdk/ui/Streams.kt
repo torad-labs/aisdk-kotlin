@@ -49,7 +49,7 @@ public interface ServerResponseWriter {
 }
 
 /** @since 0.3.0-beta01 */
-public fun TextStreamFromEvents(events: Flow<StreamEvent>): Flow<String> =
+@JvmSynthetic public fun TextStreamFromEvents(events: Flow<StreamEvent>): Flow<String> =
     events.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
 /** @since 0.3.0-beta01 */
@@ -77,7 +77,7 @@ public interface UIMessageStreamWriter {
 }
 
 /** @since 0.3.0-beta01 */
-public fun CreateUiMessageStream(
+@JvmSynthetic public fun CreateUiMessageStream(
     onError: (Throwable) -> UIMessage = { throwable ->
         UIMessage(
             id = "error",
@@ -117,7 +117,7 @@ public fun CreateUiMessageStream(
 }
 
 /** @since 0.3.0-beta01 */
-public fun ReadUiMessageStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
+@JvmSynthetic public fun ReadUiMessageStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
 
 /** @since 0.3.0-beta01 */
 public sealed class SafeValidateUIMessagesResult {
@@ -131,7 +131,7 @@ public sealed class SafeValidateUIMessagesResult {
 }
 
 /** @since 0.3.0-beta01 */
-public fun TransformTextToUiMessageStream(
+@JvmSynthetic public fun TransformTextToUiMessageStream(
     textStream: Flow<String>,
     assistantMessageId: String,
     metadata: Map<String, JsonElement>? = null,

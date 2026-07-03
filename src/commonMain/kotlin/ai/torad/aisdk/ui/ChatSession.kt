@@ -65,7 +65,7 @@ public class ChatSession(
     }
 
     /** @since 0.3.0-beta01 */
-    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
+    @JvmSynthetic public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
         // L-3 (eager vs cold): this stays a cold Flow — its contract, exercised
         // by ChatSessionTest, is that no turn starts until collection. So the
         // optimistic Submitted/append happens at collection time, not at call
@@ -93,7 +93,7 @@ public class ChatSession(
     }
 
     /** @since 0.3.0-beta01 */
-    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
+    @JvmSynthetic public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
         mutableState.update { it.copy(status = ChatStatus.Submitted, error = null) }
         try {
             chat.regenerate(body).collect { response ->
@@ -112,7 +112,7 @@ public class ChatSession(
     }
 
     /** @since 0.3.0-beta01 */
-    public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
+    @JvmSynthetic public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         chat.resumeStream(headers)
 
     private fun syncState() {

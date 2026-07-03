@@ -145,7 +145,7 @@ public class StreamObjectResult<TOutput> internal constructor(
         }
     }
 
-    public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
+    @JvmSynthetic public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
         val textBlocks = OrderedTextBlocks()
         val decoder = ElementStreamDecoder(arrayOutput)
 

@@ -685,7 +685,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * superset that also surfaces the loop's own lifecycle boundaries.
      * @since 0.3.0-beta01
      */
-    public fun events(
+    @JvmSynthetic public fun events(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,

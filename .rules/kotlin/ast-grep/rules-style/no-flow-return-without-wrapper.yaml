@@ -7,9 +7,19 @@ rule:
   all:
     - has:
         kind: modifiers
-        has:
-          kind: visibility_modifier
-          regex: '^public$'
+        all:
+          - has:
+              kind: visibility_modifier
+              regex: '^public$'
+          # Exclude functions already marked @JvmSynthetic (hidden from Java)
+          - not:
+              has:
+                kind: annotation
+                has:
+                  kind: user_type
+                  has:
+                    kind: type_identifier
+                    regex: '^JvmSynthetic$'
     - has:
         kind: user_type
         all:

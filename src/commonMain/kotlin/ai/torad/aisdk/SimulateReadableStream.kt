@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.flow
  *
  * @since 0.3.0-beta01
  */
-public fun <T> SimulateReadableStream(
+@JvmSynthetic public fun <T> SimulateReadableStream(
     chunks: Iterable<T>,
     delayMillis: Long = 0L,
 ): Flow<T> = flow {

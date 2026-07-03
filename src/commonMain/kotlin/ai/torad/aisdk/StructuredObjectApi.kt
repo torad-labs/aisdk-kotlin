@@ -107,7 +107,7 @@ public fun <INPUT> StructuredObjectRequest(
 /** @since 0.3.0-beta01 */
 public interface StructuredObjectTransport<INPUT> {
     /** @since 0.3.0-beta01 */
-    public fun submit(request: StructuredObjectRequest<INPUT>): Flow<String>
+    @JvmSynthetic public fun submit(request: StructuredObjectRequest<INPUT>): Flow<String>
 }
 
 internal class DirectStructuredObjectTransport<INPUT>(
@@ -507,7 +507,7 @@ public class StructuredObjectGenerator<RESULT>(
      * surfaced (not silently dropped) so a provider failure can't masquerade as an empty object.
      * @since 0.3.0-beta01
      */
-    public fun stream(input: GenerationInput): Flow<StructuredObjectPhase<RESULT>> =
+    @JvmSynthetic public fun stream(input: GenerationInput): Flow<StructuredObjectPhase<RESULT>> =
         CallTimeout.flow(
             flow {
                 var warnings: List<CallWarning> = emptyList()
