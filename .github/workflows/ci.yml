@@ -14,6 +14,33 @@ env:
   AI_SDK_REFERENCE_COMMIT: 3270146267b1d82f07972bc40f09e9b4ee8bb9d3
 
 jobs:
+  reference-freshness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Fetch Vercel AI SDK v6 reference
+        id: fetch_reference
+        run: |
+          mkdir -p .reference
+          if ! git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}; then
+            echo "::warning::Unable to fetch Vercel AI SDK reference; skipping freshness/parity checks so internal gates still run."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          actual_commit="$(git -C .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION} rev-parse HEAD)"
+          if [ "${actual_commit}" != "${AI_SDK_REFERENCE_COMMIT}" ]; then
+            echo "Reference checkout commit is ${actual_commit}, expected ${AI_SDK_REFERENCE_COMMIT}" >&2
+            exit 1
+          fi
+          echo "available=true" >> "$GITHUB_OUTPUT"
+      - name: Verify AI SDK reference version
+        if: steps.fetch_reference.outputs.available == 'true'
+        run: node tools/check-ai-sdk-reference.mjs
+      - name: Verify parity ledgers
+        if: steps.fetch_reference.outputs.available == 'true'
+        run: node tools/generate-parity-ledger.mjs --check
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 75
@@ -37,22 +64,6 @@ jobs:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
-      - name: Fetch Vercel AI SDK v6 reference
-        run: |
-          mkdir -p .reference
-          if ! git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}; then
-            echo "::warning::Unable to fetch Vercel AI SDK reference; continuing so internal gates still run."
-            exit 0
-          fi
-          actual_commit="$(git -C .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION} rev-parse HEAD)"
-          if [ "${actual_commit}" != "${AI_SDK_REFERENCE_COMMIT}" ]; then
-            echo "Reference checkout commit is ${actual_commit}, expected ${AI_SDK_REFERENCE_COMMIT}" >&2
-            exit 1
-          fi
-      - name: Verify AI SDK reference version
-        run: node tools/check-ai-sdk-reference.mjs
-      - name: Verify parity ledgers
-        run: node tools/generate-parity-ledger.mjs --check
       - name: Install locked Node tooling
         run: npm ci
       - name: Architecture gate (ast-grep rules + structural checks)
