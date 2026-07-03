@@ -779,9 +779,10 @@ id = "HD-23"
 phase = "hd"
 title = "orphan-gate detector (LP-4 static half turned inward, kills the HD-15/16 six-landing dark window class): python detector inventorying every .claude/hooks/rules/detect-*.py, tools/check-*.mjs, tools/*-check, tools/run-*-smoke and asserting each is referenced by ci-gate.sh, ci.yml, release.yml, or an explicit allowlist entry carrying a reason (e.g. CI-only, release-only, harness-invoked). Unreferenced gate = fail with pointer to wire-or-allowlist. Fixture pair via the harness (violation: a planted orphan check file; compliant: current tree). Wire into ci-gate."
 files = [".claude/hooks/rules/", ".claude/hooks/rules/ci-gate.sh", "tools/gate-fixtures/"]
-status = "done"
+status = "verified"
 verify = "planted orphan fails; current tree passes (or real orphans found get wired/allowlisted in same slice with reasons); harness pair green; ci-gate green"
 # [2026-07-03] HD-23 done: orphan-gate detector wired into ci-gate; planted orphan fixture fails; current tree passes with 10 directly wired gates and 7 beta-readiness delegate checks allowlisted with reasons; full fixture harness now 30 checks across 15 gates; SHA in fleet report.
+# [2026-07-03] VERIFIED at 3e6b55e (diff review; deterministic results trusted): inventory honest — 10 wired, 7 allowlisted with accurate transitive reasons (exactly the beta-readiness-check delegates, grep-confirmed 7 refs, per-commit since HD-16), 0 orphans; planted-orphan fixture pair in harness (30 checks/15 gates). The HD-15/16 six-landing-dark-window class is now structurally impossible: a new unwired gate fails the same commit that adds it.
 
 [[items]]
 id = "HD-24"
