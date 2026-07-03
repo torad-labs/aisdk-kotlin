@@ -759,9 +759,10 @@ id = "HD-21"
 phase = "hd"
 title = "Guard-the-guards ast-grep pack (python rules over .claude/hooks): the post-done failures all lived in the enforcement layer, which has zero structural rules. Three warning-severity rules, each encoding a bug we actually shipped: (1) py-no-direct-child-parent-eq — <path>.parent == <CONST> comparison shape, message suggests ancestor check via parents (HD-11s inert dump guard); (2) py-no-bare-relative-companion-path — module-level Path with a bare relative string literal in rules/detectors, message demands a __file__ anchor or explicit flag (F-01/F-02, two shipped instances); (3) py-no-fail-open-on-missing-resource — missing-resource guard (not X.is_dir / not X.exists) followed by return of empty list/None inside check/validate functions, message says raise (F-01s exact fail-open). PREMISE-CHECK FIRST: how validate_rules + the fixture harness handle language: python rules (manifest.json fixture law may be kotlin-assumed) — choose the smallest wiring that still gives both-direction fixtures + gate presence (own tiny section in ci-gate acceptable); rules must NOT enter the kotlin edit-time policy scan. LP-6: probe each rule against the real historical bug shape (pre-fix code from git show 4528f44 parent commit / HD-11 pre-redo) as the bad fixture."
 files = [".claude/hooks/rules/", ".claude/hooks/rules/ci-gate.sh"]
-status = "done"
+status = "verified"
 verify = "three rules fixture-proven both directions incl. historical bug shapes as bad examples; wired into ci-gate with fail-direction probe; kotlin policy scan unaffected; suites green"
 # [2026-07-03] HD-21 done: isolated language: python guard pack with three historical-bug fixtures, dedicated runner in ci-gate, warning-only live report; Kotlin edit-time scan remains 71-rule kotlin directory; SHA in fleet report.
+# [2026-07-03] VERIFIED at bd4d44b (diff review; deterministic results trusted): three rules live with HISTORICAL bug shapes as bad fixtures (LP-6 at the meta-layer), isolated python runner after honest premise-check (kotlin fixture law not stretched), kotlin scan unaffected, warning report non-blocking + fixture-fail-closed. FIRST-RUN LIVE CATCH: direct-child rule flagged ledger_cli_only_policy._is_ledger:93 — adjudicated REAL latent gap (manifest.py can manage nested ledgers via its path arg; nested tomls would escape the raw-edit guard; no legit raw-edit use for them). Fix dispatched as HD-24. Third first-run live catch of the campaign (parity gate, beta-readiness, now this) — LP-1s expected-value claim keeps paying.
 
 [[items]]
 id = "HD-22"
@@ -778,3 +779,11 @@ title = "orphan-gate detector (LP-4 static half turned inward, kills the HD-15/1
 files = [".claude/hooks/rules/", ".claude/hooks/rules/ci-gate.sh", "tools/gate-fixtures/"]
 status = "todo"
 verify = "planted orphan fails; current tree passes (or real orphans found get wired/allowlisted in same slice with reasons); harness pair green; ci-gate green"
+
+[[items]]
+id = "HD-24"
+phase = "hd"
+title = "Fix the HD-21 live catch: ledger_cli_only_policy._is_ledger (line ~93) uses path.parent == _CAMPAIGNS_DIR — widen to ancestor (_CAMPAIGNS_DIR in path.parents, keep suffix==.toml and the seed-once + override carve-outs exactly), so nested campaign ledgers (manifest.py manages them via its path arg) cannot escape the raw-edit guard. Extend the policy tests with a nested-path block case (dev/campaigns/sub/x.toml existing -> raw Edit blocked) and a nested seed-allow case (not existing -> Write allowed). After the fix the py-no-direct-child-parent-eq warning count over hooks returns to 0 — state it."
+files = [".claude/hooks/modules/pretooluse/ledger_cli_only_policy.py", ".claude/hooks/tests/"]
+status = "todo"
+verify = "nested existing ledger raw-Edit blocked; nested seed Write allowed; direct-child warning count 0; suites + ci-gate green"
