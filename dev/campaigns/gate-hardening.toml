@@ -212,10 +212,11 @@ id = "GH-23"
 phase = "gh2"
 title = "Budget ratchets must localize new debt (this week: 9 new data classes hid inside count headroom). detect-public-data-class-budget tracks the SET of declarations (like detekt baseline), so any NEW symbol surfaces for explicit acknowledgment even under budget; pure removals frictionless. Evaluate same for architecture/api-since budgets."
 files = [".claude/hooks/rules/detect-public-data-class-budget.py", "data-class-budget.json"]
-status = "in_flight"
+status = "done"
 verify = "adding a new public data class while total <= budget still fails/flags until acknowledged; removal-only change passes untouched"
 
 # ---------------------------------------------------------------- phase gh3: structural (L)
+# [2026-07-02] done in GH-23 slice (final SHA in fleet report): data-class budget now tracks declaration set; new untracked symbols fail under headroom; removals pass
 
 [[items]]
 id = "GH-18"

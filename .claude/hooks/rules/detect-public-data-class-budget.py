@@ -24,10 +24,12 @@ import argparse
 import json
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 BUDGET_FILE = Path("data-class-budget.json")
 BUDGET_KEY = "publicDataClassesCommonMain"
+TRACKED_KEY = "trackedPublicDataClassesCommonMain"
 
 # Modifiers that may sit between an (optional) annotation block and `class`.
 _CLASS_DECL = re.compile(
@@ -37,11 +39,18 @@ _CLASS_DECL = re.compile(
     r"inner|expect|actual|data|value|annotation|enum)[ \t]+)*)"
     r"class\b"
 )
+_CLASS_NAME = re.compile(r"\bclass\s+([A-Za-z_][A-Za-z0-9_]*)")
 _NON_PUBLIC = re.compile(r"\b(private|internal|protected)\b")
 
 
-def count_public_data_classes(root: Path) -> int:
-    total = 0
+@dataclass(frozen=True)
+class DataClassDeclaration:
+    symbol: str
+    line: int
+
+
+def collect_public_data_classes(root: Path) -> list[DataClassDeclaration]:
+    declarations: list[tuple[Path, str, int]] = []
     for path in sorted(root.rglob("*.kt")):
         text = path.read_text(encoding="utf-8")
         for match in _CLASS_DECL.finditer(text):
@@ -50,14 +59,42 @@ def count_public_data_classes(root: Path) -> int:
                 continue
             if _NON_PUBLIC.search(modifiers):
                 continue
-            total += 1
-    return total
+            name_match = _CLASS_NAME.search(text, match.start(), min(len(text), match.end() + 120))
+            if name_match is None:
+                continue
+            declarations.append((path, name_match.group(1), text.count("\n", 0, match.start()) + 1))
+
+    occurrence: dict[tuple[str, str], int] = {}
+    tracked: list[DataClassDeclaration] = []
+    for path, name, line in declarations:
+        relative = path.relative_to(root).as_posix()
+        key = (relative, name)
+        occurrence[key] = occurrence.get(key, 0) + 1
+        tracked.append(DataClassDeclaration(symbol=f"{relative}:{name}#{occurrence[key]}", line=line))
+    return tracked
 
 
-def read_budget() -> int:
+def count_public_data_classes(root: Path) -> int:
+    return len(collect_public_data_classes(root))
+
+
+def read_budget() -> dict[str, object]:
     if not BUDGET_FILE.exists():
-        return -1
-    return int(json.loads(BUDGET_FILE.read_text()).get(BUDGET_KEY, -1))
+        return {}
+    return json.loads(BUDGET_FILE.read_text())
+
+
+def budget_count(budget: dict[str, object]) -> int:
+    return int(budget.get(BUDGET_KEY, -1))
+
+
+def tracked_symbols(budget: dict[str, object]) -> set[str] | None:
+    tracked = budget.get(TRACKED_KEY)
+    if tracked is None:
+        return None
+    if not isinstance(tracked, list) or not all(isinstance(item, str) for item in tracked):
+        raise ValueError(f"{TRACKED_KEY} must be a list of strings")
+    return set(tracked)
 
 
 def main() -> int:
@@ -67,23 +104,42 @@ def main() -> int:
     parser.add_argument("--update", action="store_true", help="re-seed the budget to the current count (downward only)")
     args = parser.parse_args()
 
-    count = count_public_data_classes(Path(args.root))
+    declarations = collect_public_data_classes(Path(args.root))
+    count = len(declarations)
+    current_symbols = {declaration.symbol for declaration in declarations}
 
     if args.update:
-        prev = read_budget()
+        prev = budget_count(read_budget())
         if prev >= 0 and count > prev:
             print(
                 f"refusing to RAISE the data-class budget ({prev} -> {count}); "
                 "the ratchet only moves down. Demote a public data class to @Poko instead."
             )
             return 1
-        BUDGET_FILE.write_text(json.dumps({BUDGET_KEY: count}, indent=2) + "\n")
-        print(f"data-class budget set to {count}")
+        payload = {
+            BUDGET_KEY: count,
+            TRACKED_KEY: sorted(current_symbols),
+        }
+        BUDGET_FILE.write_text(json.dumps(payload, indent=2) + "\n")
+        print(f"data-class budget set to {count}; tracked {len(current_symbols)} declarations")
         return 0
 
-    budget = read_budget()
+    budget_data = read_budget()
+    budget = budget_count(budget_data)
     if budget < 0:
         print("data-class budget gate: missing data-class-budget.json (run with --update once to seed)")
+        return 1
+    try:
+        tracked = tracked_symbols(budget_data)
+    except ValueError as exc:
+        print(f"data-class budget gate: invalid data-class-budget.json: {exc}")
+        return 1
+    if tracked is None:
+        print(
+            f"data-class budget gate: missing {TRACKED_KEY} in data-class-budget.json "
+            "(run `python3 .claude/hooks/rules/detect-public-data-class-budget.py "
+            "src/commonMain/kotlin --update` to seed the tracked declaration set)"
+        )
         return 1
     if args.check and count > budget:
         print(
@@ -96,7 +152,20 @@ def main() -> int:
             "  does not rise. See CLAUDE.md (\"Public value types\")."
         )
         return 1
-    print(f"data-class budget gate OK: {count} public data class (budget {budget})")
+    new_symbols = sorted(current_symbols - tracked)
+    if args.check and new_symbols:
+        print(
+            "NEW PUBLIC DATA-CLASS DECLARATION(S) REQUIRE ACKNOWLEDGMENT:\n"
+            + "\n".join(f"  - {symbol}" for symbol in new_symbols)
+            + "\nRun `python3 .claude/hooks/rules/detect-public-data-class-budget.py "
+            "src/commonMain/kotlin --update` in the same commit if this public data class is intentional. "
+            "The count ratchet still refuses upward movement."
+        )
+        return 1
+    print(
+        f"data-class budget gate OK: {count} public data class "
+        f"(budget {budget}, tracked {len(tracked)} declarations)"
+    )
     return 0
 
 
