@@ -23,7 +23,16 @@ plugins {
 }
 
 group = providers.gradleProperty("GROUP").get()
-version = providers.gradleProperty("VERSION_NAME").get()
+val releaseVersion = providers.gradleProperty("VERSION_NAME").get()
+val snapshotPublishEnabled = providers.environmentVariable("SNAPSHOT_PUBLISH").map {
+    it == "1" || it.equals("true", ignoreCase = true)
+}.orElse(false)
+version = if (snapshotPublishEnabled.get()) {
+    providers.environmentVariable("SNAPSHOT_VERSION").orNull
+        ?: "${releaseVersion.removeSuffix("-SNAPSHOT")}-SNAPSHOT"
+} else {
+    releaseVersion
+}
 
 val detektCliRuntime by configurations.creating
 val detektPluginClasspath by configurations.creating
@@ -330,6 +339,17 @@ publishing {
             name = "LocalStaging"
             url = uri(layout.buildDirectory.dir("staging-deploy"))
         }
+        // Deliberate snapshot channel for main-branch nightlies. Release/staging
+        // repositories below still reject SNAPSHOT versions unless this repository
+        // is explicitly selected with SNAPSHOT_PUBLISH=1.
+        maven {
+            name = "CentralSnapshots"
+            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+            credentials {
+                username = providers.environmentVariable("SONATYPE_USERNAME").orNull
+                password = providers.environmentVariable("SONATYPE_PASSWORD").orNull
+            }
+        }
     }
 
     publications.withType<MavenPublication>().configureEach {
@@ -405,7 +425,24 @@ tasks.named("checkKotlinAbi").configure {
 tasks.withType<PublishToMavenRepository>().configureEach {
     doFirst {
         val repoName = repository.name
-        require(!version.toString().endsWith("-SNAPSHOT")) {
+        val isSnapshotRepository = repoName == "CentralSnapshots"
+        val isSnapshotVersion = version.toString().endsWith("-SNAPSHOT")
+        if (isSnapshotRepository) {
+            require(snapshotPublishEnabled.get()) {
+                "Publication to CentralSnapshots requires SNAPSHOT_PUBLISH=1 so snapshots are deliberate."
+            }
+            require(isSnapshotVersion) {
+                "Publication to CentralSnapshots requires a -SNAPSHOT version; got $version."
+            }
+            require(
+                providers.environmentVariable("SONATYPE_USERNAME").isPresent &&
+                    providers.environmentVariable("SONATYPE_PASSWORD").isPresent,
+            ) {
+                "Publication to CentralSnapshots requires SONATYPE_USERNAME and SONATYPE_PASSWORD credentials."
+            }
+            return@doFirst
+        }
+        require(!isSnapshotVersion) {
             "Publication to $repoName requires a stable VERSION_NAME; refusing to publish SNAPSHOT version $version."
         }
         require(signingKey.isPresent && signingPassword.isPresent) {
