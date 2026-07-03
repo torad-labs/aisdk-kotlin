@@ -27,7 +27,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-BUDGET_FILE = Path("data-class-budget.json")
+DEFAULT_BUDGET_FILE = Path(__file__).resolve().parents[3] / "data-class-budget.json"
 BUDGET_KEY = "publicDataClassesCommonMain"
 TRACKED_KEY = "trackedPublicDataClassesCommonMain"
 
@@ -78,10 +78,10 @@ def count_public_data_classes(root: Path) -> int:
     return len(collect_public_data_classes(root))
 
 
-def read_budget() -> dict[str, object]:
-    if not BUDGET_FILE.exists():
+def read_budget(budget_file: Path) -> dict[str, object]:
+    if not budget_file.exists():
         return {}
-    return json.loads(BUDGET_FILE.read_text())
+    return json.loads(budget_file.read_text())
 
 
 def budget_count(budget: dict[str, object]) -> int:
@@ -102,14 +102,20 @@ def main() -> int:
     parser.add_argument("root", help="source root to scan (e.g. src/commonMain/kotlin)")
     parser.add_argument("--check", action="store_true", help="fail if the count exceeds the budget")
     parser.add_argument("--update", action="store_true", help="re-seed the budget to the current count (downward only)")
+    parser.add_argument(
+        "--budget",
+        default=str(DEFAULT_BUDGET_FILE),
+        help="budget JSON path (default: repo-root data-class-budget.json)",
+    )
     args = parser.parse_args()
 
     declarations = collect_public_data_classes(Path(args.root))
     count = len(declarations)
     current_symbols = {declaration.symbol for declaration in declarations}
+    budget_file = Path(args.budget).resolve(strict=False)
 
     if args.update:
-        prev = budget_count(read_budget())
+        prev = budget_count(read_budget(budget_file))
         if prev >= 0 and count > prev:
             print(
                 f"refusing to RAISE the data-class budget ({prev} -> {count}); "
@@ -120,14 +126,14 @@ def main() -> int:
             BUDGET_KEY: count,
             TRACKED_KEY: sorted(current_symbols),
         }
-        BUDGET_FILE.write_text(json.dumps(payload, indent=2) + "\n")
+        budget_file.write_text(json.dumps(payload, indent=2) + "\n")
         print(f"data-class budget set to {count}; tracked {len(current_symbols)} declarations")
         return 0
 
-    budget_data = read_budget()
+    budget_data = read_budget(budget_file)
     budget = budget_count(budget_data)
     if budget < 0:
-        print("data-class budget gate: missing data-class-budget.json (run with --update once to seed)")
+        print(f"data-class budget gate: missing {budget_file} (run with --update once to seed)")
         return 1
     try:
         tracked = tracked_symbols(budget_data)

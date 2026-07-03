@@ -147,7 +147,11 @@ def semantic_mode(binary: str, manifest_path: Path) -> int:
     rules = _read_manifest(manifest_path)
     if rules is None:
         return 2
-    missing = _missing_manifest_entries(manifest_path, rules)
+    try:
+        missing = _missing_manifest_entries(manifest_path, rules)
+    except RuntimeError as exc:
+        print(f"SEMANTIC FAIL: {exc}")
+        return 1
     if missing:
         print(f"SEMANTIC FAIL: {len(missing)} rule files have no manifest entry")
         for rid in missing:
@@ -309,9 +313,9 @@ def _has_declared_hunk_handling(rule: dict[str, object], member_examples: list[s
 
 
 def _missing_manifest_entries(manifest_path: Path, rules: list[dict[str, object]]) -> list[str]:
-    rules_dir = manifest_path.resolve(strict=False).parent / "kotlin"
+    rules_dir = Path(__file__).resolve().parent / "kotlin"
     if not rules_dir.is_dir():
-        return []
+        raise RuntimeError(f"canonical rules dir not found: {rules_dir}")
     manifest_ids = {str(r.get("id")) for r in rules}
     rule_ids = {p.stem for p in rules_dir.glob("*.yaml")}
     return sorted(rule_ids - manifest_ids)

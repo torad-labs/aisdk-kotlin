@@ -1,1 +1,1 @@
-python3 "$REPO_ROOT/.claude/hooks/rules/detect-public-data-class-budget.py" src/commonMain/kotlin --check
+python3 "$REPO_ROOT/.claude/hooks/rules/detect-public-data-class-budget.py" src/commonMain/kotlin --budget data-class-budget.json --check

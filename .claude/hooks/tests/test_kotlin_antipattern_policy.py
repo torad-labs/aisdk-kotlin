@@ -187,6 +187,47 @@ if manifest.exists():
     )
     check("foundry rules pass semantic gate (match bad, skip good)", sem_gate.returncode == 0)
 
+    manifest_entries = json.loads(manifest.read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory() as tmp:
+        off_path_manifest = Path(tmp) / "manifest.json"
+        off_path_manifest.write_text(json.dumps(manifest_entries[:-1]), encoding="utf-8")
+        missing_entry_gate = subprocess.run(
+            [
+                sys.executable,
+                str(HOOKS_ROOT / "rules" / "validate_rules.py"),
+                "--manifest",
+                str(off_path_manifest),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+        check(
+            "off-path manifest missing a rule entry fails semantic gate",
+            missing_entry_gate.returncode == 1 and "missing manifest entry" in missing_entry_gate.stdout,
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        hunk_manifest = Path(tmp) / "manifest.json"
+        hunk_entries = list(manifest_entries)
+        hunk_entries[0] = {**hunk_entries[0], "hunkExpectation": "no-match"}
+        hunk_manifest.write_text(json.dumps(hunk_entries), encoding="utf-8")
+        hunk_gate = subprocess.run(
+            [
+                sys.executable,
+                str(HOOKS_ROOT / "rules" / "validate_rules.py"),
+                "--hunk-mode",
+                str(hunk_manifest),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+        check(
+            "flipped hunkExpectation fails hunk-mode gate",
+            hunk_gate.returncode == 1 and "hunkExpectation=no-match" in hunk_gate.stdout,
+        )
+
 
 
 # Consumer-tree exemption (2026-07-03 misfire): library rules must not bind
