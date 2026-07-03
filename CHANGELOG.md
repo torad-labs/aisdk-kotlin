@@ -6,6 +6,10 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+- `AbortSignals` is now plain factory functions instead of member-extensions:
+  `AbortSignals.from(job: Job)` / `AbortSignals.from(scope: CoroutineScope)`
+  replace `Job.asAbortSignal()` / `CoroutineScope.asAbortSignal()`, so a call
+  site no longer needs `with(AbortSignals) { ... }`.
 - **Upgrader callout:** `RetryPolicy.maxRetries` defaults to `2`. If you already
   retry transient failures in your own transport/middleware, composing both
   retries the same failure `(1 + maxRetries) * (1 + middlewareRetries)` times.

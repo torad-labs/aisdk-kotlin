@@ -13988,8 +13988,8 @@ final object ai.torad.aisdk.ui/UiMessageStreams { // ai.torad.aisdk.ui/UiMessage
 }
 
 final object ai.torad.aisdk/AbortSignals { // ai.torad.aisdk/AbortSignals|null[0]
-    final fun (kotlinx.coroutines/CoroutineScope).asAbortSignal(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/AbortSignals.asAbortSignal|asAbortSignal@kotlinx.coroutines.CoroutineScope(){}[0]
-    final fun (kotlinx.coroutines/Job).asAbortSignal(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/AbortSignals.asAbortSignal|asAbortSignal@kotlinx.coroutines.Job(){}[0]
+    final fun from(kotlinx.coroutines/CoroutineScope): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/AbortSignals.from|from(kotlinx.coroutines.CoroutineScope){}[0]
+    final fun from(kotlinx.coroutines/Job): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/AbortSignals.from|from(kotlinx.coroutines.Job){}[0]
 }
 
 final object ai.torad.aisdk/AgentSessions { // ai.torad.aisdk/AgentSessions|null[0]
