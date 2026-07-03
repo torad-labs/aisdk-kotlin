@@ -40,9 +40,15 @@ jobs:
       - name: Fetch Vercel AI SDK v6 reference
         run: |
           mkdir -p .reference
-          git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}
+          if ! git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}; then
+            echo "::warning::Unable to fetch Vercel AI SDK reference; continuing so internal gates still run."
+            exit 0
+          fi
           actual_commit="$(git -C .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION} rev-parse HEAD)"
-          test "${actual_commit}" = "${AI_SDK_REFERENCE_COMMIT}"
+          if [ "${actual_commit}" != "${AI_SDK_REFERENCE_COMMIT}" ]; then
+            echo "Reference checkout commit is ${actual_commit}, expected ${AI_SDK_REFERENCE_COMMIT}" >&2
+            exit 1
+          fi
       - name: Verify AI SDK reference version
         run: node tools/check-ai-sdk-reference.mjs
       - name: Verify parity ledgers
