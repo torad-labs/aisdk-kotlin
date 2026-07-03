@@ -1,14 +1,16 @@
 @file:Suppress("FunctionName", "PropertyName")
+@file:OptIn(kotlin.concurrent.atomics.ExperimentalAtomicApi::class)
 
 package ai.torad.aisdk
 
+import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonString
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -20,18 +22,18 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -44,17 +46,19 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
+import kotlin.math.pow
+import kotlin.math.roundToLong
 
 public const val MCP_PACKAGE_VERSION: String = "1.0.46"
 public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
 
+/** @since 0.3.0-beta01 */
 public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
     LATEST_PROTOCOL_VERSION,
     "2025-06-18",
@@ -62,15 +66,18 @@ public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
     "2024-11-05",
 )
 
-private const val JSONRPC_VERSION = "2.0"
 private const val HTTP_NOT_FOUND = 404
 private const val HTTP_METHOD_NOT_ALLOWED = 405
 private const val DEFAULT_MCP_CLIENT_NAME = "ai-sdk-mcp-client"
 private const val DEFAULT_MCP_CLIENT_VERSION = "1.0.0"
 private const val MCP_SSE_MAX_DATA_LINES = 1_000
+private const val MCP_LAST_EVENT_ID_HEADER = "Last-Event-ID"
 
 /** Default ceiling for the MCP connect handshake (initialize round-trip, SSE endpoint event). */
 private const val MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS = 30_000L
+
+/** Default ceiling for non-init JSON-RPC requests that otherwise could await forever. */
+private const val MCP_DEFAULT_REQUEST_TIMEOUT_MS = 30_000L
 
 /** Best-effort timeout for the session-cleanup DELETE on HTTP transport close. */
 private const val MCP_CLOSE_DELETE_TIMEOUT_MS = 5_000L
@@ -81,51 +88,80 @@ internal val mcpJson: Json = Json {
     explicitNulls = false
 }
 
+/** @since 0.3.0-beta01 */
 public class MCPClientError(
     message: String,
+    /** @since 0.3.0-beta01 */
     public val code: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val data: JsonElement? = null,
     cause: Throwable? = null,
 ) : AiSdkException(message, cause)
 
 @Serializable
-public sealed interface JSONRPCMessage
+/** @since 0.3.0-beta01 */
+public sealed interface JSONRPCMessage {
+    public companion object {
+        internal fun JSONRPCMessage.toJsonElement(): JsonObject = when (this) {
+            is JSONRPCRequest -> mcpJson.encodeToJsonElement(JSONRPCRequest.serializer(), this).jsonObject
+            is JSONRPCNotification -> mcpJson.encodeToJsonElement(JSONRPCNotification.serializer(), this).jsonObject
+            is JSONRPCResponse -> mcpJson.encodeToJsonElement(JSONRPCResponse.serializer(), this).jsonObject
+            is JSONRPCError -> mcpJson.encodeToJsonElement(JSONRPCError.serializer(), this).jsonObject
+        }
 
-@Serializable
-public data class JSONRPCRequest(
-    val id: JsonElement,
-    val method: String,
-    val params: JsonObject? = null,
-    val jsonrpc: String = JSONRPC_VERSION,
-) : JSONRPCMessage
+        internal fun JSONRPCMessage.toJsonString(): String = toJsonElement().toString()
 
-@Serializable
-public data class JSONRPCNotification(
-    val method: String,
-    val params: JsonObject? = null,
-    val jsonrpc: String = JSONRPC_VERSION,
-) : JSONRPCMessage
+        internal fun fromJson(text: String): JSONRPCMessage {
+            val obj = WireDecoder.parseObject(text, provider = "mcp", operation = "json-rpc message")
+            val envelope = WireDecoder.decode(
+                JSONRPCEnvelope.serializer(),
+                obj,
+                provider = "mcp",
+                operation = "json-rpc message",
+            )
+            if (envelope.jsonrpc != JSONRPC_VERSION) {
+                WireDecoder.fail(
+                    provider = "mcp",
+                    operation = "json-rpc message",
+                    path = "$.jsonrpc",
+                    message = "expected JSON-RPC version $JSONRPC_VERSION",
+                    value = obj["jsonrpc"],
+                )
+            }
+            val hasId = "id" in obj
+            return when {
+                envelope.method != null && hasId -> WireDecoder.decode(
+                    JSONRPCRequest.serializer(),
+                    obj,
+                    "mcp",
+                    "json-rpc request"
+                )
+                envelope.method != null -> WireDecoder.decode(
+                    JSONRPCNotification.serializer(),
+                    obj,
+                    "mcp",
+                    "json-rpc notification"
+                )
+                hasId && envelope.error == null -> WireDecoder.decode(
+                    JSONRPCResponse.serializer(),
+                    obj,
+                    "mcp",
+                    "json-rpc response"
+                )
+                hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
+                else -> WireDecoder.fail("mcp", "json-rpc message", "$", "invalid JSON-RPC envelope", obj)
+            }
+        }
 
-@Serializable
-public data class JSONRPCResponse(
-    val id: JsonElement,
-    val result: JsonElement = JsonObject(emptyMap()),
-    val jsonrpc: String = JSONRPC_VERSION,
-) : JSONRPCMessage
-
-@Serializable
-public data class JSONRPCError(
-    val id: JsonElement,
-    val error: JSONRPCErrorData,
-    val jsonrpc: String = JSONRPC_VERSION,
-) : JSONRPCMessage
-
-@Serializable
-public data class JSONRPCErrorData(
-    val code: Int,
-    val message: String,
-    val data: JsonElement? = null,
-)
+        internal fun fromJsonBatch(text: String): List<JSONRPCMessage> {
+            val element = mcpJson.parseToJsonElement(text)
+            return when (element) {
+                is JsonArray -> element.map { fromJson(it.toString()) }
+                else -> listOf(fromJson(element.toString()))
+            }
+        }
+    }
+}
 
 @Serializable
 private data class JSONRPCEnvelope(
@@ -137,267 +173,117 @@ private data class JSONRPCEnvelope(
     val error: JSONRPCErrorData? = null,
 )
 
-internal fun JSONRPCMessage.toJsonElement(): JsonObject = when (this) {
-    is JSONRPCRequest -> mcpJson.encodeToJsonElement(JSONRPCRequest.serializer(), this).jsonObject
-    is JSONRPCNotification -> mcpJson.encodeToJsonElement(JSONRPCNotification.serializer(), this).jsonObject
-    is JSONRPCResponse -> mcpJson.encodeToJsonElement(JSONRPCResponse.serializer(), this).jsonObject
-    is JSONRPCError -> mcpJson.encodeToJsonElement(JSONRPCError.serializer(), this).jsonObject
-}
-
-internal fun JSONRPCMessage.toJsonString(): String = toJsonElement().toString()
-
-internal fun parseJSONRPCMessage(text: String): JSONRPCMessage {
-    val obj = WireDecoder.parseObject(text, provider = "mcp", operation = "json-rpc message")
-    val envelope = WireDecoder.decode(
-        JSONRPCEnvelope.serializer(),
-        obj,
-        provider = "mcp",
-        operation = "json-rpc message",
-    )
-    if (envelope.jsonrpc != JSONRPC_VERSION) {
-        WireDecoder.fail(
-            provider = "mcp",
-            operation = "json-rpc message",
-            path = "$.jsonrpc",
-            message = "expected JSON-RPC version $JSONRPC_VERSION",
-            value = obj["jsonrpc"],
-        )
-    }
-    val hasId = "id" in obj
-    return when {
-        envelope.method != null && hasId -> WireDecoder.decode(
-            JSONRPCRequest.serializer(),
-            obj,
-            "mcp",
-            "json-rpc request"
-        )
-        envelope.method != null -> WireDecoder.decode(
-            JSONRPCNotification.serializer(),
-            obj,
-            "mcp",
-            "json-rpc notification"
-        )
-        envelope.result != null && hasId -> WireDecoder.decode(
-            JSONRPCResponse.serializer(),
-            obj,
-            "mcp",
-            "json-rpc response"
-        )
-        envelope.error != null && hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
-        else -> WireDecoder.fail("mcp", "json-rpc message", "$", "invalid JSON-RPC envelope", obj)
-    }
-}
-
 /**
  * Transport interface for MCP communication. Implementations may wrap stdio,
  * Streamable HTTP, SSE, WebSockets, or a test fixture.
+ * @since 0.3.0-beta01
  */
 public interface MCPTransport {
-    public var onClose: (() -> Unit)?
-    public var onError: ((Throwable) -> Unit)?
-    public var onMessage: (suspend (JSONRPCMessage) -> Unit)?
-    public var protocolVersion: String?
+    /** @since 0.3.0-beta01 */
+    public fun setOnClose(handler: (() -> Unit)?)
+
+    /** @since 0.3.0-beta01 */
+    public fun setOnError(handler: ((Throwable) -> Unit)?)
+
+    /** @since 0.3.0-beta01 */
+    public fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?)
+
+    /** @since 0.3.0-beta01 */
+    public fun setProtocolVersion(version: String?)
 
     public suspend fun start()
     public suspend fun send(message: JSONRPCMessage)
     public suspend fun close()
 }
 
-public data class MCPRequestOptions(
-    val signal: AbortSignal? = null,
-    val timeoutMillis: Long? = null,
-    val maxTotalTimeoutMillis: Long? = null,
+/** @since 0.3.0-beta01 */
+public class MCPClientConfig internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val transport: MCPTransport,
+    /** @since 0.3.0-beta01 */
+    public val onUncaughtError: ((Throwable) -> Unit)? = null,
+    /** @since 0.3.0-beta01 */
+    public val clientName: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val name: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val version: String = DEFAULT_MCP_CLIENT_VERSION,
+    /** @since 0.3.0-beta01 */
+    public val capabilities: MCPClientCapabilities = MCPClientCapabilities(),
 )
 
-@Serializable
-public data class Configuration(
-    val name: String,
-    val version: String,
-    val title: String? = null,
-)
+/** @since 0.3.0-beta01 */
+public class MCPClientConfigBuilder {
+    private var transport: MCPTransport? = null
+    private var onUncaughtError: ((Throwable) -> Unit)? = null
+    private var clientName: String? = null
+    private var name: String? = null
+    private var version: String = DEFAULT_MCP_CLIENT_VERSION
+    private var capabilities: MCPClientCapabilities = MCPClientCapabilities()
 
-@Serializable
-public data class ElicitationCapability(
-    val applyDefaults: Boolean? = null,
-)
+    /** @since 0.3.0-beta01 */
+    public fun transport(value: MCPTransport): MCPClientConfigBuilder {
+        transport = value
+        return this
+    }
 
-@Serializable
-public data class MCPClientCapabilities(
-    val elicitation: ElicitationCapability? = null,
-    val experimental: JsonObject? = null,
-)
+    /** @since 0.3.0-beta01 */
+    public fun onUncaughtError(value: ((Throwable) -> Unit)?): MCPClientConfigBuilder {
+        onUncaughtError = value
+        return this
+    }
 
-public typealias experimental_MCPClientCapabilities = MCPClientCapabilities
+    /** @since 0.3.0-beta01 */
+    public fun clientName(value: String?): MCPClientConfigBuilder {
+        clientName = value
+        return this
+    }
 
-@Serializable
-public data class MCPServerCapabilities(
-    val experimental: JsonObject? = null,
-    val logging: JsonObject? = null,
-    val prompts: JsonObject? = null,
-    val resources: JsonObject? = null,
-    val tools: JsonObject? = null,
-    val elicitation: ElicitationCapability? = null,
-)
+    /** @since 0.3.0-beta01 */
+    public fun name(value: String?): MCPClientConfigBuilder {
+        name = value
+        return this
+    }
 
-@Serializable
-public data class MCPBaseParams(
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
+    /** @since 0.3.0-beta01 */
+    public fun version(value: String): MCPClientConfigBuilder {
+        version = value
+        return this
+    }
 
-@Serializable
-public data class InitializeResult(
-    val protocolVersion: String,
-    val capabilities: MCPServerCapabilities = MCPServerCapabilities(),
-    val serverInfo: Configuration,
-    val instructions: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
+    /** @since 0.3.0-beta01 */
+    public fun capabilities(value: MCPClientCapabilities): MCPClientConfigBuilder {
+        capabilities = value
+        return this
+    }
 
-@Serializable
-public data class MCPToolDefinition(
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val inputSchema: JsonObject = JsonObject(mapOf("type" to JsonPrimitive("object"))),
-    val outputSchema: JsonObject? = null,
-    val annotations: JsonObject? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
+    /** @since 0.3.0-beta01 */
+    public fun build(): MCPClientConfig =
+        MCPClientConfig(
+            transport = requireNotNull(transport) { "MCPClientConfig.transport is required" },
+            onUncaughtError = onUncaughtError,
+            clientName = clientName,
+            name = name,
+            version = version,
+            capabilities = capabilities,
+        )
+}
 
-@Serializable
-public data class ListToolsResult(
-    val tools: List<MCPToolDefinition>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
+/** @since 0.3.0-beta01 */
+public fun MCPClientConfig(
+    block: MCPClientConfigBuilder.() -> Unit = {},
+): MCPClientConfig =
+    MCPClientConfigBuilder().apply(block).build()
 
-@Serializable
-public data class MCPToolSchema(
-    val inputSchema: JsonElement,
-    val outputSchema: JsonElement? = null,
-)
-
-public typealias MCPToolSchemas = Map<String, MCPToolSchema>
-
-@Serializable
-public data class CallToolResult(
-    val content: List<JsonObject> = emptyList(),
-    val structuredContent: JsonElement? = null,
-    val isError: Boolean = false,
-    val toolResult: JsonElement? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class MCPResource(
-    val uri: String,
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val mimeType: String? = null,
-    val size: Long? = null,
-)
-
-@Serializable
-public data class ListResourcesResult(
-    val resources: List<MCPResource>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class MCPResourceTemplate(
-    val uriTemplate: String,
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val mimeType: String? = null,
-)
-
-@Serializable
-public data class ListResourceTemplatesResult(
-    val resourceTemplates: List<MCPResourceTemplate>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class ReadResourceResult(
-    val contents: List<JsonObject>,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class MCPPromptArgument(
-    val name: String,
-    val description: String? = null,
-    val required: Boolean? = null,
-)
-
-@Serializable
-public data class MCPPrompt(
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val arguments: List<MCPPromptArgument>? = null,
-)
-
-@Serializable
-public data class ListPromptsResult(
-    val prompts: List<MCPPrompt>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class MCPPromptMessage(
-    val role: String,
-    val content: JsonObject,
-)
-
-@Serializable
-public data class GetPromptResult(
-    val messages: List<MCPPromptMessage>,
-    val description: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-public object ElicitationRequestSchema
-public object ElicitResultSchema
-
-@Serializable
-public data class ElicitationRequestParams(
-    val message: String,
-    val requestedSchema: JsonElement,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class ElicitationRequest(
-    val params: ElicitationRequestParams,
-    val method: String = "elicitation/create",
-)
-
-@Serializable
-public data class ElicitResult(
-    val action: String,
-    val content: JsonObject? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-public data class MCPClientConfig(
-    val transport: MCPTransport,
-    val onUncaughtError: ((Throwable) -> Unit)? = null,
-    val clientName: String? = null,
-    val name: String? = null,
-    val version: String = DEFAULT_MCP_CLIENT_VERSION,
-    val capabilities: MCPClientCapabilities = MCPClientCapabilities(),
-)
-
+@ExperimentalAiSdkApi
 public typealias experimental_MCPClientConfig = MCPClientConfig
 
+/** @since 0.3.0-beta01 */
 public interface MCPClient {
+    /** @since 0.3.0-beta01 */
     public val serverInfo: Configuration
+
+    /** @since 0.3.0-beta01 */
     public val instructions: String?
 
     public suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
@@ -426,17 +312,20 @@ public interface MCPClient {
         options: MCPRequestOptions? = null,
     ): ListResourceTemplatesResult
 
+    @ExperimentalAiSdkApi
     public suspend fun experimental_listPrompts(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListPromptsResult
 
+    @ExperimentalAiSdkApi
     public suspend fun experimental_getPrompt(
         name: String,
         arguments: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): GetPromptResult
 
+    /** @since 0.3.0-beta01 */
     public fun onElicitationRequest(
         schema: ElicitationRequestSchema,
         handler: suspend (ElicitationRequest) -> ElicitResult,
@@ -445,24 +334,26 @@ public interface MCPClient {
     public suspend fun close()
 }
 
+@ExperimentalAiSdkApi
 public typealias experimental_MCPClient = MCPClient
 
-public suspend fun createMCPClient(config: MCPClientConfig): MCPClient =
+public suspend fun CreateMCPClient(config: MCPClientConfig): MCPClient =
     DefaultMCPClient(config).also { it.init() }
 
-public suspend fun experimental_createMCPClient(config: MCPClientConfig): MCPClient =
-    createMCPClient(config)
+@ExperimentalAiSdkApi
+public suspend fun Experimental_CreateMCPClient(config: MCPClientConfig): MCPClient =
+    CreateMCPClient(config)
 
 @OptIn(ExperimentalAtomicApi::class)
 private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private val transport: MCPTransport = config.transport
     private val onUncaughtError = config.onUncaughtError
-    private val clientInfo = Configuration(
-        name = config.clientName ?: config.name ?: DEFAULT_MCP_CLIENT_NAME,
-        version = config.version,
-    )
+    private val clientInfo = Configuration {
+        name(config.clientName ?: config.name ?: DEFAULT_MCP_CLIENT_NAME)
+        version(config.version)
+    }
     private val clientCapabilities = config.capabilities
-    private val responseHandlers = mutableMapOf<String, CompletableDeferred<JsonElement>>()
+    private val responseHandlers = mutableMapOf<String, CompletableDeferred<JsonElement?>>()
     private val responseHandlersMutex = Mutex()
     private var requestMessageId: Long = 0
     private val isClosed = AtomicBoolean(true)
@@ -473,16 +364,21 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private val clientScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var serverCapabilities = MCPServerCapabilities()
     private var elicitationRequestHandler: (suspend (ElicitationRequest) -> ElicitResult)? = null
-    private var _serverInfo = Configuration(name = "", version = "")
+    private val serverInfoRef = AtomicReference(
+        Configuration {
+            name("")
+            version("")
+        },
+    )
     private var _instructions: String? = null
 
-    override val serverInfo: Configuration get() = _serverInfo
+    override val serverInfo: Configuration get() = serverInfoRef.load()
     override val instructions: String? get() = _instructions
 
     init {
-        transport.onClose = { onClose() }
-        transport.onError = { onError(it) }
-        transport.onMessage = { message -> onMessage(message) }
+        transport.setOnClose { onClose() }
+        transport.setOnError { onError(it) }
+        transport.setOnMessage { message -> onMessage(message) }
     }
 
     suspend fun init() {
@@ -501,7 +397,9 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                     put("clientInfo", mcpJson.encodeToJsonElement(Configuration.serializer(), clientInfo))
                 },
                 serializer = InitializeResult.serializer(),
-                options = MCPRequestOptions(timeoutMillis = MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS),
+                options = MCPRequestOptions {
+                    timeoutMillis(MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS)
+                },
             )
 
             if (result.protocolVersion !in SUPPORTED_PROTOCOL_VERSIONS) {
@@ -509,9 +407,9 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             }
 
             serverCapabilities = result.capabilities
-            _serverInfo = result.serverInfo
+            serverInfoRef.store(result.serverInfo)
             _instructions = result.instructions
-            transport.protocolVersion = result.protocolVersion
+            transport.setProtocolVersion(result.protocolVersion)
 
             notification(method = "notifications/initialized")
         } catch (error: Throwable) {
@@ -522,12 +420,17 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
 
     override suspend fun close() {
         isClosed.store(true)
-        transport.close()
-        // Authoritative synchronous drain: when close() returns, every pending
-        // request is settled. Idempotent (clears the map), so it composes with a
-        // drain the transport's onClose callback may already have launched.
-        failAllPendingRequests()
-        clientScope.cancel()
+        try {
+            transport.close()
+        } finally {
+            withContext(NonCancellable) {
+                // Authoritative synchronous drain: when close() returns, every pending
+                // request is settled. Idempotent (clears the map), so it composes with a
+                // drain the transport's onClose callback may already have launched.
+                failAllPendingRequests()
+                clientScope.cancel()
+            }
+        }
     }
 
     /**
@@ -561,10 +464,11 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                 return@mapNotNull null
             }
             val selectedSchema = schemas?.get(definition.name)
-            val inputSchema = selectedSchema?.inputSchema ?: schemaWithClosedAdditionalProperties(definition.inputSchema)
+            val inputSchema = selectedSchema?.inputSchema
+                ?: schemaWithClosedAdditionalProperties(definition.inputSchema)
             val outputSchema = selectedSchema?.outputSchema
             val description = definition.description ?: definition.title ?: definition.name
-            dynamicTool<TContext>(
+            DynamicTool<TContext>(
                 name = definition.name,
                 description = description,
                 inputSchemaJson = inputSchema.toString(),
@@ -573,11 +477,13 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             ) { input ->
                 val result = callTool(
                     name = definition.name,
-                    args = input.asArgumentsObject(),
-                    options = MCPRequestOptions(signal = abortSignal),
+                    args = asArgumentsObject(input),
+                    options = MCPRequestOptions {
+                        signal(abortSignal)
+                    },
                 )
                 if (!result.isError && outputSchema != null) {
-                    extractStructuredContent(result, outputSchema, definition.name)
+                    result.extractStructuredContent(outputSchema, definition.name)
                 } else {
                     mcpJson.encodeToJsonElement(CallToolResult.serializer(), result)
                 }
@@ -586,7 +492,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         // v6 parity: MCP tool names come from an external server and v6's
         // client tolerates duplicates with last-wins (not a hard failure).
         // The strict requireUniqueToolNames policy applies only to
-        // caller-owned tool sets (toolSetOf / ToolSet.plus / the builder).
+        // caller-owned tool sets (ToolSet / ToolSet.plus / the builder).
         return ToolSet(tools.associateBy { it.name })
     }
 
@@ -613,11 +519,13 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         options = options,
     )
 
+    @ExperimentalAiSdkApi
     override suspend fun experimental_listPrompts(
         params: JsonObject?,
         options: MCPRequestOptions?,
     ): ListPromptsResult = request("prompts/list", params, ListPromptsResult.serializer(), options)
 
+    @ExperimentalAiSdkApi
     override suspend fun experimental_getPrompt(
         name: String,
         arguments: JsonObject?,
@@ -671,15 +579,11 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         serializer: KSerializer<T>,
         options: MCPRequestOptions? = null,
     ): T {
-        val timeout = options?.timeoutMillis ?: options?.maxTotalTimeoutMillis
-        return if (timeout != null) {
-            // Real-time so a JSON-RPC response that never correlates back (server
-            // ACKed the POST but never answers) can't hang the caller forever, and
-            // so the bound doesn't spuriously fire under runTest's virtual clock.
-            withRealTimeout(timeout) { requestWithoutTimeout(method, params, serializer, options) }
-        } else {
-            requestWithoutTimeout(method, params, serializer, options)
-        }
+        val timeout = options?.timeoutMillis ?: options?.maxTotalTimeoutMillis ?: MCP_DEFAULT_REQUEST_TIMEOUT_MS
+        // Real-time so a JSON-RPC response that never correlates back (server
+        // ACKed the POST but never answers) can't hang the caller forever, and
+        // so the bound doesn't spuriously fire under runTest's virtual clock.
+        return HttpTransport.withRealTimeout(timeout) { requestWithoutTimeout(method, params, serializer, options) }
     }
 
     private suspend fun <T> requestWithoutTimeout(
@@ -691,7 +595,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         assertCapability(method)
         options?.signal?.throwIfAborted()
 
-        val deferred = CompletableDeferred<JsonElement>()
+        val deferred = CompletableDeferred<JsonElement?>()
         // Check isClosed under the same lock the drain uses, so a close()/onClose
         // draining concurrently can't run between the check and the insert and leave
         // this handler stranded (awaiting a response that will never come).
@@ -699,7 +603,10 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             if (isClosed.load()) {
                 throw MCPClientError("Attempted to send a request from a closed client")
             }
-            JsonPrimitive(requestMessageId++).also { responseHandlers[it.rpcIdKey()] = deferred }
+            JsonPrimitive(requestMessageId++).also { responseHandlers[rpcIdKey(it)] = deferred }
+        }
+        val abortRegistration = options?.signal?.register {
+            deferred.completeExceptionally(AbortError())
         }
         try {
             transport.send(JSONRPCRequest(id = id, method = method, params = params))
@@ -707,12 +614,20 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             val result = deferred.await()
             options?.signal?.throwIfAborted()
             return try {
-                mcpJson.decodeFromJsonElement(serializer, result)
+                mcpJson.decodeFromJsonElement(serializer, result ?: JsonNull)
             } catch (error: Throwable) {
                 throw MCPClientError("Failed to parse server response", cause = error)
             }
         } finally {
-            responseHandlersMutex.withLock { responseHandlers.remove(id.rpcIdKey()) }
+            // Cleanup MUST survive the in-flight cancellation (timeoutMillis elapsed / abort /
+            // scope-cancel): a plain withLock takes its non-suspending fast path only when
+            // uncontended — if it has to suspend it observes the cancellation and throws BEFORE
+            // acquiring the lock, so the remove never runs and this handler is stranded in
+            // responseHandlers until close(). NonCancellable guarantees the removal completes.
+            withContext(NonCancellable) {
+                abortRegistration?.cancel()
+                responseHandlersMutex.withLock { responseHandlers.remove(rpcIdKey(id)) }
+            }
         }
     }
 
@@ -791,7 +706,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                     id = request.id,
                     error = JSONRPCErrorData(
                         code = -32602,
-                        message = "Invalid elicitation request: ${getErrorMessage(error)}",
+                        message = "Invalid elicitation request: ${ErrorMessages.of(error)}",
                     ),
                 ),
             )
@@ -813,7 +728,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                     id = request.id,
                     error = JSONRPCErrorData(
                         code = -32603,
-                        message = getErrorMessage(error),
+                        message = ErrorMessages.of(error),
                     ),
                 ),
             )
@@ -822,14 +737,18 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     }
 
     private suspend fun onResponse(response: JSONRPCResponse) {
-        val handler = responseHandlersMutex.withLock { responseHandlers[response.id.rpcIdKey()] }
-            ?: throw MCPClientError("Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}")
+        val handler = responseHandlersMutex.withLock { responseHandlers[rpcIdKey(response.id)] }
+            ?: throw MCPClientError(
+                "Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}"
+            )
         handler.complete(response.result)
     }
 
     private suspend fun onResponse(response: JSONRPCError) {
-        val handler = responseHandlersMutex.withLock { responseHandlers[response.id.rpcIdKey()] }
-            ?: throw MCPClientError("Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}")
+        val handler = responseHandlersMutex.withLock { responseHandlers[rpcIdKey(response.id)] }
+            ?: throw MCPClientError(
+                "Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}"
+            )
         handler.completeExceptionally(
             MCPClientError(
                 message = response.error.message,
@@ -851,162 +770,82 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private fun onError(error: Throwable) {
         onUncaughtError?.invoke(error)
     }
-}
 
-private fun MCPToolDefinition.toolMetadata(clientInfo: Configuration): Map<String, JsonElement> = buildMap {
-    put("clientName", JsonPrimitive(clientInfo.name))
-    put("mcpToolName", JsonPrimitive(name))
-    title?.let { put("title", JsonPrimitive(it)) }
-    meta?.let { put("_meta", it) }
-}
+    private fun rpcIdKey(element: JsonElement): String {
+        val primitive = element as? JsonPrimitive ?: return "json:$element"
+        // Key by the primitive's content, NOT its JSON type: this client only ever
+        // issues numeric ids, so a server that echoes a numeric id back as a JSON
+        // string (e.g. 5 -> "5") must still resolve its registered handler. Mirrors
+        // the reference's Number(id) coercion; without it the typed lookup misses and
+        // the response is dropped as an "unknown message ID".
+        return primitive.content
+    }
 
-private fun schemaWithClosedAdditionalProperties(schema: JsonObject): JsonObject =
-    JsonObject(
-        schema + mapOf(
-            "properties" to (schema["properties"] ?: JsonObject(emptyMap())),
-            "additionalProperties" to JsonPrimitive(false),
-        ),
-    )
+    private fun schemaWithClosedAdditionalProperties(schema: JsonObject): JsonObject =
+        JsonObject(
+            schema + mapOf(
+                "properties" to (schema["properties"] ?: JsonObject(emptyMap())),
+                "additionalProperties" to JsonPrimitive(false),
+            ),
+        )
 
-private fun JsonElement.asArgumentsObject(): JsonObject = when (this) {
-    is JsonObject -> this
-    JsonNull -> JsonObject(emptyMap())
-    else -> JsonObject(mapOf("value" to this))
-}
+    private fun asArgumentsObject(element: JsonElement): JsonObject = when (element) {
+        is JsonObject -> element
+        JsonNull -> JsonObject(emptyMap())
+        else -> JsonObject(mapOf("value" to element))
+    }
 
-private fun extractStructuredContent(
-    result: CallToolResult,
-    outputSchema: JsonElement,
-    toolName: String,
-): JsonElement {
-    result.structuredContent?.let { return it }
-
-    val text = result.content.firstNotNullOfOrNull { content ->
-        if (content["type"]?.jsonPrimitive?.contentOrNull == "text") {
-            content["text"]?.jsonPrimitive?.contentOrNull
-        } else {
-            null
+    private fun mcpToModelOutput(output: JsonElement): ToolResultOutput {
+        val obj = output as? JsonObject ?: return ToolResultOutput.Json(output)
+        val content = JsonAccess.arr(obj, "content") ?: return ToolResultOutput.Json(output)
+        val converted = content.map { part ->
+            val partObj = part as? JsonObject
+            // `as? JsonPrimitive` (not `?.jsonPrimitive`, which throws on a non-primitive value):
+            // MCP content is server-controlled, so a malformed object/array type/text must degrade
+            // gracefully (fall through / empty) rather than throw a low-level IllegalArgumentException.
+            when ((partObj?.get("type") as? JsonPrimitive)?.contentOrNull) {
+                "text" -> JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive("text"),
+                        "text" to JsonPrimitive((partObj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()),
+                    ),
+                )
+                "image" -> JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive("image-data"),
+                        "data" to (partObj["data"] ?: JsonPrimitive("")),
+                        "mediaType" to (partObj["mimeType"] ?: JsonPrimitive("application/octet-stream")),
+                    ),
+                )
+                else -> JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive("text"),
+                        "text" to JsonPrimitive(part.toString()),
+                    ),
+                )
+            }
         }
-    }
-    if (text != null) {
-        return try {
-            mcpJson.parseToJsonElement(text)
-        } catch (error: Throwable) {
-            throw MCPClientError(
-                message = "Tool \"$toolName\" returned content that does not match the expected outputSchema",
-                data = outputSchema,
-                cause = error,
-            )
-        }
-    }
-
-    throw MCPClientError("Tool \"$toolName\" did not return structuredContent or parseable text content")
-}
-
-private fun mcpToModelOutput(output: JsonElement): ToolResultOutput {
-    val obj = output as? JsonObject ?: return ToolResultOutput.Json(output)
-    val content = obj["content"] as? JsonArray ?: return ToolResultOutput.Json(output)
-    val converted = content.map { part ->
-        val partObj = part as? JsonObject
-        when (partObj?.get("type")?.jsonPrimitive?.contentOrNull) {
-            "text" -> JsonObject(
-                mapOf(
-                    "type" to JsonPrimitive("text"),
-                    "text" to JsonPrimitive(partObj["text"]?.jsonPrimitive?.contentOrNull.orEmpty()),
-                ),
-            )
-            "image" -> JsonObject(
-                mapOf(
-                    "type" to JsonPrimitive("image-data"),
-                    "data" to (partObj["data"] ?: JsonPrimitive("")),
-                    "mediaType" to (partObj["mimeType"] ?: JsonPrimitive("application/octet-stream")),
-                ),
-            )
-            else -> JsonObject(
-                mapOf(
-                    "type" to JsonPrimitive("text"),
-                    "text" to JsonPrimitive(part.toString()),
-                ),
-            )
-        }
-    }
-    return ToolResultOutput.Content(
-        value = converted,
-        isError = obj["isError"]?.jsonPrimitive?.booleanOrNull == true,
-    )
-}
-
-private fun JsonElement.rpcIdKey(): String {
-    val primitive = this as? JsonPrimitive ?: return "json:$this"
-    return if (primitive.isString) {
-        "s:${primitive.content}"
-    } else {
-        "n:${primitive.content}"
+        return ToolResultOutput.Content(
+            value = converted,
+            isError = (obj["isError"] as? JsonPrimitive)?.booleanOrNull == true,
+        )
     }
 }
 
-@Serializable
-public data class OAuthTokens(
-    @SerialName("access_token") val accessToken: String,
-    @SerialName("token_type") val tokenType: String,
-    @SerialName("id_token") val idToken: String? = null,
-    @SerialName("expires_in") val expiresIn: Long? = null,
-    val scope: String? = null,
-    @SerialName("refresh_token") val refreshToken: String? = null,
+/** @since 0.3.0-beta01 */
+public class ClientAuthResult(
+    /** @since 0.3.0-beta01 */
+    public val additionalHeaders: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
+    public val additionalParams: Map<String, String> = emptyMap(),
 )
 
-@Serializable
-public data class OAuthClientInformation(
-    @SerialName("client_id") val clientId: String,
-    @SerialName("client_secret") val clientSecret: String? = null,
-    @SerialName("client_id_issued_at") val clientIdIssuedAt: Long? = null,
-    @SerialName("client_secret_expires_at") val clientSecretExpiresAt: Long? = null,
-)
-
-@Serializable
-public data class OAuthClientMetadata(
-    @SerialName("redirect_uris") val redirectUris: List<String>,
-    @SerialName("token_endpoint_auth_method") val tokenEndpointAuthMethod: String? = null,
-    @SerialName("grant_types") val grantTypes: List<String>? = null,
-    @SerialName("response_types") val responseTypes: List<String>? = null,
-    @SerialName("client_name") val clientName: String? = null,
-    @SerialName("client_uri") val clientUri: String? = null,
-    @SerialName("logo_uri") val logoUri: String? = null,
-    val scope: String? = null,
-    val contacts: List<String>? = null,
-    @SerialName("tos_uri") val tosUri: String? = null,
-    @SerialName("policy_uri") val policyUri: String? = null,
-    @SerialName("jwks_uri") val jwksUri: String? = null,
-    val jwks: JsonElement? = null,
-    @SerialName("software_id") val softwareId: String? = null,
-    @SerialName("software_version") val softwareVersion: String? = null,
-    @SerialName("software_statement") val softwareStatement: String? = null,
-)
-
-@Serializable
-public data class AuthorizationServerMetadata(
-    val issuer: String? = null,
-    @SerialName("authorization_endpoint") val authorizationEndpoint: String? = null,
-    @SerialName("token_endpoint") val tokenEndpoint: String? = null,
-    @SerialName("registration_endpoint") val registrationEndpoint: String? = null,
-    @SerialName("response_types_supported") val responseTypesSupported: List<String>? = null,
-    @SerialName("grant_types_supported") val grantTypesSupported: List<String>? = null,
-    @SerialName("token_endpoint_auth_methods_supported") val tokenEndpointAuthMethodsSupported: List<String>? = null,
-    @SerialName("code_challenge_methods_supported") val codeChallengeMethodsSupported: List<String>? = null,
-)
-
-@Serializable
-public data class OAuthProtectedResourceMetadata(
-    val resource: String,
-    @SerialName("authorization_servers") val authorizationServers: List<String>? = null,
-    @SerialName("jwks_uri") val jwksUri: String? = null,
-    @SerialName("scopes_supported") val scopesSupported: List<String>? = null,
-    @SerialName("bearer_methods_supported") val bearerMethodsSupported: List<String>? = null,
-    @SerialName("resource_name") val resourceName: String? = null,
-)
-
+/** @since 0.3.0-beta01 */
 public interface OAuthClientProvider {
+    /** @since 0.3.0-beta01 */
     public val redirectUrl: String
+
+    /** @since 0.3.0-beta01 */
     public val clientMetadata: OAuthClientMetadata
 
     public suspend fun tokens(): OAuthTokens?
@@ -1023,598 +862,325 @@ public interface OAuthClientProvider {
     public suspend fun storedState(): String? = null
     public suspend fun validateResourceURL(serverUrl: String, resource: String?): String? {
         if (resource == null) return null
-        val requestedResource = resourceUrlFromServerUrl(serverUrl)
-        if (!checkResourceAllowed(requestedResource, resource)) {
+        val requestedResource = McpResourceUrl.fromServerUrl(serverUrl)
+        if (!McpResourceUrl.checkAllowed(requestedResource, resource)) {
             throw MCPClientError("Protected resource $resource does not match expected $requestedResource (or origin)")
         }
-        return resourceUrlStripSlash(resource)
+        return McpResourceUrl.stripSlash(resource)
     }
     public suspend fun addClientAuthentication(
-        headers: MutableMap<String, String>,
-        params: MutableMap<String, String>,
+        headers: Map<String, String>,
+        params: Map<String, String>,
         url: String,
         metadata: AuthorizationServerMetadata?,
-    ): Unit = Unit
+    ): ClientAuthResult = ClientAuthResult()
 }
 
-public class UnauthorizedError(message: String = "Unauthorized") : AiSdkException(message)
-
-public enum class AuthResult {
-    AUTHORIZED,
-    REDIRECT,
-}
-
-public data class AuthOptions(
-    val serverUrl: String,
-    val authorizationCode: String? = null,
-    val callbackState: String? = null,
-    val scope: String? = null,
-    val resourceMetadataUrl: String? = null,
-    val client: HttpClient? = null,
-)
-
-internal suspend fun auth(
-    provider: OAuthClientProvider,
-    options: AuthOptions,
-): AuthResult {
-    val currentTokens = provider.tokens()
-    if (currentTokens?.accessToken?.isNotBlank() == true &&
-        currentTokens.refreshToken.isNullOrBlank() &&
-        options.authorizationCode == null
-    ) {
-        return AuthResult.AUTHORIZED
-    }
-    val resourceMetadata = options.client?.let { client ->
-        try {
-            discoverOAuthProtectedResourceMetadata(
-                client = client,
-                serverUrl = options.serverUrl,
-                resourceMetadataUrl = options.resourceMetadataUrl,
-            )
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Throwable) {
-            null
+/** OAuth client handshake driver for the HTTP / SSE transports. */
+internal object McpAuth {
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount", "ThrowsCount")
+    suspend fun auth(
+        provider: OAuthClientProvider,
+        options: AuthOptions,
+        reauthorize: Boolean = false,
+    ): AuthResult {
+        val currentTokens = provider.tokens()
+        val hasReusableAccessToken = currentTokens?.accessToken?.isNotBlank() == true &&
+            currentTokens.refreshToken.isNullOrBlank()
+        if (hasReusableAccessToken && options.authorizationCode == null && !reauthorize) {
+            return AuthResult.AUTHORIZED
         }
-    }
-    val authorizationServerUrl = resourceMetadata?.authorizationServers?.firstOrNull() ?: options.serverUrl
-    val resource = provider.validateResourceURL(options.serverUrl, resourceMetadata?.resource)
-    val metadata = options.client?.let { discoverAuthorizationServerMetadata(it, authorizationServerUrl) }
-    var clientInformation = provider.clientInformation()
-    if (clientInformation == null) {
-        if (options.authorizationCode != null) {
-            throw MCPClientError(
-                "Existing OAuth client information is required when exchanging an authorization code.",
-            )
-        }
-        if (options.client != null) {
-            clientInformation = registerClient(
-                client = options.client,
-                authorizationServerUrl = authorizationServerUrl,
-                metadata = metadata,
-                clientMetadata = provider.clientMetadata,
-            )
-            provider.saveClientInformation(clientInformation)
-        }
-    }
-    if (options.authorizationCode != null) {
-        val client = options.client ?: throw MCPClientError(
-            "OAuth authorization-code exchange requires AuthOptions.client.",
-        )
-        val info = clientInformation ?: throw MCPClientError(
-            "Existing OAuth client information is required when exchanging an authorization code.",
-        )
-        provider.storedState()?.let { expected ->
-            if (expected != options.callbackState) {
-                throw MCPClientError("OAuth state parameter mismatch - possible CSRF attack.")
+        val resourceMetadata = options.client?.let { client ->
+            try {
+                McpOAuthFlow.discoverOAuthProtectedResourceMetadata(
+                    client = client,
+                    serverUrl = options.serverUrl,
+                    resourceMetadataUrl = options.resourceMetadataUrl,
+                )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Throwable) {
+                null
             }
         }
-        val tokens = exchangeAuthorization(
-            client = client,
-            authorizationServerUrl = authorizationServerUrl,
-            metadata = metadata,
-            clientInformation = info,
-            authorizationCode = options.authorizationCode,
-            codeVerifier = provider.codeVerifier(),
-            redirectUri = provider.redirectUrl,
-            resource = resource,
-            addClientAuthentication = provider::addClientAuthentication,
-        )
-        provider.saveTokens(tokens)
-        return AuthResult.AUTHORIZED
-    }
-
-    if (currentTokens?.refreshToken?.isNotBlank() == true && options.client != null && clientInformation != null) {
-        val tokens = refreshAuthorization(
-            client = options.client,
-            authorizationServerUrl = authorizationServerUrl,
-            metadata = metadata,
-            clientInformation = clientInformation,
-            refreshToken = currentTokens.refreshToken,
-            resource = resource,
-            addClientAuthentication = provider::addClientAuthentication,
-        )
-        provider.saveTokens(tokens)
-        return AuthResult.AUTHORIZED
-    }
-
-    if (currentTokens?.accessToken?.isNotBlank() == true) {
-        return AuthResult.AUTHORIZED
-    }
-
-    val state = provider.state() ?: generateId(prefix = "mcp")
-    provider.saveState(state)
-    val codeVerifier = createIdGenerator(prefix = "mcp-verifier", size = 48).generate()
-    provider.saveCodeVerifier(codeVerifier)
-
-    val authClientInformation = clientInformation
-        ?: OAuthClientInformation(clientId = provider.clientMetadata.clientName ?: DEFAULT_MCP_CLIENT_NAME)
-    val authorizationUrl = startAuthorization(
-        serverUrl = options.serverUrl,
-        metadata = metadata,
-        clientInformation = authClientInformation,
-        redirectUrl = provider.redirectUrl,
-        scope = options.scope ?: provider.clientMetadata.scope,
-        state = state,
-        codeVerifier = codeVerifier,
-        resource = resource,
-    )
-    provider.redirectToAuthorization(authorizationUrl)
-    return AuthResult.REDIRECT
-}
-
-internal suspend fun discoverAuthorizationServerMetadata(
-    client: HttpClient,
-    authorizationServerUrl: String,
-): AuthorizationServerMetadata? {
-    val urls = authorizationDiscoveryUrls(authorizationServerUrl)
-    for (url in urls) {
-        val response = client.request(url) {
-            method = HttpMethod.Get
-            header("MCP-Protocol-Version", LATEST_PROTOCOL_VERSION)
+        val authorizationServerUrl = resourceMetadata?.authorizationServers?.firstOrNull() ?: options.serverUrl
+        val resource = provider.validateResourceURL(options.serverUrl, resourceMetadata?.resource)
+        val metadata = options.client?.let { McpOAuthFlow.discoverAuthorizationServerMetadata(it, authorizationServerUrl) }
+        var clientInformation = provider.clientInformation()
+        if (clientInformation == null) {
+            if (options.authorizationCode != null) {
+                throw MCPClientError(
+                    "Existing OAuth client information is required when exchanging an authorization code.",
+                )
+            }
+            if (options.client != null) {
+                clientInformation = McpOAuthFlow.registerClient(
+                    client = options.client,
+                    authorizationServerUrl = authorizationServerUrl,
+                    metadata = metadata,
+                    clientMetadata = provider.clientMetadata,
+                )
+                provider.saveClientInformation(clientInformation)
+            }
         }
-        if (response.status.value in 400..499) continue
-        if (response.status.value !in 200..299) {
-            throw MCPClientError("HTTP ${response.status.value} trying to load OAuth metadata from $url")
-        }
-        return mcpJson.decodeFromString<AuthorizationServerMetadata>(response.bodyAsText())
-    }
-    return null
-}
-
-internal suspend fun discoverOAuthProtectedResourceMetadata(
-    client: HttpClient,
-    serverUrl: String,
-    resourceMetadataUrl: String? = null,
-): OAuthProtectedResourceMetadata {
-    val urls = protectedResourceDiscoveryUrls(serverUrl, resourceMetadataUrl)
-    for (url in urls) {
-        val response = client.request(url) {
-            method = HttpMethod.Get
-            header("MCP-Protocol-Version", LATEST_PROTOCOL_VERSION)
-        }
-        if (response.status.value == 404) continue
-        if (response.status.value in 400..499 && resourceMetadataUrl == null) continue
-        if (response.status.value !in 200..299) {
-            throw MCPClientError(
-                "HTTP ${response.status.value} trying to load well-known OAuth protected resource metadata."
+        if (options.authorizationCode != null) {
+            val client = options.client ?: throw MCPClientError(
+                "OAuth authorization-code exchange requires AuthOptions.client.",
             )
-        }
-        return mcpJson.decodeFromString<OAuthProtectedResourceMetadata>(response.bodyAsText())
-    }
-    throw MCPClientError("Resource server does not implement OAuth 2.0 Protected Resource Metadata.")
-}
-
-internal suspend fun registerClient(
-    client: HttpClient,
-    authorizationServerUrl: String,
-    metadata: AuthorizationServerMetadata?,
-    clientMetadata: OAuthClientMetadata,
-): OAuthClientInformation {
-    val registrationUrl = metadata?.registrationEndpoint ?: "${authorizationServerUrl.trimEnd('/')}/register"
-    val response = client.request(registrationUrl) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        setBody(mcpJson.encodeToString(clientMetadata))
-    }
-    if (response.status.value !in 200..299) {
-        throw MCPClientError("OAuth client registration failed (${response.status.value}): ${response.bodyAsText()}")
-    }
-    return mcpJson.decodeFromString(response.bodyAsText())
-}
-
-internal suspend fun exchangeAuthorization(
-    client: HttpClient,
-    authorizationServerUrl: String,
-    metadata: AuthorizationServerMetadata?,
-    clientInformation: OAuthClientInformation,
-    authorizationCode: String,
-    codeVerifier: String,
-    redirectUri: String,
-    resource: String? = null,
-    addClientAuthentication: suspend (
-        MutableMap<String, String>,
-        MutableMap<String, String>,
-        String,
-        AuthorizationServerMetadata?,
-    ) -> Unit = { _, _, _, _ -> },
-): OAuthTokens {
-    val grantType = "authorization_code"
-    if (metadata?.grantTypesSupported != null && grantType !in metadata.grantTypesSupported) {
-        throw MCPClientError("Incompatible auth server: does not support grant type $grantType")
-    }
-    val tokenUrl = metadata?.tokenEndpoint ?: "${authorizationServerUrl.trimEnd('/')}/token"
-    val headers = linkedMapOf(
-        HttpHeaders.ContentType to "application/x-www-form-urlencoded",
-        HttpHeaders.Accept to "application/json",
-    )
-    val params = linkedMapOf(
-        "grant_type" to grantType,
-        "code" to authorizationCode,
-        "code_verifier" to codeVerifier,
-        "redirect_uri" to redirectUri,
-    )
-    resource?.let { params["resource"] = it }
-    applyOAuthClientAuthentication(
-        headers,
-        params,
-        authorizationServerUrl,
-        metadata,
-        clientInformation,
-        addClientAuthentication
-    )
-    return postOAuthTokenRequest(client, tokenUrl, headers, params)
-}
-
-internal suspend fun refreshAuthorization(
-    client: HttpClient,
-    authorizationServerUrl: String,
-    metadata: AuthorizationServerMetadata?,
-    clientInformation: OAuthClientInformation,
-    refreshToken: String,
-    resource: String? = null,
-    addClientAuthentication: suspend (
-        MutableMap<String, String>,
-        MutableMap<String, String>,
-        String,
-        AuthorizationServerMetadata?,
-    ) -> Unit = { _, _, _, _ -> },
-): OAuthTokens {
-    val grantType = "refresh_token"
-    if (metadata?.grantTypesSupported != null && grantType !in metadata.grantTypesSupported) {
-        throw MCPClientError("Incompatible auth server: does not support grant type $grantType")
-    }
-    val tokenUrl = metadata?.tokenEndpoint ?: "${authorizationServerUrl.trimEnd('/')}/token"
-    val headers = linkedMapOf(
-        HttpHeaders.ContentType to "application/x-www-form-urlencoded",
-        HttpHeaders.Accept to "application/json",
-    )
-    val params = linkedMapOf(
-        "grant_type" to grantType,
-        "refresh_token" to refreshToken,
-    )
-    resource?.let { params["resource"] = it }
-    applyOAuthClientAuthentication(
-        headers,
-        params,
-        authorizationServerUrl,
-        metadata,
-        clientInformation,
-        addClientAuthentication
-    )
-    val tokens = postOAuthTokenRequest(client, tokenUrl, headers, params)
-    return if (tokens.refreshToken.isNullOrBlank()) tokens.copy(refreshToken = refreshToken) else tokens
-}
-
-private fun startAuthorization(
-    serverUrl: String,
-    metadata: AuthorizationServerMetadata?,
-    clientInformation: OAuthClientInformation,
-    redirectUrl: String,
-    scope: String?,
-    state: String,
-    codeVerifier: String,
-    resource: String?,
-): String {
-    val responseType = "code"
-    val codeChallengeMethod = "S256"
-    val authorizationEndpoint = if (metadata != null) {
-        if (metadata.responseTypesSupported != null && responseType !in metadata.responseTypesSupported) {
-            throw MCPClientError("Incompatible auth server: does not support response type $responseType")
-        }
-        if (metadata.codeChallengeMethodsSupported != null && codeChallengeMethod !in metadata.codeChallengeMethodsSupported) {
-            throw MCPClientError(
-                "Incompatible auth server: does not support code challenge method $codeChallengeMethod"
+            val info = clientInformation ?: throw MCPClientError(
+                "Existing OAuth client information is required when exchanging an authorization code.",
             )
+            provider.storedState()?.let { expected ->
+                if (expected != options.callbackState) {
+                    throw MCPClientError("OAuth state parameter mismatch - possible CSRF attack.")
+                }
+            }
+            val tokens = McpOAuthFlow.exchangeAuthorization(
+                client = client,
+                authorizationServerUrl = authorizationServerUrl,
+                metadata = metadata,
+                clientInformation = info,
+                authorizationCode = options.authorizationCode,
+                codeVerifier = provider.codeVerifier(),
+                redirectUri = provider.redirectUrl,
+                resource = resource,
+                addClientAuthentication = { headers, params, url, metadata ->
+                    val result = provider.addClientAuthentication(headers, params, url, metadata)
+                    headers.putAll(result.additionalHeaders)
+                    params.putAll(result.additionalParams)
+                },
+            )
+            provider.saveTokens(tokens)
+            return AuthResult.AUTHORIZED
         }
-        metadata.authorizationEndpoint ?: throw MCPClientError("OAuth metadata is missing authorization_endpoint.")
-    } else {
-        serverUrl.trimEnd('/') + "/authorize"
-    }
-    val codeChallenge = pkceS256Challenge(codeVerifier)
-    val params = listOfNotNull(
-        "response_type=$responseType",
-        "client_id=${urlComponent(clientInformation.clientId)}",
-        "code_challenge=${urlComponent(codeChallenge)}",
-        "code_challenge_method=$codeChallengeMethod",
-        "redirect_uri=${urlComponent(redirectUrl)}",
-        scope?.let { "scope=${urlComponent(it)}" },
-        "state=${urlComponent(state)}",
-        if (scope?.split(' ')?.contains("offline_access") == true) "prompt=consent" else null,
-        resource?.let { "resource=${urlComponent(it)}" },
-    )
-    return "$authorizationEndpoint?${params.joinToString("&")}"
-}
 
-private fun urlComponent(value: String): String = buildString {
-    for (char in value) {
-        when (char) {
-            ' ' -> append("%20")
-            ':' -> append("%3A")
-            '/' -> append("%2F")
-            '?' -> append("%3F")
-            '&' -> append("%26")
-            '=' -> append("%3D")
-            '+' -> append("%2B")
-            '#' -> append("%23")
-            '%' -> append("%25")
-            else -> append(char)
+        if (currentTokens?.refreshToken?.isNotBlank() == true && options.client != null && clientInformation != null) {
+            try {
+                val tokens = McpOAuthFlow.refreshAuthorization(
+                    client = options.client,
+                    authorizationServerUrl = authorizationServerUrl,
+                    metadata = metadata,
+                    clientInformation = clientInformation,
+                    refreshToken = currentTokens.refreshToken,
+                    resource = resource,
+                    addClientAuthentication = { headers, params, url, metadata ->
+                        val result = provider.addClientAuthentication(headers, params, url, metadata)
+                        headers.putAll(result.additionalHeaders)
+                        params.putAll(result.additionalParams)
+                    },
+                )
+                provider.saveTokens(tokens)
+                return AuthResult.AUTHORIZED
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Throwable) {
+                // Expired/revoked refresh tokens should fall through to a fresh authorization redirect.
+            }
         }
-    }
-}
 
-private fun pkceS256Challenge(codeVerifier: String): String =
-    convertByteArrayToBase64(mcpSha256(codeVerifier.encodeToByteArray()))
-        .replace('+', '-')
-        .replace('/', '_')
-        .trimEnd('=')
+        if (currentTokens?.accessToken?.isNotBlank() == true && !reauthorize) {
+            return AuthResult.AUTHORIZED
+        }
 
-private fun authorizationDiscoveryUrls(authorizationServerUrl: String): List<String> {
-    val trimmed = authorizationServerUrl.trimEnd('/')
-    val origin = mcpOrigin(trimmed)
-    val path = trimmed.removePrefix(origin).ifBlank { "/" }.trimEnd('/')
-    return if (path == "/") {
-        listOf(
-            "$origin/.well-known/oauth-authorization-server",
-            "$origin/.well-known/openid-configuration",
+        // OAuth state (CSRF) and PKCE code_verifier must come from a CSPRNG, not the
+        // seeded Random.Default — RFC 7636 §4.1 requires high-entropy cryptographic random.
+        val state = provider.state() ?: IdGenerator.generate(prefix = "mcp", random = SecureRandom())
+        provider.saveState(state)
+        val codeVerifier = IdGenerator {
+            prefix("mcp-verifier")
+            size(48)
+            random(SecureRandom())
+        }.generate()
+        provider.saveCodeVerifier(codeVerifier)
+
+        val authClientInformation = clientInformation
+            ?: OAuthClientInformation {
+                clientId(provider.clientMetadata.clientName ?: DEFAULT_MCP_CLIENT_NAME)
+            }
+        val authorizationUrl = McpOAuthFlow.startAuthorization(
+            serverUrl = options.serverUrl,
+            metadata = metadata,
+            clientInformation = authClientInformation,
+            redirectUrl = provider.redirectUrl,
+            scope = options.scope ?: provider.clientMetadata.scope,
+            state = state,
+            codeVerifier = codeVerifier,
+            resource = resource,
         )
-    } else {
-        listOf(
-            "$origin/.well-known/oauth-authorization-server$path",
-            "$origin/.well-known/oauth-authorization-server",
-            "$origin/.well-known/openid-configuration$path",
-            "$trimmed/.well-known/openid-configuration",
-        )
+        provider.redirectToAuthorization(authorizationUrl)
+        return AuthResult.REDIRECT
     }
 }
 
-private fun protectedResourceDiscoveryUrls(serverUrl: String, resourceMetadataUrl: String?): List<String> {
-    if (resourceMetadataUrl != null) return listOf(resourceMetadataUrl)
-    val trimmed = serverUrl.trimEnd('/')
-    val origin = mcpOrigin(trimmed)
-    val path = trimmed.removePrefix(origin).ifBlank { "/" }.trimEnd('/')
-    return if (path == "/") {
-        listOf("$origin/.well-known/oauth-protected-resource")
-    } else {
-        listOf(
-            "$origin/.well-known/oauth-protected-resource$path",
-            "$origin/.well-known/oauth-protected-resource",
-        )
-    }
-}
-
-private fun resourceUrlFromServerUrl(serverUrl: String): String {
-    val noFragment = serverUrl.substringBefore('#')
-    return resourceUrlStripSlash(noFragment)
-}
-
-private fun resourceUrlStripSlash(resource: String): String =
-    if (resource.endsWith("/") && resource.removeSuffix("/").count { it == '/' } == 2) {
-        resource.removeSuffix("/")
-    } else {
-        resource
-    }
-
-private fun checkResourceAllowed(requestedResource: String, configuredResource: String): Boolean {
-    val requested = parsedResourceUrl(requestedResource) ?: return false
-    val configured = parsedResourceUrl(configuredResource) ?: return false
-    if (requested.origin != configured.origin) return false
-    val requestedPath = requested.path.ensureTrailingSlash()
-    val configuredPath = configured.path.ensureTrailingSlash()
-    return requestedPath.startsWith(configuredPath)
-}
-
-private data class ParsedResourceUrl(
-    val origin: String,
-    val path: String,
-)
-
-private fun parsedResourceUrl(value: String): ParsedResourceUrl? {
-    val withoutFragment = value.substringBefore('#')
-    val schemeEnd = withoutFragment.indexOf("://")
-    if (schemeEnd <= 0) return null
-    val authorityStart = schemeEnd + 3
-    val pathStart = withoutFragment.indexOf('/', authorityStart)
-    val origin = if (pathStart == -1) withoutFragment else withoutFragment.substring(0, pathStart)
-    val rawPath = if (pathStart == -1) {
-        "/"
-    } else {
-        withoutFragment.substring(
-            pathStart
-        ).substringBefore('?').ifBlank { "/" }
-    }
-    return ParsedResourceUrl(origin = origin, path = rawPath)
-}
-
-private fun String.ensureTrailingSlash(): String =
-    if (endsWith('/')) this else "$this/"
-
-private suspend fun applyOAuthClientAuthentication(
-    headers: MutableMap<String, String>,
-    params: MutableMap<String, String>,
-    tokenUrl: String,
-    metadata: AuthorizationServerMetadata?,
-    clientInformation: OAuthClientInformation,
-    addClientAuthentication: suspend (
-        MutableMap<String, String>,
-        MutableMap<String, String>,
-        String,
-        AuthorizationServerMetadata?,
-    ) -> Unit,
-) {
-    addClientAuthentication(headers, params, tokenUrl, metadata)
-    if ("client_id" in params || headers.keys.any { it.equals(HttpHeaders.Authorization, ignoreCase = true) }) {
-        return
-    }
-    when (selectOAuthClientAuthMethod(clientInformation, metadata?.tokenEndpointAuthMethodsSupported.orEmpty())) {
-        "client_secret_basic" -> {
-            val secret = clientInformation.clientSecret
-                ?: throw MCPClientError("client_secret_basic authentication requires a client_secret")
-            headers[HttpHeaders.Authorization] = "Basic ${convertByteArrayToBase64("${clientInformation.clientId}:$secret".encodeToByteArray())}"
-        }
-        "client_secret_post" -> {
-            params["client_id"] = clientInformation.clientId
-            clientInformation.clientSecret?.let { params["client_secret"] = it }
-        }
-        else -> params["client_id"] = clientInformation.clientId
-    }
-}
-
-private fun selectOAuthClientAuthMethod(
-    clientInformation: OAuthClientInformation,
-    supportedMethods: List<String>,
-): String {
-    val hasSecret = !clientInformation.clientSecret.isNullOrBlank()
-    if (supportedMethods.isEmpty()) return if (hasSecret) "client_secret_post" else "none"
-    if (hasSecret && "client_secret_basic" in supportedMethods) return "client_secret_basic"
-    if (hasSecret && "client_secret_post" in supportedMethods) return "client_secret_post"
-    return if ("none" in supportedMethods) "none" else if (hasSecret) "client_secret_post" else "none"
-}
-
-private suspend fun postOAuthTokenRequest(
-    client: HttpClient,
-    tokenUrl: String,
-    headers: Map<String, String>,
-    params: Map<String, String>,
-): OAuthTokens {
-    val response = client.request(tokenUrl) {
-        method = HttpMethod.Post
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(params.oauthFormBody())
-    }
-    if (response.status.value !in 200..299) {
-        throw MCPClientError("OAuth token request failed (${response.status.value}): ${response.bodyAsText()}")
-    }
-    return mcpJson.decodeFromString(response.bodyAsText())
-}
-
-private fun Map<String, String>.oauthFormBody(): String =
-    entries.joinToString("&") { (key, value) -> "${urlComponent(key)}=${urlComponent(value)}" }
-
-private val mcpSha256K = intArrayOf(
-    0x428a2f98, 0x71374491, -0x4a3f0431, -0x164a245b, 0x3956c25b, 0x59f111f1, -0x6dc07d5c, -0x54e3a12b,
-    -0x27f85568, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, -0x7f214e02, -0x6423f959, -0x3e640e8c,
-    -0x1b64963f, -0x1041b87a, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-    -0x67c1aeae, -0x57ce3993, -0x4ffcd838, -0x40a68039, -0x391ff40d, -0x2a586eb9, 0x06ca6351, 0x14292967,
-    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, -0x7e3d36d2, -0x6d8dd37b,
-    -0x5d40175f, -0x57e599b5, -0x3db47490, -0x3893ae5d, -0x2e6d17e7, -0x2966f9dc, -0xbf1ca7b, 0x106aa070,
-    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-    0x748f82ee, 0x78a5636f, -0x7b3787ec, -0x7338fdf8, -0x6f410006, -0x5baf9315, -0x41065c09, -0x398e870e,
-)
-
-private fun mcpSha256(input: ByteArray): ByteArray {
-    var h0 = 0x6a09e667
-    var h1 = -0x4498517b
-    var h2 = 0x3c6ef372
-    var h3 = -0x5ab00ac6
-    var h4 = 0x510e527f
-    var h5 = -0x64fa9774
-    var h6 = 0x1f83d9ab
-    var h7 = 0x5be0cd19
-    val bitLength = input.size.toLong() * 8L
-    val paddingLength = ((56 - (input.size + 1) % 64) + 64) % 64
-    val padded = ByteArray(input.size + 1 + paddingLength + 8)
-    input.copyInto(padded)
-    padded[input.size] = 0x80.toByte()
-    for (index in 0 until 8) {
-        padded[padded.size - 1 - index] = (bitLength ushr (index * 8)).toByte()
-    }
-    val w = IntArray(64)
-    for (chunkStart in padded.indices step 64) {
-        for (index in 0 until 16) {
-            val offset = chunkStart + index * 4
-            w[index] = ((padded[offset].toInt() and 0xff) shl 24) or
-                ((padded[offset + 1].toInt() and 0xff) shl 16) or
-                ((padded[offset + 2].toInt() and 0xff) shl 8) or
-                (padded[offset + 3].toInt() and 0xff)
-        }
-        for (index in 16 until 64) {
-            val s0 = mcpRotr(w[index - 15], 7) xor mcpRotr(w[index - 15], 18) xor (w[index - 15] ushr 3)
-            val s1 = mcpRotr(w[index - 2], 17) xor mcpRotr(w[index - 2], 19) xor (w[index - 2] ushr 10)
-            w[index] = w[index - 16] + s0 + w[index - 7] + s1
-        }
-        var a = h0
-        var b = h1
-        var c = h2
-        var d = h3
-        var e = h4
-        var f = h5
-        var g = h6
-        var h = h7
-        for (index in 0 until 64) {
-            val s1 = mcpRotr(e, 6) xor mcpRotr(e, 11) xor mcpRotr(e, 25)
-            val ch = (e and f) xor (e.inv() and g)
-            val temp1 = h + s1 + ch + mcpSha256K[index] + w[index]
-            val s0 = mcpRotr(a, 2) xor mcpRotr(a, 13) xor mcpRotr(a, 22)
-            val maj = (a and b) xor (a and c) xor (b and c)
-            val temp2 = s0 + maj
-            h = g
-            g = f
-            f = e
-            e = d + temp1
-            d = c
-            c = b
-            b = a
-            a = temp1 + temp2
-        }
-        h0 += a
-        h1 += b
-        h2 += c
-        h3 += d
-        h4 += e
-        h5 += f
-        h6 += g
-        h7 += h
-    }
-    val out = ByteArray(32)
-    intArrayOf(h0, h1, h2, h3, h4, h5, h6, h7).forEachIndexed { index, value ->
-        out[index * 4] = (value ushr 24).toByte()
-        out[index * 4 + 1] = (value ushr 16).toByte()
-        out[index * 4 + 2] = (value ushr 8).toByte()
-        out[index * 4 + 3] = value.toByte()
-    }
-    return out
-}
-
-private fun mcpRotr(value: Int, bits: Int): Int = (value ushr bits) or (value shl (32 - bits))
-
+/** @since 0.3.0-beta01 */
 public enum class MCPTransportKind {
     Http,
     Sse,
 }
 
-public data class MCPTransportConfig(
-    val type: MCPTransportKind,
-    val url: String,
-    val headers: Map<String, String> = emptyMap(),
-    val authProvider: OAuthClientProvider? = null,
-    val engineContext: CoroutineContext = Dispatchers.Default,
+/** @since 0.3.0-beta01 */
+public class MCPTransportConfig internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val type: MCPTransportKind,
+    /** @since 0.3.0-beta01 */
+    public val url: String,
+    /** @since 0.3.0-beta01 */
+    public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
+    public val authProvider: OAuthClientProvider? = null,
+    /** @since 0.3.0-beta01 */
+    public val engineContext: CoroutineContext = Dispatchers.Default,
+    /** @since 0.3.0-beta01 */
+    public val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions {},
 )
 
-public fun createMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTransport =
+/** @since 0.3.0-beta01 */
+public class MCPTransportConfigBuilder {
+    private var type: MCPTransportKind? = null
+    private var url: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var authProvider: OAuthClientProvider? = null
+    private var engineContext: CoroutineContext = Dispatchers.Default
+    private var reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions()
+
+    /** @since 0.3.0-beta01 */
+    public fun type(value: MCPTransportKind): MCPTransportConfigBuilder {
+        type = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun url(value: String): MCPTransportConfigBuilder {
+        url = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun headers(value: Map<String, String>): MCPTransportConfigBuilder {
+        headers = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun authProvider(value: OAuthClientProvider?): MCPTransportConfigBuilder {
+        authProvider = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun engineContext(value: CoroutineContext): MCPTransportConfigBuilder {
+        engineContext = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun reconnectionOptions(value: MCPReconnectionOptions): MCPTransportConfigBuilder {
+        reconnectionOptions = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): MCPTransportConfig =
+        MCPTransportConfig(
+            type = requireNotNull(type) { "MCPTransportConfig.type is required" },
+            url = requireNotNull(url) { "MCPTransportConfig.url is required" },
+            headers = headers,
+            authProvider = authProvider,
+            engineContext = engineContext,
+            reconnectionOptions = reconnectionOptions,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun MCPTransportConfig(
+    block: MCPTransportConfigBuilder.() -> Unit = {},
+): MCPTransportConfig =
+    MCPTransportConfigBuilder().apply(block).build()
+
+@Poko
+/** @since 0.3.0-beta01 */
+public class MCPReconnectionOptions internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val initialReconnectionDelayMillis: Long = 1_000,
+    /** @since 0.3.0-beta01 */
+    public val reconnectionDelayGrowFactor: Double = 1.5,
+    /** @since 0.3.0-beta01 */
+    public val maxReconnectionDelayMillis: Long = 30_000,
+    /** @since 0.3.0-beta01 */
+    public val maxRetries: Int = 2,
+    internal val reconnectDelayer: MCPReconnectDelayer = DefaultMCPReconnectDelayer,
+)
+
+internal fun interface MCPReconnectDelayer {
+    suspend fun delay(delayMillis: Long)
+}
+
+private object DefaultMCPReconnectDelayer : MCPReconnectDelayer {
+    override suspend fun delay(delayMillis: Long) {
+        if (delayMillis > 0L) kotlinx.coroutines.delay(delayMillis)
+    }
+}
+
+/** @since 0.3.0-beta01 */
+public class MCPReconnectionOptionsBuilder {
+    private var initialReconnectionDelayMillis: Long = 1_000
+    private var reconnectionDelayGrowFactor: Double = 1.5
+    private var maxReconnectionDelayMillis: Long = 30_000
+    private var maxRetries: Int = 2
+
+    /** @since 0.3.0-beta01 */
+    public fun initialReconnectionDelayMillis(value: Long): MCPReconnectionOptionsBuilder {
+        initialReconnectionDelayMillis = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun reconnectionDelayGrowFactor(value: Double): MCPReconnectionOptionsBuilder {
+        reconnectionDelayGrowFactor = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun maxReconnectionDelayMillis(value: Long): MCPReconnectionOptionsBuilder {
+        maxReconnectionDelayMillis = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun maxRetries(value: Int): MCPReconnectionOptionsBuilder {
+        maxRetries = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): MCPReconnectionOptions =
+        MCPReconnectionOptions(
+            initialReconnectionDelayMillis = initialReconnectionDelayMillis,
+            reconnectionDelayGrowFactor = reconnectionDelayGrowFactor,
+            maxReconnectionDelayMillis = maxReconnectionDelayMillis,
+            maxRetries = maxRetries,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun MCPReconnectionOptions(
+    block: MCPReconnectionOptionsBuilder.() -> Unit = {},
+): MCPReconnectionOptions =
+    MCPReconnectionOptionsBuilder().apply(block).build()
+
+@OptIn(InternalAiSdkApi::class)
+/** @since 0.3.0-beta01 */
+public fun CreateMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTransport =
     when (config.type) {
         MCPTransportKind.Http ->
-            HttpMCPTransport(client, config.url, config.headers, config.authProvider, config.engineContext)
+            HttpMCPTransport(
+                client,
+                config.url,
+                config.headers,
+                config.authProvider,
+                config.engineContext,
+                config.reconnectionOptions,
+            )
         MCPTransportKind.Sse ->
             SseMCPTransport(client, config.url, config.headers, config.authProvider, config.engineContext)
     }
@@ -1704,37 +1270,122 @@ internal class McpConnectionLifecycle {
             }
         }
     }
+
+    /**
+     * Cancel [job] and wait for it to finish — UNLESS the current coroutine *is*
+     * [job] (e.g. a user `onMessage`/`onClose` handler that calls `transport.close()`
+     * runs inside the reader coroutine). Joining yourself never completes, so in that
+     * case cancel without joining. Preserves the "reader is fully torn down before
+     * close returns" guarantee on the normal (external) close path.
+     */
+    suspend fun cancelAndJoinUnlessSelf(job: Job?) {
+        if (job == null) return
+        if (job === coroutineContext[Job]) job.cancel() else job.cancelAndJoin()
+    }
 }
 
-/**
- * Cancel [job] and wait for it to finish — UNLESS the current coroutine *is*
- * [job] (e.g. a user `onMessage`/`onClose` handler that calls `transport.close()`
- * runs inside the reader coroutine). Joining yourself never completes, so in that
- * case cancel without joining. Preserves the "reader is fully torn down before
- * close returns" guarantee on the normal (external) close path.
- */
-internal suspend fun cancelAndJoinUnlessSelf(job: Job?) {
-    if (job == null) return
-    if (job === coroutineContext[Job]) job.cancel() else job.cancelAndJoin()
+private class McpOAuthReauthorizer(
+    private val authProvider: OAuthClientProvider?,
+    private val serverUrl: String,
+    private val client: HttpClient,
+) {
+    private sealed interface Decision {
+        class Done(val result: AuthResult) : Decision
+        class Await(val result: CompletableDeferred<AuthResult>) : Decision
+        class Run(val result: CompletableDeferred<AuthResult>) : Decision
+    }
+
+    private val mutex = Mutex()
+    private var inFlight: CompletableDeferred<AuthResult>? = null
+
+    suspend fun reauthorizeAfter401(staleAccessToken: String?): AuthResult {
+        val provider = authProvider ?: return AuthResult.REDIRECT
+        val decision = mutex.withLock {
+            val currentAccessToken = provider.tokens()?.accessToken?.takeIf { it.isNotBlank() }
+            when {
+                staleAccessToken != null &&
+                    currentAccessToken != null &&
+                    currentAccessToken != staleAccessToken ->
+                    Decision.Done(AuthResult.AUTHORIZED)
+                inFlight?.isCompleted == false ->
+                    Decision.Await(requireNotNull(inFlight))
+                else -> {
+                    val result = CompletableDeferred<AuthResult>()
+                    inFlight = result
+                    Decision.Run(result)
+                }
+            }
+        }
+
+        return when (decision) {
+            is Decision.Done -> decision.result
+            is Decision.Await -> decision.result.await()
+            is Decision.Run -> runReauthorization(provider, decision.result)
+        }
+    }
+
+    private suspend fun runReauthorization(
+        provider: OAuthClientProvider,
+        result: CompletableDeferred<AuthResult>,
+    ): AuthResult {
+        try {
+            val authResult = McpAuth.auth(
+                provider,
+                AuthOptions {
+                    serverUrl(serverUrl)
+                    client(client)
+                },
+                reauthorize = true,
+            )
+            result.complete(authResult)
+            return authResult
+        } catch (error: Throwable) {
+            result.completeExceptionally(error)
+            throw error
+        } finally {
+            mutex.withLock {
+                if (inFlight === result) inFlight = null
+            }
+        }
+    }
+
+    companion object {
+        fun bearerAccessToken(headers: Map<String, String>): String? =
+            headers.entries.firstOrNull { it.key.equals(HttpHeaders.Authorization, ignoreCase = true) }
+                ?.value
+                ?.removePrefix("Bearer ")
+                ?.takeIf { it.isNotBlank() }
+    }
 }
 
+@InternalAiSdkApi
+/** @since 0.3.0-beta01 */
 public class HttpMCPTransport(
     private val client: HttpClient,
     private val url: String,
     private val headers: Map<String, String> = emptyMap(),
     private val authProvider: OAuthClientProvider? = null,
     private val engineContext: CoroutineContext = Dispatchers.Default,
+    private val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions {},
 ) : MCPTransport {
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
-    override var protocolVersion: String? = null
+    private var onClose: (() -> Unit)? = null
+    private var onError: ((Throwable) -> Unit)? = null
+    private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
+    private val protocolVersion = AtomicReference<String?>(null)
+
+    override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
+    override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
+    override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
+    override fun setProtocolVersion(version: String?) { protocolVersion.store(version) }
 
     private val lifecycle = McpConnectionLifecycle()
-    private var sessionId: String? = null
+    private val sessionId = AtomicReference<String?>(null)
+    private val lastInboundEventId = AtomicReference<String?>(null)
     private var inboundJob: Job? = null
     private var inboundRetryRequested: Boolean = false
+    private val inboundReconnectAttempts = intArrayOf(0)
     private val inboundMutex = Mutex()
+    private val oauthReauthorizer = McpOAuthReauthorizer(authProvider, url, client)
 
     override suspend fun start() {
         // begin() atomically claims Idle→Active and is the already-started guard.
@@ -1754,8 +1405,9 @@ public class HttpMCPTransport(
         // Atomically claim the close (idempotent; no double-close TOCTOU) — only
         // the winning caller runs the teardown below.
         val (connectionScope, _) = lifecycle.close() ?: return
+        var cancellation: CancellationException? = null
         try {
-            sessionId?.let { session ->
+            sessionId.load()?.let { session ->
                 withTimeoutOrNull(MCP_CLOSE_DELETE_TIMEOUT_MS) {
                     client.request(url) {
                         method = HttpMethod.Delete
@@ -1765,45 +1417,55 @@ public class HttpMCPTransport(
                 }
             }
         } catch (error: CancellationException) {
-            throw error
+            // Capture and rethrow only after local teardown runs: once close() has won
+            // the lifecycle transition, the inbound job/scope MUST be released even when
+            // the caller's coroutine is cancelled mid-DELETE, else the reader leaks.
+            cancellation = error
         } catch (_: Throwable) {
             // Best-effort session teardown; ignore transport errors on close.
+        } finally {
+            withContext(NonCancellable) {
+                val job = inboundMutex.withLock {
+                    inboundRetryRequested = false
+                    inboundReconnectAttempts[0] = 0
+                    inboundJob.also { inboundJob = null }
+                }
+                connectionScope.cancel()
+                lifecycle.cancelAndJoinUnlessSelf(job)
+                onClose?.invoke()
+            }
         }
-        val job = inboundMutex.withLock {
-            inboundRetryRequested = false
-            inboundJob.also { inboundJob = null }
-        }
-        connectionScope.cancel()
-        cancelAndJoinUnlessSelf(job)
-        onClose?.invoke()
+        cancellation?.let { throw it }
     }
 
     private suspend fun postMessage(message: JSONRPCMessage, triedAuth: Boolean) {
+        val requestHeaders = mcpCommonHeaders(
+            mapOf(
+                HttpHeaders.ContentType to ContentType.Application.Json.toString(),
+                HttpHeaders.Accept to "application/json, text/event-stream",
+            ),
+        )
+        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
         val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
-            mcpCommonHeaders(
-                mapOf(
-                    HttpHeaders.ContentType to ContentType.Application.Json.toString(),
-                    HttpHeaders.Accept to "application/json, text/event-stream",
-                ),
-            ).forEach { (name, value) -> header(name, value) }
+            requestHeaders.forEach { (name, value) -> header(name, value) }
             setBody(message.toJsonString())
         }
-        response.mcpSessionId()?.let { sessionId = it }
+        mcpSessionId(response)?.let { sessionId.store(it) }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
+            if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
             postMessage(message, triedAuth = true)
             return
         }
-        if (response.status.value == 202 || message is JSONRPCNotification) {
-            ensureInboundSse()
-            return
-        }
+        // Surface transport errors for BOTH requests and notifications. This check must run
+        // before the 202/notification short-circuit below, otherwise a non-2xx response to a
+        // notification POST (e.g. a rejected notifications/initialized handshake) would be
+        // silently swallowed and init() would report success on an uninitialized session.
         if (response.status.value !in 200..299) {
-            val text = response.bodyAsText()
+            val text = with(HttpTransport) { response.bodyAsTextCapped(url) }
             val hint = if (response.status.value == HTTP_NOT_FOUND) {
                 ". This server does not support HTTP transport. Try using `sse` transport instead"
             } else {
@@ -1816,18 +1478,17 @@ public class HttpMCPTransport(
             onError?.invoke(error)
             throw error
         }
+        if (response.status.value == 202 || message is JSONRPCNotification) {
+            ensureInboundSse()
+            return
+        }
         val contentType = response.headers[HttpHeaders.ContentType].orEmpty()
         when {
             contentType.contains("application/json", ignoreCase = true) -> {
-                response.bodyAsText().mcpJsonRpcMessages().forEach { onMessage?.invoke(it) }
+                val text = with(HttpTransport) { response.bodyAsTextCapped(url) }
+                JSONRPCMessage.fromJsonBatch(text).forEach { onMessage?.invoke(it) }
             }
-            contentType.contains("text/event-stream", ignoreCase = true) -> {
-                processMcpSse(response.bodyAsChannel()) { event ->
-                    if (event.event == "message") {
-                        onMessage?.invoke(parseJSONRPCMessage(event.data))
-                    }
-                }
-            }
+            contentType.contains("text/event-stream", ignoreCase = true) -> launchPostResponseSse(response)
             else -> {
                 val error = MCPClientError("MCP HTTP Transport Error: Unexpected content type: $contentType")
                 onError?.invoke(error)
@@ -1836,28 +1497,97 @@ public class HttpMCPTransport(
         }
     }
 
-    private suspend fun ensureInboundSse() {
+    // A POST may be answered with an SSE stream that stays open until the server has
+    // streamed its response(s). Parsing it inline would block send() — and therefore
+    // the caller's request — until the stream closes. Launch the parse on the
+    // connection scope (the same way readInboundSse() is launched) and return
+    // immediately: the background reader delivers the response via onMessage,
+    // completing the caller's awaiting deferred. Mirrors the reference's non-blocking
+    // `processEvents(); return;`.
+    private fun launchPostResponseSse(response: HttpResponse) {
+        val activeScope = lifecycle.scopeOrNull() ?: return
+        activeScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            try {
+                McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+                    if (event.event == "message") {
+                        // Isolate per-message handling (mirrors readInboundSse): a malformed/
+                        // unknown-ID frame is a NON-fatal protocol error routed to onError, not
+                        // an unwind that kills the rest of the stream.
+                        try {
+                            onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                        } catch (error: Throwable) {
+                            if (error is CancellationException) throw error
+                            onError?.invoke(error)
+                        }
+                    }
+                }
+            } catch (error: Throwable) {
+                if (error is CancellationException) throw error
+                if (lifecycle.isActive) onError?.invoke(error)
+            }
+        }
+    }
+
+    private suspend fun ensureInboundSse(resetReconnectAttempts: Boolean = true) {
         val activeScope = lifecycle.scopeOrNull() ?: return
         inboundMutex.withLock {
             val current = inboundJob
             if (current == null || current.isCompleted) {
                 inboundRetryRequested = false
-                inboundJob = activeScope.launch(start = CoroutineStart.UNDISPATCHED) { readInboundSse() }
+                if (resetReconnectAttempts) inboundReconnectAttempts[0] = 0
+                inboundJob = activeScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    readInboundSse(includeLastEventId = !resetReconnectAttempts)
+                }
             } else {
                 inboundRetryRequested = true
             }
         }
     }
 
-    private suspend fun readInboundSse() {
+    private enum class InboundSseCompletion {
+        Clean,
+        Error,
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private suspend fun readInboundSse(includeLastEventId: Boolean) {
+        var completion = InboundSseCompletion.Clean
         try {
-            val response = client.request(url) {
+            val firstHeaders = mcpCommonHeaders(
+                linkedMapOf(HttpHeaders.Accept to "text/event-stream").apply {
+                    if (includeLastEventId) {
+                        lastInboundEventId.load()?.takeIf { it.isNotEmpty() }?.let {
+                            put(MCP_LAST_EVENT_ID_HEADER, it)
+                        }
+                    }
+                },
+            )
+            val firstAccessToken = McpOAuthReauthorizer.bearerAccessToken(firstHeaders)
+            val firstResponse = client.request(url) {
                 method = HttpMethod.Get
-                mcpCommonHeaders(
-                    mapOf(HttpHeaders.Accept to "text/event-stream")
-                ).forEach { (name, value) -> header(name, value) }
+                firstHeaders.forEach { (name, value) -> header(name, value) }
             }
-            response.mcpSessionId()?.let { sessionId = it }
+            val response = if (firstResponse.status.value == 401 && authProvider != null) {
+                if (oauthReauthorizer.reauthorizeAfter401(firstAccessToken) != AuthResult.AUTHORIZED) {
+                    throw UnauthorizedError()
+                }
+                val retryHeaders = mcpCommonHeaders(
+                    linkedMapOf(HttpHeaders.Accept to "text/event-stream").apply {
+                        if (includeLastEventId) {
+                            lastInboundEventId.load()?.takeIf { it.isNotEmpty() }?.let {
+                                put(MCP_LAST_EVENT_ID_HEADER, it)
+                            }
+                        }
+                    },
+                )
+                client.request(url) {
+                    method = HttpMethod.Get
+                    retryHeaders.forEach { (name, value) -> header(name, value) }
+                }
+            } else {
+                firstResponse
+            }
+            mcpSessionId(response)?.let { sessionId.store(it) }
             if (response.status.value == 405) return
             if (response.status.value !in 200..299) {
                 val error =
@@ -1868,42 +1598,122 @@ public class HttpMCPTransport(
                 onError?.invoke(error)
                 return
             }
-            processMcpSse(response.bodyAsChannel()) { event ->
+            val receivedEvent = booleanArrayOf(false)
+            McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+                event.id?.let { id -> lastInboundEventId.store(id.takeIf { it.isNotEmpty() }) }
+                if (!receivedEvent[0]) {
+                    receivedEvent[0] = true
+                    inboundMutex.withLock { inboundReconnectAttempts[0] = 0 }
+                }
                 if (event.event == "message") {
-                    onMessage?.invoke(parseJSONRPCMessage(event.data))
+                    // Isolate per-message handling (mirrors the stdio reader): a malformed/unknown-ID
+                    // frame is a NON-fatal protocol error routed to onError — it must not unwind
+                    // parseStream and kill the inbound reader (dropping all later messages).
+                    try {
+                        onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                    } catch (error: Throwable) {
+                        if (error is CancellationException) throw error
+                        onError?.invoke(error)
+                    }
                 }
             }
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
+            completion = InboundSseCompletion.Error
             if (lifecycle.isActive) onError?.invoke(error)
         } finally {
+            finishInboundSse(completion)
+        }
+    }
+
+    private suspend fun finishInboundSse(completion: InboundSseCompletion) {
+        val currentJob = coroutineContext[Job]
+        var restartImmediately = false
+        var reconnectDelayMillis: Long? = null
+        var maxRetriesExceeded: Int? = null
+        inboundMutex.withLock {
+            when {
+                !lifecycle.isActive -> {
+                    inboundRetryRequested = false
+                    inboundReconnectAttempts[0] = 0
+                    inboundJob = null
+                }
+                inboundRetryRequested -> {
+                    inboundRetryRequested = false
+                    inboundReconnectAttempts[0] = 0
+                    inboundJob = null
+                    restartImmediately = true
+                }
+                completion == InboundSseCompletion.Error -> {
+                    reconnectDelayMillis = nextInboundReconnectDelayMillis()
+                    if (reconnectDelayMillis == null) {
+                        inboundJob = null
+                        if (reconnectionOptions.maxRetries > 0) {
+                            maxRetriesExceeded = reconnectionOptions.maxRetries
+                        }
+                    }
+                }
+                else -> {
+                    inboundReconnectAttempts[0] = 0
+                    inboundJob = null
+                }
+            }
+        }
+        maxRetriesExceeded?.let { maxRetries ->
+            onError?.invoke(
+                MCPClientError("MCP HTTP Transport Error: Maximum reconnection attempts ($maxRetries) exceeded.")
+            )
+        }
+        if (restartImmediately) {
+            ensureInboundSse(resetReconnectAttempts = true)
+            return
+        }
+        reconnectDelayMillis?.let { delayMillis ->
+            reconnectionOptions.reconnectDelayer.delay(delayMillis)
             var restart = false
             inboundMutex.withLock {
-                inboundJob = null
-                if (lifecycle.isActive && inboundRetryRequested) {
-                    inboundRetryRequested = false
+                if (lifecycle.isActive && inboundJob === currentJob) {
+                    inboundJob = null
                     restart = true
                 }
             }
             if (restart) {
-                ensureInboundSse()
+                ensureInboundSse(resetReconnectAttempts = false)
             }
         }
+    }
+
+    private fun nextInboundReconnectDelayMillis(): Long? {
+        val maxRetries = reconnectionOptions.maxRetries
+        if (maxRetries <= 0 || inboundReconnectAttempts[0] >= maxRetries) return null
+        val initial = reconnectionOptions.initialReconnectionDelayMillis.coerceAtLeast(0)
+        val factor = reconnectionOptions.reconnectionDelayGrowFactor
+            .takeIf { it.isFinite() && it > 0.0 }
+            ?: 1.0
+        val maxDelay = reconnectionOptions.maxReconnectionDelayMillis.coerceAtLeast(0)
+        val delayMillis = (initial * factor.pow(inboundReconnectAttempts[0])).roundToLong()
+        inboundReconnectAttempts[0] += 1
+        return delayMillis.coerceAtMost(maxDelay)
     }
 
     private suspend fun mcpCommonHeaders(base: Map<String, String>): Map<String, String> {
         val values = linkedMapOf<String, String?>()
         headers.forEach { (key, value) -> values[key] = value }
         base.forEach { (key, value) -> values[key] = value }
-        values["mcp-protocol-version"] = protocolVersion ?: LATEST_PROTOCOL_VERSION
-        sessionId?.let { values["mcp-session-id"] = it }
+        values["mcp-protocol-version"] = protocolVersion.load() ?: LATEST_PROTOCOL_VERSION
+        sessionId.load()?.let { values["mcp-session-id"] = it }
         authProvider?.tokens()?.accessToken?.takeIf {
             it.isNotBlank()
         }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }
-        return withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
+        return ProviderHeaders.withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
     }
+
+    private fun mcpSessionId(response: HttpResponse): String? =
+        response.headers["mcp-session-id"]?.takeIf { it.isNotBlank() }
 }
 
+@InternalAiSdkApi
+/** @since 0.3.0-beta01 */
 public class SseMCPTransport(
     private val client: HttpClient,
     private val url: String,
@@ -1911,13 +1721,19 @@ public class SseMCPTransport(
     private val authProvider: OAuthClientProvider? = null,
     private val engineContext: CoroutineContext = Dispatchers.Default,
 ) : MCPTransport {
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
-    override var protocolVersion: String? = null
+    private var onClose: (() -> Unit)? = null
+    private var onError: ((Throwable) -> Unit)? = null
+    private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
+    private val protocolVersion = AtomicReference<String?>(null)
+
+    override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
+    override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
+    override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
+    override fun setProtocolVersion(version: String?) { protocolVersion.store(version) }
 
     private val lifecycle = McpConnectionLifecycle()
-    private var endpoint: String? = null
+    private val endpoint = AtomicReference<String?>(null)
+    private val oauthReauthorizer = McpOAuthReauthorizer(authProvider, url, client)
 
     // SSE handshake + per-event dispatch + reader teardown; the branchiness is
     // inherent to a transport's start path.
@@ -1944,18 +1760,29 @@ public class SseMCPTransport(
                         "MCP SSE Transport Error: ${response.status.value} ${response.status.description}$hint",
                     )
                 }
-                processMcpSse(response.bodyAsChannel()) { event ->
+                McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
                     when (event.event) {
                         "endpoint" -> {
-                            endpoint = resolveMcpUrl(event.data, url).also { resolved ->
-                                if (mcpOrigin(resolved) != mcpOrigin(url)) {
-                                    throw MCPClientError("MCP SSE Transport Error: Endpoint origin does not match connection origin: ${mcpOrigin(resolved)}")
-                                }
+                            val resolvedEndpoint = McpUrl.resolve(event.data, url)
+                            if (McpUrl.origin(resolvedEndpoint) != McpUrl.origin(url)) {
+                                throw MCPClientError(
+                                    "MCP SSE Transport Error: Endpoint origin does not " +
+                                        "match connection origin: ${McpUrl.origin(resolvedEndpoint)}",
+                                )
                             }
+                            endpoint.store(resolvedEndpoint)
                             established = true
                             if (!ready.isCompleted) ready.complete(Unit)
                         }
-                        "message" -> onMessage?.invoke(parseJSONRPCMessage(event.data))
+                        // Isolate per-message handling (mirrors the stdio reader): a malformed/
+                        // unknown-ID frame is a NON-fatal protocol error routed to onError. Only the
+                        // "message" branch is guarded — an "endpoint" handshake error stays fatal.
+                        "message" -> try {
+                            onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                        } catch (error: Throwable) {
+                            if (error is CancellationException) throw error
+                            onError?.invoke(error)
+                        }
                     }
                 }
             } catch (error: Throwable) {
@@ -1982,7 +1809,7 @@ public class SseMCPTransport(
         try {
             // Bound the handshake (wait for the SSE `endpoint` event) in real time
             // so an unresponsive server can't hang start() forever; runTest-safe.
-            withRealTimeout(MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS) { ready.await() }
+            HttpTransport.withRealTimeout(MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS) { ready.await() }
         } catch (error: Throwable) {
             // Pre-handshake failure (incl. handshake timeout): the reader's finally
             // returns the lifecycle to Idle (startable again); join it so cleanup
@@ -1993,14 +1820,14 @@ public class SseMCPTransport(
     }
 
     private suspend fun openSseConnection(triedAuth: Boolean): HttpResponse {
+        val requestHeaders = mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream"))
+        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
         val response = client.request(url) {
             method = HttpMethod.Get
-            mcpCommonHeaders(
-                mapOf(HttpHeaders.Accept to "text/event-stream")
-            ).forEach { (name, value) -> header(name, value) }
+            requestHeaders.forEach { (name, value) -> header(name, value) }
         }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
+            if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
             return openSseConnection(triedAuth = true)
@@ -2014,27 +1841,30 @@ public class SseMCPTransport(
     // returning 401 after a successful auth() must not recurse until stack overflow.
     @Suppress("ThrowsCount")
     private suspend fun sendInternal(message: JSONRPCMessage, triedAuth: Boolean) {
-        val destination = endpoint ?: throw MCPClientError("MCP SSE Transport Error: Not connected")
+        val destination = endpoint.load() ?: throw MCPClientError("MCP SSE Transport Error: Not connected")
+        val requestHeaders = mcpCommonHeaders(
+            mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString())
+        )
+        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
         val response = client.request(destination) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
-            mcpCommonHeaders(
-                mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString())
-            ).forEach { (name, value) -> header(name, value) }
+            requestHeaders.forEach { (name, value) -> header(name, value) }
             setBody(message.toJsonString())
         }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
+            if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
             sendInternal(message, triedAuth = true)
             return
         }
         if (response.status.value !in 200..299) {
+            val text = with(HttpTransport) { response.bodyAsTextCapped(destination) }
             val error =
                 MCPClientError(
                     "MCP SSE Transport Error: POSTing to endpoint " +
-                        "(HTTP ${response.status.value}): ${response.bodyAsText()}"
+                        "(HTTP ${response.status.value}): $text",
                 )
             onError?.invoke(error)
             throw error
@@ -2042,12 +1872,12 @@ public class SseMCPTransport(
     }
 
     override suspend fun close() {
-        endpoint = null
+        endpoint.store(null)
         // close() wins Active→Closed and owns the teardown; if the reader already
         // died (Idle) this is a no-op and the reader fired onClose.
         val (scope, reader) = lifecycle.close() ?: return
         scope.cancel()
-        cancelAndJoinUnlessSelf(reader)
+        lifecycle.cancelAndJoinUnlessSelf(reader)
         onClose?.invoke()
     }
 
@@ -2055,88 +1885,160 @@ public class SseMCPTransport(
         val values = linkedMapOf<String, String?>()
         headers.forEach { (key, value) -> values[key] = value }
         base.forEach { (key, value) -> values[key] = value }
-        values["mcp-protocol-version"] = protocolVersion ?: LATEST_PROTOCOL_VERSION
+        values["mcp-protocol-version"] = protocolVersion.load() ?: LATEST_PROTOCOL_VERSION
         authProvider?.tokens()?.accessToken?.takeIf {
             it.isNotBlank()
         }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }
-        return withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
+        return ProviderHeaders.withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
     }
 }
 
-private data class McpSseEvent(
+internal data class McpSseFrame(
     val event: String,
     val data: String,
     val id: String? = null,
-)
+) {
+    // Per-frame accumulator for the SSE line parser. Holds the mutable
+    // event/id/data state so the companion's parseStream stays var-free.
+    private class FrameBuffer {
+        private var eventName: String = "message"
+        private var eventId: String? = null
+        private val data: MutableList<String> = mutableListOf()
 
-private suspend fun processMcpSse(channel: ByteReadChannel, onEvent: suspend (McpSseEvent) -> Unit) {
-    var eventName = "message"
-    var eventId: String? = null
-    val data = mutableListOf<String>()
+        fun setEvent(value: String) { eventName = value }
+        fun setId(value: String) { eventId = value }
 
-    suspend fun flush() {
-        if (data.isEmpty()) return
-        onEvent(McpSseEvent(eventName, data.joinToString("\n"), eventId))
-        eventName = "message"
-        eventId = null
-        data.clear()
-    }
-
-    while (true) {
-        val line = channel.readLine() ?: break
-        when {
-            line.isEmpty() -> flush()
-            line.startsWith("event:") -> eventName = line.removePrefix("event:").trimStart()
-            line.startsWith("data:") -> {
-                if (data.size >= MCP_SSE_MAX_DATA_LINES) {
-                    data.clear()
-                    eventName = "message"
-                    eventId = null
-                    throw MCPClientError(
-                        "MCP SSE Transport Error: SSE event exceeded " +
-                            "$MCP_SSE_MAX_DATA_LINES data lines; possible malformed stream"
-                    )
-                }
-                data += line.removePrefix("data:").trimStart()
+        fun addData(value: String) {
+            if (data.size >= MCP_SSE_MAX_DATA_LINES) {
+                reset()
+                throw MCPClientError(
+                    "MCP SSE Transport Error: SSE event exceeded " +
+                        "$MCP_SSE_MAX_DATA_LINES data lines; possible malformed stream"
+                )
             }
-            line.startsWith("id:") -> eventId = line.removePrefix("id:").trimStart()
+            data += value
+        }
+
+        suspend fun flush(onEvent: suspend (McpSseFrame) -> Unit) {
+            if (data.isEmpty()) return
+            onEvent(McpSseFrame(eventName, data.joinToString("\n"), eventId))
+            reset()
+        }
+
+        private fun reset() {
+            eventName = "message"
+            eventId = null
+            data.clear()
         }
     }
-    flush()
-}
 
-private fun String.mcpJsonRpcMessages(): List<JSONRPCMessage> {
-    val element = mcpJson.parseToJsonElement(this)
-    return when (element) {
-        is JsonArray -> element.map { parseJSONRPCMessage(it.toString()) }
-        else -> listOf(parseJSONRPCMessage(element.toString()))
+    internal companion object {
+        suspend fun parseStream(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
+            val frame = FrameBuffer()
+            while (true) {
+                val line = channel.readLine() ?: break
+                when {
+                    line.isEmpty() -> frame.flush(onEvent)
+                    line.startsWith("event:") -> frame.setEvent(line.removePrefix("event:").trimStart())
+                    line.startsWith("data:") -> frame.addData(line.removePrefix("data:").trimStart())
+                    line.startsWith("id:") -> frame.setId(line.removePrefix("id:").trimStart())
+                }
+            }
+            frame.flush(onEvent)
+        }
+
+        /**
+         * [parseStream] that ALWAYS releases the channel on EOF/error/cancel — on some Ktor engines
+         * the connection only closes when the body channel is explicitly cancelled (mirrors
+         * HttpTransport.streamSse). Used by the MCP SSE read sites so the release isn't duplicated.
+         */
+        suspend fun parseStreamReleasing(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
+            try {
+                parseStream(channel, onEvent)
+            } finally {
+                channel.cancel(null)
+            }
+        }
     }
 }
 
-private fun HttpResponse.mcpSessionId(): String? =
-    headers["mcp-session-id"]?.takeIf { it.isNotBlank() }
+/** URL origin/relative-resolution helpers shared by the SSE transport and the OAuth flow. */
+internal object McpUrl {
+    fun resolve(value: String, base: String): String {
+        if (value.startsWith("http://") || value.startsWith("https://")) return value
+        val origin = origin(base)
+        if (value.startsWith("/")) return origin + value
+        return base.substringBeforeLast('/', missingDelimiterValue = origin).trimEnd('/') + "/" + value
+    }
 
-private fun resolveMcpUrl(value: String, base: String): String {
-    if (value.startsWith("http://") || value.startsWith("https://")) return value
-    val origin = mcpOrigin(base)
-    if (value.startsWith("/")) return origin + value
-    return base.substringBeforeLast('/', missingDelimiterValue = origin).trimEnd('/') + "/" + value
-}
-
-private fun mcpOrigin(url: String): String {
-    val schemeEnd = url.indexOf("://")
-    val authorityStart = if (schemeEnd >= 0) schemeEnd + 3 else 0
-    val authorityEnd = url.indexOf('/', authorityStart).takeIf { it >= 0 } ?: url.length
-    return url.substring(0, authorityEnd)
+    fun origin(url: String): String {
+        val schemeEnd = url.indexOf("://")
+        val authorityStart = if (schemeEnd >= 0) schemeEnd + 3 else 0
+        val authorityEnd = url.indexOf('/', authorityStart).takeIf { it >= 0 } ?: url.length
+        return url.substring(0, authorityEnd)
+    }
 }
 
 @Serializable
-public data class StdioConfig(
-    val command: String,
-    val args: List<String> = emptyList(),
-    val env: Map<String, String> = emptyMap(),
-    val cwd: String? = null,
+@Poko
+/** @since 0.3.0-beta01 */
+public class StdioConfig internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val command: String,
+    /** @since 0.3.0-beta01 */
+    public val args: List<String> = emptyList(),
+    /** @since 0.3.0-beta01 */
+    public val env: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
+    public val cwd: String? = null,
 )
+
+/** @since 0.3.0-beta01 */
+public class StdioConfigBuilder {
+    private var command: String? = null
+    private var args: List<String> = emptyList()
+    private var env: Map<String, String> = emptyMap()
+    private var cwd: String? = null
+
+    /** @since 0.3.0-beta01 */
+    public fun command(value: String): StdioConfigBuilder {
+        command = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun args(value: List<String>): StdioConfigBuilder {
+        args = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun env(value: Map<String, String>): StdioConfigBuilder {
+        env = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun cwd(value: String?): StdioConfigBuilder {
+        cwd = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): StdioConfig =
+        StdioConfig(
+            command = requireNotNull(command) { "StdioConfig.command is required" },
+            args = args,
+            env = env,
+            cwd = cwd,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun StdioConfig(
+    block: StdioConfigBuilder.() -> Unit = {},
+): StdioConfig =
+    StdioConfigBuilder().apply(block).build()
 
 internal interface MCPStdioProcess {
     suspend fun readLine(): String?
@@ -2144,16 +2046,24 @@ internal interface MCPStdioProcess {
     suspend fun close()
 }
 
-internal expect fun createMCPStdioProcess(config: StdioConfig): MCPStdioProcess
+internal expect fun CreateMCPStdioProcess(config: StdioConfig): MCPStdioProcess
 
+@ExperimentalAiSdkApi
+/** @since 0.3.0-beta01 */
 public class Experimental_StdioMCPTransport(
+    /** @since 0.3.0-beta01 */
     public val config: StdioConfig,
     private val engineContext: CoroutineContext = Dispatchers.Default,
 ) : MCPTransport {
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
-    override var protocolVersion: String? = null
+    private var onClose: (() -> Unit)? = null
+    private var onError: ((Throwable) -> Unit)? = null
+    private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
+    private val protocolVersion = AtomicReference<String?>(null)
+
+    override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
+    override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
+    override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
+    override fun setProtocolVersion(version: String?) { protocolVersion.store(version) }
 
     private val lifecycle = McpConnectionLifecycle()
     private var process: MCPStdioProcess? = null
@@ -2161,7 +2071,18 @@ public class Experimental_StdioMCPTransport(
     override suspend fun start() {
         val readerScope = lifecycle.begin { CoroutineScope(SupervisorJob() + engineContext) }
             ?: throw MCPClientError("StdioMCPTransport already started.")
-        val started = createMCPStdioProcess(config)
+        // Close any pre-existing process before overwriting the field — a reconnect after the
+        // reader EOF'd would otherwise leak the prior child + its FDs.
+        process?.let { stale -> closeProcessPreservingCancellation(stale) }
+        val started = try {
+            CreateMCPStdioProcess(config)
+        } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
+            // Spawn failed (bad command/cwd/permissions) AFTER begin() already won Idle->Active: undo
+            // the transition and cancel the freshly built scope, else the transport is wedged Active
+            // (a later start() throws "already started") with a leaked scope. Rethrow the real cause.
+            lifecycle.onReaderExited()?.cancel()
+            throw error
+        }
         process = started
         lifecycle.setReader(
             readerScope.launch {
@@ -2169,7 +2090,7 @@ public class Experimental_StdioMCPTransport(
                     while (true) {
                         val line = started.readLine() ?: break
                         try {
-                            onMessage?.invoke(parseJSONRPCMessage(line))
+                            onMessage?.invoke(JSONRPCMessage.fromJson(line))
                         } catch (error: Throwable) {
                             if (error is CancellationException) throw error
                             onError?.invoke(error)
@@ -2179,11 +2100,17 @@ public class Experimental_StdioMCPTransport(
                     if (error is CancellationException) throw error
                     onError?.invoke(error)
                 } finally {
-                    // Reader/process exited. Release the lifecycle and fire onClose
-                    // unless close() already won the transition (it then owns onClose).
+                    // Reader/process exited (EOF or error). Release the lifecycle and, when this
+                    // reader owns the teardown, destroy the child + close its streams — the reader
+                    // exiting does NOT otherwise do so, leaking the process handle + FDs — then fire
+                    // onClose. If close() already won the transition it owns onClose.
                     lifecycle.onReaderExited()?.let { deadScope ->
-                        deadScope.cancel()
-                        onClose?.invoke()
+                        withContext(NonCancellable) {
+                            closeProcessForTeardown(started)
+                            deadScope.cancel()
+                            if (process === started) process = null
+                            onClose?.invoke()
+                        }
                     }
                 }
             },
@@ -2207,15 +2134,45 @@ public class Experimental_StdioMCPTransport(
         process = null
         if (handback == null) {
             // Reader already exited (or never started): just release the process.
-            p?.close()
+            withContext(NonCancellable) {
+                p?.let { closeProcessForTeardown(it) }
+            }
             return
         }
         val (scope, reader) = handback
+        // Local teardown is non-cancellable so a cancelled caller can't strand the
+        // reader job or skip onClose after close() won the lifecycle transition.
         // Cancel the scope, close the process to unblock a parked readLine, then
         // join — the ordering that prevents close() hanging on the blocking read.
-        scope.cancel()
-        p?.close()
-        cancelAndJoinUnlessSelf(reader)
-        onClose?.invoke()
+        withContext(NonCancellable) {
+            scope.cancel()
+            p?.let { closeProcessForTeardown(it) }
+            lifecycle.cancelAndJoinUnlessSelf(reader)
+            onClose?.invoke()
+        }
+    }
+
+    /**
+     * Close a stdio process, swallowing only non-cancellation failures. Cancellation
+     * is rethrown so structured concurrency is preserved (stdlib `runCatching` would
+     * capture it into a `Result.failure` instead). Member extension (not a top-level
+     * one) per the project's no-loose-top-level-function tenet.
+     */
+    private suspend fun closeProcessPreservingCancellation(process: MCPStdioProcess) {
+        try {
+            process.close()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            // Best-effort stdio teardown; the lifecycle owner still completes local cleanup.
+        }
+    }
+
+    private suspend fun closeProcessForTeardown(process: MCPStdioProcess) {
+        try {
+            process.close()
+        } catch (_: Throwable) {
+            // Teardown is already running in NonCancellable; process close failures are best-effort.
+        }
     }
 }

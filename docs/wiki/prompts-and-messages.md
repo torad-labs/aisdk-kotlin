@@ -9,23 +9,27 @@ history.
 Use a plain prompt for one-shot work:
 
 ```kotlin
-val result = generateText(
-    model = model,
-    prompt = "Summarize this release note in three bullets.",
-)
+val result = TextGenerator(model)
+    .generate(GenerationInput.Prompt("Summarize this release note in three bullets."))
+    .first()
 ```
 
-Use `system` for durable behavior instructions:
+Use `SystemMessage` for durable behavior instructions:
 
 ```kotlin
-val result = generateText(
-    model = model,
-    system = "You are a support engineer. Be specific and cite uncertainty.",
-    prompt = "The customer says uploads fail on mobile.",
-)
+val result = TextGenerator(model)
+    .generate(
+        GenerationInput.Messages(
+            GenerationInput.NonEmptyMessages.of(
+                SystemMessage("You are a support engineer. Be specific and cite uncertainty."),
+                UserMessage("The customer says uploads fail on mobile."),
+            ),
+        ),
+    )
+    .first()
 ```
 
-Prefer `system` over user-editable message history for policy, role, and
+Prefer `SystemMessage` over user-editable message history for policy, role, and
 format instructions.
 
 ## Message History
@@ -34,13 +38,15 @@ Use `messages` when the app owns conversation state:
 
 ```kotlin
 val messages = listOf(
-    systemMessage("Answer with short, testable steps."),
-    userMessage("How do I stream a response?"),
-    assistantMessage("Use streamTextResult when you need response adapters."),
-    userMessage("Show the server side shape."),
+    SystemMessage("Answer with short, testable steps."),
+    UserMessage("How do I stream a response?"),
+    AssistantMessage("Use streamResult when you need response adapters."),
+    UserMessage("Show the server side shape."),
 )
 
-val result = generateText(model = model, messages = messages)
+val result = TextGenerator(model)
+    .generate(GenerationInput.Messages(GenerationInput.NonEmptyMessages.from(messages)))
+    .first()
 ```
 
 `ModelMessage` has four roles: `System`, `User`, `Assistant`, and `Tool`.
@@ -64,10 +70,9 @@ val message = ModelMessage(
     ),
 )
 
-val result = generateText(
-    model = visionModel,
-    messages = listOf(message),
-)
+val result = TextGenerator(visionModel)
+    .generate(GenerationInput.Messages(GenerationInput.NonEmptyMessages.of(message)))
+    .first()
 ```
 
 Use content parts for any value you may need to render, validate, persist, or
@@ -79,22 +84,21 @@ When your host executes a tool outside the agent loop, write the result back as
 a tool message:
 
 ```kotlin
-val toolResult = toolMessage(
+val toolResult = ToolMessage(
     toolCallId = "call-123",
     toolName = "searchDocs",
     output = JsonPrimitive("Found 4 matching pages."),
 )
 
-val followUp = generateText(
-    model = model,
-    messages = previousMessages + toolResult,
-)
+val followUp = TextGenerator(model)
+    .generate(GenerationInput.Messages(GenerationInput.NonEmptyMessages.from(previousMessages + toolResult)))
+    .first()
 ```
 
 Approval responses use the same principle:
 
 ```kotlin
-val response = toolApprovalResponseMessage(
+val response = ToolApprovalResponseMessage(
     toolCallId = pending.toolCallId,
     approvalId = pending.approvalId,
     approved = true,
@@ -111,11 +115,11 @@ Use `UIMessage` for rendering and persistence in chat surfaces, then convert
 back before calling the model:
 
 ```kotlin
-val checked = safeValidateUIMessages(savedUiMessages)
+val checked = UiMessageStreams.safeValidateUIMessages(savedUiMessages)
 
 val modelMessages = when (checked) {
     is SafeValidateUIMessagesResult.Success ->
-        convertToModelMessages(checked.messages)
+        ModelMessageConversion.convertToModelMessages(checked.messages)
     is SafeValidateUIMessagesResult.Failure ->
         error("Stored chat history is invalid: ${checked.error.message}")
 }
@@ -129,15 +133,19 @@ an incomplete tool call means the persisted history is not safe to replay.
 Provider options can live on the call:
 
 ```kotlin
-val result = generateText(
-    model = model,
-    prompt = "Draft a migration summary.",
-    providerOptions = buildProviderOptions {
-        provider("openai") {
-            put("reasoningEffort", JsonPrimitive("medium"))
-        }
-    },
-)
+val config = CallConfig {
+    providerOptions(
+        ProviderOptions.ofPairs(
+            "openai" to buildJsonObject {
+                put("reasoningEffort", JsonPrimitive("medium"))
+            },
+        ),
+    )
+}
+
+val result = TextGenerator(model, config)
+    .generate(GenerationInput.Prompt("Draft a migration summary."))
+    .first()
 ```
 
 Use provider options sparingly and keep them near the provider boundary. If

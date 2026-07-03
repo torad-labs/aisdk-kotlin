@@ -1,15 +1,19 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /**
  * Validates the v6-aligned `presencePenalty` + `frequencyPenalty`
@@ -52,13 +56,13 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             presencePenalty = 0.2f,
             frequencyPenalty = 0.4f,
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         assertEquals(0.2f, capture.captured?.presencePenalty)
@@ -72,19 +76,19 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             presencePenalty = 0.2f,
             frequencyPenalty = 0.4f,
             prepareCall = {
-                AgentSettings(
-                    presencePenalty = 0.7f,
-                    frequencyPenalty = 0.9f,
-                )
+                AgentSettings {
+                    presencePenalty(0.7f)
+                    frequencyPenalty(0.9f)
+                }
             },
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         assertEquals(0.7f, capture.captured?.presencePenalty, "prepareCall wins over agent default")
@@ -98,14 +102,22 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             presencePenalty = 0.2f,
-            prepareCall = { AgentSettings(presencePenalty = 0.5f) },
-            prepareStep = { StepSettings(presencePenalty = 0.9f) },
+            prepareCall = {
+                AgentSettings {
+                    presencePenalty(0.5f)
+                }
+            },
+            prepareStep = {
+                StepSettings {
+                    presencePenalty(0.9f)
+                }
+            },
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         assertEquals(0.9f, capture.captured?.presencePenalty, "prepareStep wins over prepareCall + agent default")
@@ -118,12 +130,12 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, StructuredAnswer>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
-            output = outputObj(serializer(), name = "StructuredAnswer"),
+            tools = ToolSet(),
+            output = OutputObj(serializer(), name = "StructuredAnswer"),
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         val responseFormat = capture.captured?.responseFormat
@@ -141,13 +153,21 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
-            prepareCall = { AgentSettings(responseFormat = callFormat) },
-            prepareStep = { StepSettings(responseFormat = stepFormat) },
+            tools = ToolSet(),
+            prepareCall = {
+                AgentSettings {
+                    responseFormat(callFormat)
+                }
+            },
+            prepareStep = {
+                StepSettings {
+                    responseFormat(stepFormat)
+                }
+            },
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         assertEquals(stepFormat, capture.captured?.responseFormat)
@@ -160,21 +180,33 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             prepareCall = {
-                AgentSettings(providerOptions = mapOf("common" to JsonPrimitive("call"), "callOnly" to JsonPrimitive(true)))
+                AgentSettings {
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(mapOf("common" to JsonPrimitive("call"), "callOnly" to JsonPrimitive(true)))
+                        )
+                    )
+                }
             },
             prepareStep = {
-                StepSettings(providerOptions = mapOf("common" to JsonPrimitive("step"), "stepOnly" to JsonPrimitive(1)))
+                StepSettings {
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(mapOf("common" to JsonPrimitive("step"), "stepOnly" to JsonPrimitive(1)))
+                        )
+                    )
+                }
             },
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
-        assertEquals(JsonPrimitive("step"), capture.captured?.providerOptions?.get("common"))
-        assertEquals(JsonPrimitive(true), capture.captured?.providerOptions?.get("callOnly"))
-        assertEquals(JsonPrimitive(1), capture.captured?.providerOptions?.get("stepOnly"))
+        assertEquals(JsonPrimitive("step"), capture.captured?.providerOptions?.toMap()?.get("common"))
+        assertEquals(JsonPrimitive(true), capture.captured?.providerOptions?.toMap()?.get("callOnly"))
+        assertEquals(JsonPrimitive(1), capture.captured?.providerOptions?.toMap()?.get("stepOnly"))
     }
 }

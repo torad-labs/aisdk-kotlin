@@ -5,10 +5,10 @@ import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelMiddleware
 import ai.torad.aisdk.LanguageModelTool
 import ai.torad.aisdk.MiddlewareOperation
+import ai.torad.aisdk.ProviderOptions
 import ai.torad.aisdk.ResponseFormat
 import ai.torad.aisdk.ToolChoice
-import ai.torad.aisdk.mergeProviderOptions
-import kotlinx.serialization.json.JsonElement
+import kotlin.jvm.JvmOverloads
 
 /**
  * Applies default per-call settings to every model invocation. Explicitly
@@ -20,8 +20,10 @@ import kotlinx.serialization.json.JsonElement
  *   - app-wide `temperature = 0.7`, `maxOutputTokens = 1000`
  *   - default `tools` / `toolChoice` / `headers`
  *   - default `providerOptions` like `{ openai: { reasoningEffort: "high" } }`
+ * @since 0.3.0-beta01
  */
-public fun defaultSettingsMiddleware(
+@JvmOverloads
+public fun DefaultSettingsMiddleware(
     temperature: Float? = null,
     topP: Float? = null,
     topK: Int? = null,
@@ -31,7 +33,7 @@ public fun defaultSettingsMiddleware(
     tools: List<LanguageModelTool> = emptyList(),
     toolChoice: ToolChoice? = null,
     headers: Map<String, String> = emptyMap(),
-    providerOptions: Map<String, JsonElement> = emptyMap(),
+    providerOptions: ProviderOptions = ProviderOptions.None,
     presencePenalty: Float? = null,
     frequencyPenalty: Float? = null,
     responseFormat: ResponseFormat = ResponseFormat.Text,
@@ -40,19 +42,19 @@ public fun defaultSettingsMiddleware(
         operation: MiddlewareOperation,
         params: LanguageModelCallParams,
         model: LanguageModel,
-    ): LanguageModelCallParams = params.copy(
-        temperature = params.temperature ?: temperature,
-        topP = params.topP ?: topP,
-        topK = params.topK ?: topK,
-        maxOutputTokens = params.maxOutputTokens ?: maxOutputTokens,
-        stopSequences = params.stopSequences.ifEmpty { stopSequences },
-        seed = params.seed ?: seed,
-        tools = params.tools.ifEmpty { tools },
-        toolChoice = if (params.toolChoice == ToolChoice.Auto && toolChoice != null) toolChoice else params.toolChoice,
-        headers = headers + params.headers,
-        providerOptions = mergeProviderOptions(providerOptions, params.providerOptions),
-        presencePenalty = params.presencePenalty ?: presencePenalty,
-        frequencyPenalty = params.frequencyPenalty ?: frequencyPenalty,
-        responseFormat = if (params.responseFormat == ResponseFormat.Text) responseFormat else params.responseFormat,
-    )
+    ): LanguageModelCallParams = params.toBuilder()
+        .temperature(params.temperature ?: temperature)
+        .topP(params.topP ?: topP)
+        .topK(params.topK ?: topK)
+        .maxOutputTokens(params.maxOutputTokens ?: maxOutputTokens)
+        .stopSequences(params.stopSequences.ifEmpty { stopSequences })
+        .seed(params.seed ?: seed)
+        .tools(params.tools.ifEmpty { tools })
+        .toolChoice(if (params.toolChoice == ToolChoice.Auto && toolChoice != null) toolChoice else params.toolChoice)
+        .headers(headers + params.headers)
+        .providerOptions(providerOptions.mergedWith(params.providerOptions))
+        .presencePenalty(params.presencePenalty ?: presencePenalty)
+        .frequencyPenalty(params.frequencyPenalty ?: frequencyPenalty)
+        .responseFormat(if (params.responseFormat == ResponseFormat.Text) responseFormat else params.responseFormat)
+        .build()
 }

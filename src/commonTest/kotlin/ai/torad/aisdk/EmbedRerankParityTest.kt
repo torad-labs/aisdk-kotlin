@@ -4,12 +4,73 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class EmbedRerankParityTest {
+    @Test
+    fun `embedding and rerank Poko result types keep value semantics`() {
+        val usage = EmbeddingUsage(tokens = 3)
+        val embed = EmbedResult(
+            value = "hello",
+            embedding = listOf(1f, 2f),
+            usage = usage,
+        )
+        val equalEmbed = EmbedResult(
+            value = "hello",
+            embedding = listOf(1f, 2f),
+            usage = EmbeddingUsage(tokens = 3),
+        )
+        val differentEmbed = EmbedResult(
+            value = "hello",
+            embedding = listOf(1f, 3f),
+            usage = usage,
+        )
+        assertEquals(embed, equalEmbed)
+        assertEquals(embed.hashCode(), equalEmbed.hashCode())
+        assertNotEquals(embed, differentEmbed)
+
+        val many = EmbedManyResult(
+            values = listOf("a", "bb"),
+            embeddings = listOf(listOf(1f), listOf(2f)),
+            usage = usage,
+        )
+        val equalMany = EmbedManyResult(
+            values = listOf("a", "bb"),
+            embeddings = listOf(listOf(1f), listOf(2f)),
+            usage = EmbeddingUsage(tokens = 3),
+        )
+        val differentMany = EmbedManyResult(
+            values = listOf("a", "bb"),
+            embeddings = listOf(listOf(1f), listOf(3f)),
+            usage = usage,
+        )
+        assertEquals(many, equalMany)
+        assertEquals(many.hashCode(), equalMany.hashCode())
+        assertNotEquals(many, differentMany)
+
+        val rerank = RerankResult(
+            results = listOf(RerankedItem(value = "a", score = 0.8f, index = 0)),
+            originalDocuments = listOf("a", "b"),
+        )
+        val equalRerank = RerankResult(
+            results = listOf(RerankedItem(value = "a", score = 0.8f, index = 0)),
+            originalDocuments = listOf("a", "b"),
+        )
+        val differentRerank = RerankResult(
+            results = listOf(RerankedItem(value = "b", score = 0.7f, index = 1)),
+            originalDocuments = listOf("a", "b"),
+        )
+        assertEquals(rerank, equalRerank)
+        assertEquals(rerank.hashCode(), equalRerank.hashCode())
+        assertNotEquals(rerank, differentRerank)
+    }
+
     // A model that auto-batches at 1/call, supports parallelism, and records how many
     // calls are concurrently in flight so the test can prove batches actually overlap.
-    private class ParallelEmbeddingModel : EmbeddingModel {
+    private class ParallelEmbeddingModel(
+        private val releaseAtStarted: Int,
+    ) : EmbeddingModel {
         override val modelId = "test/embed"
         override val maxEmbeddingsPerCall = 1
         override val supportsParallelCalls = true
@@ -21,7 +82,7 @@ class EmbedRerankParityTest {
         override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
             inFlight++
             maxInFlight = maxOf(maxInFlight, inFlight)
-            if (++started == 3) gate.complete(Unit) // release once all 3 batches are concurrently in flight
+            if (++started == releaseAtStarted) gate.complete(Unit)
             gate.await()
             inFlight--
             return EmbeddingModelResult(
@@ -32,15 +93,24 @@ class EmbedRerankParityTest {
     }
 
     @Test
-    fun `embedMany runs batches concurrently when the model supports it and preserves order`() = runTest {
-        val model = ParallelEmbeddingModel()
-        val result = embedMany(model, listOf("a", "bb", "ccc"))
-        // 3 values, maxEmbeddingsPerCall=1 → 3 batches; the gate only opens once all 3
-        // are in flight, so completion proves they ran concurrently.
-        assertEquals(3, model.maxInFlight, "all batches must be in flight at once")
-        assertEquals(listOf(listOf(1f), listOf(2f), listOf(3f)), result.embeddings, "order preserved")
-        assertEquals(3, result.usage.tokens, "usage summed across batches")
-        assertEquals(3, result.responses.size, "one response per batch")
+    fun `embedMany bounds default parallel batches and preserves order`() = runTest {
+        val model = ParallelEmbeddingModel(releaseAtStarted = DEFAULT_MAX_PARALLEL_CALLS)
+        val values = (1..12).map { "x".repeat(it) }
+        val result = Embedding.embedMany(model, values)
+
+        assertEquals(DEFAULT_MAX_PARALLEL_CALLS, model.maxInFlight, "default batch fan-out is bounded")
+        assertEquals(values.map { listOf(it.length.toFloat()) }, result.embeddings, "order preserved")
+        assertEquals(values.size, result.usage.tokens, "usage summed across batches")
+        assertEquals(values.size, result.responses.size, "one response per batch")
+    }
+
+    @Test
+    fun `embedMany honors explicit maxParallelCalls`() = runTest {
+        val model = ParallelEmbeddingModel(releaseAtStarted = 2)
+        val result = Embedding.embedMany(model, listOf("a", "bb", "ccc", "dddd"), maxParallelCalls = 2)
+
+        assertEquals(2, model.maxInFlight)
+        assertEquals(listOf(listOf(1f), listOf(2f), listOf(3f), listOf(4f)), result.embeddings)
     }
 
     @Test
@@ -59,7 +129,7 @@ class EmbedRerankParityTest {
                 )
             }
         }
-        val result = rerank(model, "q", listOf("low", "mid", "high"), topN = 2)
+        val result = Reranking.rerank(model, "q", listOf("low", "mid", "high"), topN = 2)
         assertEquals(2, capturedTopN)
         assertEquals(listOf("low", "mid", "high"), result.originalDocuments)
         assertEquals(listOf("mid", "low", "high"), result.rerankedDocuments)
@@ -72,7 +142,7 @@ class EmbedRerankParityTest {
             override suspend fun rerank(params: RerankingParams): RerankingModelResult =
                 error("must not be called for empty documents")
         }
-        val result = rerank(model, "q", emptyList())
+        val result = Reranking.rerank(model, "q", emptyList())
         assertTrue(result.results.isEmpty())
         assertTrue(result.rerankedDocuments.isEmpty())
     }

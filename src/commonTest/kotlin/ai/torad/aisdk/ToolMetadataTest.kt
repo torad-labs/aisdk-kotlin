@@ -1,11 +1,11 @@
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Validates Phase 4F #34 — opaque metadata bag on [Tool]. Per
@@ -21,7 +21,7 @@ class ToolMetadataTest {
 
     @Test
     fun `given a tool constructed without metadata when read then metadata is empty`() {
-        val t = tool<Input, String, Unit>(
+        val t = Tool<Input, String, Unit>(
             name = "noMeta",
             description = "",
             inputSerializer = serializer(),
@@ -33,7 +33,7 @@ class ToolMetadataTest {
     @Test
     fun `given a tool constructed with metadata when read then values survive`() {
         // GIVEN — a metadata bag with arbitrary application-defined keys.
-        val t = tool<Input, String, Unit>(
+        val t = Tool<Input, String, Unit>(
             name = "tier",
             description = "",
             inputSerializer = serializer(),
@@ -52,14 +52,14 @@ class ToolMetadataTest {
     @Test
     fun `given a tool in a toolset when looked up by name then metadata flows through unchanged`() {
         // GIVEN
-        val t = tool<Input, String, Unit>(
+        val t = Tool<Input, String, Unit>(
             name = "telemetry",
             description = "",
             inputSerializer = serializer(),
             outputSerializer = serializer(),
             metadata = mapOf("sample-rate" to JsonPrimitive(0.1)),
         ) { _ -> "ok" }
-        val ts: ToolSet<Unit> = toolSetOf(t)
+        val ts: ToolSet<Unit> = ToolSet(t)
 
         // WHEN — consumers reach into the toolset for the metadata bag.
         val found = ts.find("telemetry")

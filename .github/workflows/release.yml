@@ -1,32 +1,44 @@
 name: Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Stage, sign, and smoke-test artifacts without publishing"
+        required: false
+        default: false
+        type: boolean
   push:
     tags:
       - "v*"
 
 permissions:
   contents: read
-  packages: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  AI_SDK_REFERENCE_VERSION: 6.0.208
+  AI_SDK_REFERENCE_COMMIT: 3270146267b1d82f07972bc40f09e9b4ee8bb9d3
 
 jobs:
-  publish:
+  preflight:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v5.2.0
-        with:
-          distribution: temurin
-          java-version: "21"
-      - uses: android-actions/setup-android@v4.0.1
-      - uses: gradle/actions/setup-gradle@v6.1.0
       - name: Verify release tag
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
         run: |
+          if [ "${DRY_RUN}" = "true" ]; then
+            project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
+            echo "Dry-run release preflight for ${project_version} on ${GITHUB_REF_NAME}; tag and main-ancestry checks are publish-only."
+            exit 0
+          fi
           tag_version="${GITHUB_REF_NAME#v}"
           project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
           test "${tag_version}" = "${project_version}"
@@ -36,17 +48,123 @@ jobs:
           fi
           git fetch origin main
           git merge-base --is-ancestor "${GITHUB_SHA}" origin/main
+      - name: Beta readiness gate
+        run: tools/beta-readiness-check
+
+  verify-apple:
+    runs-on: macos-latest
+    timeout-minutes: 75
+    needs: preflight
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - name: Cache Kotlin/Native toolchain (~/.konan)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+      - name: Verify Apple targets (compile all, test simulator)
+        run: ./gradlew iosSimulatorArm64Test compileKotlinIosArm64 compileKotlinIosX64
+      - name: Verify Swift import smoke
+        run: tools/run-ios-swift-smoke
+
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    needs:
+      - preflight
+      - verify-apple
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - name: Cache Kotlin/Native toolchain (~/.konan)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+      - name: Fetch Vercel AI SDK v6 reference
+        run: |
+          mkdir -p .reference
+          git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}
+          actual_commit="$(git -C .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION} rev-parse HEAD)"
+          test "${actual_commit}" = "${AI_SDK_REFERENCE_COMMIT}"
+      - name: Verify AI SDK reference version
+        id: ai_sdk_reference
+        continue-on-error: true
+        run: node tools/check-ai-sdk-reference.mjs
+      - name: Verify parity ledgers
+        id: parity_ledgers
+        continue-on-error: true
+        run: node tools/generate-parity-ledger.mjs --check
+      - name: Install locked Node tooling
+        run: npm ci
+      - name: Architecture gate (ast-grep rules + structural checks)
+        id: architecture_gate
+        continue-on-error: true
+        run: ./node_modules/.bin/ast-grep --version && PATH="$PWD/node_modules/.bin:$PATH" bash .claude/hooks/rules/ci-gate.sh
+      - name: Beta readiness gate
+        id: beta_readiness
+        continue-on-error: true
+        run: tools/beta-readiness-check
       - name: Verify checks
+        id: gradle_check
+        continue-on-error: true
         run: ./gradlew check
+      - name: Summarize pre-publish gates
+        if: always()
+        run: |
+          gates=(
+            "ai_sdk_reference|Verify AI SDK reference version|${{ steps.ai_sdk_reference.outcome }}"
+            "parity_ledgers|Verify parity ledgers|${{ steps.parity_ledgers.outcome }}"
+            "architecture_gate|Architecture gate (ast-grep rules + structural checks)|${{ steps.architecture_gate.outcome }}"
+            "beta_readiness|Beta readiness gate|${{ steps.beta_readiness.outcome }}"
+            "gradle_check|Verify checks|${{ steps.gradle_check.outcome }}"
+          )
+
+          failed=0
+          printf '| Step id | Gate | Outcome |\n'
+          printf '| --- | --- | --- |\n'
+          for gate in "${gates[@]}"; do
+            IFS='|' read -r step_id name outcome <<< "$gate"
+            printf '| `%s` | %s | %s |\n' "$step_id" "$name" "$outcome"
+            if [ "$outcome" != "success" ]; then
+              failed=1
+            fi
+          done
+
+          exit "$failed"
       # Maven Central is the release target. The Central Portal takes a single zip
       # in Maven Repository Layout, validates it asynchronously, and (with
       # publishingType=AUTOMATIC) syncs to Maven Central if validation passes.
-      - name: Publish to Maven Central
+      # This step stages/signs/bundles the artifacts and intentionally stays
+      # fail-fast after the pre-publish gate aggregator above. Dry-run proves
+      # local staging/signing/smoke only; it cannot prove Central auth or the
+      # Central Portal state machine.
+      - name: Build Maven Central release bundle
         env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
           set -euo pipefail
           # Stage every KMP publication (jvm, android, ios*, linux, and the root
@@ -56,11 +174,29 @@ jobs:
           # and PublishToMavenRepository captures Project references — both only
           # surface during real (remote) publishing, which is CI-only anyway.
           ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache
+          tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
           # A release bundle must contain only the versioned artifacts. The Portal
           # generates its own group-level metadata, and leaving version-listing
           # maven-metadata.xml in the zip can trip bundle validation.
           find build/staging-deploy -name 'maven-metadata.xml*' -delete
           ( cd build/staging-deploy && zip -q -r ../../bundle.zip . )
+          artifact_count=$(find build/staging-deploy -type f \( -name '*.aar' -o -name '*.jar' -o -name '*.klib' -o -name '*.module' -o -name '*.pom' \) | wc -l | tr -d '[:space:]')
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "DRY RUN: would publish ${artifact_count} artifacts"
+          fi
+          echo "artifact_count=${artifact_count}" >> "${GITHUB_OUTPUT}"
+      - name: Attest Maven Central bundle provenance
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: bundle.zip
+      - name: Publish to Maven Central
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: |
+          set -euo pipefail
           token=$(printf '%s:%s' "${SONATYPE_USERNAME}" "${SONATYPE_PASSWORD}" | base64 -w 0)
           # Upload. The response body is the deployment id (a UUID).
           if ! deployment_id=$(curl --fail-with-body --silent --show-error --request POST \
@@ -99,6 +235,7 @@ jobs:
       # release. Re-runs of the same version 409 (GitHub Packages is immutable),
       # which is fine to ignore here.
       - name: Publish to GitHub Packages (best effort)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -109,6 +246,7 @@ jobs:
       # unlike Central which has propagation delay). This also exercises the KMP
       # module metadata. Best-effort: it depends on the mirror above.
       - name: Verify published artifact resolves (GitHub Packages)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
         continue-on-error: true
         env:
           GITHUB_ACTOR: ${{ github.actor }}

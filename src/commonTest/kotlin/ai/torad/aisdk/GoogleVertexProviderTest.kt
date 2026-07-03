@@ -1,21 +1,16 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.GOOGLE_VERSION
 import ai.torad.aisdk.providers.GOOGLE_VERTEX_VERSION
-import ai.torad.aisdk.providers.GoogleVertexAnthropicProviderSettings
-import ai.torad.aisdk.providers.GoogleVertexMaasProviderSettings
+import ai.torad.aisdk.providers.GoogleVertex
+import ai.torad.aisdk.providers.GoogleVertexAnthropic
+import ai.torad.aisdk.providers.GoogleVertexMaas
 import ai.torad.aisdk.providers.GoogleVertexProviderSettings
-import ai.torad.aisdk.providers.anthropic
-import ai.torad.aisdk.providers.createVertex
-import ai.torad.aisdk.providers.createVertexAnthropic
-import ai.torad.aisdk.providers.createVertexMaas
-import ai.torad.aisdk.providers.google
-import ai.torad.aisdk.providers.vertex
-import ai.torad.aisdk.providers.xai
-import ai.torad.aisdk.providers.GoogleVertexXaiProviderSettings
-import ai.torad.aisdk.providers.createGoogleVertexXai
-
+import ai.torad.aisdk.providers.GoogleVertexXai
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -31,7 +26,7 @@ import kotlin.test.assertTrue
 class GoogleVertexProviderTest {
     @Test
     fun `vertex core provider maps publisher base url auth and Gemini body`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://us-central1-aiplatform.googleapis.com/v1beta1/projects/project-1/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -48,27 +43,33 @@ class GoogleVertexProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createVertex(
+        val provider = GoogleVertex(
             fixture.httpClient(),
-            GoogleVertexProviderSettings(
-                project = "project-1",
-                location = "us-central1",
-                accessToken = "token",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("us-central1")
+                accessToken("token")
+                headers(mapOf("X-Provider" to "provider"))
+            }),
         )
 
-        val result = provider.chat("gemini-2.5-flash").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
-                providerOptions = mapOf(
-                    "google" to buildJsonObject {
-                        put("sharedRequestType", JsonPrimitive("priority"))
-                        put("requestType", JsonPrimitive("shared"))
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+        val result = provider.chat(ModelId("gemini-2.5-flash")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "google" to buildJsonObject {
+                                    put("sharedRequestType", JsonPrimitive("priority"))
+                                    put("requestType", JsonPrimitive("shared"))
+                                },
+                            )
+                        )
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("google.vertex", provider.languageModel("gemini-2.5-flash").provider)
@@ -85,12 +86,17 @@ class GoogleVertexProviderTest {
         assertEquals("request", request.requestHeaders.headerValue("X-Request"))
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/google-vertex/$GOOGLE_VERTEX_VERSION"))
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/google/$GOOGLE_VERSION"))
-        assertEquals("hi", request.requestBodyJson.jsonObject["contents"]?.jsonArray?.single()?.jsonObject?.get("parts")?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "hi",
+            request.requestBodyJson.jsonObject["contents"]?.jsonArray?.single()?.jsonObject?.get(
+                "parts"
+            )?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
     fun `vertex core provider uses multi-region REP host for eu and us`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aiplatform.eu.rep.googleapis.com/v1beta1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -120,17 +126,39 @@ class GoogleVertexProviderTest {
         )
         fixture.server.start()
 
-        val eu = createVertex(
+        val eu = GoogleVertex(
             fixture.httpClient(),
-            GoogleVertexProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("eu")
+                accessToken("token")
+            }),
         )
-        val us = createVertex(
+        val us = GoogleVertex(
             fixture.httpClient(),
-            GoogleVertexProviderSettings(project = "project-1", location = "us", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("us")
+                accessToken("token")
+            }),
         )
 
-        assertEquals("eu", eu.chat("gemini-2.5-flash").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
-        assertEquals("us", us.chat("gemini-2.5-flash").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals(
+            "eu",
+            eu.chat(ModelId("gemini-2.5-flash")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
+        assertEquals(
+            "us",
+            us.chat(ModelId("gemini-2.5-flash")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
         assertEquals(
             listOf(
                 "https://aiplatform.eu.rep.googleapis.com/v1beta1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent",
@@ -142,7 +170,7 @@ class GoogleVertexProviderTest {
 
     @Test
     fun `vertex maas routes through OpenAI compatible chat`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://vertex-openai.test/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -161,23 +189,33 @@ class GoogleVertexProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createVertexMaas(
+        val provider = GoogleVertexMaas(
             fixture.httpClient(),
-            GoogleVertexMaasProviderSettings(baseURL = "https://vertex-openai.test/v1", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                baseURL("https://vertex-openai.test/v1")
+                accessToken("token")
+            }),
         )
 
-        val result = provider.chat("llama-model").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val result = provider.chat(ModelId("llama-model")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         assertEquals("maas", result.text)
         assertEquals(3, result.usage.promptTokens)
         assertEquals(4, result.usage.completionTokens)
         assertEquals("Bearer token", fixture.calls.single().requestHeaders.headerValue("Authorization"))
-        assertEquals("llama-model", fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "llama-model",
+            fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
     fun `vertex maas constructs global regional and multi-region base urls`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -198,22 +236,55 @@ class GoogleVertexProviderTest {
         )
         fixture.server.start()
 
-        val global = createVertexMaas(
+        val global = GoogleVertexMaas(
             fixture.httpClient(),
-            GoogleVertexMaasProviderSettings(project = "project-1", location = "global", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("global")
+                accessToken("token")
+            }),
         )
-        val regional = createVertexMaas(
+        val regional = GoogleVertexMaas(
             fixture.httpClient(),
-            GoogleVertexMaasProviderSettings(project = "project-1", location = "us-central1", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("us-central1")
+                accessToken("token")
+            }),
         )
-        val eu = createVertexMaas(
+        val eu = GoogleVertexMaas(
             fixture.httpClient(),
-            GoogleVertexMaasProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("eu")
+                accessToken("token")
+            }),
         )
 
-        assertEquals("global", global.chat("llama").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
-        assertEquals("regional", regional.chat("llama").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
-        assertEquals("eu", eu.chat("llama").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals(
+            "global",
+            global.chat(ModelId("llama")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
+        assertEquals(
+            "regional",
+            regional.chat(ModelId("llama")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
+        assertEquals(
+            "eu",
+            eu.chat(ModelId("llama")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
         assertEquals(
             listOf(
                 "https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions",
@@ -226,7 +297,7 @@ class GoogleVertexProviderTest {
 
     @Test
     fun `vertex anthropic maps rawPredict url headers and body`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://us-central1-aiplatform.googleapis.com/v1/projects/project-1/locations/us-central1/publishers/anthropic/models/claude-sonnet-4:rawPredict" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -248,22 +319,30 @@ class GoogleVertexProviderTest {
         )
         fixture.server.start()
         val missingProject = assertFailsWith<AiSdkException> {
-            createVertex(fixture.httpClient(), GoogleVertexProviderSettings(accessToken = "token"))
+            GoogleVertex(
+                fixture.httpClient(),
+                GoogleVertexProviderSettings(block = {
+                    accessToken("token")
+                }),
+            )
         }
         assertTrue(missingProject.message.orEmpty().contains("project is required"))
 
-        val anthropic = createVertexAnthropic(
+        val anthropic = GoogleVertexAnthropic(
             fixture.httpClient(),
-            GoogleVertexAnthropicProviderSettings(project = "project-1", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                accessToken("token")
+            }),
         )
         assertEquals("vertex.anthropic.messages", anthropic.languageModel("claude-sonnet-4").provider)
-        assertEquals("vertex.anthropic.messages", anthropic.messages("claude-sonnet-4").provider)
+        assertEquals("vertex.anthropic.messages", anthropic.messages(ModelId("claude-sonnet-4")).provider)
 
-        val result = anthropic.messages("claude-sonnet-4").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
-                headers = mapOf("X-Request" to "request"),
-            ),
+        val result = anthropic.messages(ModelId("claude-sonnet-4")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("vertex anthropic", result.text)
@@ -277,12 +356,17 @@ class GoogleVertexProviderTest {
         val body = request.requestBodyJson.jsonObject
         assertEquals(null, body["model"])
         assertEquals("vertex-2023-10-16", body["anthropic_version"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("hi", body["messages"]?.jsonArray?.single()?.jsonObject?.get("content")?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "hi",
+            body["messages"]?.jsonArray?.single()?.jsonObject?.get(
+                "content"
+            )?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
     fun `vertex anthropic uses multi-region REP host for eu and us`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/anthropic/models/claude-sonnet-4:rawPredict" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -320,17 +404,39 @@ class GoogleVertexProviderTest {
         )
         fixture.server.start()
 
-        val eu = createVertexAnthropic(
+        val eu = GoogleVertexAnthropic(
             fixture.httpClient(),
-            GoogleVertexAnthropicProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("eu")
+                accessToken("token")
+            }),
         )
-        val us = createVertexAnthropic(
+        val us = GoogleVertexAnthropic(
             fixture.httpClient(),
-            GoogleVertexAnthropicProviderSettings(project = "project-1", location = "us", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("us")
+                accessToken("token")
+            }),
         )
 
-        assertEquals("eu", eu.messages("claude-sonnet-4").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
-        assertEquals("us", us.messages("claude-sonnet-4").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals(
+            "eu",
+            eu.messages(ModelId("claude-sonnet-4")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
+        assertEquals(
+            "us",
+            us.messages(ModelId("claude-sonnet-4")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).text
+        )
         assertEquals(
             listOf(
                 "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/anthropic/models/claude-sonnet-4:rawPredict",
@@ -342,7 +448,7 @@ class GoogleVertexProviderTest {
 
     @Test
     fun `vertex xai drops reasoning effort and uses xai usage totals`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -366,21 +472,31 @@ class GoogleVertexProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleVertexXai(
+        val provider = GoogleVertexXai(
             fixture.httpClient(),
-            GoogleVertexXaiProviderSettings(project = "project-1", location = "global", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("global")
+                accessToken("token")
+            }),
         )
 
-        val result = provider.chatModel("grok").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
-                providerOptions = mapOf(
-                    "xai" to buildJsonObject {
-                        put("reasoningEffort", JsonPrimitive("high"))
-                        put("topLogprobs", JsonPrimitive(3))
-                    },
-                ),
-            ),
+        val result = provider.chatModel(ModelId("grok")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "xai" to buildJsonObject {
+                                    put("reasoningEffort", JsonPrimitive("high"))
+                                    put("topLogprobs", JsonPrimitive(3))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals("xai", result.text)

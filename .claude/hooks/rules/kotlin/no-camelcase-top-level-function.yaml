@@ -1,0 +1,15 @@
+id: no-camelcase-top-level-function
+language: kotlin
+severity: error
+rule:
+  all:
+    - kind: function_declaration
+    - inside: { kind: source_file }
+    - has: { kind: simple_identifier, regex: '^[a-z]', stopBy: neighbor }
+    # `override` cannot appear on a genuine top-level function, but the PreToolUse
+    # hook scans edit snippets in isolation where a member override parses at
+    # source_file level — exclude it so the gate is snippet-safe (AR-15 misfire).
+    - not:
+        has:
+          kind: modifiers
+          has: { kind: member_modifier, regex: '^override$', stopBy: end }

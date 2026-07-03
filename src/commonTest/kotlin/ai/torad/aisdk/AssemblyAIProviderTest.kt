@@ -1,12 +1,11 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ASSEMBLYAI_VERSION
+import ai.torad.aisdk.providers.AssemblyAI
 import ai.torad.aisdk.providers.AssemblyAIProviderSettings
-import ai.torad.aisdk.providers.assemblyai
-import ai.torad.aisdk.providers.createAssemblyAI
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -24,7 +23,7 @@ import kotlin.test.assertTrue
 class AssemblyAIProviderTest {
     @Test
     fun `transcription model uploads audio submits transcript and maps completed result`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.assemblyai.com/v2/upload" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"upload_url":"https://cdn.example/audio"}""")),
@@ -35,7 +34,12 @@ class AssemblyAIProviderTest {
                 "https://api.assemblyai.com/v2/transcript/tx1" to UrlHandler(
                     UrlResponse.JsonValue(
                         Json.parseToJsonElement(
-                            """{"id":"tx1","status":"completed","text":"hello world","language_code":"en","audio_duration":4.2,"words":[{"start":0.1,"end":0.3,"text":"hello"},{"start":0.4,"end":0.8,"text":"world"}]}""",
+                            """
+                            {"id":"tx1","status":"completed","text":"hello world",
+                            "language_code":"en","audio_duration":4.2,
+                            "words":[{"start":100,"end":300,"text":"hello"},
+                            {"start":400,"end":800,"text":"world"}]}
+                            """.trimIndent(),
                         ),
                         headers = mapOf("x-final" to "true"),
                     ),
@@ -43,40 +47,53 @@ class AssemblyAIProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createAssemblyAI(
+        val model = AssemblyAI(
             fixture.httpClient(),
-            AssemblyAIProviderSettings(apiKey = "key"),
-        ).transcription("best")
+            AssemblyAIProviderSettings {
+                apiKey("key")
+            },
+        ).transcription(ModelId("best"))
 
         val result = model.transcribe(
-            TranscriptionParams(
-                audio = AudioSource(
-                    mediaType = "audio/mpeg",
-                    base64 = convertByteArrayToBase64("abc".encodeToByteArray()),
-                    filename = "clip.mp3",
-                ),
-                language = "en_us",
-                providerOptions = mapOf(
-                    "assemblyai" to buildJsonObject {
-                        put("audioEndAt", JsonPrimitive(10))
-                        put("autoChapters", JsonPrimitive(true))
-                        put("contentSafetyConfidence", JsonPrimitive(75))
-                        put("customSpelling", buildJsonArray {
-                            add(
-                                buildJsonObject {
-                                    put("from", buildJsonArray { add(JsonPrimitive("sdk")) })
-                                    put("to", JsonPrimitive("SDK"))
+            TranscriptionParams {
+                audio(
+                    AudioSource(
+                        mediaType = "audio/mpeg",
+                        base64 = Base64Codec.encode("abc".encodeToByteArray()),
+                        filename = "clip.mp3",
+                    )
+                )
+                language("en_us")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "assemblyai" to buildJsonObject {
+                                    put("audioEndAt", JsonPrimitive(10))
+                                    put("autoChapters", JsonPrimitive(true))
+                                    put("contentSafetyConfidence", JsonPrimitive(75))
+                                    put(
+                                        "customSpelling",
+                                        buildJsonArray {
+                                            add(
+                                                buildJsonObject {
+                                                    put("from", buildJsonArray { add(JsonPrimitive("sdk")) })
+                                                    put("to", JsonPrimitive("SDK"))
+                                                },
+                                            )
+                                        }
+                                    )
+                                    put("languageCode", JsonPrimitive("en"))
+                                    put("languageDetection", JsonPrimitive(true))
+                                    put("speakerLabels", JsonPrimitive(true))
+                                    put("speechThreshold", JsonPrimitive(0.7f))
+                                    put("wordBoost", buildJsonArray { add(JsonPrimitive("Kotlin")) })
                                 },
                             )
-                        })
-                        put("languageCode", JsonPrimitive("en"))
-                        put("languageDetection", JsonPrimitive(true))
-                        put("speakerLabels", JsonPrimitive(true))
-                        put("speechThreshold", JsonPrimitive(0.7f))
-                        put("wordBoost", buildJsonArray { add(JsonPrimitive("Kotlin")) })
-                    },
-                ),
-            ),
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals("assemblyai.transcription", model.provider)
@@ -84,12 +101,17 @@ class AssemblyAIProviderTest {
         assertEquals(2, result.segments.size)
         assertEquals("hello", result.segments.first().text)
         assertEquals(0.1f, result.segments.first().startSeconds)
+        assertEquals(0.3f, result.segments.first().endSeconds)
+        assertEquals(0.4f, result.segments.last().startSeconds)
         assertEquals(0.8f, result.segments.last().endSeconds)
         assertEquals("en", result.language)
         assertEquals(4.2f, result.durationInSeconds)
         assertEquals("true", result.response.headers["x-final"])
         assertEquals("completed", result.response.body?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
-        assertEquals("completed", result.providerMetadata["assemblyai"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "completed",
+            result.providerMetadata.toMap()["assemblyai"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull
+        )
 
         val upload = fixture.calls[0]
         assertEquals("POST", upload.requestMethod)
@@ -106,7 +128,10 @@ class AssemblyAIProviderTest {
         assertEquals(10, body["audio_end_at"]?.jsonPrimitive?.intOrNull)
         assertEquals(true, body["auto_chapters"]?.jsonPrimitive?.contentOrNull.toBoolean())
         assertEquals(75, body["content_safety_confidence"]?.jsonPrimitive?.intOrNull)
-        assertEquals("SDK", body["custom_spelling"]?.jsonArray?.single()?.jsonObject?.get("to")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "SDK",
+            body["custom_spelling"]?.jsonArray?.single()?.jsonObject?.get("to")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("en", body["language_code"]?.jsonPrimitive?.contentOrNull)
         assertEquals(true, body["language_detection"]?.jsonPrimitive?.contentOrNull.toBoolean())
         assertEquals(true, body["speaker_labels"]?.jsonPrimitive?.contentOrNull.toBoolean())
@@ -120,7 +145,7 @@ class AssemblyAIProviderTest {
 
     @Test
     fun `transcription model uses top-level language when provider option is omitted`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.assemblyai.com/v2/upload" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"upload_url":"https://cdn.example/audio"}""")),
@@ -134,16 +159,18 @@ class AssemblyAIProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createAssemblyAI(
+        val model = AssemblyAI(
             fixture.httpClient(),
-            AssemblyAIProviderSettings(apiKey = "key"),
-        ).transcription("nano")
+            AssemblyAIProviderSettings {
+                apiKey("key")
+            },
+        ).transcription(ModelId("nano"))
 
         model.transcribe(
-            TranscriptionParams(
-                audio = AudioSource("audio/wav", convertByteArrayToBase64(byteArrayOf(1))),
-                language = "pt",
-            ),
+            TranscriptionParams {
+                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                language("pt")
+            },
         )
 
         assertEquals("pt", fixture.calls[1].requestBodyJson.jsonObject["language_code"]?.jsonPrimitive?.contentOrNull)
@@ -151,7 +178,7 @@ class AssemblyAIProviderTest {
 
     @Test
     fun `transcription model throws when transcript finishes with error`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.assemblyai.com/v2/upload" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"upload_url":"https://cdn.example/audio"}""")),
@@ -165,25 +192,36 @@ class AssemblyAIProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createAssemblyAI(
+        val model = AssemblyAI(
             fixture.httpClient(),
-            AssemblyAIProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
-        ).transcription("best")
+            AssemblyAIProviderSettings {
+                apiKey("key")
+                pollingIntervalMillis(0)
+            },
+        ).transcription(ModelId("best"))
 
         val error = assertFailsWith<AiSdkException> {
-            model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", convertByteArrayToBase64(byteArrayOf(1)))))
+            model.transcribe(
+                TranscriptionParams {
+                    audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                }
+            )
         }
         assertTrue(error.message.orEmpty().contains("bad audio"))
     }
 
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
-        val fixture = createTestServer(mutableMapOf())
-        val provider = createAssemblyAI(fixture.httpClient(), AssemblyAIProviderSettings(apiKey = "key"))
+        val fixture = TestServer.createTestServer(mutableMapOf())
+        val provider = AssemblyAI(
+            fixture.httpClient(),
+            AssemblyAIProviderSettings {
+                apiKey("key")
+            },
+        )
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { assemblyai.transcription("best") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

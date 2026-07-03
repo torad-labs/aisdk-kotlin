@@ -1,16 +1,18 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.MockLanguageModel
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Per invariant I-5, per-step settings flow through `prepareStep` — the
@@ -47,25 +49,29 @@ class PrepareStepTest {
         val recordedStepNumbers = mutableListOf<Int>()
         val recordedActiveSubsets = mutableListOf<List<String>?>()
 
-        val ping = tool<Empty, String, Unit>(
-            name = "ping", description = "",
-            inputSerializer = serializer(), outputSerializer = serializer(),
+        val ping = Tool<Empty, String, Unit>(
+            name = "ping",
+            description = "",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
         ) { _ -> "pong" }
 
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "ping",
-                toolInput = mockToolInput("unused" to ""),
+                toolInput = MockToolInput("unused" to ""),
                 finalText = "ok",
             ),
             instructions = "x",
-            tools = toolSetOf(ping),
+            tools = ToolSet(ping),
             prepareStep = {
                 recordedStepNumbers.add(stepNumber)
-                StepSettings(activeTools = listOf("ping"))
+                StepSettings {
+                    activeTools(listOf("ping"))
+                }
             },
         )
-        agent.generate("go")
+        agent.generate("go").first()
         assertTrue(recordedStepNumbers.size >= 2, "prepareStep ran at least twice — once per step")
         assertEquals(listOf(1, 2), recordedStepNumbers.take(2))
     }
@@ -77,11 +83,11 @@ class PrepareStepTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "x",
-            tools = toolSetOf(testTool("ping"), testTool("pong")),
+            tools = ToolSet(testTool("ping"), testTool("pong")),
             activeTools = listOf("ping"),
         )
 
-        agent.generate("go")
+        agent.generate("go").first()
 
         assertEquals(listOf(listOf("ping")), capture.observedToolNames)
     }
@@ -93,12 +99,16 @@ class PrepareStepTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "x",
-            tools = toolSetOf(testTool("ping"), testTool("pong")),
+            tools = ToolSet(testTool("ping"), testTool("pong")),
             activeTools = listOf("ping"),
-            prepareCall = { AgentSettings(activeTools = listOf("pong")) },
+            prepareCall = {
+                AgentSettings {
+                    activeTools(listOf("pong"))
+                }
+            },
         )
 
-        agent.generate("go")
+        agent.generate("go").first()
 
         assertEquals(listOf(listOf("pong")), capture.observedToolNames)
     }
@@ -110,18 +120,26 @@ class PrepareStepTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "x",
-            tools = toolSetOf(testTool("ping"), testTool("pong")),
+            tools = ToolSet(testTool("ping"), testTool("pong")),
             activeTools = listOf("ping"),
-            prepareCall = { AgentSettings(activeTools = listOf("pong")) },
-            prepareStep = { StepSettings(activeTools = listOf("ping")) },
+            prepareCall = {
+                AgentSettings {
+                    activeTools(listOf("pong"))
+                }
+            },
+            prepareStep = {
+                StepSettings {
+                    activeTools(listOf("ping"))
+                }
+            },
         )
 
-        agent.generate("go")
+        agent.generate("go").first()
 
         assertEquals(listOf(listOf("ping")), capture.observedToolNames)
     }
 
-    private fun testTool(name: String): Tool<Empty, String, Unit> = tool(
+    private fun testTool(name: String): Tool<Empty, String, Unit> = Tool<Empty, String, Unit>(
         name = name,
         description = "",
         inputSerializer = serializer(),

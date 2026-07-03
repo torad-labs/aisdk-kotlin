@@ -1,0 +1,21 @@
+id: prefer-list-over-array-return-in-public-fun
+language: kotlin
+severity: warning
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: visibility_modifier
+          regex: '^public$'
+    - has:
+        kind: user_type
+        all:
+          - has:
+              kind: type_identifier
+              regex: '^Array$'
+              stopBy: end
+          - not:
+              precedes:
+                regex: '^\.$'

@@ -1,15 +1,19 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.middleware
 
 import ai.torad.aisdk.AgentError
 import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.Logger
 import ai.torad.aisdk.StreamEvent
+import ai.torad.aisdk.UserMessage
+import ai.torad.aisdk.WrapLanguageModel
 import ai.torad.aisdk.providers.MockLanguageModel
 import ai.torad.aisdk.providers.ScriptedResponse
-import ai.torad.aisdk.userMessage
-import ai.torad.aisdk.wrapLanguageModel
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -37,7 +41,9 @@ class LoggingMiddlewareTest {
         }
     }
 
-    private val params = LanguageModelCallParams(messages = listOf(userMessage("hi")))
+    private val params = LanguageModelCallParams {
+        messages(listOf(UserMessage("hi")))
+    }
 
     @Test
     fun `given a model that emits a tool call when logging-wrapped then the call is logged at debug`() = runTest {
@@ -53,7 +59,7 @@ class LoggingMiddlewareTest {
             ),
         )
         val logger = RecordingLogger()
-        val wrapped = wrapLanguageModel(model, listOf(loggingMiddleware(logger)))
+        val wrapped = WrapLanguageModel(model, listOf(LoggingMiddleware(logger)))
 
         // WHEN streamed.
         val sink = mutableListOf<StreamEvent>()
@@ -78,7 +84,7 @@ class LoggingMiddlewareTest {
                 ),
             )
             val logger = RecordingLogger()
-            val wrapped = wrapLanguageModel(model, listOf(loggingMiddleware(logger)))
+            val wrapped = WrapLanguageModel(model, listOf(LoggingMiddleware(logger)))
 
             // WHEN streamed.
             val sink = mutableListOf<StreamEvent>()
@@ -89,4 +95,78 @@ class LoggingMiddlewareTest {
             assertTrue(logger.warns[0].first.contains("tool-error"), "warn message shape")
             assertTrue(logger.warns[0].second is AgentError.ToolExecution, "typed error passed as throwable")
         }
+
+    @Test
+    fun `tool args and authorization values are absent from logs by default`() = runTest {
+        val secretArgs = buildJsonObject {
+            put("Authorization", "Bearer sk-live-secret")
+            put("api-key", "api-key-secret")
+            put("query", "raw user prompt")
+        }
+        val model = MockLanguageModel(
+            responses = listOf(
+                ScriptedResponse(
+                    events = listOf(StreamEvent.ToolCall("call_1", "weather", secretArgs)),
+                ),
+            ),
+        )
+        val logger = RecordingLogger()
+        val wrapped = WrapLanguageModel(model, listOf(LoggingMiddleware(logger)))
+
+        wrapped.stream(params).collect { }
+
+        val allLogs = (logger.debugs + logger.infos + logger.warns.map { it.first }).joinToString("\n")
+        assertTrue("argsBytes=" in allLogs, "metadata diagnostics should remain")
+        assertTrue("raw user prompt" !in allLogs, allLogs)
+        assertTrue("sk-live-secret" !in allLogs, allLogs)
+        assertTrue("api-key-secret" !in allLogs, allLogs)
+        assertTrue("Authorization" !in allLogs, allLogs)
+    }
+
+    @Test
+    fun `recordInputs logs redacted args and raw logging requires explicit unsafe opt in`() = runTest {
+        val secretArgs = buildJsonObject {
+            put("Authorization", "Bearer sk-live-secret")
+            put("query", "safe city")
+        }
+        val model = MockLanguageModel(
+            responses = listOf(
+                ScriptedResponse(events = listOf(StreamEvent.ToolCall("call_1", "weather", secretArgs))),
+                ScriptedResponse(events = listOf(StreamEvent.ToolCall("call_2", "weather", secretArgs))),
+            ),
+        )
+
+        val redactedLogger = RecordingLogger()
+        WrapLanguageModel(
+            model,
+            listOf(
+                LoggingMiddleware(
+                    redactedLogger,
+                    LoggingOptions {
+                        recordInputs(true)
+                    }
+                )
+            ),
+        ).stream(params).collect { }
+        val redactedLogs = redactedLogger.debugs.joinToString("\n")
+        assertTrue("safe city" in redactedLogs, redactedLogs)
+        assertTrue("sk-live-secret" !in redactedLogs, redactedLogs)
+        assertTrue("[REDACTED]" in redactedLogs, redactedLogs)
+
+        val rawLogger = RecordingLogger()
+        WrapLanguageModel(
+            model,
+            listOf(
+                LoggingMiddleware(
+                    rawLogger,
+                    LoggingOptions {
+                        recordInputs(true)
+                        allowRawValues(true)
+                    }
+                )
+            ),
+        ).stream(params).collect { }
+        val rawLogs = rawLogger.debugs.joinToString("\n")
+        assertTrue("sk-live-secret" in rawLogs, rawLogs)
+    }
 }

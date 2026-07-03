@@ -12,10 +12,10 @@ data class SearchInput(val query: String, val limit: Int = 5)
 @Serializable
 data class SearchHit(val title: String, val url: String, val snippet: String)
 
-val searchDocs = tool<SearchInput, List<SearchHit>, AppContext>(
+val searchDocs = Tool<SearchInput, List<SearchHit>, AppContext>(
     name = "searchDocs",
     description = "Search product documentation by query.",
-    inputExamples = listOf("""{"query":"streamTextResult adapters","limit":3}"""),
+    inputExamples = listOf("""{"query":"TextGenerator streamResult adapters","limit":3}"""),
 ) { input ->
     docs.search(input.query, limit = input.limit)
 }
@@ -27,26 +27,27 @@ serializer-explicit overload when the type is not reified at the call site.
 ## Use Tools With Agents
 
 ```kotlin
-val supportAgent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Use documentation search before answering SDK questions.",
-    tools = toolSetOf(searchDocs, createTicket),
-    stopWhen = anyOf(stepCountIs(8), repeatedToolCallLoop(3)),
-)
+class SupportAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Use documentation search before answering SDK questions.",
+        tools = tools,
+        stopWhen = AnyOf(StepCountIs(8), RepeatedToolCallLoop(3)),
+    )
 
+val supportAgent = SupportAgent(model, ToolSet(searchDocs, createTicket))
 val result = supportAgent.generate(
     prompt = "How do I persist chat messages?",
     options = context,
-)
+).first()
 
 println(result.text)
 ```
 
-Agents own tool execution and loop control. Direct `generateText` and
-`streamText` calls are better for one-step work; agents are better when the
-model may need to act, observe, and continue. Set `stopWhen` whenever tools are
-available. Structured output can add another model step, so leave enough room
-for tool use plus final formatting.
+Agents own tool execution and loop control. `TextGenerator` is better for
+one-step work; agents are better when the model may need to act, observe, and
+continue. Set `stopWhen` whenever tools are available. Structured output can
+add another model step, so leave enough room for tool use plus final formatting.
 
 ## Approval
 
@@ -54,7 +55,7 @@ Use `needsApproval` for tools that write data, spend money, contact users, or
 run privileged operations.
 
 ```kotlin
-val createTicket = tool<CreateTicket, Ticket, AppContext>(
+val createTicket = Tool<CreateTicket, Ticket, AppContext>(
     name = "createTicket",
     description = "Create a customer support ticket.",
     needsApproval = { input, options ->
@@ -67,7 +68,7 @@ val createTicket = tool<CreateTicket, Ticket, AppContext>(
 ```
 
 When approval is required, generation returns with pending approval data. Add
-a `toolApprovalResponseMessage(...)` to the message log, then call the agent
+a `ToolApprovalResponseMessage(...)` to the message log, then call the agent
 again with the updated messages.
 
 ## Control What The Model Sees
@@ -76,7 +77,7 @@ Use `toModelOutput` when a tool returns rich UI data but the model only needs
 a summary:
 
 ```kotlin
-val searchDocs = tool<SearchInput, List<SearchHit>, AppContext>(
+val searchDocs = Tool<SearchInput, List<SearchHit>, AppContext>(
     name = "searchDocs",
     description = "Search product documentation.",
     toModelOutput = { hits, _ ->
@@ -94,10 +95,10 @@ context.
 
 ## Streaming Tools
 
-Use `streamingTool` when a tool can show progress before the final result:
+Use `StreamingTool` when a tool can show progress before the final result:
 
 ```kotlin
-val lookupIssue = streamingTool<IssueInput, IssueSnapshot, AppContext>(
+val lookupIssue = StreamingTool<IssueInput, IssueSnapshot, AppContext>(
     name = "lookupIssue",
     description = "Fetch issue details and stream progress.",
 ) { input ->
@@ -113,10 +114,10 @@ result used by the model on the next step.
 
 ## Dynamic And Provider-Executed Tools
 
-Use `dynamicTool` when the schema is runtime-defined:
+Use `DynamicTool` when the schema is runtime-defined:
 
 ```kotlin
-val external = dynamicTool<AppContext>(
+val external = DynamicTool<AppContext>(
     name = "externalAction",
     description = "Call an externally registered action.",
     inputSchemaJson = runtimeSchemaJson,
@@ -125,15 +126,16 @@ val external = dynamicTool<AppContext>(
 }
 ```
 
-Use `providerExecuted = true` or provider-defined helpers when the provider
-runs the tool on its side. Keep local executors for app-owned side effects.
+Use `ProviderExecutedTool(...)` when the provider runs the tool on its side.
+For custom tool factories, set `schemaOptions = ToolSchemaOptions {
+providerExecuted(true) }`. Keep local executors for app-owned side effects.
 
 ## Input Lifecycle Hooks
 
 Use input hooks to surface streamed tool-call input:
 
 ```kotlin
-val draftEmail = tool<DraftInput, Draft, AppContext>(
+val draftEmail = Tool<DraftInput, Draft, AppContext>(
     name = "draftEmail",
     description = "Draft an email.",
     onInputStart = { id -> ui.markToolInputStarted(id) },

@@ -6,24 +6,24 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
-import kotlin.concurrent.Volatile
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
@@ -41,7 +41,7 @@ import kotlin.coroutines.coroutineContext
  *   - A finish reason other than `tool-calls` is returned, OR
  *   - A tool that is invoked does not have an execute function, OR
  *   - **A tool call needs approval**, OR
- *   - A stop condition is met (default `stepCountIs(20)`).
+ *   - A stop condition is met (default `StepCountIs(20)`).
  *
  * ## Approval flow (v6 RPC semantics)
  *
@@ -51,98 +51,170 @@ import kotlin.coroutines.coroutineContext
  *   3. **End the loop** — return control to the host with
  *      `GenerateResult.pendingApprovals` populated.
  *   4. Host calls [generate] again with
- *      `messages = result.messages + toolApprovalResponseMessage(...)`.
+ *      `messages = result.messages + ToolApprovalResponseMessage(...)`.
  *   5. Loop resumes; approved tools execute; denied tools are skipped
  *      and the denial reason flows back to the model as a tool result.
  *
  * Generation isn't kept "in flight" while the user decides — host can
  * serialize, persist, transport, then resume.
+ *
+ * Construction accepts either direct common parameters or [AgentSettings].
+ * Direct parameters win over matching settings fields. [model],
+ * [instructions], and [tools] are required through one of those paths.
+ * Because all constructor parameters have defaults, Kotlin also exposes a
+ * public no-arg constructor; `ToolLoopAgent<Unit, String>()` compiles but
+ * fails immediately with [InvalidArgumentError] because the required model,
+ * instructions, and tools are missing.
  */
+@OptIn(ExperimentalAiSdkApi::class, ExperimentalAtomicApi::class)
+@Suppress("ConstructorParameterNaming", "LongParameterList", "UNCHECKED_CAST", "VariableNaming")
+/** @since 0.3.0-beta01 */
 public abstract class ToolLoopAgent<TContext, TOutput>(
-    public val model: LanguageModel,
-    public val instructions: String,
-    override val tools: ToolSet<TContext>,
-    public val activeTools: List<String>? = null,
-    public val output: Output<TOutput>? = null,
-    public val stopWhen: StopCondition = stepCountIs(20),
-    public val prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = null,
-    public val prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = null,
-    public val callOptionsSchema: KSerializer<TContext>? = null,
+    /**
+     * Builder-backed construction settings for advanced agent configuration.
+     * @since 0.3.0-beta01
+     */
+    settings: AgentSettings<TContext> = AgentSettings(),
+    /** @since 0.3.0-beta01 */
+    public val model: LanguageModel = settings.model
+        ?: throw InvalidArgumentError("model", "ToolLoopAgent requires model via parameter or settings"),
+    /** @since 0.3.0-beta01 */
+    public val instructions: String = settings.instructions
+        ?: throw InvalidArgumentError(
+            "instructions",
+            "ToolLoopAgent requires instructions via parameter or settings",
+        ),
+    override val tools: ToolSet<TContext> = settings.tools
+        ?: throw InvalidArgumentError("tools", "ToolLoopAgent requires tools via parameter or settings"),
+    /** @since 0.3.0-beta01 */
+    public val output: Output<TOutput>? = settings.output as Output<TOutput>?,
+    /** @since 0.3.0-beta01 */
+    public val stopWhen: StopCondition = settings.stopWhen ?: StepCountIs(20),
+) : Agent<TContext, TOutput> {
+    /** @since 0.3.0-beta01 */
+    public val activeTools: List<String>? = settings.activeTools
+
+    /** @since 0.3.0-beta01 */
+    public val prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = settings.prepareCall
+
+    /** @since 0.3.0-beta01 */
+    public val prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = settings.prepareStep
+
+    /** @since 0.3.0-beta01 */
+    public val callOptionsSchema: KSerializer<TContext>? = settings.callOptionsSchema
+
     // Sampler-param defaults set at agent construction. Mirror v6's
     // `CallSettings` (tool-loop-agent-settings.ts:145-194). Resolution
     // chain inside the loop is `StepSettings ?: AgentSettings ?: these
     // constructor defaults ?: null` (null = provider's own default).
-    public val temperature: Float? = null,
-    public val topP: Float? = null,
-    public val topK: Int? = null,
-    public val maxOutputTokens: Int? = null,
-    public val stopSequences: List<String>? = null,
-    public val seed: Int? = null,
-    /** v6 `CallSettings.presencePenalty` agent-default. */
-    public val presencePenalty: Float? = null,
-    /** v6 `CallSettings.frequencyPenalty` agent-default. */
-    public val frequencyPenalty: Float? = null,
-    /** Wire-level response constraint for providers that support it. */
-    public val responseFormat: ResponseFormat = ResponseFormat.Text,
+    /** @since 0.3.0-beta01 */
+    public val temperature: Float? = settings.temperature
+
+    /** @since 0.3.0-beta01 */
+    public val topP: Float? = settings.topP
+
+    /** @since 0.3.0-beta01 */
+    public val topK: Int? = settings.topK
+
+    /** @since 0.3.0-beta01 */
+    public val maxOutputTokens: Int? = settings.maxOutputTokens
+
+    /** @since 0.3.0-beta01 */
+    public val stopSequences: List<String>? = settings.stopSequences
+
+    /** @since 0.3.0-beta01 */
+    public val seed: Int? = settings.seed
+
     /**
-     * Max tool calls executed concurrently within one step. Default unbounded — all of a
-     * step's tool calls run at once (latency = slowest tool, not the sum). Results are
-     * still applied to the message log in deterministic call order.
+     * v6 `CallSettings.presencePenalty` agent-default.
+     * @since 0.3.0-beta01
      */
-    public val maxParallelToolCalls: Int = Int.MAX_VALUE,
-    public val onStart: (suspend OnStartEvent.() -> Unit)? = null,
-    public val onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null,
-    public val onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null,
-    public val onFinish: (suspend OnFinishEvent.() -> Unit)? = null,
-    public val onError: (suspend OnErrorEvent.() -> Unit)? = null,
-    public val onChunk: (suspend OnChunkEvent.() -> Unit)? = null,
-    public val onAbort: (suspend OnAbortEvent.() -> Unit)? = null,
-    public val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null,
-    public val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null,
+    public val presencePenalty: Float? = settings.presencePenalty
+
+    /**
+     * v6 `CallSettings.frequencyPenalty` agent-default.
+     * @since 0.3.0-beta01
+     */
+    public val frequencyPenalty: Float? = settings.frequencyPenalty
+
+    /**
+     * Wire-level response constraint for providers that support it.
+     * @since 0.3.0-beta01
+     */
+    public val responseFormat: ResponseFormat = settings.responseFormat ?: ResponseFormat.Text
+
+    /**
+     * Maximum retries for each non-streaming model round-trip. Streaming retry is handled separately.
+     * @since 0.3.0-beta01
+     */
+    public val maxRetries: Int = settings.maxRetries ?: 2
+
+    private val requestedMaxParallelToolCalls =
+        settings.maxParallelToolCalls ?: ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS
+
+    /**
+     * Explicit bounded policy for per-step tool execution. Defaults cap both concurrent
+     * tool executors and total accepted tool calls so a model cannot create unbounded
+     * child coroutines or unbounded in-step work.
+     * @since 0.3.0-beta01
+     */
+    public val toolExecutionPolicy: ToolExecutionPolicy =
+        settings.toolExecutionPolicy ?: ToolExecutionPolicy {
+            maxParallelToolCalls(requestedMaxParallelToolCalls)
+        }
+
     /**
      * Self-healing callback fired when a tool call's arguments fail to
      * decode. Return a corrected call to retry, or null to surface
      * `StreamEvent.ToolError`. See [ToolCallRepairFunction].
+     * @since 0.3.0-beta01
      */
-    public val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
-    /**
-     * Secret for HMAC-signing tool-approval requests (upstream v6.0.202
-     * `experimental_toolApprovalSecret`). When set, every approval request the
-     * loop issues carries a signature over `(approvalId, toolCallId, toolName,
-     * input)`, and a replayed approval is re-validated FAIL-CLOSED before the
-     * tool executes: missing/invalid signature throws
-     * [AgentError.InvalidToolApprovalSignature], the input is re-validated
-     * against the tool's schema, and a tool that no longer requires approval
-     * is denied rather than run — so a client cannot forge, re-target, or
-     * input-swap an approval. Experimental upstream (can break in patches).
-     */
-    public val experimental_toolApprovalSecret: ByteArray? = null,
+    @ExperimentalAiSdkApi
+    public val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = settings.experimental_repairToolCall
+
     /**
      * Telemetry for this agent's invocations (upstream v7 `telemetry`).
-     * [Telemetry] integrations registered globally via [registerTelemetry]
+     * [Telemetry] integrations registered globally via `registerTelemetry`
      * observe every generate/stream call automatically; this setting adds
      * call metadata ([TelemetrySettings.functionId]) or per-agent
      * [TelemetrySettings.integrations] — which, when non-empty, REPLACE the
      * global registrations for this agent's calls (upstream per-call
      * semantics). Telemetry observes — an integration throw never alters
      * loop behavior.
+     * @since 0.3.0-beta01
      */
-    public val telemetry: TelemetrySettings? = null,
+    public val telemetry: TelemetrySettings? = settings.telemetry
+
     /**
      * Port-side log sink for non-fatal warnings (see [Logger]). The loop warns here
      * when a [Telemetry] integration throws and the event is dropped — the swallow
      * contract keeps telemetry from altering the loop, and the warn keeps a broken
      * integration DISCOVERABLE instead of perfectly silent.
+     * @since 0.3.0-beta01
      */
-    public val logger: Logger = NoopLogger,
+    public val logger: Logger = settings.logger ?: NoopLogger
+
+    private val engineContext: CoroutineContext = settings.engineContext ?: Dispatchers.Default
+
+    init {
+        require(maxRetries >= 0) { "maxRetries must be >= 0" }
+    }
+
+    private val dispatcher = AgentTelemetryDispatcher<TContext>(logger)
+    private val repairer = ToolCallRepairer<TContext>(experimental_repairToolCall, tools)
+    private val toolApprovalSecretBytes = settings.experimental_toolApprovalSecret?.copyOf()
+    private val approvalCoordinator = ToolApprovalCoordinator<TContext>(toolApprovalSecretBytes, repairer)
+
+    /** @since 0.3.0-beta01 */
+    @ExperimentalAiSdkApi
+    public val experimental_toolApprovalSecret: ByteArray?
+        get() = toolApprovalSecretBytes?.copyOf()
+
     /**
-     * Coroutine context for the engine-surface scope (the long-lived
-     * StateFlow-driven surface). Defaults to [Dispatchers.Default]; inject a
-     * test dispatcher or a host-controlled one for deterministic scheduling.
-     * The per-call generate()/stream() API is unaffected.
+     * Effective per-step parallelism cap, retained for source compatibility with existing callers.
+     * @since 0.3.0-beta01
      */
-    engineContext: CoroutineContext = Dispatchers.Default,
-) : Agent<TContext, TOutput> {
+    public val maxParallelToolCalls: Int = toolExecutionPolicy.maxParallelToolCalls
 
     // ─── ENGINE-SHAPE STATE-HOLDER SURFACE ───────────────────────────────
     //
@@ -164,37 +236,36 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * is a host-specific reactive lifecycle surface layered on top.
      * Renamed from `state` so subclasses can declare their own `state`
      * member without member-hiding clashes.
+     * @since 0.3.0-beta01
      */
     public val engineState: StateFlow<ToolLoopAgentState> = mutableEngineState.asStateFlow()
 
     private val engineScope: CoroutineScope = CoroutineScope(SupervisorJob() + engineContext)
 
-    // @Volatile for cross-thread visibility: these are written from host-thread
-    // entry points (dispatchEngineAction/submitPrompt/resumeWithApproval/close) and
-    // read from engine jobs running on a multi-threaded dispatcher (Dispatchers.Default,
-    // i.e. Native). A plain var here is a data race the single-threaded test scheduler
-    // hides. currentEngineJob also backs the supersession guard (see runEngineLoop).
-    @Volatile
-    private var currentEngineJob: Job? = null
-
-    @Volatile
-    private var currentEngineContext: TContext? = null
+    // AtomicReference for cross-thread visibility: written from host-thread entry points
+    // (dispatchEngineAction/submitPrompt/resumeWithApproval/close) and read from engine
+    // jobs on Dispatchers.Default. currentEngineJobRef also backs the supersession guard.
+    private val currentEngineJobRef = AtomicReference<Job?>(null)
+    private val currentEngineAbortControllerRef = AtomicReference<AbortController?>(null as AbortController?)
+    private val currentEngineContextRef = AtomicReference<TContext?>(null)
 
     // TOOL-004: tracks the most recent activeContext the loop was running with,
     // including any override applied by prepareStep via StepSettings.experimental_context.
     // Updated by runEngineLoop before the stream starts and after each prepareStep override,
     // so resumeWithApproval picks up the live context rather than the stale submitPrompt one.
-    @Volatile
-    private var currentActiveContext: TContext? = null
+    private val currentActiveContextRef = AtomicReference<TContext?>(null)
 
     /**
      * Cancel the engine scope and any in-flight engine job. Call when a
      * long-lived host (ViewModel / Repository) that drove the engine surface
      * is disposed. The per-call generate()/stream() API needs no close().
+     * @since 0.3.0-beta01
      */
     public fun close() {
-        currentEngineJob?.cancel()
-        currentEngineJob = null
+        currentEngineAbortControllerRef.load()?.abort()
+        currentEngineAbortControllerRef.store(null)
+        currentEngineJobRef.load()?.cancel()
+        currentEngineJobRef.store(null)
         engineScope.cancel()
     }
 
@@ -208,6 +279,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * which takes a host-specific host action type. The port-level engine
      * action dispatch lives here; subclasses layer their own onAction
      * with different action types on top.
+     * @since 0.3.0-beta01
      */
     public fun dispatchEngineAction(action: ToolLoopAgentAction<TContext>) {
         when (action) {
@@ -218,48 +290,82 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             is ToolLoopAgentAction.DenyToolCall ->
                 resumeWithApproval(action.toolCallId, approved = false, reason = action.reason)
             ToolLoopAgentAction.Cancel -> {
-                currentEngineJob?.cancel()
-                mutableEngineState.update { it.copy(isStreaming = false) }
+                currentEngineAbortControllerRef.load()?.abort()
+                currentEngineAbortControllerRef.store(null)
+                currentEngineJobRef.load()?.cancel()
+                // Null the ref (mirroring close()) so updateEngineStateIfCurrent's guard
+                // rejects a late write from the cancelled-but-unwinding job clobbering Idle.
+                currentEngineJobRef.store(null)
+                mutableEngineState.update { it.copy(phase = ToolLoopAgentState.Phase.Idle) }
             }
             ToolLoopAgentAction.Reset -> {
-                currentEngineJob?.cancel()
-                currentEngineContext = null
+                currentEngineAbortControllerRef.load()?.abort()
+                currentEngineAbortControllerRef.store(null)
+                currentEngineJobRef.load()?.cancel()
+                // Null the ref (mirroring close()) so updateEngineStateIfCurrent's guard
+                // rejects a late write from the cancelled-but-unwinding job clobbering the reset.
+                currentEngineJobRef.store(null)
+                currentEngineContextRef.store(null)
                 mutableEngineState.value = ToolLoopAgentState()
             }
         }
     }
 
     private fun submitPrompt(text: String, context: TContext?) {
-        currentEngineJob?.cancel()
-        currentEngineContext = context
+        currentEngineAbortControllerRef.load()?.abort()
+        currentEngineJobRef.load()?.cancel()
+        currentEngineContextRef.store(context)
         val priorMessages = mutableEngineState.value.messages
         mutableEngineState.update {
             it.copy(
-                messages = priorMessages + userMessage(text),
+                messages = priorMessages + UserMessage(text),
                 streamingAssistantText = "",
                 currentToolCalls = emptyList(),
                 pendingApprovals = emptyList(),
-                isStreaming = true,
-                error = null,
+                phase = ToolLoopAgentState.Phase.Streaming,
             )
         }
-        // Lazy-start so currentEngineJob is published BEFORE the loop body runs (build →
-        // assign → start). The body's supersession guard (runEngineLoop) compares its own
-        // job to this field; an eager launch could begin writing state before the
-        // assignment lands, making the new job's own early writes fail the guard.
+        // Lazy-start so currentEngineJobRef is published BEFORE the loop body runs (build →
+        // store → start). The body's supersession guard (runEngineLoop) compares its own
+        // job to this ref; an eager launch could begin writing state before the
+        // store lands, making the new job's own early writes fail the guard.
+        val abortController = AbortController(logger)
         val job = engineScope.launch(start = CoroutineStart.LAZY) {
-            runEngineLoop(prompt = text, priorMessages = priorMessages, context = context)
+            runEngineLoop(
+                prompt = text,
+                priorMessages = priorMessages,
+                context = context,
+                abortSignal = abortController.signal,
+            )
         }
-        currentEngineJob = job
+        currentEngineAbortControllerRef.store(abortController)
+        currentEngineJobRef.store(job)
         job.start()
     }
 
     private fun resumeWithApproval(toolCallId: String, approved: Boolean, reason: String?) {
-        currentEngineJob?.cancel()
-        val priorMessages = mutableEngineState.value.messages
+        val currentState = mutableEngineState.value
+        val matchingApprovals = currentState.pendingApprovals
+            .filter { it.toolCallId == toolCallId || ApprovalIds.effectiveApprovalId(it) == toolCallId }
+        if (matchingApprovals.isEmpty()) {
+            mutableEngineState.update {
+                it.copy(phase = ToolLoopAgentState.Phase.Error("Unknown approval id: $toolCallId"))
+            }
+            return
+        }
+        currentEngineAbortControllerRef.load()?.abort()
+        currentEngineJobRef.load()?.cancel()
+        val priorMessages = currentState.messages
         val approvalResponse = ModelMessage(
             role = MessageRole.Tool,
-            content = listOf(ContentPart.ToolApprovalResponse(toolCallId, approved, reason)),
+            content = matchingApprovals.map {
+                ContentPart.ToolApprovalResponse(
+                    toolCallId = it.toolCallId,
+                    approved = approved,
+                    reason = reason,
+                    approvalId = it.approvalId,
+                )
+            },
         )
         val updatedMessages = priorMessages + approvalResponse
         mutableEngineState.update {
@@ -268,37 +374,42 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 streamingAssistantText = "",
                 currentToolCalls = emptyList(),
                 pendingApprovals = emptyList(),
-                isStreaming = true,
-                error = null,
+                phase = ToolLoopAgentState.Phase.Streaming,
             )
         }
-        // Build → assign → start (see submitPrompt) so the guard sees this job published.
+        // Build → store → start (see submitPrompt) so the guard sees this job published.
+        val abortController = AbortController(logger)
         val job = engineScope.launch(start = CoroutineStart.LAZY) {
-            // TOOL-004: use currentActiveContext (updated by prepareStep overrides)
-            // rather than currentEngineContext (only set at submitPrompt time).
-            runEngineLoop(prompt = null, priorMessages = updatedMessages, context = currentActiveContext)
+            // TOOL-004: use currentActiveContextRef (updated by prepareStep overrides)
+            // rather than currentEngineContextRef (only set at submitPrompt time).
+            runEngineLoop(
+                prompt = null,
+                priorMessages = updatedMessages,
+                context = currentActiveContextRef.load(),
+                abortSignal = abortController.signal,
+            )
         }
-        currentEngineJob = job
+        currentEngineAbortControllerRef.store(abortController)
+        currentEngineJobRef.store(job)
         job.start()
     }
 
+    @Suppress("LongMethod")
     private suspend fun runEngineLoop(
         prompt: String?,
         priorMessages: List<ModelMessage>,
         context: TContext?,
+        abortSignal: AbortSignal,
     ) {
         // This loop's own job. Every state write below is gated on it still being the
         // current engine job, so a superseded-but-cooperatively-unwinding old loop can't
         // clobber a newer submit's state (the stale-write race AgentSession's active()
-        // guard prevents). currentEngineJob was published before start() (see callers).
+        // guard prevents). currentEngineJobRef was stored before start() (see callers).
         val ownJob = coroutineContext[Job]
-        // TOOL-004: seed the active context so resumeWithApproval uses at least the
-        // caller-supplied context when no prepareStep override has fired yet.
-        // FLAG: per-step updates (when stepSettings.experimental_context overrides activeContext
-        // inside streamInternal) are not yet reflected here — that requires threading a
-        // callback into streamInternal. The seed covers the common case; per-step context
-        // evolution on resume is a follow-up.
-        currentActiveContext = context
+        val engineAbortSignal = CombineAbortSignals(abortSignal, ownJob?.let(::AbortSignalFromJob) ?: AbortSignalNever)
+        // TOOL-004: seed the active context so approval-resume starts from the caller-supplied
+        // context even before prepareStep overrides the running value inside streamInternal.
+        currentActiveContextRef.store(context)
         val engineHooks = AgentCallHooks(
             onChunk = { event ->
                 val streamEvent = event.event
@@ -324,17 +435,21 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         streamingAssistantText = "",
                         currentToolCalls = emptyList(),
                         pendingApprovals = event.pendingApprovals,
-                        isStreaming = false,
+                        phase = ToolLoopAgentState.Phase.Idle,
                     )
                 }
             },
         )
         try {
-            stream(
+            streamInternal(
                 prompt = prompt,
-                messages = priorMessages,
+                priorMessages = priorMessages,
                 options = context,
+                abortSignal = engineAbortSignal,
                 hooks = engineHooks,
+                finalMessagesRef = null,
+                stepsCapture = null,
+                onActiveContextChanged = { currentActiveContextRef.store(it) },
             ).collect { event ->
                 when (event) {
                     is StreamEvent.ToolCall -> updateEngineStateIfCurrent(ownJob) { current ->
@@ -344,15 +459,45 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         )
                     }
                     is StreamEvent.Error -> updateEngineStateIfCurrent(ownJob) {
-                        it.copy(isStreaming = false, error = event.message)
+                        it.copy(phase = ToolLoopAgentState.Phase.Error(event.message))
                     }
-                    else -> Unit
+                    // Record the terminal finish reason on the engine state so hosts that
+                    // branch on engineState.lastFinishReason (stop/length/max-steps/approval)
+                    // observe it; without this it stayed permanently null.
+                    is StreamEvent.Finish -> updateEngineStateIfCurrent(ownJob) {
+                        it.copy(lastFinishReason = event.finishReason)
+                    }
+                    is StreamEvent.StreamStart,
+                    is StreamEvent.ResponseMetadata,
+                    is StreamEvent.StepStart,
+                    is StreamEvent.TextStart,
+                    is StreamEvent.TextDelta,
+                    is StreamEvent.TextEnd,
+                    is StreamEvent.ReasoningStart,
+                    is StreamEvent.ReasoningDelta,
+                    is StreamEvent.ReasoningEnd,
+                    is StreamEvent.SourcePart,
+                    is StreamEvent.FilePart,
+                    is StreamEvent.Data,
+                    is StreamEvent.ToolInputStart,
+                    is StreamEvent.ToolInputDelta,
+                    is StreamEvent.ToolInputEnd,
+                    is StreamEvent.ToolResult,
+                    is StreamEvent.ToolError,
+                    is StreamEvent.ToolApprovalRequest,
+                    is StreamEvent.ToolOutputDenied,
+                    is StreamEvent.StepFinish,
+                    StreamEvent.Abort,
+                    is StreamEvent.Raw,
+                    -> Unit
                 }
             }
         } catch (t: CancellationException) {
             throw t
         } catch (t: Throwable) {
-            updateEngineStateIfCurrent(ownJob) { it.copy(isStreaming = false, error = t.message ?: "agent failed") }
+            updateEngineStateIfCurrent(
+                ownJob
+            ) { it.copy(phase = ToolLoopAgentState.Phase.Error(t.message ?: "agent failed")) }
         }
     }
 
@@ -363,7 +508,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * overwrite the new job's state. Mirrors [AgentSession]'s `active()` guard.
      *
      * The check→write is not atomic against a concurrent [close] that nulls
-     * currentEngineJob between the two: such a write lands on an agent that is
+     * currentEngineJobRef between the two: such a write lands on an agent that is
      * already disposing (engineScope is being cancelled) and on a StateFlow no
      * live host is observing, so it is benign — a tighter lock would buy nothing.
      */
@@ -371,19 +516,25 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         ownerJob: Job?,
         block: (ToolLoopAgentState) -> ToolLoopAgentState,
     ) {
-        if (currentEngineJob !== ownerJob) return
+        if (currentEngineJobRef.load() !== ownerJob) return
         mutableEngineState.update(block)
     }
     // ──────────────────────────────────────────────────────────────────────
 
+    /**
+     * Cold flow: no model call or tool execution starts until collected.
+     * Each collection reruns the full generation from the beginning, including
+     * tool executions and their side effects, and may incur provider cost or
+     * billing again. One-shot callers should collect exactly one value, usually
+     * with `.first()`.
+     */
     @Suppress("UNCHECKED_CAST")
-    override suspend fun generate(
+    override fun generate(
         prompt: String?,
         messages: List<ModelMessage>,
         options: TContext?,
         abortSignal: AbortSignal,
-        hooks: AgentCallHooks?,
-    ): GenerateResult<TOutput> {
+    ): Flow<GenerateResult<TOutput>> = flow {
         val accumulator = StringBuilder()
         val collectedSteps = mutableListOf<StepResult>()
         val collectedApprovals = mutableListOf<PendingApproval>()
@@ -395,7 +546,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 is StreamEvent.TextDelta -> accumulator.append(event.text)
                 is StreamEvent.StepFinish -> {
                     finishReason = event.finishReason
-                    totalUsage += event.usage
+                    totalUsage = with(UsageArithmetic) { totalUsage + event.usage }
                 }
                 is StreamEvent.Finish -> {
                     finishReason = event.finishReason
@@ -412,30 +563,82 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         ),
                     )
                 }
-                is StreamEvent.Error -> throw AiSdkException(event.message, event.cause)
-                else -> Unit
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.TextStart,
+                is StreamEvent.TextEnd,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.Data,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolOutputDenied,
+                StreamEvent.Abort,
+                is StreamEvent.Raw,
+                -> Unit
             }
         }
         val finalMessagesRef = MessageHolder()
         val stepsRef = StepsHolder(collectedSteps)
-        streamInternal(prompt, messages, options, abortSignal, hooks, finalMessagesRef, stepsRef)
+        streamInternal(
+            prompt,
+            messages,
+            options,
+            abortSignal,
+            null,
+            finalMessagesRef,
+            stepsRef,
+            modelCallMode = ModelCallMode.Generate,
+        )
             .collect { event ->
                 captureCollector.consume(event)
             }
         collectedMessages = finalMessagesRef.value
         val text = accumulator.toString()
         val steps = collectedSteps.toList()
-        return GenerateResult(
-            output = decodeFinalOutput(output, text, finishReason),
-            text = text,
-            steps = steps,
-            finishReason = finishReason,
-            // upstream parity: usage = final step's usage, totalUsage = sum across steps.
-            usage = steps.lastOrNull()?.usage ?: totalUsage,
-            totalUsage = totalUsage,
-            pendingApprovals = collectedApprovals.toList(),
-            messages = collectedMessages,
-        )
+        val approvals = collectedApprovals.toList()
+        // A loop paused on tool approval has no final object yet — the host inspects
+        // pendingApprovals and resumes. Decoding (or throwing NoOutputGeneratedError) here
+        // would discard the approvals, making structured-output + approval unresumable.
+        val pausedForApproval = approvals.isNotEmpty() || finishReason == FinishReason.ToolApprovalRequested
+        val usage = steps.lastOrNull()?.usage ?: totalUsage
+        if (output != null && pausedForApproval) {
+            emit(
+                GenerateResult.unavailable(
+                    outputUnavailableReason = "No object generated: the run is paused for tool approval.",
+                    text = text,
+                    steps = steps,
+                    finishReason = finishReason,
+                    usage = usage,
+                    totalUsage = totalUsage,
+                    pendingApprovals = approvals,
+                    messages = collectedMessages,
+                ),
+            )
+        } else {
+            emit(
+                ResultConstruction.generateResult(
+                    rawOutput = decodeFinalOutput(output, text, finishReason),
+                    text = text,
+                    steps = steps,
+                    finishReason = finishReason,
+                    // upstream parity: usage = final step's usage, totalUsage = sum across steps.
+                    usage = usage,
+                    totalUsage = totalUsage,
+                    pendingApprovals = approvals,
+                    messages = collectedMessages,
+                )
+            )
+        }
     }
 
     /**
@@ -444,8 +647,14 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * length / step-cap / non-stop yields no parseable object, surfaced as
      * [NoOutputGeneratedError] rather than a confusing decode error.
      */
-    private fun decodeFinalOutput(output: Output<TOutput>?, text: String, finishReason: FinishReason): TOutput =
+    private fun decodeFinalOutput(
+        output: Output<TOutput>?,
+        text: String,
+        finishReason: FinishReason,
+    ): TOutput =
         if (output == null) {
+            // No structured object to decode: a text agent returns raw text, and the
+            // cast targets the erased TOutput, so it is a no-op at this site.
             @Suppress("UNCHECKED_CAST")
             (text as TOutput)
         } else if (finishReason == FinishReason.Stop) {
@@ -459,12 +668,60 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         messages: List<ModelMessage>,
         options: TContext?,
         abortSignal: AbortSignal,
-        hooks: AgentCallHooks?,
-    ): Flow<StreamEvent> = streamInternal(prompt, messages, options, abortSignal, hooks, null, null)
+    ): Flow<StreamEvent> = streamInternal(prompt, messages, options, abortSignal, null, null, null)
+
+    /**
+     * Observe the FULL agent-lifecycle event stream as a `Flow<AgentEvent>` — the
+     * Flow-first replacement for the former bag of nullable `onX` callbacks. Cold:
+     * one loop run per collection. Carries every lifecycle event ([AgentEvent.Started],
+     * [AgentEvent.StepStarted], every [AgentEvent.Chunk], [AgentEvent.StepFinished],
+     * the tool-call pair, [AgentEvent.Errored], [AgentEvent.Aborted],
+     * [AgentEvent.Finished]).
+     *
+     * Collect with an exhaustive `when` (no `else`), or use [collectAgentEvents].
+     * [stream] stays the curated `Flow<StreamEvent>` (model deltas only); this is the
+     * superset that also surfaces the loop's own lifecycle boundaries.
+     * @since 0.3.0-beta01
+     */
+    public fun events(
+        prompt: String? = null,
+        messages: List<ModelMessage> = emptyList(),
+        options: TContext? = null,
+        abortSignal: AbortSignal = AbortSignalNever,
+    ): Flow<AgentEvent> = channelFlow {
+        // Bridge: each lifecycle hook fans its event into the channel. The loop fires
+        // these per-call hooks (the constructor `onX` callbacks are gone); onChunk fires
+        // for EVERY model event, so events() carries a Chunk for each.
+        val bridge = AgentCallHooks(
+            onStart = { send(it) },
+            onStepStart = { send(it) },
+            onStepFinish = { send(it) },
+            onFinish = { send(it) },
+            onError = { send(it) },
+            onChunk = { send(it) },
+            onAbort = { send(it) },
+            experimental_onToolCallStart = { send(it) },
+            experimental_onToolCallFinish = { send(it) },
+        )
+        // Drive one loop run; drain the StreamEvents (already surfaced as Chunk above).
+        streamInternal(prompt, messages, options, abortSignal, bridge, null, null).collect { }
+    }
+
+    /**
+     * Convenience over [events]: collect the lifecycle stream with one suspend handler —
+     * `agent.collectAgentEvents { when (it) { is AgentEvent.Chunk -> … } }`.
+     */
+    public suspend fun collectAgentEvents(
+        prompt: String? = null,
+        messages: List<ModelMessage> = emptyList(),
+        options: TContext? = null,
+        abortSignal: AbortSignal = AbortSignalNever,
+        onEvent: suspend (AgentEvent) -> Unit,
+    ): Unit = events(prompt, messages, options, abortSignal).collect(onEvent)
 
     // SwallowedException: the AbortError catch intentionally consumes the abort — it is a
     // terminal user signal surfaced as StreamEvent.Abort, not an error to propagate.
-    @Suppress("SwallowedException")
+    @Suppress("SwallowedException", "LongMethod", "CyclomaticComplexMethod", "LongParameterList")
     private fun streamInternal(
         prompt: String?,
         priorMessages: List<ModelMessage>,
@@ -473,18 +730,18 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         hooks: AgentCallHooks?,
         finalMessagesRef: MessageHolder?,
         stepsCapture: StepsHolder?,
+        onActiveContextChanged: ((TContext?) -> Unit)? = null,
+        modelCallMode: ModelCallMode = ModelCallMode.Stream,
     ): Flow<StreamEvent> = flow {
-        require(prompt != null || priorMessages.isNotEmpty()) {
-            "Agent.generate/stream: must provide either `prompt` or `messages`"
-        }
         val validatedOptions = validateCallOptions(options)
+        onActiveContextChanged?.invoke(validatedOptions)
         // v7 telemetry: resolve the effective integration once per invocation and
         // stamp every event of this call with one TelemetryCall envelope.
-        val feed = resolveTelemetry(telemetry, logger)?.let { tele ->
+        val feed = Telemetry.resolveTelemetry(telemetry, logger)?.let { tele ->
             TelemetryFeed(
                 tele = tele,
                 call = TelemetryCall(
-                    callId = generateId("call"),
+                    callId = IdGenerator.generate("call"),
                     agentId = id,
                     agentVersion = version,
                     modelId = model.modelId,
@@ -494,12 +751,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         }
         emit(StreamEvent.StreamStart())
         // One immutable event shared by both hook invocations AND telemetry — the identical snapshot.
-        val startEvent = OnStartEvent(prompt, priorMessages, validatedOptions)
-        runHook(0, feed) {
-            onStart?.invoke(startEvent)
+        val startEvent = AgentEvent.Started(prompt, priorMessages, validatedOptions)
+        dispatcher.runHook(0, feed, hooks) {
             hooks?.onStart?.invoke(startEvent)
         }
-        fireTelemetry(feed) { onAgentStart(it, startEvent) }
+        dispatcher.fireTelemetry(feed) { onEvent(it, startEvent) }
 
         // prepareCall — once per invocation.
         val resolvedSettings: AgentSettings<TContext> = prepareCall?.let { hook ->
@@ -508,7 +764,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             } catch (ce: CancellationException) {
                 throw ce
             } catch (t: Throwable) {
-                emitError(t, 0, OnErrorEvent.ErrorSource.PrepareCall, hooks, feed)
+                dispatcher.emitError(t, 0, AgentEvent.Errored.ErrorSource.PrepareCall, hooks, feed)
                 emit(StreamEvent.Error(t.message ?: "prepareCall failed", cause = t))
                 finalMessagesRef?.value = priorMessages
                 return@flow
@@ -522,19 +778,28 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         val isResumption = priorMessages.isNotEmpty() && hasSystemMessage(priorMessages)
         val messages = if (isResumption) {
             priorMessages.toMutableList().apply {
-                if (prompt != null) add(userMessage(prompt))
+                if (prompt != null) add(UserMessage(prompt))
             }
         } else {
             mutableListOf<ModelMessage>().apply {
-                add(systemMessage(resolvedInstructions))
+                add(SystemMessage(resolvedInstructions))
                 addAll(priorMessages)
-                if (prompt != null) add(userMessage(prompt))
+                if (prompt != null) add(UserMessage(prompt))
             }
         }
 
         // Apply any pending tool-approval responses BEFORE the next model call.
-        val resumeOutcome =
-            applyToolApprovalResponses(this, messages, resolvedTools, options, abortSignal, hooks, feed)
+        val resumeOutcome = approvalCoordinator.applyToolApprovalResponses(
+            out = this,
+            messages = messages,
+            tools = resolvedTools,
+            options = options,
+            abortSignal = abortSignal,
+            hooks = hooks,
+            feed = feed,
+        ) { out, toolDef, call, opts, abort, msgs, h, f, pre ->
+            executeTool(out, toolDef, call, opts, abort, 0, msgs, h, f, pre)
+        }
         if (resumeOutcome != null) {
             // We executed approved tools (and/or recorded denials). Continue the loop normally.
         }
@@ -563,12 +828,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // StreamEvent.Abort and returns; this only does the side effects (it isn't the
         // FlowCollector, so it can't emit itself).
         suspend fun fireAbort() {
-            val abortEvent = OnAbortEvent(completedSteps.toList())
-            runHook(stepNumber, feed) {
-                onAbort?.invoke(abortEvent)
+            val abortEvent = AgentEvent.Aborted(completedSteps.toList())
+            dispatcher.runHook(stepNumber, feed, hooks) {
                 hooks?.onAbort?.invoke(abortEvent)
             }
-            fireTelemetry(feed) { onAbort(it, abortEvent) }
+            dispatcher.fireTelemetry(feed) { onEvent(it, abortEvent) }
             finalMessagesRef?.value = messages.toList()
         }
 
@@ -582,12 +846,6 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 return@flow
             }
             emit(StreamEvent.StepStart(stepNumber))
-            val stepStartEvent = OnStepStartEvent(stepNumber, messages.toList())
-            runHook(stepNumber, feed) {
-                onStepStart?.invoke(stepStartEvent)
-                hooks?.onStepStart?.invoke(stepStartEvent)
-            }
-            fireTelemetry(feed) { onStepStart(it, stepStartEvent) }
 
             val stepSettings: StepSettings<TContext> = prepareStep?.let { hook ->
                 try {
@@ -595,7 +853,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (t: Throwable) {
-                    emitError(t, stepNumber, OnErrorEvent.ErrorSource.PrepareStep, hooks, feed)
+                    dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.PrepareStep, hooks, feed)
                     emit(StreamEvent.Error(t.message ?: "prepareStep failed", cause = t))
                     finalMessagesRef?.value = messages.toList()
                     return@flow
@@ -603,7 +861,10 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             } ?: StepSettings<TContext>()
             // gap #16: a returned experimental_context overrides the running
             // context — for this step's tool execution and every later step.
-            stepSettings.experimental_context?.let { activeContext = it }
+            stepSettings.experimental_context?.let {
+                activeContext = it
+                onActiveContextChanged?.invoke(activeContext)
+            }
 
             val stepModel = stepSettings.model ?: resolvedModel
             val stepMessages = stepSettings.messages ?: messages.toList()
@@ -614,41 +875,65 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             } ?: resolvedTools
             val stepToolChoice = stepSettings.toolChoice ?: ToolChoice.Auto
             val stepProviderOptions =
-                (resolvedSettings.providerOptions ?: emptyMap()) + (stepSettings.providerOptions ?: emptyMap())
+                resolvedSettings.providerOptions + stepSettings.providerOptions
             val stepSystem = stepSettings.system
 
             val effectiveMessages = if (stepSystem != null) {
-                listOf(systemMessage(stepSystem)) + stepMessages.dropWhile { it.role == MessageRole.System }
+                listOf(SystemMessage(stepSystem)) + stepMessages.dropWhile { it.role == MessageRole.System }
             } else {
                 stepMessages
             }
 
-            val callParams = LanguageModelCallParams(
-                messages = effectiveMessages,
-                tools = stepTools.descriptors,
-                toolChoice = stepToolChoice,
-                temperature = stepSettings.temperature
-                    ?: resolvedSettings.temperature ?: temperature,
-                topP = stepSettings.topP ?: resolvedSettings.topP ?: topP,
-                topK = stepSettings.topK ?: resolvedSettings.topK ?: topK,
-                maxOutputTokens = stepSettings.maxOutputTokens
-                    ?: resolvedSettings.maxOutputTokens ?: maxOutputTokens,
-                stopSequences = resolveStopSequences(stepSettings, resolvedSettings),
-                seed = stepSettings.seed ?: resolvedSettings.seed ?: seed,
-                providerOptions = stepProviderOptions,
-                abortSignal = abortSignal,
-                presencePenalty = stepSettings.presencePenalty
-                    ?: resolvedSettings.presencePenalty ?: presencePenalty,
-                frequencyPenalty = stepSettings.frequencyPenalty
-                    ?: resolvedSettings.frequencyPenalty ?: frequencyPenalty,
-                responseFormat = stepSettings.responseFormat
-                    ?: resolvedSettings.responseFormat
-                    ?: if (responseFormat == ResponseFormat.Text && output != null) {
-                        output.toResponseFormat()
-                    } else {
-                        responseFormat
-                    },
+            val callParams = LanguageModelCallParams {
+                messages(effectiveMessages)
+                tools(stepTools.descriptors)
+                toolChoice(stepToolChoice)
+                temperature(
+                    stepSettings.temperature
+                        ?: resolvedSettings.temperature ?: temperature
+                )
+                topP(stepSettings.topP ?: resolvedSettings.topP ?: topP)
+                topK(stepSettings.topK ?: resolvedSettings.topK ?: topK)
+                maxOutputTokens(
+                    stepSettings.maxOutputTokens
+                        ?: resolvedSettings.maxOutputTokens ?: maxOutputTokens
+                )
+                stopSequences(resolveStopSequences(stepSettings, resolvedSettings))
+                seed(stepSettings.seed ?: resolvedSettings.seed ?: seed)
+                providerOptions(stepProviderOptions)
+                abortSignal(abortSignal)
+                presencePenalty(
+                    stepSettings.presencePenalty
+                        ?: resolvedSettings.presencePenalty ?: presencePenalty
+                )
+                frequencyPenalty(
+                    stepSettings.frequencyPenalty
+                        ?: resolvedSettings.frequencyPenalty ?: frequencyPenalty
+                )
+                responseFormat(
+                    stepSettings.responseFormat
+                        ?: resolvedSettings.responseFormat
+                        ?: if (responseFormat == ResponseFormat.Text && output != null) {
+                            output.toResponseFormat()
+                        } else {
+                            responseFormat
+                        }
+                )
+            }
+
+            // Fire onStepStart AFTER prepareStep + callParams so the event carries the
+            // fully-resolved request (post prepareStep overrides) and the accumulated
+            // priorSteps — both now required params, not silently-empty defaults.
+            val stepStartEvent = AgentEvent.StepStarted(
+                stepNumber = stepNumber,
+                messages = messages.toList(),
+                request = callParams,
+                priorSteps = completedSteps.toList(),
             )
+            dispatcher.runHook(stepNumber, feed, hooks) {
+                hooks?.onStepStart?.invoke(stepStartEvent)
+            }
+            dispatcher.fireTelemetry(feed) { onEvent(it, stepStartEvent) }
 
             val stepText = StringBuilder()
             val stepReasoning = StringBuilder()
@@ -660,8 +945,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // Per-step metadata, captured from the stream and surfaced on StepResult
             // (parity with upstream — the loop previously dropped all four).
             var stepWarnings: List<CallWarning> = emptyList()
-            var stepProviderMetadata: Map<String, JsonElement> = emptyMap()
+            var stepProviderMetadata: ProviderMetadata = ProviderMetadata.None
             var stepResponse = LanguageModelResponseMetadata()
+            // Captured from streamResult() so StepResult.request carries the real
+            // serialized request body (providers populate it only on streamResult()).
+            var stepRequest = LanguageModelRequestMetadata()
             var stepRawFinishReason: String? = null
             // gap #18: a streaming tool-input id -> toolName, so ToolInputDelta
             // (which carries only the streaming id) can route to the right
@@ -673,10 +961,10 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // so a span-pairing integration never leaks an open model-call span. A local fun
             // (the fireAbort precedent) so the step locals are captured, not re-passed 4x.
             suspend fun closeModelCall(finishReason: FinishReason, rawFinishReason: String?) {
-                fireTelemetry(feed) {
-                    onModelCallFinish(
+                dispatcher.fireTelemetry(feed) {
+                    onEvent(
                         it,
-                        TelemetryModelCallResultEvent(
+                        AgentEvent.ModelCallFinished(
                             stepNumber = stepNumber,
                             modelId = stepModel.modelId,
                             finishReason = finishReason,
@@ -688,15 +976,18 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 }
             }
 
-            fireTelemetry(feed) {
-                onModelCallStart(it, TelemetryModelCallEvent(stepNumber, stepModel.modelId, callParams))
+            dispatcher.fireTelemetry(feed) {
+                onEvent(it, AgentEvent.ModelCallStarted(stepNumber, stepModel.modelId, callParams))
             }
             try {
-                stepModel.stream(callParams).collect { event ->
+                val stepMaxRetries = stepSettings.maxRetries ?: resolvedSettings.maxRetries ?: maxRetries
+                val stepStreamResult = executeModelStep(stepModel, callParams, modelCallMode, stepMaxRetries)
+                stepRequest = stepStreamResult.request
+                stepResponse = stepStreamResult.response
+                stepStreamResult.stream.collect { event ->
                     abortSignal.throwIfAborted()
-                    runHook(stepNumber, feed) {
-                        onChunk?.invoke(OnChunkEvent(event, stepNumber))
-                        hooks?.onChunk?.invoke(OnChunkEvent(event, stepNumber))
+                    dispatcher.runHook(stepNumber, feed, hooks) {
+                        hooks?.onChunk?.invoke(AgentEvent.Chunk(event, stepNumber))
                     }
                     when (event) {
                         is StreamEvent.TextDelta -> {
@@ -713,13 +1004,17 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                             // so a hook failure can't abort the inference stream.
                             toolInputNames[event.id] = event.toolName
                             val startedTool = stepTools.find(event.toolName)
-                            runHook(stepNumber, feed) { startedTool?.onInputStart(event.id) }
+                            dispatcher.runHook(stepNumber, feed, hooks) { startedTool?.onInputStart(event.id) }
                             emit(event)
                         }
                         is StreamEvent.ToolInputDelta -> {
                             // gap #18: raw-character pre-warm as input streams in.
                             val deltaTool = toolInputNames[event.id]?.let { stepTools.find(it) }
-                            runHook(stepNumber, feed) { deltaTool?.onInputDelta(event.id, event.delta) }
+                            dispatcher.runHook(
+                                stepNumber,
+                                feed,
+                                hooks
+                            ) { deltaTool?.onInputDelta(event.id, event.delta) }
                             emit(event)
                         }
                         is StreamEvent.ToolCall -> {
@@ -734,7 +1029,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         is StreamEvent.StepFinish -> {
                             stepFinishReason = event.finishReason
                             stepUsage = event.usage
-                            event.providerMetadata?.let { stepProviderMetadata = it }
+                            stepProviderMetadata = event.providerMetadata
                             // Don't forward — we emit our own StepFinish below post-tool-execution.
                         }
                         is StreamEvent.Finish -> {
@@ -742,7 +1037,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                             stepUsage = event.usage
                             lastRawFinishReason = event.rawFinishReason
                             stepRawFinishReason = event.rawFinishReason
-                            event.providerMetadata?.let { stepProviderMetadata = it }
+                            stepProviderMetadata = event.providerMetadata
                         }
                         is StreamEvent.StreamStart -> {
                             stepWarnings = event.warnings
@@ -762,7 +1057,22 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                             emit(event)
                             throw TerminalModelStreamError()
                         }
-                        else -> emit(event)
+                        is StreamEvent.StepStart,
+                        is StreamEvent.TextStart,
+                        is StreamEvent.TextEnd,
+                        is StreamEvent.ReasoningStart,
+                        is StreamEvent.ReasoningEnd,
+                        is StreamEvent.SourcePart,
+                        is StreamEvent.FilePart,
+                        is StreamEvent.Data,
+                        is StreamEvent.ToolInputEnd,
+                        is StreamEvent.ToolResult,
+                        is StreamEvent.ToolError,
+                        is StreamEvent.ToolApprovalRequest,
+                        is StreamEvent.ToolOutputDenied,
+                        StreamEvent.Abort,
+                        is StreamEvent.Raw,
+                        -> emit(event)
                     }
                 }
             } catch (_: TerminalModelStreamError) {
@@ -794,13 +1104,38 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 // A genuine coroutine cancellation must re-throw untouched (Tier-0 coroutines).
                 throw ce
             } catch (t: Throwable) {
-                emitError(t, stepNumber, OnErrorEvent.ErrorSource.Model, hooks, feed)
-                emit(StreamEvent.Error(t.message ?: "model failed", cause = t))
-                closeModelCall(FinishReason.Error, stepRawFinishReason)
-                finalMessagesRef?.value = messages.toList()
+                dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.Model, hooks, feed)
+                // try-finally so the model-call telemetry bracket ALWAYS closes: when generate()
+                // is the collector its StreamCapture throws synchronously on StreamEvent.Error, so
+                // a bare closeModelCall AFTER the emit would be skipped and the span would leak.
+                // (A mid-stream provider Error also funnels here for generate(), since its emit
+                // throws before the TerminalModelStreamError handoff — so this covers both paths.)
+                try {
+                    emit(StreamEvent.Error(t.message ?: "model failed", cause = t))
+                } finally {
+                    closeModelCall(FinishReason.Error, stepRawFinishReason)
+                    finalMessagesRef?.value = messages.toList()
+                }
                 return@flow
             }
             closeModelCall(stepFinishReason, stepRawFinishReason)
+
+            // Bounded execution policy: fail closed if the model emitted more tool calls in one
+            // step than the policy allows, BEFORE any executor coroutine is scheduled. A
+            // pathological/compromised model otherwise drives unbounded per-step fan-out.
+            if (stepToolCalls.size > toolExecutionPolicy.maxToolCallsPerStep) {
+                val policyError = AgentError.MaxToolCallsPerStepExceeded(
+                    toolCallCount = stepToolCalls.size,
+                    maxToolCallsPerStep = toolExecutionPolicy.maxToolCallsPerStep,
+                )
+                dispatcher.emitError(policyError, stepNumber, AgentEvent.Errored.ErrorSource.Tool, hooks, feed)
+                try {
+                    emit(StreamEvent.Error(policyError.message ?: "too many tool calls", cause = policyError))
+                } finally {
+                    finalMessagesRef?.value = messages.toList()
+                }
+                return@flow
+            }
 
             // Build assistant content: text + reasoning + tool calls.
             val assistantParts: MutableList<ContentPart> = mutableListOf()
@@ -816,19 +1151,26 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // executor via resolvedForExecution so the repair attempt is not repeated.
             val toolsRequiringApproval = mutableListOf<ContentPart.ToolCall>()
             val toolsToExecute = mutableListOf<ContentPart.ToolCall>()
-            val resolvedForExecution = mutableMapOf<String, Pair<Tool<*, *, TContext>, Any?>>()
+            // Keyed by the call's POSITION in toolsToExecute, not toolCallId: a malformed step that
+            // emits two calls sharing one id must not collide (the second overwriting the first so
+            // both run with the second's args). The parallel loop fetches by its forEachIndexed index.
+            val resolvedForExecution = mutableMapOf<Int, Pair<Tool<*, *, TContext>, Any?>>()
+            // Tool-error results for calls that fail categorization. Held here (not appended to
+            // `messages`) until AFTER the assistant tool-call message is added below, so a failed
+            // call's tool_result never precedes the assistant tool_use that issued it.
+            val deferredToolErrorMessages = mutableListOf<ModelMessage>()
             for (call in stepToolCalls) {
                 val toolDef = stepTools.find(call.toolName)
                 if (toolDef == null) {
                     val err = AgentError.NoSuchTool(call.toolName, stepTools.names())
-                    emitToolError(this, call.toolCallId, call.toolName, err, messages)
+                    deferredToolErrorMessages.add(emitToolErrorDeferred(this, call.toolCallId, call.toolName, err))
                     continue
                 }
                 if (toolDef.providerExecuted) {
                     continue
                 }
                 val (resolvedTool, resolvedInput, wasRepaired) = try {
-                    resolveCall(toolDef, call, messages.toList())
+                    repairer.resolveCall(toolDef, call, messages.toList())
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
@@ -836,27 +1178,35 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     // the error-reporting surface — before input resolution was hoisted ahead of the
                     // approval gate, a non-gated tool's decode failure happened inside executeTool,
                     // which reported it; categorizing it here must report it too.
-                    emitError(t, stepNumber, OnErrorEvent.ErrorSource.Tool, hooks, feed)
-                    emitToolError(
-                        this,
-                        call.toolCallId,
-                        call.toolName,
-                        t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
-                        messages,
+                    dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.Tool, hooks, feed)
+                    deferredToolErrorMessages.add(
+                        emitToolErrorDeferred(
+                            this,
+                            call.toolCallId,
+                            call.toolName,
+                            t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
+                        ),
                     )
                     continue
                 }
                 val needsApproval = try {
-                    callNeedsApproval(resolvedTool, call, resolvedInput, activeContext, messages.toList())
+                    approvalCoordinator.callNeedsApproval(
+                        resolvedTool,
+                        call,
+                        resolvedInput,
+                        activeContext,
+                        messages.toList()
+                    )
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-                    emitToolError(
-                        this,
-                        call.toolCallId,
-                        call.toolName,
-                        t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
-                        messages,
+                    deferredToolErrorMessages.add(
+                        emitToolErrorDeferred(
+                            this,
+                            call.toolCallId,
+                            call.toolName,
+                            t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
+                        ),
                     )
                     continue
                 }
@@ -867,37 +1217,54 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         // re-validation are keyed to the model's ORIGINAL input (and its signature),
                         // so approve-over-repaired could not be honored on resume. Matches the
                         // pre-resolve "gated tool + malformed input = error" behavior.
-                        emitToolError(
-                            this,
-                            call.toolCallId,
-                            call.toolName,
-                            AgentError.InvalidToolInput(
+                        deferredToolErrorMessages.add(
+                            emitToolErrorDeferred(
+                                this,
+                                call.toolCallId,
                                 call.toolName,
-                                call.input.toString(),
-                                IllegalStateException(
-                                    "approval-gated tool received input that only decoded after repair; " +
-                                        "gated tool calls are not auto-repaired",
+                                AgentError.InvalidToolInput(
+                                    call.toolName,
+                                    call.input.toString(),
+                                    IllegalStateException(
+                                        "approval-gated tool received input that only decoded after repair; " +
+                                            "gated tool calls are not auto-repaired",
+                                    ),
                                 ),
                             ),
-                            messages,
                         )
                     } else {
                         toolsRequiringApproval.add(call)
                     }
                 } else {
-                    resolvedForExecution[call.toolCallId] = resolvedTool to resolvedInput
+                    // toolsToExecute.size is the index this call will occupy after the add below.
+                    resolvedForExecution[toolsToExecute.size] = resolvedTool to resolvedInput
                     toolsToExecute.add(call)
                 }
             }
-            val hasLocalToolWork = toolsRequiringApproval.isNotEmpty() || toolsToExecute.isNotEmpty()
+            // A categorization failure (NoSuchTool / undecodable args / repair failure) writes a
+            // tool-error result but reaches neither list; count it as work so the loop re-invokes
+            // the model to react — symmetric with a tool that decodes then THROWS (which already
+            // continues). Otherwise a single malformed tool call silently ends the conversation.
+            val hasLocalToolWork = toolsRequiringApproval.isNotEmpty() ||
+                toolsToExecute.isNotEmpty() ||
+                deferredToolErrorMessages.isNotEmpty()
 
             // Emit approval requests + add to assistant content. Loop ends after this step.
             // With an approval secret configured, each request is signed at issuance over its
             // EFFECTIVE approval id (explicit approvalId ?: toolCallId — here the default).
+            val approvalCountsByToolCallId = toolsRequiringApproval.groupingBy { it.toolCallId }.eachCount()
+            val approvalOrdinalsByToolCallId = mutableMapOf<String, Int>()
             for (call in toolsRequiringApproval) {
-                val signature = maybeSignToolApproval(
-                    secret = experimental_toolApprovalSecret,
-                    approvalId = call.toolCallId,
+                val approvalId = if (approvalCountsByToolCallId.getValue(call.toolCallId) > 1) {
+                    val ordinal = (approvalOrdinalsByToolCallId[call.toolCallId] ?: 0) + 1
+                    approvalOrdinalsByToolCallId[call.toolCallId] = ordinal
+                    "${call.toolCallId}#$ordinal"
+                } else {
+                    null
+                }
+                val signature = ToolApprovalSignature.maybeSignToolApproval(
+                    secret = toolApprovalSecretBytes,
+                    approvalId = approvalId ?: call.toolCallId,
                     toolCallId = call.toolCallId,
                     toolName = call.toolName,
                     input = call.input,
@@ -907,6 +1274,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         call.toolCallId,
                         call.toolName,
                         call.input,
+                        approvalId = approvalId,
                         signature = signature,
                     ),
                 )
@@ -914,6 +1282,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     call.toolCallId,
                     call.toolName,
                     call.input,
+                    approvalId = approvalId,
                     signature = signature,
                 )
                 assistantParts.add(request)
@@ -924,70 +1293,101 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             if (assistantParts.isNotEmpty()) {
                 messages.add(ModelMessage(MessageRole.Assistant, assistantParts.toList()))
             }
+            // Now that the assistant tool-call message is in the log, append the deferred
+            // categorization tool-error results — they pair with tool_use blocks in the message
+            // just added, so the [assistant(calls), tool_result/err...] ordering is correct.
+            messages.addAll(deferredToolErrorMessages)
 
-            // Execute non-approval-gated tools.
-            // Execute the step's tools CONCURRENTLY (bounded by maxParallelToolCalls),
-            // each buffering its stream events into its own BufferingCollector; then replay
-            // the buffers + apply results SERIALLY in call order on the collector coroutine.
-            // This overlaps the slow tool compute (latency = slowest, not the sum) while
-            // preserving deterministic message ordering and the Flow single-collector
-            // invariant (all real emits happen on this coroutine, never from an async child).
+            // Execute non-approval-gated tools concurrently. The scheduler launches bounded
+            // workers (not one coroutine per tool call) and queues the rest as data. Child
+            // workers send progress to a parent-owned channel; only this collector coroutine
+            // performs real Flow emits. Final durable results are applied in original call order.
             // All tools see the SAME prompt snapshot (they were requested in one assistant
             // turn) — more correct than the prior serial leak of one tool's result into the
             // next tool's messages view.
             val promptSnapshot = messages.toList()
-            val permits = Semaphore(maxParallelToolCalls.coerceAtLeast(1))
-            val executed = coroutineScope {
-                toolsToExecute.map { call ->
-                    async {
-                        val toolDef = stepTools.find(call.toolName) ?: return@async null
-                        runHook(stepNumber, feed) {
-                            val startEvent = OnToolCallStartEvent(
+            val parentOut: FlowCollector<StreamEvent> = this
+            val sawAbort = ToolLoopParallelExecution.runBoundedParallelToolCalls(
+                toolCalls = toolsToExecute,
+                policy = toolExecutionPolicy,
+                parentOut = parentOut,
+                executeCall = { index, call, progressOut ->
+                    val toolDef = stepTools.find(call.toolName)
+                    if (toolDef == null) {
+                        OrderedToolCompletion.Skipped(index)
+                    } else {
+                        dispatcher.runHook(stepNumber, feed, hooks) {
+                            val startEvent = AgentEvent.ToolCallStarted(
                                 call.toolCallId,
-                                call.toolName,
+                                resolvedForExecution[index]?.first?.name ?: call.toolName,
                                 call.input,
                                 stepNumber,
                                 promptSnapshot,
                             )
-                            experimental_onToolCallStart?.invoke(startEvent)
                             hooks?.experimental_onToolCallStart?.invoke(startEvent)
                         }
-                        val buffer = BufferingCollector()
-                        val result = permits.withPermit {
-                            executeTool(
-                                out = buffer,
-                                toolDef = toolDef,
-                                call = call,
-                                options = activeContext,
-                                abortSignal = abortSignal,
-                                stepNumber = stepNumber,
-                                messages = promptSnapshot,
-                                hooks = hooks,
-                                feed = feed,
-                                // Reuse the (tool, input) already resolved + repaired during the
-                                // approval-categorization pass — don't decode/repair a second time.
-                                preResolved = resolvedForExecution[call.toolCallId],
-                            )
-                        }
-                        runHook(stepNumber, feed) {
-                            val finishEvent = OnToolCallFinishEvent(
+                        val result = executeToolWithPolicy(
+                            out = progressOut,
+                            toolDef = toolDef,
+                            call = call,
+                            options = activeContext,
+                            abortSignal = abortSignal,
+                            stepNumber = stepNumber,
+                            messages = promptSnapshot,
+                            hooks = hooks,
+                            feed = feed,
+                            // Reuse the (tool, input) already resolved + repaired during the
+                            // approval-categorization pass — don't decode/repair a second time.
+                            // Keyed by position (index), so duplicate toolCallIds don't collide.
+                            preResolved = resolvedForExecution[index],
+                        )
+                        dispatcher.runHook(stepNumber, feed, hooks) {
+                            val resultToolName = when (result) {
+                                is ToolExecutionResult.Success -> result.toolName
+                                is ToolExecutionResult.Failure -> result.toolName
+                            }
+                            val finishEvent = AgentEvent.ToolCallFinished(
                                 toolCallId = call.toolCallId,
-                                toolName = call.toolName,
-                                outputJson = (result as? ToolExecutionResult.Success)?.outputJson,
-                                errorMessage = (result as? ToolExecutionResult.Failure)?.error?.message,
+                                toolName = resultToolName,
+                                outcome = when (result) {
+                                    is ToolExecutionResult.Success ->
+                                        AgentEvent.ToolCallFinished.Outcome.Success(result.outputJson)
+                                    is ToolExecutionResult.Failure ->
+                                        AgentEvent.ToolCallFinished.Outcome.Failure(
+                                            result.error.message ?: "tool failed",
+                                        )
+                                },
                                 stepNumber = stepNumber,
                             )
-                            experimental_onToolCallFinish?.invoke(finishEvent)
                             hooks?.experimental_onToolCallFinish?.invoke(finishEvent)
                         }
-                        ExecutedTool(call, buffer.events, result)
+                        OrderedToolCompletion.Executed(index, call, result)
                     }
-                }.awaitAll()
-            }
-            for (entry in executed) {
-                if (entry == null) continue
-                entry.events.forEach { emit(it) }
-                applyToolResult(this, entry.call, entry.result, messages, stepToolResults)
+                },
+                applyCompletion = { completion ->
+                    when (completion) {
+                        is OrderedToolCompletion.Executed ->
+                            applyToolResult(
+                                parentOut,
+                                completion.call,
+                                completion.result,
+                                messages,
+                                stepToolResults,
+                            )
+                        is OrderedToolCompletion.Skipped,
+                        is OrderedToolCompletion.Aborted,
+                        -> Unit
+                    }
+                },
+            )
+
+            // A child aborted mid-flight: surface ONE terminal Abort for the step (mirroring the
+            // model-stream abort path at the top of this loop) and end cleanly, instead of building
+            // a step result on partial tool output.
+            if (sawAbort) {
+                emit(StreamEvent.Abort)
+                fireAbort()
+                return@flow
             }
 
             val effectiveFinishReason = if (toolsRequiringApproval.isNotEmpty()) {
@@ -996,7 +1396,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 stepFinishReason
             }
 
-            val step = StepResult(
+            val step = ResultConstruction.stepResult(
                 stepNumber = stepNumber,
                 text = stepText.toString(),
                 reasoning = stepReasoning.toString(),
@@ -1006,7 +1406,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 finishReason = effectiveFinishReason,
                 usage = stepUsage,
                 warnings = stepWarnings,
-                request = LanguageModelRequestMetadata(),
+                request = stepRequest,
                 response = stepResponse,
                 providerMetadata = stepProviderMetadata,
                 rawFinishReason = stepRawFinishReason,
@@ -1015,15 +1415,14 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             )
             completedSteps.add(step)
             stepsCapture?.steps?.add(step)
-            totalUsage += stepUsage
+            totalUsage = with(UsageArithmetic) { totalUsage + stepUsage }
             lastFinishReason = effectiveFinishReason
 
-            val stepFinishEvent = OnStepFinishEvent(stepNumber, step)
-            runHook(stepNumber, feed) {
-                onStepFinish?.invoke(stepFinishEvent)
+            val stepFinishEvent = AgentEvent.StepFinished(stepNumber, step)
+            dispatcher.runHook(stepNumber, feed, hooks) {
                 hooks?.onStepFinish?.invoke(stepFinishEvent)
             }
-            fireTelemetry(feed) { onStepFinish(it, stepFinishEvent) }
+            dispatcher.fireTelemetry(feed) { onEvent(it, stepFinishEvent) }
             emit(StreamEvent.StepFinish(stepNumber, effectiveFinishReason, stepUsage))
 
             // If approval was emitted this step, the loop ends — host resumes.
@@ -1067,7 +1466,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             emptyList()
         }
 
-        val finishEvent = OnFinishEvent(
+        val finishEvent = AgentEvent.Finished<TContext, TOutput>(
             null,
             stepNumber,
             totalUsage,
@@ -1075,201 +1474,12 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             messages.toList(),
             // gap #36: surface the post-prepareStep-override context the
             // loop tracked (activeContext), not a hardcoded null.
-            experimental_context = activeContext,
+            experimentalContext = activeContext,
         )
-        runHook(stepNumber, feed) {
-            onFinish?.invoke(finishEvent)
+        dispatcher.runHook(stepNumber, feed, hooks) {
             hooks?.onFinish?.invoke(finishEvent)
         }
-        fireTelemetry(feed) { onAgentFinish(it, finishEvent) }
-    }
-
-    /**
-     * If the most recent tool message contains [ContentPart.ToolApprovalResponse]
-     * parts, execute (or deny) the matching tool calls from the prior
-     * assistant message before the next model call.
-     */
-    @Suppress("LongParameterList")
-    private suspend fun applyToolApprovalResponses(
-        out: FlowCollector<StreamEvent>,
-        messages: MutableList<ModelMessage>,
-        tools: ToolSet<TContext>,
-        options: TContext?,
-        abortSignal: AbortSignal,
-        hooks: AgentCallHooks?,
-        feed: TelemetryFeed? = null,
-    ): Unit? {
-        val lastToolMsg = messages.lastOrNull { it.role == MessageRole.Tool } ?: return null
-        val approvals = lastToolMsg.content.filterIsInstance<ContentPart.ToolApprovalResponse>()
-        if (approvals.isEmpty()) return null
-
-        val priorAssistantMsg = messages.findLast { it.role == MessageRole.Assistant } ?: return null
-        val priorToolCalls = priorAssistantMsg.content.filterIsInstance<ContentPart.ToolCall>()
-        if (priorToolCalls.isEmpty()) return null
-
-        // Correlate response.approvalId -> request.toolCallId (the approval response may
-        // reference the request by a distinct approvalId), matching upstream.
-        val approvalRequests = priorAssistantMsg.content.filterIsInstance<ContentPart.ToolApprovalRequest>()
-        val approvalIdToCallId = approvalRequests
-            .mapNotNull { req -> req.approvalId?.let { it to req.toolCallId } }
-            .toMap()
-        // The issued request per EFFECTIVE approval id — carries the signature the
-        // v6.0.202 fail-closed re-validation checks before an approved tool executes.
-        val requestsByApprovalId = approvalRequests.associateBy { it.approvalId ?: it.toolCallId }
-        // Idempotency: a call already answered by a tool result must NOT re-execute.
-        val alreadyResolved = resolvedToolCallIds(messages)
-
-        // TOOL-003: index calls by toolCallId so duplicate approvals for the same id
-        // are each matched deterministically to a distinct call occurrence (preserving
-        // order), rather than silently mapping every approval to the first match.
-        val remainingCalls = priorToolCalls.toMutableList()
-        for (approval in approvals) {
-            // Resolve the target call via approvalId correlation, falling back to toolCallId.
-            val targetCallId = approval.approvalId?.let { approvalIdToCallId[it] } ?: approval.toolCallId
-            if (targetCallId in alreadyResolved) continue // already executed/denied — skip
-            val callIndex = remainingCalls.indexOfFirst { it.toolCallId == targetCallId }
-            if (callIndex == -1) continue
-            val matchingCall = remainingCalls.removeAt(callIndex)
-            alreadyResolved += matchingCall.toolCallId
-            if (!approval.approved) {
-                val denialMsg = approval.reason ?: "user denied tool execution"
-                applyDeniedToolApproval(
-                    out = out,
-                    call = matchingCall,
-                    approvalId = approval.approvalId ?: matchingCall.toolCallId,
-                    reason = denialMsg,
-                    messages = messages,
-                )
-                continue
-            }
-            // v6.0.202 fail-closed re-validation of the client-replayed approval, in upstream
-            // order: HMAC signature (with a configured secret), input schema, then a fresh
-            // needsApproval resolution. A tool that vanished from the surface or no longer
-            // requires approval could never have been issued this request — denied, not run.
-            val effectiveApprovalKey = approval.approvalId ?: matchingCall.toolCallId
-            verifyReplayedApprovalSignature(
-                request = requestsByApprovalId[effectiveApprovalKey],
-                approvalKey = effectiveApprovalKey,
-                call = matchingCall,
-            )
-            val toolDef = tools.find(matchingCall.toolName)
-            val decodedInput: Any? = if (toolDef != null) revalidateApprovedInput(toolDef, matchingCall) else null
-            val stillNeedsApproval = toolDef != null &&
-                callNeedsApproval(toolDef, matchingCall, decodedInput, options, messages.toList())
-            if (toolDef == null || !stillNeedsApproval) {
-                applyDeniedToolApproval(
-                    out = out,
-                    call = matchingCall,
-                    approvalId = effectiveApprovalKey,
-                    reason = approval.reason
-                        ?: "Tool \"${matchingCall.toolName}\" does not require approval",
-                    messages = messages,
-                )
-                continue
-            }
-            val approvedResult = executeTool(
-                out = out,
-                toolDef = toolDef,
-                call = matchingCall,
-                options = options,
-                abortSignal = abortSignal,
-                stepNumber = 0,
-                messages = messages.toList(),
-                hooks = hooks,
-                feed = feed,
-                // Approval only ever fires for cleanly-decoded input — reuse it (no re-decode/repair).
-                preResolved = toolDef to decodedInput,
-            )
-            when (approvedResult) {
-                is ToolExecutionResult.Success -> applyApprovedToolSuccess(
-                    call = matchingCall,
-                    result = approvedResult,
-                    messages = messages,
-                    out = out,
-                )
-                is ToolExecutionResult.Failure ->
-                    emitToolError(out, matchingCall.toolCallId, matchingCall.toolName, approvedResult.error, messages)
-            }
-        }
-        return Unit
-    }
-
-    /**
-     * Fail-closed HMAC check for one replayed approval (v6.0.202): with no configured
-     * secret this is a no-op; with one, a missing or invalid signature throws
-     * [AgentError.InvalidToolApprovalSignature] — the tool never executes. Verified over
-     * the ASSISTANT tool-call's input (what would execute), not the response's claim.
-     */
-    private fun verifyReplayedApprovalSignature(
-        request: ContentPart.ToolApprovalRequest?,
-        approvalKey: String,
-        call: ContentPart.ToolCall,
-    ) {
-        val secret = experimental_toolApprovalSecret ?: return
-        val signature = request?.signature
-            ?: throw AgentError.InvalidToolApprovalSignature(approvalKey, call.toolCallId, "missing signature")
-        val valid = verifyToolApprovalSignature(
-            secret = secret,
-            signature = signature,
-            approvalId = approvalKey,
-            toolCallId = call.toolCallId,
-            toolName = call.toolName,
-            input = call.input,
-        )
-        if (!valid) {
-            throw AgentError.InvalidToolApprovalSignature(approvalKey, call.toolCallId, "invalid signature")
-        }
-    }
-
-    /** Fail-closed schema re-validation of a replayed approval's input (v6.0.202): the
-     *  client supplied this history, so the input is re-decoded against the tool's schema
-     *  BEFORE execution; a mismatch throws [AgentError.InvalidToolInput]. */
-    private fun revalidateApprovedInput(toolDef: Tool<*, *, TContext>, call: ContentPart.ToolCall): Any? {
-        return try {
-            decodeToolInput(toolDef, call.input)
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            throw t as? AgentError ?: AgentError.InvalidToolInput(call.toolName, call.input.toString(), t)
-        }
-    }
-
-    /** Tool-call ids already answered by a tool result anywhere in the message log. */
-    private fun resolvedToolCallIds(messages: List<ModelMessage>): MutableSet<String> =
-        messages.asSequence()
-            .filter { it.role == MessageRole.Tool }
-            .flatMap { it.content.asSequence() }
-            .filterIsInstance<ContentPart.ToolResult>()
-            .map { it.toolCallId }
-            .toMutableSet()
-
-    /**
-     * Evaluate a tool's approval gate on its ALREADY-resolved (decoded/repaired)
-     * input. Decode + repair happen once up front (see [resolveCall]); this only
-     * runs the predicate, so it is never the place a malformed input is rejected
-     * and never bypasses [ToolCallRepairFunction].
-     */
-    private suspend fun callNeedsApproval(
-        toolDef: Tool<*, *, TContext>,
-        call: ContentPart.ToolCall,
-        typedInput: Any?,
-        options: TContext?,
-        messages: List<ModelMessage>,
-    ): Boolean {
-        @Suppress("UNCHECKED_CAST")
-        val gated = toolDef as Tool<Any?, Any?, TContext>
-        val predicateOptions = ToolPredicateOptions(
-            toolCallId = call.toolCallId,
-            messages = messages,
-            experimental_context = options,
-        )
-        return try {
-            gated.needsApproval(typedInput, predicateOptions)
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-            throw AgentError.ToolExecution(call.toolName, call.toolCallId, t)
-        }
+        dispatcher.fireTelemetry(feed) { onEvent(it, finishEvent) }
     }
 
     /**
@@ -1290,7 +1500,37 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * Preliminary emissions never touch `messages` or the step's
      * `stepToolResults` list — they're UI-only progress signals.
      */
-    @Suppress("LongParameterList")
+    @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
+    private suspend fun executeToolWithPolicy(
+        out: FlowCollector<StreamEvent>,
+        toolDef: Tool<*, *, TContext>,
+        call: ContentPart.ToolCall,
+        options: TContext?,
+        abortSignal: AbortSignal,
+        stepNumber: Int,
+        messages: List<ModelMessage>,
+        hooks: AgentCallHooks?,
+        feed: TelemetryFeed? = null,
+        preResolved: Pair<Tool<*, *, TContext>, Any?>? = null,
+    ): ToolExecutionResult {
+        val timeout = toolExecutionPolicy.toolExecutionTimeout
+        if (timeout == null) {
+            return executeTool(out, toolDef, call, options, abortSignal, stepNumber, messages, hooks, feed, preResolved)
+        }
+        return try {
+            withTimeout(timeout) {
+                executeTool(out, toolDef, call, options, abortSignal, stepNumber, messages, hooks, feed, preResolved)
+            }
+        } catch (timeoutError: TimeoutCancellationException) {
+            dispatcher.emitError(timeoutError, stepNumber, AgentEvent.Errored.ErrorSource.Tool, hooks, feed)
+            toolFailure(
+                call,
+                AgentError.ToolExecutionTimedOut(call.toolName, call.toolCallId, timeout),
+            )
+        }
+    }
+
+    @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     private suspend fun executeTool(
         out: FlowCollector<StreamEvent>,
         toolDef: Tool<*, *, TContext>,
@@ -1306,20 +1546,38 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // executeTool resolves the approved call itself.
         preResolved: Pair<Tool<*, *, TContext>, Any?>? = null,
     ): ToolExecutionResult {
-        // Telemetry brackets the execution HERE (not at the dispatch site) so
-        // both routes — the step loop AND the approval-resume path — emit.
-        fireTelemetry(feed) {
-            onToolCallStart(it, OnToolCallStartEvent(call.toolCallId, call.toolName, call.input, stepNumber, messages))
-        }
+        var effectiveCallForFailure = call
         val result = try {
-            // Resolve (toolDef, decoded input). On first attempt: decode
-            // the call's args against `toolDef`. On decode failure with
-            // `experimental_repairToolCall` set: invoke the repair fn,
-            // re-resolve the tool (a repaired call may re-route to a
-            // different toolName), and retry decode ONCE. No recursive
-            // repair — keeps the loop bounded.
-            val (resolvedTool, resolvedInput) = preResolved ?: resolveToolInput(toolDef, call, messages)
-
+            val (resolvedTool, resolvedInput) = preResolved
+                ?: repairer.resolveCall(toolDef, call, messages).let { (t, i, _) -> t to i }
+            val effectiveCall =
+                if (resolvedTool.name == call.toolName) {
+                    call
+                } else {
+                    ContentPart.ToolCall(
+                        toolCallId = call.toolCallId,
+                        toolName = resolvedTool.name,
+                        input = call.input,
+                        providerExecuted = call.providerExecuted,
+                        dynamic = call.dynamic,
+                        providerMetadata = call.providerMetadata,
+                    )
+                }
+            effectiveCallForFailure = effectiveCall
+            // Telemetry brackets the execution HERE (not at the dispatch site) so
+            // both routes — the step loop AND the approval-resume path — emit.
+            dispatcher.fireTelemetry(feed) {
+                onEvent(
+                    it,
+                    AgentEvent.ToolCallStarted(
+                        call.toolCallId,
+                        effectiveCall.toolName,
+                        call.input,
+                        stepNumber,
+                        messages,
+                    ),
+                )
+            }
             @Suppress("UNCHECKED_CAST")
             val typedTool = resolvedTool as Tool<Any?, Any?, TContext>
             val input = resolvedInput
@@ -1334,25 +1592,26 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // gap #18: typed input parsed — fire onInputAvailable just before
             // the executor runs (UI pre-warm). Guarded so a hook failure does
             // not fail the tool call itself.
-            runHook(stepNumber, feed) { typedTool.onInputAvailable(call.toolCallId, input) }
-            val captured = collectFinalToolOutput(out, typedTool, ctx, call, input)
+            dispatcher.runHook(stepNumber, feed, hooks) { typedTool.onInputAvailable(call.toolCallId, input) }
+            val captured = collectFinalToolOutput(out, typedTool, ctx, effectiveCall, input)
             if (!captured.hasOutput) {
-                toolFailure(call, IllegalStateException("tool emitted no values"))
+                toolFailure(effectiveCall, IllegalStateException("tool emitted no values"))
             } else {
                 val lastOutput = captured.value
                 val outputJson = encodeToolOutput(typedTool, lastOutput)
-                val predicateOptions = ToolPredicateOptions(
-                    toolCallId = call.toolCallId,
-                    messages = messages,
-                    experimental_context = options,
-                )
-                val output = toolResultOutputFromJson(outputJson)
+                val predicateOptions = ToolPredicateOptions<TContext> {
+                    toolCallId(call.toolCallId)
+                    messages(messages)
+                    experimental_context(options)
+                }
+                val output = ToolResultOutputs.toolResultOutputFromJson(outputJson)
                 val modelOutput = typedTool.toModelOutput(lastOutput, predicateOptions) ?: output
                 ToolExecutionResult.Success(
+                    toolName = effectiveCall.toolName,
                     outputJson = outputJson,
                     output = output,
                     modelOutput = modelOutput,
-                    modelVisible = modelOutput.toJsonElement(),
+                    modelVisible = with(ToolResultOutputs) { modelOutput.toJsonElement() },
                 )
             }
         } catch (ce: CancellationException) {
@@ -1361,19 +1620,29 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // tool returned cancellation" and the conversation goes off-rails.
             throw ce
         } catch (t: Throwable) {
-            emitError(t, stepNumber, OnErrorEvent.ErrorSource.Tool, hooks, feed)
+            dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.Tool, hooks, feed)
             // resolveToolInput throws typed AgentError; a raw executor
             // throw becomes ToolExecution (see toolFailure).
-            toolFailure(call, t)
+            toolFailure(effectiveCallForFailure, t)
         }
-        fireTelemetry(feed) {
-            onToolCallFinish(
+        dispatcher.fireTelemetry(feed) {
+            val resultToolName = when (result) {
+                is ToolExecutionResult.Success -> result.toolName
+                is ToolExecutionResult.Failure -> result.toolName
+            }
+            onEvent(
                 it,
-                OnToolCallFinishEvent(
+                AgentEvent.ToolCallFinished(
                     toolCallId = call.toolCallId,
-                    toolName = call.toolName,
-                    outputJson = (result as? ToolExecutionResult.Success)?.outputJson,
-                    errorMessage = (result as? ToolExecutionResult.Failure)?.error?.message,
+                    toolName = resultToolName,
+                    outcome = when (result) {
+                        is ToolExecutionResult.Success ->
+                            AgentEvent.ToolCallFinished.Outcome.Success(result.outputJson)
+                        is ToolExecutionResult.Failure ->
+                            AgentEvent.ToolCallFinished.Outcome.Failure(
+                                result.error.message ?: "tool failed",
+                            )
+                    },
                     stepNumber = stepNumber,
                 ),
             )
@@ -1402,12 +1671,12 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         tool.streamExecutor(ctx, input).collect { output ->
             if (hasOutput) {
                 val outputJson = encodeToolOutput(tool, lastOutput)
-                val output = toolResultOutputFromJson(outputJson)
-                val predicateOptions = ToolPredicateOptions(
-                    toolCallId = call.toolCallId,
-                    messages = ctx.messages,
-                    experimental_context = ctx.context,
-                )
+                val output = ToolResultOutputs.toolResultOutputFromJson(outputJson)
+                val predicateOptions = ToolPredicateOptions<TContext> {
+                    toolCallId(call.toolCallId)
+                    messages(ctx.messages)
+                    experimental_context(ctx.context)
+                }
                 val modelOutput = tool.toModelOutput(lastOutput, predicateOptions) ?: output
                 out.emit(
                     StreamEvent.ToolResult(
@@ -1416,7 +1685,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         outputJson = outputJson,
                         output = output,
                         modelOutput = modelOutput,
-                        isError = modelOutput.isToolResultError(),
+                        isError = with(ToolResultOutputs) { modelOutput.isToolResultError() },
                         preliminary = true,
                     ),
                 )
@@ -1450,7 +1719,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 out.emit(
                     StreamEvent.ToolResult(
                         toolCallId = call.toolCallId,
-                        toolName = call.toolName,
+                        toolName = result.toolName,
                         outputJson = result.outputJson,
                         output = result.output,
                         modelOutput = result.modelOutput,
@@ -1459,7 +1728,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 )
                 val toolPart = ContentPart.ToolResult(
                     toolCallId = call.toolCallId,
-                    toolName = call.toolName,
+                    toolName = result.toolName,
                     output = result.outputJson,
                     isError = result.isError,
                     modelVisible = result.modelVisible,
@@ -1468,173 +1737,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 messages.add(ModelMessage(MessageRole.Tool, listOf(toolPart)))
             }
             is ToolExecutionResult.Failure ->
-                emitToolError(out, call.toolCallId, call.toolName, result.error, messages)
+                emitToolError(out, call.toolCallId, result.toolName, result.error, messages)
         }
-    }
-
-    /**
-     * Approval-resume mirror of [applyToolResult] for the success branch.
-     * Same modelVisible handling so tools that combine an approval gate
-     * with `toModelOutput` summarization still avoid the KV-cache blow-up
-     * on the resumed turn.
-     */
-    private suspend fun applyApprovedToolSuccess(
-        call: ContentPart.ToolCall,
-        result: ToolExecutionResult.Success,
-        messages: MutableList<ModelMessage>,
-        out: FlowCollector<StreamEvent>,
-    ) {
-        out.emit(
-            StreamEvent.ToolResult(
-                toolCallId = call.toolCallId,
-                toolName = call.toolName,
-                outputJson = result.outputJson,
-                output = result.output,
-                modelOutput = result.modelOutput,
-                isError = result.isError,
-            ),
-        )
-        val toolPart = ContentPart.ToolResult(
-            toolCallId = call.toolCallId,
-            toolName = call.toolName,
-            output = result.outputJson,
-            isError = result.isError,
-            modelVisible = result.modelVisible,
-        )
-        messages.add(ModelMessage(MessageRole.Tool, listOf(toolPart)))
-    }
-
-    /**
-     * Approval denials are an expected host decision, not a tool failure.
-     * They still need a tool-role result in the durable message log so a
-     * resumed conversation can explain that the tool was intentionally
-     * skipped without retriggering the approval path.
-     */
-    private suspend fun applyDeniedToolApproval(
-        out: FlowCollector<StreamEvent>,
-        call: ContentPart.ToolCall,
-        approvalId: String,
-        reason: String,
-        messages: MutableList<ModelMessage>,
-    ) {
-        val output = ToolResultOutput.ExecutionDenied(reason)
-        val outputJson = output.toJsonElement()
-        out.emit(
-            StreamEvent.ToolOutputDenied(
-                toolCallId = call.toolCallId,
-                toolName = call.toolName,
-                approvalId = approvalId,
-                reason = reason,
-            ),
-        )
-        out.emit(
-            StreamEvent.ToolResult(
-                toolCallId = call.toolCallId,
-                toolName = call.toolName,
-                outputJson = outputJson,
-                output = output,
-                modelOutput = output,
-                isError = true,
-            ),
-        )
-        val toolPart = ContentPart.ToolResult(
-            toolCallId = call.toolCallId,
-            toolName = call.toolName,
-            output = outputJson,
-            isError = true,
-            modelVisible = outputJson,
-        )
-        messages.add(ModelMessage(MessageRole.Tool, listOf(toolPart)))
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    /**
-     * Decode `call.input` to a typed value. On failure, invoke
-     * [experimental_repairToolCall] once (if set); if the repair
-     * returns a corrected call, re-resolve the tool (the corrected
-     * call may target a different toolName) and retry the decode.
-     * If the repair returns null or the retry also fails, the
-     * original exception propagates and the caller turns it into
-     * [ToolExecutionResult.Failure].
-     */
-    private suspend fun resolveToolInput(
-        toolDef: Tool<*, *, TContext>,
-        call: ContentPart.ToolCall,
-        messages: List<ModelMessage>,
-    ): Pair<Tool<*, *, TContext>, Any?> {
-        val (tool, input, _) = resolveCall(toolDef, call, messages)
-        return tool to input
-    }
-
-    /**
-     * Resolve a call's input: a plain decode, then — on failure — a SINGLE repair
-     * attempt via [experimental_repairToolCall]. Returns the resolved (tool, typed
-     * input) plus whether repair was needed; throws a typed [AgentError]
-     * ([AgentError.ToolCallRepairFailed] / [AgentError.InvalidToolInput]) when the
-     * input cannot be decoded even after repair. A repaired call may re-route to a
-     * different tool, so the returned tool is not necessarily [toolDef]. This is the
-     * ONE place a tool call is decoded/repaired — both the approval-categorization
-     * pass and [executeTool] consume its result, so repair runs at most once per call.
-     */
-    private suspend fun resolveCall(
-        toolDef: Tool<*, *, TContext>,
-        call: ContentPart.ToolCall,
-        messages: List<ModelMessage>,
-    ): Triple<Tool<*, *, TContext>, Any?, Boolean> {
-        val plainError: Throwable = try {
-            return Triple(toolDef, decodeToolInput(toolDef, call.input), false)
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-            e
-        }
-        tryRepairToolInput(toolDef, call, plainError, messages)?.let { (repairedTool, repairedInput) ->
-            return Triple(repairedTool, repairedInput, true)
-        }
-        // Repair absent or exhausted — surface a typed decode failure.
-        throw if (experimental_repairToolCall != null) {
-            AgentError.ToolCallRepairFailed(call.toolName, originalError = plainError, repairError = null)
-        } else {
-            AgentError.InvalidToolInput(call.toolName, call.input.toString(), plainError)
-        }
-    }
-
-    /** Single-attempt repair pass — null if no repair fn, repair gave
-     *  up, the rerouted tool isn't in the set, or the repaired input
-     *  still doesn't decode. Caller throws the original exception when
-     *  this returns null. */
-    private suspend fun tryRepairToolInput(
-        originalToolDef: Tool<*, *, TContext>,
-        call: ContentPart.ToolCall,
-        originalError: Throwable,
-        messages: List<ModelMessage>,
-    ): Pair<Tool<*, *, TContext>, Any?>? {
-        val repair = experimental_repairToolCall ?: return null
-        val corrected = try {
-            repair.invoke(call, originalError, messages, tools)
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (@Suppress("TooGenericExceptionCaught") repairError: Throwable) {
-            // The repair fn ITSELF threw (e.g. the model re-prompt failed) —
-            // route to the documented ToolCallRepairFailed with repairError
-            // populated, not the generic ToolExecution path executeTool's
-            // outer catch would otherwise produce.
-            throw AgentError.ToolCallRepairFailed(call.toolName, originalError = originalError, repairError = repairError)
-        } ?: return null
-        val toolDef = if (corrected.toolName != call.toolName) {
-            tools.find(corrected.toolName)
-        } else {
-            originalToolDef
-        }
-        return toolDef?.let { def ->
-            runCatching { def to decodeToolInput(def, corrected.input) }.getOrNull()
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun decodeToolInput(tool: Tool<*, *, *>, input: JsonElement): Any? {
-        val ser = tool.inputSerializer as KSerializer<Any?>
-        return WireDecoder.decode(ser, input, provider = "tool", operation = "${tool.name} input")
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -1648,54 +1752,16 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         if (options == null) return null
         return try {
             aiSdkOutputJson.decodeFromJsonElement(serializer, aiSdkOutputJson.encodeToJsonElement(serializer, options))
-        } catch (error: Exception) {
+        } catch (error: SerializationException) {
             throw AgentError.InvalidCallOptions(error)
         }
     }
 
-    private suspend fun emitError(
-        t: Throwable,
-        stepNumber: Int,
-        source: OnErrorEvent.ErrorSource,
-        hooks: AgentCallHooks?,
-        feed: TelemetryFeed? = null,
-    ) {
-        val event = OnErrorEvent(t, stepNumber, source)
-        try { onError?.invoke(event) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}
-        try { hooks?.onError?.invoke(event) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}
-        fireTelemetry(feed) { onError(it, event) }
-    }
-
-    /** One invocation's telemetry handle: the resolved integration + the call's correlation envelope. */
-    private class TelemetryFeed(
-        val tele: Telemetry,
-        val call: TelemetryCall,
-    )
-
-    /**
-     * Deliver one telemetry event, guarded: telemetry OBSERVES — an
-     * integration throw is swallowed so it can never alter loop behavior
-     * (CancellationException still propagates). No-op when no integration
-     * is registered ([feed] null — the zero-overhead path).
-     */
-    private suspend fun fireTelemetry(
-        feed: TelemetryFeed?,
-        block: suspend Telemetry.(TelemetryCall) -> Unit,
-    ) {
-        if (feed == null) return
-        try {
-            feed.tele.block(feed.call)
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            // Telemetry failures never reach the loop — but they leave a tell.
-            logger.warn("telemetry integration '${feed.tele.name}' threw — event dropped", t)
-        }
-    }
-
-    /** Single source for the 3 tool-error sites: emit a typed
-     *  [StreamEvent.ToolError] (display text derived from [error]) AND
-     *  append the matching tool message so the model sees the failure. */
+    /** Emit a typed [StreamEvent.ToolError] (display text derived from [error]) AND
+     *  append the matching tool message so the model sees the failure. Correct only at
+     *  sites where the assistant tool-call message is ALREADY in [messages]; the
+     *  categorization pass (which runs before that message exists) must instead use
+     *  [emitToolErrorDeferred] and append the returned message afterward. */
     private suspend fun emitToolError(
         out: FlowCollector<StreamEvent>,
         toolCallId: String,
@@ -1703,9 +1769,28 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         error: AgentError,
         messages: MutableList<ModelMessage>,
     ) {
+        messages.add(emitToolErrorDeferred(out, toolCallId, toolName, error))
+    }
+
+    /** Emit the tool-error event for live observers and RETURN the matching Tool message
+     *  instead of appending it — so the caller can order it AFTER the assistant tool-call
+     *  message (a failed call's tool_result must never precede the tool_use that issued it). */
+    private suspend fun emitToolErrorDeferred(
+        out: FlowCollector<StreamEvent>,
+        toolCallId: String,
+        toolName: String,
+        error: AgentError,
+    ): ModelMessage {
         val msg = error.message ?: "tool failed"
         out.emit(StreamEvent.ToolError(toolCallId, toolName, msg, error = error))
-        messages.add(toolMessage(toolCallId, toolName, JsonPrimitive(msg)))
+        // isError = true: a failed tool MUST be logged (and re-sent to the provider) as an error,
+        // not a success whose body happens to hold the error text — providers map isError ->
+        // is_error, which is what lets the model self-correct. Mirrors applyToolResult's Success
+        // path (which carries result.isError) and ToolApprovalCoordinator.applyDenied.
+        return ModelMessage(
+            MessageRole.Tool,
+            listOf(ContentPart.ToolResult(toolCallId, toolName, JsonPrimitive(msg), isError = true)),
+        )
     }
 
     /** Wrap a tool-execution throwable as a typed Failure: an AgentError
@@ -1713,83 +1798,51 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      *  [AgentError.ToolExecution]. */
     private fun toolFailure(call: ContentPart.ToolCall, t: Throwable): ToolExecutionResult.Failure =
         ToolExecutionResult.Failure(
+            toolName = call.toolName,
             t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
         )
-
-    /** One guarded lifecycle-hook body — run via [runHook], which reports failures instead of throwing. */
-    private fun interface HookBody {
-        public suspend fun run()
-    }
-
-    private suspend fun runHook(
-        stepNumber: Int,
-        feed: TelemetryFeed? = null,
-        block: HookBody,
-    ) {
-        try {
-            block.run()
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (t: Throwable) {
-            val event = OnErrorEvent(t, stepNumber, OnErrorEvent.ErrorSource.Hook)
-            try {
-                onError?.invoke(event)
-            } catch (ce: CancellationException) {
-                throw ce
-            } catch (_: Throwable) {
-                // reporting hook's own failure is best-effort
-            }
-            fireTelemetry(feed) { onError(it, event) }
-        }
-    }
 
     private fun hasSystemMessage(messages: List<ModelMessage>): Boolean =
         messages.any { it.role == MessageRole.System }
 
-    /** One tool's concurrently-computed outcome: the call, its buffered events, and its result. */
-    private class ExecutedTool(
-        val call: ContentPart.ToolCall,
-        val events: List<StreamEvent>,
-        val result: ToolExecutionResult,
-    )
+    private enum class ModelCallMode { Generate, Stream }
 
-    private sealed interface ToolExecutionResult {
-        /**
-         * [outputJson] is the full typed payload that drives the UI's
-         * per-tool renderer pipeline. [modelVisible] is what the agent
-         * feeds back to the model in its `toolMessage(...)` — by
-         * default the same as [outputJson], but tools can override via
-         * `toModelOutput` to send the model a token-cheap summary
-         * (e.g. "lineup: 2127 artists across 9 stages") while the UI
-         * still gets the full thing. Without this split, rich tools
-         * blow the model's context window every call.
-         */
-        data class Success(
-            val outputJson: JsonElement,
-            val output: ToolResultOutput = toolResultOutputFromJson(outputJson),
-            val modelOutput: ToolResultOutput = output,
-            val modelVisible: JsonElement = outputJson,
-        ) : ToolExecutionResult {
-            val isError: Boolean = modelOutput.isToolResultError()
+    @OptIn(LowLevelLanguageModelApi::class)
+    private suspend fun executeModelStep(
+        stepModel: LanguageModel,
+        callParams: LanguageModelCallParams,
+        mode: ModelCallMode,
+        maxRetries: Int,
+    ): LanguageModelStreamResult =
+        when (mode) {
+            ModelCallMode.Stream -> stepModel.streamResult(callParams).let { result ->
+                LanguageModelStreamResult(
+                    stream = StreamOpenRetry.wrap(maxRetries) {
+                        result.stream
+                    },
+                    request = result.request,
+                    response = result.response,
+                )
+            }
+            ModelCallMode.Generate -> {
+                val result = RetryPolicy {
+                    maxRetries(maxRetries)
+                }.execute {
+                    stepModel.generate(callParams)
+                }
+                LanguageModelStreamResult(
+                    stream = LanguageModelResultStreamEvents.from(result),
+                    request = result.request,
+                    response = result.response,
+                )
+            }
         }
-        data class Failure(val error: AgentError) : ToolExecutionResult
-    }
 
-    private class MessageHolder(var value: List<ModelMessage> = emptyList())
-    private class StepsHolder(val steps: MutableList<StepResult>)
-
-    /**
-     * Tiny adapter that captures stream events into a side-effecting
-     * collector while leaving the upstream Flow uncollected from the
-     * caller's perspective. Used by [generate] to drain its own stream
-     * and tally aggregates.
-     */
-    private class StreamCapture(private val onEach: suspend (StreamEvent) -> Unit) {
-        suspend fun consume(event: StreamEvent) = onEach(event)
-    }
-
-    /** Result of draining a tool executor Flow — see [collectFinalToolOutput]. */
-    private data class ToolOutputCapture(val hasOutput: Boolean, val value: Any?)
+    // The parallel-tool channel signals (ParallelToolSignal / OrderedToolCompletion /
+    // ChannelToolEventCollector), the tool-execution result types (ToolExecutionResult /
+    // ToolOutputCapture), and the loop's plumbing carriers (MessageHolder / StepsHolder /
+    // StreamCapture) live in same-package files: ToolLoopParallelExecution.kt,
+    // ToolExecutionResult.kt, ToolLoopAgentInternals.kt.
 
     /**
      * Resolve `stopSequences` along the `Step ?: Agent ?: agent-default`
@@ -1802,32 +1855,3 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         agent: AgentSettings<TContext>,
     ): List<String> = step.stopSequences ?: agent.stopSequences ?: stopSequences ?: emptyList()
 }
-
-/**
- * [ToolStreamWriter] bound to the agent loop's output [FlowCollector].
- * Supplied to every [ToolExecutionContext] so a tool executor can write
- * custom events into the same stream the loop emits on (gap #21). Safe
- * because tool execution runs sequentially inside the loop's `flow { }`
- * collector — there's no concurrent emission to race with.
- */
-private class FlowToolStreamWriter(
-    private val out: FlowCollector<StreamEvent>,
-) : ToolStreamWriter {
-    override suspend fun write(event: StreamEvent) = out.emit(event)
-    override suspend fun writeData(value: JsonElement) = out.emit(StreamEvent.Raw(value))
-}
-
-/**
- * A [FlowCollector] that buffers events into a list instead of emitting them, so a tool
- * can run on a concurrent child coroutine (its writes never touch the shared collector).
- * The loop replays [events] onto the real collector serially, in deterministic order.
- * Each instance is used by exactly one tool's coroutine, so the list is single-threaded.
- */
-private class BufferingCollector : FlowCollector<StreamEvent> {
-    val events: MutableList<StreamEvent> = mutableListOf()
-    override suspend fun emit(value: StreamEvent) {
-        events.add(value)
-    }
-}
-
-private class TerminalModelStreamError : RuntimeException()

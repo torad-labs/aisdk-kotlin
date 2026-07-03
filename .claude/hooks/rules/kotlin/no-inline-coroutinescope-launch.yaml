@@ -1,0 +1,9 @@
+id: no-inline-coroutinescope-launch
+language: kotlin
+severity: error
+message: "Launching on a throwaway CoroutineScope(...) leaks the scope — there is no reference left to cancel it."
+note: "Hold the CoroutineScope as a field tied to a lifecycle (and cancel it), or use coroutineScope { }/supervisorScope { }."
+rule:
+  any:
+    - pattern: CoroutineScope($$$ARGS).launch
+    - pattern: CoroutineScope($$$ARGS).async

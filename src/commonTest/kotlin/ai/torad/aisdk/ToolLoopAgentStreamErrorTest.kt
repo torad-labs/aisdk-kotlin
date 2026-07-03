@@ -1,12 +1,14 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
-import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ToolLoopAgentStreamErrorTest {
 
@@ -28,7 +30,7 @@ class ToolLoopAgentStreamErrorTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "stream",
-            tools = toolSetOf(),
+            tools = ToolSet(),
         )
 
         val events = drainAllItems(agent.stream(prompt = "run", options = Unit))

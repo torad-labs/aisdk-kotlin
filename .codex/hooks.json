@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$root\" python3 \"$root/.codex/hooks/claude_compat.py\" pretooluse \"$root/.claude/hooks/orchestrator/pretooluse.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking aisdk-kotlin local Claude hook policy"
+          }
+        ]
+      }
+    ]
+  }
+}

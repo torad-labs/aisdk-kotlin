@@ -1,12 +1,11 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.LUMA_VERSION
+import ai.torad.aisdk.providers.Luma
 import ai.torad.aisdk.providers.LumaProviderSettings
-import ai.torad.aisdk.providers.createLuma
-import ai.torad.aisdk.providers.luma
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -23,7 +22,7 @@ import kotlin.test.assertTrue
 class LumaProviderTest {
     @Test
     fun `image model creates generation polls and downloads image`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.lumalabs.ai/dream-machine/v1/generations/image" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"gen1","state":"queued"}""")),
@@ -37,37 +36,48 @@ class LumaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createLuma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-1")
+        val model = Luma(fixture.httpClient(), LumaProviderSettings { apiKey("key") }).image(ModelId("photon-1"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "a kinetic sculpture",
-                size = "1024x1024",
-                aspectRatio = "16:9",
-                seed = 42,
-                files = listOf(
-                    ImageGenerationFile(url = "https://example.com/ref-a.png"),
-                    ImageGenerationFile(url = "https://example.com/ref-b.png"),
-                ),
-                providerOptions = mapOf(
-                    "luma" to buildJsonObject {
-                        put("pollIntervalMillis", JsonPrimitive(0))
-                        put("maxPollAttempts", JsonPrimitive(1))
-                        put("referenceType", JsonPrimitive("image"))
-                        put("images", buildJsonArray {
-                            add(buildJsonObject { put("weight", JsonPrimitive(0.9f)) })
-                            add(buildJsonObject { put("weight", JsonPrimitive(0.5f)) })
-                        })
-                        put("style", JsonPrimitive("cinematic"))
-                    },
-                ),
-            ),
+            ImageGenerationParams {
+                prompt("a kinetic sculpture")
+                size("1024x1024")
+                aspectRatio("16:9")
+                seed(42)
+                files(
+                    listOf(
+                        ImageGenerationFile(url = "https://example.com/ref-a.png"),
+                        ImageGenerationFile(url = "https://example.com/ref-b.png"),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "luma" to buildJsonObject {
+                                    put("pollIntervalMillis", JsonPrimitive(0))
+                                    put("maxPollAttempts", JsonPrimitive(1))
+                                    put("referenceType", JsonPrimitive("image"))
+                                    put(
+                                        "images",
+                                        buildJsonArray {
+                                            add(buildJsonObject { put("weight", JsonPrimitive(0.9f)) })
+                                            add(buildJsonObject { put("weight", JsonPrimitive(0.5f)) })
+                                        }
+                                    )
+                                    put("style", JsonPrimitive("cinematic"))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals("luma.image", model.provider)
         assertEquals(1, model.maxImagesPerCall)
         assertEquals("image/png", result.images.single().mediaType)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), result.images.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.images.single().base64)
         assertEquals(2, result.warnings.size)
         assertTrue(result.warnings.any { it.message.orEmpty().contains("seed") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("size") })
@@ -81,13 +91,16 @@ class LumaProviderTest {
         assertEquals("16:9", body["aspect_ratio"]?.jsonPrimitive?.contentOrNull)
         assertEquals("photon-1", body["model"]?.jsonPrimitive?.contentOrNull)
         assertEquals("cinematic", body["style"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("https://example.com/ref-a.png", body["image"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "https://example.com/ref-a.png",
+            body["image"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(0.9f, body["image"]?.jsonArray?.first()?.jsonObject?.get("weight")?.jsonPrimitive?.floatOrNull)
     }
 
     @Test
     fun `image model maps character references`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.lumalabs.ai/dream-machine/v1/generations/image" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"gen1","state":"queued"}""")),
@@ -99,55 +112,80 @@ class LumaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createLuma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-flash-1")
+        val model = Luma(fixture.httpClient(), LumaProviderSettings { apiKey("key") }).image(ModelId("photon-flash-1"))
 
         model.generate(
-            ImageGenerationParams(
-                prompt = "portrait",
-                files = listOf(
-                    ImageGenerationFile(url = "https://example.com/a.png"),
-                    ImageGenerationFile(url = "https://example.com/b.png"),
-                ),
-                providerOptions = mapOf(
-                    "luma" to buildJsonObject {
-                        put("pollIntervalMillis", JsonPrimitive(0))
-                        put("maxPollAttempts", JsonPrimitive(1))
-                        put("referenceType", JsonPrimitive("character"))
-                        put("images", buildJsonArray {
-                            add(buildJsonObject { put("id", JsonPrimitive("hero")) })
-                            add(buildJsonObject { put("id", JsonPrimitive("hero")) })
-                        })
-                    },
-                ),
-            ),
+            ImageGenerationParams {
+                prompt("portrait")
+                files(
+                    listOf(
+                        ImageGenerationFile(url = "https://example.com/a.png"),
+                        ImageGenerationFile(url = "https://example.com/b.png"),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "luma" to buildJsonObject {
+                                    put("pollIntervalMillis", JsonPrimitive(0))
+                                    put("maxPollAttempts", JsonPrimitive(1))
+                                    put("referenceType", JsonPrimitive("character"))
+                                    put(
+                                        "images",
+                                        buildJsonArray {
+                                            add(buildJsonObject { put("id", JsonPrimitive("hero")) })
+                                            add(buildJsonObject { put("id", JsonPrimitive("hero")) })
+                                        }
+                                    )
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
-        val character = fixture.calls.first().requestBodyJson.jsonObject["character"]?.jsonObject?.get("hero")?.jsonObject
+        val character = fixture.calls.first().requestBodyJson.jsonObject["character"]?.jsonObject?.get(
+            "hero"
+        )?.jsonObject
         assertEquals(2, character?.get("images")?.jsonArray?.size)
-        assertEquals("https://example.com/a.png", character?.get("images")?.jsonArray?.first()?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "https://example.com/a.png",
+            character?.get("images")?.jsonArray?.first()?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
     fun `image model rejects base64 reference files and masks`() = runTest {
-        val fixture = createTestServer(mutableMapOf())
-        val model = createLuma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-1")
+        val fixture = TestServer.createTestServer(mutableMapOf())
+        val model = Luma(fixture.httpClient(), LumaProviderSettings { apiKey("key") }).image(ModelId("photon-1"))
 
         assertFailsWith<AiSdkException> {
-            model.generate(ImageGenerationParams(prompt = "x", files = listOf(ImageGenerationFile(mediaType = "image/png", base64 = "abc"))))
+            model.generate(
+                ImageGenerationParams {
+                    prompt("x")
+                    files(listOf(ImageGenerationFile(mediaType = "image/png", base64 = "abc")))
+                }
+            )
         }
         assertFailsWith<AiSdkException> {
-            model.generate(ImageGenerationParams(prompt = "x", mask = ImageGenerationFile(url = "https://example.com/mask.png")))
+            model.generate(
+                ImageGenerationParams {
+                    prompt("x")
+                    mask(ImageGenerationFile(url = "https://example.com/mask.png"))
+                }
+            )
         }
     }
 
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
-        val fixture = createTestServer(mutableMapOf())
-        val provider = createLuma(fixture.httpClient(), LumaProviderSettings(apiKey = "key"))
+        val fixture = TestServer.createTestServer(mutableMapOf())
+        val provider = Luma(fixture.httpClient(), LumaProviderSettings { apiKey("key") })
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { luma.image("photon-1") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

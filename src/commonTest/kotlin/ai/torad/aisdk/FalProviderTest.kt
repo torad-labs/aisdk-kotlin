@@ -1,15 +1,14 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.FAL_VERSION
+import ai.torad.aisdk.providers.Fal
 import ai.torad.aisdk.providers.FalProviderSettings
-import ai.torad.aisdk.providers.createFal
-import ai.torad.aisdk.providers.fal
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
@@ -24,7 +23,7 @@ import kotlin.test.assertTrue
 class FalProviderTest {
     @Test
     fun `image model maps request options downloads images and exposes metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://fal.test/fal-ai/qwen-image" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -60,47 +59,63 @@ class FalProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createFal(
+        val provider = Fal(
             fixture.httpClient(),
-            FalProviderSettings(
-                apiKey = "key",
-                baseURL = "https://fal.test",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            FalProviderSettings {
+                apiKey("key")
+                baseURL("https://fal.test")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         )
 
-        val result = provider.image("fal-ai/qwen-image").generate(
-            ImageGenerationParams(
-                prompt = "A clean product render",
-                n = 1,
-                size = "1024x1024",
-                seed = 123,
-                files = listOf(
-                    ImageGenerationFile(mediaType = "image/png", base64 = "aW1hZ2U="),
-                    ImageGenerationFile(url = "https://example.com/second.png"),
-                ),
-                mask = ImageGenerationFile(mediaType = "image/png", base64 = "bWFzaw=="),
-                providerOptions = mapOf(
-                    "fal" to buildJsonObject {
-                        put("guidanceScale", JsonPrimitive(7.5f))
-                        put("num_inference_steps", JsonPrimitive(30))
-                        put("enableSafetyChecker", JsonPrimitive(false))
-                        put("extra_param", JsonPrimitive("extra"))
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+        val result = provider.image(ModelId("fal-ai/qwen-image")).generate(
+            ImageGenerationParams {
+                prompt("A clean product render")
+                n(1)
+                size("1024x1024")
+                seed(123)
+                files(
+                    listOf(
+                        ImageGenerationFile(mediaType = "image/png", base64 = "aW1hZ2U="),
+                        ImageGenerationFile(url = "https://example.com/second.png"),
+                    )
+                )
+                mask(ImageGenerationFile(mediaType = "image/png", base64 = "bWFzaw=="))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "fal" to buildJsonObject {
+                                    put("guidanceScale", JsonPrimitive(7.5f))
+                                    put("num_inference_steps", JsonPrimitive(30))
+                                    put("enableSafetyChecker", JsonPrimitive(false))
+                                    put("extra_param", JsonPrimitive("extra"))
+                                },
+                            )
+                        )
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("fal.image", provider.imageModel("fal-ai/qwen-image").provider)
         assertEquals(1, provider.imageModel("fal-ai/qwen-image").maxImagesPerCall)
         assertEquals("image/png", result.images.single().mediaType)
-        assertEquals("image-bytes", convertBase64ToByteArray(result.images.single().base64).decodeToString())
+        assertEquals("image-bytes", Base64Codec.decode(result.images.single().base64).decodeToString())
         assertEquals("https://fal.media/files/image.png", result.images.single().url)
         assertEquals("image.png", result.images.single().filename)
-        assertEquals(false, result.providerMetadata["fal"]?.jsonObject?.get("images")?.jsonArray?.single()?.jsonObject?.get("nsfw")?.jsonPrimitive?.booleanOrNull)
-        assertEquals(123, result.providerMetadata["fal"]?.jsonObject?.get("seed")?.jsonPrimitive?.intOrNull)
-        assertEquals(30, result.providerMetadata["fal"]?.jsonObject?.get("num_inference_steps")?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            false,
+            result.providerMetadata.toMap()["fal"]?.jsonObject?.get(
+                "images"
+            )?.jsonArray?.single()?.jsonObject?.get("nsfw")?.jsonPrimitive?.booleanOrNull
+        )
+        assertEquals(123, result.providerMetadata.toMap()["fal"]?.jsonObject?.get("seed")?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            30,
+            result.providerMetadata.toMap()["fal"]?.jsonObject?.get("num_inference_steps")?.jsonPrimitive?.intOrNull
+        )
         assertTrue(result.warnings.any { it.message.orEmpty().contains("Multiple input images") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("num_inference_steps") })
 
@@ -127,7 +142,7 @@ class FalProviderTest {
 
     @Test
     fun `speech model posts text options downloads audio and warns on unsupported settings`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://fal.run/fal-ai/minimax/speech-02-hd" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -151,30 +166,36 @@ class FalProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createFal(fixture.httpClient(), FalProviderSettings(apiKey = "key"))
+        val provider = Fal(fixture.httpClient(), FalProviderSettings { apiKey("key") })
 
-        val result = provider.speech("fal-ai/minimax/speech-02-hd").generate(
-            SpeechGenerationParams(
-                text = "Hello from the AI SDK!",
-                voice = "voice-1",
-                instructions = "Speak softly.",
-                speed = 1.2f,
-                responseFormat = "wav",
-                providerOptions = mapOf(
-                    "fal" to buildJsonObject {
-                        put(
-                            "voice_setting",
-                            buildJsonObject { put("emotion", JsonPrimitive("happy")) },
+        val result = provider.speech(ModelId("fal-ai/minimax/speech-02-hd")).generate(
+            SpeechGenerationParams {
+                text("Hello from the AI SDK!")
+                voice("voice-1")
+                instructions("Speak softly.")
+                speed(1.2f)
+                responseFormat("wav")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "fal" to buildJsonObject {
+                                    put(
+                                        "voice_setting",
+                                        buildJsonObject { put("emotion", JsonPrimitive("happy")) },
+                                    )
+                                },
+                            )
                         )
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("fal.speech", provider.speechModel("fal-ai/minimax/speech-02-hd").provider)
         assertEquals("audio/mp3", result.audio?.mediaType)
-        assertEquals("audio-bytes", convertBase64ToByteArray(result.audio?.base64.orEmpty()).decodeToString())
+        assertEquals("audio-bytes", Base64Codec.decode(result.audio?.base64.orEmpty()).decodeToString())
         assertTrue(result.warnings.any { it.message == "instructions" })
         assertTrue(result.warnings.any { it.message == "outputFormat" })
 
@@ -191,7 +212,7 @@ class FalProviderTest {
 
     @Test
     fun `transcription model queues audio polls result and maps chunks`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://queue.fal.run/fal-ai/wizper" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -217,25 +238,34 @@ class FalProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createFal(
+        val provider = Fal(
             fixture.httpClient(),
-            FalProviderSettings(apiKey = "key", transcriptionPollIntervalMillis = 0),
+            FalProviderSettings {
+                apiKey("key")
+                transcriptionPollIntervalMillis(0)
+            },
         )
 
-        val result = provider.transcription("wizper").transcribe(
-            TranscriptionParams(
-                audio = AudioSource("audio/wav", "YXVkaW8=", "clip.wav"),
-                language = "pt",
-                providerOptions = mapOf(
-                    "fal" to buildJsonObject {
-                        put("diarize", JsonPrimitive(false))
-                        put("chunkLevel", JsonPrimitive("segment"))
-                        put("batchSize", JsonPrimitive(16))
-                        put("numSpeakers", JsonPrimitive(2))
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+        val result = provider.transcription(ModelId("wizper")).transcribe(
+            TranscriptionParams {
+                audio(AudioSource("audio/wav", "YXVkaW8=", "clip.wav"))
+                language("pt")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "fal" to buildJsonObject {
+                                    put("diarize", JsonPrimitive(false))
+                                    put("chunkLevel", JsonPrimitive("segment"))
+                                    put("batchSize", JsonPrimitive(16))
+                                    put("numSpeakers", JsonPrimitive(2))
+                                },
+                            )
+                        )
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("fal.transcription", provider.transcriptionModel("wizper").provider)
@@ -259,7 +289,7 @@ class FalProviderTest {
 
     @Test
     fun `video model queues normalized model id polls result and returns url video`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://queue.fal.run/fal-ai/luma-dream-machine" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -301,30 +331,39 @@ class FalProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createFal(
+        val provider = Fal(
             fixture.httpClient(),
-            FalProviderSettings(apiKey = "key", videoPollIntervalMillis = 10),
+            FalProviderSettings {
+                apiKey("key")
+                videoPollIntervalMillis(10)
+            },
         )
 
-        val result = provider.video("fal-ai/luma-dream-machine").generate(
-            VideoGenerationParams(
-                prompt = "A futuristic city",
-                image = GeneratedFile("image/png", "aW1hZ2U="),
-                durationSeconds = 5f,
-                aspectRatio = "16:9",
-                seed = 42,
-                providerOptions = mapOf(
-                    "fal" to buildJsonObject {
-                        put("pollIntervalMs", JsonPrimitive(1))
-                        put("pollTimeoutMs", JsonPrimitive(2))
-                        put("motionStrength", JsonPrimitive(0.7f))
-                        put("negativePrompt", JsonPrimitive("blur"))
-                        put("promptOptimizer", JsonPrimitive(true))
-                        put("customFlag", JsonPrimitive("custom"))
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+        val result = provider.video(ModelId("fal-ai/luma-dream-machine")).generate(
+            VideoGenerationParams {
+                prompt("A futuristic city")
+                image(GeneratedFile("image/png", "aW1hZ2U="))
+                durationSeconds(5f)
+                aspectRatio("16:9")
+                seed(42)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "fal" to buildJsonObject {
+                                    put("pollIntervalMs", JsonPrimitive(1))
+                                    put("pollTimeoutMs", JsonPrimitive(2))
+                                    put("motionStrength", JsonPrimitive(0.7f))
+                                    put("negativePrompt", JsonPrimitive("blur"))
+                                    put("promptOptimizer", JsonPrimitive(true))
+                                    put("customFlag", JsonPrimitive("custom"))
+                                },
+                            )
+                        )
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("fal.video", provider.videoModel("fal-ai/luma-dream-machine").provider)
@@ -332,9 +371,17 @@ class FalProviderTest {
         assertEquals("video/mp4", result.videos.single().mediaType)
         assertEquals("", result.videos.single().base64)
         assertEquals("https://fal.media/files/video.mp4", result.videos.single().url)
-        assertEquals(42, result.providerMetadata["fal"]?.jsonObject?.get("seed")?.jsonPrimitive?.intOrNull)
-        assertEquals("Enhanced prompt", result.providerMetadata["fal"]?.jsonObject?.get("prompt")?.jsonPrimitive?.contentOrNull)
-        assertEquals(1920, result.providerMetadata["fal"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject?.get("width")?.jsonPrimitive?.intOrNull)
+        assertEquals(42, result.providerMetadata.toMap()["fal"]?.jsonObject?.get("seed")?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            "Enhanced prompt",
+            result.providerMetadata.toMap()["fal"]?.jsonObject?.get("prompt")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            1920,
+            result.providerMetadata.toMap()["fal"]?.jsonObject?.get(
+                "videos"
+            )?.jsonArray?.single()?.jsonObject?.get("width")?.jsonPrimitive?.intOrNull
+        )
 
         val request = fixture.calls.first()
         assertEquals("https://queue.fal.run/fal-ai/luma-dream-machine", request.requestUrl)
@@ -353,12 +400,11 @@ class FalProviderTest {
 
     @Test
     fun `unsupported language and embedding models throw no such model errors`() {
-        val provider = createFal(createTestServer(mutableMapOf()).httpClient())
+        val provider = Fal(TestServer.createTestServer(mutableMapOf()).httpClient())
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("model") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("model") }
-        assertFailsWith<AiSdkException> { fal.image("model") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

@@ -6,21 +6,20 @@ bind platform HTTP clients, credentials, storage, and UI from the host app.
 
 ## Install
 
-Until a stable release is published, publish the artifact locally:
+Use the published beta from Maven Central:
+
+```kotlin
+dependencies {
+    implementation("ai.torad:torad-aisdk:0.3.0-beta01")
+}
+```
+
+For application development against a checkout, publish locally or use a
+composite build:
 
 ```sh
 ./gradlew publishToMavenLocal
 ```
-
-Then add the dependency:
-
-```kotlin
-dependencies {
-    implementation("ai.torad:aisdk-kotlin:0.1.0-SNAPSHOT")
-}
-```
-
-For application development against a checkout, use a composite build:
 
 ```kotlin
 // settings.gradle.kts
@@ -37,48 +36,62 @@ There are three normal ways to get a model:
 | OpenAI-compatible | Your service speaks OpenAI-compatible HTTP. |
 | Dedicated facade | You need provider-specific options, metadata, media APIs, or auth. |
 
+For a real provider setup, [Providers And Models](providers.md) shows the Ktor
+engine dependency, `HttpClient` construction, environment-backed API key wiring,
+and OpenAI-compatible provider factory.
+
 For tests and examples, use mock models:
 
 ```kotlin
-import ai.torad.aisdk.providers.MockLanguageModel
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 
-val model = MockLanguageModel.textOnly("Hello from AI SDK Kotlin.")
+val model = MockLanguageModelTextOnly("Hello from AI SDK Kotlin.")
 ```
 
 ## Generate Text
 
-Use `generateText` for a single model call.
+Use `TextGenerator` for a single model call.
 
 ```kotlin
-val result = generateText(
-    model = model,
-    system = "Answer as a concise Kotlin engineer.",
-    prompt = "What does this SDK provide?",
-)
+import ai.torad.aisdk.GenerationInput
+import ai.torad.aisdk.TextGenerator
+import kotlinx.coroutines.flow.first
+
+val result = TextGenerator(model)
+    .generate(GenerationInput.Prompt("What does this SDK provide?"))
+    .first()
 
 println(result.text)
 ```
 
-For Kotlin call sites, the builder form keeps settings grouped:
+For Kotlin call sites, pass generation settings through `CallConfig`:
 
 ```kotlin
-val result = generateText(model) {
-    system("Answer with short bullets.")
-    prompt("How do I stream output?")
-    settings {
-        temperature = 0.2f
-        maxOutputTokens = 400
-    }
-}
+import ai.torad.aisdk.CallConfig
+import ai.torad.aisdk.GenerationInput
+import ai.torad.aisdk.TextGenerator
+import kotlinx.coroutines.flow.first
+
+val result = TextGenerator(
+    model,
+    CallConfig {
+        temperature(0.2f)
+        maxOutputTokens(400)
+    },
+).generate(GenerationInput.Prompt("How do I stream output?")).first()
 ```
 
 ## Stream Text
 
-`streamText` returns a cold `Flow<StreamEvent>`. The model call starts when
-the flow is collected.
+`TextGenerator.stream(...)` returns a cold `Flow<StreamEvent>`. The model call
+starts when the flow is collected.
 
 ```kotlin
-streamText(model = model, prompt = "Write a short intro.").collect { event ->
+import ai.torad.aisdk.GenerationInput
+import ai.torad.aisdk.StreamEvent
+import ai.torad.aisdk.TextGenerator
+
+TextGenerator(model).stream(GenerationInput.Prompt("Write a short intro.")).collect { event ->
     when (event) {
         is StreamEvent.TextDelta -> print(event.text)
         is StreamEvent.Finish -> println(event.finishReason)
@@ -87,11 +100,14 @@ streamText(model = model, prompt = "Write a short intro.").collect { event ->
 }
 ```
 
-Use `streamTextResult` when you want helpers for text-only streams or
+Use `TextGenerator.streamResult(...)` when you want helpers for text-only streams or
 UI-message streams:
 
 ```kotlin
-val result = streamTextResult(model = model, prompt = "Stream this.")
+import ai.torad.aisdk.GenerationInput
+import ai.torad.aisdk.TextGenerator
+
+val result = TextGenerator(model).streamResult(GenerationInput.Prompt("Stream this."))
 result.textStream.collect { delta -> print(delta) }
 ```
 
@@ -106,7 +122,7 @@ data class WeatherInput(val city: String)
 @Serializable
 data class WeatherOutput(val summary: String)
 
-val weatherTool = tool<WeatherInput, WeatherOutput, Unit>(
+val weatherTool = Tool<WeatherInput, WeatherOutput, Unit>(
     name = "weather",
     description = "Get the weather for a city.",
     inputSerializer = serializer(),
@@ -116,17 +132,15 @@ val weatherTool = tool<WeatherInput, WeatherOutput, Unit>(
 }
 ```
 
-The Kotlin-first tool-set builder can infer serializers:
+The reified tool factory can infer serializers:
 
 ```kotlin
-val tools = toolSet<Unit> {
-    tool<WeatherInput, WeatherOutput>(
+val tools = ToolSet(
+    Tool<WeatherInput, WeatherOutput, Unit>(
         name = "weather",
         description = "Get the weather for a city.",
-    ) { input ->
-        WeatherOutput(summary = "Mild in ${input.city}.")
-    }
-}
+    ) { input -> WeatherOutput(summary = "Mild in ${input.city}.") },
+)
 ```
 
 ## Build An Agent
@@ -134,15 +148,19 @@ val tools = toolSet<Unit> {
 Use `ToolLoopAgent` when the model should decide when to call tools.
 
 ```kotlin
-val agent = ToolLoopAgent<Unit, String>(
-    model = model,
-    instructions = "Use tools when they help. Be brief.",
-    tools = toolSetOf(weatherTool),
-    stopWhen = stepCountIs(6),
-)
+import kotlinx.coroutines.flow.first
 
+class WeatherAgent(model: LanguageModel, tools: ToolSet<Unit>) :
+    ToolLoopAgent<Unit, String>(
+        model = model,
+        instructions = "Use tools when they help. Be brief.",
+        tools = tools,
+        stopWhen = StepCountIs(6),
+    )
+
+val agent = WeatherAgent(model, ToolSet(weatherTool))
 val answer = agent.generate(prompt = "What is the weather in Paris?")
-println(answer.text)
+println(answer.first().text)
 ```
 
 Agents can also stream:

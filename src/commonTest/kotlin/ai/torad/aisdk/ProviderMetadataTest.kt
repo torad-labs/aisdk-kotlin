@@ -1,14 +1,12 @@
 package ai.torad.aisdk
-import ai.torad.aisdk.providers.anthropic
-import ai.torad.aisdk.providers.openai
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 
 /**
  * Surface tests for the Phase 4C #18 slice — `providerMetadata` on
@@ -27,7 +25,7 @@ class ProviderMetadataTest {
     private val codec = Json { encodeDefaults = true }
 
     @Test
-    fun `given StepFinish constructed without providerMetadata when read then field is null`() {
+    fun `given StepFinish constructed without providerMetadata when read then field is None`() {
         // GIVEN — backwards-compat path (existing call sites).
         val ev = StreamEvent.StepFinish(
             stepNumber = 1,
@@ -36,7 +34,7 @@ class ProviderMetadataTest {
         )
 
         // WHEN/THEN
-        assertNull(ev.providerMetadata)
+        assertEquals(ProviderMetadata.None, ev.providerMetadata)
     }
 
     @Test
@@ -51,11 +49,15 @@ class ProviderMetadataTest {
                 inputTokens = Usage.InputTokenBreakdown(total = 1200, cacheRead = 1000, cacheWrite = 50),
                 outputTokens = Usage.OutputTokenBreakdown(total = 80, text = 80),
             ),
-            providerMetadata = mapOf(
-                "anthropic" to buildJsonObject {
-                    put("cache_creation_input_tokens", JsonPrimitive(50))
-                    put("cache_read_input_tokens", JsonPrimitive(1000))
-                },
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "anthropic" to buildJsonObject {
+                            put("cache_creation_input_tokens", JsonPrimitive(50))
+                            put("cache_read_input_tokens", JsonPrimitive(1000))
+                        },
+                    )
+                )
             ),
         )
 
@@ -65,7 +67,7 @@ class ProviderMetadataTest {
 
         // THEN
         assertNotNull(decoded.providerMetadata)
-        val anthropic = decoded.providerMetadata["anthropic"]
+        val anthropic = decoded.providerMetadata.toMap()["anthropic"]
         assertNotNull(anthropic, "anthropic key survives")
         assertEquals(1000, decoded.usage.inputTokens.cacheRead, "cache split readable for billing")
     }
@@ -76,12 +78,16 @@ class ProviderMetadataTest {
         val original = StreamEvent.Finish(
             totalSteps = 3,
             finishReason = FinishReason.Stop,
-            usage = Usage(promptTokens = 500, completionTokens = 200),
-            providerMetadata = mapOf(
-                "openai" to buildJsonObject {
-                    put("reasoning_effort", JsonPrimitive("high"))
-                    put("reasoning_tokens", JsonPrimitive(150))
-                },
+            usage = Usage.of(promptTokens = 500, completionTokens = 200),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "openai" to buildJsonObject {
+                            put("reasoning_effort", JsonPrimitive("high"))
+                            put("reasoning_tokens", JsonPrimitive(150))
+                        },
+                    )
+                )
             ),
         )
 
@@ -92,7 +98,7 @@ class ProviderMetadataTest {
         // THEN
         assertNotNull(decoded.providerMetadata)
         assertEquals(500, decoded.usage.promptTokens)
-        val openai = decoded.providerMetadata["openai"]
+        val openai = decoded.providerMetadata.toMap()["openai"]
         assertNotNull(openai, "openai provider payload survives")
     }
 }

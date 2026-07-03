@@ -1,12 +1,12 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.BLACK_FOREST_LABS_VERSION
+import ai.torad.aisdk.providers.BlackForestLabs
 import ai.torad.aisdk.providers.BlackForestLabsProviderSettings
 import ai.torad.aisdk.providers.blackForestLabs
-import ai.torad.aisdk.providers.createBlackForestLabs
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -23,7 +23,7 @@ import kotlin.test.assertTrue
 class BlackForestLabsProviderTest {
     @Test
     fun `image model submits polls downloads image and records metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.bfl.ai/v1/flux-pro-1.1" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -45,44 +45,52 @@ class BlackForestLabsProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createBlackForestLabs(
+        val model = BlackForestLabs(
             fixture.httpClient(),
-            BlackForestLabsProviderSettings(apiKey = "bfl-key"),
-        ).image("flux-pro-1.1")
+            BlackForestLabsProviderSettings { apiKey("bfl-key") },
+        ).image(ModelId("flux-pro-1.1"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "a detailed city model",
-                size = "1024x512",
-                seed = 7,
-                files = listOf(
-                    ImageGenerationFile(url = "https://example.com/ref.png"),
-                    ImageGenerationFile(mediaType = "image/png", base64 = "abc123"),
-                ),
-                mask = ImageGenerationFile(mediaType = "image/png", base64 = "mask123"),
-                providerOptions = mapOf(
-                    "blackForestLabs" to buildJsonObject {
-                        put("steps", JsonPrimitive(4))
-                        put("guidance", JsonPrimitive(2.5))
-                        put("imagePromptStrength", JsonPrimitive(0.7))
-                        put("imagePrompt", JsonPrimitive("prompt-image"))
-                        put("outputFormat", JsonPrimitive("jpeg"))
-                        put("promptUpsampling", JsonPrimitive(true))
-                        put("raw", JsonPrimitive(false))
-                        put("safetyTolerance", JsonPrimitive(3))
-                        put("webhookSecret", JsonPrimitive("secret"))
-                        put("webhookUrl", JsonPrimitive("https://hooks.example/bfl"))
-                        put("pollIntervalMillis", JsonPrimitive(1))
-                        put("pollTimeoutMillis", JsonPrimitive(1))
-                    },
-                ),
-            ),
+            ImageGenerationParams {
+                prompt("a detailed city model")
+                size("1024x512")
+                seed(7)
+                files(
+                    listOf(
+                        ImageGenerationFile(url = "https://example.com/ref.png"),
+                        ImageGenerationFile(mediaType = "image/png", base64 = "abc123"),
+                    )
+                )
+                mask(ImageGenerationFile(mediaType = "image/png", base64 = "mask123"))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "blackForestLabs" to buildJsonObject {
+                                    put("steps", JsonPrimitive(4))
+                                    put("guidance", JsonPrimitive(2.5))
+                                    put("imagePromptStrength", JsonPrimitive(0.7))
+                                    put("imagePrompt", JsonPrimitive("prompt-image"))
+                                    put("outputFormat", JsonPrimitive("jpeg"))
+                                    put("promptUpsampling", JsonPrimitive(true))
+                                    put("raw", JsonPrimitive(false))
+                                    put("safetyTolerance", JsonPrimitive(3))
+                                    put("webhookSecret", JsonPrimitive("secret"))
+                                    put("webhookUrl", JsonPrimitive("https://hooks.example/bfl"))
+                                    put("pollIntervalMillis", JsonPrimitive(1))
+                                    put("pollTimeoutMillis", JsonPrimitive(1))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals("black-forest-labs.image", model.provider)
         assertEquals(1, model.maxImagesPerCall)
         assertEquals("image/jpeg", result.images.single().mediaType)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(4, 5, 6)), result.images.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(4, 5, 6)), result.images.single().base64)
         assertEquals(1, result.warnings.size)
         assertTrue(result.warnings.single().message.orEmpty().contains("Deriving aspect_ratio"))
 
@@ -111,7 +119,7 @@ class BlackForestLabsProviderTest {
         assertEquals("https://api.bfl.ai/v1/get_result?id=req1", fixture.calls[1].requestUrl)
         assertEquals("bfl-key", fixture.calls[2].requestHeaders.headerValue("x-key"))
 
-        val providerMetadata = result.providerMetadata["blackForestLabs"]?.jsonObject
+        val providerMetadata = result.providerMetadata.toMap()["blackForestLabs"]?.jsonObject
         val imageMetadata = providerMetadata?.get("images")?.jsonArray?.single()?.jsonObject
         assertEquals(123, imageMetadata?.get("seed")?.jsonPrimitive?.intOrNull)
         assertEquals(2.5, imageMetadata?.get("duration")?.jsonPrimitive?.doubleOrNull)
@@ -121,7 +129,7 @@ class BlackForestLabsProviderTest {
 
     @Test
     fun `fill model uses image fields and aspect ratio overrides size`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.bfl.ai/v1/flux-pro-1.0-fill" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"req1","polling_url":"https://api.bfl.ai/v1/poll?id=req1"}""")),
@@ -133,27 +141,35 @@ class BlackForestLabsProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createBlackForestLabs(
+        val model = BlackForestLabs(
             fixture.httpClient(),
-            BlackForestLabsProviderSettings(apiKey = "key"),
-        ).image("flux-pro-1.0-fill")
+            BlackForestLabsProviderSettings { apiKey("key") },
+        ).image(ModelId("flux-pro-1.0-fill"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "replace the sky",
-                size = "1024x1024",
-                aspectRatio = "16:9",
-                files = listOf(
-                    ImageGenerationFile(url = "https://example.com/input.png"),
-                    ImageGenerationFile(url = "https://example.com/second.png"),
-                ),
-                providerOptions = mapOf(
-                    "blackForestLabs" to buildJsonObject {
-                        put("width", JsonPrimitive(1280))
-                        put("height", JsonPrimitive(720))
-                    },
-                ),
-            ),
+            ImageGenerationParams {
+                prompt("replace the sky")
+                size("1024x1024")
+                aspectRatio("16:9")
+                files(
+                    listOf(
+                        ImageGenerationFile(url = "https://example.com/input.png"),
+                        ImageGenerationFile(url = "https://example.com/second.png"),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "blackForestLabs" to buildJsonObject {
+                                    put("width", JsonPrimitive(1280))
+                                    put("height", JsonPrimitive(720))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         val body = fixture.calls.first().requestBodyJson.jsonObject
@@ -167,7 +183,7 @@ class BlackForestLabsProviderTest {
 
     @Test
     fun `poll failure and input image limit fail explicitly`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.bfl.ai/v1/flux-pro-1.1" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"req1","polling_url":"https://api.bfl.ai/v1/poll"}""")),
@@ -178,41 +194,96 @@ class BlackForestLabsProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createBlackForestLabs(
+        val model = BlackForestLabs(
             fixture.httpClient(),
-            BlackForestLabsProviderSettings(apiKey = "key"),
-        ).image("flux-pro-1.1")
+            BlackForestLabsProviderSettings { apiKey("key") },
+        ).image(ModelId("flux-pro-1.1"))
 
         assertFailsWith<AiSdkException> {
             model.generate(
-                ImageGenerationParams(
-                    prompt = "x",
-                    providerOptions = mapOf("blackForestLabs" to buildJsonObject {
-                        put("pollIntervalMillis", JsonPrimitive(1))
-                        put("pollTimeoutMillis", JsonPrimitive(1))
-                    }),
-                ),
+                ImageGenerationParams {
+                    prompt("x")
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf(
+                                    "blackForestLabs" to buildJsonObject {
+                                        put("pollIntervalMillis", JsonPrimitive(1))
+                                        put("pollTimeoutMillis", JsonPrimitive(1))
+                                    }
+                                )
+                            )
+                        )
+                    )
+                },
             )
         }
 
         assertFailsWith<AiSdkException> {
             model.generate(
-                ImageGenerationParams(
-                    prompt = "x",
-                    files = List(11) { ImageGenerationFile(url = "https://example.com/$it.png") },
-                ),
+                ImageGenerationParams {
+                    prompt("x")
+                    files(List(11) { ImageGenerationFile(url = "https://example.com/$it.png") })
+                },
             )
         }
     }
 
     @Test
+    fun `poll surfaces content moderation terminal status and reasons without polling to timeout`() = runTest {
+        val moderated = """{"status":"Content Moderated","details":{"Moderation Reasons":["nsfw","violence"]}}"""
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.bfl.ai/v1/flux-pro-1.1" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"req1","polling_url":"https://api.bfl.ai/v1/poll"}""")),
+                ),
+                "https://api.bfl.ai/v1/poll?id=req1" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement(moderated)),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = BlackForestLabs(
+            fixture.httpClient(),
+            BlackForestLabsProviderSettings { apiKey("key") },
+        ).image(ModelId("flux-pro-1.1"))
+
+        val error = assertFailsWith<NoImageGeneratedError> {
+            model.generate(
+                ImageGenerationParams {
+                    prompt("x")
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf(
+                                    "blackForestLabs" to buildJsonObject {
+                                        put("pollIntervalMillis", JsonPrimitive(1))
+                                        put("pollTimeoutMillis", JsonPrimitive(100))
+                                    }
+                                )
+                            )
+                        )
+                    )
+                },
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("Content Moderated"))
+        assertTrue(error.message.orEmpty().contains("nsfw"))
+        assertTrue(error.message.orEmpty().contains("violence"))
+        // 1 submit POST + exactly 1 poll GET: the terminal status returns immediately
+        // instead of polling ~100 times to timeout with a misleading message.
+        assertEquals(2, fixture.calls.size)
+    }
+
+    @Test
     fun `default provider and unsupported model families fail explicitly`() {
-        val fixture = createTestServer(mutableMapOf())
-        val provider = createBlackForestLabs(fixture.httpClient(), BlackForestLabsProviderSettings(apiKey = "key"))
+        val fixture = TestServer.createTestServer(mutableMapOf())
+        val provider = BlackForestLabs(fixture.httpClient(), BlackForestLabsProviderSettings { apiKey("key") })
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { blackForestLabs.image("flux-pro-1.1") }
+        assertFailsWith<AiSdkException> { blackForestLabs.image(ModelId("flux-pro-1.1")) }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

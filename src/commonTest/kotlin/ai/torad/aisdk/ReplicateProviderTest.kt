@@ -1,12 +1,11 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.REPLICATE_VERSION
+import ai.torad.aisdk.providers.Replicate
 import ai.torad.aisdk.providers.ReplicateProviderSettings
-import ai.torad.aisdk.providers.createReplicate
-import ai.torad.aisdk.providers.replicate
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -24,7 +23,7 @@ import kotlin.test.assertTrue
 class ReplicateProviderTest {
     @Test
     fun `image model sends versioned prediction and downloads outputs`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.replicate.com/v1/predictions" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"output":["https://cdn.example/a.png","https://cdn.example/b.webp"]}""")),
@@ -38,36 +37,42 @@ class ReplicateProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createReplicate(
+        val model = Replicate(
             fixture.httpClient(),
-            ReplicateProviderSettings(apiToken = "token"),
-        ).image("owner/model:version-123")
+            ReplicateProviderSettings { apiToken("token") },
+        ).image(ModelId("owner/model:version-123"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "make an icon",
-                n = 2,
-                size = "1024x1024",
-                aspectRatio = "1:1",
-                seed = 9,
-                files = listOf(ImageGenerationFile(mediaType = "image/png", base64 = "imgb64")),
-                mask = ImageGenerationFile(url = "https://example.com/mask.png"),
-                providerOptions = mapOf(
-                    "replicate" to buildJsonObject {
-                        put("maxWaitTimeInSeconds", JsonPrimitive(5))
-                        put("guidance_scale", JsonPrimitive(3.5))
-                        put("negative_prompt", JsonPrimitive("blur"))
-                        put("custom_option", JsonPrimitive("kept"))
-                    },
-                ),
-            ),
+            ImageGenerationParams {
+                prompt("make an icon")
+                n(2)
+                size("1024x1024")
+                aspectRatio("1:1")
+                seed(9)
+                files(listOf(ImageGenerationFile(mediaType = "image/png", base64 = "imgb64")))
+                mask(ImageGenerationFile(url = "https://example.com/mask.png"))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "replicate" to buildJsonObject {
+                                    put("maxWaitTimeInSeconds", JsonPrimitive(5))
+                                    put("guidance_scale", JsonPrimitive(3.5))
+                                    put("negative_prompt", JsonPrimitive("blur"))
+                                    put("custom_option", JsonPrimitive("kept"))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals("replicate", model.provider)
         assertEquals(1, model.maxImagesPerCall)
-        assertEquals(8, createReplicate(fixture.httpClient()).image("black-forest-labs/flux-2-pro").maxImagesPerCall)
+        assertEquals(8, Replicate(fixture.httpClient()).image(ModelId("black-forest-labs/flux-2-pro")).maxImagesPerCall)
         assertEquals(listOf("image/png", "image/webp"), result.images.map { it.mediaType })
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2)), result.images.first().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2)), result.images.first().base64)
 
         val create = fixture.calls[0]
         assertEquals("POST", create.requestMethod)
@@ -92,7 +97,7 @@ class ReplicateProviderTest {
 
     @Test
     fun `flux two image models map up to eight input images and warn on extras`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"output":"https://cdn.example/out.png"}""")),
@@ -101,17 +106,17 @@ class ReplicateProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createReplicate(
+        val model = Replicate(
             fixture.httpClient(),
-            ReplicateProviderSettings(apiToken = "token"),
-        ).image("black-forest-labs/flux-2-pro")
+            ReplicateProviderSettings { apiToken("token") },
+        ).image(ModelId("black-forest-labs/flux-2-pro"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "blend refs",
-                files = List(9) { ImageGenerationFile(url = "https://example.com/$it.png") },
-                mask = ImageGenerationFile(url = "https://example.com/mask.png"),
-            ),
+            ImageGenerationParams {
+                prompt("blend refs")
+                files(List(9) { ImageGenerationFile(url = "https://example.com/$it.png") })
+                mask(ImageGenerationFile(url = "https://example.com/mask.png"))
+            },
         )
 
         val input = fixture.calls.first().requestBodyJson.jsonObject["input"]?.jsonObject
@@ -126,7 +131,7 @@ class ReplicateProviderTest {
 
     @Test
     fun `video model submits polls and returns url video metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.replicate.com/v1/models/minimax/video-01/predictions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -145,31 +150,37 @@ class ReplicateProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createReplicate(
+        val model = Replicate(
             fixture.httpClient(),
-            ReplicateProviderSettings(apiToken = "token"),
-        ).video("minimax/video-01")
+            ReplicateProviderSettings { apiToken("token") },
+        ).video(ModelId("minimax/video-01"))
 
         val result = model.generate(
-            VideoGenerationParams(
-                prompt = "camera push in",
-                image = GeneratedFile(mediaType = "image/png", base64 = "frameb64"),
-                durationSeconds = 3f,
-                aspectRatio = "16:9",
-                seed = 77,
-                fps = 24,
-                resolution = "720p",
-                providerOptions = mapOf(
-                    "replicate" to buildJsonObject {
-                        put("maxWaitTimeInSeconds", JsonPrimitive(1))
-                        put("pollIntervalMs", JsonPrimitive(0))
-                        put("pollTimeoutMs", JsonPrimitive(1))
-                        put("guidance_scale", JsonPrimitive(2.0))
-                        put("prompt_optimizer", JsonPrimitive(true))
-                        put("custom_video_option", JsonPrimitive("kept"))
-                    },
-                ),
-            ),
+            VideoGenerationParams {
+                prompt("camera push in")
+                image(GeneratedFile(mediaType = "image/png", base64 = "frameb64"))
+                durationSeconds(3f)
+                aspectRatio("16:9")
+                seed(77)
+                fps(24)
+                resolution("720p")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "replicate" to buildJsonObject {
+                                    put("maxWaitTimeInSeconds", JsonPrimitive(1))
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(1))
+                                    put("guidance_scale", JsonPrimitive(2.0))
+                                    put("prompt_optimizer", JsonPrimitive(true))
+                                    put("custom_video_option", JsonPrimitive("kept"))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals("replicate.video", model.provider)
@@ -190,7 +201,7 @@ class ReplicateProviderTest {
         assertEquals("kept", input?.get("custom_video_option")?.jsonPrimitive?.contentOrNull)
         assertNull(input?.get("pollIntervalMs"))
 
-        val metadata = result.providerMetadata["replicate"]?.jsonObject
+        val metadata = result.providerMetadata.toMap()["replicate"]?.jsonObject
         assertEquals("pred1", metadata?.get("predictionId")?.jsonPrimitive?.contentOrNull)
         assertEquals(
             "https://cdn.example/video.mp4",
@@ -200,8 +211,36 @@ class ReplicateProviderTest {
     }
 
     @Test
+    fun `video model extracts url from array-shaped output`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.replicate.com/v1/models/minimax/video-01/predictions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"succeeded","output":["https://cdn.example/array.mp4"]}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Replicate(
+            fixture.httpClient(),
+            ReplicateProviderSettings { apiToken("token") },
+        ).video(ModelId("minimax/video-01"))
+
+        val result = model.generate(
+            VideoGenerationParams {
+                prompt("array output")
+            }
+        )
+
+        assertEquals("https://cdn.example/array.mp4", result.videos.single().url)
+    }
+
+    @Test
     fun `video model reports failed predictions and unsupported families`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.replicate.com/v1/models/minimax/video-01/predictions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -213,14 +252,17 @@ class ReplicateProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createReplicate(fixture.httpClient(), ReplicateProviderSettings(apiToken = "token"))
+        val provider = Replicate(fixture.httpClient(), ReplicateProviderSettings { apiToken("token") })
 
         assertFailsWith<AiSdkException> {
-            provider.video("minimax/video-01").generate(VideoGenerationParams(prompt = "x"))
+            provider.video(ModelId("minimax/video-01")).generate(
+                VideoGenerationParams {
+                    prompt("x")
+                }
+            )
         }
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { replicate.image("black-forest-labs/flux-dev") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  if [[ "${REQUIRE_REAL_SMOKE:-}" = "1" ]]; then
+    echo "iOS Swift smoke requires macOS, but REQUIRE_REAL_SMOKE=1 forbids skipping" >&2
+    exit 1
+  fi
+  echo "iOS Swift smoke skipped: requires macOS"
+  exit 0
+fi
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$root"
+./gradlew assembleAiSdkDebugXCFramework --no-configuration-cache
+framework_dir="$(find build -name 'AiSdk.xcframework' -type d | head -1)"
+if [[ -z "$framework_dir" ]]; then
+  echo "AiSdk.xcframework not found after assembleAiSdkDebugXCFramework" >&2
+  exit 1
+fi
+simulator_slice="$(find "$framework_dir" -maxdepth 1 -type d -name '*-simulator' | head -1)"
+if [[ -z "$simulator_slice" ]]; then
+  echo "No iOS simulator slice found in $framework_dir" >&2
+  exit 1
+fi
+if [[ ! -d "$simulator_slice/AiSdk.framework" ]]; then
+  echo "AiSdk.framework not found in simulator slice $simulator_slice" >&2
+  exit 1
+fi
+minimum_os_version="13.0"
+info_plist="$simulator_slice/AiSdk.framework/Info.plist"
+if [[ -f "$info_plist" ]]; then
+  minimum_os_version="$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$info_plist" 2>/dev/null || true)"
+  minimum_os_version="${minimum_os_version:-13.0}"
+fi
+simulator_sdk="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+swiftc \
+  -typecheck \
+  -target "arm64-apple-ios${minimum_os_version}-simulator" \
+  -sdk "$simulator_sdk" \
+  -F "$simulator_slice" \
+  smoke-tests/ios-swift/AiSdkSmoke.swift

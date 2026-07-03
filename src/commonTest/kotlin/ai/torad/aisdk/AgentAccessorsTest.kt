@@ -20,7 +20,7 @@ class AgentAccessorsTest {
     @Test
     fun `given a ToolLoopAgent when accessed via the Agent interface then tools accessor exposes the toolset`() {
         // GIVEN
-        val tools = toolSetOf<Unit>()
+        val tools = ToolSet<Unit>()
         val agent: Agent<Unit, String> = TestToolLoopAgent(
             model = MockLanguageModel(responses = emptyList()),
             instructions = "",
@@ -37,7 +37,7 @@ class AgentAccessorsTest {
         val agent: Agent<Unit, String> = TestToolLoopAgent(
             model = MockLanguageModel(responses = emptyList()),
             instructions = "",
-            tools = toolSetOf(),
+            tools = ToolSet(),
         )
 
         // WHEN/THEN

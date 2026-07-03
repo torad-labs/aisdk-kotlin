@@ -1,15 +1,14 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.VOYAGE_VERSION
+import ai.torad.aisdk.providers.Voyage
 import ai.torad.aisdk.providers.VoyageProviderSettings
-import ai.torad.aisdk.providers.createVoyage
-import ai.torad.aisdk.providers.voyage
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -23,7 +22,7 @@ import kotlin.test.assertTrue
 class VoyageProviderTest {
     @Test
     fun `embedding model sends voyage request shape and parses usage`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://voyage.test/v1/embeddings" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -35,23 +34,32 @@ class VoyageProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createVoyage(
+        val model = Voyage(
             fixture.httpClient(),
-            VoyageProviderSettings(apiKey = "key", baseURL = "https://voyage.test/v1"),
-        ).embedding("voyage-4")
+            VoyageProviderSettings {
+                apiKey("key")
+                baseURL("https://voyage.test/v1")
+            },
+        ).embedding(ModelId("voyage-4"))
 
         val result = model.embed(
-            EmbeddingModelCallParams(
-                values = listOf("first", "second"),
-                providerOptions = mapOf(
-                    "voyage" to buildJsonObject {
-                        put("inputType", JsonPrimitive("document"))
-                        put("truncation", JsonPrimitive(true))
-                        put("outputDimension", JsonPrimitive(256))
-                        put("outputDtype", JsonPrimitive("int8"))
-                    },
-                ),
-            ),
+            EmbeddingModelCallParams {
+                values(listOf("first", "second"))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "voyage" to buildJsonObject {
+                                    put("inputType", JsonPrimitive("document"))
+                                    put("truncation", JsonPrimitive(true))
+                                    put("outputDimension", JsonPrimitive(256))
+                                    put("outputDtype", JsonPrimitive("int8"))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals("voyage.embedding", model.provider)
@@ -75,7 +83,7 @@ class VoyageProviderTest {
 
     @Test
     fun `reranking model sends voyage request shape and maps ranking`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://voyage.test/v1/rerank" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -87,23 +95,32 @@ class VoyageProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createVoyage(
+        val model = Voyage(
             fixture.httpClient(),
-            VoyageProviderSettings(apiKey = "key", baseURL = "https://voyage.test/v1"),
-        ).reranking("rerank-2.5")
+            VoyageProviderSettings {
+                apiKey("key")
+                baseURL("https://voyage.test/v1")
+            },
+        ).reranking(ModelId("rerank-2.5"))
 
         val result = model.rerank(
-            RerankingParams(
-                query = "best",
-                documents = listOf("alpha", "beta"),
-                topN = 1,
-                providerOptions = mapOf(
-                    "voyage" to buildJsonObject {
-                        put("returnDocuments", JsonPrimitive(false))
-                        put("truncation", JsonPrimitive(true))
-                    },
-                ),
-            ),
+            RerankingParams {
+                query("best")
+                documents(listOf("alpha", "beta"))
+                topN(1)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "voyage" to buildJsonObject {
+                                    put("returnDocuments", JsonPrimitive(false))
+                                    put("truncation", JsonPrimitive(true))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals("voyage.reranking", model.provider)
@@ -121,13 +138,17 @@ class VoyageProviderTest {
 
     @Test
     fun `embedding model enforces voyage max values per call`() = runTest {
-        val model = createVoyage(
+        val model = Voyage(
             TestServer(mutableMapOf()).httpClient(),
-            VoyageProviderSettings(baseURL = "https://voyage.test/v1"),
-        ).embedding("voyage-4")
+            VoyageProviderSettings { baseURL("https://voyage.test/v1") },
+        ).embedding(ModelId("voyage-4"))
 
         val error = assertFailsWith<InvalidArgumentError> {
-            model.embed(EmbeddingModelCallParams(values = List(129) { "value-$it" }))
+            model.embed(
+                EmbeddingModelCallParams {
+                    values(List(129) { "value-$it" })
+                }
+            )
         }
 
         assertTrue(error.message.orEmpty().contains("128 values"))

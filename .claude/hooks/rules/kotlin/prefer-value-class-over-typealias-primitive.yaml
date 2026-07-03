@@ -1,0 +1,11 @@
+id: prefer-value-class-over-typealias-primitive
+language: kotlin
+severity: warning
+rule:
+  kind: type_alias
+  has:
+    kind: user_type
+    has:
+      kind: type_identifier
+      regex: '^(Int|Long|Boolean|Double|Float|Char|Short|Byte|UInt|ULong|UShort|UByte)$'
+message: "typealias to a primitive gives no type safety (every Int is assignable to it); prefer a value class (@JvmInline value class) to make illegal states unrepresentable."

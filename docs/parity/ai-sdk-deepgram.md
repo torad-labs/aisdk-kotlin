@@ -1,7 +1,7 @@
 # @ai-sdk/deepgram
 
-- Version: 2.0.35
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/deepgram`
+- Version: 2.0.36
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/deepgram`
 - Kotlin parity area: `:aisdk-provider-deepgram`
 - Current parity status: ported: createDeepgram/deepgram, DeepgramProviderSettings, DeepgramSpeechModel/DeepgramSpeechModelOptions, DeepgramSpeechCallOptions alias, DeepgramTranscriptionModelOptions, speech output-format and provider-option query mapping, transcription option query mapping, binary audio response parsing, and word segment parsing are represented as a Kotlin facade folded into the root module; VERSION is exposed as DEEPGRAM_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/deepgram/src/index.ts` | 10 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/deepgram/src/index.ts` | 10 |
 
 ## Public Exports
 

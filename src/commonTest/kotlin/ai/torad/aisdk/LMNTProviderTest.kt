@@ -1,11 +1,10 @@
 package ai.torad.aisdk
-import ai.torad.aisdk.providers.LMNT_VERSION
-import ai.torad.aisdk.providers.lmnt
+import ai.torad.aisdk.providers.LMNT
 import ai.torad.aisdk.providers.LMNTProviderSettings
-import ai.torad.aisdk.providers.createLMNT
-
+import ai.torad.aisdk.providers.LMNT_VERSION
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -20,7 +19,7 @@ import kotlin.test.assertTrue
 class LMNTProviderTest {
     @Test
     fun `speech model sends lmnt request shape and returns binary audio`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.lmnt.com/v1/ai/speech/bytes" to UrlHandler(
                     UrlResponse.Binary(byteArrayOf(1, 2, 3), headers = mapOf(HttpHeaders.ContentType to "audio/wav")),
@@ -28,32 +27,38 @@ class LMNTProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createLMNT(
+        val model = LMNT(
             fixture.httpClient(),
-            LMNTProviderSettings(apiKey = "key"),
-        ).speech("aurora")
+            LMNTProviderSettings { apiKey("key") },
+        ).speech(ModelId("aurora"))
 
         val result = model.generate(
-            SpeechGenerationParams(
-                text = "hello",
-                voice = "ava",
-                responseFormat = "wav",
-                language = "fr",
-                speed = 1.1f,
-                providerOptions = mapOf(
-                    "lmnt" to buildJsonObject {
-                        put("seed", JsonPrimitive(123))
-                        put("sampleRate", JsonPrimitive(24000))
-                        put("topP", JsonPrimitive(0.9f))
-                        put("temperature", JsonPrimitive(0.5f))
-                    },
-                ),
-            ),
+            SpeechGenerationParams {
+                text("hello")
+                voice("ava")
+                responseFormat("wav")
+                language("fr")
+                speed(1.1f)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "lmnt" to buildJsonObject {
+                                    put("seed", JsonPrimitive(123))
+                                    put("sampleRate", JsonPrimitive(24000))
+                                    put("topP", JsonPrimitive(0.9f))
+                                    put("temperature", JsonPrimitive(0.5f))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals("lmnt.speech", model.provider)
         assertEquals("audio/wav", result.audio?.mediaType)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), result.audio?.base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.audio?.base64)
         val request = fixture.calls.single()
         assertEquals("POST", request.requestMethod)
         assertEquals("https://api.lmnt.com/v1/ai/speech/bytes", request.requestUrl)
@@ -74,7 +79,7 @@ class LMNTProviderTest {
 
     @Test
     fun `speech model warns and falls back to mp3 for unsupported format`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.lmnt.com/v1/ai/speech/bytes" to UrlHandler(
                     UrlResponse.Binary(byteArrayOf(4, 5, 6)),
@@ -82,17 +87,23 @@ class LMNTProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createLMNT(
+        val model = LMNT(
             fixture.httpClient(),
-            LMNTProviderSettings(apiKey = "key"),
-        ).speech("aurora")
+            LMNTProviderSettings { apiKey("key") },
+        ).speech(ModelId("aurora"))
 
         val result = model.generate(
-            SpeechGenerationParams(text = "hello", responseFormat = "flac"),
+            SpeechGenerationParams {
+                text("hello")
+                responseFormat("flac")
+            },
         )
 
         assertEquals("unsupported", result.warnings.single().type)
-        assertEquals("mp3", fixture.calls.single().requestBodyJson.jsonObject["response_format"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "mp3",
+            fixture.calls.single().requestBodyJson.jsonObject["response_format"]?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("audio/mpeg", result.audio?.mediaType)
     }
 

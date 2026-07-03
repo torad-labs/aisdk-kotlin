@@ -1,13 +1,13 @@
 package ai.torad.aisdk
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 
 /**
  * Validates Phase 4C #19 — `Usage` rich tree with input/output token
@@ -31,7 +31,7 @@ class UsageRichTreeTest {
     @Test
     fun `given legacy flat constructor Usage promptTokens completionTokens when read via legacy accessors then values match`() {
         // GIVEN — old-style construction used in tests + ToolLoopAgent.
-        val u = Usage(promptTokens = 12, completionTokens = 34)
+        val u = Usage.of(promptTokens = 12, completionTokens = 34)
 
         // WHEN/THEN
         assertEquals(12, u.promptTokens, "legacy accessor reads inputTokens.total")

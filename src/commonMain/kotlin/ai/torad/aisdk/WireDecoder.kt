@@ -12,14 +12,17 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
+/** @since 0.3.0-beta01 */
 public class WireDecodeException(
+    /** @since 0.3.0-beta01 */
     public val provider: String,
+    /** @since 0.3.0-beta01 */
     public val operation: String,
+    /** @since 0.3.0-beta01 */
     public val path: String,
     message: String,
+    /** @since 0.3.0-beta01 */
     public val value: JsonElement? = null,
     cause: Throwable? = null,
 ) : AiSdkException(
@@ -58,9 +61,9 @@ internal object WireDecoder {
         try {
             json.decodeFromJsonElement(serializer, value)
         } catch (error: SerializationException) {
-            fail(provider, operation, path, "schema decode failed: ${getErrorMessage(error)}", value, error)
+            fail(provider, operation, path, "schema decode failed: ${ErrorMessages.of(error)}", value, error)
         } catch (error: IllegalArgumentException) {
-            fail(provider, operation, path, "schema decode failed: ${getErrorMessage(error)}", value, error)
+            fail(provider, operation, path, "schema decode failed: ${ErrorMessages.of(error)}", value, error)
         }
 
     fun required(obj: JsonObject, key: String, provider: String, operation: String, path: String = "$"): JsonElement =
@@ -95,7 +98,7 @@ internal object WireDecoder {
             ?: fail(provider, operation, path, "missing one required field: ${keys.joinToString(" or ")}")
 
     fun stringValue(value: JsonElement, provider: String, operation: String, path: String = "$"): String =
-        (value as? JsonPrimitive)?.takeIf { it.isString }?.jsonPrimitive?.content
+        (value as? JsonPrimitive)?.takeIf { it.isString }?.content
             ?: fail(provider, operation, path, "expected string", value)
 
     fun optionalBoolean(obj: JsonObject, key: String, provider: String, operation: String, path: String = "$"): Boolean? =
@@ -131,7 +134,7 @@ internal object WireDecoder {
 
     fun embeddingVector(value: JsonElement, provider: String, operation: String = "embedding response", path: String = "$"): List<Float> =
         arrayValue(value, provider, operation, path).mapIndexed { index, item ->
-            embeddingFloat(item, provider, operation, "$path[$index]")
+            WireDecoder.embeddingFloat(item, provider, operation, "$path[$index]")
         }
 
     fun child(path: String, key: String): String = if (path == "$") "$.$key" else "$path.$key"

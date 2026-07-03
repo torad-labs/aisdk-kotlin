@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,12 +17,22 @@ class CodecConfigTest {
     @Serializable
     data class Fixture(val a: String = "default", val b: Int = 0)
 
+    @Serializable
+    data class NullableFixture(val value: String? = "default")
+
     @Test
     fun `outbound codec emits default-valued fields`() {
         val obj = aiSdkOutputJson.parseToJsonElement(
             aiSdkOutputJson.encodeToString(Fixture.serializer(), Fixture()),
         ).jsonObject
         assertTrue("a" in obj && "b" in obj, "encodeDefaults=true must emit defaulted fields")
+    }
+
+    @Test
+    fun `typed JSON operations encode through the outbound codec`() {
+        val obj = TypedJsonOps.encodeJsonElement(NullableFixture(value = null)).jsonObject
+        assertTrue("value" in obj, "explicit nulls must survive outbound encoding")
+        assertEquals(null, aiSdkOutputJson.decodeFromJsonElement(NullableFixture.serializer(), obj).value)
     }
 
     @Test

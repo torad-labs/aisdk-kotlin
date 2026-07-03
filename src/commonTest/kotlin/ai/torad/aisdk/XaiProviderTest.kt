@@ -1,17 +1,19 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.XAI_VERSION
+import ai.torad.aisdk.providers.Xai
 import ai.torad.aisdk.providers.XaiProviderSettings
-import ai.torad.aisdk.providers.createXai
-import ai.torad.aisdk.providers.xai
-
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -21,13 +23,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class XaiProviderTest {
     @Test
     fun `chat and responses route through xAI endpoints with headers options and citations`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.x.ai/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -70,55 +71,66 @@ class XaiProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createXai(
+        val provider = Xai(
             fixture.httpClient(),
-            XaiProviderSettings(apiKey = "key", headers = mapOf("X-Provider" to "provider")),
+            XaiProviderSettings {
+                apiKey("key")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         )
 
-        val chat = provider.chat("grok-3").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("Hello")),
-                maxOutputTokens = 128,
-                providerOptions = mapOf(
-                    "xai" to buildJsonObject {
-                        put("topLogprobs", JsonPrimitive(3))
-                        put(
-                            "searchParameters",
-                            buildJsonObject {
-                                put("mode", JsonPrimitive("on"))
-                                put("returnCitations", JsonPrimitive(true))
-                                put("maxSearchResults", JsonPrimitive(10))
-                                put(
-                                    "sources",
-                                    buildJsonArray {
-                                        add(
-                                            buildJsonObject {
-                                                put("type", JsonPrimitive("web"))
-                                                put("allowedWebsites", buildJsonArray { add(JsonPrimitive("example.com")) })
-                                                put("safeSearch", JsonPrimitive(false))
-                                            },
-                                        )
-                                    },
-                                )
-                            },
+        val chat = provider.chat(ModelId("grok-3")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hello")))
+                maxOutputTokens(128)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "xai" to buildJsonObject {
+                                    put("topLogprobs", JsonPrimitive(3))
+                                    put(
+                                        "searchParameters",
+                                        buildJsonObject {
+                                            put("mode", JsonPrimitive("on"))
+                                            put("returnCitations", JsonPrimitive(true))
+                                            put("maxSearchResults", JsonPrimitive(10))
+                                            put(
+                                                "sources",
+                                                buildJsonArray {
+                                                    add(
+                                                        buildJsonObject {
+                                                            put("type", JsonPrimitive("web"))
+                                                            put("allowedWebsites", buildJsonArray { add(JsonPrimitive("example.com")) })
+                                                            put("safeSearch", JsonPrimitive(false))
+                                                        },
+                                                    )
+                                                },
+                                            )
+                                        },
+                                    )
+                                },
+                            )
                         )
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
-        val responses = provider.responses("grok-4").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("Hi")),
-                providerOptions = mapOf("xai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("low")) }),
-            ),
+        val responses = provider.responses(ModelId("grok-4")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hi")))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject {
+                    put("reasoningEffort", JsonPrimitive("low"))
+                }))))
+            },
         )
 
         assertEquals("answer", chat.text)
         assertEquals("response text", responses.text)
-        assertEquals("xai.chat", provider("grok-3").provider)
-        assertEquals("xai.responses", provider.responses("grok-4").provider)
-        assertEquals(mapOf("image/*" to listOf("^https?://.*$")), provider.chat("grok-3").supportedUrls)
+        assertEquals("xai.chat", provider(ModelId("grok-3")).provider)
+        assertEquals("xai.responses", provider.responses(ModelId("grok-4")).provider)
+        assertEquals(mapOf("image/*" to listOf("^https?://.*$")), provider.chat(ModelId("grok-3")).supportedUrls)
         assertEquals(2, chat.content.filterIsInstance<ContentPart.Source>().size)
         assertEquals(3, chat.usage.outputTokens.reasoning)
 
@@ -135,13 +147,124 @@ class XaiProviderTest {
         val search = chatBody["search_parameters"]?.jsonObject
         assertEquals(true, search?.get("return_citations")?.jsonPrimitive?.booleanOrNull)
         assertEquals(10, search?.get("max_search_results")?.jsonPrimitive?.intOrNull)
-        assertEquals("example.com", search?.get("sources")?.jsonArray?.single()?.jsonObject?.get("allowed_websites")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "example.com",
+            search?.get(
+                "sources"
+            )?.jsonArray?.single()?.jsonObject?.get(
+                "allowed_websites"
+            )?.jsonArray?.single()?.jsonPrimitive?.contentOrNull
+        )
+    }
+
+    @Test
+    fun `chat usage treats xAI reasoning as additive and handles non inclusive cached tokens`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    listOf(
+                        UrlResponse.JsonValue(
+                            Json.parseToJsonElement(
+                                """
+                                {
+                                  "id":"chat-usage-1",
+                                  "created":1780000000,
+                                  "model":"grok-3-mini",
+                                  "choices":[{"message":{"role":"assistant","content":"answer"},"finish_reason":"stop"}],
+                                  "usage":{
+                                    "prompt_tokens":4142,
+                                    "completion_tokens":254,
+                                    "total_tokens":8724,
+                                    "prompt_tokens_details":{"cached_tokens":4328},
+                                    "completion_tokens_details":{"reasoning_tokens":10}
+                                  }
+                                }
+                                """.trimIndent(),
+                            ),
+                        ),
+                        UrlResponse.StreamChunks(
+                            listOf(
+                                """
+                                data: {"id":"chat-usage-2","choices":[{"delta":{"content":"answer"}}]}
+
+                                data: {"id":"chat-usage-2","choices":[{"finish_reason":"stop"}],"usage":{"prompt_tokens":4142,"completion_tokens":254,"total_tokens":8724,"prompt_tokens_details":{"cached_tokens":4328},"completion_tokens_details":{"reasoning_tokens":10}}}
+
+                                data: [DONE]
+
+                                """.trimIndent(),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
+
+        val generated = provider.chat(ModelId("grok-3-mini")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
+        )
+        val streamedFinish = drainAllItems(
+            provider.chat(ModelId("grok-3-mini")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        ).filterIsInstance<StreamEvent.Finish>().single()
+
+        listOf(generated.usage, streamedFinish.usage).forEach { usage ->
+            assertEquals(8470, usage.inputTokens.total)
+            assertEquals(4142, usage.inputTokens.noCache)
+            assertEquals(4328, usage.inputTokens.cacheRead)
+            assertEquals(264, usage.outputTokens.total)
+            assertEquals(254, usage.outputTokens.text)
+            assertEquals(10, usage.outputTokens.reasoning)
+        }
+    }
+
+    @Test
+    fun `chat stream requests include usage stream option`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"id":"chat-1","choices":[{"delta":{"content":"hello"}}]}
+
+                            data: {"id":"chat-1","choices":[{"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1}}
+
+                            data: [DONE]
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
+
+        drainAllItems(
+            provider.chat(ModelId("grok-3")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
+
+        val bodyText = fixture.calls.single().requestBodyText
+        assertTrue(bodyText.contains(""""stream_options":{"include_usage":true}"""))
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals(true, body["stream_options"]?.jsonObject?.get("include_usage")?.jsonPrimitive?.booleanOrNull)
     }
 
     @Test
     @Suppress("LongMethod")
     fun `chat body drops stop and strips additionalProperties and maps xHandles alias`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.x.ai/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -155,39 +278,47 @@ class XaiProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createXai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
-        provider.chat("grok-3").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("go")),
-                stopSequences = listOf("END"),
-                tools = listOf(
-                    LanguageModelTool(
-                        "lookup",
-                        "d",
-                        xaiUnsupportedToolSchema(),
-                    ),
-                ),
-                providerOptions = mapOf(
-                    "xai" to buildJsonObject {
-                        put(
-                            "searchParameters",
-                            buildJsonObject {
-                                put(
-                                    "sources",
-                                    buildJsonArray {
-                                        add(
-                                            buildJsonObject {
-                                                put("type", JsonPrimitive("x"))
-                                                put("xHandles", buildJsonArray { add(JsonPrimitive("grok")) })
-                                            },
-                                        )
-                                    },
-                                )
-                            },
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
+        provider.chat(ModelId("grok-3")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("go")))
+                stopSequences(listOf("END"))
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            "lookup",
+                            "d",
+                            xaiUnsupportedToolSchema(),
+                        ),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "xai" to buildJsonObject {
+                                    put(
+                                        "searchParameters",
+                                        buildJsonObject {
+                                            put(
+                                                "sources",
+                                                buildJsonArray {
+                                                    add(
+                                                        buildJsonObject {
+                                                            put("type", JsonPrimitive("x"))
+                                                            put("xHandles", buildJsonArray { add(JsonPrimitive("grok")) })
+                                                        },
+                                                    )
+                                                },
+                                            )
+                                        },
+                                    )
+                                },
+                            )
                         )
-                    },
-                ),
-            ),
+                    )
+                )
+            },
         )
         val body = fixture.calls.single().requestBodyJson.jsonObject
         assertEquals(null, body["stop"], "stop dropped (xAI unsupported)")
@@ -206,7 +337,7 @@ class XaiProviderTest {
 
     @Test
     fun `chat throws APICallError when xAI returns 200 error body`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.x.ai/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -223,10 +354,14 @@ class XaiProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createXai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
 
         val error = assertFailsWith<APICallError> {
-            provider.chat("grok-3").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.chat(ModelId("grok-3")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
         }
 
         assertEquals("Timed out waiting for first token", error.message)
@@ -237,7 +372,7 @@ class XaiProviderTest {
 
     @Test
     fun `image model supports generation edits options metadata and warnings`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://xai.test/v1/images/generations" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -252,36 +387,50 @@ class XaiProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createXai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))
-        val model = provider.image("grok-imagine-image")
+        val provider = Xai(
+            fixture.httpClient(),
+            XaiProviderSettings {
+                baseURL("https://xai.test/v1")
+                apiKey("key")
+            },
+        )
+        val model = provider.image(ModelId("grok-imagine-image"))
 
         val generated = model.generate(
-            ImageGenerationParams(
-                prompt = "A cute baby sea otter",
-                n = 1,
-                size = "1024x1024",
-                seed = 42,
-                aspectRatio = "16:9",
-                providerOptions = mapOf(
-                    "xai" to buildJsonObject {
-                        put("output_format", JsonPrimitive("jpeg"))
-                        put("sync_mode", JsonPrimitive(true))
-                        put("resolution", JsonPrimitive("2k"))
-                        put("quality", JsonPrimitive("high"))
-                        put("user", JsonPrimitive("user-1"))
-                    },
-                ),
-            ),
+            ImageGenerationParams {
+                prompt("A cute baby sea otter")
+                n(1)
+                size("1024x1024")
+                seed(42)
+                aspectRatio("16:9")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "xai" to buildJsonObject {
+                                    put("output_format", JsonPrimitive("jpeg"))
+                                    put("sync_mode", JsonPrimitive(true))
+                                    put("resolution", JsonPrimitive("2k"))
+                                    put("quality", JsonPrimitive("high"))
+                                    put("user", JsonPrimitive("user-1"))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
         val edited = model.generate(
-            ImageGenerationParams(
-                prompt = "combine",
-                files = listOf(
-                    ImageGenerationFile(url = "https://example.com/input.png"),
-                    ImageGenerationFile(mediaType = "image/png", base64 = "iVBORw=="),
-                ),
-                mask = ImageGenerationFile(mediaType = "image/png", base64 = "mask"),
-            ),
+            ImageGenerationParams {
+                prompt("combine")
+                files(
+                    listOf(
+                        ImageGenerationFile(url = "https://example.com/input.png"),
+                        ImageGenerationFile(mediaType = "image/png", base64 = "iVBORw=="),
+                    )
+                )
+                mask(ImageGenerationFile(mediaType = "image/png", base64 = "mask"))
+            },
         )
 
         assertEquals("xai.image", model.provider)
@@ -290,8 +439,11 @@ class XaiProviderTest {
         assertTrue(generated.warnings.any { it.message.orEmpty().contains("size") })
         assertTrue(generated.warnings.any { it.message.orEmpty().contains("seed") })
         assertTrue(edited.warnings.any { it.message.orEmpty().contains("mask") })
-        val metadata = generated.providerMetadata["xai"]?.jsonObject
-        assertEquals("revised", metadata?.get("images")?.jsonArray?.single()?.jsonObject?.get("revisedPrompt")?.jsonPrimitive?.contentOrNull)
+        val metadata = generated.providerMetadata.toMap()["xai"]?.jsonObject
+        assertEquals(
+            "revised",
+            metadata?.get("images")?.jsonArray?.single()?.jsonObject?.get("revisedPrompt")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(12, metadata?.get("costInUsdTicks")?.jsonPrimitive?.intOrNull)
 
         val generateBody = fixture.calls[0].requestBodyJson.jsonObject
@@ -310,7 +462,7 @@ class XaiProviderTest {
 
     @Test
     fun `video model submits polls maps modes warnings and metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://xai.test/v1/videos/generations" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req-1"}""")),
@@ -335,39 +487,61 @@ class XaiProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createXai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))
-        val model = provider.video("grok-imagine-video")
+        val provider = Xai(
+            fixture.httpClient(),
+            XaiProviderSettings {
+                baseURL("https://xai.test/v1")
+                apiKey("key")
+            },
+        )
+        val model = provider.video(ModelId("grok-imagine-video"))
 
         val generated = model.generate(
-            VideoGenerationParams(
-                prompt = "A chicken flying into the sunset",
-                n = 2,
-                image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/ref.png"),
-                durationSeconds = 5f,
-                aspectRatio = "16:9",
-                resolution = "1280x720",
-                fps = 24,
-                seed = 7,
-                providerOptions = mapOf("xai" to buildJsonObject {
-                    put("pollIntervalMs", JsonPrimitive(0))
-                    put("pollTimeoutMs", JsonPrimitive(1))
-                    put("custom_option", JsonPrimitive("kept"))
-                }),
-            ),
+            VideoGenerationParams {
+                prompt("A chicken flying into the sunset")
+                n(2)
+                image(GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/ref.png"))
+                durationSeconds(5f)
+                aspectRatio("16:9")
+                resolution("1280x720")
+                fps(24)
+                seed(7)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "xai" to buildJsonObject {
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(1))
+                                    put("custom_option", JsonPrimitive("kept"))
+                                }
+                            )
+                        )
+                    )
+                )
+            },
         )
         val edited = model.generate(
-            VideoGenerationParams(
-                prompt = "edit",
-                durationSeconds = 3f,
-                aspectRatio = "1:1",
-                resolution = "1280x720",
-                providerOptions = mapOf("xai" to buildJsonObject {
-                    put("mode", JsonPrimitive("edit-video"))
-                    put("videoUrl", JsonPrimitive("https://example.com/source.mp4"))
-                    put("pollIntervalMs", JsonPrimitive(0))
-                    put("pollTimeoutMs", JsonPrimitive(1))
-                }),
-            ),
+            VideoGenerationParams {
+                prompt("edit")
+                durationSeconds(3f)
+                aspectRatio("1:1")
+                resolution("1280x720")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "xai" to buildJsonObject {
+                                    put("mode", JsonPrimitive("edit-video"))
+                                    put("videoUrl", JsonPrimitive("https://example.com/source.mp4"))
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(1))
+                                }
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals("xai.video", model.provider)
@@ -380,21 +554,33 @@ class XaiProviderTest {
 
         val generateBody = fixture.calls[0].requestBodyJson.jsonObject
         assertEquals("720p", generateBody["resolution"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("https://example.com/ref.png", generateBody["image"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "https://example.com/ref.png",
+            generateBody["image"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("kept", generateBody["custom_option"]?.jsonPrimitive?.contentOrNull)
         val editBody = fixture.calls[2].requestBodyJson.jsonObject
-        assertEquals("https://example.com/source.mp4", editBody["video"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "https://example.com/source.mp4",
+            editBody["video"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals(null, editBody["duration"])
         assertEquals(null, editBody["aspect_ratio"])
-        assertEquals("req-1", generated.providerMetadata["xai"]?.jsonObject?.get("requestId")?.jsonPrimitive?.contentOrNull)
-        assertEquals(9, generated.providerMetadata["xai"]?.jsonObject?.get("costInUsdTicks")?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            "req-1",
+            generated.providerMetadata.toMap()["xai"]?.jsonObject?.get("requestId")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            9,
+            generated.providerMetadata.toMap()["xai"]?.jsonObject?.get("costInUsdTicks")?.jsonPrimitive?.intOrNull
+        )
     }
 
     @Test
     fun `tools unsupported embeddings and default singleton match provider surface`() {
-        val provider = createXai(
-            createTestServer(mutableMapOf()).httpClient(),
-            XaiProviderSettings(apiKey = "key"),
+        val provider = Xai(
+            TestServer.createTestServer(mutableMapOf()).httpClient(),
+            XaiProviderSettings { apiKey("key") },
         )
 
         assertProviderTool(provider.tools.codeExecution, "code_execution", "xai.code_execution")
@@ -406,9 +592,6 @@ class XaiProviderTest {
         assertProviderTool(provider.tools.xSearch, "x_search", "xai.x_search")
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }
-        val error = assertFailsWith<AiSdkException> { xai.chat("grok-3") }
-        assertNotNull(error.message)
-        assertTrue(error.message.orEmpty().contains("createXai"))
     }
 
     private fun assertProviderTool(tool: Tool<JsonElement, JsonElement, Any?>, name: String, providerToolId: String) {

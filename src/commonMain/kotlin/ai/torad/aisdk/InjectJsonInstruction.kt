@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonElement
  * structured-output / JSON mode the way cloud OpenAI / Anthropic do.
  * The v6 strategy for such providers is to splice a textual schema
  * instruction into the system prompt and then repair the model's
- * partial output with [fixJson] / [parsePartialJson]. This file ports
+ * partial output with `fixJson` / `parsePartialJson`. This file ports
  * the splice half; `FixJson` ports the repair half.
  *
  * The three default strings are reproduced verbatim from upstream so a
@@ -26,71 +26,82 @@ private const val DEFAULT_SCHEMA_SUFFIX =
 private const val DEFAULT_GENERIC_SUFFIX = "You MUST answer with JSON."
 
 /**
- * Build the JSON instruction block.
+ * JSON-mode instruction injection operations.
  *
- * Mirrors the v6 array-filter-join exactly:
- * ```
- * [
- *   prompt (only if non-empty),
- *   ""     (blank separator line — only if prompt non-empty),
- *   schemaPrefix,
- *   JSON.stringify(schema) (only if schema present),
- *   schemaSuffix,
- * ].filter(notNull).join("\n")
- * ```
- *
- * `schema.toString()` on a kotlinx [JsonElement] yields compact JSON
- * (no insignificant whitespace), matching JS `JSON.stringify(schema)`.
- *
- * @param prompt existing instruction text to lead with (the model's
- *   system prompt, typically). Empty / null contributes nothing and
- *   suppresses the blank separator line.
- * @param schema the JSON schema the answer must satisfy. When null the
- *   suffix degrades to the generic "answer with JSON" form and no
- *   schema block is emitted.
- * @param schemaPrefix label printed before the schema. Defaults to
- *   [DEFAULT_SCHEMA_PREFIX] when a schema is present, else null.
- * @param schemaSuffix closing instruction. Defaults to the
- *   schema-aware suffix when a schema is present, else the generic one.
+ * Groups the splice-half procedures ported from Vercel AI SDK v6
+ * `inject-json-instruction.ts`.
+ * @since 0.3.0-beta01
  */
-public fun injectJsonInstruction(
-    prompt: String? = null,
-    schema: JsonElement? = null,
-    schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,
-    schemaSuffix: String? = if (schema != null) DEFAULT_SCHEMA_SUFFIX else DEFAULT_GENERIC_SUFFIX,
-): String = listOfNotNull(
-    prompt?.takeIf { it.isNotEmpty() },
-    "".takeIf { !prompt.isNullOrEmpty() },
-    schemaPrefix,
-    schema?.toString(),
-    schemaSuffix,
-).joinToString("\n")
+public object JsonInstruction {
+    /**
+     * Build the JSON instruction block.
+     *
+     * Mirrors the v6 array-filter-join exactly:
+     * ```
+     * [
+     *   prompt (only if non-empty),
+     *   ""     (blank separator line — only if prompt non-empty),
+     *   schemaPrefix,
+     *   JSON.stringify(schema) (only if schema present),
+     *   schemaSuffix,
+     * ].filter(notNull).join("\n")
+     * ```
+     *
+     * `schema.toString()` on a kotlinx [JsonElement] yields compact JSON
+     * (no insignificant whitespace), matching JS `JSON.stringify(schema)`.
+     *
+     * @param prompt existing instruction text to lead with (the model's
+     *   system prompt, typically). Empty / null contributes nothing and
+     *   suppresses the blank separator line.
+     * @param schema the JSON schema the answer must satisfy. When null the
+     *   suffix degrades to the generic "answer with JSON" form and no
+     *   schema block is emitted.
+     * @param schemaPrefix label printed before the schema. Defaults to
+     *   [DEFAULT_SCHEMA_PREFIX] when a schema is present, else null.
+     * @param schemaSuffix closing instruction. Defaults to the
+     *   schema-aware suffix when a schema is present, else the generic one.
+     */
+    /** @since 0.3.0-beta01 */
+    public fun injectJsonInstruction(
+        prompt: String? = null,
+        schema: JsonElement? = null,
+        schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,
+        schemaSuffix: String? = if (schema != null) DEFAULT_SCHEMA_SUFFIX else DEFAULT_GENERIC_SUFFIX,
+    ): String = listOfNotNull(
+        prompt?.takeIf { it.isNotEmpty() },
+        "".takeIf { !prompt.isNullOrEmpty() },
+        schemaPrefix,
+        schema?.toString(),
+        schemaSuffix,
+    ).joinToString("\n")
 
-/**
- * Splice [injectJsonInstruction] into a message list's system prompt.
- *
- * If the first message is a [MessageRole.System] message, its text is
- * used as the `prompt` seed and the whole leading system message is
- * replaced by the injected one. Otherwise a fresh system message is
- * prepended. The remaining messages pass through untouched.
- *
- * This is the provider-side entry point a LiteRt [LanguageModel] would
- * call before generation when the caller requested structured output
- * but the engine has no native JSON mode.
- */
-public fun injectJsonInstructionIntoMessages(
-    messages: List<ModelMessage>,
-    schema: JsonElement? = null,
-    schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,
-    schemaSuffix: String? = if (schema != null) DEFAULT_SCHEMA_SUFFIX else DEFAULT_GENERIC_SUFFIX,
-): List<ModelMessage> {
-    val leadingSystem = messages.firstOrNull()?.takeIf { it.role == MessageRole.System }
-    val existingText = leadingSystem
-        ?.content
-        ?.filterIsInstance<ContentPart.Text>()
-        ?.joinToString("") { it.text }
-        ?: ""
-    val injected = injectJsonInstruction(existingText, schema, schemaPrefix, schemaSuffix)
-    val tail = if (leadingSystem != null) messages.drop(1) else messages
-    return listOf(systemMessage(injected)) + tail
+    /**
+     * Splice [injectJsonInstruction] into a message list's system prompt.
+     *
+     * If the first message is a [MessageRole.System] message, its text is
+     * used as the `prompt` seed and the whole leading system message is
+     * replaced by the injected one. Otherwise a fresh system message is
+     * prepended. The remaining messages pass through untouched.
+     *
+     * This is the provider-side entry point a LiteRt [LanguageModel] would
+     * call before generation when the caller requested structured output
+     * but the engine has no native JSON mode.
+     * @since 0.3.0-beta01
+     */
+    public fun injectJsonInstructionIntoMessages(
+        messages: List<ModelMessage>,
+        schema: JsonElement? = null,
+        schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,
+        schemaSuffix: String? = if (schema != null) DEFAULT_SCHEMA_SUFFIX else DEFAULT_GENERIC_SUFFIX,
+    ): List<ModelMessage> {
+        val leadingSystem = messages.firstOrNull()?.takeIf { it.role == MessageRole.System }
+        val existingText = leadingSystem
+            ?.content
+            ?.filterIsInstance<ContentPart.Text>()
+            ?.joinToString("") { it.text }
+            .orEmpty()
+        val injected = injectJsonInstruction(existingText, schema, schemaPrefix, schemaSuffix)
+        val tail = if (leadingSystem != null) messages.drop(1) else messages
+        return listOf(SystemMessage(injected)) + tail
+    }
 }

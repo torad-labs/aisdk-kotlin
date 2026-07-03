@@ -1,0 +1,24 @@
+id: no-primitive-array-property-in-data-class
+language: kotlin
+severity: error
+message: >-
+  data class with a primitive-array property (ByteArray/IntArray/...) has
+  broken equals()/hashCode() (reference identity). Drop `data` and hand-write
+  equals/hashCode (contentEquals), or wrap in a value type.
+rule:
+  kind: class_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: class_modifier
+          regex: '^data$'
+    - has:
+        kind: primary_constructor
+        has:
+          kind: class_parameter
+          has:
+            kind: user_type
+            has:
+              kind: type_identifier
+              regex: '^(ByteArray|IntArray|LongArray|ShortArray|CharArray|FloatArray|DoubleArray|BooleanArray)$'

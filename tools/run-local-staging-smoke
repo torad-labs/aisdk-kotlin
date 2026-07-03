@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: tools/run-local-staging-smoke [--no-publish] [--staging-repo PATH] [--version VERSION]
+
+Compiles standalone consumer projects against the published ai.torad:torad-aisdk
+artifact, not a project dependency.
+
+Default behavior:
+  - If SIGNING_KEY and SIGNING_PASSWORD are set, publish to build/staging-deploy
+    and resolve from that local staging Maven repository.
+  - Otherwise, publishToMavenLocal and resolve from ~/.m2/repository so the smoke
+    remains usable for local contributors without release signing secrets.
+
+Release CI should call this after publishAllPublicationsToLocalStagingRepository:
+  tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
+
+Relative --staging-repo paths are resolved from the repository root.
+EOF
+}
+
+publish=true
+version=""
+staging_repo=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --no-publish) publish=false; shift ;;
+    --staging-repo) staging_repo="${2:?missing path for --staging-repo}"; shift 2 ;;
+    --version) version="${2:?missing version for --version}"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "unknown argument: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$root"
+
+if [[ -z "$version" ]]; then
+  version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
+fi
+
+if [[ -z "$staging_repo" ]]; then
+  if [[ -n "${SIGNING_KEY:-}" && -n "${SIGNING_PASSWORD:-}" ]]; then
+    staging_repo="$root/build/staging-deploy"
+  else
+    staging_repo="${HOME}/.m2/repository"
+  fi
+fi
+staging_repo="$(realpath -m -- "$staging_repo")"
+
+if [[ "$publish" == true ]]; then
+  if [[ "$staging_repo" == "$root/build/staging-deploy" ]]; then
+    ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache
+  else
+    echo "SIGNING_KEY/SIGNING_PASSWORD not set; using publishToMavenLocal for local smoke." >&2
+    ./gradlew publishToMavenLocal
+  fi
+fi
+
+./gradlew \
+  -p smoke-tests/local-staging \
+  -PaisdkVersion="$version" \
+  -PsmokeRepository="$staging_repo" \
+  :jvm-consumer:compileKotlin \
+  :kmp-consumer:compileKotlinMetadata \
+  :kmp-consumer:compileKotlinIosArm64 \
+  :kmp-consumer:compileKotlinLinuxX64 \
+  :kmp-consumer:jvmMainClasses \
+  :android-consumer:assembleRelease

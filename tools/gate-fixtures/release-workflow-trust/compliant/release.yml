@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+      - name: Verify release tag
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
+          test "${tag_version}" = "${project_version}"
+          if [[ "${project_version}" == *-SNAPSHOT ]]; then
+            exit 1
+          fi
+          git merge-base --is-ancestor "${GITHUB_SHA}" origin/main
+
+  verify-apple:
+    runs-on: macos-latest
+    timeout-minutes: 75
+    needs: preflight
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Apple targets
+        run: ./gradlew iosSimulatorArm64Test compileKotlinIosArm64 compileKotlinIosX64
+
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    needs:
+      - preflight
+      - verify-apple
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Architecture gate
+        run: bash .claude/hooks/rules/ci-gate.sh
+      - name: Verify checks
+        run: ./gradlew check

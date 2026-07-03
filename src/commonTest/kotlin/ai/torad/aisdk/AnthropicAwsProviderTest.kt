@@ -1,11 +1,11 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ANTHROPIC_AWS_VERSION
 import ai.torad.aisdk.providers.ANTHROPIC_VERSION
+import ai.torad.aisdk.providers.AnthropicAws
 import ai.torad.aisdk.providers.AnthropicAwsProviderSettings
-import ai.torad.aisdk.providers.anthropic
-import ai.torad.aisdk.providers.createAnthropicAws
-
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 class AnthropicAwsProviderTest {
     @Test
     fun `messages model uses AWS base url workspace header api key and Anthropic mapping`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aws-anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -41,21 +41,21 @@ class AnthropicAwsProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropicAws(
+        val provider = AnthropicAws(
             fixture.httpClient(),
-            AnthropicAwsProviderSettings(
-                apiKey = "aws-key",
-                workspaceId = "wrkspc_123",
-                baseURL = "https://aws-anthropic.test/v1/",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            AnthropicAwsProviderSettings(block = {
+                apiKey("aws-key")
+                workspaceId("wrkspc_123")
+                baseURL("https://aws-anthropic.test/v1/")
+                headers(mapOf("X-Provider" to "provider"))
+            }),
         )
 
-        val result = provider("claude-sonnet-4-6").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("Hello")),
-                headers = mapOf("X-Request" to "request"),
-            ),
+        val result = provider(ModelId("claude-sonnet-4-6")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hello")))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("anthropic-aws.messages", provider.languageModel("claude-sonnet-4-6").provider)
@@ -76,7 +76,7 @@ class AnthropicAwsProviderTest {
 
     @Test
     fun `stream uses Anthropic SSE mapping with AWS headers`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aws-external-anthropic.us-east-1.api.aws/v1/messages" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -100,13 +100,21 @@ class AnthropicAwsProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropicAws(
+        val provider = AnthropicAws(
             fixture.httpClient(),
-            AnthropicAwsProviderSettings(apiKey = "key", workspaceId = "wrkspc_123", region = "us-east-1"),
+            AnthropicAwsProviderSettings(block = {
+                apiKey("key")
+                workspaceId("wrkspc_123")
+                region("us-east-1")
+            }),
         )
 
         val events = drainAllItems(
-            provider.messages("claude-sonnet-4-6").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.messages(ModelId("claude-sonnet-4-6")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())
@@ -121,7 +129,7 @@ class AnthropicAwsProviderTest {
 
     @Test
     fun `unsupported models and SigV4 path are explicit`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aws-anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -141,21 +149,25 @@ class AnthropicAwsProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropicAws(
+        val provider = AnthropicAws(
             fixture.httpClient(),
-            AnthropicAwsProviderSettings(
-                workspaceId = "wrkspc_123",
-                accessKeyId = "id",
-                secretAccessKey = "secret",
-                sessionToken = "token",
-                region = "us-east-1",
-                baseURL = "https://aws-anthropic.test/v1",
-            ),
+            AnthropicAwsProviderSettings(block = {
+                workspaceId("wrkspc_123")
+                accessKeyId("id")
+                secretAccessKey("secret")
+                sessionToken("token")
+                region("us-east-1")
+                baseURL("https://aws-anthropic.test/v1")
+            }),
         )
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertEquals("advisor", provider.tools.advisor_20260301.name)
-        val result = provider.languageModel("claude-sonnet-4-6").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val result = provider.languageModel("claude-sonnet-4-6").generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         val request = fixture.calls.single()
         assertEquals("signed", result.text)
@@ -163,7 +175,11 @@ class AnthropicAwsProviderTest {
         assertEquals("aws-anthropic.test", request.requestHeaders.headerValue("host"))
         assertTrue(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("AWS4-HMAC-SHA256"))
         assertTrue(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("Credential=id/"))
-        assertTrue(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("/aws-external-anthropic/aws4_request"))
+        assertTrue(
+            request.requestHeaders.headerValue(
+                HttpHeaders.Authorization
+            ).orEmpty().contains("/aws-external-anthropic/aws4_request")
+        )
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -20,7 +21,7 @@ import kotlinx.coroutines.flow.Flow
  * The host resumes by calling [generate] again with:
  * ```
  * agent.generate(
- *   messages = result.messages + toolApprovalResponseMessage(toolCallId, approved = true),
+ *   messages = result.messages + ToolApprovalResponseMessage(toolCallId, approved = true),
  *   options = ...
  * )
  * ```
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.Flow
  *                 it's `String`; for structured-output agents (with
  *                 [Output] set) it's the typed shape.
  */
+/** @since 0.3.0-beta01 */
 public interface Agent<TContext, TOutput> {
 
     /**
@@ -46,6 +48,7 @@ public interface Agent<TContext, TOutput> {
      * default to `"agent"`; override in the constructor or via class
      * member to set a more specific tag (`"chat-agent"`,
      * `"lineup-subagent"`, etc.).
+     * @since 0.3.0-beta01
      */
     public val id: String
         get() = "agent"
@@ -54,6 +57,7 @@ public interface Agent<TContext, TOutput> {
      * Optional version string — `"1.0.0"`, a git sha, anything stable
      * across an app build. Null = unversioned. Lets telemetry pin
      * issues to a specific agent revision.
+     * @since 0.3.0-beta01
      */
     public val version: String?
         get() = null
@@ -62,6 +66,7 @@ public interface Agent<TContext, TOutput> {
      * The tool surface this agent carries. Exposed at the interface
      * so consumers can inspect / dispatch without casting to
      * [ToolLoopAgent].
+     * @since 0.3.0-beta01
      */
     public val tools: ToolSet<TContext>
 
@@ -70,23 +75,32 @@ public interface Agent<TContext, TOutput> {
      * be supplied. When both are present, [prompt] is appended as a
      * trailing user message.
      *
-     * @param hooks per-call lifecycle observation; see [AgentCallHooks].
+     * To observe lifecycle events, collect [ToolLoopAgent.events] (a
+     * `Flow<AgentEvent>`) — there is no callback parameter.
+     *
+     * Cold flow: no model call or tool execution starts until collected.
+     * Each collection reruns the full generation from the beginning; for
+     * tool-loop agents that includes tool executions and their side effects,
+     * and every collection may incur provider cost/billing. One-shot callers
+     * should collect exactly one value, usually with `.first()`.
+     * @since 0.3.0-beta01
      */
-    public suspend fun generate(
+    public fun generate(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,
         abortSignal: AbortSignal = AbortSignalNever,
-        hooks: AgentCallHooks? = null,
-    ): GenerateResult<TOutput>
+    ): Flow<GenerateResult<TOutput>>
 
-    /** Streaming generation. Cold flow — starts when collected. */
+    /**
+     * Streaming generation. Cold flow — starts when collected.
+     * @since 0.3.0-beta01
+     */
     public fun stream(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,
         abortSignal: AbortSignal = AbortSignalNever,
-        hooks: AgentCallHooks? = null,
     ): Flow<StreamEvent>
 }
 
@@ -94,41 +108,100 @@ public interface Agent<TContext, TOutput> {
  * Final output of [Agent.generate]. When [pendingApprovals] is non-empty,
  * the loop paused on tool approval — call [Agent.generate] again with
  * [messages] plus tool-approval-response messages to resume.
+ * @since 0.3.0-beta01
  */
-public data class GenerateResult<TOutput>(
-    val output: TOutput,
-    val text: String,
-    val steps: List<StepResult>,
-    val finishReason: FinishReason,
-    /** Token usage of the FINAL step (matching upstream's `usage`); for the sum see [totalUsage]. */
-    val usage: Usage,
-    /** Combined token usage across every step of this call (matching upstream's `totalUsage`). */
-    val totalUsage: Usage = usage,
-    /** Tool calls awaiting host decision. Empty when generation finished naturally. */
-    val pendingApprovals: List<PendingApproval> = emptyList(),
-    /** Full message log including all assistant + tool messages from this call. */
-    val messages: List<ModelMessage> = emptyList(),
-)
+@Poko
+public class GenerateResult<TOutput> internal constructor(
+    internal val rawOutput: TOutput,
+    /** @since 0.3.0-beta01 */
+    public val text: String,
+    /** @since 0.3.0-beta01 */
+    public val steps: List<StepResult>,
+    /** @since 0.3.0-beta01 */
+    public val finishReason: FinishReason,
+    /**
+     * Token usage of the FINAL step (matching upstream's `usage`); for the sum see [totalUsage].
+     * @since 0.3.0-beta01
+     */
+    public val usage: Usage,
+    /**
+     * Combined token usage across every step of this call (matching upstream's `totalUsage`).
+     * @since 0.3.0-beta01
+     */
+    public val totalUsage: Usage = usage,
+    /**
+     * Tool calls awaiting host decision. Empty when generation finished naturally.
+     * @since 0.3.0-beta01
+     */
+    public val pendingApprovals: List<PendingApproval> = emptyList(),
+    /**
+     * Full message log including all assistant + tool messages from this call.
+     * @since 0.3.0-beta01
+     */
+    public val messages: List<ModelMessage> = emptyList(),
+) {
+    private var outputUnavailableReason: String? = null
+
+    /** @since 0.3.0-beta01 */
+    public val output: TOutput
+        get() {
+            if ((rawOutput as Any?) === OutputUnavailablePlaceholder) {
+                throw NoOutputGeneratedError(
+                    outputUnavailableReason ?: "No object generated: the run is paused for tool approval.",
+                )
+            }
+            return rawOutput
+        }
+
+    internal companion object {
+        private object OutputUnavailablePlaceholder
+
+        @Suppress("UNCHECKED_CAST")
+        private fun <TOutput> unavailableOutputPlaceholder(): TOutput =
+            OutputUnavailablePlaceholder as TOutput
+
+        @Suppress("LongParameterList")
+        internal fun <TOutput> unavailable(
+            outputUnavailableReason: String,
+            text: String,
+            steps: List<StepResult>,
+            finishReason: FinishReason,
+            usage: Usage,
+            totalUsage: Usage = usage,
+            pendingApprovals: List<PendingApproval> = emptyList(),
+            messages: List<ModelMessage> = emptyList(),
+        ): GenerateResult<TOutput> =
+            GenerateResult<TOutput>(
+                rawOutput = unavailableOutputPlaceholder<TOutput>(),
+                text = text,
+                steps = steps,
+                finishReason = finishReason,
+                usage = usage,
+                totalUsage = totalUsage,
+                pendingApprovals = pendingApprovals,
+                messages = messages,
+            ).also {
+                it.outputUnavailableReason = outputUnavailableReason
+            }
+    }
+}
 
 /**
- * Per-call lifecycle hooks. These mirror the ones on the agent
- * constructor but apply to a single [Agent.generate] / [Agent.stream]
- * invocation — useful for request-scoped logging, tracing, or
- * progress UI.
- *
- * Both call-site hooks and constructor-site hooks fire (constructor
- * first, then call-site) — neither replaces the other.
+ * INTERNAL lifecycle-hook substrate. Not a public API — the public observation
+ * surface is [ToolLoopAgent.events] (`Flow<AgentEvent>`). The loop fires these
+ * per-call hooks; [ToolLoopAgent.events] builds one whose lambdas fan each event
+ * into the Flow, and the engine surface uses one to drive its [ToolLoopAgentState].
  */
-public data class AgentCallHooks(
-    val onStart: (suspend (OnStartEvent) -> Unit)? = null,
-    val onStepStart: (suspend (OnStepStartEvent) -> Unit)? = null,
-    val onStepFinish: (suspend (OnStepFinishEvent) -> Unit)? = null,
-    val onFinish: (suspend (OnFinishEvent) -> Unit)? = null,
-    val onError: (suspend (OnErrorEvent) -> Unit)? = null,
-    val onChunk: (suspend (OnChunkEvent) -> Unit)? = null,
-    val onAbort: (suspend (OnAbortEvent) -> Unit)? = null,
+internal data class AgentCallHooks(
+    val onStart: (suspend (AgentEvent.Started<*>) -> Unit)? = null,
+    val onStepStart: (suspend (AgentEvent.StepStarted) -> Unit)? = null,
+    val onStepFinish: (suspend (AgentEvent.StepFinished) -> Unit)? = null,
+    val onFinish: (suspend (AgentEvent.Finished<*, *>) -> Unit)? = null,
+    val onError: (suspend (AgentEvent.Errored) -> Unit)? = null,
+    val onChunk: (suspend (AgentEvent.Chunk) -> Unit)? = null,
+    val onAbort: (suspend (AgentEvent.Aborted) -> Unit)? = null,
     /** Per-call mirror of the constructor hook — fired before a (non-gated) tool executes. */
-    val experimental_onToolCallStart: (suspend (OnToolCallStartEvent) -> Unit)? = null,
+    val experimental_onToolCallStart: (suspend (AgentEvent.ToolCallStarted) -> Unit)? = null,
     /** Per-call mirror of the constructor hook — fired after a tool returns or throws. */
-    val experimental_onToolCallFinish: (suspend (OnToolCallFinishEvent) -> Unit)? = null,
+    val experimental_onToolCallFinish: (suspend (AgentEvent.ToolCallFinished) -> Unit)? = null,
 )

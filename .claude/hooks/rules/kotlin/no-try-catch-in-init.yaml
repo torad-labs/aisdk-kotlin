@@ -1,0 +1,24 @@
+id: no-try-catch-in-init
+language: kotlin
+severity: warning
+message: try/catch inside an init block performs fallible work during construction and tends to swallow failures.
+note: |
+  A try/catch executed directly in init means the constructor is doing work that
+  can fail (I/O, parsing, decoding) and is deciding how to recover at construction
+  time — often by fabricating a fallback (`catch { "" }`), which violates the
+  no-sentinel rule. Construction should be total and cheap; move fallible work
+  into a suspend factory that can fail explicitly or return a typed result.
+  Tenet: explicit construction over magic; no sentinel fabrication.
+  (A try/catch inside a lambda/callback defined in init runs at call time, not
+  construction time, and is intentionally NOT matched.)
+rule:
+  kind: try_expression
+  inside:
+    kind: anonymous_initializer
+    stopBy: end
+  not:
+    inside:
+      any:
+        - kind: lambda_literal
+        - kind: anonymous_function
+      stopBy: end

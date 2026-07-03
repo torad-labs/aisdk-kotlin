@@ -1,80 +1,58 @@
 package ai.torad.aisdk
 
-/**
- * Tool-loop error taxonomy (Phase 4C gap #25). The agent loop's failure
- * modes were previously all `String` messages on [StreamEvent.Error] /
- * [StreamEvent.ToolError]; catch sites had no way to discriminate
- * "model called an unknown tool" from "executor threw" from "input
- * decode failed" without parsing the message.
- *
- * Six variants, mirroring v6's `error/` directory subset that the
- * tool-loop emits (`packages/ai/src/error/`). Tests + future
- * pattern-matching can `when (e)` on the sealed class instead of
- * substring-matching strings.
- *
- * Surface:
- *  - [NoSuchTool] — model emitted a `ToolCall` for a name not in
- *    `ToolSet`. Available names attached so the host can offer "did
- *    you mean…" feedback.
- *  - [InvalidToolInput] — JSON parse / schema mismatch on the
- *    decoded arguments. Wraps the underlying parser exception so
- *    `cause` chains still work.
- *  - [ToolExecution] — the tool's executor body threw. Carries the
- *    tool call id so traces can correlate.
- *  - [ToolCallRepairFailed] — `experimental_repairToolCall` itself
- *    threw OR returned a corrected call that still failed to decode.
- *    Wraps the original decode error AND the repair error.
- *  - [InvalidApprovalResponse] — `toolApprovalResponseMessage(...)`
- *    referenced a `toolCallId` the agent has no pending request for.
- *  - [InvalidCallOptions] — per-call `options` failed the
- *    constructor's `callOptionsSchema` validation before any model call.
- *  - [MaxStepsReached] — `stopWhen` fired without a model emitting a
- *    terminal finish reason.
- *
- * All variants extend [RuntimeException] so they can be `throw`n and
- * caught by existing `Throwable`-tolerant handlers; pattern-match on
- * the sealed parent for typed handling.
- *
- * Wiring to existing call sites (replacing bare `String` messages in
- * `StreamEvent.Error.message`) is a follow-up to keep this change
- * additive — the taxonomy is in place; downstream call sites adopt it
- * incrementally.
- */
+import kotlin.time.Duration
+
+/** @since 0.3.0-beta01 */
 public sealed class AgentError(
     message: String,
     cause: Throwable? = null,
-) : RuntimeException(message, cause) {
+) : AiSdkException(message, cause) {
 
-    public data class NoSuchTool(
-        val toolName: String,
-        val availableTools: List<String>,
+    /** @since 0.3.0-beta01 */
+    public class NoSuchTool(
+        /** @since 0.3.0-beta01 */
+        public val toolName: String,
+        /** @since 0.3.0-beta01 */
+        public val availableTools: List<String>,
     ) : AgentError(
         "Model called unknown tool '$toolName' " +
             "(available: ${availableTools.joinToString().ifBlank { "<none>" }})",
     )
 
-    public data class InvalidToolInput(
-        val toolName: String,
-        val rawArgs: String,
-        val parseError: Throwable,
+    /** @since 0.3.0-beta01 */
+    public class InvalidToolInput(
+        /** @since 0.3.0-beta01 */
+        public val toolName: String,
+        /** @since 0.3.0-beta01 */
+        public val rawArgs: String,
+        /** @since 0.3.0-beta01 */
+        public val parseError: Throwable,
     ) : AgentError(
         "Tool '$toolName' input failed to decode: ${parseError.message ?: "<no message>"} (raw=$rawArgs)",
         cause = parseError,
     )
 
-    public data class ToolExecution(
-        val toolName: String,
-        val toolCallId: String,
-        val executorError: Throwable,
+    /** @since 0.3.0-beta01 */
+    public class ToolExecution(
+        /** @since 0.3.0-beta01 */
+        public val toolName: String,
+        /** @since 0.3.0-beta01 */
+        public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
+        public val executorError: Throwable,
     ) : AgentError(
         "Tool '$toolName' (callId=$toolCallId) executor threw: ${executorError.message ?: "<no message>"}",
         cause = executorError,
     )
 
-    public data class ToolCallRepairFailed(
-        val toolName: String,
-        val originalError: Throwable,
-        val repairError: Throwable?,
+    /** @since 0.3.0-beta01 */
+    public class ToolCallRepairFailed(
+        /** @since 0.3.0-beta01 */
+        public val toolName: String,
+        /** @since 0.3.0-beta01 */
+        public val originalError: Throwable,
+        /** @since 0.3.0-beta01 */
+        public val repairError: Throwable?,
     ) : AgentError(
         "Tool '$toolName' repair failed " +
             "(original: ${originalError.message ?: "<no message>"}, " +
@@ -82,35 +60,67 @@ public sealed class AgentError(
         cause = repairError ?: originalError,
     )
 
-    public data class InvalidApprovalResponse(
-        val toolCallId: String,
-        val knownPendingIds: List<String>,
+    /** @since 0.3.0-beta01 */
+    public class InvalidApprovalResponse(
+        /** @since 0.3.0-beta01 */
+        public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
+        public val knownPendingIds: List<String>,
     ) : AgentError(
         "Approval response references unknown tool call '$toolCallId' " +
             "(pending: ${knownPendingIds.joinToString().ifBlank { "<none>" }})",
     )
 
-    /** A replayed tool approval failed HMAC verification — fail-closed, the tool never executes
-     *  (upstream v6.0.202 `InvalidToolApprovalSignatureError`). */
-    public data class InvalidToolApprovalSignature(
-        val approvalId: String,
-        val toolCallId: String,
-        val reason: String,
+    /** @since 0.3.0-beta01 */
+    public class InvalidToolApprovalSignature(
+        /** @since 0.3.0-beta01 */
+        public val approvalId: String,
+        /** @since 0.3.0-beta01 */
+        public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
+        public val reason: String,
     ) : AgentError(
         "Tool approval signature verification failed for approval '$approvalId' " +
             "(tool call '$toolCallId'): $reason",
     )
 
-    public data class InvalidCallOptions(
-        val validationError: Throwable,
+    /** @since 0.3.0-beta01 */
+    public class InvalidCallOptions(
+        /** @since 0.3.0-beta01 */
+        public val validationError: Throwable,
     ) : AgentError(
         "Type validation failed for options: ${validationError.message ?: "<no message>"}",
         cause = validationError,
     )
 
-    public data class MaxStepsReached(
-        val stepCount: Int,
+    /** @since 0.3.0-beta01 */
+    public class MaxStepsReached(
+        /** @since 0.3.0-beta01 */
+        public val stepCount: Int,
     ) : AgentError(
         "Agent loop hit stop condition after $stepCount step(s) without a terminal finish reason",
+    )
+
+    /** @since 0.3.0-beta01 */
+    public class MaxToolCallsPerStepExceeded(
+        /** @since 0.3.0-beta01 */
+        public val toolCallCount: Int,
+        /** @since 0.3.0-beta01 */
+        public val maxToolCallsPerStep: Int,
+    ) : AgentError(
+        "Model emitted $toolCallCount tool call(s) in one step, exceeding the configured " +
+            "maxToolCallsPerStep=$maxToolCallsPerStep",
+    )
+
+    /** @since 0.3.0-beta01 */
+    public class ToolExecutionTimedOut(
+        /** @since 0.3.0-beta01 */
+        public val toolName: String,
+        /** @since 0.3.0-beta01 */
+        public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
+        public val timeout: Duration,
+    ) : AgentError(
+        "Tool '$toolName' (callId=$toolCallId) timed out after $timeout",
     )
 }

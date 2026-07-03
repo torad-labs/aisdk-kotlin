@@ -1,10 +1,10 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
@@ -21,68 +21,381 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.abs
 import kotlin.math.ceil
 
 public const val BLACK_FOREST_LABS_VERSION: String = "1.0.34"
 
-public typealias BlackForestLabsImageModelId = String
-public typealias BlackForestLabsAspectRatio = String
 public typealias BlackForestLabsImageProviderOptions = BlackForestLabsImageModelOptions
 
 @Serializable
-public data class BlackForestLabsImageModelOptions(
-    val imagePrompt: String? = null,
-    val imagePromptStrength: Double? = null,
-    val inputImage: String? = null,
-    val inputImage2: String? = null,
-    val inputImage3: String? = null,
-    val inputImage4: String? = null,
-    val inputImage5: String? = null,
-    val inputImage6: String? = null,
-    val inputImage7: String? = null,
-    val inputImage8: String? = null,
-    val inputImage9: String? = null,
-    val inputImage10: String? = null,
-    val steps: Int? = null,
-    val guidance: Double? = null,
-    val width: Int? = null,
-    val height: Int? = null,
-    val outputFormat: String? = null,
-    val promptUpsampling: Boolean? = null,
-    val raw: Boolean? = null,
-    val safetyTolerance: Int? = null,
-    val webhookSecret: String? = null,
-    val webhookUrl: String? = null,
-    val pollIntervalMillis: Long? = null,
-    val pollTimeoutMillis: Long? = null,
+@Poko
+/** @since 0.3.0-beta01 */
+public class BlackForestLabsImageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val imagePrompt: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val imagePromptStrength: Double? = null,
+    /** @since 0.3.0-beta01 */
+    public val inputImage: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val inputImage2: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val inputImage3: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val inputImage4: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val inputImage5: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val inputImage6: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val inputImage7: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val inputImage8: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val inputImage9: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val inputImage10: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val steps: Int? = null,
+    /** @since 0.3.0-beta01 */
+    public val guidance: Double? = null,
+    /** @since 0.3.0-beta01 */
+    public val width: Int? = null,
+    /** @since 0.3.0-beta01 */
+    public val height: Int? = null,
+    /** @since 0.3.0-beta01 */
+    public val outputFormat: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val promptUpsampling: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val raw: Boolean? = null,
+    /** @since 0.3.0-beta01 */
+    public val safetyTolerance: Int? = null,
+    /** @since 0.3.0-beta01 */
+    public val webhookSecret: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val webhookUrl: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val pollIntervalMillis: Long? = null,
+    /** @since 0.3.0-beta01 */
+    public val pollTimeoutMillis: Long? = null,
 )
 
-@Serializable
-public data class BlackForestLabsProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://api.bfl.ai/v1",
-    val headers: Map<String, String> = emptyMap(),
-    val pollIntervalMillis: Long? = null,
-    val pollTimeoutMillis: Long? = null,
-)
+/** @since 0.3.0-beta01 */
+public class BlackForestLabsImageModelOptionsBuilder {
+    private var imagePrompt: String? = null
+    private var imagePromptStrength: Double? = null
+    private var inputImage: String? = null
+    private var inputImage2: String? = null
+    private var inputImage3: String? = null
+    private var inputImage4: String? = null
+    private var inputImage5: String? = null
+    private var inputImage6: String? = null
+    private var inputImage7: String? = null
+    private var inputImage8: String? = null
+    private var inputImage9: String? = null
+    private var inputImage10: String? = null
+    private var steps: Int? = null
+    private var guidance: Double? = null
+    private var width: Int? = null
+    private var height: Int? = null
+    private var outputFormat: String? = null
+    private var promptUpsampling: Boolean? = null
+    private var raw: Boolean? = null
+    private var safetyTolerance: Int? = null
+    private var webhookSecret: String? = null
+    private var webhookUrl: String? = null
+    private var pollIntervalMillis: Long? = null
+    private var pollTimeoutMillis: Long? = null
 
-public interface BlackForestLabsProvider : Provider {
-    public fun image(modelId: BlackForestLabsImageModelId): ImageModel
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    /** @since 0.3.0-beta01 */
+    public fun imagePrompt(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        imagePrompt = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun imagePromptStrength(value: Double?): BlackForestLabsImageModelOptionsBuilder {
+        imagePromptStrength = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputImage(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        inputImage = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputImage2(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        inputImage2 = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputImage3(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        inputImage3 = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputImage4(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        inputImage4 = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputImage5(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        inputImage5 = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputImage6(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        inputImage6 = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputImage7(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        inputImage7 = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputImage8(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        inputImage8 = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputImage9(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        inputImage9 = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputImage10(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        inputImage10 = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun steps(value: Int?): BlackForestLabsImageModelOptionsBuilder {
+        steps = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun guidance(value: Double?): BlackForestLabsImageModelOptionsBuilder {
+        guidance = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun width(value: Int?): BlackForestLabsImageModelOptionsBuilder {
+        width = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun height(value: Int?): BlackForestLabsImageModelOptionsBuilder {
+        height = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun outputFormat(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        outputFormat = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun promptUpsampling(value: Boolean?): BlackForestLabsImageModelOptionsBuilder {
+        promptUpsampling = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun raw(value: Boolean?): BlackForestLabsImageModelOptionsBuilder {
+        raw = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun safetyTolerance(value: Int?): BlackForestLabsImageModelOptionsBuilder {
+        safetyTolerance = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun webhookSecret(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        webhookSecret = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun webhookUrl(value: String?): BlackForestLabsImageModelOptionsBuilder {
+        webhookUrl = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun pollIntervalMillis(value: Long?): BlackForestLabsImageModelOptionsBuilder {
+        pollIntervalMillis = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun pollTimeoutMillis(value: Long?): BlackForestLabsImageModelOptionsBuilder {
+        pollTimeoutMillis = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): BlackForestLabsImageModelOptions =
+        BlackForestLabsImageModelOptions(
+            imagePrompt = imagePrompt,
+            imagePromptStrength = imagePromptStrength,
+            inputImage = inputImage,
+            inputImage2 = inputImage2,
+            inputImage3 = inputImage3,
+            inputImage4 = inputImage4,
+            inputImage5 = inputImage5,
+            inputImage6 = inputImage6,
+            inputImage7 = inputImage7,
+            inputImage8 = inputImage8,
+            inputImage9 = inputImage9,
+            inputImage10 = inputImage10,
+            steps = steps,
+            guidance = guidance,
+            width = width,
+            height = height,
+            outputFormat = outputFormat,
+            promptUpsampling = promptUpsampling,
+            raw = raw,
+            safetyTolerance = safetyTolerance,
+            webhookSecret = webhookSecret,
+            webhookUrl = webhookUrl,
+            pollIntervalMillis = pollIntervalMillis,
+            pollTimeoutMillis = pollTimeoutMillis,
+        )
 }
 
-public fun createBlackForestLabs(
+/** @since 0.3.0-beta01 */
+public fun BlackForestLabsImageModelOptions(
+    block: BlackForestLabsImageModelOptionsBuilder.() -> Unit = {},
+): BlackForestLabsImageModelOptions =
+    BlackForestLabsImageModelOptionsBuilder().apply(block).build()
+
+@Serializable
+@Poko
+/** @since 0.3.0-beta01 */
+public class BlackForestLabsProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val baseURL: String = "https://api.bfl.ai/v1",
+    /** @since 0.3.0-beta01 */
+    public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
+    public val pollIntervalMillis: Long? = null,
+    /** @since 0.3.0-beta01 */
+    public val pollTimeoutMillis: Long? = null,
+) {
+    internal fun bflHeaders(callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String?>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { base["x-key"] = it }
+        headers.forEach { (key, value) -> base[key] = value }
+        callHeaders.forEach { (key, value) -> base[key] = value }
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/black-forest-labs/$BLACK_FOREST_LABS_VERSION")
+    }
+}
+
+/** @since 0.3.0-beta01 */
+public class BlackForestLabsProviderSettingsBuilder {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://api.bfl.ai/v1"
+    private var headers: Map<String, String> = emptyMap()
+    private var pollIntervalMillis: Long? = null
+    private var pollTimeoutMillis: Long? = null
+
+    /** @since 0.3.0-beta01 */
+    public fun apiKey(value: String?): BlackForestLabsProviderSettingsBuilder {
+        apiKey = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun baseURL(value: String): BlackForestLabsProviderSettingsBuilder {
+        baseURL = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun headers(value: Map<String, String>): BlackForestLabsProviderSettingsBuilder {
+        headers = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun pollIntervalMillis(value: Long?): BlackForestLabsProviderSettingsBuilder {
+        pollIntervalMillis = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun pollTimeoutMillis(value: Long?): BlackForestLabsProviderSettingsBuilder {
+        pollTimeoutMillis = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): BlackForestLabsProviderSettings =
+        BlackForestLabsProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+            pollIntervalMillis = pollIntervalMillis,
+            pollTimeoutMillis = pollTimeoutMillis,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun BlackForestLabsProviderSettings(
+    block: BlackForestLabsProviderSettingsBuilder.() -> Unit = {},
+): BlackForestLabsProviderSettings =
+    BlackForestLabsProviderSettingsBuilder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+public interface BlackForestLabsProvider : Provider {
+    /** @since 0.3.0-beta01 */
+    public fun image(modelId: ModelId): ImageModel
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
+
+    /** @since 0.3.0-beta01 */
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
+}
+
+/** @since 0.3.0-beta01 */
+public fun BlackForestLabs(
     client: HttpClient,
     settings: BlackForestLabsProviderSettings = BlackForestLabsProviderSettings(),
 ): BlackForestLabsProvider = DefaultBlackForestLabsProvider(client, settings)
 
+/** @since 0.3.0-beta01 */
 public val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsProvider {
     override val providerId: String = "black-forest-labs"
-    override fun image(modelId: String): ImageModel =
-        throw AiSdkException("Black Forest Labs provider is not configured. Use createBlackForestLabs(client, settings).")
+    override fun image(modelId: ModelId): ImageModel =
+        throw UnsupportedFunctionalityError(
+            "black-forest-labs",
+            "Black Forest Labs provider is not configured. Use BlackForestLabs(client, settings)."
+        )
 }
 
 private class DefaultBlackForestLabsProvider(
@@ -90,9 +403,17 @@ private class DefaultBlackForestLabsProvider(
     private val settings: BlackForestLabsProviderSettings,
 ) : BlackForestLabsProvider {
     override val providerId: String = "black-forest-labs"
-    override fun image(modelId: String): ImageModel = BlackForestLabsImageModel(client, settings, modelId)
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun image(modelId: ModelId): ImageModel = BlackForestLabsImageModel(client, settings, modelId.value)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
+        providerId,
+        "languageModel",
+        modelId
+    )
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(
+        providerId,
+        "embeddingModel",
+        modelId
+    )
 }
 
 private class BlackForestLabsImageModel(
@@ -107,7 +428,7 @@ private class BlackForestLabsImageModel(
         params.abortSignal.throwIfAborted()
         val options = bflOptions(params.providerOptions)
         val args = bflRequestBody(modelId, params, options)
-        val headers = bflHeaders(settings, params.headers)
+        val headers = settings.bflHeaders(params.headers)
         val submit = bflPostJson(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/$modelId",
@@ -115,19 +436,19 @@ private class BlackForestLabsImageModel(
             headers = headers,
         )
         val submitBody = submit.value.jsonObject
-        val requestId = submitBody["id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("Black Forest Labs submit response is missing id")
-        val pollingUrl = submitBody["polling_url"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("Black Forest Labs submit response is missing polling_url")
+        val requestId = (submitBody["id"] as? JsonPrimitive)?.contentOrNull
+            ?: throw InvalidResponseDataError(null, "Black Forest Labs submit response is missing id")
+        val pollingUrl = (submitBody["polling_url"] as? JsonPrimitive)?.contentOrNull
+            ?: throw InvalidResponseDataError(null, "Black Forest Labs submit response is missing polling_url")
         val pollResult = bflPollForImage(
             client = client,
             pollingUrl = bflPollUrl(pollingUrl, requestId),
             headers = headers,
             abortSignal = params.abortSignal,
-            pollIntervalMillis = options["pollIntervalMillis"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
+            pollIntervalMillis = (options["pollIntervalMillis"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
                 ?: settings.pollIntervalMillis
                 ?: DEFAULT_BFL_POLL_INTERVAL_MILLIS,
-            pollTimeoutMillis = options["pollTimeoutMillis"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
+            pollTimeoutMillis = (options["pollTimeoutMillis"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
                 ?: settings.pollTimeoutMillis
                 ?: DEFAULT_BFL_POLL_TIMEOUT_MILLIS,
         )
@@ -136,272 +457,301 @@ private class BlackForestLabsImageModel(
             images = listOf(downloaded.file),
             warnings = args.warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = downloaded.headers),
-            providerMetadata = mapOf(
-                "blackForestLabs" to bflProviderMetadata(submitBody, pollResult.result),
+            providerMetadata = ProviderMetadata.Raw(
+                JsonObject(
+                    mapOf(
+                        "blackForestLabs" to bflProviderMetadata(submitBody, pollResult.result),
+                    )
+                )
             ),
         )
     }
+
+    private fun bflRequestBody(
+        modelId: String,
+        params: ImageGenerationParams,
+        options: JsonObject,
+    ): BflArgs {
+        val warnings = mutableListOf<CallWarning>()
+        val finalAspectRatio = params.aspectRatio ?: params.size?.let(::bflSizeToAspectRatio)
+        if (params.size != null && params.aspectRatio == null) {
+            warnings += CallWarning(
+                type = "unsupported",
+                message = "Deriving aspect_ratio from size. Use width and height provider options to specify dimensions for models that support them.",
+            )
+        } else if (params.size != null && params.aspectRatio != null) {
+            warnings += CallWarning(
+                type = "unsupported",
+                message = "Black Forest Labs ignores size when aspectRatio is provided. Use width and height provider options to specify dimensions for models that support them.",
+            )
+        }
+        val (sizeWidth, sizeHeight) = bflParseSize(params.size)
+        val width = (options["width"] as? JsonPrimitive)?.intOrNull ?: sizeWidth
+        val height = (options["height"] as? JsonPrimitive)?.intOrNull ?: sizeHeight
+        return BflArgs(
+            body = buildJsonObject {
+                put("prompt", JsonPrimitive(params.prompt))
+                putStringIfNotNull("aspect_ratio", finalAspectRatio)
+                putIntIfNotNull("seed", params.seed)
+                putIntIfNotNull("width", width)
+                putIntIfNotNull("height", height)
+                putIntIfNotNull("steps", (options["steps"] as? JsonPrimitive)?.intOrNull)
+                putDoubleIfNotNull("guidance", (options["guidance"] as? JsonPrimitive)?.doubleOrNull)
+                putDoubleIfNotNull(
+                    "image_prompt_strength",
+                    (options["imagePromptStrength"] as? JsonPrimitive)?.doubleOrNull,
+                )
+                putStringIfNotNull("image_prompt", (options["imagePrompt"] as? JsonPrimitive)?.contentOrNull)
+                putBflInputImages(modelId, params.files)
+                putStringIfNotNull("mask", params.mask?.bflValue())
+                putStringIfNotNull("output_format", (options["outputFormat"] as? JsonPrimitive)?.contentOrNull)
+                putBooleanIfNotNull("prompt_upsampling", (options["promptUpsampling"] as? JsonPrimitive)?.booleanOrNull)
+                putBooleanIfNotNull("raw", (options["raw"] as? JsonPrimitive)?.booleanOrNull)
+                putIntIfNotNull("safety_tolerance", (options["safetyTolerance"] as? JsonPrimitive)?.intOrNull)
+                putStringIfNotNull("webhook_secret", (options["webhookSecret"] as? JsonPrimitive)?.contentOrNull)
+                putStringIfNotNull("webhook_url", (options["webhookUrl"] as? JsonPrimitive)?.contentOrNull)
+            },
+            warnings = warnings,
+        )
+    }
+
+    private fun JsonObjectBuilder.putBflInputImages(modelId: String, files: List<ImageGenerationFile>) {
+        if (files.size > 10) throw InvalidArgumentError("files", "Black Forest Labs supports up to 10 input images.")
+        val inputImageField = if (modelId == "flux-pro-1.0-fill") "image" else "input_image"
+        files.forEachIndexed { index, file ->
+            val suffix = if (index == 0) "" else "_${index + 1}"
+            putStringIfNotNull("$inputImageField$suffix", file.bflValue())
+        }
+    }
+
+    private fun ImageGenerationFile.bflValue(): String? =
+        url?.takeIf { it.isNotBlank() } ?: base64?.takeIf { it.isNotBlank() }
+
+    private suspend fun bflPostJson(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Post,
+            headers = headers,
+            body = body,
+            requestBodyValues = body,
+            errorMessage = ::bflErrorMessage,
+        )
+
+    private suspend fun bflGetJson(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+    ): HttpJsonResponse {
+        abortSignal.throwIfAborted()
+        return HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Get,
+            headers = headers,
+            errorMessage = ::bflErrorMessage,
+        )
+    }
+
+    private suspend fun bflPollForImage(
+        client: HttpClient,
+        pollingUrl: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+        pollIntervalMillis: Long,
+        pollTimeoutMillis: Long,
+    ): BflPollResult {
+        val interval = pollIntervalMillis.coerceAtLeast(1L)
+        val maxPollAttempts = ceil(
+            pollTimeoutMillis.coerceAtLeast(1L).toDouble() / interval.toDouble()
+        ).toInt().coerceAtLeast(1)
+        repeat(maxPollAttempts) { attempt ->
+            abortSignal.throwIfAborted()
+            val poll = bflGetJson(client, pollingUrl, headers, abortSignal).value.jsonObject
+            val status = (poll["status"] as? JsonPrimitive)?.contentOrNull
+                ?: (poll["state"] as? JsonPrimitive)?.contentOrNull
+                ?: throw InvalidResponseDataError(null, "Missing status in Black Forest Labs poll response")
+            when (status) {
+                "Ready" -> {
+                    val result = (JsonAccess.obj(poll, "result"))
+                        ?: throw InvalidResponseDataError(
+                            null,
+                            "Black Forest Labs poll response is Ready but missing result.sample",
+                        )
+                    val imageUrl = (result["sample"] as? JsonPrimitive)?.contentOrNull
+                        ?: throw InvalidResponseDataError(
+                            null,
+                            "Black Forest Labs poll response is Ready but missing result.sample",
+                        )
+                    return BflPollResult(imageUrl = imageUrl, result = result)
+                }
+                "Error", "Failed", "Content Moderated", "Request Moderated", "Task not found" -> {
+                    val reasons = ((JsonAccess.obj(poll, "details"))?.get("Moderation Reasons") as? JsonArray)
+                        ?.joinToString(", ") { (it as? JsonPrimitive)?.contentOrNull.orEmpty() }
+                    throw NoImageGeneratedError(
+                        "Black Forest Labs generation $status" +
+                            (reasons?.takeIf { it.isNotBlank() }?.let { ": $it" } ?: "."),
+                    )
+                }
+            }
+            if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
+        }
+        throw NoImageGeneratedError("Black Forest Labs generation timed out.")
+    }
+
+    private suspend fun bflDownloadImage(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+    ): BflDownloadedImage {
+        abortSignal.throwIfAborted()
+        val (statusCode, headersMap, bytes) = HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+            val response = client.request(url) {
+                method = HttpMethod.Get
+                headers.forEach { (name, value) -> header(name, value) }
+            }
+            Triple(
+                response.status.value,
+                with(HttpTransport) { response.flattenedHeaders() },
+                with(HttpTransport) { response.bodyAsBytesCapped(url) },
+            )
+        }
+        if (statusCode !in 200..299) {
+            val raw = bytes.decodeToString()
+            val detail = raw.ifBlank { "request failed" }
+            throw ApiCallError(
+                url = url,
+                statusCode = statusCode,
+                rawBody = raw,
+                headers = headersMap,
+                message = "Black Forest Labs image download failed ($statusCode): $detail",
+            )
+        }
+        return BflDownloadedImage(
+            file = GeneratedFile(
+                mediaType = headersMap.bflHeaderValue(HttpHeaders.ContentType) ?: "image/png",
+                base64 = Base64Codec.encode(bytes),
+            ),
+            headers = headersMap,
+        )
+    }
+
+    private fun bflProviderMetadata(submit: JsonObject, result: JsonObject): JsonElement = buildJsonObject {
+        put(
+            "images",
+            JsonArray(
+                listOf(
+                    buildJsonObject {
+                        putIfPresent("seed", result["seed"])
+                        putIfPresent("start_time", result["start_time"])
+                        putIfPresent("end_time", result["end_time"])
+                        putIfPresent("duration", result["duration"])
+                        putIfPresent("cost", submit["cost"])
+                        putIfPresent("inputMegapixels", submit["input_mp"])
+                        putIfPresent("outputMegapixels", submit["output_mp"])
+                    }
+                )
+            )
+        )
+    }
+
+    private fun bflOptions(providerOptions: ProviderOptions): JsonObject =
+        JsonAccess.obj(providerOptions.toMap(), "blackForestLabs") ?: JsonObject(emptyMap())
+
+    private fun bflPollUrl(pollingUrl: String, requestId: String): String {
+        val hasId = pollingUrl.substringAfter(
+            '?',
+            missingDelimiterValue = ""
+        ).split('&').any { it.substringBefore('=') == "id" }
+        if (hasId) return pollingUrl
+        val separator = if ('?' in pollingUrl) "&" else "?"
+        return "$pollingUrl${separator}id=$requestId"
+    }
+
+    private fun bflParseSize(size: String?): Pair<Int?, Int?> {
+        if (size == null) return null to null
+        val width = size.substringBefore('x', missingDelimiterValue = "").toIntOrNull()
+        val height = size.substringAfter('x', missingDelimiterValue = "").toIntOrNull()
+        return width to height
+    }
+
+    private fun bflSizeToAspectRatio(size: String): String? {
+        val (width, height) = bflParseSize(size)
+        if (width == null || height == null || width <= 0 || height <= 0) return null
+        val divisor = bflGcd(width, height)
+        return "${width / divisor}:${height / divisor}"
+    }
+
+    private fun bflGcd(a: Int, b: Int): Int {
+        var x = abs(a)
+        var y = abs(b)
+        while (y != 0) {
+            val next = x % y
+            x = y
+            y = next
+        }
+        return x.coerceAtLeast(1)
+    }
+
+    private fun bflErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = obj?.get("detail")
+        val detailContent = (detail as? JsonPrimitive)?.contentOrNull
+        val messageContent = (obj?.get("message") as? JsonPrimitive)?.contentOrNull
+        val message = when {
+            detailContent != null -> detailContent
+            detail != null && detail !is JsonNull -> detail.toString()
+            messageContent != null -> messageContent
+            else -> raw.ifBlank { "request failed" }
+        }
+        return "Black Forest Labs request failed ($statusCode): $message"
+    }
+
+    private fun JsonObjectBuilder.putIfPresent(key: String, value: JsonElement?) {
+        if (value != null && value !is JsonNull) put(key, value)
+    }
+
+    private fun JsonObjectBuilder.putStringIfNotNull(key: String, value: String?) {
+        if (value != null) put(key, JsonPrimitive(value))
+    }
+
+    private fun JsonObjectBuilder.putIntIfNotNull(key: String, value: Int?) {
+        if (value != null) put(key, JsonPrimitive(value))
+    }
+
+    private fun JsonObjectBuilder.putDoubleIfNotNull(key: String, value: Double?) {
+        if (value != null) put(key, JsonPrimitive(value))
+    }
+
+    private fun JsonObjectBuilder.putBooleanIfNotNull(key: String, value: Boolean?) {
+        if (value != null) put(key, JsonPrimitive(value))
+    }
+
+    private fun Map<String, String>.bflHeaderValue(name: String): String? =
+        entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
 
 private const val DEFAULT_BFL_POLL_INTERVAL_MILLIS: Long = 500L
 private const val DEFAULT_BFL_POLL_TIMEOUT_MILLIS: Long = 60_000L
 
-
-private data class BflArgs(
+internal data class BflArgs(
     val body: JsonObject,
     val warnings: List<CallWarning>,
 )
 
-private data class BflPollResult(
+internal data class BflPollResult(
     val imageUrl: String,
     val result: JsonObject,
 )
 
-private data class BflDownloadedImage(
+internal data class BflDownloadedImage(
     val file: GeneratedFile,
     val headers: Map<String, String>,
 )
-
-private fun bflRequestBody(
-    modelId: String,
-    params: ImageGenerationParams,
-    options: JsonObject,
-): BflArgs {
-    val warnings = mutableListOf<CallWarning>()
-    val finalAspectRatio = params.aspectRatio ?: params.size?.let(::bflSizeToAspectRatio)
-    if (params.size != null && params.aspectRatio == null) {
-        warnings += CallWarning(
-            type = "unsupported",
-            message = "Deriving aspect_ratio from size. Use width and height provider options to specify dimensions for models that support them.",
-        )
-    } else if (params.size != null && params.aspectRatio != null) {
-        warnings += CallWarning(
-            type = "unsupported",
-            message = "Black Forest Labs ignores size when aspectRatio is provided. Use width and height provider options to specify dimensions for models that support them.",
-        )
-    }
-    val (sizeWidth, sizeHeight) = bflParseSize(params.size)
-    val width = options["width"]?.jsonPrimitive?.intOrNull ?: sizeWidth
-    val height = options["height"]?.jsonPrimitive?.intOrNull ?: sizeHeight
-    return BflArgs(
-        body = buildJsonObject {
-            put("prompt", JsonPrimitive(params.prompt))
-            putStringIfNotNull("aspect_ratio", finalAspectRatio)
-            putIntIfNotNull("seed", params.seed)
-            putIntIfNotNull("width", width)
-            putIntIfNotNull("height", height)
-            putIntIfNotNull("steps", options["steps"]?.jsonPrimitive?.intOrNull)
-            putDoubleIfNotNull("guidance", options["guidance"]?.jsonPrimitive?.doubleOrNull)
-            putDoubleIfNotNull("image_prompt_strength", options["imagePromptStrength"]?.jsonPrimitive?.doubleOrNull)
-            putStringIfNotNull("image_prompt", options["imagePrompt"]?.jsonPrimitive?.contentOrNull)
-            putBflInputImages(modelId, params.files)
-            putStringIfNotNull("mask", params.mask?.bflValue())
-            putStringIfNotNull("output_format", options["outputFormat"]?.jsonPrimitive?.contentOrNull)
-            putBooleanIfNotNull("prompt_upsampling", options["promptUpsampling"]?.jsonPrimitive?.booleanOrNull)
-            putBooleanIfNotNull("raw", options["raw"]?.jsonPrimitive?.booleanOrNull)
-            putIntIfNotNull("safety_tolerance", options["safetyTolerance"]?.jsonPrimitive?.intOrNull)
-            putStringIfNotNull("webhook_secret", options["webhookSecret"]?.jsonPrimitive?.contentOrNull)
-            putStringIfNotNull("webhook_url", options["webhookUrl"]?.jsonPrimitive?.contentOrNull)
-        },
-        warnings = warnings,
-    )
-}
-
-private fun JsonObjectBuilder.putBflInputImages(modelId: String, files: List<ImageGenerationFile>) {
-    if (files.size > 10) throw AiSdkException("Black Forest Labs supports up to 10 input images.")
-    val inputImageField = if (modelId == "flux-pro-1.0-fill") "image" else "input_image"
-    files.forEachIndexed { index, file ->
-        val suffix = if (index == 0) "" else "_${index + 1}"
-        putStringIfNotNull("$inputImageField$suffix", file.bflValue())
-    }
-}
-
-private fun ImageGenerationFile.bflValue(): String? =
-    url?.takeIf { it.isNotBlank() } ?: base64?.takeIf { it.isNotBlank() }
-
-private suspend fun bflPostJson(
-    client: HttpClient,
-    url: String,
-    body: JsonObject,
-    headers: Map<String, String>,
-): HttpJsonResponse =
-    requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Post,
-        headers = headers,
-        body = body,
-        requestBodyValues = body,
-        errorMessage = ::bflErrorMessage,
-    )
-
-private suspend fun bflGetJson(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-    abortSignal: AbortSignal,
-): HttpJsonResponse {
-    abortSignal.throwIfAborted()
-    return requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Get,
-        headers = headers,
-        errorMessage = ::bflErrorMessage,
-    )
-}
-
-private suspend fun bflPollForImage(
-    client: HttpClient,
-    pollingUrl: String,
-    headers: Map<String, String>,
-    abortSignal: AbortSignal,
-    pollIntervalMillis: Long,
-    pollTimeoutMillis: Long,
-): BflPollResult {
-    val interval = pollIntervalMillis.coerceAtLeast(1L)
-    val maxPollAttempts = ceil(pollTimeoutMillis.coerceAtLeast(1L).toDouble() / interval.toDouble()).toInt().coerceAtLeast(1)
-    repeat(maxPollAttempts) { attempt ->
-        abortSignal.throwIfAborted()
-        val poll = bflGetJson(client, pollingUrl, headers, abortSignal).value.jsonObject
-        val status = poll["status"]?.jsonPrimitive?.contentOrNull ?: poll["state"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("Missing status in Black Forest Labs poll response")
-        when (status) {
-            "Ready" -> {
-                val result = poll["result"]?.jsonObject ?: throw AiSdkException(
-                    "Black Forest Labs poll response is Ready but missing result.sample",
-                )
-                val imageUrl = result["sample"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkException(
-                    "Black Forest Labs poll response is Ready but missing result.sample",
-                )
-                return BflPollResult(imageUrl = imageUrl, result = result)
-            }
-            "Error", "Failed" -> throw AiSdkException("Black Forest Labs generation failed.")
-        }
-        if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
-    }
-    throw AiSdkException("Black Forest Labs generation timed out.")
-}
-
-private suspend fun bflDownloadImage(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-    abortSignal: AbortSignal,
-): BflDownloadedImage {
-    abortSignal.throwIfAborted()
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    val bytes = response.bodyAsBytes()
-    val headersMap = response.flattenedHeaders()
-    if (response.status.value !in 200..299) {
-        val raw = bytes.decodeToString()
-        val detail = raw.ifBlank { "request failed" }
-        throw apiCallError(
-            url = url,
-            statusCode = response.status.value,
-            rawBody = raw,
-            headers = headersMap,
-            message = "Black Forest Labs image download failed (${response.status.value}): $detail",
-        )
-    }
-    return BflDownloadedImage(
-        file = GeneratedFile(
-            mediaType = headersMap.bflHeaderValue(HttpHeaders.ContentType) ?: "image/png",
-            base64 = convertByteArrayToBase64(bytes),
-        ),
-        headers = headersMap,
-    )
-}
-
-private fun bflProviderMetadata(submit: JsonObject, result: JsonObject): JsonElement = buildJsonObject {
-    put("images", JsonArray(listOf(buildJsonObject {
-        putIfPresent("seed", result["seed"])
-        putIfPresent("start_time", result["start_time"])
-        putIfPresent("end_time", result["end_time"])
-        putIfPresent("duration", result["duration"])
-        putIfPresent("cost", submit["cost"])
-        putIfPresent("inputMegapixels", submit["input_mp"])
-        putIfPresent("outputMegapixels", submit["output_mp"])
-    })))
-}
-
-private fun bflHeaders(settings: BlackForestLabsProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-    val base = linkedMapOf<String, String?>()
-    settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["x-key"] = it }
-    settings.headers.forEach { (key, value) -> base[key] = value }
-    callHeaders.forEach { (key, value) -> base[key] = value }
-    return withUserAgentSuffix(base, "ai-sdk/black-forest-labs/$BLACK_FOREST_LABS_VERSION")
-}
-
-private fun bflOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["blackForestLabs"] as? JsonObject ?: JsonObject(emptyMap())
-
-private fun bflPollUrl(pollingUrl: String, requestId: String): String {
-    val hasId = pollingUrl.substringAfter('?', missingDelimiterValue = "").split('&').any { it.substringBefore('=') == "id" }
-    if (hasId) return pollingUrl
-    val separator = if ('?' in pollingUrl) "&" else "?"
-    return "$pollingUrl${separator}id=$requestId"
-}
-
-private fun bflParseSize(size: String?): Pair<Int?, Int?> {
-    if (size == null) return null to null
-    val width = size.substringBefore('x', missingDelimiterValue = "").toIntOrNull()
-    val height = size.substringAfter('x', missingDelimiterValue = "").toIntOrNull()
-    return width to height
-}
-
-private fun bflSizeToAspectRatio(size: String): String? {
-    val (width, height) = bflParseSize(size)
-    if (width == null || height == null || width <= 0 || height <= 0) return null
-    val divisor = bflGcd(width, height)
-    return "${width / divisor}:${height / divisor}"
-}
-
-private fun bflGcd(a: Int, b: Int): Int {
-    var x = abs(a)
-    var y = abs(b)
-    while (y != 0) {
-        val next = x % y
-        x = y
-        y = next
-    }
-    return x.coerceAtLeast(1)
-}
-
-private fun bflErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-    val obj = parsed as? JsonObject
-    val detail = obj?.get("detail")
-    val message = when {
-        detail?.jsonPrimitive?.contentOrNull != null -> detail.jsonPrimitive.content
-        detail != null && detail !is JsonNull -> detail.toString()
-        obj?.get("message")?.jsonPrimitive?.contentOrNull != null -> obj["message"]?.jsonPrimitive?.content.orEmpty()
-        else -> raw.ifBlank { "request failed" }
-    }
-    return "Black Forest Labs request failed ($statusCode): $message"
-}
-
-private fun JsonObjectBuilder.putIfPresent(key: String, value: JsonElement?) {
-    if (value != null && value !is JsonNull) put(key, value)
-}
-
-private fun JsonObjectBuilder.putStringIfNotNull(key: String, value: String?) {
-    if (value != null) put(key, JsonPrimitive(value))
-}
-
-private fun JsonObjectBuilder.putIntIfNotNull(key: String, value: Int?) {
-    if (value != null) put(key, JsonPrimitive(value))
-}
-
-private fun JsonObjectBuilder.putDoubleIfNotNull(key: String, value: Double?) {
-    if (value != null) put(key, JsonPrimitive(value))
-}
-
-private fun JsonObjectBuilder.putBooleanIfNotNull(key: String, value: Boolean?) {
-    if (value != null) put(key, JsonPrimitive(value))
-}
-
-private fun Map<String, String>.bflHeaderValue(name: String): String? =
-    entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value

@@ -1,64 +1,71 @@
 # Lifecycle And Events
 
-Lifecycle hooks observe an agent run. Stream events carry incremental model,
+Lifecycle events observe an agent run. Stream events carry incremental model,
 tool, and UI state. Telemetry integrations record the same kind of lifecycle at
 an observability boundary.
 
-The top-level `generateText` and `streamText` functions do not take lifecycle
-callback options in this port. Use `ToolLoopAgent` hooks when you need
-request-scoped callbacks, middleware when you need model-call wrapping, and
-telemetry integrations when you need app-wide observation.
+The `TextGenerator` helpers do not take lifecycle callback options in this
+port. Use `ToolLoopAgent.events(...)` or `collectAgentEvents(...)` when you
+need request-scoped observation, middleware when you
+need model-call wrapping, and telemetry integrations when you need app-wide
+observation.
 
-## Agent Hooks
+## Agent Events
 
-Use constructor hooks for app-wide observation:
+Use the lifecycle event stream for full-loop observation:
 
 ```kotlin
-val agent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Use tools when they help.",
-    tools = toolSetOf(searchDocs),
-    stopWhen = stepCountIs(8),
-    onStepFinish = {
-        audit.step(stepNumber, step.finishReason, step.usage.totalTokens)
-    },
-    onFinish = {
-        audit.finish(totalSteps, usage.totalTokens, pendingApprovals.size)
-    },
-)
+class AuditAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Use tools when they help.",
+        tools = tools,
+        stopWhen = StepCountIs(8),
+    )
+
+val agent = AuditAgent(model, ToolSet(searchDocs))
+agent.events(prompt = prompt, options = context).collect { event ->
+    when (event) {
+        is AgentEvent.StepFinished -> audit.step(event.stepNumber, event.step.usage.totalTokens)
+        is AgentEvent.Finished<*, *> -> audit.finish(event.totalSteps, event.usage.totalTokens)
+        else -> Unit
+    }
+}
 ```
 
-Use per-call hooks for a single request:
+Use `collectAgentEvents` for a single request:
 
 ```kotlin
-val result = agent.generate(
+agent.collectAgentEvents(
     prompt = prompt,
     options = context,
-    hooks = AgentCallHooks(
-        onStart = { event -> trace.start(event.options) },
-        onChunk = { event -> trace.chunk(event.stepNumber, event.event) },
-        onAbort = { event -> trace.aborted(event.steps.size) },
-    ),
-)
+) { event ->
+    when (event) {
+        is AgentEvent.Started<*> -> trace.start(event.options)
+        is AgentEvent.Chunk -> trace.chunk(event.stepNumber, event.event)
+        is AgentEvent.Aborted -> trace.aborted(event.steps.size)
+        else -> Unit
+    }
+}
 ```
 
-Constructor hooks and per-call hooks both run when both are supplied.
+Use `collectAgentEvents` when you only need a small subset of lifecycle events.
 
-## Hook Events
+## Event Types
 
-| Hook | Use it for |
+| Event | Use it for |
 |---|---|
-| `onStart` | Log request context and prior message count. |
-| `onStepStart` | Inspect the next step's messages and prepared request. |
-| `onStepFinish` | Record step output, usage, warnings, model id, and metadata. |
-| `onFinish` | Persist final messages, usage, pending approvals, and final context. |
-| `onError` | Observe hook, tool, prepare, and model failures. |
-| `onChunk` | Mirror streaming events into diagnostics or progress traces. |
-| `onAbort` | Persist partial work after cancellation. |
-| `experimental_onToolCallStart` | Record parsed tool input before execution. |
-| `experimental_onToolCallFinish` | Record tool output or tool failure. |
+| `AgentEvent.Started` | Log request context and prior message count. |
+| `AgentEvent.StepStarted` | Inspect the next step's messages and prepared request. |
+| `AgentEvent.StepFinished` | Record step output, usage, warnings, model id, and metadata. |
+| `AgentEvent.Finished` | Persist final messages, usage, pending approvals, and final context. |
+| `AgentEvent.Errored` | Observe tool, prepare, model, and collector failures. |
+| `AgentEvent.Chunk` | Mirror streaming events into diagnostics or progress traces. |
+| `AgentEvent.Aborted` | Persist partial work after cancellation. |
+| `AgentEvent.ToolCallStarted` | Record parsed tool input before execution. |
+| `AgentEvent.ToolCallFinished` | Record tool output or tool failure. |
 
-Hooks are observation points. Use `prepareCall` or `prepareStep` when behavior
+Events are observation points. Use `prepareCall` or `prepareStep` when behavior
 needs to change.
 
 ## Stream Events
@@ -78,15 +85,15 @@ agent.stream(prompt = prompt, options = context).collect { event ->
 }
 ```
 
-Use stream events when the host needs incremental behavior. Use hooks when the
-host wants lifecycle observation without taking over rendering.
+Use stream events when the host needs incremental behavior. Use agent events
+when the host wants lifecycle observation without taking over rendering.
 
 ## Tool Input Hooks
 
 Tool input can stream before it is available as typed data:
 
 ```kotlin
-val lookup = tool<LookupInput, LookupResult, AppContext>(
+val lookup = Tool<LookupInput, LookupResult, AppContext>(
     name = "lookup",
     description = "Look up one record.",
     onInputStart = { id -> ui.startInput(id) },
@@ -102,30 +109,34 @@ still happen inside the tool executor or `needsApproval`.
 
 ## Telemetry Events
 
-Telemetry integrations receive lifecycle callbacks such as start, step start,
+Telemetry integrations receive `AgentEvent` values such as start, step start,
 tool-call start/finish, step finish, and finish:
 
 ```kotlin
-val integration = object : TelemetryIntegration {
-    override suspend fun record(span: TelemetrySpan, block: suspend () -> Unit) {
-        tracer.span(span.name, span.attributes) { block() }
-    }
+val integration = object : Telemetry {
+    override val name: String = "metrics"
 
-    override suspend fun onStepFinish(event: TelemetryEvent) {
-        metrics.increment("ai.step.finish")
+    override suspend fun onEvent(call: TelemetryCall, event: AgentEvent) {
+        when (event) {
+            is AgentEvent.StepFinished -> metrics.increment("ai.step.finish")
+            is AgentEvent.ToolCallFinished -> metrics.increment("ai.tool.finish")
+            else -> Unit
+        }
     }
 }
+
+Telemetry.registerTelemetry(integration)
 ```
 
-Use telemetry for durable observability. Use hooks for local orchestration
-observation and tests.
+Use telemetry for durable observability. Use `events` or `collectAgentEvents`
+for local orchestration observation and tests.
 
 ## UI Finish Events
 
 For UI streams, finish handling belongs at the message stream boundary:
 
 ```kotlin
-handleUiMessageStreamFinish(messages) { finalMessages ->
+UiMessageStreams.handleUiMessageStreamFinish(messages) { finalMessages ->
     save(finalMessages)
 }
 ```
@@ -135,11 +146,11 @@ external transport.
 
 ## Tips
 
-- Hook failures are observed and logged; tool and prepare failures are real
-  generation failures.
-- Persist `onFinish.messages` when approval may resume later.
-- Use `onAbort` for cleanup and partial persistence.
-- Do not mutate global prompt or tool state from hooks.
+- Collector failures are observed as lifecycle errors; tool and prepare
+  failures are real generation failures.
+- Persist `AgentEvent.Finished.messages` when approval may resume later.
+- Use `AgentEvent.Aborted` for cleanup and partial persistence.
+- Do not mutate global prompt or tool state from event collectors.
 
 ## Related
 

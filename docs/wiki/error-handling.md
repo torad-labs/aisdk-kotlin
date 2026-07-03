@@ -8,7 +8,7 @@ exhaustion.
 
 ```kotlin
 try {
-    val result = generateText(model = model, prompt = prompt)
+    val result = TextGenerator(model).generate(GenerationInput.Prompt(prompt)).first()
     render(result.text)
 } catch (error: APICallError) {
     logger.warn("Provider call failed: ${error.statusCode} ${error.message}")
@@ -28,7 +28,7 @@ error text matters. Catch `AiSdkException` for SDK-level fallback handling.
 | `InvalidArgumentError` | Caller supplied invalid SDK input. | The named argument in the exception. |
 | `InvalidPromptError` | Prompt or messages are not valid for the call. | Whether `prompt` and `messages` were mixed incorrectly. |
 | `APICallError` | Provider or HTTP transport failed. | `statusCode`, `isRetryable`, `responseHeaders`. |
-| `NoSuchProviderError` | Registry cannot resolve a provider prefix. | `createProviderRegistry` setup. |
+| `NoSuchProviderError` | Registry cannot resolve a provider prefix. | `ProviderRegistry.createProviderRegistry` setup. |
 | `NoSuchModelError` | Provider cannot resolve the requested model id. | Model family and id string. |
 | `NoSuchToolError` | The model called a tool that is not active. | Tool names and `activeTools`. |
 | `InvalidToolInputError` | Tool input did not decode. | Tool serializer and repair callback. |
@@ -39,11 +39,10 @@ error text matters. Catch `AiSdkException` for SDK-level fallback handling.
 ## Retries
 
 Embedding and reranking helpers retry retryable provider errors by default.
-For custom work, use `retryWithExponentialBackoff`:
+For custom work, use `RetryPolicy`:
 
 ```kotlin
-val value = retryWithExponentialBackoff(
-    policy = RetryPolicy(maxRetries = 3),
+val value = RetryPolicy { maxRetries(3) }.execute(
     shouldRetry = { error -> (error as? APICallError)?.isRetryable == true },
 ) { attempt ->
     remoteIndex.query(query, attempt)
@@ -60,7 +59,7 @@ Handle both stream-level and tool-level errors:
 ```kotlin
 agent.stream(prompt = prompt, options = context).collect { event ->
     when (event) {
-        is StreamEvent.Error -> renderError(event.error.message ?: "stream failed")
+        is StreamEvent.Error -> renderError(event.message)
         is StreamEvent.ToolError -> renderToolError(event.toolName, event.error)
         is StreamEvent.Finish -> finish(event.finishReason)
         else -> renderEvent(event)
@@ -95,7 +94,7 @@ real contract problem.
 Validate before persistence:
 
 ```kotlin
-when (val checked = safeValidateUIMessages(messages)) {
+when (val checked = UiMessageStreams.safeValidateUIMessages(messages)) {
     is SafeValidateUIMessagesResult.Success -> save(checked.messages)
     is SafeValidateUIMessagesResult.Failure -> report(checked.error)
 }

@@ -1,0 +1,25 @@
+id: no-sealed-interface
+language: kotlin
+severity: error
+# Tenet: a sealed hierarchy's root is a sealed CLASS, not a sealed interface — EXCEPT two
+# carve-outs the user approved (2026-06-22):
+#   - `@Serializable` polymorphic wire types — sealed interface is the idiomatic kotlinx
+#     pattern (a variant can be a data class/object that also implements other interfaces).
+#   - `private` sealed interfaces — internal state machines, not public API.
+#
+# The previous pattern-based form (`pattern: sealed interface $NAME`, …) had a GAP: it
+# missed sealed interfaces carrying annotations/visibility modifiers, so it silently passed
+# 5 real cases in commonMain (caught by the Konsist whole-codebase layer). This kind+has rule
+# matches a class_declaration that (a) is an interface (`interface` keyword child) and (b)
+# carries the `sealed` class_modifier, then carves out @Serializable + private.
+rule:
+  all:
+    - kind: class_declaration
+    - has: { regex: '^interface$', stopBy: neighbor }
+    - has:
+        kind: modifiers
+        has: { kind: class_modifier, regex: '^sealed$' }
+  not:
+    any:
+      - has: { kind: modifiers, has: { kind: annotation, regex: 'Serializable' } }
+      - has: { kind: modifiers, has: { kind: visibility_modifier, regex: '^private$' } }

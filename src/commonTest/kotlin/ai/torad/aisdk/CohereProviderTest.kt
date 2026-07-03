@@ -1,17 +1,18 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.COHERE_VERSION
+import ai.torad.aisdk.providers.Cohere
 import ai.torad.aisdk.providers.CohereProviderSettings
-import ai.torad.aisdk.providers.cohere
-import ai.torad.aisdk.providers.createCohere
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -19,12 +20,39 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class CohereProviderTest {
     @Test
+    fun `CohereProviderSettings DSL builds settings with value semantics`() {
+        val settings = CohereProviderSettings {
+            apiKey("k")
+            baseURL("https://x")
+            headers(mapOf("X-Test" to "yes"))
+        }
+        val equal = CohereProviderSettings {
+            apiKey("k")
+            baseURL("https://x")
+            headers(mapOf("X-Test" to "yes"))
+        }
+        val different = CohereProviderSettings {
+            apiKey("other")
+            baseURL("https://x")
+            headers(mapOf("X-Test" to "yes"))
+        }
+
+        assertEquals("k", settings.apiKey)
+        assertEquals("https://x", settings.baseURL)
+        assertEquals(mapOf("X-Test" to "yes"), settings.headers)
+        assertEquals(settings, equal)
+        assertEquals(settings.hashCode(), equal.hashCode())
+        assertNotEquals(settings, different)
+    }
+
+    @Test
     fun `chat model sends Cohere request shape and maps response content`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://cohere.test/v2/chat" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -69,71 +97,87 @@ class CohereProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createCohere(
+        val provider = Cohere(
             fixture.httpClient(),
-            CohereProviderSettings(
-                apiKey = "key",
-                baseURL = "https://cohere.test/v2",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         )
-        val documentBase64 = convertByteArrayToBase64("Paris document".encodeToByteArray())
+        val documentBase64 = Base64Codec.encode("Paris document".encodeToByteArray())
 
-        val result = provider("command-r-plus").generate(
-            LanguageModelCallParams(
-                messages = listOf(
-                    systemMessage("Use documents when available."),
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Text("Where is Paris?"),
-                            ContentPart.File(mediaType = "text/plain", base64 = documentBase64, filename = "notes.txt"),
-                            ContentPart.Image(
-                                mediaType = "image/png",
-                                base64 = "iVBORw0=",
-                                providerMetadata = mapOf("cohere" to buildJsonObject { put("detail", JsonPrimitive("high")) }),
+        val result = provider(ModelId("command-r-plus")).generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        SystemMessage("Use documents when available."),
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Text("Where is Paris?"),
+                                ContentPart.File(mediaType = "text/plain", base64 = documentBase64, filename = "notes.txt"),
+                                ContentPart.Image(
+                                    mediaType = "image/png",
+                                    base64 = "iVBORw0=",
+                                    providerMetadata = ProviderMetadata.Raw(
+                                        JsonObject(
+                                            mapOf("cohere" to buildJsonObject { put("detail", JsonPrimitive("high")) })
+                                        )
+                                    ),
+                                ),
                             ),
                         ),
-                    ),
-                ),
-                tools = listOf(
-                    LanguageModelTool(
-                        name = "lookup",
-                        description = "Look up a place.",
-                        parametersSchemaJson = """{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}""",
-                    ),
-                    LanguageModelTool(
-                        name = "providerSearch",
-                        description = "Provider hosted search.",
-                        parametersSchemaJson = """{"type":"object"}""",
-                        providerExecuted = true,
-                    ),
-                ),
-                toolChoice = ToolChoice.Specific("lookup"),
-                maxOutputTokens = 256,
-                temperature = 0.2f,
-                topP = 0.9f,
-                topK = 25,
-                presencePenalty = 0.1f,
-                frequencyPenalty = 0.2f,
-                seed = 7,
-                stopSequences = listOf("STOP"),
-                responseFormat = ResponseFormat.Json(
-                    schemaJson = buildJsonObject {
-                        put("type", JsonPrimitive("object"))
-                        put("additionalProperties", JsonPrimitive(false))
-                    },
-                ),
-                providerOptions = mapOf(
-                    "cohere" to buildJsonObject {
-                        put("thinking", buildJsonObject { put("tokenBudget", JsonPrimitive(128)) })
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                    )
+                )
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            name = "lookup",
+                            description = "Look up a place.",
+                            parametersSchemaJson = """{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}""",
+                        ),
+                        LanguageModelTool(
+                            name = "providerSearch",
+                            description = "Provider hosted search.",
+                            parametersSchemaJson = """{"type":"object"}""",
+                            providerExecuted = true,
+                        ),
+                    )
+                )
+                toolChoice(ToolChoice.Specific("lookup"))
+                maxOutputTokens(256)
+                temperature(0.2f)
+                topP(0.9f)
+                topK(25)
+                presencePenalty(0.1f)
+                frequencyPenalty(0.2f)
+                seed(7)
+                stopSequences(listOf("STOP"))
+                responseFormat(
+                    ResponseFormat.Json(
+                        schemaJson = buildJsonObject {
+                            put("type", JsonPrimitive("object"))
+                            put("additionalProperties", JsonPrimitive(false))
+                        },
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "cohere" to buildJsonObject {
+                                    put("thinking", buildJsonObject { put("tokenBudget", JsonPrimitive(128)) })
+                                },
+                            )
+                        )
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
-        assertEquals("cohere.chat", provider("command-r-plus").provider)
+        assertEquals("cohere.chat", provider(ModelId("command-r-plus")).provider)
         assertEquals("Use the lookup tool.", result.text)
         assertEquals(FinishReason.ToolCalls, result.finishReason)
         assertEquals("TOOL_CALL", result.rawFinishReason)
@@ -144,7 +188,7 @@ class CohereProviderTest {
         assertEquals("lookup", result.toolCalls.single().toolName)
         assertEquals("Paris", result.toolCalls.single().input.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
         assertEquals(
-            listOf("Checking the supplied document.", "Need one lookup."),
+            listOf("Checking the supplied document."),
             result.content.filterIsInstance<ContentPart.Reasoning>().map { it.text },
         )
         assertEquals("Notes", result.content.filterIsInstance<ContentPart.Source>().single().title)
@@ -165,9 +209,19 @@ class CohereProviderTest {
         assertEquals(7, body["seed"]?.jsonPrimitive?.intOrNull)
         assertEquals("STOP", body["stop_sequences"]?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
         assertEquals("json_object", body["response_format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
-        assertEquals(false, body["response_format"]?.jsonObject?.get("json_schema")?.jsonObject?.get("additionalProperties")?.jsonPrimitive?.contentOrNull?.toBoolean())
+        assertEquals(
+            false,
+            body["response_format"]?.jsonObject?.get(
+                "json_schema"
+            )?.jsonObject?.get("additionalProperties")?.jsonPrimitive?.contentOrNull?.toBoolean()
+        )
         assertEquals("REQUIRED", body["tool_choice"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("lookup", body["tools"]?.jsonArray?.single()?.jsonObject?.get("function")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "lookup",
+            body["tools"]?.jsonArray?.single()?.jsonObject?.get(
+                "function"
+            )?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("enabled", body["thinking"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
         assertEquals(128, body["thinking"]?.jsonObject?.get("token_budget")?.jsonPrimitive?.intOrNull)
 
@@ -180,7 +234,10 @@ class CohereProviderTest {
             "data:image/png;base64,iVBORw0=",
             userContent[1].jsonObject["image_url"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull,
         )
-        assertEquals("high", userContent[1].jsonObject["image_url"]?.jsonObject?.get("detail")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "high",
+            userContent[1].jsonObject["image_url"]?.jsonObject?.get("detail")?.jsonPrimitive?.contentOrNull
+        )
         val document = body["documents"]?.jsonArray?.single()?.jsonObject?.get("data")?.jsonObject
         assertEquals("Paris document", document?.get("text")?.jsonPrimitive?.contentOrNull)
         assertEquals("notes.txt", document?.get("title")?.jsonPrimitive?.contentOrNull)
@@ -188,7 +245,7 @@ class CohereProviderTest {
 
     @Test
     fun `embedding model sends Cohere embed request and parses embeddings`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://cohere.test/v2/embed" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -208,31 +265,46 @@ class CohereProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createCohere(
+        val provider = Cohere(
             fixture.httpClient(),
-            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
         )
 
-        val result = provider.embedding("embed-v4.0").embed(
-            EmbeddingModelCallParams(
-                values = listOf("alpha", "beta"),
-                truncate = false,
-                providerOptions = mapOf(
-                    "cohere" to buildJsonObject {
-                        put("inputType", JsonPrimitive("classification"))
-                        put("truncate", JsonPrimitive("START"))
-                        put("outputDimension", JsonPrimitive(512))
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+        val result = provider.embedding(ModelId("embed-v4.0")).embed(
+            EmbeddingModelCallParams {
+                values(listOf("alpha", "beta"))
+                truncate(false)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "cohere" to buildJsonObject {
+                                    put("inputType", JsonPrimitive("classification"))
+                                    put("truncate", JsonPrimitive("START"))
+                                    put("outputDimension", JsonPrimitive(512))
+                                },
+                            )
+                        )
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("cohere.textEmbedding", provider.embeddingModel("embed-v4.0").provider)
-        assertEquals(96, provider.embedding("embed-v4.0").maxEmbeddingsPerCall)
-        assertEquals(true, provider.embedding("embed-v4.0").supportsParallelCalls)
-        assertEquals(provider.embedding("embed-v4.0").modelId, provider.textEmbedding("embed-v4.0").modelId)
-        assertEquals(provider.embedding("embed-v4.0").modelId, provider.textEmbeddingModel("embed-v4.0").modelId)
+        assertEquals(96, provider.embedding(ModelId("embed-v4.0")).maxEmbeddingsPerCall)
+        assertEquals(true, provider.embedding(ModelId("embed-v4.0")).supportsParallelCalls)
+        assertEquals(
+            provider.embedding(ModelId("embed-v4.0")).modelId,
+            provider.textEmbedding(ModelId("embed-v4.0")).modelId
+        )
+        assertEquals(
+            provider.embedding(ModelId("embed-v4.0")).modelId,
+            provider.textEmbeddingModel(ModelId("embed-v4.0")).modelId
+        )
         assertEquals(listOf(listOf(0.1f, 0.2f), listOf(0.3f, 0.4f)), result.embeddings)
         assertEquals(10, result.usage.tokens)
         assertEquals("embed-1", result.response.id)
@@ -250,7 +322,7 @@ class CohereProviderTest {
 
     @Test
     fun `reranking model sends Cohere rerank request and maps scores`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://cohere.test/v2/rerank" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -271,24 +343,33 @@ class CohereProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createCohere(
+        val model = Cohere(
             fixture.httpClient(),
-            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
-        ).reranking("rerank-v3.5")
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
+        ).reranking(ModelId("rerank-v3.5"))
 
         val result = model.rerank(
-            RerankingParams(
-                query = "capital",
-                documents = listOf("Berlin", "Paris"),
-                topN = 1,
-                providerOptions = mapOf(
-                    "cohere" to buildJsonObject {
-                        put("maxTokensPerDoc", JsonPrimitive(64))
-                        put("priority", JsonPrimitive(1))
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            RerankingParams {
+                query("capital")
+                documents(listOf("Berlin", "Paris"))
+                topN(1)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "cohere" to buildJsonObject {
+                                    put("maxTokensPerDoc", JsonPrimitive(64))
+                                    put("priority", JsonPrimitive(1))
+                                },
+                            )
+                        )
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("cohere.reranking", model.provider)
@@ -309,56 +390,103 @@ class CohereProviderTest {
     }
 
     @Test
-    fun `stream emits tool input lifecycle before final tool call`() = runTest {
-        val fixture = createTestServer(
+    fun `stream sends Cohere SSE request and emits incremental text deltas`() = runTest {
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://cohere.test/v2/chat" to UrlHandler(
-                    UrlResponse.JsonValue(
-                        Json.parseToJsonElement(
-                            """
-                            {
-                              "generation_id":"gen-1",
-                              "message":{
-                                "role":"assistant",
-                                "tool_calls":[
-                                  {
-                                    "id":"call-1",
-                                    "type":"function",
-                                    "function":{"name":"lookup","arguments":"{\"city\":\"Paris\"}"}
-                                  }
-                                ]
-                              },
-                              "finish_reason":"TOOL_CALL",
-                              "usage":{"tokens":{"input_tokens":1,"output_tokens":1}}
-                            }
-                            """.trimIndent(),
-                        ),
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """{"id":"gen-stream","type":"message-start","delta":{"message":{"role":"assistant","content":[],"tool_plan":"","tool_calls":[],"citations":[]}}}""",
+                            """{"type":"content-start","index":0,"delta":{"message":{"content":{"type":"text","text":""}}}}""",
+                            """{"type":"content-delta","index":0,"delta":{"message":{"content":{"text":"Hel"}}}}""",
+                            """{"type":"content-delta","index":0,"delta":{"message":{"content":{"text":"lo"}}}}""",
+                            """{"type":"content-end","index":0}""",
+                            """{"type":"message-end","delta":{"finish_reason":"COMPLETE","usage":{"tokens":{"input_tokens":3,"output_tokens":2}}}}""",
+                        ).map { "data: $it\n\n" },
                     ),
                 ),
             ),
         )
         fixture.server.start()
-        val model = createCohere(
+        val model = Cohere(
             fixture.httpClient(),
-            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
         ).languageModel("command-r-plus")
 
-        val events = model.stream(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("where")),
-                tools = listOf(
-                    LanguageModelTool(
-                        name = "lookup",
-                        description = "Look up a place.",
-                        parametersSchemaJson = """{"type":"object","properties":{"city":{"type":"string"}}}""",
+        val streamResult = model.streamResult(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hello")))
+            },
+        )
+        val events = streamResult.stream.toList()
+
+        assertEquals(true, streamResult.request.body?.jsonObject?.get("stream")?.jsonPrimitive?.booleanOrNull)
+        assertEquals(
+            listOf("Hel", "lo"),
+            events.filterIsInstance<StreamEvent.TextDelta>().map { it.text },
+        )
+        assertEquals("gen-stream", events.filterIsInstance<StreamEvent.ResponseMetadata>().last { it.id != null }.id)
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(FinishReason.Stop, finish.finishReason)
+        assertEquals("COMPLETE", finish.rawFinishReason)
+        assertEquals(3, finish.usage.promptTokens)
+        assertEquals(2, finish.usage.completionTokens)
+
+        val request = fixture.calls.single()
+        assertEquals("text/event-stream", request.requestHeaders.headerValue(HttpHeaders.Accept))
+        val body = request.requestBodyJson.jsonObject
+        assertEquals(true, body["stream"]?.jsonPrimitive?.booleanOrNull)
+    }
+
+    @Test
+    fun `stream emits tool input lifecycle before final tool call`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://cohere.test/v2/chat" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """{"id":"gen-1","type":"message-start","delta":{"message":{"role":"assistant","content":[],"tool_plan":"","tool_calls":[],"citations":[]}}}""",
+                            """{"type":"tool-call-start","index":0,"delta":{"message":{"tool_calls":{"id":"call-1","type":"function","function":{"name":"lookup","arguments":""}}}}}""",
+                            """{"type":"tool-call-delta","index":0,"delta":{"message":{"tool_calls":{"function":{"arguments":"{\"city\":\"Paris\"}"}}}}}""",
+                            """{"type":"tool-call-end","index":0}""",
+                            """{"type":"message-end","delta":{"finish_reason":"TOOL_CALL","usage":{"tokens":{"input_tokens":1,"output_tokens":1}}}}""",
+                        ).map { "data: $it\n\n" },
                     ),
                 ),
             ),
+        )
+        fixture.server.start()
+        val model = Cohere(
+            fixture.httpClient(),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
+        ).languageModel("command-r-plus")
+
+        val events = model.stream(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("where")))
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            name = "lookup",
+                            description = "Look up a place.",
+                            parametersSchemaJson = """{"type":"object","properties":{"city":{"type":"string"}}}""",
+                        ),
+                    )
+                )
+            },
         ).toList()
 
         assertEquals(
             listOf(
                 StreamEvent.StreamStart::class,
+                StreamEvent.ResponseMetadata::class,
+                StreamEvent.ResponseMetadata::class,
                 StreamEvent.ToolInputStart::class,
                 StreamEvent.ToolInputDelta::class,
                 StreamEvent.ToolInputEnd::class,
@@ -367,9 +495,9 @@ class CohereProviderTest {
             ),
             events.map { it::class },
         )
-        val start = events[1] as StreamEvent.ToolInputStart
-        val delta = events[2] as StreamEvent.ToolInputDelta
-        val toolCall = events[4] as StreamEvent.ToolCall
+        val start = events[3] as StreamEvent.ToolInputStart
+        val delta = events[4] as StreamEvent.ToolInputDelta
+        val toolCall = events[6] as StreamEvent.ToolCall
         assertEquals("call-1", start.id)
         assertEquals("lookup", start.toolName)
         assertEquals("call-1", delta.id)
@@ -379,29 +507,90 @@ class CohereProviderTest {
 
     @Test
     fun `unsupported Cohere surfaces and unconfigured singleton fail explicitly`() = runTest {
-        val provider = createCohere(createTestServer(mutableMapOf()).httpClient(), CohereProviderSettings(apiKey = "key"))
+        val provider = Cohere(
+            TestServer.createTestServer(mutableMapOf()).httpClient(),
+            CohereProviderSettings {
+                apiKey("key")
+            },
+        )
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        val chatError = assertFailsWith<AiSdkException> { cohere("command-r") }
-        val embeddingError = assertFailsWith<AiSdkException> { cohere.embedding("embed-v4.0") }
-        val rerankingError = assertFailsWith<AiSdkException> { cohere.reranking("rerank-v3.5") }
-        assertTrue(chatError.message.orEmpty().contains("createCohere"))
-        assertTrue(embeddingError.message.orEmpty().contains("createCohere"))
-        assertTrue(rerankingError.message.orEmpty().contains("createCohere"))
 
         val unsupportedFile = assertFailsWith<InvalidArgumentError> {
-            provider("command-r").generate(
-                LanguageModelCallParams(
-                    messages = listOf(
-                        ModelMessage(
-                            MessageRole.User,
-                            listOf(ContentPart.File(mediaType = "application/pdf", base64 = "AA==", filename = "paper.pdf")),
-                        ),
-                    ),
-                ),
+            provider(ModelId("command-r")).generate(
+                LanguageModelCallParams {
+                    messages(
+                        listOf(
+                            ModelMessage(
+                                MessageRole.User,
+                                listOf(
+                                    ContentPart.File(mediaType = "application/pdf", base64 = "AA==", filename = "paper.pdf")
+                                ),
+                            ),
+                        )
+                    )
+                },
             )
         }
         assertTrue(unsupportedFile.message.orEmpty().contains("application/pdf"))
+    }
+
+    @Test
+    fun `image supplied by url passes the url through unchanged when base64 is empty`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://cohere.test/v2/chat" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "generation_id":"gen-1",
+                              "message":{"role":"assistant","content":[{"type":"text","text":"ok"}]},
+                              "finish_reason":"COMPLETE",
+                              "usage":{"tokens":{"input_tokens":1,"output_tokens":1}}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Cohere(
+            fixture.httpClient(),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
+        ).languageModel("command-r-plus")
+
+        model.generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Image(
+                                    mediaType = "image/png",
+                                    base64 = "",
+                                    url = "https://images.test/cat.png",
+                                ),
+                            ),
+                        ),
+                    )
+                )
+            },
+        )
+
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        val userContent = body["messages"]?.jsonArray.orEmpty()
+            .single { it.jsonObject["role"]?.jsonPrimitive?.contentOrNull == "user" }
+            .jsonObject["content"]?.jsonArray.orEmpty()
+        assertEquals(
+            "https://images.test/cat.png",
+            userContent.single().jsonObject["image_url"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull,
+        )
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

@@ -1,0 +1,33 @@
+id: no-public-mutable-collection-val
+language: kotlin
+severity: warning
+rule:
+  kind: property_declaration
+  all:
+    - has:
+        kind: variable_declaration
+        has:
+          kind: user_type
+          has:
+            kind: type_identifier
+            regex: '^(MutableList|MutableMap|MutableSet|MutableCollection|ArrayList|HashMap|LinkedHashMap|HashSet|LinkedHashSet)$'
+    - not:
+        has:
+          kind: visibility_modifier
+          regex: '^(private|internal|protected)$'
+          stopBy: end
+    - inside:
+        kind: class_body
+    - not:
+        inside:
+          kind: class_declaration
+          stopBy: end
+          has:
+            kind: modifiers
+            has:
+              kind: visibility_modifier
+              regex: '^(private|internal)$'
+note: >-
+  Public property exposes a mutable collection (MutableList/MutableMap/...).
+  Callers can mutate it behind your back. Expose the read-only interface
+  (List/Map/Set) via a public getter backed by a private mutable field.

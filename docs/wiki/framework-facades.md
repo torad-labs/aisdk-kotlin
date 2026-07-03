@@ -1,108 +1,103 @@
-# Framework Facades
+# Framework Host Integration
 
-AI SDK Kotlin includes framework-shaped facades for upstream package parity.
-They are Kotlin Multiplatform state and stream helpers, not React, Vue, Svelte,
-Angular, or RSC component implementations.
+AI SDK Kotlin does not ship React, Vue, Svelte, Angular, or React Server
+Components packages. The runtime is Kotlin Multiplatform and exposes
+framework-neutral message, stream, and state primitives that host applications
+adapt into Compose, SwiftUI, server responses, or their own presentation layer.
 
-## React-Shaped Helpers
+This artifact does not provide JavaScript client packages. Web clients can use
+the Vercel AI SDK in the client and talk to a Kotlin backend through an explicit
+HTTP/SSE protocol.
+
+## What The Kotlin Runtime Provides
+
+- `UIMessage`, `UIMessagePart`, and validation helpers for renderable,
+  persistable chat history.
+- `StreamToUiMessages` and `ToUIMessageStream` for converting model/agent
+  stream events into message snapshots or wire chunks.
+- `CreateTextStreamResponse` and `CreateUiMessageStreamResponse` wrappers for
+  hosts that want response-shaped stream metadata.
+- `Chat`, `ChatSession`, `ChatTransport`, `DirectChatTransport`, and
+  `TextStreamChatTransport` for transport-driven chat state.
+- `AgentSession` for UI or service code that wants agent status, text, output,
+  pending approvals, and message state over time.
+- `Completion` and `StructuredObject` state holders for focused completion and
+  partial object UI flows.
+
+These are not components and do not render anything. The host chooses state
+collection, lifecycle ownership, threading, persistence, and rendering.
+
+## Compose Hosts
+
+Use `ChatSession` or `AgentSession` from a ViewModel or presenter and collect
+their `StateFlow` values into the UI:
 
 ```kotlin
-val helpers = ai.torad.aisdk.react.useChat(
-    ai.torad.aisdk.react.UseChatOptions(
-        id = "support",
-        transport = transport,
-        initialMessages = savedMessages,
-    ),
+val session = ChatSession(
+    id = "support",
+    transport = DirectChatTransport { request ->
+        StreamToUiMessages(
+            events = agent.stream(
+                messages = ModelMessageConversion.convertToModelMessages(request.messages),
+            ),
+            assistantMessageId = UiMessageStreams.getResponseUiMessageId(request.messages),
+        )
+    },
 )
 
-helpers.sendMessage(userMessage).collect { message ->
-    render(message)
+session.state.collect { state ->
+    renderMessages(state.messages)
 }
 ```
 
-The React facade exposes `useChat`, `useCompletion`, and experimental object
-helpers as Kotlin state wrappers. The host UI framework still owns rendering.
+Compose owns recomposition and persistence. The SDK only owns message state and
+transport calls.
 
-## Completion Helpers
+## SwiftUI Hosts
+
+SwiftUI hosts use the same runtime surfaces from shared Kotlin. Adapt
+`StateFlow<ChatState>` or `StateFlow<AgentSessionState<*>>` into the app's
+observable model, then render `UIMessagePart` variants in SwiftUI views.
+
+Keep approval buttons tied to the `UIMessagePart.ToolUI` ids and call the
+session approval APIs from the host action handlers.
+
+## Server Hosts
+
+Server frameworks can expose text streams, UI message snapshots, or
+UI-message-chunk JSON streams:
 
 ```kotlin
-val completion = ai.torad.aisdk.react.useCompletion(
-    UseCompletionOptions(transport = completionTransport),
+val result = TextGenerator(model).streamResult(GenerationInput.Prompt("Explain the API."))
+
+val response = result.toUiMessageStreamResponse(
+    assistantMessageId = "assistant-1",
 )
-
-val text = completion.complete("Draft a changelog entry.")
 ```
 
-Use completion helpers for single-text-field flows. Use chat helpers when the
-history, tools, or UI message parts matter.
+Use `UiMessageStreams.pipeTextStreamToResponse` or
+`UiMessageStreams.pipeUiMessageStreamToResponse` when the host framework gives
+you a writable response sink.
 
-For the root transport/state examples, see [Completion And Object UI](completion-and-object-ui.md).
+## Completion And Object UI
 
-## Vue, Svelte, And Angular Facades
+Use `Completion` for one text field and `StructuredObject` when the UI should
+render partial structured state as it arrives. These are Kotlin state holders
+backed by transports, not framework hooks.
 
-The Vue, Svelte, and Angular packages expose aliases and thin wrappers over the
-same root state objects:
+For examples, see [Completion And Object UI](completion-and-object-ui.md).
 
-- `Chat`
-- `UIMessage`
-- `Completion`
-- completion options
-- structured object options
+## Migration Guidance
 
-They exist so ported code can keep familiar package names while host apps
-build idiomatic platform UI.
-
-## RSC-Shaped Helpers
-
-```kotlin
-val controller = createStreamableValue("starting")
-
-scope.launch {
-    controller.update("working")
-    controller.done("done")
-}
-
-readStreamableValue(controller.value).collect { value ->
-    render(value)
-}
-```
-
-RSC helpers include:
-
-- `createStreamableValue` and `readStreamableValue`
-- `createStreamableUI`
-- `streamUI`
-- `createAI`
-- `getAIState`, `getMutableAIState`, `useAIState`, `useUIState`, `useActions`
-- `createAgentUIStream`
-
-These are experimental parity surfaces. Use the framework-neutral UI message
-and stream APIs for new production integrations unless you are porting code
-that expects RSC-shaped names.
-
-## Generative UI Pattern
-
-Use tool UI parts rather than asking the model to render arbitrary UI:
-
-```kotlin
-val handlers = buildToolPartHandlerRegistry<Node>(
-    fallback = { part -> UnknownToolNode(part.toolName) },
-) {
-    register(showInvoiceTool) { invocation ->
-        InvoiceNode(invocation.output, invocation.state)
-    }
-}
-```
-
-This keeps routing probabilistic at the model layer but deterministic at the
-renderer boundary.
-
-## Tips
-
-- Prefer [UI And Streams](ui-and-streams.md) for new apps.
-- Use facades when porting upstream-shaped code or preserving package names.
-- Keep rendering in the host framework.
-- Treat RSC helpers as experimental.
+- Put framework code in the host app, not the shared SDK layer.
+- Persist validated `UIMessage` values, then convert to model messages when
+  resuming with a model or agent.
+- Render every `UIMessagePart` variant with a fallback so provider-specific
+  parts do not break the UI.
+- Keep web clients on their JavaScript SDK and define an explicit wire contract
+  when they talk to Kotlin services.
+- Prefer [UI And Streams](ui-and-streams.md), [Chatbots](chatbots.md), and
+  [UI Stream Protocols](ui-stream-protocols.md) for new integrations.
 
 ## Related
 
@@ -110,4 +105,4 @@ renderer boundary.
 - [Chatbots](chatbots.md)
 - [Completion And Object UI](completion-and-object-ui.md)
 - [UI Stream Protocols](ui-stream-protocols.md)
-- [Tools](tools.md)
+- [Agents](agents.md)

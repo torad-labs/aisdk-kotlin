@@ -1,0 +1,13 @@
+id: no-throw-in-stream-error-fn
+language: kotlin
+severity: error
+rule:
+  any:
+    - pattern: |
+        public suspend fun error($P: Throwable) {
+            throw $P
+        }
+    - pattern: |
+        suspend fun error($P: Throwable) {
+            throw $P
+        }

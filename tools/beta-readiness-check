@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""Fast beta-readiness gate for local use and CI.
+
+This command intentionally checks release/quality wiring, not runtime behavior. It
+is cheap enough to run after the heavier gates documented in docs/beta-readiness.md:
+
+  ./gradlew check publishToMavenLocal
+  bash .claude/hooks/rules/ci-gate.sh
+  tools/beta-readiness-check
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+WORKFLOWS = [ROOT / ".github/workflows/ci.yml", ROOT / ".github/workflows/release.yml"]
+GENERATED_TRACKED_COMPONENTS = {"build", ".gradle", "out", "target", "node_modules", ".kotlin"}
+README_MARKERS = (
+    "<!-- beta-readiness:readme-sample:start -->",
+    "<!-- beta-readiness:readme-sample:end -->",
+)
+
+
+class Reporter:
+    def __init__(self) -> None:
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
+
+    def ok(self, message: str) -> None:
+        print(f"ok - {message}")
+
+    def warn(self, message: str) -> None:
+        self.warnings.append(message)
+        print(f"warn - {message}")
+
+    def fail(self, message: str) -> None:
+        self.errors.append(message)
+        print(f"FAIL - {message}")
+
+
+def run(command: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(command, cwd=ROOT, check=False, text=True, capture_output=True)
+
+
+def check_detekt_budget(reporter: Reporter) -> None:
+    result = run([str(ROOT / "tools/check-detekt-baseline-budget")])
+    if result.returncode == 0:
+        reporter.ok(result.stdout.strip() or "detekt baseline budget")
+    else:
+        details = (result.stderr or result.stdout).strip()
+        reporter.fail(f"detekt baseline budget failed: {details}")
+
+
+def check_readme_sample_presence(reporter: Reporter, strict_readme: bool) -> None:
+    readme = ROOT / "README.md"
+    text = readme.read_text(encoding="utf-8") if readme.exists() else ""
+    has_markers = all(marker in text for marker in README_MARKERS)
+    sample_tests = [
+        path for path in (ROOT / "smoke-tests").rglob("*Readme*Sample*")
+        if path.is_file()
+    ] + [
+        path for path in (ROOT / "src").rglob("*Readme*Sample*Test.kt")
+        if path.is_file()
+    ]
+
+    if sample_tests:
+        reporter.ok("README sample compile/smoke fixture present")
+    else:
+        reporter.fail("missing README sample compile/smoke fixture (*Readme*Sample* under smoke-tests or src)")
+
+    if has_markers:
+        reporter.ok("README sample extraction markers present")
+    elif strict_readme:
+        reporter.fail("README sample extraction markers missing")
+    else:
+        reporter.warn("README sample extraction markers missing; docs owner must add before strict beta gate")
+
+
+def check_dependency_verification(reporter: Reporter) -> None:
+    metadata = ROOT / "gradle/verification-metadata.xml"
+    if not metadata.exists():
+        reporter.fail("gradle/verification-metadata.xml is missing")
+        return
+    text = metadata.read_text(encoding="utf-8", errors="replace")
+    if "<verification-metadata" not in text:
+        reporter.fail("gradle/verification-metadata.xml does not look like Gradle verification metadata")
+        return
+    if "<sha256" not in text and "<sha512" not in text:
+        reporter.fail("dependency verification metadata has no sha256/sha512 checksums")
+        return
+    reporter.ok("Gradle dependency verification metadata exists with checksums")
+
+
+def workflow_jobs(text: str) -> dict[str, str]:
+    jobs_match = re.search(r"(?ms)^jobs:\n(?P<body>.*?)(?=^[^\s#][^\n]*:|\Z)", text)
+    if not jobs_match:
+        return {}
+    body = jobs_match.group("body")
+    matches = list(re.finditer(r"(?m)^  ([A-Za-z0-9_-]+):\s*$", body))
+    jobs: dict[str, str] = {}
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(body)
+        jobs[match.group(1)] = body[start:end]
+    return jobs
+
+
+def check_workflows(reporter: Reporter) -> None:
+    unpinned: list[str] = []
+    missing_timeouts: list[str] = []
+    global_npm_installs: list[str] = []
+
+    for workflow in WORKFLOWS:
+        if not workflow.exists():
+            reporter.fail(f"workflow missing: {workflow.relative_to(ROOT)}")
+            continue
+        text = workflow.read_text(encoding="utf-8")
+        for job_name, job_body in workflow_jobs(text).items():
+            if not re.search(r"(?m)^    timeout-minutes:\s*\d+\s*$", job_body):
+                missing_timeouts.append(f"{workflow.relative_to(ROOT)}:{job_name}")
+        for line_no, line in enumerate(text.splitlines(), start=1):
+            stripped = line.strip()
+            uses_match = re.match(r"^-?\s*uses:\s*([^#\s]+)", stripped)
+            if uses_match:
+                uses_ref = uses_match.group(1)
+                ref = uses_ref.split("@", 1)[1] if "@" in uses_ref else ""
+                if not re.fullmatch(r"[0-9a-fA-F]{40}", ref):
+                    unpinned.append(f"{workflow.relative_to(ROOT)}:{line_no}: {stripped}")
+            if "npm install -g" in stripped:
+                global_npm_installs.append(f"{workflow.relative_to(ROOT)}:{line_no}: {stripped}")
+
+    if missing_timeouts:
+        reporter.fail("workflow jobs missing timeout-minutes: " + ", ".join(missing_timeouts))
+    else:
+        reporter.ok("all workflow jobs have timeout-minutes")
+
+    if unpinned:
+        reporter.fail("GitHub Actions are not SHA-pinned:\n  " + "\n  ".join(unpinned))
+    else:
+        reporter.ok("GitHub Actions are SHA-pinned")
+
+    if global_npm_installs:
+        reporter.fail("global npm installs are present in workflows:\n  " + "\n  ".join(global_npm_installs))
+    else:
+        reporter.ok("workflows avoid global npm installs")
+
+
+def check_no_generated_outputs_tracked(reporter: Reporter) -> None:
+    result = run(["git", "ls-files"])
+    if result.returncode != 0:
+        reporter.fail(f"unable to inspect tracked files: {result.stderr.strip()}")
+        return
+    offenders: list[str] = []
+    for file_name in result.stdout.splitlines():
+        parts = set(Path(file_name).parts)
+        if parts & GENERATED_TRACKED_COMPONENTS:
+            offenders.append(file_name)
+    if offenders:
+        reporter.fail("generated build outputs are tracked:\n  " + "\n  ".join(offenders[:50]))
+    else:
+        reporter.ok("no generated build output directories are tracked")
+
+
+def project_version() -> str | None:
+    props = ROOT / "gradle.properties"
+    for line in props.read_text(encoding="utf-8").splitlines():
+        if line.startswith("VERSION_NAME="):
+            return line.split("=", 1)[1].strip()
+    return None
+
+
+def check_release_version_and_changelog(reporter: Reporter) -> None:
+    version = project_version()
+    if not version:
+        reporter.fail("VERSION_NAME missing from gradle.properties")
+        return
+    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8", errors="replace")
+    if re.search(rf"(?m)^##\s+\[?{re.escape(version)}\]?\s*$", changelog):
+        reporter.ok(f"CHANGELOG.md has an entry for VERSION_NAME={version}")
+    else:
+        reporter.fail(f"CHANGELOG.md is missing a '## {version}' entry")
+
+    ref_name = os.environ.get("GITHUB_REF_NAME", "")
+    if ref_name.startswith("v"):
+        tag_version = ref_name[1:]
+        if tag_version != version:
+            reporter.fail(f"release tag/version mismatch: tag {tag_version} != VERSION_NAME {version}")
+        elif version.endswith("-SNAPSHOT"):
+            reporter.fail(f"release tag must not publish SNAPSHOT version {version}")
+        else:
+            reporter.ok("release tag matches VERSION_NAME and is not SNAPSHOT")
+    else:
+        reporter.ok("release tag/version check not applicable outside v* tag builds")
+
+
+def check_local_staging_smoke_fixture(reporter: Reporter) -> None:
+    required = [
+        ROOT / "tools/run-local-staging-smoke",
+        ROOT / "smoke-tests/local-staging/settings.gradle.kts",
+        ROOT / "smoke-tests/local-staging/jvm-consumer/build.gradle.kts",
+        ROOT / "smoke-tests/local-staging/kmp-consumer/build.gradle.kts",
+        ROOT / "smoke-tests/local-staging/android-consumer/build.gradle.kts",
+        ROOT / "smoke-tests/ios-swift/AiSdkSmoke.swift",
+        ROOT / "tools/run-ios-swift-smoke",
+    ]
+    missing = [str(path.relative_to(ROOT)) for path in required if not path.exists()]
+    if missing:
+        reporter.fail("local-staging smoke fixture is incomplete: " + ", ".join(missing))
+    else:
+        reporter.ok("local-staging consumer smoke fixture/scripts present")
+
+
+
+def check_lenient_codec_not_used_for_encoding(reporter: Reporter) -> None:
+    offenders: list[str] = []
+    for base in [ROOT / "src/commonMain/kotlin", ROOT / "src/commonTest/kotlin"]:
+        if not base.exists():
+            continue
+        for path in base.rglob("*.kt"):
+            text = path.read_text(encoding="utf-8", errors="replace")
+            for line_no, line in enumerate(text.splitlines(), start=1):
+                if "aiSdkJson.encode" in line:
+                    offenders.append(f"{path.relative_to(ROOT)}:{line_no}: {line.strip()}")
+    if offenders:
+        reporter.fail(
+            "decode-lenient aiSdkJson is used for outbound encoding; use aiSdkOutputJson instead:\n  "
+            + "\n  ".join(offenders[:50])
+        )
+    else:
+        reporter.ok("decode-lenient aiSdkJson is not used for outbound encoding")
+
+
+def check_additional_gates(reporter: Reporter) -> None:
+    gates = [
+        ("public API @since budget", ["node", "tools/check-public-api-since-budget.mjs"]),
+        ("architecture file-size budget", ["node", "tools/check-architecture-budget.mjs"]),
+        ("provider golden coverage", ["node", "tools/check-provider-golden-coverage.mjs"]),
+        ("provider capability matrix", ["node", "tools/check-provider-capabilities.mjs"]),
+        ("parity ledger claims", ["node", "tools/check-parity-claims.mjs"]),
+        ("API review/error taxonomy", ["node", "tools/check-api-review.mjs"]),
+    ]
+    for label, command in gates:
+        result = run(command)
+        if result.returncode == 0:
+            reporter.ok(result.stdout.strip() or label)
+        else:
+            reporter.fail(f"{label} failed: {(result.stderr or result.stdout).strip()}")
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--strict-readme",
+        action="store_true",
+        default=os.environ.get("BETA_READINESS_STRICT_README") == "1",
+        help="fail if README extraction markers are missing; default is warn because docs may be owned by another worker",
+    )
+    args = parser.parse_args()
+
+    reporter = Reporter()
+    check_detekt_budget(reporter)
+    check_readme_sample_presence(reporter, strict_readme=args.strict_readme)
+    check_dependency_verification(reporter)
+    check_workflows(reporter)
+    check_no_generated_outputs_tracked(reporter)
+    check_release_version_and_changelog(reporter)
+    check_lenient_codec_not_used_for_encoding(reporter)
+    check_local_staging_smoke_fixture(reporter)
+    check_additional_gates(reporter)
+
+    if reporter.errors:
+        print(f"\nbeta readiness failed: {len(reporter.errors)} error(s), {len(reporter.warnings)} warning(s)", file=sys.stderr)
+        return 1
+    print(f"\nbeta readiness OK: 0 errors, {len(reporter.warnings)} warning(s)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

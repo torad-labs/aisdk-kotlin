@@ -1,35 +1,40 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class DevToolsMiddlewareTest {
 
     @Test
     fun `devToolsMiddleware records generate steps`() = runTest {
         val recorder = InMemoryDevToolsRecorder()
-        val middleware = devToolsMiddleware(
+        val middleware = DevToolsMiddleware(
             recorder = recorder,
             runId = "run_1",
             idGenerator = { "step_1" },
         )
-        val wrapped = wrapLanguageModel(mockLanguageModelTextOnly("ok"), listOf(middleware))
+        val wrapped = WrapLanguageModel(MockLanguageModelTextOnly("ok"), listOf(middleware))
 
-        wrapped.generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        wrapped.generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        )
 
         assertEquals(listOf("run_1"), recorder.runs)
         val step = recorder.steps.single()
@@ -49,20 +54,27 @@ class DevToolsMiddlewareTest {
     @Test
     fun `devToolsMiddleware records stream output and raw chunks`() = runTest {
         val recorder = InMemoryDevToolsRecorder()
-        val middleware = devToolsMiddleware(
+        val middleware = DevToolsMiddleware(
             recorder = recorder,
             runId = "run_1",
             idGenerator = { "step_1" },
         )
-        val wrapped = wrapLanguageModel(StreamingFixtureModel(), listOf(middleware))
+        val wrapped = WrapLanguageModel(StreamingFixtureModel(), listOf(middleware))
 
-        val events = wrapped.stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))).toList()
+        val events = wrapped.stream(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            }
+        ).toList()
 
         assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "hello" })
         val result = assertNotNull(recorder.results["step_1"])
         val output = result.output!!.jsonObject
         assertEquals("hello", output["textParts"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content)
-        assertEquals("because", output["reasoningParts"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content)
+        assertEquals(
+            "because",
+            output["reasoningParts"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content
+        )
         assertEquals("search", output["toolCalls"]!!.jsonArray.single().jsonObject["toolName"]!!.jsonPrimitive.content)
         assertEquals(FinishReason.ToolCalls.name, output["finishReason"]!!.jsonPrimitive.content)
         assertEquals(2, result.usage!!.completionTokens)
@@ -73,7 +85,7 @@ class DevToolsMiddlewareTest {
     @Test
     fun `devToolsMiddleware rejects production environment`() {
         val error = assertFailsWith<AiSdkException> {
-            devToolsMiddleware(environment = "production")
+            DevToolsMiddleware(environment = "production")
         }
 
         assertTrue(error.message!!.contains("should not be used in production"))
@@ -87,7 +99,7 @@ class DevToolsMiddlewareTest {
             LanguageModelResult(
                 text = "unused",
                 finishReason = FinishReason.Stop,
-                usage = Usage(promptTokens = 1, completionTokens = 1),
+                usage = Usage.of(promptTokens = 1, completionTokens = 1),
             )
 
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
@@ -99,7 +111,7 @@ class DevToolsMiddlewareTest {
             emit(StreamEvent.ReasoningEnd("r1"))
             emit(StreamEvent.ToolCall("call_1", "search", JsonObject(emptyMap())))
             emit(StreamEvent.Raw(JsonPrimitive("raw-provider-event")))
-            emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage(promptTokens = 1, completionTokens = 2)))
+            emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage.of(promptTokens = 1, completionTokens = 2)))
         }
     }
 }

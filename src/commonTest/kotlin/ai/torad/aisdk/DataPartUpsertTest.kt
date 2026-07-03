@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.streamToUiMessages
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -29,7 +29,7 @@ class DataPartUpsertTest {
             dataChunk("data-progress", "50%", id = "p1"),
             dataChunk("data-progress", "100%", id = "p1"),
         )
-        val final = streamToUiMessages(events, assistantMessageId = "a1").toList().last()
+        val final = StreamToUiMessages(events, assistantMessageId = "a1").toList().last()
         val dataParts = final.parts.filterIsInstance<UIMessagePart.Data>()
         assertEquals(1, dataParts.size, "same id collapses to one part")
         assertEquals(JsonPrimitive("100%"), dataParts.single().data, "last value wins")
@@ -43,7 +43,7 @@ class DataPartUpsertTest {
             dataChunk("data-note", "b"),
             dataChunk("data-toast", "hi", transient = true),
         )
-        val final = streamToUiMessages(events, assistantMessageId = "a1").toList().last()
+        val final = StreamToUiMessages(events, assistantMessageId = "a1").toList().last()
         val dataParts = final.parts.filterIsInstance<UIMessagePart.Data>()
         assertEquals(3, dataParts.size, "unkeyed parts each append")
         assertTrue(dataParts.any { it.transient }, "transient flag carried through")

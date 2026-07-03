@@ -1,15 +1,16 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ALIBABA_VERSION
+import ai.torad.aisdk.providers.Alibaba
 import ai.torad.aisdk.providers.AlibabaProviderSettings
-import ai.torad.aisdk.providers.alibaba
-import ai.torad.aisdk.providers.createAlibaba
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
@@ -24,7 +25,7 @@ import kotlin.test.assertTrue
 class AlibabaProviderTest {
     @Test
     fun `chat model maps Alibaba provider options and usage details`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://alibaba.test/compatible-mode/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -66,37 +67,52 @@ class AlibabaProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAlibaba(
+        val provider = Alibaba(
             fixture.httpClient(),
-            AlibabaProviderSettings(
-                apiKey = "key",
-                baseURL = "https://alibaba.test/compatible-mode/v1",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            AlibabaProviderSettings {
+                apiKey("key")
+                baseURL("https://alibaba.test/compatible-mode/v1")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         )
 
-        val result = provider.chatModel("qwen-plus").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("Hello")),
-                tools = listOf(
-                    LanguageModelTool("lookup", "Lookup city details.", """{"type":"object","properties":{"city":{"type":"string"}}}"""),
-                ),
-                toolChoice = ToolChoice.Required,
-                providerOptions = mapOf(
-                    "alibaba" to buildJsonObject {
-                        put("enableThinking", JsonPrimitive(true))
-                        put("thinkingBudget", JsonPrimitive(2048))
-                        put("parallelToolCalls", JsonPrimitive(false))
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+        val result = provider.chatModel(ModelId("qwen-plus")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hello")))
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            "lookup",
+                            "Lookup city details.",
+                            """{"type":"object","properties":{"city":{"type":"string"}}}"""
+                        ),
+                    )
+                )
+                toolChoice(ToolChoice.Required)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "alibaba" to buildJsonObject {
+                                    put("enableThinking", JsonPrimitive(true))
+                                    put("thinkingBudget", JsonPrimitive(2048))
+                                    put("parallelToolCalls", JsonPrimitive(false))
+                                },
+                            )
+                        )
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
-        assertEquals("alibaba.chat", provider("qwen-plus").provider)
+        assertEquals("alibaba.chat", provider(ModelId("qwen-plus")).provider)
         assertEquals("The answer is Paris.", result.text)
         assertEquals(FinishReason.ToolCalls, result.finishReason)
-        assertEquals("I checked the cached context.", result.content.filterIsInstance<ContentPart.Reasoning>().single().text)
+        assertEquals(
+            "I checked the cached context.",
+            result.content.filterIsInstance<ContentPart.Reasoning>().single().text
+        )
         assertEquals("lookup", result.toolCalls.single().toolName)
         assertEquals("Paris", result.toolCalls.single().input.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
         assertEquals(100, result.usage.promptTokens)
@@ -118,12 +134,17 @@ class AlibabaProviderTest {
         assertEquals(2048, body["thinking_budget"]?.jsonPrimitive?.intOrNull)
         assertEquals(false, body["parallel_tool_calls"]?.jsonPrimitive?.booleanOrNull)
         assertEquals("required", body["tool_choice"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("lookup", body["tools"]?.jsonArray?.single()?.jsonObject?.get("function")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "lookup",
+            body["tools"]?.jsonArray?.single()?.jsonObject?.get(
+                "function"
+            )?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
     fun `video model submits DashScope task polls and maps metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://dash.test/api/v1/services/aigc/video-generation/video-synthesis" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"output":{"task_status":"PENDING","task_id":"task-1"},"request_id":"create-1"}""")),
@@ -149,36 +170,45 @@ class AlibabaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createAlibaba(
+        val model = Alibaba(
             fixture.httpClient(),
-            AlibabaProviderSettings(apiKey = "key", videoBaseURL = "https://dash.test"),
-        ).video("wan2.6-i2v")
+            AlibabaProviderSettings {
+                apiKey("key")
+                videoBaseURL("https://dash.test")
+            },
+        ).video(ModelId("wan2.6-i2v"))
 
         val result = model.generate(
-            VideoGenerationParams(
-                prompt = "Animate this",
-                image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/start.png"),
-                durationSeconds = 5f,
-                seed = 12,
-                resolution = "1280x720",
-                aspectRatio = "16:9",
-                fps = 24,
-                n = 2,
-                providerOptions = mapOf(
-                    "alibaba" to buildJsonObject {
-                        put("pollIntervalMs", JsonPrimitive(0))
-                        put("pollTimeoutMs", JsonPrimitive(1_000))
-                        put("negativePrompt", JsonPrimitive("blur"))
-                        put("audioUrl", JsonPrimitive("https://example.com/audio.mp3"))
-                        put("promptExtend", JsonPrimitive(true))
-                        put("shotType", JsonPrimitive("single"))
-                        put("watermark", JsonPrimitive(false))
-                        put("audio", JsonPrimitive(true))
-                        put("custom_parameter", JsonPrimitive("kept"))
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            VideoGenerationParams {
+                prompt("Animate this")
+                image(GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/start.png"))
+                durationSeconds(5f)
+                seed(12)
+                resolution("1280x720")
+                aspectRatio("16:9")
+                fps(24)
+                n(2)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "alibaba" to buildJsonObject {
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(1_000))
+                                    put("negativePrompt", JsonPrimitive("blur"))
+                                    put("audioUrl", JsonPrimitive("https://example.com/audio.mp3"))
+                                    put("promptExtend", JsonPrimitive(true))
+                                    put("shotType", JsonPrimitive("single"))
+                                    put("watermark", JsonPrimitive(false))
+                                    put("audio", JsonPrimitive(true))
+                                    put("custom_parameter", JsonPrimitive("kept"))
+                                },
+                            )
+                        )
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("alibaba.video", model.provider)
@@ -187,7 +217,7 @@ class AlibabaProviderTest {
         assertTrue(result.warnings.any { it.message.orEmpty().contains("explicit size") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("FPS") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("1 video") })
-        val metadata = result.providerMetadata["alibaba"]?.jsonObject
+        val metadata = result.providerMetadata.toMap()["alibaba"]?.jsonObject
         assertEquals("task-1", metadata?.get("taskId")?.jsonPrimitive?.contentOrNull)
         assertEquals("expanded prompt", metadata?.get("actualPrompt")?.jsonPrimitive?.contentOrNull)
         assertEquals(4, metadata?.get("usage")?.jsonObject?.get("outputVideoDuration")?.jsonPrimitive?.intOrNull)
@@ -220,7 +250,7 @@ class AlibabaProviderTest {
 
     @Test
     fun `embedding model posts DashScope native request and maps sorted embeddings and usage`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://alibaba.test/api/v1/services/embeddings/text-embedding/text-embedding" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -242,21 +272,30 @@ class AlibabaProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAlibaba(
+        val provider = Alibaba(
             fixture.httpClient(),
-            AlibabaProviderSettings(apiKey = "key", embeddingBaseURL = "https://alibaba.test/api/v1"),
+            AlibabaProviderSettings {
+                apiKey("key")
+                embeddingBaseURL("https://alibaba.test/api/v1")
+            },
         )
 
         val result = provider.embeddingModel("text-embedding-v4").embed(
-            EmbeddingModelCallParams(
-                values = listOf("hello", "world"),
-                providerOptions = mapOf(
-                    "alibaba" to buildJsonObject {
-                        put("textType", JsonPrimitive("query"))
-                        put("dimension", JsonPrimitive(2))
-                    },
-                ),
-            ),
+            EmbeddingModelCallParams {
+                values(listOf("hello", "world"))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "alibaba" to buildJsonObject {
+                                    put("textType", JsonPrimitive("query"))
+                                    put("dimension", JsonPrimitive(2))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
 
         assertEquals(10, provider.embeddingModel("text-embedding-v4").maxEmbeddingsPerCall)
@@ -268,30 +307,44 @@ class AlibabaProviderTest {
 
     @Test
     fun `embedding model rejects sparse output and over-limit batches`() = runTest {
-        val provider = createAlibaba(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))
+        val provider = Alibaba(
+            TestServer.createTestServer(mutableMapOf()).httpClient(),
+            AlibabaProviderSettings { apiKey("key") }
+        )
         val model = provider.embeddingModel("text-embedding-v4")
         assertFailsWith<UnsupportedFunctionalityError> {
             model.embed(
-                EmbeddingModelCallParams(
-                    values = listOf("x"),
-                    providerOptions = mapOf(
-                        "alibaba" to buildJsonObject { put("outputType", JsonPrimitive("sparse")) },
-                    ),
-                ),
+                EmbeddingModelCallParams {
+                    values(listOf("x"))
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf(
+                                    "alibaba" to buildJsonObject { put("outputType", JsonPrimitive("sparse")) },
+                                )
+                            )
+                        )
+                    )
+                },
             )
         }
         assertFailsWith<TooManyEmbeddingValuesForCallError> {
-            model.embed(EmbeddingModelCallParams(values = List(11) { "v$it" }))
+            model.embed(
+                EmbeddingModelCallParams {
+                    values(List(11) { "v$it" })
+                }
+            )
         }
     }
 
     @Test
     fun `unsupported Alibaba surfaces and unconfigured singleton fail explicitly`() {
-        val provider = createAlibaba(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))
+        val provider = Alibaba(
+            TestServer.createTestServer(mutableMapOf()).httpClient(),
+            AlibabaProviderSettings { apiKey("key") }
+        )
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        assertTrue(assertFailsWith<AiSdkException> { alibaba("qwen-plus") }.message.orEmpty().contains("createAlibaba"))
-        assertTrue(assertFailsWith<AiSdkException> { alibaba.video("wan2.6-t2v") }.message.orEmpty().contains("createAlibaba"))
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

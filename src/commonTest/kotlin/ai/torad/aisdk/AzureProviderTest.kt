@@ -1,17 +1,16 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.AZURE_VERSION
+import ai.torad.aisdk.providers.AzureOpenAI
 import ai.torad.aisdk.providers.AzureOpenAIProviderSettings
-import ai.torad.aisdk.providers.azure
-import ai.torad.aisdk.providers.createAzure
-import ai.torad.aisdk.providers.openai
-
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.Headers
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
@@ -25,7 +24,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class AzureProviderTest {
@@ -44,29 +42,35 @@ class AzureProviderTest {
                 )
             },
         )
-        val provider = createAzure(
+        val provider = AzureOpenAI(
             client,
-            AzureOpenAIProviderSettings(
-                resourceName = "test-resource",
-                apiKey = "test-api-key",
-                headers = mapOf("Custom-Provider-Header" to "provider-header-value"),
-            ),
+            AzureOpenAIProviderSettings {
+                resourceName("test-resource")
+                apiKey("test-api-key")
+                headers(mapOf("Custom-Provider-Header" to "provider-header-value"))
+            },
         )
 
         val result = provider("test-deployment").generate(
-            LanguageModelCallParams(
-                messages = listOf(userMessage("Hello")),
-                maxOutputTokens = 64,
-                providerOptions = mapOf(
-                    "openai" to JsonObject(
-                        mapOf(
-                            "reasoningEffort" to JsonPrimitive("low"),
-                            "reasoningSummary" to JsonPrimitive("concise"),
-                        ),
-                    ),
-                ),
-                headers = mapOf("Custom-Request-Header" to "request-header-value"),
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hello")))
+                maxOutputTokens(64)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "openai" to JsonObject(
+                                    mapOf(
+                                        "reasoningEffort" to JsonPrimitive("low"),
+                                        "reasoningSummary" to JsonPrimitive("concise"),
+                                    ),
+                                ),
+                            )
+                        )
+                    )
+                )
+                headers(mapOf("Custom-Request-Header" to "request-header-value"))
+            },
         )
 
         val request = seenRequests.single()
@@ -101,17 +105,25 @@ class AzureProviderTest {
                 )
             },
         )
-        val provider = createAzure(
+        val provider = AzureOpenAI(
             client,
-            AzureOpenAIProviderSettings(
-                resourceName = "test-resource",
-                tokenProvider = { "token-${++tokenCount}" },
-                apiVersion = "2025-04-01-preview",
-            ),
+            AzureOpenAIProviderSettings {
+                resourceName("test-resource")
+                tokenProvider { "token-${++tokenCount}" }
+                apiVersion("2025-04-01-preview")
+            },
         )
 
-        provider.chat("test-deployment").generate(LanguageModelCallParams(listOf(userMessage("Hi"))))
-        provider.chat("test-deployment").generate(LanguageModelCallParams(listOf(userMessage("Hi again"))))
+        provider.chat(ModelId("test-deployment")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hi")))
+            }
+        )
+        provider.chat(ModelId("test-deployment")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hi again")))
+            }
+        )
 
         assertEquals(2, tokenCount)
         assertEquals(
@@ -146,30 +158,36 @@ class AzureProviderTest {
                 }
             },
         )
-        val provider = createAzure(
+        val provider = AzureOpenAI(
             client,
-            AzureOpenAIProviderSettings(
-                baseURL = "https://proxy.example/openai/",
-                apiKey = "test-api-key",
-                useDeploymentBasedUrls = true,
-            ),
+            AzureOpenAIProviderSettings {
+                baseURL("https://proxy.example/openai/")
+                apiKey("test-api-key")
+                useDeploymentBasedUrls(true)
+            },
         )
 
         val image = provider.imageModel("dalle-deployment").generate(
-            ImageGenerationParams(
-                prompt = "A cute baby sea otter",
-                n = 2,
-                size = "1024x1024",
-                providerOptions = mapOf("openai" to JsonObject(mapOf("style" to JsonPrimitive("natural")))),
-            ),
+            ImageGenerationParams {
+                prompt("A cute baby sea otter")
+                n(2)
+                size("1024x1024")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(mapOf("openai" to JsonObject(mapOf("style" to JsonPrimitive("natural")))))
+                    )
+                )
+            },
         )
-        val transcript = provider.transcription("whisper-1").transcribe(
-            TranscriptionParams(
-                audio = AudioSource(
-                    mediaType = "audio/wav",
-                    base64 = convertByteArrayToBase64(byteArrayOf(1, 2, 3)),
-                ),
-            ),
+        val transcript = provider.transcription(ModelId("whisper-1")).transcribe(
+            TranscriptionParams {
+                audio(
+                    AudioSource(
+                        mediaType = "audio/wav",
+                        base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
+                    )
+                )
+            },
         )
 
         assertEquals("base64-image-1", image.images.single().base64)
@@ -183,20 +201,26 @@ class AzureProviderTest {
             seenRequests[1].url.toString(),
         )
         assertEquals("natural", seenBodies.single()["style"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("azure.chat", provider.chat("chat-deployment").provider)
-        assertEquals("azure.completion", provider.completion("completion-deployment").provider)
-        assertEquals("azure.embeddings", provider.embedding("embedding-deployment").provider)
-        assertEquals("azure.image", provider.image("image-deployment").provider)
+        assertEquals("azure.chat", provider.chat(ModelId("chat-deployment")).provider)
+        assertEquals("azure.completion", provider.completion(ModelId("completion-deployment")).provider)
+        assertEquals("azure.embeddings", provider.embedding(ModelId("embedding-deployment")).provider)
+        assertEquals("azure.image", provider.image(ModelId("image-deployment")).provider)
         assertEquals("azure.transcription", provider.transcriptionModel("whisper-1").provider)
-        assertEquals("azure.speech", provider.speech("tts-1").provider)
-        assertEquals(provider.embedding("embedding-deployment").modelId, provider.textEmbeddingModel("embedding-deployment").modelId)
+        assertEquals("azure.speech", provider.speech(ModelId("tts-1")).provider)
+        assertEquals(
+            provider.embedding(ModelId("embedding-deployment")).modelId,
+            provider.textEmbeddingModel(ModelId("embedding-deployment")).modelId
+        )
     }
 
     @Test
     fun `tools mirror Azure OpenAI hosted tool subset`() {
-        val tools = createAzure(
+        val tools = AzureOpenAI(
             HttpClient(MockEngine { respond("{}") }),
-            AzureOpenAIProviderSettings(resourceName = "test-resource", apiKey = "test-api-key"),
+            AzureOpenAIProviderSettings {
+                resourceName("test-resource")
+                apiKey("test-api-key")
+            },
         ).tools
 
         assertProviderTool(tools.codeInterpreter, "code_interpreter", "openai.code_interpreter")
@@ -209,22 +233,16 @@ class AzureProviderTest {
     @Test
     fun `rejects conflicting Azure auth settings and unconfigured singleton fails explicitly`() {
         val error = assertFailsWith<InvalidArgumentError> {
-            createAzure(
+            AzureOpenAI(
                 HttpClient(MockEngine { respond("{}") }),
-                AzureOpenAIProviderSettings(
-                    resourceName = "test-resource",
-                    apiKey = "test-api-key",
-                    tokenProvider = { "token" },
-                ),
+                AzureOpenAIProviderSettings {
+                    resourceName("test-resource")
+                    apiKey("test-api-key")
+                    tokenProvider { "token" }
+                },
             )
         }
         assertTrue(error.message.orEmpty().contains("Both apiKey and tokenProvider were provided"))
-
-        val singletonError = assertFailsWith<AiSdkException> {
-            azure.chat("model")
-        }
-        assertNotNull(singletonError.message)
-        assertTrue(singletonError.message.orEmpty().contains("createAzure"))
     }
 
     private fun azureResponsesJson(text: String): String =

@@ -1,7 +1,7 @@
 # @ai-sdk/togetherai
 
-- Version: 2.0.55
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/togetherai`
+- Version: 2.0.56
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/togetherai`
 - Kotlin parity area: `:aisdk-provider-togetherai`
 - Current parity status: ported: createTogetherAI/togetherai, provider settings, image/reranking option surfaces, TogetherAIErrorData, chat/completion/embedding/image routing, and TogetherAI reranking are represented as a Kotlin facade folded into the root module; VERSION is exposed as TOGETHERAI_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/togetherai/src/index.ts` | 10 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/togetherai/src/index.ts` | 10 |
 
 ## Public Exports
 

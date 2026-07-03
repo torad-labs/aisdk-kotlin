@@ -1,15 +1,15 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.streamToUiMessages
 import app.cash.turbine.test
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 /**
  * Validates the v6-aligned approval-flow additions from
@@ -33,7 +33,7 @@ class ApprovalIdTest {
             toolName = "saveNote",
             input = JsonPrimitive("data"),
         )
-        assertEquals("call_1", effectiveApprovalId(approval))
+        assertEquals("call_1", ApprovalIds.effectiveApprovalId(approval))
     }
 
     @Test
@@ -44,7 +44,7 @@ class ApprovalIdTest {
             input = JsonPrimitive("data"),
             approvalId = "approval_xyz",
         )
-        assertEquals("approval_xyz", effectiveApprovalId(approval))
+        assertEquals("approval_xyz", ApprovalIds.effectiveApprovalId(approval))
     }
 
     @Test
@@ -64,15 +64,15 @@ class ApprovalIdTest {
             input = JsonPrimitive("second"),
             approvalId = "approval_b",
         )
-        assertEquals("approval_a", effectiveApprovalId(first))
-        assertEquals("approval_b", effectiveApprovalId(second))
+        assertEquals("approval_a", ApprovalIds.effectiveApprovalId(first))
+        assertEquals("approval_b", ApprovalIds.effectiveApprovalId(second))
         // The two approvals are NOT equal — distinct approvalId disambiguates.
         assertEquals(false, first == second)
     }
 
     @Test
     fun `given toolApprovalResponseMessage with approvalId when constructed then the ContentPart carries it`() {
-        val message = toolApprovalResponseMessage(
+        val message = ToolApprovalResponseMessage(
             toolCallId = "call_1",
             approved = true,
             approvalId = "approval_xyz",
@@ -96,7 +96,7 @@ class ApprovalIdTest {
         // final state. streamToUiMessages is a finite cold flow over the
         // input events so the loop terminates at awaitComplete().
         var finalToolUi: UIMessagePart.ToolUI? = null
-        streamToUiMessages(events, assistantMessageId = "asst_1").test {
+        StreamToUiMessages(events, assistantMessageId = "asst_1").test {
             var latest = awaitItem()
             while (true) {
                 val event = awaitEvent()
@@ -125,7 +125,7 @@ class ApprovalIdTest {
             StreamEvent.Finish(totalSteps = 1, finishReason = FinishReason.ToolApprovalRequested, usage = Usage()),
         )
         var finalUi: ai.torad.aisdk.ui.UIMessage? = null
-        streamToUiMessages(events, assistantMessageId = "asst_1").test {
+        StreamToUiMessages(events, assistantMessageId = "asst_1").test {
             var latest = awaitItem()
             while (true) {
                 val event = awaitEvent()

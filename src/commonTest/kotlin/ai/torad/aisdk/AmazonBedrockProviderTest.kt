@@ -1,11 +1,11 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.AMAZON_BEDROCK_VERSION
+import ai.torad.aisdk.providers.AmazonBedrock
 import ai.torad.aisdk.providers.AmazonBedrockProviderSettings
-import ai.torad.aisdk.providers.BedrockMantleProviderSettings
-import ai.torad.aisdk.providers.bedrock
-import ai.torad.aisdk.providers.createAmazonBedrock
-import ai.torad.aisdk.providers.createBedrockMantle
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.providers.BedrockMantle
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -13,6 +13,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -22,7 +23,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -34,10 +34,27 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AmazonBedrockProviderTest {
     @Test
+    fun `bedrock model ids are percent encoded like boto3 path segments`() {
+        val settings = AmazonBedrockProviderSettings()
+
+        assertEquals(
+            "arn%3Aaws%3Abedrock%3Aus-east-1%3A123456789012%3Aapplication-inference-profile%2Fabc123",
+            settings.bedrockEncodeModelId(
+                "arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/abc123"
+            ),
+        )
+        assertEquals(
+            "anthropic.claude-3-5-sonnet-20240620-v1%3A0",
+            settings.bedrockEncodeModelId("anthropic.claude-3-5-sonnet-20240620-v1:0"),
+        )
+    }
+
+    @Test
     fun `chat model maps Converse request response metadata and auth`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/anthropic.claude-3-7-sonnet-20250219-v1%3A0/converse" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -84,63 +101,75 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(
-                apiKey = "key",
-                baseURL = "https://bedrock.test",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://bedrock.test")
+                headers(mapOf("X-Provider" to "provider"))
+            }),
         )
 
-        val result = provider("anthropic.claude-3-7-sonnet-20250219-v1:0").generate(
-            LanguageModelCallParams(
-                messages = listOf(
-                    ModelMessage(
-                        MessageRole.System,
-                        listOf(ContentPart.Text("Follow policy.")),
-                    ),
-                    ModelMessage(
-                        MessageRole.User,
-                        listOf(
-                            ContentPart.Text("Describe the file."),
-                            ContentPart.Image("image/png", "aW1hZ2U="),
-                            ContentPart.File(
-                                mediaType = "application/pdf",
-                                base64 = "cGRm",
-                                filename = "brief.pdf",
-                                providerMetadata = mapOf(
-                                    "bedrock" to buildJsonObject {
-                                        put("citations", buildJsonObject { put("enabled", JsonPrimitive(true)) })
-                                    },
+        val result = provider(ModelId("anthropic.claude-3-7-sonnet-20250219-v1:0")).generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.System,
+                            listOf(ContentPart.Text("Follow policy.")),
+                        ),
+                        ModelMessage(
+                            MessageRole.User,
+                            listOf(
+                                ContentPart.Text("Describe the file."),
+                                ContentPart.Image("image/png", "aW1hZ2U="),
+                                ContentPart.File(
+                                    mediaType = "application/pdf",
+                                    base64 = "cGRm",
+                                    filename = "brief.pdf",
+                                    providerMetadata = ProviderMetadata.Raw(
+                                        JsonObject(
+                                            mapOf(
+                                                "bedrock" to buildJsonObject {
+                                                    put("citations", buildJsonObject { put("enabled", JsonPrimitive(true)) })
+                                                },
+                                            )
+                                        )
+                                    ),
                                 ),
                             ),
                         ),
-                    ),
-                ),
-                tools = listOf(LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString())),
-                toolChoice = ToolChoice.Specific("lookup"),
-                temperature = 2f,
-                topP = 0.5f,
-                topK = 10,
-                maxOutputTokens = 64,
-                responseFormat = ResponseFormat.Json(schemaJson = objectSchema("answer")),
-                providerOptions = mapOf(
-                    "bedrock" to buildJsonObject {
-                        put("serviceTier", JsonPrimitive("priority"))
-                        put(
-                            "reasoningConfig",
-                            buildJsonObject {
-                                put("type", JsonPrimitive("enabled"))
-                                put("budgetTokens", JsonPrimitive(32))
-                                put("maxReasoningEffort", JsonPrimitive("high"))
-                            },
+                    )
+                )
+                tools(listOf(LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString())))
+                toolChoice(ToolChoice.Specific("lookup"))
+                temperature(2f)
+                topP(0.5f)
+                topK(10)
+                maxOutputTokens(64)
+                responseFormat(ResponseFormat.Json(schemaJson = objectSchema("answer")))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "bedrock" to buildJsonObject {
+                                    put("serviceTier", JsonPrimitive("priority"))
+                                    put(
+                                        "reasoningConfig",
+                                        buildJsonObject {
+                                            put("type", JsonPrimitive("enabled"))
+                                            put("budgetTokens", JsonPrimitive(32))
+                                            put("maxReasoningEffort", JsonPrimitive("high"))
+                                        },
+                                    )
+                                    put("anthropicBeta", Json.parseToJsonElement("""["beta-1"]"""))
+                                },
+                            )
                         )
-                        put("anthropicBeta", Json.parseToJsonElement("""["beta-1"]"""))
-                    },
-                ),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                    )
+                )
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("Answer", result.text)
@@ -153,7 +182,10 @@ class AmazonBedrockProviderTest {
         assertEquals(2, result.usage.inputTokens.cacheRead)
         assertEquals(3, result.usage.inputTokens.cacheWrite)
         assertEquals("req-1", result.response.id)
-        assertEquals("</done>", result.providerMetadata["bedrock"]?.jsonObject?.get("stopSequence")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "</done>",
+            result.providerMetadata.toMap()["bedrock"]?.jsonObject?.get("stopSequence")?.jsonPrimitive?.contentOrNull
+        )
 
         val request = fixture.calls.single()
         assertEquals("POST", request.requestMethod)
@@ -162,7 +194,10 @@ class AmazonBedrockProviderTest {
         assertEquals("request", request.requestHeaders.headerValue("X-Request"))
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/amazon-bedrock/$AMAZON_BEDROCK_VERSION"))
         val body = request.requestBodyJson.jsonObject
-        assertEquals("Follow policy.", body["system"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "Follow policy.",
+            body["system"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull
+        )
         assertEquals("priority", body["serviceTier"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
         // Anthropic thinking is enabled, so Bedrock rejects sampling params — they're stripped,
         // and the thinking budget (32) is added to maxTokens (64 + 32 = 96).
@@ -171,20 +206,48 @@ class AmazonBedrockProviderTest {
         assertEquals(null, inference?.get("topP"), "topP stripped with thinking")
         assertEquals(null, inference?.get("topK"), "topK stripped with thinking")
         assertEquals(96, inference?.get("maxTokens")?.jsonPrimitive?.intOrNull)
-        assertEquals("high", body["additionalModelRequestFields"]?.jsonObject?.get("output_config")?.jsonObject?.get("effort")?.jsonPrimitive?.contentOrNull)
-        assertEquals("enabled", body["additionalModelRequestFields"]?.jsonObject?.get("thinking")?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
-        assertEquals("beta-1", body["additionalModelRequestFields"]?.jsonObject?.get("anthropic_beta")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "high",
+            body["additionalModelRequestFields"]?.jsonObject?.get(
+                "output_config"
+            )?.jsonObject?.get("effort")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            "enabled",
+            body["additionalModelRequestFields"]?.jsonObject?.get(
+                "thinking"
+            )?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            "beta-1",
+            body["additionalModelRequestFields"]?.jsonObject?.get(
+                "anthropic_beta"
+            )?.jsonArray?.single()?.jsonPrimitive?.contentOrNull
+        )
         val userContent = body["messages"]?.jsonArray?.first()?.jsonObject?.get("content")?.jsonArray.orEmpty()
         assertEquals("Describe the file.", userContent[0].jsonObject["text"]?.jsonPrimitive?.contentOrNull)
         assertEquals("png", userContent[1].jsonObject["image"]?.jsonObject?.get("format")?.jsonPrimitive?.contentOrNull)
-        assertEquals("pdf", userContent[2].jsonObject["document"]?.jsonObject?.get("format")?.jsonPrimitive?.contentOrNull)
-        assertEquals(true, userContent[2].jsonObject["document"]?.jsonObject?.get("citations")?.jsonObject?.get("enabled")?.jsonPrimitive?.booleanOrNull)
-        assertEquals("lookup", body["toolConfig"]?.jsonObject?.get("toolChoice")?.jsonObject?.get("tool")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "pdf",
+            userContent[2].jsonObject["document"]?.jsonObject?.get("format")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            true,
+            userContent[2].jsonObject["document"]?.jsonObject?.get(
+                "citations"
+            )?.jsonObject?.get("enabled")?.jsonPrimitive?.booleanOrNull
+        )
+        assertEquals(
+            "lookup",
+            body["toolConfig"]?.jsonObject?.get(
+                "toolChoice"
+            )?.jsonObject?.get("tool")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull
+        )
     }
 
     @Test
     fun `tool result serializes as a text block with no status field`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/anthropic.claude-3-7-sonnet-20250219-v1%3A0/converse" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -197,32 +260,37 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://bedrock.test")
+            }),
         )
-        provider("anthropic.claude-3-7-sonnet-20250219-v1:0").generate(
-            LanguageModelCallParams(
-                messages = listOf(
-                    ModelMessage(MessageRole.User, listOf(ContentPart.Text("go"))),
-                    ModelMessage(
-                        MessageRole.Assistant,
-                        listOf(ContentPart.ToolCall("t1", "lookup", JsonObject(emptyMap()))),
-                    ),
-                    ModelMessage(
-                        MessageRole.Tool,
-                        // A JSON (non-string) tool result + isError — must become a text block, no status.
-                        listOf(
-                            ContentPart.ToolResult(
-                                "t1",
-                                "lookup",
-                                Json.parseToJsonElement("""{"temp":20}"""),
-                                isError = true,
+        provider(ModelId("anthropic.claude-3-7-sonnet-20250219-v1:0")).generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        ModelMessage(MessageRole.User, listOf(ContentPart.Text("go"))),
+                        ModelMessage(
+                            MessageRole.Assistant,
+                            listOf(ContentPart.ToolCall("t1", "lookup", JsonObject(emptyMap()))),
+                        ),
+                        ModelMessage(
+                            MessageRole.Tool,
+                            // A JSON (non-string) tool result + isError — must become a text block, no status.
+                            listOf(
+                                ContentPart.ToolResult(
+                                    "t1",
+                                    "lookup",
+                                    Json.parseToJsonElement("""{"temp":20}"""),
+                                    isError = true,
+                                ),
                             ),
                         ),
-                    ),
-                ),
-            ),
+                    )
+                )
+            },
         )
         val messages = fixture.calls.single().requestBodyJson.jsonObject["messages"]!!.jsonArray
         val lastContent = messages.last().jsonObject["content"]!!.jsonArray.single().jsonObject
@@ -235,7 +303,7 @@ class AmazonBedrockProviderTest {
 
     @Test
     fun `chat stream maps decoded Bedrock event stream chunks`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/anthropic.claude-3-7-sonnet-20250219-v1%3A0/converse-stream" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -259,14 +327,19 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://bedrock.test")
+            }),
         )
 
         val events = drainAllItems(
             provider.languageModel("anthropic.claude-3-7-sonnet-20250219-v1:0").stream(
-                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
             ),
         )
 
@@ -281,12 +354,15 @@ class AmazonBedrockProviderTest {
         assertEquals(FinishReason.ToolCalls, finish.finishReason)
         assertEquals(3, finish.usage.promptTokens)
         assertEquals(4, finish.usage.completionTokens)
-        assertEquals("application/vnd.amazon.eventstream", fixture.calls.single().requestHeaders.headerValue(HttpHeaders.Accept))
+        assertEquals(
+            "application/vnd.amazon.eventstream",
+            fixture.calls.single().requestHeaders.headerValue(HttpHeaders.Accept)
+        )
     }
 
     @Test
     fun `chat stream decodes Smithy binary event stream frames`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse-stream" to UrlHandler(
                     UrlResponse.Binary(
@@ -306,14 +382,19 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://bedrock.test")
+            }),
         )
 
         val events = drainAllItems(
             provider.languageModel("amazon.nova-lite-v1:0").stream(
-                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
             ),
         )
 
@@ -323,6 +404,123 @@ class AmazonBedrockProviderTest {
         assertEquals(FinishReason.Stop, finish.finishReason)
         assertEquals(2, finish.usage.promptTokens)
         assertEquals(3, finish.usage.completionTokens)
+    }
+
+    @Test
+    fun `chat stream rejects Smithy frame with corrupt prelude CRC`() = runTest {
+        val frame = bedrockSmithyEventStream(
+            "messageStart" to """{"role":"assistant"}""",
+        ).also { it[8] = (it[8].toInt() xor 0x01).toByte() }
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse-stream" to UrlHandler(
+                    UrlResponse.Binary(
+                        frame,
+                        headers = mapOf(HttpHeaders.ContentType to "application/vnd.amazon.eventstream"),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = AmazonBedrock(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://bedrock.test")
+            }),
+        )
+
+        val error = assertFailsWith<InvalidResponseDataError> {
+            drainAllItems(
+                provider.languageModel("amazon.nova-lite-v1:0").stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    },
+                ),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("prelude CRC mismatch"))
+    }
+
+    @Test
+    fun `chat stream rejects Smithy frame with corrupt message CRC`() = runTest {
+        val frame = bedrockSmithyEventStream(
+            "messageStart" to """{"role":"assistant"}""",
+        ).also { it[it.lastIndex - 1] = (it[it.lastIndex - 1].toInt() xor 0x01).toByte() }
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse-stream" to UrlHandler(
+                    UrlResponse.Binary(
+                        frame,
+                        headers = mapOf(HttpHeaders.ContentType to "application/vnd.amazon.eventstream"),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = AmazonBedrock(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://bedrock.test")
+            }),
+        )
+
+        val error = assertFailsWith<InvalidResponseDataError> {
+            drainAllItems(
+                provider.languageModel("amazon.nova-lite-v1:0").stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    },
+                ),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("message CRC mismatch"))
+    }
+
+    @Test
+    fun `chat stream surfaces a mid-stream modeled exception sent via colon-exception-type`() = runTest {
+        // AWS sends a modeled error event with :message-type=exception and the
+        // union member name in :exception-type (camelCase) -- NOT :event-type and
+        // NOT :error-code. The decoder must read :exception-type so the payload
+        // is wrapped under e.g. "internalServerException" and accept() raises it.
+        val errorPayload = """{"message":"boom"}"""
+        val frames = bedrockSmithyFrame(
+            headers = smithyStringHeader(":message-type", "exception") +
+                smithyStringHeader(":exception-type", "internalServerException"),
+            payload = errorPayload.encodeToByteArray(),
+        )
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse-stream" to UrlHandler(
+                    UrlResponse.Binary(
+                        frames,
+                        headers = mapOf(HttpHeaders.ContentType to "application/vnd.amazon.eventstream"),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = AmazonBedrock(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://bedrock.test")
+            }),
+        )
+
+        val events = drainAllItems(
+            provider.languageModel("amazon.nova-lite-v1:0").stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
+            ),
+        )
+
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertTrue(error.message.contains("boom"))
     }
 
     @Test
@@ -346,15 +544,22 @@ class AmazonBedrockProviderTest {
                 )
             },
         )
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             client,
-            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://bedrock.test")
+            }),
         )
 
         val deltas = mutableListOf<String>()
         val collector = launch {
             provider.languageModel("amazon.nova-lite-v1:0")
-                .stream(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+                .stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    }
+                )
                 .collect { if (it is StreamEvent.TextDelta) deltas += it.text }
         }
 
@@ -371,7 +576,7 @@ class AmazonBedrockProviderTest {
 
     @Test
     fun `embedding image and reranking models map Bedrock runtime payloads`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/amazon.titan-embed-text-v2%3A0/invoke" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"embedding":[1.0,2.0],"inputTextTokenCount":7}""")),
@@ -391,47 +596,63 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(
-                apiKey = "key",
-                region = "us-east-1",
-                baseURL = "https://bedrock.test",
-                agentBaseURL = "https://bedrock-agent.test",
-            ),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                region("us-east-1")
+                baseURL("https://bedrock.test")
+                agentBaseURL("https://bedrock-agent.test")
+            }),
         )
 
-        val embedding = provider.embedding("amazon.titan-embed-text-v2:0").embed(
-            EmbeddingModelCallParams(
-                values = listOf("embed me"),
-                providerOptions = mapOf(
-                    "bedrock" to buildJsonObject {
-                        put("dimensions", JsonPrimitive(256))
-                        put("normalize", JsonPrimitive(true))
-                    },
-                ),
-            ),
+        val embedding = provider.embedding(ModelId("amazon.titan-embed-text-v2:0")).embed(
+            EmbeddingModelCallParams {
+                values(listOf("embed me"))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "bedrock" to buildJsonObject {
+                                    put("dimensions", JsonPrimitive(256))
+                                    put("normalize", JsonPrimitive(true))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
         )
-        val image = provider.image("amazon.titan-image-generator-v2:0").generate(
-            ImageGenerationParams(
-                prompt = "A product render",
-                n = 2,
-                size = "512x768",
-                seed = 42,
-                providerOptions = mapOf(
-                    "bedrock" to buildJsonObject { put("negativeText", JsonPrimitive("blur")) },
-                ),
-            ),
+        val image = provider.image(ModelId("amazon.titan-image-generator-v2:0")).generate(
+            ImageGenerationParams {
+                prompt("A product render")
+                n(2)
+                size("512x768")
+                seed(42)
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "bedrock" to buildJsonObject { put("negativeText", JsonPrimitive("blur")) },
+                            )
+                        )
+                    )
+                )
+            },
         )
-        val rerank = provider.reranking("amazon.rerank-v1:0").rerank(
-            RerankingParams(query = "best", documents = listOf("first", "second"), topN = 2),
+        val rerank = provider.reranking(ModelId("amazon.rerank-v1:0")).rerank(
+            RerankingParams {
+                query("best")
+                documents(listOf("first", "second"))
+                topN(2)
+            },
         )
 
         assertEquals(listOf(1.0f, 2.0f), embedding.embeddings.single())
-        assertEquals(1, provider.embedding("amazon.titan-embed-text-v2:0").maxEmbeddingsPerCall)
-        assertEquals(true, provider.embedding("amazon.titan-embed-text-v2:0").supportsParallelCalls)
+        assertEquals(1, provider.embedding(ModelId("amazon.titan-embed-text-v2:0")).maxEmbeddingsPerCall)
+        assertEquals(true, provider.embedding(ModelId("amazon.titan-embed-text-v2:0")).supportsParallelCalls)
         assertEquals(7, embedding.usage.tokens)
-        assertEquals("image", convertBase64ToByteArray(image.images.single().base64).decodeToString())
+        assertEquals("image", Base64Codec.decode(image.images.single().base64).decodeToString())
         assertEquals("second", rerank.results.first().value)
         assertEquals(0.9f, rerank.results.first().score)
 
@@ -442,15 +663,28 @@ class AmazonBedrockProviderTest {
         val imageBody = fixture.calls[1].requestBodyJson.jsonObject
         assertEquals("TEXT_IMAGE", imageBody["taskType"]?.jsonPrimitive?.contentOrNull)
         assertEquals(512, imageBody["imageGenerationConfig"]?.jsonObject?.get("width")?.jsonPrimitive?.intOrNull)
-        assertEquals("blur", imageBody["textToImageParams"]?.jsonObject?.get("negativeText")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "blur",
+            imageBody["textToImageParams"]?.jsonObject?.get("negativeText")?.jsonPrimitive?.contentOrNull
+        )
         val rerankBody = fixture.calls[2].requestBodyJson.jsonObject
-        assertEquals("arn:aws:bedrock:us-east-1::foundation-model/amazon.rerank-v1:0", rerankBody["rerankingConfiguration"]?.jsonObject?.get("bedrockRerankingConfiguration")?.jsonObject?.get("modelConfiguration")?.jsonObject?.get("modelArn")?.jsonPrimitive?.contentOrNull)
-        assertEquals(2, rerankBody["rerankingConfiguration"]?.jsonObject?.get("bedrockRerankingConfiguration")?.jsonObject?.get("numberOfResults")?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            "arn:aws:bedrock:us-east-1::foundation-model/amazon.rerank-v1:0",
+            rerankBody["rerankingConfiguration"]?.jsonObject?.get(
+                "bedrockRerankingConfiguration"
+            )?.jsonObject?.get("modelConfiguration")?.jsonObject?.get("modelArn")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            2,
+            rerankBody["rerankingConfiguration"]?.jsonObject?.get(
+                "bedrockRerankingConfiguration"
+            )?.jsonObject?.get("numberOfResults")?.jsonPrimitive?.intOrNull
+        )
     }
 
     @Test
     fun `mantle facade maps OpenAI compatible chat and SigV4 settings are surfaced`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://mantle.test/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -483,13 +717,18 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createBedrockMantle(
+        val provider = BedrockMantle(
             fixture.httpClient(),
-            BedrockMantleProviderSettings(apiKey = "key", baseURL = "https://mantle.test/v1"),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://mantle.test/v1")
+            }),
         )
 
-        val result = provider.chat("openai.gpt-oss-20b-1:0").generate(
-            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+        val result = provider.chat(ModelId("openai.gpt-oss-20b-1:0")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
 
         assertEquals("hello", result.text)
@@ -497,32 +736,77 @@ class AmazonBedrockProviderTest {
         assertEquals(2, result.usage.promptTokens)
         assertEquals(3, result.usage.completionTokens)
         assertEquals("Bearer key", fixture.calls.single().requestHeaders.headerValue(HttpHeaders.Authorization))
-        assertEquals("openai.gpt-oss-20b-1:0", fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "openai.gpt-oss-20b-1:0",
+            fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull
+        )
 
-        val sigV4Provider = createAmazonBedrock(
+        val sigV4Provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(
-                accessKeyId = "id",
-                secretAccessKey = "secret",
-                sessionToken = "token",
-                baseURL = "https://bedrock.test",
-            ),
+            AmazonBedrockProviderSettings(block = {
+                accessKeyId("id")
+                secretAccessKey("secret")
+                sessionToken("token")
+                baseURL("https://bedrock.test")
+            }),
         )
         val signed = sigV4Provider.languageModel("amazon.nova-lite-v1:0").generate(
-            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
         val signedRequest = fixture.calls.last()
         assertEquals("signed", signed.text)
         assertEquals("token", signedRequest.requestHeaders.headerValue("x-amz-security-token"))
         assertEquals("bedrock.test", signedRequest.requestHeaders.headerValue("host"))
-        assertTrue(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("AWS4-HMAC-SHA256"))
-        assertTrue(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("Credential=id/"))
-        assertTrue(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("/bedrock/aws4_request"))
+        assertTrue(
+            signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("AWS4-HMAC-SHA256")
+        )
+        assertTrue(
+            signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("Credential=id/")
+        )
+        assertTrue(
+            signedRequest.requestHeaders.headerValue(
+                HttpHeaders.Authorization
+            ).orEmpty().contains("/bedrock/aws4_request")
+        )
+    }
+
+    @Test
+    fun `mantle chat decodes OpenAI shaped tool_calls into ContentPart ToolCall`() = runTest {
+        val toolCall =
+            """{"id":"call_abc","function":{"name":"get_weather","arguments":"{\"city\":\"Paris\"}"}}"""
+        val message = """{"content":null,"tool_calls":[$toolCall]}"""
+        val body = """{"choices":[{"message":$message,"finish_reason":"tool_calls"}]}"""
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mantle.test/v1/chat/completions" to
+                    UrlHandler(UrlResponse.JsonValue(Json.parseToJsonElement(body))),
+            ),
+        )
+        fixture.server.start()
+        val provider = BedrockMantle(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://mantle.test/v1")
+            }),
+        )
+        val result = provider.chat(ModelId("m")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
+        )
+        assertEquals(FinishReason.ToolCalls, result.finishReason)
+        val call = result.toolCalls.single()
+        assertEquals("call_abc", call.toolCallId)
+        assertEquals("get_weather", call.toolName)
+        assertEquals("Paris", call.input.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
     }
 
     @Test
     fun `bedrock SigV4 clock skew errors include actionable clock guidance`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse" to UrlHandler(
                     UrlResponse.Error(
@@ -538,18 +822,20 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(
-                accessKeyId = "id",
-                secretAccessKey = "secret",
-                baseURL = "https://bedrock.test",
-            ),
+            AmazonBedrockProviderSettings(block = {
+                accessKeyId("id")
+                secretAccessKey("secret")
+                baseURL("https://bedrock.test")
+            }),
         )
 
         val error = assertFailsWith<APICallError> {
             provider.languageModel("amazon.nova-lite-v1:0").generate(
-                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
             )
         }
 
@@ -587,8 +873,10 @@ class AmazonBedrockProviderTest {
         return ByteArray(totalLength).also { frame ->
             frame.writeInt32BE(0, totalLength)
             frame.writeInt32BE(4, headers.size)
+            frame.writeInt32BE(8, bedrockCrc32(frame, 0, 8))
             headers.copyInto(frame, destinationOffset = 12)
             payload.copyInto(frame, destinationOffset = 12 + headers.size)
+            frame.writeInt32BE(totalLength - 4, bedrockCrc32(frame, 0, totalLength - 4))
         }
     }
 
@@ -609,6 +897,25 @@ class AmazonBedrockProviderTest {
         this[index + 3] = value.toByte()
     }
 
+    private fun bedrockCrc32(bytes: ByteArray, start: Int, end: Int): Int {
+        var crc = -1
+        for (index in start until end) {
+            crc = crc xor (bytes[index].toInt() and 0xff)
+            repeat(8) {
+                crc = if ((crc and 1) != 0) {
+                    (crc ushr 1) xor CRC32_POLYNOMIAL
+                } else {
+                    crc ushr 1
+                }
+            }
+        }
+        return crc.inv()
+    }
+
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+
+    private companion object {
+        const val CRC32_POLYNOMIAL: Int = -306674912 // 0xedb88320
+    }
 }

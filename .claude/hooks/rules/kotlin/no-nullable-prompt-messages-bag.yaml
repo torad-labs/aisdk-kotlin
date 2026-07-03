@@ -1,0 +1,7 @@
+id: no-nullable-prompt-messages-bag
+language: kotlin
+severity: error
+rule:
+  any:
+    - pattern: require($A != null || $B.isNotEmpty())
+    - pattern: 'require($A != null || $B.isNotEmpty()) { $$$MSG }'

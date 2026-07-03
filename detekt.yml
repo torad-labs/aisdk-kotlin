@@ -4,25 +4,19 @@
 # Cancellation-rethrow intent: the flagship anti-pattern this SDK guards against
 # is a `runCatching { someSuspendCall() }` (or broad catch) that captures
 # CancellationException into a Result and never rethrows it, breaking structured
-# concurrency. detekt's built-in `SuspendFunSwallowedCancellation` (coroutines
-# rule set, shipped in 1.23.0, PR #5666) detects exactly this — but ONLY via
-# type resolution (a classpath-aware run).
+# concurrency. detekt's built-in `SuspendFunSwallowedCancellation` detects that
+# only with type resolution; this repo's detekt task is intentionally
+# classpath-less over raw KMP source dirs, so enabling that built-in here is an
+# inert comment, not a gate. GH-16 removes it; GH-21 may re-enable it only with a
+# classpath-aware detekt lane that proves the rule fires.
 #
-# IMPORTANT — this rule is currently INERT in this repo. Our detekt runs
-# classpath-less (a single `detekt` task over the raw KMP source dirs, because
-# detekt 1.23.x cannot type-resolve KMP non-JVM source sets — detekt#5961), so
-# `SuspendFunSwallowedCancellation` matches nothing here even though it is
-# `active: true`. We keep it on so it fires for free the day a typed
-# (classpath-aware) detekt task is wired — that wiring is the open task; see
-# §7.4 / Non-Goals in docs/KOTLIN_SDK_BEST_PRACTICES.md.
-#
-# Until then the suspend-cancellation guard that DOES run is: `SwallowedException`
-# below (with CancellationException deliberately NOT in `ignoredExceptionTypes`,
-# catching synchronous swallows) + the `runTest` cancellation tests + review.
-# This is itself the worked example of the doc's thesis: an enabled rule that
-# doesn't run is a comment, not a gate.
+# The guardrails that DO run today are: the custom
+# `torad-aisdk.NoRunCatchingInSuspendFunction` rule below, `SwallowedException`
+# with CancellationException deliberately NOT in `ignoredExceptionTypes`, the
+# cancellation tests, and review.
 coroutines:
-  SuspendFunSwallowedCancellation:
+  # Built-in mirror of the ast-grep `no-globalscope` rule (off by default in detekt).
+  GlobalCoroutineUsage:
     active: true
 exceptions:
   SwallowedException:
@@ -36,4 +30,32 @@ exceptions:
       - 'ParseException'
     allowedExceptionNameRegex: '_|(ignore|expected).*'
   ThrowingExceptionsWithoutMessageOrCause:
+    active: true
+
+# --- Custom ruleset: the project's architectural tenets (see the :detekt-rules module) ---
+# Each rule mirrors an ast-grep PreToolUse hook rule, so the same invariant is enforced in
+# the IDE (detekt plugin) + `./gradlew check` for every developer, not only Claude's edits.
+# See docs/enforcement-layers.md. Pre-existing hits are grandfathered via detekt-baseline.xml.
+torad-aisdk:
+  NoNotNullAssertion:
+    active: true
+  NoJsonContainerForceCast:
+    active: true
+  NoInlineJsonInstance:
+    active: true
+  NoDeferredWiringComment:
+    active: true
+  NoConsoleOutputInLibrary:
+    active: true
+    # A library must not write to the console; tests legitimately may.
+    excludes: ['**/commonTest/**', '**/jvmTest/**']
+  NoFloatEqualityComparison:
+    active: true
+  PreferTypedErrorOverErrorCall:
+    active: true
+  PreferTypedErrorOverCheckNotNull:
+    active: true
+  PreferTypedErrorOverGenericThrow:
+    active: true
+  NoRunCatchingInSuspendFunction:
     active: true

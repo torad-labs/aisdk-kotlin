@@ -1,7 +1,9 @@
+@file:OptIn(ExperimentalAiSdkApi::class)
+
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
@@ -27,7 +29,7 @@ class ToolLoopContractGapsTest {
     fun `given no prepareStep override when a tool runs then it sees the original call context`() = runTest {
         // GIVEN a probe tool that records the context it executed with.
         val seen = mutableListOf<String?>()
-        val probe = tool<Empty, String, String>(
+        val probe = Tool<Empty, String, String>(
             name = "probe",
             description = "records its context",
             inputSerializer = serializer(),
@@ -37,9 +39,9 @@ class ToolLoopContractGapsTest {
             "ok"
         }
         val agent = TestToolLoopAgent<String, String>(
-            model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
+            model = MockLanguageModelToolThenText("probe", MockToolInput("unused" to ""), "done"),
             instructions = "run probe",
-            tools = toolSetOf(probe),
+            tools = ToolSet(probe),
         )
 
         // WHEN streamed with the call context "initial" and no prepareStep.
@@ -54,7 +56,7 @@ class ToolLoopContractGapsTest {
     fun `given a prepareStep that sets experimental_context when a tool runs then it sees the override`() = runTest {
         // GIVEN a prepareStep that evolves the context to "augmented".
         val seen = mutableListOf<String?>()
-        val probe = tool<Empty, String, String>(
+        val probe = Tool<Empty, String, String>(
             name = "probe",
             description = "records its context",
             inputSerializer = serializer(),
@@ -64,10 +66,14 @@ class ToolLoopContractGapsTest {
             "ok"
         }
         val agent = TestToolLoopAgent<String, String>(
-            model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
+            model = MockLanguageModelToolThenText("probe", MockToolInput("unused" to ""), "done"),
             instructions = "run probe",
-            tools = toolSetOf(probe),
-            prepareStep = { StepSettings(experimental_context = "augmented") },
+            tools = ToolSet(probe),
+            prepareStep = {
+                StepSettings {
+                    experimental_context("augmented")
+                }
+            },
         )
 
         // WHEN streamed with "initial" but the step overrides it.
@@ -86,7 +92,7 @@ class ToolLoopContractGapsTest {
         val starts = mutableListOf<String>()
         val deltas = mutableListOf<String>()
         val avails = mutableListOf<String>()
-        val probe = tool<Empty, String, Unit>(
+        val probe = Tool<Empty, String, Unit>(
             name = "probe",
             description = "lifecycle probe",
             inputSerializer = serializer(),
@@ -96,9 +102,9 @@ class ToolLoopContractGapsTest {
             onInputAvailable = { callId, _ -> avails.add(callId) },
         ) { _ -> "ok" }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
+            model = MockLanguageModelToolThenText("probe", MockToolInput("unused" to ""), "done"),
             instructions = "run probe",
-            tools = toolSetOf(probe),
+            tools = ToolSet(probe),
         )
 
         // WHEN the model streams the tool's input then calls it.
@@ -113,7 +119,7 @@ class ToolLoopContractGapsTest {
     @Test
     fun `given an onInputStart that throws when the tool streams then the run still completes`() = runTest {
         // GIVEN a pre-warm hook that fails — it must not abort inference.
-        val probe = tool<Empty, String, Unit>(
+        val probe = Tool<Empty, String, Unit>(
             name = "probe",
             description = "throwing pre-warm",
             inputSerializer = serializer(),
@@ -121,9 +127,9 @@ class ToolLoopContractGapsTest {
             onInputStart = { error("pre-warm boom") },
         ) { _ -> "ok" }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
+            model = MockLanguageModelToolThenText("probe", MockToolInput("unused" to ""), "done"),
             instructions = "run probe",
-            tools = toolSetOf(probe),
+            tools = ToolSet(probe),
         )
 
         // WHEN streamed.
@@ -140,7 +146,7 @@ class ToolLoopContractGapsTest {
     @Test
     fun `given a tool that writes custom data when it runs then a Raw event appears in the stream`() = runTest {
         // GIVEN a tool that pushes a progress payload via the writer.
-        val writerTool = tool<Empty, String, Unit>(
+        val writerTool = Tool<Empty, String, Unit>(
             name = "progressing",
             description = "writes back into the stream",
             inputSerializer = serializer(),
@@ -150,9 +156,9 @@ class ToolLoopContractGapsTest {
             "final"
         }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText("progressing", mockToolInput("unused" to ""), "done"),
+            model = MockLanguageModelToolThenText("progressing", MockToolInput("unused" to ""), "done"),
             instructions = "run it",
-            tools = toolSetOf(writerTool),
+            tools = ToolSet(writerTool),
         )
 
         // WHEN streamed.

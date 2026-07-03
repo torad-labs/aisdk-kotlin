@@ -1,0 +1,10 @@
+id: no-public-mutable-var
+language: kotlin
+severity: error
+rule:
+  all:
+    - kind: property_declaration
+    - has: { kind: binding_pattern_kind, regex: "^var$" }
+    - inside: { kind: class_body }
+  not:
+    has: { kind: visibility_modifier, regex: "^(private|internal|protected)$", stopBy: end }

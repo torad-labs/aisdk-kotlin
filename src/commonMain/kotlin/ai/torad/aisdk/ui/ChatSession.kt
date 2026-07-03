@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonElement
 
+/** @since 0.3.0-beta01 */
 public data class ChatState(
     val id: String,
     val messages: List<UIMessage> = emptyList(),
@@ -18,25 +19,31 @@ public data class ChatState(
         get() = status == ChatStatus.Submitted || status == ChatStatus.Streaming
 }
 
+/** @since 0.3.0-beta01 */
 public class ChatSession(
     private val chat: Chat,
 ) {
     private val mutableState = MutableStateFlow(chat.toState())
 
+    /** @since 0.3.0-beta01 */
     public val state: StateFlow<ChatState> = mutableState.asStateFlow()
 
+    /** @since 0.3.0-beta01 */
     public val id: String get() = chat.id
 
+    /** @since 0.3.0-beta01 */
     public fun setMessages(messages: List<UIMessage>) {
         chat.setMessages(messages)
         syncState()
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clearError() {
         chat.clearError()
         syncState()
     }
 
+    /** @since 0.3.0-beta01 */
     public fun addToolApprovalResponse(
         toolCallId: String,
         approved: Boolean,
@@ -47,6 +54,7 @@ public class ChatSession(
         syncState()
     }
 
+    /** @since 0.3.0-beta01 */
     public fun addToolOutput(
         toolCallId: String,
         output: JsonElement,
@@ -56,6 +64,7 @@ public class ChatSession(
         syncState()
     }
 
+    /** @since 0.3.0-beta01 */
     public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
         // L-3 (eager vs cold): this stays a cold Flow — its contract, exercised
         // by ChatSessionTest, is that no turn starts until collection. So the
@@ -83,6 +92,7 @@ public class ChatSession(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
         mutableState.update { it.copy(status = ChatStatus.Submitted, error = null) }
         try {
@@ -95,11 +105,13 @@ public class ChatSession(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun stop() {
         chat.stop()
         syncState()
     }
 
+    /** @since 0.3.0-beta01 */
     public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         chat.resumeStream(headers)
 
@@ -108,7 +120,10 @@ public class ChatSession(
     }
 }
 
-public fun chatSession(
+// Faux-constructor factory (was top-level `fun chatSession(...)`): overloads the
+// ChatSession class name to build one from transport config.
+/** @since 0.3.0-beta01 */
+public fun ChatSession(
     id: String = "chat",
     initialMessages: List<UIMessage> = emptyList(),
     transport: ChatTransport,
@@ -120,11 +135,10 @@ public fun chatSession(
     ),
 )
 
-public fun Chat.asSession(): ChatSession = ChatSession(this)
-
-private fun Chat.toState(): ChatState = ChatState(
-    id = id,
-    messages = messages,
-    status = status,
-    error = error,
-)
+// Public Chat extension (was top-level `fun Chat.asSession()`), now a
+// member-extension. Callers use member-import or `with(ChatSessionFactory) { ... }`.
+/** @since 0.3.0-beta01 */
+public object ChatSessionFactory {
+    /** @since 0.3.0-beta01 */
+    public fun Chat.asSession(): ChatSession = ChatSession(this)
+}

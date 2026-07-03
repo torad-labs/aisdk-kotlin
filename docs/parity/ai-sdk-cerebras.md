@@ -1,7 +1,7 @@
 # @ai-sdk/cerebras
 
-- Version: 2.0.56
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/cerebras`
+- Version: 2.0.57
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/cerebras`
 - Kotlin parity area: `:aisdk-provider-cerebras`
 - Current parity status: ported: createCerebras/cerebras, chat provider settings, CerebrasErrorData, and chat model routing are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as CEREBRAS_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/cerebras/src/index.ts` | 6 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/cerebras/src/index.ts` | 6 |
 
 ## Public Exports
 

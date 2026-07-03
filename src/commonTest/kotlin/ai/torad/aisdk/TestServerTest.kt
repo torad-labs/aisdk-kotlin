@@ -25,7 +25,7 @@ import kotlin.test.assertNull
 class TestServerTest {
     @Test
     fun `json responses record request details and reset restores original routes`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.test/v1/items?filter=recent" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -69,7 +69,7 @@ class TestServerTest {
 
     @Test
     fun `sequence and factory responses use global call number like upstream`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "/sequence" to UrlHandler(
                     listOf(
@@ -98,7 +98,7 @@ class TestServerTest {
 
     @Test
     fun `binary empty stream and missing responses map to Ktor responses`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "/binary" to UrlHandler(UrlResponse.Binary(byteArrayOf(1, 2, 3), headers = mapOf("x-bin" to "1"))),
                 "/empty" to UrlHandler(UrlResponse.Empty(status = 204)),
@@ -126,7 +126,7 @@ class TestServerTest {
     @Test
     fun `controlled stream can be written and closed by the controller`() = runTest {
         val controller = TestResponseController()
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "/controlled" to UrlHandler(UrlResponse.ControlledStream(controller)),
             ),
@@ -144,7 +144,7 @@ class TestServerTest {
 
     @Test
     fun `server rejects requests before start`() = runTest {
-        val fixture = createTestServer(mutableMapOf("/ok" to UrlHandler(UrlResponse.Empty())))
+        val fixture = TestServer.createTestServer(mutableMapOf("/ok" to UrlHandler(UrlResponse.Empty())))
 
         val error = assertFailsWith<IllegalStateException> {
             fixture.httpClient().get("https://api.test/ok")

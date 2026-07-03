@@ -1,143 +1,188 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.JsonElement
 
 public const val AZURE_VERSION: String = "3.0.69"
 
-public typealias AzureOpenAIChatModelId = String
-public typealias AzureOpenAICompletionModelId = String
-public typealias AzureOpenAIEmbeddingModelId = String
-public typealias AzureOpenAIImageModelId = String
-public typealias AzureOpenAITranscriptionModelId = String
-public typealias AzureOpenAISpeechModelId = String
-
-public data class AzureOpenAIProviderSettings(
-    val resourceName: String? = null,
-    val baseURL: String? = null,
-    val apiKey: String? = null,
-    val tokenProvider: (suspend () -> String)? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val apiVersion: String = "v1",
-    val useDeploymentBasedUrls: Boolean = false,
+@Poko
+/** @since 0.3.0-beta01 */
+public class AzureOpenAIProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val resourceName: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val baseURL: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
+    public val tokenProvider: (suspend () -> String)? = null,
+    /** @since 0.3.0-beta01 */
+    public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
+    public val apiVersion: String = "v1",
+    /** @since 0.3.0-beta01 */
+    public val useDeploymentBasedUrls: Boolean = false,
 )
 
-public interface AzureOpenAIProvider : Provider {
-    public val settings: AzureOpenAIProviderSettings
-    public val tools: AzureOpenAITools
+/** @since 0.3.0-beta01 */
+public class AzureOpenAIProviderSettingsBuilder {
+    private var resourceName: String? = null
+    private var baseURL: String? = null
+    private var apiKey: String? = null
+    private var tokenProvider: (suspend () -> String)? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var apiVersion: String = "v1"
+    private var useDeploymentBasedUrls: Boolean = false
+
+    /** @since 0.3.0-beta01 */
+    public fun resourceName(value: String?): AzureOpenAIProviderSettingsBuilder {
+        resourceName = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun baseURL(value: String?): AzureOpenAIProviderSettingsBuilder {
+        baseURL = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun apiKey(value: String?): AzureOpenAIProviderSettingsBuilder {
+        apiKey = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun tokenProvider(value: (suspend () -> String)?): AzureOpenAIProviderSettingsBuilder {
+        tokenProvider = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun headers(value: Map<String, String>): AzureOpenAIProviderSettingsBuilder {
+        headers = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun apiVersion(value: String): AzureOpenAIProviderSettingsBuilder {
+        apiVersion = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun useDeploymentBasedUrls(value: Boolean): AzureOpenAIProviderSettingsBuilder {
+        useDeploymentBasedUrls = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): AzureOpenAIProviderSettings =
+        AzureOpenAIProviderSettings(
+            resourceName = resourceName,
+            baseURL = baseURL,
+            apiKey = apiKey,
+            tokenProvider = tokenProvider,
+            headers = headers,
+            apiVersion = apiVersion,
+            useDeploymentBasedUrls = useDeploymentBasedUrls,
+        )
+}
+
+/** @since 0.3.0-beta01 */
+public fun AzureOpenAIProviderSettings(
+    block: AzureOpenAIProviderSettingsBuilder.() -> Unit = {},
+): AzureOpenAIProviderSettings =
+    AzureOpenAIProviderSettingsBuilder().apply(block).build()
+
+/** @since 0.3.0-beta01 */
+public class AzureOpenAIProvider(
+    private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
+    public val settings: AzureOpenAIProviderSettings,
+) : Provider {
+    init {
+        if (settings.apiKey != null && settings.tokenProvider != null) {
+            throw InvalidArgumentError(
+                "apiKey/tokenProvider",
+                "Both apiKey and tokenProvider were provided. Please use only one authentication method.",
+            )
+        }
+    }
+
+    private val compatible = OpenAICompatible(client, compatibleSettings())
+
+    override val providerId: String = "azure"
+
+    /** @since 0.3.0-beta01 */
+    public val tools: AzureOpenAITools = azureOpenaiTools
 
     public operator fun invoke(deploymentId: String): LanguageModel = responses(deploymentId)
-    public fun responses(deploymentId: String): LanguageModel
-    public fun chat(deploymentId: AzureOpenAIChatModelId): LanguageModel
-    public fun completion(deploymentId: AzureOpenAICompletionModelId): LanguageModel
-    public fun embedding(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel
-    public fun image(deploymentId: AzureOpenAIImageModelId): ImageModel
-    public fun transcription(deploymentId: AzureOpenAITranscriptionModelId): TranscriptionModel
-    public fun speech(deploymentId: AzureOpenAISpeechModelId): SpeechModel
 
-    override fun languageModel(modelId: String): LanguageModel = responses(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    public fun textEmbedding(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel = embedding(deploymentId)
-    public fun textEmbeddingModel(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel = embedding(deploymentId)
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
-    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
-}
-
-public data class AzureOpenAITools(
-    val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = OpenAITools().codeInterpreter,
-    val fileSearch: Tool<JsonElement, JsonElement, Any?> = OpenAITools().fileSearch,
-    val imageGeneration: Tool<JsonElement, JsonElement, Any?> = OpenAITools().imageGeneration,
-    val webSearch: Tool<JsonElement, JsonElement, Any?> = OpenAITools().webSearch,
-    val webSearchPreview: Tool<JsonElement, JsonElement, Any?> = OpenAITools().webSearchPreview,
-)
-
-public val azureOpenaiTools: AzureOpenAITools = AzureOpenAITools()
-
-public fun createAzure(
-    client: HttpClient,
-    settings: AzureOpenAIProviderSettings = AzureOpenAIProviderSettings(),
-): AzureOpenAIProvider {
-    if (settings.apiKey != null && settings.tokenProvider != null) {
-        throw InvalidArgumentError(
-            "apiKey/tokenProvider",
-            "Both apiKey and tokenProvider were provided. Please use only one authentication method.",
-        )
-    }
-    return DefaultAzureOpenAIProvider(client, settings)
-}
-
-public val azure: AzureOpenAIProvider = AzureOpenAIProviderNotConfigured
-
-private object AzureOpenAIProviderNotConfigured : AzureOpenAIProvider {
-    override val settings: AzureOpenAIProviderSettings = AzureOpenAIProviderSettings()
-    override val providerId: String = "azure"
-    override val tools: AzureOpenAITools = azureOpenaiTools
-
-    override fun responses(deploymentId: String): LanguageModel = missing()
-    override fun chat(deploymentId: AzureOpenAIChatModelId): LanguageModel = missing()
-    override fun completion(deploymentId: AzureOpenAICompletionModelId): LanguageModel = missing()
-    override fun embedding(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel = missing()
-    override fun image(deploymentId: AzureOpenAIImageModelId): ImageModel = missing()
-    override fun transcription(deploymentId: AzureOpenAITranscriptionModelId): TranscriptionModel = missing()
-    override fun speech(deploymentId: AzureOpenAISpeechModelId): SpeechModel = missing()
-
-    private fun missing(): Nothing = throw AiSdkException("Azure OpenAI provider is not configured. Use createAzure(client, settings).")
-}
-
-private class DefaultAzureOpenAIProvider(
-    private val client: HttpClient,
-    override val settings: AzureOpenAIProviderSettings,
-) : AzureOpenAIProvider {
-    private val compatible = createOpenAICompatible(client, compatibleSettings())
-
-    override val providerId: String = "azure"
-    override val tools: AzureOpenAITools = azureOpenaiTools
-
-    override fun responses(deploymentId: String): LanguageModel =
-        createOpenResponses(
+    /** @since 0.3.0-beta01 */
+    public fun responses(deploymentId: String): LanguageModel =
+        OpenResponses(
             client,
-            OpenResponsesProviderSettings(
-                url = azureUrl("/responses", deploymentId),
-                name = "azure",
-                authHeadersProvider = { azureHeaders() },
-                userAgentSuffix = null,
-                providerOptionsName = "openai",
-                supportedUrls = OPENAI_RESPONSES_SUPPORTED_URLS,
-                fileIdPrefixes = listOf("assistant-"),
-            ),
+            OpenResponsesProviderSettings {
+                url(azureUrl("/responses", deploymentId))
+                name("azure")
+                authHeadersProvider { azureHeaders() }
+                userAgentSuffix(null)
+                providerOptionsName("openai")
+                supportedUrls(OPENAI_RESPONSES_SUPPORTED_URLS)
+                fileIdPrefixes(listOf("assistant-"))
+            },
         ).responses(deploymentId)
 
-    override fun chat(deploymentId: AzureOpenAIChatModelId): LanguageModel =
-        compatible.chatModel(deploymentId)
+    /** @since 0.3.0-beta01 */
+    public fun chat(deploymentId: ModelId): LanguageModel =
+        compatible.chatModel(deploymentId.value)
 
-    override fun completion(deploymentId: AzureOpenAICompletionModelId): LanguageModel =
-        compatible.completionModel(deploymentId)
+    /** @since 0.3.0-beta01 */
+    public fun completion(deploymentId: ModelId): LanguageModel =
+        compatible.completionModel(deploymentId.value)
 
-    override fun embedding(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel =
-        AzureOpenAIEmbeddingModel(compatible.embeddingModel(deploymentId))
+    /** @since 0.3.0-beta01 */
+    public fun embedding(deploymentId: ModelId): EmbeddingModel =
+        AzureOpenAIEmbeddingModel(compatible.embeddingModel(deploymentId.value))
 
-    override fun image(deploymentId: AzureOpenAIImageModelId): ImageModel =
-        compatible.imageModel(deploymentId)
+    /** @since 0.3.0-beta01 */
+    public fun image(deploymentId: ModelId): ImageModel =
+        compatible.imageModel(deploymentId.value)
 
-    override fun transcription(deploymentId: AzureOpenAITranscriptionModelId): TranscriptionModel =
-        compatible.transcriptionModel(deploymentId)
+    /** @since 0.3.0-beta01 */
+    public fun transcription(deploymentId: ModelId): TranscriptionModel =
+        compatible.transcriptionModel(deploymentId.value)
 
-    override fun speech(deploymentId: AzureOpenAISpeechModelId): SpeechModel =
-        compatible.speechModel(deploymentId)
+    /** @since 0.3.0-beta01 */
+    public fun speech(deploymentId: ModelId): SpeechModel =
+        compatible.speechModel(deploymentId.value)
+
+    override fun languageModel(modelId: String): LanguageModel = responses(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+
+    /** @since 0.3.0-beta01 */
+    public fun textEmbedding(deploymentId: ModelId): EmbeddingModel = embedding(deploymentId)
+
+    /** @since 0.3.0-beta01 */
+    public fun textEmbeddingModel(deploymentId: ModelId): EmbeddingModel = embedding(deploymentId)
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
+    override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
 
     private fun compatibleSettings(): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings(
-            name = "azure",
-            baseUrl = "https://azure.openai.invalid/openai/v1",
-            authHeadersProvider = { azureHeaders() },
-            urlBuilder = ::azureUrl,
-            userAgentSuffix = null,
-            providerOptionsName = "openai",
-            supportsStructuredOutputs = true,
-        )
+        OpenAICompatibleProviderSettings {
+            name("azure")
+            baseUrl("https://azure.openai.invalid/openai/v1")
+            authHeadersProvider { azureHeaders() }
+            urlBuilder(::azureUrl)
+            userAgentSuffix(null)
+            providerOptionsName("openai")
+            supportsStructuredOutputs(true)
+        }
 
     private suspend fun azureHeaders(): Map<String, String> {
         val base = linkedMapOf<String, String>()
@@ -148,7 +193,7 @@ private class DefaultAzureOpenAIProvider(
             settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["api-key"] = it }
         }
         base.putAll(settings.headers)
-        return withUserAgentSuffix(base, "ai-sdk/azure/$AZURE_VERSION")
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/azure/$AZURE_VERSION")
     }
 
     private fun azureUrl(path: String, modelId: String): String {
@@ -161,13 +206,39 @@ private class DefaultAzureOpenAIProvider(
             "$baseUrlPrefix/v1$path"
         }
         val separator = if ('?' in endpoint) "&" else "?"
-        return "$endpoint${separator}api-version=${urlEncode(settings.apiVersion)}"
+        return "$endpoint${separator}api-version=${UrlOps.encode(settings.apiVersion)}"
     }
 }
+
+/**
+ * PascalCase factory — mirrors `OpenAI(...)`.
+ * @since 0.3.0-beta01
+ */
+public fun AzureOpenAI(
+    client: HttpClient,
+    settings: AzureOpenAIProviderSettings = AzureOpenAIProviderSettings(),
+): AzureOpenAIProvider = AzureOpenAIProvider(client, settings)
+
+@Poko
+/** @since 0.3.0-beta01 */
+public class AzureOpenAITools(
+    /** @since 0.3.0-beta01 */
+    public val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = OpenAITools().codeInterpreter,
+    /** @since 0.3.0-beta01 */
+    public val fileSearch: Tool<JsonElement, JsonElement, Any?> = OpenAITools().fileSearch,
+    /** @since 0.3.0-beta01 */
+    public val imageGeneration: Tool<JsonElement, JsonElement, Any?> = OpenAITools().imageGeneration,
+    /** @since 0.3.0-beta01 */
+    public val webSearch: Tool<JsonElement, JsonElement, Any?> = OpenAITools().webSearch,
+    /** @since 0.3.0-beta01 */
+    public val webSearchPreview: Tool<JsonElement, JsonElement, Any?> = OpenAITools().webSearchPreview,
+)
+
+/** @since 0.3.0-beta01 */
+public val azureOpenaiTools: AzureOpenAITools = AzureOpenAITools()
 
 private class AzureOpenAIEmbeddingModel(
     private val delegate: EmbeddingModel,
 ) : EmbeddingModel by delegate {
     override val provider: String = "azure.embeddings"
 }
-

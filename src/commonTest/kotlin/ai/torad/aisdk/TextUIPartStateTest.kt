@@ -1,14 +1,14 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import ai.torad.aisdk.ui.StreamToUiMessages
 import ai.torad.aisdk.ui.TextUIPartState
 import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.streamToUiMessages
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
 
 /**
  * Validates Phase 4E #30: `TextUIPart.state` + `ReasoningUIPart.state`
@@ -36,7 +36,7 @@ class TextUIPartStateTest {
         )
 
         // WHEN
-        val snapshots = drainAllItems(streamToUiMessages(events, assistantMessageId = "asst_1"))
+        val snapshots = drainAllItems(StreamToUiMessages(events, assistantMessageId = "asst_1"))
 
         // THEN
         val lastTextPart = snapshots.last().parts.last() as UIMessagePart.Text
@@ -59,7 +59,7 @@ class TextUIPartStateTest {
         )
 
         // WHEN
-        val snapshots = drainAllItems(streamToUiMessages(events, assistantMessageId = "asst_1"))
+        val snapshots = drainAllItems(StreamToUiMessages(events, assistantMessageId = "asst_1"))
 
         // THEN
         val finalPart = snapshots.last().parts.last() as UIMessagePart.Text
@@ -80,7 +80,7 @@ class TextUIPartStateTest {
         )
 
         // WHEN
-        val snapshots = drainAllItems(streamToUiMessages(events, assistantMessageId = "asst_1"))
+        val snapshots = drainAllItems(StreamToUiMessages(events, assistantMessageId = "asst_1"))
 
         // THEN
         val part = snapshots.last().parts.last() as UIMessagePart.Reasoning
@@ -98,7 +98,7 @@ class TextUIPartStateTest {
         )
 
         // WHEN
-        val snapshots = drainAllItems(streamToUiMessages(events, assistantMessageId = "asst_1"))
+        val snapshots = drainAllItems(StreamToUiMessages(events, assistantMessageId = "asst_1"))
 
         // THEN
         val part = snapshots.last().parts.last() as UIMessagePart.Reasoning
@@ -131,7 +131,7 @@ class TextUIPartStateTest {
             )
 
             // WHEN
-            val snapshots = drainAllItems(streamToUiMessages(events, assistantMessageId = "asst_1"))
+            val snapshots = drainAllItems(StreamToUiMessages(events, assistantMessageId = "asst_1"))
 
             // THEN — t1 stays Done; t2 still Streaming.
             val finalParts = snapshots.last().parts

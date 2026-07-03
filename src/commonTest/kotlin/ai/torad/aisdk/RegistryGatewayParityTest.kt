@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.coroutines.test.runTest
@@ -16,7 +18,7 @@ class RegistryGatewayParityTest {
 
     @Test
     fun `createProviderRegistry honors a custom separator`() {
-        val registry = createProviderRegistry(
+        val registry = ProviderRegistry.createProviderRegistry(
             mapOf("openai" to StubProvider("openai", "oa")),
             separator = "/",
         )
@@ -26,14 +28,16 @@ class RegistryGatewayParityTest {
 
     @Test
     fun `splitProviderModelId supports a multi-char separator`() {
-        assertEquals("openai" to "gpt-4o", splitProviderModelId("openai::gpt-4o", separator = "::"))
-        assertEquals(null to "bare", splitProviderModelId("bare", separator = "::"))
+        assertEquals("openai" to "gpt-4o", ProviderRegistry.splitProviderModelId("openai::gpt-4o", separator = "::"))
+        assertEquals(null to "bare", ProviderRegistry.splitProviderModelId("bare", separator = "::"))
     }
 
     @Test
     fun `gateway falls back to AI_GATEWAY_API_KEY from the environment when apiKey is null`() = runTest {
-        val token = getGatewayAuthToken(
-            GatewayProviderSettings(environment = mapOf("AI_GATEWAY_API_KEY" to "env-key")),
+        val token = GatewayAuthToken.fromSettings(
+            GatewayProviderSettings {
+                environment(mapOf("AI_GATEWAY_API_KEY" to "env-key"))
+            }
         )
         assertEquals("env-key", token?.token)
         assertEquals(GatewayAuthMethod.ApiKey, token?.authMethod)
@@ -41,16 +45,32 @@ class RegistryGatewayParityTest {
 
     @Test
     fun `explicit gateway apiKey takes precedence over the environment`() = runTest {
-        val token = getGatewayAuthToken(
-            GatewayProviderSettings(apiKey = "explicit", environment = mapOf("AI_GATEWAY_API_KEY" to "env-key")),
+        val token = GatewayAuthToken.fromSettings(
+            GatewayProviderSettings {
+                apiKey("explicit")
+                environment(mapOf("AI_GATEWAY_API_KEY" to "env-key"))
+            }
         )
         assertEquals("explicit", token?.token)
     }
 
     @Test
     fun `gateway falls back to VERCEL_OIDC_TOKEN as the oidc auth method`() = runTest {
-        val token = getGatewayAuthToken(
-            GatewayProviderSettings(environment = mapOf("VERCEL_OIDC_TOKEN" to "oidc-tok")),
+        val token = GatewayAuthToken.fromSettings(
+            GatewayProviderSettings {
+                environment(mapOf("VERCEL_OIDC_TOKEN" to "oidc-tok"))
+            }
+        )
+        assertEquals("oidc-tok", token?.token)
+        assertEquals(GatewayAuthMethod.Oidc, token?.authMethod)
+    }
+
+    @Test
+    fun `blank AI_GATEWAY_API_KEY falls back to OIDC`() = runTest {
+        val token = GatewayAuthToken.fromSettings(
+            GatewayProviderSettings {
+                environment(mapOf("AI_GATEWAY_API_KEY" to "", "VERCEL_OIDC_TOKEN" to "oidc-tok"))
+            },
         )
         assertEquals("oidc-tok", token?.token)
         assertEquals(GatewayAuthMethod.Oidc, token?.authMethod)
@@ -58,10 +78,10 @@ class RegistryGatewayParityTest {
 
     @Test
     fun `api key wins over the OIDC token when both are present`() = runTest {
-        val token = getGatewayAuthToken(
-            GatewayProviderSettings(
-                environment = mapOf("AI_GATEWAY_API_KEY" to "k", "VERCEL_OIDC_TOKEN" to "oidc-tok"),
-            ),
+        val token = GatewayAuthToken.fromSettings(
+            GatewayProviderSettings {
+                environment(mapOf("AI_GATEWAY_API_KEY" to "k", "VERCEL_OIDC_TOKEN" to "oidc-tok"))
+            }
         )
         assertEquals("k", token?.token)
         assertEquals(GatewayAuthMethod.ApiKey, token?.authMethod)
@@ -69,11 +89,9 @@ class RegistryGatewayParityTest {
 
     @Test
     fun `gateway emits ai-o11y headers from the VERCEL environment`() = runTest {
-        val headers = gatewayHeaders(
-            GatewayProviderSettings(
-                environment = mapOf("VERCEL_ENV" to "production", "VERCEL_REGION" to "iad1"),
-            ),
-        )
+        val headers = GatewayProviderSettings {
+            environment(mapOf("VERCEL_ENV" to "production", "VERCEL_REGION" to "iad1"))
+        }.gatewayHeaders()
         assertEquals("production", headers["ai-o11y-environment"])
         assertEquals("iad1", headers["ai-o11y-region"])
     }

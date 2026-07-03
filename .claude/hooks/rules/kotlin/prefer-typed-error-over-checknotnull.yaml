@@ -1,0 +1,5 @@
+id: prefer-typed-error-over-checknotnull
+language: kotlin
+severity: warning
+rule:
+  pattern: checkNotNull($$$ARGS)

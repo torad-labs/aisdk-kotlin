@@ -17,18 +17,19 @@ class StopConditionTest {
         toolCallsAllSteps = calls.map { ContentPart.ToolCall("call_$it", it, JsonPrimitive("")) },
     )
 
-    private fun stepWithCall(stepNum: Int, toolName: String, input: JsonElement): StepResult = StepResult(
-        stepNumber = stepNum,
-        text = "",
-        reasoning = "",
-        toolCalls = listOf(ContentPart.ToolCall("call_${stepNum}_$toolName", toolName, input)),
-        toolResults = emptyList(),
-        toolApprovalRequests = emptyList(),
-        finishReason = FinishReason.ToolCalls,
-        usage = Usage(),
-    )
+    private fun stepWithCall(stepNum: Int, toolName: String, input: JsonElement): StepResult =
+        ResultConstruction.stepResult(
+            stepNumber = stepNum,
+            text = "",
+            reasoning = "",
+            toolCalls = listOf(ContentPart.ToolCall("call_${stepNum}_$toolName", toolName, input)),
+            toolResults = emptyList(),
+            toolApprovalRequests = emptyList(),
+            finishReason = FinishReason.ToolCalls,
+            usage = Usage(),
+        )
 
-    private fun emptyStep(stepNum: Int): StepResult = StepResult(
+    private fun emptyStep(stepNum: Int): StepResult = ResultConstruction.stepResult(
         stepNumber = stepNum,
         text = "",
         reasoning = "",
@@ -50,7 +51,7 @@ class StopConditionTest {
 
     @Test
     fun `stepCountIs_returns_true_at_or_above_threshold`() = runTest {
-        val cond = stepCountIs(3)
+        val cond = StepCountIs(3)
         assertFalse(cond.shouldStop(stateAt(1)))
         assertFalse(cond.shouldStop(stateAt(2)))
         assertTrue(cond.shouldStop(stateAt(3)))
@@ -59,7 +60,7 @@ class StopConditionTest {
 
     @Test
     fun `hasToolCall_returns_true_when_tool_seen`() = runTest {
-        val cond = hasToolCall("done")
+        val cond = HasToolCall("done")
         assertFalse(cond.shouldStop(stateAt(1, calls = listOf("other"))))
         assertTrue(cond.shouldStop(stateAt(1, calls = listOf("done"))))
         assertTrue(cond.shouldStop(stateAt(2, calls = listOf("other", "done"))))
@@ -67,20 +68,20 @@ class StopConditionTest {
 
     @Test
     fun `anyOf_short_circuits_on_first_match`() = runTest {
-        val cond = anyOf(stepCountIs(10), hasToolCall("done"))
+        val cond = AnyOf(StepCountIs(10), HasToolCall("done"))
         assertTrue(cond.shouldStop(stateAt(1, calls = listOf("done"))))
     }
 
     @Test
     fun `allOf_requires_every_condition_true`() = runTest {
-        val cond = allOf(stepCountIs(2), hasToolCall("done"))
+        val cond = AllOf(StepCountIs(2), HasToolCall("done"))
         assertFalse(cond.shouldStop(stateAt(2, calls = listOf("other"))))
         assertTrue(cond.shouldStop(stateAt(2, calls = listOf("done"))))
     }
 
     @Test
     fun `given fewer than n steps when repeatedToolCallLoop checks then false`() = runTest {
-        val cond = repeatedToolCallLoop(3)
+        val cond = RepeatedToolCallLoop(3)
         val args = JsonPrimitive("hard techno")
 
         assertFalse(
@@ -100,7 +101,7 @@ class StopConditionTest {
 
     @Test
     fun `given n identical tool calls when repeatedToolCallLoop checks then true`() = runTest {
-        val cond = repeatedToolCallLoop(3)
+        val cond = RepeatedToolCallLoop(3)
         val args = JsonPrimitive("hard techno")
         val steps = listOf(
             stepWithCall(1, "findArtists", args),
@@ -113,7 +114,7 @@ class StopConditionTest {
 
     @Test
     fun `given identical name but different args when repeatedToolCallLoop checks then false`() = runTest {
-        val cond = repeatedToolCallLoop(3)
+        val cond = RepeatedToolCallLoop(3)
         val steps = listOf(
             stepWithCall(1, "findArtists", JsonPrimitive("hard techno")),
             stepWithCall(2, "findArtists", JsonPrimitive("melodic")),
@@ -125,7 +126,7 @@ class StopConditionTest {
 
     @Test
     fun `given same args but different tool names when repeatedToolCallLoop checks then false`() = runTest {
-        val cond = repeatedToolCallLoop(3)
+        val cond = RepeatedToolCallLoop(3)
         val args = JsonPrimitive("hard techno")
         val steps = listOf(
             stepWithCall(1, "findArtists", args),
@@ -138,7 +139,7 @@ class StopConditionTest {
 
     @Test
     fun `given a step with no tool calls in the run when repeatedToolCallLoop checks then false`() = runTest {
-        val cond = repeatedToolCallLoop(3)
+        val cond = RepeatedToolCallLoop(3)
         val args = JsonPrimitive("x")
         val steps = listOf(
             stepWithCall(1, "findArtists", args),

@@ -23,10 +23,16 @@ import kotlinx.coroutines.flow.flow
  * Non-text events (tool calls, step-finish, etc.) pass through immediately
  * without delay so the loop logic isn't slowed down.
  */
-public sealed interface ChunkBy {
-    public data object Word : ChunkBy
-    public data object Line : ChunkBy
-    public data class Pattern(val regex: Regex) : ChunkBy
+/** @since 0.3.0-beta01 */
+public sealed class ChunkBy {
+    /** @since 0.3.0-beta01 */
+    public data object Word : ChunkBy()
+
+    /** @since 0.3.0-beta01 */
+    public data object Line : ChunkBy()
+
+    /** @since 0.3.0-beta01 */
+    public data class Pattern(val regex: Regex) : ChunkBy()
 }
 
 // Word-boundary regex with CJK awareness (per historical parity gap #32).
@@ -55,7 +61,8 @@ private val LINE_REGEX = Regex("""[^\n]*\n""", RegexOption.MULTILINE)
 // partial text/reasoning buffers before propagating (CancellationException is
 // rethrown first, above), so dropping to a narrower type would lose data.
 @Suppress("TooGenericExceptionCaught", "CyclomaticComplexMethod")
-public fun smoothStream(
+/** @since 0.3.0-beta01 */
+public fun SmoothStream(
     upstream: Flow<StreamEvent>,
     delayMs: Long = 10L,
     chunkBy: ChunkBy = ChunkBy.Word,
@@ -132,7 +139,32 @@ public fun smoothStream(
                     reasoningBuffers.remove(event.id)
                     emit(event)
                 }
-                else -> emit(event)
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.TextStart,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.Data,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                is StreamEvent.Finish,
+                StreamEvent.Abort,
+                is StreamEvent.Error,
+                is StreamEvent.Raw,
+                -> {
+                    for (id in textBuffers.keys.toList()) flushText(id, all = true)
+                    for (id in reasoningBuffers.keys.toList()) flushReasoning(id, all = true)
+                    emit(event)
+                }
             }
         }
     } catch (ce: CancellationException) {

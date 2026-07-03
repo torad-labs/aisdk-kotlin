@@ -1,0 +1,12 @@
+id: no-globalscope
+language: kotlin
+severity: error
+message: "GlobalScope is unstructured concurrency — coroutines launched here outlive every caller and cannot be cancelled."
+note: "Inject a CoroutineScope (or use coroutineScope { }/supervisorScope { }) so work is bound to a lifecycle."
+rule:
+  kind: simple_identifier
+  regex: '^GlobalScope$'
+  not:
+    inside:
+      kind: import_header
+      stopBy: end
