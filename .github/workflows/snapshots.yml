@@ -1,9 +1,13 @@
 name: Snapshot
 
+# OPERATOR HOLD (2026-07-03, RR-06): no distributions until release go — the
+# push-to-main trigger is parked so the fold-in merge cannot fire the first
+# snapshot publish. Re-arm at release time by restoring:
+#   push:
+#     branches:
+#       - main
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read

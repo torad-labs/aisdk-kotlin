@@ -368,6 +368,7 @@ verify = "Central shows artifact; canary green; release run archived green"
 # [2026-07-02] operator decision 2026-07-03: FOLD-IN THEN TAG — wave 12 completes on beta-follow-ups, ONE PR to main, merge on green (squash, consistent with operator's RR-05 choice), then tag v0.3.0-beta01 from post-merge main; beta ships with BP-02 consumer floor + samples + all pipelines. Main's first gated run: green (all 3 jobs incl. freshness).
 # [2026-07-02] OPERATOR HOLD 2026-07-03: tagging + publishing deferred — maximize work first; fold-in PR merge also held; ledger completion triggers a FINAL REVIEW ROUND before any release motion
 # [2026-07-03] FR-03 completeness item folded in: post-tag, bump VERSION_NAME so snapshots.yml tracks the next unreleased version instead of re-snapshotting frozen 0.3.0-beta01 (snapshot version auto-derives from VERSION_NAME, build.gradle.kts:30-32). Also: R4 network-mask live proof running as draft PR #12 (scratch branch, never merges) during FR-04.
+# [2026-07-03] FOLD-IN EXECUTION 2026-07-03 (operator: merge to main, no distributions yet): snapshots.yml push-trigger parked to workflow_dispatch-only in the same fold-in (re-arm instructions in the workflow comment) so the merge cannot fire the first snapshot publish; docs.yml inert without a Release run; consumer-canary arms read-only (green-with-notices pre-release by design). Tag + Central release + GitHub Release remain held.
 
 [[items]]
 id = "RR-07"
