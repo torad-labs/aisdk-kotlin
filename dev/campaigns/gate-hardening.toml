@@ -341,6 +341,7 @@ depends = ["RR-05", "GH-17"]
 verify = "Central shows artifact; canary green; release run archived green"
 # [2026-07-02] operator decision 2026-07-03: FOLD-IN THEN TAG — wave 12 completes on beta-follow-ups, ONE PR to main, merge on green (squash, consistent with operator's RR-05 choice), then tag v0.3.0-beta01 from post-merge main; beta ships with BP-02 consumer floor + samples + all pipelines. Main's first gated run: green (all 3 jobs incl. freshness).
 # [2026-07-02] OPERATOR HOLD 2026-07-03: tagging + publishing deferred — maximize work first; fold-in PR merge also held; ledger completion triggers a FINAL REVIEW ROUND before any release motion
+# [2026-07-03] FR-03 completeness item folded in: post-tag, bump VERSION_NAME so snapshots.yml tracks the next unreleased version instead of re-snapshotting frozen 0.3.0-beta01 (snapshot version auto-derives from VERSION_NAME, build.gradle.kts:30-32). Also: R4 network-mask live proof running as draft PR #12 (scratch branch, never merges) during FR-04.
 
 [[items]]
 id = "RR-07"
@@ -481,3 +482,27 @@ files = ["dev/campaigns/review/fr04-final-report.md"]
 status = "in_flight"
 verify = "all accepted findings probed or fixed; final report delivered to operator; ledger states reconciled"
 # [2026-07-03] OPERATOR DIRECTIVE 2026-07-03: builder session = GPT-5.5 xhigh, capability ≈ Opus 4.8. Route Opus-tier delegations (adjudication, hardest analysis) to the builder via torad-fleet instead of Opus subagents — conserves Claude tokens for Fable orchestration. Opus subagents only when the fleet is unavailable. Current FR-03 Opus run rides to completion per operator.
+
+[[items]]
+id = "FX-01"
+phase = "fx"
+title = "F-01+F-02 path-anchor fix (FR verdict pre-tag ride-along). validate_rules.py:_missing_manifest_entries anchors rules_dir to Path(__file__).resolve().parent/'kotlin' and ERRORS (exit 1 with message) instead of return [] when it is missing. detect-public-data-class-budget.py: add --budget <path> flag; default = Path(__file__).resolve().parents[3]/'data-class-budget.json' (repo root); tools/gate-fixtures/public-data-class-budget/cmd.txt updated to pass --budget data-class-budget.json since the harness spawns with cwd=fixture-dir (run-gate-fixtures.mjs:64) — ORCHESTRATOR FOUND THIS: naive __file__ anchor breaks the fixture harness, the toy budgets in violation/+compliant/ resolve via cwd today. PREMISE-CHECK before coding: read rule_selfcheck_policy.py invocation pattern — if it validates temp manifest copies, completeness-vs-canonical-rules-dir must not misfire on legitimate rule-add edits. Plus standing fail-direction regression tests: (a) temp-copy manifest missing one entry -> --manifest exits 1 (GH-09 direction, works post-anchor from any path); (b) flipped hunkExpectation -> --hunk-mode exits 1 (GH-10 direction). All four hook suites + full ci-gate + fixture harness must stay green."
+files = [".claude/hooks/rules/validate_rules.py", ".claude/hooks/rules/detect-public-data-class-budget.py", "tools/gate-fixtures/public-data-class-budget/cmd.txt", ".claude/hooks/tests/"]
+status = "todo"
+verify = "my F-01 repro (63-entry manifest off-path) now exits 1; fixture harness 26 checks green; ci-gate green; suites 36+/26/6/5 green"
+
+[[items]]
+id = "FX-02"
+phase = "fx"
+title = "FR doc corrections: (1) CLAUDE.md enforcement section — budget json lives at REPO ROOT (data-class-budget.json), wording currently implies .claude/hooks/rules/; (2) release.yml comment stating the DELIBERATE fail-closed asymmetry vs ci.yml GH-13 decoupling (F-03 adjudicated by-design, document it); (3) samples/jvm-chat-cli README or CONTRIBUTING dev-loop note: republishing the same non-SNAPSHOT version to mavenLocal may serve stale bytes — use ./gradlew --refresh-dependencies (F-06)."
+files = ["CLAUDE.md", ".github/workflows/release.yml", "samples/jvm-chat-cli/"]
+status = "todo"
+verify = "wording matches reality (budget path, asymmetry rationale present, refresh-dependencies note present); trust gate + ci-gate green"
+
+[[items]]
+id = "FX-03"
+phase = "fx"
+title = "FR hardening pair: (1) ci-gate.sh ast-grep version parity (F-05) — read @ast-grep/cli version from package.json and compare to $AG --version; mismatch = fail with pointer to GH-13 pin (keeps local pre-commit honest vs CI checksum-pinned 0.42.1); (2) snapshots.yml concurrency group (F-08) — concurrency: group snapshots-main, cancel-in-progress: false (queue, do not cancel a mid-flight publish)."
+files = [".claude/hooks/rules/ci-gate.sh", ".github/workflows/snapshots.yml"]
+status = "todo"
+verify = "version-mismatch simulation fails ci-gate with clear message; matching version passes; snapshots.yml parses; ci-gate green"
