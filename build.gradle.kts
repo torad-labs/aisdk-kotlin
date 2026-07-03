@@ -272,18 +272,18 @@ kover {
             }
         }
         verify {
-            // Current aggregate coverage from build/reports/kover/report.xml:
-            //   line 81.32%, instruction 71.95%, branch 44.01%.
+            // Actuals: run ./gradlew koverXmlReport; do not restate numbers here.
+            // Stale copied coverage numbers misled FR-03.
             // These beta gates leave a small ratchet margin so incidental line
             // churn can land with tests, while material regressions fail `check`.
             rule("line coverage ratchet") {
-                minBound(80, CoverageUnit.LINE, AggregationType.COVERED_PERCENTAGE)
+                minBound(82, CoverageUnit.LINE, AggregationType.COVERED_PERCENTAGE)
             }
             rule("instruction coverage ratchet") {
-                minBound(70, CoverageUnit.INSTRUCTION, AggregationType.COVERED_PERCENTAGE)
+                minBound(76, CoverageUnit.INSTRUCTION, AggregationType.COVERED_PERCENTAGE)
             }
             rule("branch coverage ratchet") {
-                minBound(43, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)
+                minBound(48, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)
             }
         }
     }

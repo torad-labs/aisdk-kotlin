@@ -557,5 +557,6 @@ id = "HD-04"
 phase = "hd"
 title = "Coverage floor ratchet + kill the stale-numbers comment. Raise koverVerify bounds to actuals-minus-margin: line 80->82, instruction 70->76, branch 43->48 (actuals 84.14/78.87/49.95 at 733a1df; ~2pp margin absorbs churn). REPLACE the frozen aggregate-coverage comment at build.gradle.kts:~275 with a pointer ('actuals: run ./gradlew koverXmlReport; do not restate numbers here — stale copy misled FR-03') — restated numbers in comments are the drift channel the measurements-ledger law exists for. Verify: ./gradlew koverVerify passes at new floors; lowering any actual below floor fails (probe one bound with a temporarily higher minBound to prove fail direction, then restore)."
 files = ["build.gradle.kts"]
-status = "todo"
+status = "done"
 verify = "koverVerify green at 82/76/48; fail-direction probed; comment replaced with pointer; gradle check green"
+# [2026-07-03] raised kover floors to line 82 / instruction 76 / branch 48 and replaced stale aggregate-number comment with live-report pointer; koverVerify PASS at new floors; negative probe branch floor 51 failed as expected with actual 49.871100 < 51, then restored; ./gradlew check, ci-gate.sh, beta-readiness PASS; final SHA in fleet report
