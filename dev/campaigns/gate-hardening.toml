@@ -31,7 +31,7 @@ id = "GH-01"
 phase = "gh1"
 title = "Wire validate_rules.py (parse + --manifest semantic) into ci-gate.sh. Two lines, same idiom as the four detect-*.py gates (ci-gate.sh:57-67). Activates 50 dormant fixtures + parse-checks all 64 rules per commit. Highest leverage in campaign."
 files = [".claude/hooks/rules/ci-gate.sh"]
-status = "in_flight"
+status = "verified"
 verify = "break one manifest fixture in a scratch copy -> ci-gate.sh exits 1; pristine tree -> exits 0; both directions demonstrated in the report"
 
 [[items]]
