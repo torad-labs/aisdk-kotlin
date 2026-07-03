@@ -602,5 +602,22 @@ id = "HD-08"
 phase = "hd"
 title = "Branch-coverage hardening, slice 2: the next 4 clusters from HD-02s worst-10 ranking — GoogleProvider (2/50), GatewayContentEncoder (2/38), GatewayContentDecoder (2/32), Streaming (23/264 — pick the highest-value untested when-arms/error paths, not exhaustive). Same law as HD-02: REAL behavioral assertions (wire-field values, error propagation, boundary shapes), no line-touching; use ast-grep to enumerate untested when-expressions and catch clauses in these files; before/after branch numbers in the ledger note. After gains land, ratchet the branch floor again in the SAME slice this time (HD-04 pattern: actuals-minus-2pp, probe fail direction) so the gain locks immediately."
 files = ["src/commonTest/kotlin/", "build.gradle.kts"]
-status = "todo"
+status = "in_flight"
 verify = "before/after branch numbers in note; new tests behavioral and passing; branch floor re-ratcheted with fail-direction probe; gradle check green; ci-gate green"
+# [2026-07-03] Started branch-coverage slice 2; measuring current kover baseline before test additions
+
+[[items]]
+id = "HD-09"
+phase = "hd"
+title = "Measurements ledger (qgre steal, #944 §6): dev/measurements.toml + dev/measurements_ledger.py CLI adapted from /home/marcos/Documents/dev/qgre/qgre-main/dev/ (read the originals — header comments carry the law: measured-only, supersede-never-delete, provenance per entry = date/HEAD/command, docs cite keys never restate values; the HD-04 stale-comment incident is OUR proof of the class). Adapt provenance fields for this repo (no GPU/clocks; HEAD + command + gradle/tool versions). SEED with current measured values: coverage line/instruction/branch (84.14/78.87/49.95 at 733a1df — re-measure at seed HEAD), ci-gate wall-clock, per-edit hook latency (245ms at HD-05 verify), rule count 71, data-class floor 40, hook suite counts. Wire a pointer from build.gradle.kts kover comment + CLAUDE.md to the ledger. Run the CLI selftest against the new file before first use."
+files = ["dev/measurements.toml", "dev/measurements_ledger.py", "build.gradle.kts", "CLAUDE.md"]
+status = "todo"
+verify = "CLI selftest green; seeded entries carry full provenance; supersede flow probed (add then supersede one key); docs point at keys not numbers; ci-gate green"
+
+[[items]]
+id = "HD-11"
+phase = "hd"
+title = "No-interpreter-source-writes + ABI-dump guard (qgre steal module 40 + our extension). New pretooluse module inspecting BASH commands: block source-file writes routed around the edit layer — python/sh heredocs, cat> redirection, sed -i, tee — targeting .kt/.kts/.claude/hooks/**/*.py/.claude/hooks/rules/**/*.yaml (the 71-rule edit layer only sees Edit/Write; Bash-written Kotlin bypasses it = same class as --no-verify, see qgre module 40 docstring for the incident). Sanctioned in Bash: ast-grep run --rewrite / scan --update-all (pattern visible in command text), gradle tasks. PLUS: api/*.api + api/*.klib.api are GENERATED trust artifacts — block Edit/Write AND Bash redirection on them entirely; regeneration only via ./gradlew updateKotlinAbi (hand-editing a dump to match changed source passes checkKotlinAbi while silently rewriting the public contract). Reuse fleet_protocol_policy's heredoc-strip + shlex machinery for command parsing (do not fork it — import or extract shared helper). Tests both directions incl. the ast-grep-rewrite allow path and a gradle-task allow path."
+files = [".claude/hooks/modules/pretooluse/", ".claude/hooks/tests/"]
+status = "todo"
+verify = "cat-heredoc .kt write blocked; ast-grep --rewrite allowed; Edit on api/*.api blocked; bash redirect to api/*.api blocked; updateKotlinAbi via gradle allowed; suites green; ci-gate green; per-edit latency still under ceiling"
