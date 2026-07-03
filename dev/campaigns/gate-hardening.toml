@@ -237,10 +237,11 @@ id = "GH-19"
 phase = "gh3"
 title = "Gate execution ledger (LP-4): each context emits {gate,status} to gate-manifest.json artifact; final step asserts EXPECTED set ran (checked-in expected-gates list = canonical what-runs-where registry). Catches gates silently dropping out of pipelines (live example: validate_rules was unwired for weeks)."
 files = [".github/workflows/ci.yml", "tools/"]
-status = "done"
+status = "verified"
 depends = ["GH-12"]
 verify = "commenting out one gate invocation without updating expected set fails CI"
 # [2026-07-02] verify and verify-apple gate ledgers assert expected gate sets; runner strips GIT_ALTERNATE_OBJECT_DIRECTORIES
+# [2026-07-02] orchestrator verified 9b3ea5e: expected-set asserted per context (verify 5, verify-apple 2), missing+unexpected both exit 1 (true-exit probes), ran-but-failed correctly deferred to the GH-12 aggregator (presence vs success separation); env-strip rider applied. LP-4 dynamic half mechanized.
 
 [[items]]
 id = "GH-20"
