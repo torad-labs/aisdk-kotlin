@@ -29,6 +29,14 @@
 # prove the rule matches the violation AND skips the compliant form — then
 # rewrite. Structural rewrites over regex/sed on code, always; grep/rg stays
 # only for non-code text. More effective and more correct: that is the point.
+#
+# VERIFY LAW LP-6 (2026-07-03): fixture-green is not live-green. Every item
+# that adds or changes a guard/rule/check MUST verify it against the NAMED
+# real site it protects (the actual file/artifact in this repo), or state
+# that no real site exists and synthesize one in scratch. Proven twice in one
+# day: HD-11 (dump guard green-tested yet inert for api/jvm/...) and HD-13
+# (matcher green-tested yet blind to the annotated AbortSignal catch).
+
 
 [campaign]
 name = "gate-hardening-beta-release"
