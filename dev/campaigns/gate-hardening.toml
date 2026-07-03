@@ -162,10 +162,11 @@ id = "GH-13"
 phase = "gh2"
 title = "Decouple ci-gate.sh from npm ci in CI: pinned ast-grep binary via GitHub release + actions/cache (npm -g forbidden by beta-readiness workflow gate); run architecture gate before/independent of node-dependent steps."
 files = [".github/workflows/ci.yml"]
-status = "done"
+status = "verified"
 verify = "architecture gate step precedes npm ci and passes with node steps stubbed broken"
 # [2026-07-02] done in GH-13 slice (final SHA in fleet report): CI downloads cached ast-grep 0.42.1 before npm ci; architecture and hook gates run without node_modules
 # [2026-07-02] done in GH-13 checksum follow-up (final SHA in fleet report): ast-grep release zip pinned to sha256 5de8b87cba67fc8dc3e239d54b6484802ad745a7ae3de76be4fe89661dc52657 before unzip
+# [2026-07-02] orchestrator verified 90cc6ed+9731fe1: gates decoupled from npm ci (PATH-stripped proof), binary version drift-checked vs package.json, zip sha256 pinned and verified pre-unzip — checksum independently re-derived from the release asset, exact match
 
 [[items]]
 id = "GH-14"
