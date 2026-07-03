@@ -94,9 +94,11 @@ Kotlin/JVM SDKs do, including the two most directly comparable to this one:
 declarations in `src/commonMain/kotlin` and **fails if the count rises above the
 budget** — so a new public `data class` is blocked with a pointer back to this
 section. The budget is a one-way ratchet: re-seed it *downward only* with
-`--update` after demoting a type to `@Poko`. The grandfathered existing set is
-being migrated case-by-case (see `docs/data-class-audit.md` / backlog BL-058/A1).
-Never raise the budget to land a new data class; demote one instead.
+`--update` after demoting a type to `@Poko`. The current enforced floor is 40
+true public-ABI declarations; nested/internal/function-local data classes are not
+budgeted as public ABI. The grandfathered existing set is being migrated
+case-by-case (see `docs/data-class-audit.md` / backlog BL-058/A1). Never raise
+the budget to land a new data class; demote one instead.
 
 ## Gate misfires — fix the gate, not the result
 

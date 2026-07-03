@@ -529,8 +529,9 @@ id = "HD-01"
 phase = "hd"
 title = "Scope-aware data-class budget (fix the instrument, not the data). The regex detector counts 17 non-public nested/local types as public ABI (audit doc lines 572-594). Orchestrator planned+validated the ast-grep rule at .claude/hooks/rules/public-abi-data-class.yaml (matches public top-level/nested-in-public data classes; excludes own-visibility internal/private/protected, nested-inside-internal/private class or object at any depth, function-local, lambda-local; live count on src/commonMain = 40 = exactly the adjudicated KEEP floor). Builder wires detect-public-data-class-budget.py to measure via this rule (shell to ast-grep, resolve binary node_modules/.bin then PATH like ci-gate.sh; rule path defaults relative to __file__), keeps --budget/--check/--update semantics + refuse-raise ratchet, RE-SEEDS budget 57->40 with the 40 true-ABI tracked symbols IN THE SAME COMMIT (downward ratchet, sanctioned), extends fixtures: violation/ adds a case proving a NEW public top-level data class still fails; compliant/ adds a nested-in-internal public data class that must NOT count (scope-awareness regression, both directions). Update audit doc NON-PUBLIC section (resolved by instrument fix) + CLAUDE.md '57' mentions to 40. DO NOT add the rule to rules/kotlin/ (it is a measurement rule, not an architecture-gate rule; kotlin/ membership would drag it into manifest fixture completeness + hook scans)."
 files = [".claude/hooks/rules/detect-public-data-class-budget.py", ".claude/hooks/rules/public-abi-data-class.yaml", "data-class-budget.json", "tools/gate-fixtures/public-data-class-budget/", "docs/data-class-audit.md", "CLAUDE.md"]
-status = "todo"
+status = "done"
 verify = "detector reports 40/40 on commonMain matching orchestrator ast-grep count; nested-internal fixture case not counted; new-public-data-class fixture still fails; refuse-raise probe intact; ci-gate + harness + suites green"
+# [2026-07-03] Scope-aware data-class detector wired through public-abi ast-grep rule; budget ratcheted 57->40; nested-internal and new-public fixtures verified; final SHA via fleet
 
 [[items]]
 id = "HD-02"
