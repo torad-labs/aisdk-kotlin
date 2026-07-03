@@ -36,6 +36,14 @@
 # that no real site exists and synthesize one in scratch. Proven twice in one
 # day: HD-11 (dump guard green-tested yet inert for api/jvm/...) and HD-13
 # (matcher green-tested yet blind to the annotated AbortSignal catch).
+#
+# CODEMOD LAW LP-9 (2026-07-03): fix-rule-first adjudication. When a sweep
+# reveals a uniform mechanical fix shape across N sites, author the fix rule
+# (with fixExamples) BEFORE touching sites; the prepass applies the mechanical
+# majority and hand-work shrinks to the exceptions, which become structural
+# carve-outs per LP-7. Proven by inversion cost: HD-06 hand-fixed 21 sites,
+# then HD-13 built the codemod that would have fixed about 20 of them.
+
 
 
 [campaign]
@@ -710,8 +718,9 @@ id = "HD-17"
 phase = "hd"
 title = "Close the gate scan-scope hole (audit finding 1): ci-gate error-rule scan defaults to src/commonMain/kotlin only (ci-gate.sh case block ~line 56-63) — widen the default dirs to ALL library source sets (commonMain, jvmAndAndroidMain, jvmMain, nativeMain; keep test sets out of error rules except where already included, keep the existing platform-scoped carve-outs for the 4 JVM-legit rules + camelcase list exactly as-is). Also scan the two cancellation-correctness WARNING rules (no-throwable-catch-without-rethrow, no-runcatching-in-suspend) in the gate as a non-blocking REPORT section (count + list, never fail=1 — detekt/edit-time own blocking) so drift in platform sets becomes visible per-commit. Fail-direction probe per LP-6: plant a catch(Exception) violation in a scratch copy under jvmAndAndroidMain -> gate exits 1 -> remove. Latency delta via measurements CLI supersede if material."
 files = [".claude/hooks/rules/ci-gate.sh", "dev/measurements.toml"]
-status = "todo"
+status = "done"
 verify = "planted jvmAndAndroidMain violation fails gate (probe shown); pristine passes; warning-report section visible; latency recorded if material"
+# [2026-07-03] HD-17 done pending commit: ci-gate default error-rule dirs now include commonMain/jvmMain/jvmAndAndroidMain/nativeMain; JVM carve-outs unchanged; cancellation warning report prints no-throwable/no-runcatching counts non-blockingly; LP-6 probe planted jvmAndAndroidMain no-empty-catch violation and gate failed; pristine gate passed in 11.72s, no material latency ledger update.
 
 [[items]]
 id = "HD-18"

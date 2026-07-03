@@ -59,7 +59,7 @@ for f in "$RULES_DIR"/*.yaml; do
     no-camelcase-top-level-function)
       dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin src/commonTest/kotlin" ;;
     *)
-      dirs="src/commonMain/kotlin" ;;
+      dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin" ;;
   esac
   n=$(count "$f" "$dirs")
   if [ "$n" -gt 0 ] 2>/dev/null; then
@@ -69,6 +69,19 @@ for f in "$RULES_DIR"/*.yaml; do
   fi
 done
 [ "$fail" = 0 ] && echo "  ok: 0 error-rule violations"
+
+echo "== cancellation correctness warning report =="
+warning_dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin"
+ag_name=AG
+ag_path="${!ag_name}"
+for warning_rule in no-throwable-catch-without-rethrow no-runcatching-in-suspend; do
+  warning_file=".claude/hooks/rules/kotlin/$warning_rule.yaml"
+  n=$(count "$warning_file" "$warning_dirs")
+  echo "  $warning_rule: $n warning(s)"
+  if [ "$n" -gt 0 ] 2>/dev/null; then
+    "$ag_path" scan --rule "$warning_file" $warning_dirs 2>/dev/null | head -12
+  fi
+done
 
 echo "== non-integrated (internal, cross-file) gate =="
 python3 .claude/hooks/rules/detect-nonintegrated-kotlin.py src --check || fail=1
