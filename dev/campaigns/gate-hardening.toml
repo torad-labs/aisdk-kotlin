@@ -551,12 +551,15 @@ title = "ast-grep Kotlin rule package + agent doctrine (operator prompt, Sonnet 
 files = [".claude/hooks/rules/kotlin/", ".claude/hooks/rules/manifest.json", ".claude/hooks/rules/utils", "CLAUDE.md", "docs/"]
 status = "in_flight"
 verify = "validate_rules parse+semantic+hunk green over grown ruleset; ci-gate green; hook suite green; live block demo of one new tier-1 rule; dedupe table exists; tier-2 list delivered to operator"
+# [2026-07-03] INCIDENT 2026-07-03: node_modules/ was deleted wholesale mid-session while HD-03 agent + builder both live (package.json/lock untouched — a bare rm, actor unidentified). FX-03 parity gate caught it: refused orchestrator ledger commit rather than validating via drifted ~/.local/bin 0.44.0 fallback — second live catch in one day. Restored via npm ci (0.42.1). Deleting node_modules is outside all fences; standing warning issued to both workers.
+# [2026-07-03] Incident attribution closed: builder self-reported removing node_modules/ as an HD-02 cleanup step; standing no-delete rule acknowledged in its HD-04 report.
 
 [[items]]
 id = "HD-04"
 phase = "hd"
 title = "Coverage floor ratchet + kill the stale-numbers comment. Raise koverVerify bounds to actuals-minus-margin: line 80->82, instruction 70->76, branch 43->48 (actuals 84.14/78.87/49.95 at 733a1df; ~2pp margin absorbs churn). REPLACE the frozen aggregate-coverage comment at build.gradle.kts:~275 with a pointer ('actuals: run ./gradlew koverXmlReport; do not restate numbers here — stale copy misled FR-03') — restated numbers in comments are the drift channel the measurements-ledger law exists for. Verify: ./gradlew koverVerify passes at new floors; lowering any actual below floor fails (probe one bound with a temporarily higher minBound to prove fail direction, then restore)."
 files = ["build.gradle.kts"]
-status = "done"
+status = "verified"
 verify = "koverVerify green at 82/76/48; fail-direction probed; comment replaced with pointer; gradle check green"
 # [2026-07-03] raised kover floors to line 82 / instruction 76 / branch 48 and replaced stale aggregate-number comment with live-report pointer; koverVerify PASS at new floors; negative probe branch floor 51 failed as expected with actual 49.871100 < 51, then restored; ./gradlew check, ci-gate.sh, beta-readiness PASS; final SHA in fleet report
+# [2026-07-03] VERIFIED at ea2c602: floors 82/76/48 exactly as specced; stale-numbers comment replaced with run-the-report pointer + FR-03 lesson; orchestrator re-ran koverVerify at new floors EXIT=0; builder fail-direction probe accepted (quoted live kover error at floor 51: branches 49.8711 < 51); builder used ast-grep for the rewrite per tooling law. Coverage ratchet margins now ~2pp on all three axes.
