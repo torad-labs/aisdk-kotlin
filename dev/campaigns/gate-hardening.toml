@@ -488,8 +488,9 @@ id = "FX-01"
 phase = "fx"
 title = "F-01+F-02 path-anchor fix (FR verdict pre-tag ride-along). validate_rules.py:_missing_manifest_entries anchors rules_dir to Path(__file__).resolve().parent/'kotlin' and ERRORS (exit 1 with message) instead of return [] when it is missing. detect-public-data-class-budget.py: add --budget <path> flag; default = Path(__file__).resolve().parents[3]/'data-class-budget.json' (repo root); tools/gate-fixtures/public-data-class-budget/cmd.txt updated to pass --budget data-class-budget.json since the harness spawns with cwd=fixture-dir (run-gate-fixtures.mjs:64) — ORCHESTRATOR FOUND THIS: naive __file__ anchor breaks the fixture harness, the toy budgets in violation/+compliant/ resolve via cwd today. PREMISE-CHECK before coding: read rule_selfcheck_policy.py invocation pattern — if it validates temp manifest copies, completeness-vs-canonical-rules-dir must not misfire on legitimate rule-add edits. Plus standing fail-direction regression tests: (a) temp-copy manifest missing one entry -> --manifest exits 1 (GH-09 direction, works post-anchor from any path); (b) flipped hunkExpectation -> --hunk-mode exits 1 (GH-10 direction). All four hook suites + full ci-gate + fixture harness must stay green."
 files = [".claude/hooks/rules/validate_rules.py", ".claude/hooks/rules/detect-public-data-class-budget.py", "tools/gate-fixtures/public-data-class-budget/cmd.txt", ".claude/hooks/tests/"]
-status = "todo"
+status = "done"
 verify = "my F-01 repro (63-entry manifest off-path) now exits 1; fixture harness 26 checks green; ci-gate green; suites 36+/26/6/5 green"
+# [2026-07-03] Path-anchor fixes landed: canonical rule manifest completeness, explicit data-class budget path, fixture cmd updated, fail-direction regressions added; final SHA via fleet
 
 [[items]]
 id = "FX-02"
