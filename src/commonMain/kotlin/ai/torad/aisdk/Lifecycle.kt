@@ -161,7 +161,14 @@ public sealed class AgentEvent {
         // Nullable for now: the base loop doesn't compute the typed output here (it flows via
         // `generate(): TOutput`); `null` preserves the prior behavior. Wiring a real value is a
         // step-2 dispatch concern. Typed (no `Any?`) regardless.
-        /** @since 0.3.0-beta01 */
+        /**
+         * Always `null` today (see the step-2 note above) — the typed output flows
+         * through `generate(): TOutput`, not through this event. If you need the
+         * final output while also collecting lifecycle events, derive it from the
+         * last [StepFinished] event's `step.text` (or the equivalent typed field)
+         * instead of waiting on this property.
+         * @since 0.3.0-beta01
+         */
         public val output: TOutput?,
         /** @since 0.3.0-beta01 */
         public val totalSteps: Int,

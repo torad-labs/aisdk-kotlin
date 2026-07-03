@@ -6,6 +6,11 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+- **Upgrader callout:** `RetryPolicy.maxRetries` defaults to `2`. If you already
+  retry transient failures in your own transport/middleware, composing both
+  retries the same failure `(1 + maxRetries) * (1 + middlewareRetries)` times.
+  Pass `maxRetries(0)` on the `RetryPolicy` builder if your middleware already
+  owns retry behavior.
 - Cancellation hardening: broad `catch(Throwable)` paths no longer swallow
   coroutine cancellation in telemetry dispatch, memoized stream replay, retry
   classification, completion fallback, agent submit, smooth-stream flushing,
