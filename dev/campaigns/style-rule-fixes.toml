@@ -961,7 +961,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/ApprovalIdTest.kt"]
 lines = "106,135"
 count = 2
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/ApprovalIdTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-078 done — see ledger
 
@@ -974,7 +974,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/EmbedRerankParityTest.kt"]
 lines = "143"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/EmbedRerankParityTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-079 done — see ledger
 
@@ -987,7 +987,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/FullPortFeatureParityTest.kt"]
 lines = "342"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/FullPortFeatureParityTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-080 done — see ledger
 
@@ -1000,7 +1000,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/GoogleMediaProviderTest.kt"]
 lines = "126"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/GoogleMediaProviderTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-081 done — see ledger
 
@@ -1013,7 +1013,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/KotlinIdiomsTest.kt"]
 lines = "121"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/KotlinIdiomsTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-082 done — see ledger
 
@@ -1026,7 +1026,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/LifecycleHooksTest.kt"]
 lines = "145"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/LifecycleHooksTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-083 done — see ledger
 
@@ -1039,7 +1039,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/McpDocSnippetTest.kt"]
 lines = "16"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/McpDocSnippetTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-084 done — see ledger
 
@@ -1052,7 +1052,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/OpenAIProviderTest.kt"]
 lines = "549,556"
 count = 2
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/OpenAIProviderTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-085 done — see ledger
 
@@ -1065,7 +1065,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/ProvidersDocSnippetTest.kt"]
 lines = "133"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/ProvidersDocSnippetTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-086 done — see ledger
 
@@ -1078,7 +1078,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/RetryBackoffTest.kt"]
 lines = "150,151,167,178"
 count = 4
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/RetryBackoffTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-087 done — see ledger
 
@@ -1091,7 +1091,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/SimulateStreamingTest.kt"]
 lines = "52"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/SimulateStreamingTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-088 done — see ledger
 
@@ -1104,7 +1104,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/TelemetryParityTest.kt"]
 lines = "94"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/TelemetryParityTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-089 done — see ledger
 
@@ -1117,7 +1117,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/TelemetryWiringTest.kt"]
 lines = "85,226,228,330,360"
 count = 5
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/TelemetryWiringTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-090 done — see ledger
 
@@ -1130,7 +1130,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/ToolErrorWiringTest.kt"]
 lines = "69,153"
 count = 2
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/ToolErrorWiringTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-091 done — see ledger
 
@@ -1143,7 +1143,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/ToolLoopAgentStreamErrorTest.kt"]
 lines = "22"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/ToolLoopAgentStreamErrorTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-092 done — see ledger
 
@@ -1156,7 +1156,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/ToolLoopContractGapsTest.kt"]
 lines = "127"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/ToolLoopContractGapsTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-093 done — see ledger
 
@@ -1169,7 +1169,7 @@ files = ["src/commonTest/kotlin/ai/torad/aisdk/ToolMetadataTest.kt"]
 lines = "66"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml src/commonTest/kotlin/ai/torad/aisdk/ToolMetadataTest.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 # [2026-07-03] SRF-094 done — see ledger
 
