@@ -188,6 +188,20 @@ if manifest.exists():
     check("foundry rules pass semantic gate (match bad, skip good)", sem_gate.returncode == 0)
 
 
+
+# Consumer-tree exemption (2026-07-03 misfire): library rules must not bind
+# samples/ or smoke-tests/ Kotlin; everywhere else stays guarded.
+sample_allowed = policy.run({"tool_name": "Write", "tool_input": {
+    "file_path": str(ROOT / "samples" / "jvm-chat-cli" / "src" / "main" / "kotlin" / "Main.kt"),
+    "content": "public fun generateText(): Unit = Unit",
+}})
+check("samples/ Kotlin is exempt from library rules", sample_allowed is None or sample_allowed.kind != "block")
+smoke_allowed = policy.run({"tool_name": "Write", "tool_input": {
+    "file_path": str(ROOT / "smoke-tests" / "x" / "Main.kt"),
+    "content": "public fun generateText(): Unit = Unit",
+}})
+check("smoke-tests/ Kotlin is exempt from library rules", smoke_allowed is None or smoke_allowed.kind != "block")
+
 if failures:
     print(f"FAILED {ran - len(failures)}/{ran}")
     for failure in failures:
