@@ -16,6 +16,8 @@ Default behavior:
 
 Release CI should call this after publishAllPublicationsToLocalStagingRepository:
   tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
+
+Relative --staging-repo paths are resolved from the repository root.
 EOF
 }
 
@@ -46,6 +48,7 @@ if [[ -z "$staging_repo" ]]; then
     staging_repo="${HOME}/.m2/repository"
   fi
 fi
+staging_repo="$(realpath -m -- "$staging_repo")"
 
 if [[ "$publish" == true ]]; then
   if [[ "$staging_repo" == "$root/build/staging-deploy" ]]; then
