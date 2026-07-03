@@ -15,7 +15,10 @@ note: >-
   SomeType) { ... }`, or an unconditional rethrow (wrapped or not) inside the
   Throwable catch itself; a catch parameter explicitly discarded as `_` is
   the established best-effort-ignore idiom (matches no-empty-catch-block's
-  own carve-out) and is intentionally not flagged. Severity is warning, not
+  own carve-out) and is intentionally not flagged. The registry autofix inserts
+  the minimal guard line as the first catch statement; the preferred handwritten
+  form remains the explicit `catch (ce: CancellationException) { throw ce }`
+  before the broad catch. Severity is warning, not
   error: this pattern already exists across roughly 20 call sites in
   commonMain (RetryPolicy, CompletionApi, Telemetry, SmoothStream,
   StructuredObjectApi, Generate, AbortSignal, AgentSession,
@@ -25,10 +28,20 @@ note: >-
 rule:
   kind: catch_block
   all:
-    - has:
-        kind: user_type
-        has: { kind: type_identifier, regex: '^Throwable$' }
+    - pattern:
+        context: |
+          try {
+            $$$TRY
+          } catch ($ERR: Throwable) {
+            $$$BODY
+          }
+        selector: catch_block
     - not:
         has: { kind: simple_identifier, regex: '^_$' }
     - not:
         has: { pattern: 'throw $X', stopBy: end }
+fix: |-
+  catch ($ERR: Throwable) {
+      CancellationExceptions.asCancellationExceptionOrNull($ERR)?.let { throw it }
+      $$$BODY
+  }

@@ -658,8 +658,9 @@ id = "HD-13"
 phase = "hd"
 title = "First production autofix registry entry: fix: for no-throwable-catch-without-rethrow. The transform is total + deterministic: insert the established guard line (CancellationExceptions.asCancellationExceptionOrNull(<param>)?.let { throw it } — see HD-06 sites for the exact idiom) as the FIRST statement of a catch(<param>: Throwable) body that contains no throw; idempotent by construction (fixed body contains throw -> rule no longer matches). Registry admission per HD-05 law: fixExamples in manifest.json proving idempotence + clean re-scan; validate_rules must pass the registry gate. NOTE: the rules message should keep teaching the full catch(ce: CancellationException){throw ce} idiom as the PREFERRED hand-written form; the autofix guard-line is the mechanical minimum. Probe the edit-time block-with-corrected-snippet flow and the ci-gate apply-then-fail pre-pass with a scratch violation before claiming done. ONE mechanism, one slice."
 files = [".claude/hooks/rules/kotlin/no-throwable-catch-without-rethrow.yaml", ".claude/hooks/rules/manifest.json", ".claude/hooks/rules/autofix-registry.json"]
-status = "todo"
+status = "done"
 verify = "registry entry passes validate_rules registry gate; scratch violation via edit-time hook returns corrected snippet; apply-then-fail pre-pass fixes scratch site then exits 1 then idempotent; suites + ci-gate green"
+# [2026-07-03] done: registered no-throwable-catch-without-rethrow autofix; fix inserts CancellationExceptions guard as first catch statement; fixExamples prove idempotence and clean re-scan; edit-time probe returned AUTOFIX AVAILABLE corrected snippet; apply-prepass scratch fixed 1 site then exit 1, second pass exit 0; suites, ci-gate, beta-readiness PASS; final SHA in fleet report
 
 [[items]]
 id = "HD-14"
