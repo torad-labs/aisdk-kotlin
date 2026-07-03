@@ -482,6 +482,7 @@ public class AgentSession<TContext, TOutput>(
                 }
                 throw error
             } catch (error: Throwable) {
+                CancellationExceptions.asCancellationExceptionOrNull(error)?.let { throw it }
                 if (job === currentJobRef.load()) {
                     mutableState.update { it.copy(status = AgentSessionStatus.Error, error = error) }
                 }

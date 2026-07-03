@@ -96,6 +96,7 @@ public class RetryPolicy internal constructor(
             } catch (ce: CancellationException) {
                 throw ce
             } catch (t: Throwable) {
+                CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
                 classifyFailure(t, shouldRetry, errors, attempts)
             }
             if (waitMs > 0) delay(waitMs)

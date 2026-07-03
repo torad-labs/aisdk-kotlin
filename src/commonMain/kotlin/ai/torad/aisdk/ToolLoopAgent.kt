@@ -495,6 +495,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         } catch (t: CancellationException) {
             throw t
         } catch (t: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
             updateEngineStateIfCurrent(
                 ownJob
             ) { it.copy(phase = ToolLoopAgentState.Phase.Error(t.message ?: "agent failed")) }
@@ -764,6 +765,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             } catch (ce: CancellationException) {
                 throw ce
             } catch (t: Throwable) {
+                CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
                 dispatcher.emitError(t, 0, AgentEvent.Errored.ErrorSource.PrepareCall, hooks, feed)
                 emit(StreamEvent.Error(t.message ?: "prepareCall failed", cause = t))
                 finalMessagesRef?.value = priorMessages
@@ -853,6 +855,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (t: Throwable) {
+                    CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
                     dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.PrepareStep, hooks, feed)
                     emit(StreamEvent.Error(t.message ?: "prepareStep failed", cause = t))
                     finalMessagesRef?.value = messages.toList()
@@ -1104,6 +1107,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 // A genuine coroutine cancellation must re-throw untouched (Tier-0 coroutines).
                 throw ce
             } catch (t: Throwable) {
+                CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
                 dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.Model, hooks, feed)
                 // try-finally so the model-call telemetry bracket ALWAYS closes: when generate()
                 // is the collector its StreamCapture throws synchronously on StreamEvent.Error, so
@@ -1174,6 +1178,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+                    CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
                     // Decode/repair failure. Fire onError + telemetry here so these failures stay on
                     // the error-reporting surface — before input resolution was hoisted ahead of the
                     // approval gate, a non-gated tool's decode failure happened inside executeTool,
@@ -1200,6 +1205,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+                    CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
                     deferredToolErrorMessages.add(
                         emitToolErrorDeferred(
                             this,
@@ -1620,6 +1626,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // tool returned cancellation" and the conversation goes off-rails.
             throw ce
         } catch (t: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
             dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.Tool, hooks, feed)
             // resolveToolInput throws typed AgentError; a raw executor
             // throw becomes ToolExecution (see toolFailure).

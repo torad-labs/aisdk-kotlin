@@ -5,6 +5,7 @@ package ai.torad.aisdk
 import ai.torad.aisdk.AgentSessions.session
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.providers.MockToolInput
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -367,6 +368,36 @@ class AgentSessionTest {
 
         // The returned result must NOT be committed as Ready — the abort wins,
         // mirroring submitStreaming's StreamEvent.Abort handling.
+        assertEquals(AgentSessionStatus.Cancelled, session.state.value.status)
+    }
+
+    @Test
+    fun `submit settles Cancelled when agent generation throws cancellation`() = runTest {
+        val agent = object : Agent<Unit, String> {
+            override val tools = ToolSet<Unit>()
+
+            override fun generate(
+                prompt: String?,
+                messages: List<ModelMessage>,
+                options: Unit?,
+                abortSignal: AbortSignal,
+            ): Flow<GenerateResult<String>> = flow {
+                throw CancellationException("generation cancelled")
+            }
+
+            override fun stream(
+                prompt: String?,
+                messages: List<ModelMessage>,
+                options: Unit?,
+                abortSignal: AbortSignal,
+            ): Flow<StreamEvent> = flow {}
+        }
+        val session = agent.session(this)
+
+        val job = session.submit(prompt = "x")
+        job.join()
+
+        assertTrue(job.isCancelled)
         assertEquals(AgentSessionStatus.Cancelled, session.state.value.status)
     }
 }

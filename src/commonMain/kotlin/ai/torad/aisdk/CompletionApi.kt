@@ -454,6 +454,7 @@ public object CompletionApi {
         } catch (t: CancellationException) {
             throw t
         } catch (t: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
             options.setError(t)
             options.onError(t)
             null

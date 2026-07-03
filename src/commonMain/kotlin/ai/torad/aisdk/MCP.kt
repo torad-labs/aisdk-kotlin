@@ -701,6 +701,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                 ),
             )
         } catch (error: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(error)?.let { throw it }
             transport.send(
                 JSONRPCError(
                     id = request.id,
