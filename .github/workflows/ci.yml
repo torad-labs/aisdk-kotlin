@@ -14,6 +14,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AI_SDK_REFERENCE_VERSION: 6.0.208
   AI_SDK_REFERENCE_COMMIT: 3270146267b1d82f07972bc40f09e9b4ee8bb9d3
+  AST_GREP_VERSION: 0.42.1
 
 jobs:
   reference-freshness:
@@ -66,21 +67,49 @@ jobs:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
-      - name: Install locked Node tooling
-        run: npm ci
+      - name: Cache ast-grep binary
+        id: cache_ast_grep
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: .tools/ast-grep/${{ env.AST_GREP_VERSION }}
+          key: ast-grep-${{ runner.os }}-${{ env.AST_GREP_VERSION }}
+      - name: Install ast-grep binary
+        run: |
+          set -euo pipefail
+          package_version="$(node -p "require('./package.json').devDependencies['@ast-grep/cli']")"
+          if [ "$package_version" != "$AST_GREP_VERSION" ]; then
+            echo "AST_GREP_VERSION=$AST_GREP_VERSION does not match package.json @ast-grep/cli=$package_version" >&2
+            exit 1
+          fi
+
+          install_dir="$PWD/.tools/ast-grep/$AST_GREP_VERSION"
+          mkdir -p "$install_dir"
+          if [ ! -x "$install_dir/ast-grep" ]; then
+            tmp="$(mktemp -d)"
+            trap 'rm -rf "$tmp"' EXIT
+            curl -fsSL \
+              "https://github.com/ast-grep/ast-grep/releases/download/${AST_GREP_VERSION}/app-x86_64-unknown-linux-gnu.zip" \
+              -o "$tmp/ast-grep.zip"
+            unzip -q "$tmp/ast-grep.zip" -d "$tmp/extract"
+            install -m 755 "$tmp/extract/ast-grep" "$install_dir/ast-grep"
+          fi
+
+          echo "$install_dir" >> "$GITHUB_PATH"
+          "$install_dir/ast-grep" --version
       - name: Architecture gate (ast-grep rules + structural checks)
         id: architecture_gate
         continue-on-error: true
-        run: ./node_modules/.bin/ast-grep --version && PATH="$PWD/node_modules/.bin:$PATH" bash .claude/hooks/rules/ci-gate.sh
+        run: ast-grep --version && bash .claude/hooks/rules/ci-gate.sh
       - name: Hook self-tests
         id: hook_self_tests
         continue-on-error: true
         run: |
-          export PATH="$PWD/node_modules/.bin:$PATH"
           python3 .claude/hooks/tests/test_kotlin_antipattern_policy.py
           python3 .claude/hooks/tests/test_codex_hook_adapter.py
           python3 .claude/hooks/tests/test_fleet_protocol_policy.py
           python3 .claude/hooks/tests/test_rule_selfcheck_policy.py
+      - name: Install locked Node tooling
+        run: npm ci
       - name: Beta readiness gate
         id: beta_readiness
         continue-on-error: true
