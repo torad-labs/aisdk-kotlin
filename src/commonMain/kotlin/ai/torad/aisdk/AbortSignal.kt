@@ -116,6 +116,7 @@ public class AbortController(
         try {
             onAbort()
         } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
+            // Abort delivery is best-effort: one callback failure must not skip remaining callbacks.
             logCallbackFailure(error)
         }
     }

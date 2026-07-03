@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -11,6 +12,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -41,6 +43,19 @@ class ToolTest {
         val window: WeatherWindow,
         val unit: UnitSystem = UnitSystem.Celsius,
     )
+
+    @Test
+    fun `safeValidateTypes rethrows cancellation from custom validators`() {
+        val schema = Schemas.jsonSchema<String>(
+            buildJsonObject { put("type", JsonPrimitive("string")) },
+        ) {
+            throw CancellationException("validator cancelled")
+        }
+
+        assertFailsWith<CancellationException> {
+            Schemas.safeValidateTypes(JsonPrimitive("Paris"), schema)
+        }
+    }
 
     @Test
     fun `tool_factory_carries_input_and_output_serializers`() {

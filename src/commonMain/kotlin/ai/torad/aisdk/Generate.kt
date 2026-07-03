@@ -242,6 +242,7 @@ private class MemoizedStreamReplay(
             }
             complete(producerRunId, ReplayTerminal.Complete)
         } catch (t: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
             complete(producerRunId, ReplayTerminal.Error(t))
         }
     }

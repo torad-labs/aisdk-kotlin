@@ -344,6 +344,7 @@ public class StructuredObject<RESULT, INPUT>(
             // turned into a Done) must propagate so cooperative cancellation unwinds the job tree.
             throw c
         } catch (t: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
             val current = mutableState.value
             val partial = (current as? StructuredObjectPhase.Streaming)?.partial
             val raw = (current as? StructuredObjectPhase.Streaming)?.raw

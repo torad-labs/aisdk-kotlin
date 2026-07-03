@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -9,6 +10,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /**
@@ -75,6 +77,19 @@ class ToolErrorWiringTest {
         assertTrue(typed is AgentError.ToolExecution, "expected ToolExecution, was $typed")
         assertEquals("weather", typed.toolName)
         assertTrue(typed.executorError.message?.contains("db down") == true, "executor cause preserved")
+    }
+
+    @Test
+    fun `given a tool executor cancellation when run then cancellation propagates instead of ToolError`() = runTest {
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = MockLanguageModelToolThenText(toolName = "weather", toolInput = validInput, finalText = "done"),
+            instructions = "",
+            tools = ToolSet(weatherTool { throw CancellationException("tool cancelled") }),
+        )
+
+        assertFailsWith<CancellationException> {
+            agent.stream(prompt = "?").collect {}
+        }
     }
 
     @Test

@@ -561,6 +561,7 @@ internal class GoogleInteractionsStreamState(
         val input = try {
             aiSdkJson.parseToJsonElement(inputText)
         } catch (error: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(error)?.let { throw it }
             return listOf(
                 StreamEvent.Error(
                     "Google stream protocol error: function_call arguments were not valid JSON: ${error.message}"

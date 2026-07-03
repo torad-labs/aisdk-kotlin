@@ -581,8 +581,9 @@ id = "HD-06"
 phase = "hd"
 title = "Adjudicate + fix the ~20 catch(Throwable)-without-rethrow sites surfaced by HD-03s new rule (grandfathered at warning severity). Files: RetryPolicy, CompletionApi, Telemetry, SmoothStream, StructuredObjectApi, Generate, AbortSignal, AgentSession, AgentTelemetryDispatcher, ui/Streams, ToolLoopAgent, Tool, MCP, ToolCallRepairer, GoogleInteractionsStreamState. Per site adjudicate: (a) suspend/coroutine context where CancellationException can arrive -> add the established idiom catch(ce: CancellationException){throw ce} before the Throwable catch (or rethrow inside); (b) non-suspend context or deliberate best-effort (telemetry flush, close paths) -> keep but make deliberate: discard param as _ (the rules carve-out) or comment. Use ast-grep to enumerate sites (the rule itself) and for mechanical rewrites where the fix is uniform. NO blanket rewrite — each site gets a one-line adjudication in the report. Tests: any behavior change (previously-swallowed cancellation now propagating) needs a test proving cooperative cancellation, esp. ToolLoopAgent/AgentSession loops. This is a src/ correctness slice — full gradle check + ci-gate; ABI dumps should be unchanged (no signature changes)."
 files = ["src/commonMain/kotlin/", "src/commonTest/kotlin/"]
-status = "todo"
+status = "done"
 verify = "per-site adjudication table in report/note; cancellation-propagation test(s) added and passing; gradle check green; ci-gate green; rule warning count on touched files drops to deliberate-only"
+# [2026-07-03] Cancellation rethrow adjudication complete: 22 ast-grep findings reduced to AbortSignal best-effort callback only; propagation tests added; budget reseeded; final SHA in fleet report
 
 [[items]]
 id = "HD-07"
