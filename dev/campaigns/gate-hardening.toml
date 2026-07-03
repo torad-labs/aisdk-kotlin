@@ -173,16 +173,17 @@ id = "GH-14"
 phase = "gh2"
 title = "ONE shared fixture-pair harness for zero-self-test mjs/py gates: runner walks tools/gate-fixtures/<gate>/{violation,compliant}/, asserts violation->nonzero, compliant->zero. New gates = two directories, zero runner code."
 files = ["tools/run-gate-fixtures.mjs", "tools/gate-fixtures/"]
-status = "done"
+status = "verified"
 verify = "runner wired into CI; adding a scratch gate with fixtures needs no runner edit"
 # [2026-07-02] done in GH-14 slice (final SHA in fleet report): shared gate fixture runner added and wired into ci-gate; no-fixture path lazy-skips in 17ms; scratch gate passed without runner edits
+# [2026-07-02] orchestrator verified 464dc8f: cmd.txt-per-gate contract with env injection, lazy skip 17ms, zero-runner-code proven by builder scratch gate; fire direction proven by orchestrator probe (violation-exits-0 -> harness exit 1)
 
 [[items]]
 id = "GH-15"
 phase = "gh2"
 title = "First harness tenant: detect-release-workflow-trust.py (guards release.yml, zero tests today). Violation fixture: release job missing preflight dependency or workflow-level packages:write."
 files = ["tools/gate-fixtures/release-workflow-trust/"]
-status = "todo"
+status = "in_flight"
 depends = ["GH-14"]
 verify = "tampered fixture fails; compliant real-shape fixture passes; runs in CI via GH-14 runner"
 
@@ -201,7 +202,7 @@ id = "GH-17"
 phase = "gh2"
 title = "Release workflow_dispatch dry-run: staging + signing + local-staging smoke, SKIP Sonatype/GH-Packages curls; logs 'would publish N artifacts'. Honest limit: cannot prove Central auth/state-machine. release.yml edits must keep detect-release-workflow-trust green."
 files = [".github/workflows/release.yml"]
-status = "todo"
+status = "in_flight"
 verify = "dry_run=true manual run completes green on a non-tag ref with zero publish-endpoint calls"
 
 [[items]]
@@ -209,7 +210,7 @@ id = "GH-23"
 phase = "gh2"
 title = "Budget ratchets must localize new debt (this week: 9 new data classes hid inside count headroom). detect-public-data-class-budget tracks the SET of declarations (like detekt baseline), so any NEW symbol surfaces for explicit acknowledgment even under budget; pure removals frictionless. Evaluate same for architecture/api-since budgets."
 files = [".claude/hooks/rules/detect-public-data-class-budget.py", "data-class-budget.json"]
-status = "todo"
+status = "in_flight"
 verify = "adding a new public data class while total <= budget still fails/flags until acknowledged; removal-only change passes untouched"
 
 # ---------------------------------------------------------------- phase gh3: structural (L)
