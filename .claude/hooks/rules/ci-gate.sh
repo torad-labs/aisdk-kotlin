@@ -101,6 +101,18 @@ python3 .claude/hooks/rules/validate_rules.py --manifest .claude/hooks/rules/man
 python3 .claude/hooks/rules/validate_rules.py --hunk-mode .claude/hooks/rules/manifest.json || fail=1
 echo "== ast-grep autofix pre-pass =="
 python3 .claude/hooks/rules/validate_rules.py --apply-autofix "$RULES_ROOT/registry.json" src/commonMain/kotlin src/commonTest/kotlin || exit 1
+
+echo "== sealed-when codemod =="
+if [ -f "dev/codemods/fix_sealed_when.py" ]; then
+  output=$(python3 dev/codemods/fix_sealed_when.py src/commonMain src/commonTest 2>&1)
+  if echo "$output" | grep -qE "^Applying [1-9]"; then
+    echo "$output" | grep -E "^(Applying|  Replace)"
+    echo "sealed-when codemod applied fixes — stage changes and re-commit"
+    exit 1
+  fi
+fi
+echo "sealed-when codemod OK: no fixes needed"
+
 node tools/run-gate-fixtures.mjs || fail=1
 
 echo "== consumer migration rule gate =="
