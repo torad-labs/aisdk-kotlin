@@ -13,7 +13,7 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AI_SDK_REFERENCE_VERSION: 6.0.208
-  AI_SDK_REFERENCE_COMMIT: 3270146267b1d82f07972bc40f09e9b4ee8bb9d3
+  AI_SDK_REFERENCE_COMMIT: 0000000000000000000000000000000000000bad
   # Update AST_GREP_SHA256 together with AST_GREP_VERSION; the package.json drift-check below enforces version consistency.
   AST_GREP_VERSION: 0.42.1
   AST_GREP_SHA256: 5de8b87cba67fc8dc3e239d54b6484802ad745a7ae3de76be4fe89661dc52657
@@ -28,7 +28,7 @@ jobs:
         id: fetch_reference
         run: |
           mkdir -p .reference
-          if ! git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai-nonexistent-fr04-probe .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}; then
+          if ! git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}; then
             echo "::warning::Unable to fetch Vercel AI SDK reference; skipping freshness/parity checks so internal gates still run."
             echo "available=false" >> "$GITHUB_OUTPUT"
             exit 0
