@@ -61,6 +61,7 @@ echo "== ast-grep rule self-test gate =="
 python3 .claude/hooks/rules/validate_rules.py "$RULES_DIR" || fail=1
 python3 .claude/hooks/rules/validate_rules.py --manifest .claude/hooks/rules/manifest.json || fail=1
 python3 .claude/hooks/rules/validate_rules.py --hunk-mode .claude/hooks/rules/manifest.json || fail=1
+node tools/run-gate-fixtures.mjs || fail=1
 
 echo "== tool occurrence identity gate =="
 python3 .claude/hooks/rules/detect-tool-identity-regressions.py src/commonMain/kotlin --check || fail=1
