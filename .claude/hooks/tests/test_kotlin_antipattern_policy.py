@@ -187,6 +187,213 @@ if manifest.exists():
     )
     check("foundry rules pass semantic gate (match bad, skip good)", sem_gate.returncode == 0)
 
+    manifest_entries = json.loads(manifest.read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory() as tmp:
+        off_path_manifest = Path(tmp) / "manifest.json"
+        off_path_manifest.write_text(json.dumps(manifest_entries[:-1]), encoding="utf-8")
+        missing_entry_gate = subprocess.run(
+            [
+                sys.executable,
+                str(HOOKS_ROOT / "rules" / "validate_rules.py"),
+                "--manifest",
+                str(off_path_manifest),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+        check(
+            "off-path manifest missing a rule entry fails semantic gate",
+            missing_entry_gate.returncode == 1 and "missing manifest entry" in missing_entry_gate.stdout,
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        hunk_manifest = Path(tmp) / "manifest.json"
+        hunk_entries = list(manifest_entries)
+        hunk_entries[0] = {**hunk_entries[0], "hunkExpectation": "no-match"}
+        hunk_manifest.write_text(json.dumps(hunk_entries), encoding="utf-8")
+        hunk_gate = subprocess.run(
+            [
+                sys.executable,
+                str(HOOKS_ROOT / "rules" / "validate_rules.py"),
+                "--hunk-mode",
+                str(hunk_manifest),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+        check(
+            "flipped hunkExpectation fails hunk-mode gate",
+            hunk_gate.returncode == 1 and "hunkExpectation=no-match" in hunk_gate.stdout,
+        )
+
+    fix_rule = """id: test-replace-bad-name
+language: kotlin
+severity: error
+rule:
+  pattern: BadName()
+fix: GoodName()
+"""
+    fix_manifest_entry = {
+        "id": "test-replace-bad-name",
+        "severity": "error",
+        "yaml": fix_rule,
+        "badExample": "val x = BadName()",
+        "goodExample": "val x = GoodName()",
+        "fixExamples": [
+            {
+                "input": "val x = BadName()",
+                "output": "val x = GoodName()",
+            }
+        ],
+    }
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        fix_manifest = tmp_path / "manifest.json"
+        fix_registry = tmp_path / "autofix-registry.json"
+        fix_manifest.write_text(json.dumps([*manifest_entries, fix_manifest_entry]), encoding="utf-8")
+        fix_registry.write_text(json.dumps([{"id": "test-replace-bad-name"}]), encoding="utf-8")
+        valid_fix_gate = subprocess.run(
+            [
+                sys.executable,
+                str(HOOKS_ROOT / "rules" / "validate_rules.py"),
+                "--manifest",
+                str(fix_manifest),
+                "--autofix-registry",
+                str(fix_registry),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        check("registered autofix rule with idempotent fixture passes", valid_fix_gate.returncode == 0)
+
+        broken_entry = {
+            **fix_manifest_entry,
+            "fixExamples": [{"input": "val x = BadName()", "output": "val x = StillWrong()"}],
+        }
+        fix_manifest.write_text(json.dumps([*manifest_entries, broken_entry]), encoding="utf-8")
+        broken_fix_gate = subprocess.run(
+            [
+                sys.executable,
+                str(HOOKS_ROOT / "rules" / "validate_rules.py"),
+                "--manifest",
+                str(fix_manifest),
+                "--autofix-registry",
+                str(fix_registry),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        check(
+            "registered autofix rule with broken fixture fails",
+            broken_fix_gate.returncode == 1 and "fixExamples[1]" in broken_fix_gate.stdout,
+        )
+
+        no_fixture_entry = {k: v for k, v in fix_manifest_entry.items() if k != "fixExamples"}
+        fix_manifest.write_text(json.dumps([*manifest_entries, no_fixture_entry]), encoding="utf-8")
+        no_fixture_gate = subprocess.run(
+            [
+                sys.executable,
+                str(HOOKS_ROOT / "rules" / "validate_rules.py"),
+                "--manifest",
+                str(fix_manifest),
+                "--autofix-registry",
+                str(fix_registry),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        check(
+            "registered autofix rule without fixExamples fails",
+            no_fixture_gate.returncode == 1 and "fixExamples" in no_fixture_gate.stdout,
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        rules_dir = tmp_path / "kotlin"
+        rules_dir.mkdir()
+        registry = tmp_path / "autofix-registry.json"
+        sample_dir = tmp_path / "src"
+        sample_dir.mkdir()
+        rule_file = rules_dir / "test-replace-bad-name.yaml"
+        sample = sample_dir / "Sample.kt"
+        rule_file.write_text(fix_rule, encoding="utf-8")
+        registry.write_text(json.dumps([{"id": "test-replace-bad-name"}]), encoding="utf-8")
+        sample.write_text("package x\n\nval x = BadName()\n", encoding="utf-8")
+        apply_gate = subprocess.run(
+            [
+                sys.executable,
+                str(HOOKS_ROOT / "rules" / "validate_rules.py"),
+                "--apply-autofix",
+                str(registry),
+                str(sample_dir),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        check(
+            "autofix pre-pass applies fixes then fails for review",
+            apply_gate.returncode == 1
+            and "fixed 1 site(s)" in apply_gate.stdout
+            and "GoodName()" in sample.read_text(encoding="utf-8"),
+        )
+        apply_again = subprocess.run(
+            [
+                sys.executable,
+                str(HOOKS_ROOT / "rules" / "validate_rules.py"),
+                "--apply-autofix",
+                str(registry),
+                str(sample_dir),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        check("autofix pre-pass is idempotent after review", apply_again.returncode == 0)
+
+        original_rules_dir = policy.RULES_DIR
+        original_registry = policy.AUTOFIX_REGISTRY
+        try:
+            policy.RULES_DIR = rules_dir
+            policy.AUTOFIX_REGISTRY = registry
+            fixed = policy.run({"tool_name": "Write", "tool_input": {
+                "file_path": str(sample),
+                "content": "package x\n\nval x = BadName()\n",
+            }})
+            check(
+                "edit-time autofix fallback blocks with corrected snippet",
+                bool(
+                    fixed
+                    and fixed.kind == "block"
+                    and "AUTOFIX AVAILABLE" in fixed.payload
+                    and "fixed 1 site(s)" in fixed.payload
+                    and "GoodName()" in fixed.payload
+                ),
+            )
+        finally:
+            policy.RULES_DIR = original_rules_dir
+            policy.AUTOFIX_REGISTRY = original_registry
+
+
+
+# Consumer-tree exemption (2026-07-03 misfire): library rules must not bind
+# samples/ or smoke-tests/ Kotlin; everywhere else stays guarded.
+sample_allowed = policy.run({"tool_name": "Write", "tool_input": {
+    "file_path": str(ROOT / "samples" / "jvm-chat-cli" / "src" / "main" / "kotlin" / "Main.kt"),
+    "content": "public fun generateText(): Unit = Unit",
+}})
+check("samples/ Kotlin is exempt from library rules", sample_allowed is None or sample_allowed.kind != "block")
+smoke_allowed = policy.run({"tool_name": "Write", "tool_input": {
+    "file_path": str(ROOT / "smoke-tests" / "x" / "Main.kt"),
+    "content": "public fun generateText(): Unit = Unit",
+}})
+check("smoke-tests/ Kotlin is exempt from library rules", smoke_allowed is None or smoke_allowed.kind != "block")
 
 if failures:
     print(f"FAILED {ran - len(failures)}/{ran}")

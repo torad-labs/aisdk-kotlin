@@ -1,0 +1,49 @@
+id: no-runcatching-in-suspend
+language: kotlin
+severity: warning
+message: "runCatching in suspend/coroutine-builder code swallows CancellationException; use explicit try/catch that rethrows cancellation."
+note: >-
+  Edit-time mirror of the custom detekt rule
+  NoRunCatchingInSuspendFunction. It flags stdlib runCatching under a suspend
+  named function, and the type-free coroutine-builder case detekt can prove:
+  runCatching inside launch/async/withContext/coroutineScope/supervisorScope
+  whose body calls a suspend function declared in the same file. Detekt remains
+  the blocking owner; this warning rule is the earlier feedback layer.
+rule:
+  kind: call_expression
+  all:
+    - has: { kind: simple_identifier, regex: '^runCatching$', stopBy: neighbor }
+    - any:
+        - inside:
+            kind: function_declaration
+            stopBy: end
+            has:
+              kind: modifiers
+              has: { kind: function_modifier, regex: '^suspend$' }
+        - all:
+            - inside:
+                stopBy: end
+                any:
+                  - pattern: '$RECEIVER.launch { $$$BUILDER_BODY }'
+                  - pattern: '$RECEIVER.launch($$$BUILDER_ARGS) { $$$BUILDER_BODY }'
+                  - pattern: 'launch { $$$BUILDER_BODY }'
+                  - pattern: 'launch($$$BUILDER_ARGS) { $$$BUILDER_BODY }'
+                  - pattern: '$RECEIVER.async { $$$BUILDER_BODY }'
+                  - pattern: '$RECEIVER.async($$$BUILDER_ARGS) { $$$BUILDER_BODY }'
+                  - pattern: 'async { $$$BUILDER_BODY }'
+                  - pattern: 'async($$$BUILDER_ARGS) { $$$BUILDER_BODY }'
+                  - pattern: 'withContext($$$BUILDER_ARGS) { $$$BUILDER_BODY }'
+                  - pattern: 'coroutineScope { $$$BUILDER_BODY }'
+                  - pattern: 'supervisorScope { $$$BUILDER_BODY }'
+            - has:
+                pattern: '$SUSPEND_NAME($$$ARGS)'
+                stopBy: end
+            - inside:
+                kind: source_file
+                stopBy: end
+                has:
+                  any:
+                    - pattern: 'suspend fun $SUSPEND_NAME($$$PARAMS): $$$RET = $$$BODY'
+                    - pattern: 'suspend fun $SUSPEND_NAME($$$PARAMS): $$$RET { $$$BODY }'
+                    - pattern: 'suspend fun $SUSPEND_NAME($$$PARAMS) = $$$BODY'
+                    - pattern: 'suspend fun $SUSPEND_NAME($$$PARAMS) { $$$BODY }'

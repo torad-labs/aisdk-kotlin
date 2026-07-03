@@ -574,9 +574,39 @@ internal object GoogleInteractions {
                     put("id", JsonPrimitive(IdGenerator.generate()))
                 }))),
             )
-            else -> null
+            else -> googleUnknownAnnotationSource(annotation, url, metadata)
         }
     }
+
+    private fun googleUnknownAnnotationSource(
+        annotation: JsonObject,
+        url: String,
+        metadata: Map<String, JsonElement>?,
+    ): ContentPart.Source =
+        ContentPart.Source(
+            sourceType = if (annotation["document_uri"] != null) {
+                StreamEvent.SourcePart.SourceType.Document
+            } else {
+                StreamEvent.SourcePart.SourceType.Url
+            },
+            url = url,
+            title = (annotation["title"] as? JsonPrimitive)?.contentOrNull
+                ?: (annotation["name"] as? JsonPrimitive)?.contentOrNull
+                ?: (annotation["file_name"] as? JsonPrimitive)?.contentOrNull,
+            providerMetadata = googleUnknownAnnotationMetadata(annotation, metadata),
+        )
+
+    private fun googleUnknownAnnotationMetadata(
+        annotation: JsonObject,
+        metadata: Map<String, JsonElement>?,
+    ): ProviderMetadata {
+        val base = metadata.orEmpty()
+        val google = (base["google"] as? JsonObject)
+            ?.let { JsonObject(it + ("annotation" to annotation)) }
+            ?: annotation
+        return ProviderMetadata.Raw(JsonObject(base + ("google" to google)))
+    }
+
     fun googleInteractionsUsage(element: JsonElement?): Usage {
         val obj = element as? JsonObject ?: return Usage()
         val input = (obj["total_input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0

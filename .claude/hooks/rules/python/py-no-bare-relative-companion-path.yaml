@@ -1,0 +1,19 @@
+id: py-no-bare-relative-companion-path
+language: python
+severity: warning
+message: "Module-level Path(\"relative\") in hook/gate code anchors to caller cwd; anchor via __file__ or accept an explicit --path/--budget flag."
+rule:
+  kind: assignment
+  all:
+    - pattern: $NAME = Path("$REL")
+    - not:
+        inside:
+          kind: function_definition
+          stopBy: end
+    - not:
+        inside:
+          kind: class_definition
+          stopBy: end
+constraints:
+  REL:
+    regex: '^[^/~].*'

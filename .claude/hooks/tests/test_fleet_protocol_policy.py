@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -12,6 +13,12 @@ ROOT = Path(__file__).resolve().parents[3]
 TARGET = ROOT / ".claude" / "hooks" / "orchestrator" / "pretooluse.py"
 ADAPTER = ROOT / ".codex" / "hooks" / "claude_compat.py"
 OWNED = ROOT / "docs" / "audit-remediation-backlog.md"
+CAMPAIGN_LEDGER = ROOT / "dev" / "campaigns" / "gate-hardening.toml"
+MEASUREMENTS_LEDGER = ROOT / "dev" / "measurements.toml"
+NEW_CAMPAIGN_LEDGER = ROOT / "dev" / "campaigns" / "seed-once-test.toml"
+API_KLIB_DUMP = ROOT / "api" / "torad-aisdk.klib.api"
+API_JVM_DUMP = ROOT / "api" / "jvm" / "torad-aisdk.api"
+KOTLIN_TARGET = ROOT / "src" / "commonMain" / "kotlin" / "ai" / "torad" / "aisdk" / "ShellWriteTarget.kt"
 
 failures: list[str] = []
 ran = 0
@@ -24,18 +31,30 @@ def check(name: str, condition: bool) -> None:
         failures.append(name)
 
 
-def run_target(event: dict) -> subprocess.CompletedProcess[str]:
+def run_target(
+    event: dict,
+    *,
+    extra_env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    env = dict(os.environ)
+    if extra_env:
+        env.update(extra_env)
     return subprocess.run(
         [sys.executable, str(TARGET)],
         input=json.dumps(event),
         capture_output=True,
         text=True,
         timeout=20,
+        env=env,
     )
 
 
 def blocked(result: subprocess.CompletedProcess[str]) -> bool:
     return '"decision": "block"' in result.stdout or '"permissionDecision": "deny"' in result.stdout
+
+
+def warned(result: subprocess.CompletedProcess[str]) -> bool:
+    return bool(result.stderr.strip())
 
 
 # 1/2 — orchestrator-owned file: builder blocked, unstamped (orchestrator) allowed.
@@ -47,6 +66,84 @@ builder_write = {
 check("builder write to owned ledger is blocked", blocked(run_target(builder_write)))
 orch_write = {k: v for k, v in builder_write.items() if k != "fleet_role"}
 check("orchestrator write to owned ledger is allowed", not blocked(run_target(orch_write)))
+
+# 2 — cross-session ledgers are CLI-only, with a seed-new-file carve-out.
+check(
+    "raw campaign ledger Write is blocked",
+    blocked(run_target({
+        "tool_name": "Write",
+        "tool_input": {"file_path": str(CAMPAIGN_LEDGER), "content": "status = 'bad'"},
+    })),
+)
+check(
+    "raw measurements ledger Edit is blocked",
+    blocked(run_target({
+        "tool_name": "Edit",
+        "tool_input": {
+            "file_path": str(MEASUREMENTS_LEDGER),
+            "old_string": "x",
+            "new_string": "y",
+        },
+    })),
+)
+check(
+    "raw ledger MultiEdit is blocked",
+    blocked(run_target({
+        "tool_name": "MultiEdit",
+        "tool_input": {
+            "file_path": str(CAMPAIGN_LEDGER),
+            "edits": [{"old_string": "x", "new_string": "y"}],
+        },
+    })),
+)
+check("ledger seed Write fixture path does not exist", not NEW_CAMPAIGN_LEDGER.exists())
+check(
+    "seed-new campaign ledger Write is allowed once",
+    not blocked(run_target({
+        "tool_name": "Write",
+        "tool_input": {"file_path": str(NEW_CAMPAIGN_LEDGER), "content": "[[items]]\n"},
+    })),
+)
+with tempfile.TemporaryDirectory(dir=ROOT / "dev" / "campaigns") as tmp:
+    nested_existing = Path(tmp) / "nested" / "x.toml"
+    nested_existing.parent.mkdir()
+    nested_existing.write_text("[[items]]\n", encoding="utf-8")
+    check(
+        "nested existing campaign ledger Edit is blocked",
+        blocked(run_target({
+            "tool_name": "Edit",
+            "tool_input": {
+                "file_path": str(nested_existing),
+                "old_string": "x",
+                "new_string": "y",
+            },
+        })),
+    )
+    nested_seed = Path(tmp) / "nested" / "seed-once.toml"
+    check("nested seed Write fixture path does not exist", not nested_seed.exists())
+    check(
+        "nested seed-new campaign ledger Write is allowed once",
+        not blocked(run_target({
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(nested_seed), "content": "[[items]]\n"},
+        })),
+    )
+override_result = run_target(
+    {
+        "tool_name": "Write",
+        "tool_input": {"file_path": str(CAMPAIGN_LEDGER), "content": "status = 'override'"},
+    },
+    extra_env={"AISDK_LEDGER_RAW_OK": "1"},
+)
+check("operator override allows raw ledger Write", not blocked(override_result))
+check("operator override is loud", warned(override_result))
+check(
+    "ledger CLI path via Bash is untouched",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "python3 dev/campaigns/manifest.py get HD-10"},
+    })),
+)
 
 # 3 — builder push blocked, incl. list-form codex shell commands.
 check(
@@ -87,6 +184,173 @@ check(
         "tool_name": "Bash",
         "fleet_role": "builder",
         "tool_input": {"command": "bash -c 'echo ok'"},
+    })),
+)
+
+# 3b — new parallel-copy filenames are blocked on code/config files and only
+# warned for Markdown notes.
+check(
+    "creating a v2 Kotlin file is blocked",
+    blocked(run_target({
+        "tool_name": "Write",
+        "tool_input": {
+            "file_path": str(ROOT / "src" / "commonMain" / "kotlin" / "ai" / "torad" / "aisdk" / "Agent_v2.kt"),
+            "content": "package ai.torad.aisdk\n",
+        },
+    })),
+)
+check(
+    "creating a normal Kotlin file is allowed",
+    not blocked(run_target({
+        "tool_name": "Write",
+        "tool_input": {
+            "file_path": str(ROOT / "src" / "commonMain" / "kotlin" / "ai" / "torad" / "aisdk" / "AgentCanonical.kt"),
+            "content": "package ai.torad.aisdk\n",
+        },
+    })),
+)
+markdown_warn_result = run_target({
+    "tool_name": "Write",
+    "tool_input": {"file_path": str(ROOT / "docs" / "release_final.md"), "content": "# Final\n"},
+})
+check("creating a final Markdown file is warn-only", not blocked(markdown_warn_result))
+check("creating a final Markdown file emits warning", warned(markdown_warn_result))
+with tempfile.TemporaryDirectory() as tmp:
+    existing_bad = Path(tmp) / "Existing_copy.py"
+    existing_bad.write_text("print('ok')\n", encoding="utf-8")
+    check(
+        "editing an existing copy-suffixed file is allowed",
+        not blocked(run_target({
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(existing_bad), "content": "print('still ok')\n"},
+        })),
+    )
+
+# 3c — Bash-routed source writes bypass the edit layer and are blocked; the
+# sanctioned structural rewrite and ABI-regeneration commands remain allowed.
+check(
+    "cat heredoc write to Kotlin source is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": f"cat <<'EOF' > {KOTLIN_TARGET}\npackage x\nEOF"},
+    })),
+)
+check(
+    "python heredoc write to Kotlin source is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {
+            "command": (
+                "python3 - <<'PY'\n"
+                "from pathlib import Path\n"
+                f"Path('{KOTLIN_TARGET}').write_text('package x\\n')\n"
+                "PY"
+            ),
+        },
+    })),
+)
+check(
+    "python heredoc that only mentions Kotlin source is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {
+            "command": (
+                "python3 - <<'PY'\n"
+                "target = 'src/commonMain/kotlin/ai/torad/aisdk/Generate.kt'\n"
+                "print(target)\n"
+                "PY"
+            ),
+        },
+    })),
+)
+check(
+    "tee write to Kotlin source is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": f"printf 'package x\\n' | tee {KOTLIN_TARGET}"},
+    })),
+)
+check(
+    "env-prefixed sed inplace write to Kotlin source is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": f"env LC_ALL=C sed -i 's/a/b/' {KOTLIN_TARGET}"},
+    })),
+)
+check(
+    "source file read through Bash is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "cat src/commonMain/kotlin/ai/torad/aisdk/Generate.kt"},
+    })),
+)
+check(
+    "source file read through nested shell is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "bash -c 'cat src/commonMain/kotlin/ai/torad/aisdk/Generate.kt'"},
+    })),
+)
+check(
+    "ast-grep rewrite command is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {
+            "command": (
+                "ast-grep run --pattern 'println($A)' --rewrite 'logger.info($A)' "
+                "src/commonMain/kotlin"
+            ),
+        },
+    })),
+)
+check(
+    "ast-grep update-all command is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "ast-grep scan --update-all src/commonMain/kotlin"},
+    })),
+)
+check(
+    "direct Edit on direct-child ABI dump is blocked",
+    blocked(run_target({
+        "tool_name": "Edit",
+        "tool_input": {
+            "file_path": str(API_KLIB_DUMP),
+            "old_string": "old",
+            "new_string": "new",
+        },
+    })),
+)
+check(
+    "direct Edit on nested JVM ABI dump is blocked",
+    blocked(run_target({
+        "tool_name": "Edit",
+        "tool_input": {
+            "file_path": str(API_JVM_DUMP),
+            "old_string": "old",
+            "new_string": "new",
+        },
+    })),
+)
+check(
+    "bash redirect to direct-child ABI dump is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": f"cat <<'EOF' > {API_KLIB_DUMP}\napi\nEOF"},
+    })),
+)
+check(
+    "bash redirect to nested JVM ABI dump is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": f"cat <<'EOF' >> {API_JVM_DUMP}\napi\nEOF"},
+    })),
+)
+check(
+    "gradle updateKotlinAbi command is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "./gradlew updateKotlinAbi"},
     })),
 )
 

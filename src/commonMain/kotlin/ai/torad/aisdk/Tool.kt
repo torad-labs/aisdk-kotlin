@@ -623,6 +623,7 @@ public object Schemas {
             @Suppress("UNCHECKED_CAST")
             ValidationResult.Success(validated as T, value)
         } catch (error: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(error)?.let { throw it }
             ValidationResult.Failure(TypeValidationError.wrap(value, error, context), value)
         }
 

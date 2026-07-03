@@ -20,6 +20,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 @Suppress("LargeClass")
@@ -178,6 +179,128 @@ class GoogleProviderTest {
     }
 
     @Test
+    fun `provider settings expose defaults custom values and header precedence`() {
+        val defaults = GoogleGenerativeAIProviderSettings()
+        assertEquals("https://generativelanguage.googleapis.com/v1beta", defaults.baseURL)
+        assertEquals(null, defaults.apiKey)
+        assertEquals(emptyMap(), defaults.headers)
+        assertEquals("google.generative-ai", defaults.name)
+        assertEquals(1_000L, defaults.videoPollIntervalMillis)
+        assertEquals(120, defaults.videoMaxPollAttempts)
+
+        val defaultHeaders = defaults.googleHeaders(emptyMap())
+        assertEquals(null, defaultHeaders["x-goog-api-key"])
+        assertTrue(defaultHeaders.getValue(HttpHeaders.UserAgent).contains("ai-sdk/google/$GOOGLE_VERSION"))
+
+        val custom = GoogleGenerativeAIProviderSettings {
+            baseURL("https://google.test/custom")
+            apiKey("provider-key")
+            headers(
+                mapOf(
+                    "X-Provider" to "provider",
+                    HttpHeaders.UserAgent to "provider-agent",
+                )
+            )
+            generateId { "fixed-id" }
+            name("custom-google")
+            videoPollIntervalMillis(250L)
+            videoMaxPollAttempts(7)
+        }
+
+        assertEquals("https://google.test/custom", custom.baseURL)
+        assertEquals("fixed-id", custom.generateId())
+        assertEquals("custom-google", custom.name)
+        assertEquals(250L, custom.videoPollIntervalMillis)
+        assertEquals(7, custom.videoMaxPollAttempts)
+
+        val headers = custom.googleHeaders(
+            mapOf(
+                "X-Request" to "request",
+                HttpHeaders.UserAgent to "request-agent",
+            )
+        )
+        assertEquals("provider-key", headers["x-goog-api-key"])
+        assertEquals("provider", headers["X-Provider"])
+        assertEquals("request", headers["X-Request"])
+        assertTrue(headers.getValue(HttpHeaders.UserAgent).contains("request-agent"))
+        assertTrue(headers.getValue(HttpHeaders.UserAgent).contains("ai-sdk/google/$GOOGLE_VERSION"))
+
+        val interactionHeaders = custom.googleInteractionsHeaders(emptyMap())
+        assertEquals("2026-05-20", interactionHeaders["Api-Revision"])
+    }
+
+    @Test
+    fun `provider settings deserialize missing and explicit JSON fields`() {
+        val defaults = Json.decodeFromString(GoogleGenerativeAIProviderSettings.serializer(), "{}")
+        assertEquals("https://generativelanguage.googleapis.com/v1beta", defaults.baseURL)
+        assertEquals(null, defaults.apiKey)
+        assertEquals(emptyMap(), defaults.headers)
+        assertEquals("google.generative-ai", defaults.name)
+        assertEquals(1_000L, defaults.videoPollIntervalMillis)
+        assertEquals(120, defaults.videoMaxPollAttempts)
+
+        val explicit = Json.decodeFromString(
+            GoogleGenerativeAIProviderSettings.serializer(),
+            """
+            {
+              "baseURL": "https://google.test/v1",
+              "apiKey": "json-key",
+              "headers": {"X-Provider": "json"},
+              "name": "json-google",
+              "videoPollIntervalMillis": 250,
+              "videoMaxPollAttempts": 9
+            }
+            """.trimIndent(),
+        )
+        assertEquals("https://google.test/v1", explicit.baseURL)
+        assertEquals("json-key", explicit.apiKey)
+        assertEquals("json", explicit.headers["X-Provider"])
+        assertEquals("json-google", explicit.name)
+        assertEquals(250L, explicit.videoPollIntervalMillis)
+        assertEquals(9, explicit.videoMaxPollAttempts)
+    }
+
+    @Test
+    fun `provider settings equality hash and string cover each stored field`() {
+        val generateId = { "fixed-id" }
+        fun settings(
+            baseURL: String = "https://google.test/base",
+            apiKey: String? = "key",
+            headers: Map<String, String> = mapOf("X-Test" to "yes"),
+            generateIdValue: () -> String = generateId,
+            name: String = "google.test",
+            videoPollIntervalMillis: Long = 250L,
+            videoMaxPollAttempts: Int = 7,
+        ): GoogleGenerativeAIProviderSettings =
+            GoogleGenerativeAIProviderSettings {
+                baseURL(baseURL)
+                apiKey(apiKey)
+                headers(headers)
+                generateId(generateIdValue)
+                name(name)
+                videoPollIntervalMillis(videoPollIntervalMillis)
+                videoMaxPollAttempts(videoMaxPollAttempts)
+            }
+
+        val base = settings()
+        val same = settings()
+
+        assertEquals(base, base)
+        assertEquals(base, same)
+        assertEquals(base.hashCode(), same.hashCode())
+        assertTrue(base.toString().contains("baseURL=https://google.test/base"))
+        assertTrue(base.toString().contains("videoMaxPollAttempts=7"))
+        assertNotEquals(base, Any())
+        assertNotEquals(base, settings(baseURL = "https://google.test/other"))
+        assertNotEquals(base, settings(apiKey = null))
+        assertNotEquals(base, settings(headers = mapOf("X-Test" to "no")))
+        assertNotEquals(base, settings(generateIdValue = { "fixed-id" }))
+        assertNotEquals(base, settings(name = "google.other"))
+        assertNotEquals(base, settings(videoPollIntervalMillis = 500L))
+        assertNotEquals(base, settings(videoMaxPollAttempts = 8))
+    }
+
+    @Test
     fun `language model sends URL media as fileData and base64 media as inlineData`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
@@ -198,7 +321,7 @@ class GoogleProviderTest {
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings {
-                apiKey("key");
+                apiKey("key")
                 baseURL("https://google.test/v1beta")
             },
         )
@@ -270,7 +393,7 @@ class GoogleProviderTest {
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings {
-                apiKey("key");
+                apiKey("key")
                 baseURL("https://google.test/v1beta")
             },
         )
@@ -317,7 +440,7 @@ class GoogleProviderTest {
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings {
-                apiKey("key");
+                apiKey("key")
                 baseURL("https://google.test/v1beta")
             },
         )
@@ -395,7 +518,7 @@ class GoogleProviderTest {
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings {
-                apiKey("key");
+                apiKey("key")
                 baseURL("https://google.test/v1beta")
             },
         )
@@ -440,7 +563,7 @@ class GoogleProviderTest {
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings {
-                apiKey("key");
+                apiKey("key")
                 baseURL("https://google.test/v1beta")
             },
         )
@@ -516,7 +639,7 @@ class GoogleProviderTest {
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings {
-                apiKey("key");
+                apiKey("key")
                 baseURL("https://google.test/v1beta")
             },
         )
@@ -553,7 +676,7 @@ class GoogleProviderTest {
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings {
-                apiKey("key");
+                apiKey("key")
                 baseURL("https://google.test/v1beta")
             },
         )
@@ -588,7 +711,7 @@ class GoogleProviderTest {
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings {
-                apiKey("key");
+                apiKey("key")
                 baseURL("https://google.test/v1beta")
             },
         )
@@ -623,7 +746,7 @@ class GoogleProviderTest {
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings {
-                apiKey("key");
+                apiKey("key")
                 baseURL("https://google.test/v1beta")
             },
         )

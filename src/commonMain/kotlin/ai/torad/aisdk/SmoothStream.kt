@@ -173,6 +173,7 @@ public fun SmoothStream(
         // intentionally not emitted under cancellation.
         throw ce
     } catch (t: Throwable) {
+        CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
         upstreamError = t
     }
     // Flush any remaining partial buffers on error or normal completion so

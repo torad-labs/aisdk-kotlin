@@ -1,0 +1,18 @@
+id: py-no-fail-open-on-missing-resource
+language: python
+severity: warning
+message: "Validation/check code must not return []/None when an expected resource is missing; raise so the guard fails closed."
+rule:
+  kind: if_statement
+  all:
+    - any:
+        - pattern: 'if not $RESOURCE.is_dir(): return []'
+        - pattern: 'if not $RESOURCE.exists(): return []'
+        - pattern: 'if not $RESOURCE.is_dir(): return None'
+        - pattern: 'if not $RESOURCE.exists(): return None'
+    - inside:
+        kind: function_definition
+        stopBy: end
+        has:
+          kind: identifier
+          regex: '(check|validate|missing|detect)'

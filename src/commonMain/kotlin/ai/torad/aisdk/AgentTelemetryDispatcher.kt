@@ -34,6 +34,7 @@ internal class AgentTelemetryDispatcher<TContext>(
         } catch (ce: CancellationException) {
             throw ce
         } catch (t: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
             logger.warn("telemetry integration '${feed.tele.name}' threw — event dropped", t)
         }
     }
@@ -48,9 +49,8 @@ internal class AgentTelemetryDispatcher<TContext>(
     ) {
         try {
             block()
-        } catch (ce: CancellationException) {
-            throw ce
         } catch (t: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
             val event = AgentEvent.Errored(t, stepNumber, AgentEvent.Errored.ErrorSource.Hook)
             try {
                 hooks?.onError?.invoke(event)

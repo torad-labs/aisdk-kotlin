@@ -28,8 +28,14 @@ This gate has two modes:
   consumers cannot accidentally rely on whole-file-only behavior.
       python3 validate_rules.py --hunk-mode <rules.json>
 
+  AUTOFIX mode — validate the explicit autofix registry and its fix fixtures,
+  or apply registered fixes to a target tree and fail for review/restage.
+      python3 validate_rules.py --manifest <rules.json> --autofix-registry <registry.json>
+      python3 validate_rules.py --apply-autofix <registry.json> <path>...
+
   SCAFFOLD mode — emit a fill-in manifest entry for an existing rule file.
       python3 validate_rules.py --new <rule-id>
+      python3 validate_rules.py --new <rule-id> --fix
 
 Exit 0 if all checks pass; 1 listing offenders; 2 on environment error.
 """
@@ -48,7 +54,11 @@ PARSE_ERROR_MARKERS = ("Cannot parse", "not a valid ast-grep rule", "Rule must s
 PROBE = "package probe\n\npublic class Probe {\n    public fun run(): Int = 0\n}\n"
 STUB_BAD_EXAMPLE = "TODO: replace with code that MUST match this rule"
 STUB_GOOD_EXAMPLE = "TODO: replace with code that MUST NOT match this rule"
+STUB_FIX_TEMPLATE = "TODO: replace with an ast-grep fix template"
+STUB_FIX_INPUT = "TODO: replace with code BEFORE applying this fix"
+STUB_FIX_OUTPUT = "TODO: replace with code AFTER applying this fix"
 RELATIONAL_ANCHOR_RE = re.compile(r"(?m)^\s*-?\s*(inside|precedes|follows):")
+FIX_RE = re.compile(r"(?m)^\s*fix\s*:")
 
 
 def ast_grep_binary() -> str | None:
@@ -143,11 +153,15 @@ def _read_manifest(manifest_path: Path) -> list[dict[str, object]] | None:
     return rules
 
 
-def semantic_mode(binary: str, manifest_path: Path) -> int:
+def semantic_mode(binary: str, manifest_path: Path, registry_path: Path | None = None) -> int:
     rules = _read_manifest(manifest_path)
     if rules is None:
         return 2
-    missing = _missing_manifest_entries(manifest_path, rules)
+    try:
+        missing = _missing_manifest_entries(manifest_path, rules)
+    except RuntimeError as exc:
+        print(f"SEMANTIC FAIL: {exc}")
+        return 1
     if missing:
         print(f"SEMANTIC FAIL: {len(missing)} rule files have no manifest entry")
         for rid in missing:
@@ -189,6 +203,14 @@ def semantic_mode(binary: str, manifest_path: Path) -> int:
         for rid, why in failures:
             print(f"  - {rid}: {why}")
         print(f"({passed} passed)")
+        return 1
+    registry_failures = _validate_autofix_registry(binary, manifest_path, rules, registry_path)
+    if registry_failures is None:
+        return 2
+    if registry_failures:
+        print(f"SEMANTIC FAIL: {len(registry_failures)} autofix registry issue(s)")
+        for rid, why in registry_failures:
+            print(f"  - {rid}: {why}")
         return 1
     print(f"ok: all {len(rules)} rules match bad + skip good")
     return 0
@@ -309,9 +331,9 @@ def _has_declared_hunk_handling(rule: dict[str, object], member_examples: list[s
 
 
 def _missing_manifest_entries(manifest_path: Path, rules: list[dict[str, object]]) -> list[str]:
-    rules_dir = manifest_path.resolve(strict=False).parent / "kotlin"
+    rules_dir = Path(__file__).resolve().parent / "kotlin"
     if not rules_dir.is_dir():
-        return []
+        raise RuntimeError(f"canonical rules dir not found: {rules_dir}")
     manifest_ids = {str(r.get("id")) for r in rules}
     rule_ids = {p.stem for p in rules_dir.glob("*.yaml")}
     return sorted(rule_ids - manifest_ids)
@@ -326,7 +348,210 @@ def _needs_examples(bad_ex: object, good_ex: object) -> bool:
     )
 
 
-def new_entry_mode(rule_id: str, rules_dir: Path) -> int:
+def _default_registry_path(manifest_path: Path) -> Path:
+    return manifest_path.resolve().parent / "autofix-registry.json"
+
+
+def _read_registry(registry_path: Path) -> tuple[list[str] | None, str | None]:
+    try:
+        payload = json.loads(registry_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return [], None
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, f"cannot read autofix registry: {exc}"
+    if not isinstance(payload, list):
+        return None, "autofix registry must be a JSON list"
+    ids: list[str] = []
+    for index, entry in enumerate(payload, start=1):
+        if isinstance(entry, str):
+            rid = entry
+        elif isinstance(entry, dict) and isinstance(entry.get("id"), str):
+            rid = str(entry["id"])
+        else:
+            return None, f"entry {index} must be a rule id string or object with string id"
+        if not rid.strip():
+            return None, f"entry {index} has empty rule id"
+        ids.append(rid)
+    duplicates = sorted({rid for rid in ids if ids.count(rid) > 1})
+    if duplicates:
+        return None, "duplicate autofix rule id(s): " + ", ".join(duplicates)
+    return ids, None
+
+
+def _validate_autofix_registry(
+    binary: str,
+    manifest_path: Path,
+    rules: list[dict[str, object]],
+    registry_path: Path | None,
+) -> list[tuple[str, str]] | None:
+    registry = registry_path or _default_registry_path(manifest_path)
+    ids, error = _read_registry(registry)
+    if error:
+        return [("<registry>", error)]
+    if ids is None:
+        return None
+    by_id = {str(rule.get("id")): rule for rule in rules}
+    failures: list[tuple[str, str]] = []
+    for rid in ids:
+        entry = by_id.get(rid)
+        if entry is None:
+            failures.append((rid, "registered rule has no manifest entry"))
+            continue
+        yaml_text = entry.get("yaml")
+        if not isinstance(yaml_text, str) or not FIX_RE.search(yaml_text):
+            failures.append((rid, "registered rule must include ast-grep fix:"))
+            continue
+        examples = entry.get("fixExamples")
+        if not isinstance(examples, list) or not examples:
+            failures.append((rid, "registered rule must declare non-empty fixExamples"))
+            continue
+        rule_path = _write_yaml(yaml_text)
+        try:
+            for index, example in enumerate(examples, start=1):
+                if not isinstance(example, dict):
+                    failures.append((rid, f"fixExamples[{index}] must be an object"))
+                    continue
+                before = example.get("input")
+                after = example.get("output")
+                if not isinstance(before, str) or not isinstance(after, str):
+                    failures.append((rid, f"fixExamples[{index}] needs string input and output"))
+                    continue
+                if _needs_fix_examples(before, after):
+                    failures.append((rid, f"fixExamples[{index}] needs examples"))
+                    continue
+                reason = _check_fix_example(binary, rule_path, before, after)
+                if reason:
+                    failures.append((rid, f"fixExamples[{index}] {reason}"))
+        finally:
+            try:
+                os.unlink(rule_path)
+            except OSError:
+                pass
+    return failures
+
+
+def _kt_fixture_text(text: str) -> str:
+    return text if text.strip().startswith("package") else "package probe\n\n" + text
+
+
+def _check_fix_example(binary: str, rule_path: str, before: str, after: str) -> str | None:
+    code_path = _write_kt(before)
+    try:
+        completed = _apply_fix(binary, rule_path, code_path)
+        if completed.returncode not in (0, 1):
+            return "fix command failed"
+        fixed = Path(code_path).read_text(encoding="utf-8")
+        expected = _kt_fixture_text(after)
+        if fixed != expected:
+            return "output did not match expected fixed code"
+        second = _apply_fix(binary, rule_path, code_path)
+        if second.returncode not in (0, 1):
+            return "second fix command failed"
+        fixed_again = Path(code_path).read_text(encoding="utf-8")
+        if fixed_again != fixed:
+            return "fix is not idempotent"
+        rc, count, err = _scan(binary, rule_path, code_path)
+        if not _parses(err, rc):
+            return "fixed output did not parse for clean re-scan"
+        if count:
+            return f"fixed output still matches x{count}"
+        return None
+    finally:
+        try:
+            os.unlink(code_path)
+        except OSError:
+            pass
+
+
+def _apply_fix(binary: str, rule_path: str, code_path: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [binary, "scan", "--rule", rule_path, "--update-all", code_path],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+
+def apply_autofix_mode(binary: str, registry_path: Path, targets: list[str]) -> int:
+    ids, error = _read_registry(registry_path)
+    if error:
+        print(f"AUTOFIX FAIL: {error}")
+        return 2
+    if ids is None:
+        return 2
+    if not ids:
+        print("autofix registry OK: no registered rules")
+        return 0
+    if not targets:
+        print("ERROR: --apply-autofix requires at least one target path")
+        return 2
+
+    rules_dir = registry_path.resolve().parent / "kotlin"
+    applied: list[tuple[str, int]] = []
+    failures: list[tuple[str, str]] = []
+    for rid in ids:
+        rule_path = rules_dir / f"{rid}.yaml"
+        if not rule_path.is_file():
+            failures.append((rid, f"rule file not found: {rule_path}"))
+            continue
+        before = _count_tree_hits(binary, rule_path, targets)
+        if before < 1:
+            continue
+        completed = subprocess.run(
+            [binary, "scan", "--rule", str(rule_path), "--update-all", *targets],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if completed.returncode not in (0, 1):
+            failures.append((rid, "fix command failed"))
+            continue
+        after = _count_tree_hits(binary, rule_path, targets)
+        if after:
+            failures.append((rid, f"fix left {after} matching site(s)"))
+        else:
+            applied.append((rid, before))
+    if failures:
+        print(f"AUTOFIX FAIL: {len(failures)} issue(s)")
+        for rid, why in failures:
+            print(f"  - {rid}: {why}")
+        return 1
+    if applied:
+        print("AUTOFIX APPLIED — review and restage the changed files before committing:")
+        for rid, count in applied:
+            print(f"  - {rid}: fixed {count} site(s)")
+        return 1
+    print("autofix registry OK: no fixes needed")
+    return 0
+
+
+def _count_tree_hits(binary: str, rule_path: Path, targets: list[str]) -> int:
+    completed = subprocess.run(
+        [binary, "scan", "--rule", str(rule_path), *targets, "--json=compact"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    raw = (completed.stdout or "").strip()
+    if not raw:
+        return 0
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return 0
+    return len(payload) if isinstance(payload, list) else 0
+
+
+def _needs_fix_examples(before: object, after: object) -> bool:
+    return (
+        not isinstance(before, str)
+        or not isinstance(after, str)
+        or before.strip() in {"", STUB_FIX_INPUT}
+        or after.strip() in {"", STUB_FIX_OUTPUT}
+    )
+
+
+def new_entry_mode(rule_id: str, rules_dir: Path, include_fix: bool = False) -> int:
     rule_path = rules_dir / f"{rule_id}.yaml"
     try:
         yaml_text = rule_path.read_text(encoding="utf-8")
@@ -336,12 +561,26 @@ def new_entry_mode(rule_id: str, rules_dir: Path) -> int:
     entry = {
         "id": rule_id,
         "severity": _severity_for_rule(yaml_text),
-        "yaml": yaml_text,
+        "yaml": _yaml_with_fix_stub(yaml_text) if include_fix else yaml_text,
         "badExample": STUB_BAD_EXAMPLE,
         "goodExample": STUB_GOOD_EXAMPLE,
     }
+    if include_fix:
+        entry["fixExamples"] = [
+            {
+                "input": STUB_FIX_INPUT,
+                "output": STUB_FIX_OUTPUT,
+            }
+        ]
     print(json.dumps(entry, indent=2))
     return 0
+
+
+def _yaml_with_fix_stub(yaml_text: str) -> str:
+    if FIX_RE.search(yaml_text):
+        return yaml_text
+    separator = "" if yaml_text.endswith("\n") else "\n"
+    return f"{yaml_text}{separator}fix: |-\n  {STUB_FIX_TEMPLATE}\n"
 
 
 def _severity_for_rule(yaml_text: str) -> str:
@@ -358,7 +597,7 @@ def main() -> int:
         if len(args) < 2:
             print("ERROR: --new requires a rule id")
             return 2
-        return new_entry_mode(args[1], Path(__file__).resolve().parent / "kotlin")
+        return new_entry_mode(args[1], Path(__file__).resolve().parent / "kotlin", "--fix" in args[2:])
 
     binary = ast_grep_binary()
     if binary is None:
@@ -368,17 +607,34 @@ def main() -> int:
         if len(args) < 2:
             print("ERROR: --manifest requires a path")
             return 2
-        return semantic_mode(binary, Path(args[1]))
+        registry_path = _option_path(args[2:], "--autofix-registry")
+        return semantic_mode(binary, Path(args[1]), registry_path)
     if args and args[0] == "--hunk-mode":
         if len(args) < 2:
             print("ERROR: --hunk-mode requires a path")
             return 2
         return hunk_mode(binary, Path(args[1]))
+    if args and args[0] == "--apply-autofix":
+        if len(args) < 2:
+            print("ERROR: --apply-autofix requires a registry path")
+            return 2
+        return apply_autofix_mode(binary, Path(args[1]), args[2:])
     rules_dir = Path(args[0]) if args else Path(__file__).resolve().parent / "kotlin"
     if not rules_dir.is_dir():
         print(f"ERROR: rules dir not found: {rules_dir}")
         return 2
     return parse_mode(binary, rules_dir)
+
+
+def _option_path(args: list[str], option: str) -> Path | None:
+    if option not in args:
+        return None
+    index = args.index(option)
+    try:
+        return Path(args[index + 1])
+    except IndexError:
+        print(f"ERROR: {option} requires a path")
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

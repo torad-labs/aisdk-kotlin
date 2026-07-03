@@ -35,9 +35,8 @@ internal class ToolCallRepairer<TContext>(
     ): Triple<Tool<*, *, TContext>, Any?, Boolean> {
         val plainError: Throwable = try {
             return Triple(toolDef, decodeInput(toolDef, call.input), false)
-        } catch (ce: CancellationException) {
-            throw ce
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            CancellationExceptions.asCancellationExceptionOrNull(e)?.let { throw it }
             e
         }
         tryRepair(toolDef, call, plainError, messages)?.let { (repairedTool, repairedInput) ->
