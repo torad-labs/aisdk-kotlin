@@ -3,6 +3,7 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.middleware.AddToolInputExamplesMiddleware
+import ai.torad.aisdk.protocol.GatewayContentDecoder
 import ai.torad.aisdk.protocol.GatewayContentEncoder
 import ai.torad.aisdk.providers.Vercel
 import ai.torad.aisdk.providers.VercelProviderSettings
@@ -12,14 +13,19 @@ import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -92,6 +98,222 @@ class HardeningBranchCoverageTest {
         )
         assertEquals("https://images.test/a.png", remoteImage.stringField("url"))
         assertNull(remoteImage["data"])
+    }
+
+    @Test
+    fun `gateway content encoder maps text reasoning raw and metadata branches`() {
+        val metadata = ProviderMetadata.Raw(
+            buildJsonObject {
+                put("gateway", buildJsonObject { put("trace", "encoder") })
+            }
+        )
+
+        val text = GatewayContentEncoder.encode(ContentPart.Text("hello", providerMetadata = metadata))
+        assertEquals("text", text.stringField("type"))
+        assertEquals("hello", text.stringField("text"))
+        assertEquals("encoder", text.metadataField("trace"))
+
+        val reasoning = GatewayContentEncoder.encode(ContentPart.Reasoning("because", providerMetadata = metadata))
+        assertEquals("reasoning", reasoning.stringField("type"))
+        assertEquals("because", reasoning.stringField("text"))
+
+        val rawObject = buildJsonObject {
+            put("type", "future-part")
+            put("payload", "kept")
+        }
+        assertEquals(rawObject, GatewayContentEncoder.encode(ContentPart.Raw(rawObject)))
+
+        val rawPrimitive = GatewayContentEncoder.encode(ContentPart.Raw(JsonPrimitive("opaque")))
+        assertEquals("raw", rawPrimitive.stringField("type"))
+        assertEquals("opaque", rawPrimitive["rawValue"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `gateway content encoder maps tool call and result flags`() {
+        val metadata = ProviderMetadata.Raw(
+            buildJsonObject {
+                put("gateway", buildJsonObject { put("trace", "encoder") })
+            }
+        )
+        val input = buildJsonObject { put("city", "Paris") }
+        val defaultToolCall = GatewayContentEncoder.encode(ContentPart.ToolCall("call_1", "lookup", input))
+        assertEquals("tool-call", defaultToolCall.stringField("type"))
+        assertNull(defaultToolCall["providerExecuted"])
+        assertNull(defaultToolCall["dynamic"])
+
+        val flaggedToolCall = GatewayContentEncoder.encode(
+            ContentPart.ToolCall(
+                toolCallId = "call_2",
+                toolName = "lookup",
+                input = input,
+                providerExecuted = true,
+                dynamic = true,
+                providerMetadata = metadata,
+            )
+        )
+        assertEquals(true, flaggedToolCall.booleanField("providerExecuted"))
+        assertEquals(true, flaggedToolCall.booleanField("dynamic"))
+        assertEquals("encoder", flaggedToolCall.metadataField("trace"))
+
+        val defaultToolResult = GatewayContentEncoder.encode(
+            ContentPart.ToolResult("call_1", "lookup", JsonPrimitive("done"))
+        )
+        assertNull(defaultToolResult["dynamic"])
+        assertNull(defaultToolResult["providerExecuted"])
+
+        val flaggedToolResult = GatewayContentEncoder.encode(
+            ContentPart.ToolResult(
+                toolCallId = "call_2",
+                toolName = "lookup",
+                output = JsonPrimitive("done"),
+                modelVisible = JsonPrimitive("summary"),
+                isError = true,
+                dynamic = true,
+                providerExecuted = true,
+                providerMetadata = metadata,
+            )
+        )
+        assertEquals("summary", flaggedToolResult["modelVisible"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(true, flaggedToolResult.booleanField("isError"))
+        assertEquals(true, flaggedToolResult.booleanField("dynamic"))
+        assertEquals(true, flaggedToolResult.booleanField("providerExecuted"))
+    }
+
+    @Test
+    fun `gateway content encoder maps approval request and response fields`() {
+        val metadata = ProviderMetadata.Raw(
+            buildJsonObject {
+                put("gateway", buildJsonObject { put("trace", "encoder") })
+            }
+        )
+        val input = buildJsonObject { put("city", "Paris") }
+        val approvalRequest = GatewayContentEncoder.encode(
+            ContentPart.ToolApprovalRequest(
+                toolCallId = "call_3",
+                toolName = "lookup",
+                input = input,
+                approvalId = "approval_1",
+                signature = "sig",
+                providerMetadata = metadata,
+            )
+        )
+        assertEquals("approval_1", approvalRequest.stringField("approvalId"))
+        assertEquals("sig", approvalRequest.stringField("signature"))
+        assertEquals("encoder", approvalRequest.metadataField("trace"))
+
+        val approvalResponse = GatewayContentEncoder.encode(
+            ContentPart.ToolApprovalResponse(
+                toolCallId = "call_3",
+                approved = false,
+                reason = "denied",
+                approvalId = "approval_1",
+            )
+        )
+        assertEquals("tool-approval-response", approvalResponse.stringField("type"))
+        assertEquals(false, approvalResponse.booleanField("approved"))
+        assertEquals("denied", approvalResponse.stringField("reason"))
+    }
+
+    @Test
+    fun `gateway content decoder maps tool call flags`() {
+        val input = buildJsonObject { put("city", "Paris") }
+        val toolCall = assertIs<ContentPart.ToolCall>(
+            GatewayContentDecoder.decode(
+                buildJsonObject {
+                    put("type", "tool-call")
+                    put("toolCallId", "call_1")
+                    put("toolName", "lookup")
+                    put("input", input)
+                }
+            )
+        )
+        assertFalse(toolCall.providerExecuted)
+        assertFalse(toolCall.dynamic)
+
+        val flaggedToolCall = assertIs<ContentPart.ToolCall>(
+            GatewayContentDecoder.decode(
+                buildJsonObject {
+                    put("type", "tool-call")
+                    put("toolCallId", "call_2")
+                    put("toolName", "lookup")
+                    put("input", input)
+                    put("providerExecuted", true)
+                    put("dynamic", true)
+                }
+            )
+        )
+        assertTrue(flaggedToolCall.providerExecuted)
+        assertTrue(flaggedToolCall.dynamic)
+    }
+
+    @Test
+    fun `gateway content decoder maps tool result fallback and explicit fields`() {
+        val output = JsonPrimitive("full")
+        val outputOnlyResult = assertIs<ContentPart.ToolResult>(
+            GatewayContentDecoder.decode(
+                buildJsonObject {
+                    put("type", "tool-result")
+                    put("toolCallId", "call_1")
+                    put("toolName", "lookup")
+                    put("output", output)
+                }
+            )
+        )
+        assertFalse(outputOnlyResult.isError)
+        assertEquals(output, outputOnlyResult.modelVisible)
+        assertFalse(outputOnlyResult.dynamic)
+        assertFalse(outputOnlyResult.providerExecuted)
+
+        val modelOutputResult = assertIs<ContentPart.ToolResult>(
+            GatewayContentDecoder.decode(
+                buildJsonObject {
+                    put("type", "tool-result")
+                    put("toolCallId", "call_2")
+                    put("toolName", "lookup")
+                    put("output", output)
+                    put("modelOutput", JsonPrimitive("summary"))
+                    put("isError", true)
+                    put("dynamic", true)
+                    put("providerExecuted", true)
+                }
+            )
+        )
+        assertEquals(JsonPrimitive("summary"), modelOutputResult.modelVisible)
+        assertTrue(modelOutputResult.isError)
+        assertTrue(modelOutputResult.dynamic)
+        assertTrue(modelOutputResult.providerExecuted)
+    }
+
+    @Test
+    fun `gateway content decoder maps media defaults and unknown raw parts`() {
+        val file = assertIs<ContentPart.File>(
+            GatewayContentDecoder.decode(
+                buildJsonObject {
+                    put("type", "file")
+                    put("data", JsonPrimitive("ZmlsZQ=="))
+                }
+            )
+        )
+        assertEquals("application/octet-stream", file.mediaType)
+        assertEquals("ZmlsZQ==", file.base64)
+
+        val image = assertIs<ContentPart.Image>(
+            GatewayContentDecoder.decode(
+                buildJsonObject {
+                    put("type", "image")
+                    put("data", JsonPrimitive("aW1hZ2U="))
+                }
+            )
+        )
+        assertEquals("image/*", image.mediaType)
+        assertEquals("aW1hZ2U=", image.base64)
+
+        val unknown = buildJsonObject {
+            put("type", "future-part")
+            put("payload", "kept")
+        }
+        val raw = assertIs<ContentPart.Raw>(GatewayContentDecoder.decode(unknown))
+        assertEquals(unknown, raw.rawValue)
     }
 
     @Test
@@ -265,6 +487,16 @@ class HardeningBranchCoverageTest {
 
     private fun JsonObject.stringField(name: String): String? =
         get(name)?.jsonPrimitive?.contentOrNull
+
+    private fun JsonObject.booleanField(name: String): Boolean? =
+        get(name)?.jsonPrimitive?.boolean
+
+    private fun JsonObject.metadataField(name: String): String? =
+        get("providerMetadata")
+            ?.jsonObject
+            ?.get("gateway")
+            ?.jsonObject
+            ?.stringField(name)
 
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
