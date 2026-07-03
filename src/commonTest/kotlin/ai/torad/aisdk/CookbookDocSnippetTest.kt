@@ -116,7 +116,16 @@ class CookbookDocSnippetTest {
             when (event) {
                 is AgentEvent.StepFinished -> tokenCounts += event.step.usage.totalTokens
                 is AgentEvent.Finished<*, *> -> savedMessages += event.messages
-                else -> Unit
+                is AgentEvent.Started<*> -> Unit
+                is AgentEvent.StepStarted -> Unit
+                is AgentEvent.Chunk -> Unit
+                is AgentEvent.ToolCallStarted -> Unit
+                is AgentEvent.ToolCallFinished -> Unit
+                is AgentEvent.Errored -> Unit
+                is AgentEvent.Aborted -> Unit
+                is AgentEvent.ModelCallStarted -> Unit
+                is AgentEvent.ModelCallFinished -> Unit
+                is AgentEvent.SpanEmitted -> Unit
             }
         }
 
