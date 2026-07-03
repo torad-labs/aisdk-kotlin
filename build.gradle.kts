@@ -314,6 +314,22 @@ tasks.named("check").configure {
 // the publication itself is finalized in the later publishing pass.
 dokka {
     moduleName.set(providers.gradleProperty("POM_NAME"))
+    dokkaSourceSets.configureEach {
+        sourceLink {
+            localDirectory.set(file("src"))
+            remoteUrl("https://github.com/torad-labs/aisdk-kotlin/blob/v$version/src")
+            remoteLineSuffix.set("#L")
+        }
+        externalDocumentationLinks.register("kotlinx-coroutines") {
+            url("https://kotlinlang.org/api/kotlinx.coroutines/")
+        }
+        externalDocumentationLinks.register("kotlinx-serialization") {
+            url("https://kotlinlang.org/api/kotlinx.serialization/")
+        }
+        externalDocumentationLinks.register("ktor") {
+            url("https://api.ktor.io/")
+        }
+    }
 }
 
 val dokkaJavadocJar by tasks.registering(Jar::class) {
