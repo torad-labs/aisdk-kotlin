@@ -204,10 +204,11 @@ id = "GH-17"
 phase = "gh2"
 title = "Release workflow_dispatch dry-run: staging + signing + local-staging smoke, SKIP Sonatype/GH-Packages curls; logs 'would publish N artifacts'. Honest limit: cannot prove Central auth/state-machine. release.yml edits must keep detect-release-workflow-trust green."
 files = [".github/workflows/release.yml"]
-status = "done"
+status = "verified"
 verify = "dry_run=true manual run completes green on a non-tag ref with zero publish-endpoint calls"
 # [2026-07-02] done in GH-17 slice (final SHA in fleet report): release workflow_dispatch dry_run stages/signs/smokes then logs would-publish count before publish endpoints; GitHub Packages mirror/resolve skipped
 # [2026-07-02] DRY-RUN FINDING (run 28633985138): preflight + verify-apple GREEN on tag-less dispatch; publish job failed at staging smoke — run-local-staging-smoke passes --staging-repo RAW to -PsmokeRepository, so release.yml's relative 'build/staging-deploy' resolved against smoke-tests/local-staging/ (never-executed CI call site was the only relative caller; LP-1 again). Fix slice dispatched: normalize to absolute in the script.
+# [2026-07-02] orchestrator verified via LIVE dry-run #2 (run 28634876875): preflight+verify-apple+publish all green on tag-less dispatch, 'would publish 38 artifacts', staging/signing/smoke executed end-to-end; dry-run #1's staging-path finding fixed (b4aefda) and re-proven. GATE-HARDENING PHASES COMPLETE 24/24.
 
 [[items]]
 id = "GH-23"
