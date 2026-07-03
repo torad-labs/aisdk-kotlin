@@ -421,7 +421,8 @@ id = "BP-08"
 phase = "bp"
 title = "User-facing samples/ (JVM chat CLI first; Compose host later per BL-018); seed from compile-guarded README/wiki snippets."
 files = ["samples/"]
-status = "in_flight"
+status = "done"
+# [2026-07-02] JVM chat CLI sample added with mock default and explicit OpenAI-compatible opt-in; sample build/run and gates passed; final SHA reported via fleet.
 
 [[items]]
 id = "BP-10"
