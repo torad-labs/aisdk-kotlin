@@ -107,10 +107,11 @@ id = "GH-24"
 phase = "gh1"
 title = "Pre-commit gates are inactive on fresh clones: nothing sets core.hooksPath=.githooks and no doc mentions it (verified: only reference is inside the hook itself). Add bootstrap (tools/bootstrap or gradle task) + CONTRIBUTING/README setup note."
 files = ["CONTRIBUTING.md", "README.md", "tools/"]
-status = "in_flight"
+status = "done"
 verify = "documented one-liner activates hooks on a scratch clone; CONTRIBUTING names it as required setup"
 
 # ---------------------------------------------------------------- phase gh2: coverage + de-serialization (M)
+# [2026-07-02] done in GH-24 slice (final SHA in fleet report): tools/bootstrap activates .githooks in fresh clones and docs name it
 
 [[items]]
 id = "GH-09"
