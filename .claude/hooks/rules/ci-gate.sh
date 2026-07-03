@@ -94,6 +94,9 @@ echo "== ast-grep autofix pre-pass =="
 python3 .claude/hooks/rules/validate_rules.py --apply-autofix .claude/hooks/rules/autofix-registry.json src/commonMain/kotlin src/commonTest/kotlin || exit 1
 node tools/run-gate-fixtures.mjs || fail=1
 
+echo "== consumer migration rule gate =="
+python3 .claude/hooks/rules/validate_migration_rules.py docs/migrations || fail=1
+
 echo "== tool occurrence identity gate =="
 python3 .claude/hooks/rules/detect-tool-identity-regressions.py src/commonMain/kotlin --check || fail=1
 
