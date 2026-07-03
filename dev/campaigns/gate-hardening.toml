@@ -400,8 +400,9 @@ id = "BP-06"
 phase = "bp"
 title = "Artifact provenance attestations: actions/attest over staged release bundle (SLSA, Sigstore, free for public repos); document gh attestation verify for consumers. Trust gate stays green."
 files = [".github/workflows/release.yml"]
-status = "done"
+status = "verified"
 # [2026-07-02] Release bundle provenance attestation added; trust gate, workflow parse, beta readiness, and api-review passed; final SHA reported via fleet.
+# [2026-07-02] orchestrator verified c07fbbc: attest-build-provenance SHA-pinned v4.1.1, id-token/attestations write scoped to publish job only (workflow stays contents:read), dry-run skip mirrors publish condition, consumer verify command in contract; trust gate green. First attested release will be the v0.3.0-beta01 tag.
 
 [[items]]
 id = "BP-07"
