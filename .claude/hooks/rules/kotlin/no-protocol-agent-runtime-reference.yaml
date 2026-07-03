@@ -1,0 +1,30 @@
+id: no-protocol-agent-runtime-reference
+language: kotlin
+severity: error
+message: "protocol/ references an agent-runtime type (AgentEvent/AgentSession/ToolLoopAgent/ToolLoopAgentEngine) — protocol codecs stay below the agent runtime layer (Konsist: 'protocol codecs stay below agent runtime and ui layers')."
+note: >-
+  A file whose package is ai.torad.aisdk.protocol references AgentEvent,
+  AgentSession, ToolLoopAgent, or ToolLoopAgentEngine as a type or
+  constructor. These are agent-runtime-layer types; the protocol wire-codec
+  layer sits below the agent runtime and must stay expressible without
+  referencing it. Mirrors the identifier-reference half of the whole-codebase
+  Konsist test `protocol codecs stay below agent runtime and ui layers`
+  (src/jvmTest/kotlin/ai/torad/aisdk/arch/KonsistArchitectureTest.kt), narrowed
+  here to actual identifier references (type positions and call positions),
+  not comments/strings, per this repo's node-scoped-regex-only convention
+  (docs/enforcement-layers.md) — a stricter, lower-noise signal than Konsist's
+  raw text-containment check, adding edit-time (Claude) protection for an
+  invariant Konsist only catches at `./gradlew check` time.
+rule:
+  any:
+    - kind: type_identifier
+      regex: '^(AgentEvent|AgentSession|ToolLoopAgent|ToolLoopAgentEngine)$'
+    - kind: simple_identifier
+      regex: '^(AgentEvent|AgentSession|ToolLoopAgent|ToolLoopAgentEngine)$'
+  inside:
+    kind: source_file
+    stopBy: end
+    has:
+      kind: package_header
+      stopBy: end
+      has: { kind: identifier, regex: '^ai\.torad\.aisdk\.protocol(\.|$)', stopBy: end }

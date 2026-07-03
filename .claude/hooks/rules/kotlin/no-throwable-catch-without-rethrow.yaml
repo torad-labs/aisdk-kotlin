@@ -1,0 +1,34 @@
+id: no-throwable-catch-without-rethrow
+language: kotlin
+severity: warning
+message: "catch (x: Throwable) whose body never throws swallows CancellationException, breaking structured-concurrency cancellation."
+note: >-
+  A catch block typed on Throwable (broader than the already-flagged `catch
+  (e: Exception)` in avoid-broad-catch-exception, since Throwable also spans
+  Error and any non-Exception Throwable) whose body contains no `throw` at
+  all converts every caught failure — including a CancellationException from
+  a cancelled coroutine — into a non-throwing value (a logged warning, an
+  updated state field, a returned fallback): the structured-concurrency
+  unwind silently stops there instead of propagating. This repo's established
+  idiom (see avoid-broad-catch-exception's and no-empty-catch-block's
+  goodExamples) is `catch (ce: CancellationException) { throw ce } catch (e:
+  SomeType) { ... }`, or an unconditional rethrow (wrapped or not) inside the
+  Throwable catch itself; a catch parameter explicitly discarded as `_` is
+  the established best-effort-ignore idiom (matches no-empty-catch-block's
+  own carve-out) and is intentionally not flagged. Severity is warning, not
+  error: this pattern already exists across roughly 20 call sites in
+  commonMain (RetryPolicy, CompletionApi, Telemetry, SmoothStream,
+  StructuredObjectApi, Generate, AbortSignal, AgentSession,
+  AgentTelemetryDispatcher, ui/Streams, ToolLoopAgent, Tool, MCP,
+  ToolCallRepairer, GoogleInteractionsStreamState) — the incremental hook
+  grandfathers all of them and only nudges on newly introduced instances.
+rule:
+  kind: catch_block
+  all:
+    - has:
+        kind: user_type
+        has: { kind: type_identifier, regex: '^Throwable$' }
+    - not:
+        has: { kind: simple_identifier, regex: '^_$' }
+    - not:
+        has: { pattern: 'throw $X', stopBy: end }

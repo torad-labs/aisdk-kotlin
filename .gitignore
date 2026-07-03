@@ -33,3 +33,4 @@ local.properties
 .codex/hooks/**/*.pyc
 !.claude/skills/
 !.claude/skills/**
+node_modules/
