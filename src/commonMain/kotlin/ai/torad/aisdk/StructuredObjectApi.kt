@@ -544,7 +544,29 @@ public class StructuredObjectGenerator<RESULT>(
             when (event) {
                 is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
                 is StreamEvent.StreamStart -> onWarnings(event.warnings)
-                else -> Unit
+                is StreamEvent.ResponseMetadata -> Unit
+                is StreamEvent.StepStart -> Unit
+                is StreamEvent.TextStart -> Unit
+                is StreamEvent.TextDelta -> Unit
+                is StreamEvent.TextEnd -> Unit
+                is StreamEvent.ReasoningStart -> Unit
+                is StreamEvent.ReasoningDelta -> Unit
+                is StreamEvent.ReasoningEnd -> Unit
+                is StreamEvent.SourcePart -> Unit
+                is StreamEvent.FilePart -> Unit
+                is StreamEvent.Data -> Unit
+                is StreamEvent.ToolInputStart -> Unit
+                is StreamEvent.ToolInputDelta -> Unit
+                is StreamEvent.ToolInputEnd -> Unit
+                is StreamEvent.ToolCall -> Unit
+                is StreamEvent.ToolResult -> Unit
+                is StreamEvent.ToolError -> Unit
+                is StreamEvent.ToolApprovalRequest -> Unit
+                is StreamEvent.ToolOutputDenied -> Unit
+                is StreamEvent.StepFinish -> Unit
+                is StreamEvent.Finish -> Unit
+                is StreamEvent.Abort -> Unit
+                is StreamEvent.Raw -> Unit
             }
         }.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
