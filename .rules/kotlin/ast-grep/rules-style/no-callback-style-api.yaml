@@ -37,6 +37,8 @@ rule:
         kind: function_value_parameters
         has:
           kind: parameter
-          any:
-            - has: { kind: simple_identifier, regex: '(?i)^(on[A-Z]\w*|callback|listener)$' }
-            - has: { kind: user_type, has: { kind: type_identifier, regex: '(Callback|Listener)$' } }
+          all:
+            - any:
+                - has: { kind: simple_identifier, regex: '(?i)^(on[A-Z]\w*|callback|listener)$' }
+                - has: { kind: user_type, has: { kind: type_identifier, regex: '(Callback|Listener)$' } }
+            - not: { regex: '\bsuspend\b' }

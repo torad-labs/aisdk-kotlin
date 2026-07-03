@@ -7,6 +7,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class TelemetryParityTest {
@@ -62,8 +63,7 @@ class TelemetryParityTest {
         val calls = mutableListOf<String>()
         RegisterTelemetry(OrderedIntegration("first", calls))
         RegisterTelemetry(OrderedIntegration("second", calls))
-        val composite = ResolveTelemetry(null)
-        checkNotNull(composite)
+        val composite = assertNotNull(ResolveTelemetry(null))
         val call = TelemetryCall(callId = "c1", agentId = "agent")
 
         composite.onEvent(call, AgentEvent.Started<Unit>(null, emptyList(), null))

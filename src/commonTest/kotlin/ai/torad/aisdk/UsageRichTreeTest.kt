@@ -9,6 +9,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+private val usageCodec: Json = Json { encodeDefaults = true }
+
 /**
  * Validates Phase 4C #19 — `Usage` rich tree with input/output token
  * breakdowns. Mirrors v6's `LanguageModelV3Usage` shape
@@ -94,11 +96,10 @@ class UsageRichTreeTest {
             inputTokens = Usage.InputTokenBreakdown(total = 50, cacheRead = 50),
             raw = rawPayload,
         )
-        val codec = Json { encodeDefaults = true }
 
         // WHEN
-        val encoded = codec.encodeToString(Usage.serializer(), original)
-        val decoded = codec.decodeFromString(Usage.serializer(), encoded)
+        val encoded = usageCodec.encodeToString(Usage.serializer(), original)
+        val decoded = usageCodec.decodeFromString(Usage.serializer(), encoded)
 
         // THEN
         assertEquals(50, decoded.inputTokens.cacheRead)

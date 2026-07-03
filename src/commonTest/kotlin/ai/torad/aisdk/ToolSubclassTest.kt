@@ -183,7 +183,7 @@ class ToolSubclassTest {
             instructions = "",
             tools = ToolSet(CityTool()),
             experimental_repairToolCall = { failedCall, _, _, _ ->
-                val original = failedCall.input.jsonObject["location"]?.jsonPrimitive?.content ?: ""
+                val original = failedCall.input.jsonObject["location"]?.jsonPrimitive?.content.orEmpty()
                 ContentPart.ToolCall(
                     toolCallId = failedCall.toolCallId,
                     toolName = failedCall.toolName,

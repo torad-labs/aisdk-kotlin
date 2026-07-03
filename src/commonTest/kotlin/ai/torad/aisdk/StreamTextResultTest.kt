@@ -194,16 +194,16 @@ class StreamTextResultTest {
             collections++
             emit(StreamEvent.TextStart("t"))
             emit(StreamEvent.TextDelta("t", "partial"))
-            throw IllegalStateException("boom")
+            throw InvalidArgumentError("stream", "boom")
         }
         val result = StreamTextResult(sourceStream = upstream)
 
         val firstEvents = mutableListOf<StreamEvent>()
-        val first = assertFailsWith<IllegalStateException> {
+        val first = assertFailsWith<InvalidArgumentError> {
             result.fullStream.collect { firstEvents += it }
         }
         val secondEvents = mutableListOf<StreamEvent>()
-        val second = assertFailsWith<IllegalStateException> {
+        val second = assertFailsWith<InvalidArgumentError> {
             result.fullStream.collect { secondEvents += it }
         }
 

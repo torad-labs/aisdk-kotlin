@@ -263,6 +263,7 @@ internal fun OpenAIProviderTool(
 
 @Poko
 /** @since 0.3.0-beta01 */
+@OptIn(ExperimentalAiSdkApi::class)
 public class OpenAITools(
     /** @since 0.3.0-beta01 */
     public val applyPatch: Tool<JsonElement, JsonElement, Any?> = OpenAIApplyPatch(),
@@ -311,6 +312,7 @@ public fun OpenAIShell(args: JsonElement = JsonObject(emptyMap())): Tool<JsonEle
     OpenAIProviderTool("openai.shell", "Request controlled shell command execution.", args)
 
 /** @since 0.3.0-beta01 */
+@ExperimentalAiSdkApi
 public fun OpenAIWebSearchPreview(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     OpenAIProviderTool("openai.web_search_preview", "Search the web with OpenAI's preview web search tool.", args)
 

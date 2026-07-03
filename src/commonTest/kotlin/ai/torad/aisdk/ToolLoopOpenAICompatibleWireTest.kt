@@ -80,7 +80,7 @@ class ToolLoopOpenAICompatibleWireTest {
     private data class WeatherInput(val city: String)
 
     private fun JsonObject.stringField(name: String): String? =
-        get(name)?.jsonPrimitive?.contentOrNull
+        this[name]?.jsonPrimitive?.contentOrNull
 
     private companion object {
         val firstToolCallResponse: JsonObject = Json.parseToJsonElement(
