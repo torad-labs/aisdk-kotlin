@@ -1,0 +1,22 @@
+#!/bin/bash
+# Pre-commit hook: run codemods and CI gate
+# Install with: ln -sf ../../dev/hooks/pre-commit .git/hooks/pre-commit
+
+set -e
+
+# Run sealed-when codemod (auto-fix else branches in sealed when-expressions)
+if command -v python3 &> /dev/null && [ -f "dev/codemods/fix_sealed_when.py" ]; then
+    echo "Running sealed-when codemod..."
+    output=$(python3 dev/codemods/fix_sealed_when.py src/commonMain src/commonTest 2>&1)
+
+    # Show summary if fixes were applied
+    if echo "$output" | grep -q "Applying"; then
+        echo "$output" | grep -E "^(Applying|  Replace)" | head -20
+        echo ""
+        echo "Codemod applied fixes. Stage the changes and re-commit."
+        exit 1
+    fi
+fi
+
+# Run the CI gate
+bash .claude/hooks/rules/ci-gate.sh
