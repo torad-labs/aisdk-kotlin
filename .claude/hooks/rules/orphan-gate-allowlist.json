@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "path": "tools/check-api-review.mjs",
+      "reason": "Invoked by tools/beta-readiness-check, which is wired into ci-gate.sh, ci.yml, and release.yml."
+    },
+    {
+      "path": "tools/check-architecture-budget.mjs",
+      "reason": "Invoked by tools/beta-readiness-check, which is wired into ci-gate.sh, ci.yml, and release.yml."
+    },
+    {
+      "path": "tools/check-detekt-baseline-budget",
+      "reason": "Invoked by tools/beta-readiness-check, which is wired into ci-gate.sh, ci.yml, and release.yml."
+    },
+    {
+      "path": "tools/check-parity-claims.mjs",
+      "reason": "Invoked by tools/beta-readiness-check, which is wired into ci-gate.sh, ci.yml, and release.yml."
+    },
+    {
+      "path": "tools/check-provider-capabilities.mjs",
+      "reason": "Invoked by tools/beta-readiness-check, which is wired into ci-gate.sh, ci.yml, and release.yml."
+    },
+    {
+      "path": "tools/check-provider-golden-coverage.mjs",
+      "reason": "Invoked by tools/beta-readiness-check, which is wired into ci-gate.sh, ci.yml, and release.yml."
+    },
+    {
+      "path": "tools/check-public-api-since-budget.mjs",
+      "reason": "Invoked by tools/beta-readiness-check, which is wired into ci-gate.sh, ci.yml, and release.yml."
+    }
+  ]
+}

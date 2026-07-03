@@ -1,0 +1,5 @@
+if [ "$CASE_KIND" = "compliant" ]; then
+  python3 "$REPO_ROOT/.claude/hooks/rules/detect-orphan-gates.py" --root "$REPO_ROOT" --allowlist "$REPO_ROOT/.claude/hooks/rules/orphan-gate-allowlist.json"
+else
+  python3 "$REPO_ROOT/.claude/hooks/rules/detect-orphan-gates.py" --root "$FIXTURE_DIR" --allowlist "$REPO_ROOT/.claude/hooks/rules/orphan-gate-allowlist.json"
+fi
