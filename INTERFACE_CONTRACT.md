@@ -195,6 +195,21 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `class AbortError`
 - `fun abortSignalFromJob(job: Job): AbortSignal`
 
+Cancellation is structural. SDK recovery paths that catch broad failures
+rethrow `CancellationException` rather than converting it into retry decisions,
+fallback values, stream `Error` events, validation failures, telemetry drops, or
+tool results. This applies across telemetry/lifecycle dispatch, memoized stream
+replay, retry classification, completion fallback, agent submit, smooth-stream
+flush, structured-object phases, tool-loop model/prepare/tool paths, MCP
+elicitation, tool-call repair fallback, provider stream parsing, and UI stream
+wrappers.
+
+User abort remains a distinct cooperative signal. `AbortSignal` / `AbortError`
+paths may surface terminal abort state where documented, but cancellation thrown
+by a worker coroutine is not treated as a user abort. In bounded parallel tool
+execution, worker `CancellationException` cancels the parent collector instead
+of producing a normal abort completion for the step.
+
 ### Provider abstraction
 
 - `interface LanguageModel { val modelId; @LowLevelLanguageModelApi suspend fun generate(...); @LowLevelLanguageModelApi fun stream(...); @LowLevelLanguageModelApi fun streamResult(...) }`
@@ -536,6 +551,9 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   intentionally absent.
 - Chat: `ChatRequest`, `ChatTransport`, `DirectChatTransport`, `DefaultChatTransport`, `TextStreamChatTransport`, `Chat`.
 - Validation/completion helpers: `UiMessageStreams.validateUiMessages`, `UiMessageStreams.validateUIMessages`, `UiMessageStreams.safeValidateUIMessages`, `UiMessageStreams.getResponseUiMessageId`, `UiMessageStreams.handleUiMessageStreamFinish`, `UiMessageStreams.lastAssistantMessageIsCompleteWithToolCalls`, `UiMessageStreams.lastAssistantMessageIsCompleteWithApprovalResponses`.
+  `safeValidateUIMessages` is a validation wrapper, not a general exception
+  sink: it returns `Failure` for `IllegalArgumentException` from invalid
+  messages and lets other failures, including cancellation, propagate.
 
 - `data class UIMessage(id, role, parts: List<UIMessagePart>, createdAtMs?, metadata: Map<String, JsonElement>? = null)` — `metadata` is the monomorphic substitute for v6's `<METADATA, DATA_PARTS, TOOLS>` generics; apps can attach source-agent identity or routing metadata under their own namespaced keys.
 - `enum UIMessageRole { System, User, Assistant }`

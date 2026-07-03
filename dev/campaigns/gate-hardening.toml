@@ -647,8 +647,9 @@ id = "HD-12"
 phase = "hd"
 title = "CHANGELOG + INTERFACE_CONTRACT entries for HD-06s observable behavior change: cancellation is no longer swallowed by broad catch(Throwable) sites — CancellationException now propagates through telemetry dispatch, generate replay, retry classification, completion fallback, agent submit (settles Cancelled), smooth-stream flush, structured-object phases, tool loop paths, MCP elicitation, repair fallback, UI stream wrapper; safeValidateUIMessages narrowed from catch(Throwable) to catch(IllegalArgumentException) (non-IAE now propagates); parallel tool executor distinguishes worker cancellation from user abort. Zero signature changes (ABI dumps untouched) but consumers observe different exception flow — beta-pending CHANGELOG must say so. Also add a one-paragraph HD-era hardening summary (coverage floors, new gates) to CHANGELOG under Unreleased. Cite measurement keys, do not restate numbers (per dev/measurements.toml law)."
 files = ["CHANGELOG.md", "INTERFACE_CONTRACT.md"]
-status = "todo"
+status = "done"
 verify = "entries accurate against the 2d52974 diff; no restated numbers (keys cited); ci-gate green"
+# [2026-07-03] done: documented HD-06 cancellation propagation, safeValidateUIMessages narrowing, worker-cancel vs abort distinction, and Unreleased hardening summary using measurement keys; ci-gate PASS; beta-readiness red is pre-existing architecture-budget drift outside docs-only slice
 
 [[items]]
 id = "HD-13"
