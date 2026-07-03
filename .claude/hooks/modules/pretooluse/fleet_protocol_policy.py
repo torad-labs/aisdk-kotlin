@@ -10,6 +10,11 @@ Builder detection: the Codex adapter (.codex/hooks/claude_compat.py) stamps
 every forwarded event with fleet_role="builder". Unstamped events are the
 orchestrator/owner session and keep full authority over the owned files, but
 still get the role-agnostic history-safety guards.
+
+Known limits: command substitution such as `$(git push ...)` and Git alias
+indirection such as `git -c alias.p=push p` remain expressible through token-level
+guarding. The review protocol and branch protection remain the structural
+backstops for those dynamic shell/Git behaviors.
 """
 from __future__ import annotations
 
@@ -49,6 +54,7 @@ READ_ONLY_COMMANDS = {
 READ_ONLY_GIT_SUBCOMMANDS = {"diff", "log", "show", "status"}
 BROAD_ADD_ARGS = {".", "-A", "--all", "-u", "--update"}
 MESSAGE_OPTIONS = {"-m", "--message", "-F"}
+SHELL_COMMANDS = {"bash", "dash", "sh", "zsh"}
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 
@@ -119,6 +125,14 @@ def run(data: dict) -> HookResult | None:
                 "tool calls so the fleet guards can inspect it."
             )
         return None
+
+    segments, parse_failed = _expand_nested_shell_segments(segments, data)
+    if parse_failed and role == "builder":
+        return _block(
+            "FLEET PROTOCOL: could not parse this nested builder shell command "
+            "safely. Use a simpler command shape or split it into explicit "
+            "tool calls so the fleet guards can inspect it."
+        )
 
     git_commands = [
         git
@@ -215,6 +229,34 @@ def _command_segments(command: str) -> tuple[list[CommandSegment], bool]:
     return (segments, False)
 
 
+def _expand_nested_shell_segments(
+    segments: list[CommandSegment],
+    data: dict,
+    depth: int = 0,
+) -> tuple[list[CommandSegment], bool]:
+    if depth >= 4:
+        return (segments, False)
+    expanded: list[CommandSegment] = []
+    parse_failed = False
+    for segment in segments:
+        expanded.append(segment)
+        inner = _shell_command_operand(segment.tokens, data)
+        if inner is None:
+            continue
+        inner_segments, inner_failed = _command_segments(inner)
+        if inner_failed:
+            parse_failed = True
+            continue
+        nested, nested_failed = _expand_nested_shell_segments(
+            inner_segments,
+            data,
+            depth + 1,
+        )
+        parse_failed = parse_failed or nested_failed
+        expanded.extend(nested)
+    return (expanded, parse_failed)
+
+
 _HEREDOC_RE = re.compile(r"<<-?\s*(?:'([^']+)'|\"([^\"]+)\"|([A-Za-z_][A-Za-z0-9_]*))")
 
 
@@ -292,13 +334,10 @@ def _split_command_segments(text: str) -> tuple[list[str], bool]:
 
 
 def _git_command(tokens: tuple[str, ...], data: dict) -> GitCommand | None:
-    index = 0
-    while index < len(tokens) and _is_env_assignment(tokens[index]):
-        index += 1
+    index, cwd = _skip_exec_prefixes(tokens, 0, _event_cwd(data))
     if index >= len(tokens) or Path(tokens[index]).name != "git":
         return None
 
-    cwd = _event_cwd(data)
     head_args: list[str] = []
     index += 1
     while index < len(tokens):
@@ -337,6 +376,142 @@ def _git_command(tokens: tuple[str, ...], data: dict) -> GitCommand | None:
             cwd=cwd,
             head_args=tuple(head_args),
         )
+    return None
+
+
+def _skip_exec_prefixes(tokens: tuple[str, ...], start: int, cwd: Path) -> tuple[int, Path]:
+    index = start
+    while True:
+        while index < len(tokens) and _is_env_assignment(tokens[index]):
+            index += 1
+        if index >= len(tokens):
+            return (index, cwd)
+
+        command = Path(tokens[index]).name
+        if command == "nohup":
+            index += 1
+            continue
+        if command == "env":
+            index, cwd = _skip_env_prefix(tokens, index + 1, cwd)
+            continue
+        if command == "nice":
+            index = _skip_nice_prefix(tokens, index + 1)
+            continue
+        if command == "time":
+            index = _skip_time_prefix(tokens, index + 1)
+            continue
+        if command == "stdbuf":
+            index = _skip_stdbuf_prefix(tokens, index + 1)
+            continue
+        if command == "timeout":
+            index = _skip_timeout_prefix(tokens, index + 1)
+            continue
+        return (index, cwd)
+
+
+def _skip_env_prefix(tokens: tuple[str, ...], index: int, cwd: Path) -> tuple[int, Path]:
+    while index < len(tokens):
+        token = tokens[index]
+        if _is_env_assignment(token) or token == "-":
+            index += 1
+            continue
+        if token in {"-i", "--ignore-environment", "-0", "--null"}:
+            index += 1
+            continue
+        if token in {"-u", "--unset", "-S", "--split-string"} and index + 1 < len(tokens):
+            index += 2
+            continue
+        if token in {"-C", "--chdir"} and index + 1 < len(tokens):
+            cwd = _resolve_path(tokens[index + 1], cwd)
+            index += 2
+            continue
+        if token.startswith("--chdir="):
+            cwd = _resolve_path(token.split("=", 1)[1], cwd)
+            index += 1
+            continue
+        if token.startswith("--unset=") or token.startswith("--split-string="):
+            index += 1
+            continue
+        if token.startswith("-u") and token != "-u":
+            index += 1
+            continue
+        if token.startswith("-S") and token != "-S":
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        break
+    return (index, cwd)
+
+
+def _skip_nice_prefix(tokens: tuple[str, ...], index: int) -> int:
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "-n" and index + 1 < len(tokens):
+            index += 2
+            continue
+        if token == "--adjustment" and index + 1 < len(tokens):
+            index += 2
+            continue
+        if token.startswith("-n") and token != "-n":
+            index += 1
+            continue
+        if token.startswith("--adjustment="):
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        break
+    return index
+
+
+def _skip_time_prefix(tokens: tuple[str, ...], index: int) -> int:
+    while index < len(tokens) and tokens[index].startswith("-"):
+        if tokens[index] in {"-f", "-o", "--format", "--output"} and index + 1 < len(tokens):
+            index += 2
+        else:
+            index += 1
+    return index
+
+
+def _skip_stdbuf_prefix(tokens: tuple[str, ...], index: int) -> int:
+    while index < len(tokens) and tokens[index].startswith("-"):
+        if tokens[index] in {"-e", "-i", "-o"} and index + 1 < len(tokens):
+            index += 2
+        else:
+            index += 1
+    return index
+
+
+def _skip_timeout_prefix(tokens: tuple[str, ...], index: int) -> int:
+    while index < len(tokens) and tokens[index].startswith("-"):
+        if tokens[index] in {"-k", "-s", "--kill-after", "--signal"} and index + 1 < len(tokens):
+            index += 2
+        else:
+            index += 1
+    if index < len(tokens):
+        index += 1
+    return index
+
+
+def _shell_command_operand(tokens: tuple[str, ...], data: dict) -> str | None:
+    index, _ = _skip_exec_prefixes(tokens, 0, _event_cwd(data))
+    if index >= len(tokens) or Path(tokens[index]).name not in SHELL_COMMANDS:
+        return None
+    index += 1
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "--":
+            index += 1
+            continue
+        if token == "-c" or (token.startswith("-") and "c" in token[1:]):
+            return tokens[index + 1] if index + 1 < len(tokens) else None
+        if token.startswith("-"):
+            index += 1
+            continue
+        return None
     return None
 
 

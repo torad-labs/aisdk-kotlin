@@ -65,6 +65,30 @@ check(
         "tool_input": {"command": 'git "push" origin main'},
     })),
 )
+check(
+    "builder nested bash -c git push is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "fleet_role": "builder",
+        "tool_input": {"command": "bash -c 'git push origin main'"},
+    })),
+)
+check(
+    "builder env-prefixed git push is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "fleet_role": "builder",
+        "tool_input": {"command": "env GIT_TRACE=1 git push origin main"},
+    })),
+)
+check(
+    "builder nested bash -c innocent command is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "fleet_role": "builder",
+        "tool_input": {"command": "bash -c 'echo ok'"},
+    })),
+)
 
 # 4 — builder staging an owned file is blocked; staging normal files is not.
 check(
