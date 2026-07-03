@@ -89,11 +89,11 @@ Kotlin/JVM SDKs do, including the two most directly comparable to this one:
 ### Enforcement (do not bypass)
 
 `ci-gate.sh` runs the **public data-class budget gate**
-(`.claude/hooks/rules/detect-public-data-class-budget.py` + `data-class-budget.json`)
-in pre-commit and CI. It counts public `data class` declarations in
-`src/commonMain/kotlin` and **fails if the count rises above the budget** — so a
-new public `data class` is blocked with a pointer back to this section. The
-budget is a one-way ratchet: re-seed it *downward only* with
+(`.claude/hooks/rules/detect-public-data-class-budget.py` + repo-root
+`data-class-budget.json`) in pre-commit and CI. It counts public `data class`
+declarations in `src/commonMain/kotlin` and **fails if the count rises above the
+budget** — so a new public `data class` is blocked with a pointer back to this
+section. The budget is a one-way ratchet: re-seed it *downward only* with
 `--update` after demoting a type to `@Poko`. The grandfathered existing set is
 being migrated case-by-case (see `docs/data-class-audit.md` / backlog BL-058/A1).
 Never raise the budget to land a new data class; demote one instead.
@@ -117,8 +117,10 @@ enabled rule that cannot match its bad example is dead code.
 Budget gates are one-way ratchets. If a legitimate change grows a tracked file
 or exhausts a public-surface budget, re-seed the budget in the same commit as
 the growth, with the smallest reviewed increase; when reducing debt, re-seed
-downward. Never raise a budget to hide accidental drift, and never use
-`--no-verify` or a skip env to get past a budget failure.
+downward. The public data-class ratchet lives at repo-root
+`data-class-budget.json`; ast-grep fixtures live under `.claude/hooks/rules/`.
+Never raise a budget to hide accidental drift, and never use `--no-verify` or a
+skip env to get past a budget failure.
 
 ## API shape — idiomatic Kotlin, not a Vercel transliteration
 

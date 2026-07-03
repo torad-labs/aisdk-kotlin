@@ -116,6 +116,11 @@ jobs:
         id: parity_ledgers
         continue-on-error: true
         run: node tools/generate-parity-ledger.mjs --check
+      # Release publishing deliberately fails closed on locked npm tooling. The
+      # regular ci.yml verify job uses GH-13's checksum-pinned ast-grep binary
+      # before npm ci so internal gates keep running during npm/network outages;
+      # a publish path should instead stop before staging artifacts if its locked
+      # release environment cannot be installed.
       - name: Install locked Node tooling
         run: npm ci
       - name: Architecture gate (ast-grep rules + structural checks)
