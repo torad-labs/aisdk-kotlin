@@ -185,8 +185,9 @@ id = "GH-16"
 phase = "gh2"
 title = "Resolve-or-remove inert SuspendFunSwallowedCancellation detekt rule (enabled, cannot fire without type resolution). Either wire classpath-aware detekt or remove + document the custom-rule stopgap. No enabled-but-inert rule remains."
 files = ["detekt.yml"]
-status = "in_flight"
+status = "done"
 verify = "rule provably fires via fixture OR is gone with rationale comment"
+# [2026-07-02] done in GH-16 slice (final SHA in fleet report): removed inert SuspendFunSwallowedCancellation config; detekt.yml documents custom-rule stopgap and GH-21 re-enable condition
 
 [[items]]
 id = "GH-17"
