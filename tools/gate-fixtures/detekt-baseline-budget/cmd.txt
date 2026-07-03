@@ -1,0 +1,1 @@
+python3 "$REPO_ROOT/tools/check-detekt-baseline-budget" --baseline detekt-baseline.xml --budget detekt-baseline-budget.json

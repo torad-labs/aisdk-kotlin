@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SmellBaseline>
+  <ManuallySuppressedIssues>
+    <ID>RuleA:Fixture.kt$one</ID>
+  </ManuallySuppressedIssues>
+</SmellBaseline>
