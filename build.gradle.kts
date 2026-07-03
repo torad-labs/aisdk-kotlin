@@ -345,6 +345,14 @@ publishing {
                 connection.set(providers.gradleProperty("POM_SCM_CONNECTION"))
                 developerConnection.set(providers.gradleProperty("POM_SCM_DEV_CONNECTION"))
             }
+            issueManagement {
+                system.set("GitHub")
+                url.set("https://github.com/torad-labs/aisdk-kotlin/issues")
+            }
+            ciManagement {
+                system.set("GitHub Actions")
+                url.set("https://github.com/torad-labs/aisdk-kotlin/actions")
+            }
             developers {
                 developer {
                     id.set(providers.gradleProperty("POM_DEVELOPER_ID"))
