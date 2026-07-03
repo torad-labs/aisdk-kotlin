@@ -508,6 +508,7 @@ id = "FX-03"
 phase = "fx"
 title = "FR hardening pair: (1) ci-gate.sh ast-grep version parity (F-05) — read @ast-grep/cli version from package.json and compare to $AG --version; mismatch = fail with pointer to GH-13 pin (keeps local pre-commit honest vs CI checksum-pinned 0.42.1); (2) snapshots.yml concurrency group (F-08) — concurrency: group snapshots-main, cancel-in-progress: false (queue, do not cancel a mid-flight publish)."
 files = [".claude/hooks/rules/ci-gate.sh", ".github/workflows/snapshots.yml"]
-status = "done"
+status = "verified"
 verify = "version-mismatch simulation fails ci-gate with clear message; matching version passes; snapshots.yml parses; ci-gate green"
 # [2026-07-03] Ast-grep version parity added to ci-gate and snapshots publish concurrency queued; mismatch/match simulations and ci-gate passed; final SHA via fleet
+# [2026-07-03] VERIFIED at fd40247 with LIVE CATCH: on first orchestrator run the parity gate FAILED — ~/.local/bin/ast-grep had drifted to 0.44.0 vs the 0.42.1 pin (F-05's hypothetical drift was real on this machine; FR-02 measured 0.42.1 hours earlier). Gate message + remediation correct: npm ci restored lockfile 0.42.1 via the new node_modules/.bin preference; full ci-gate then exit 0. CI unaffected by the node_modules preference: verify job runs the gate at ci.yml:103 BEFORE npm ci at :115, so CI always uses the GH-13-pinned PATH binary. RECONCILE: builder's 'match simulation passed' validated comparison logic with a stub, not the live env — the live env was in drift at claim time. Mismatch direction re-proven with fake 0.39.9 binary (exit 1, clear message). snapshots.yml concurrency group parses, queue-not-cancel semantics as specced.
