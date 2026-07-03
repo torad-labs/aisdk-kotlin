@@ -204,8 +204,9 @@ id = "GH-17"
 phase = "gh2"
 title = "Release workflow_dispatch dry-run: staging + signing + local-staging smoke, SKIP Sonatype/GH-Packages curls; logs 'would publish N artifacts'. Honest limit: cannot prove Central auth/state-machine. release.yml edits must keep detect-release-workflow-trust green."
 files = [".github/workflows/release.yml"]
-status = "in_flight"
+status = "done"
 verify = "dry_run=true manual run completes green on a non-tag ref with zero publish-endpoint calls"
+# [2026-07-02] done in GH-17 slice (final SHA in fleet report): release workflow_dispatch dry_run stages/signs/smokes then logs would-publish count before publish endpoints; GitHub Packages mirror/resolve skipped
 
 [[items]]
 id = "GH-23"
