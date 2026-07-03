@@ -391,7 +391,8 @@ id = "BP-04"
 phase = "bp"
 title = "Dokka HTML to GitHub Pages on release + sourceLink + externalDocumentationLinks for coroutines/serialization/ktor (verified: neither configured)."
 files = ["build.gradle.kts", ".github/workflows/"]
-status = "todo"
+status = "done"
+# [2026-07-02] Dokka source/external links configured and release-success Pages deployment workflow added; dokkaGenerate and generated-link checks passed.
 
 [[items]]
 id = "BP-05"
