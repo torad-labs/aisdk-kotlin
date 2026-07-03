@@ -37,7 +37,7 @@ import kotlinx.serialization.json.jsonObject
  * ```
  */
 /** @since 0.3.0-beta01 */
-public fun StreamToUiMessages(
+@JvmSynthetic public fun StreamToUiMessages(
     events: Flow<StreamEvent>,
     assistantMessageId: String,
 ): Flow<UIMessage> = flow {

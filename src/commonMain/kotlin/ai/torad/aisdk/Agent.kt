@@ -86,7 +86,7 @@ public interface Agent<TContext, TOutput> {
      * should collect exactly one value, usually with `.first()`.
      * @since 0.3.0-beta01
      */
-    public fun generate(
+    @JvmSynthetic public fun generate(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,
@@ -97,7 +97,7 @@ public interface Agent<TContext, TOutput> {
      * Streaming generation. Cold flow — starts when collected.
      * @since 0.3.0-beta01
      */
-    public fun stream(
+    @JvmSynthetic public fun stream(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,

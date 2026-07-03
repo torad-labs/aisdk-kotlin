@@ -62,7 +62,7 @@ private val LINE_REGEX = Regex("""[^\n]*\n""", RegexOption.MULTILINE)
 // rethrown first, above), so dropping to a narrower type would lose data.
 @Suppress("TooGenericExceptionCaught", "CyclomaticComplexMethod")
 /** @since 0.3.0-beta01 */
-public fun SmoothStream(
+@JvmSynthetic public fun SmoothStream(
     upstream: Flow<StreamEvent>,
     delayMs: Long = 10L,
     chunkBy: ChunkBy = ChunkBy.Word,

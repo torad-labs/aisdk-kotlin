@@ -71,7 +71,7 @@ public fun ChatRequest(
 /** @since 0.3.0-beta01 */
 public interface ChatTransport {
     /** @since 0.3.0-beta01 */
-    public fun sendMessages(request: ChatRequest): Flow<UIMessage>
+    @JvmSynthetic public fun sendMessages(request: ChatRequest): Flow<UIMessage>
 
     /** @since 0.3.0-beta01 */
     public fun reconnectToStream(chatId: String, headers: Map<String, String> = emptyMap()): Flow<UIMessage>? = null
@@ -255,11 +255,11 @@ public class Chat(
     ): Unit = addToolOutput(toolCallId, output, toolName)
 
     /** @since 0.3.0-beta01 */
-    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
+    @JvmSynthetic public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
         sendInternal(body) { it + message }
 
     /** @since 0.3.0-beta01 */
-    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
+    @JvmSynthetic public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
         // Re-run from the existing history with the trailing assistant turn(s) dropped. Do NOT
         // re-append the last user message — it is already present, and appending it (as the old
         // code did via sendMessage) duplicated its id and sent a doubled user turn to the model.
@@ -323,7 +323,7 @@ public class Chat(
         transport.reconnectToStream(id, headers)
 
     /** @since 0.3.0-beta01 */
-    public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
+    @JvmSynthetic public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         reconnectToStream(headers) ?: emptyFlow()
 
     /** @since 0.3.0-beta01 */

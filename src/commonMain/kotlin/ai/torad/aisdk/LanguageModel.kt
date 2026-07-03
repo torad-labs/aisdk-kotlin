@@ -71,7 +71,7 @@ public interface LanguageModel {
      * @since 0.3.0-beta01
      */
     @LowLevelLanguageModelApi
-    public fun stream(params: LanguageModelCallParams): Flow<StreamEvent>
+    @JvmSynthetic public fun stream(params: LanguageModelCallParams): Flow<StreamEvent>
 
     /**
      * Streaming completion plus metadata available before stream

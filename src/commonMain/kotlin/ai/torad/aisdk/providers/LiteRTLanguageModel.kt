@@ -849,7 +849,7 @@ public interface LiteRTConversation {
     public suspend fun send(message: LiteRTMessage, extraContext: Map<String, JsonElement> = emptyMap()): LiteRTMessage
 
     /** @since 0.3.0-beta01 */
-    public fun stream(message: LiteRTMessage, extraContext: Map<String, JsonElement> = emptyMap()): Flow<LiteRTMessage>
+    @JvmSynthetic public fun stream(message: LiteRTMessage, extraContext: Map<String, JsonElement> = emptyMap()): Flow<LiteRTMessage>
 
     /**
      * Cancel in-flight generation. The default is a no-op for simple engines;
