@@ -325,10 +325,11 @@ id = "RR-05"
 phase = "rr"
 title = "OPERATOR-GATED: merge PR #10 (~370 reviewed commits). Recommendation: merge commit not squash (granular history referenced by two backlogs + this manifest). Confirm main CI green at merge commit."
 files = []
-status = "todo"
+status = "verified"
 depends = ["RR-04"]
 verify = "PR merged; main run green"
 # [2026-07-02] operator chose SQUASH merge (overrides merge-commit recommendation, locked); mitigation: refactor/ts-residue-cleanup branch is KEPT as archival ref so manifest/backlog per-item SHAs stay reachable
+# [2026-07-02] MERGED: PR #10 squashed to main as cc3d373 (operator's squash choice), archival branch kept, main CI run in progress under new required checks; follow-up work continues on beta-follow-ups (one-PR directive)
 
 [[items]]
 id = "RR-06"

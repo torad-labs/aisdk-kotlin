@@ -68,6 +68,27 @@ _JVM_SOURCE_SET_MARKERS = (
 )
 
 
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+_CONSUMER_TREE_PREFIXES = ("samples/", "smoke-tests/")
+
+
+def _is_library_source(file_path: str) -> bool:
+    """Library anti-pattern rules apply everywhere EXCEPT consumer-shaped trees.
+    samples/ and smoke-tests/ legitimately use main(), stdout, runBlocking
+    bridges, and env access (misfire 2026-07-03: the policy blocked a JVM CLI
+    sample's entire shape). Default-apply is kept for all other paths so scratch
+    and temp Kotlin stays guarded exactly as before."""
+    path = Path(file_path)
+    if not path.is_absolute():
+        path = _REPO_ROOT / path
+    try:
+        relative = path.resolve(strict=False).relative_to(_REPO_ROOT)
+    except ValueError:
+        return True  # outside the repo (temp/scratch) — guarded as before
+    posix = relative.as_posix()
+    return not any(posix.startswith(prefix) for prefix in _CONSUMER_TREE_PREFIXES)
+
+
 def _rules_for_path(rule_files: list[Path], file_path: str) -> list[Path]:
     """Scope JVM-platform-legitimate rules out of JVM-backed source sets.
 
@@ -104,6 +125,8 @@ def run(data: dict) -> Optional[HookResult]:
 
     for change in _changes(tool_input):
         if Path(change.file_path).suffix.lower() != ".kt":
+            continue
+        if not _is_library_source(change.file_path):
             continue
         applicable = _rules_for_path(rule_files, change.file_path)
         for hit in _introduced(binary, applicable, severities, change.old_text, change.new_text):
