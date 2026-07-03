@@ -625,9 +625,10 @@ id = "HD-11"
 phase = "hd"
 title = "No-interpreter-source-writes + ABI-dump guard (qgre steal module 40 + our extension). New pretooluse module inspecting BASH commands: block source-file writes routed around the edit layer — python/sh heredocs, cat> redirection, sed -i, tee — targeting .kt/.kts/.claude/hooks/**/*.py/.claude/hooks/rules/**/*.yaml (the 71-rule edit layer only sees Edit/Write; Bash-written Kotlin bypasses it = same class as --no-verify, see qgre module 40 docstring for the incident). Sanctioned in Bash: ast-grep run --rewrite / scan --update-all (pattern visible in command text), gradle tasks. PLUS: api/*.api + api/*.klib.api are GENERATED trust artifacts — block Edit/Write AND Bash redirection on them entirely; regeneration only via ./gradlew updateKotlinAbi (hand-editing a dump to match changed source passes checkKotlinAbi while silently rewriting the public contract). Reuse fleet_protocol_policy's heredoc-strip + shlex machinery for command parsing (do not fork it — import or extract shared helper). Tests both directions incl. the ast-grep-rewrite allow path and a gradle-task allow path."
 files = [".claude/hooks/modules/pretooluse/", ".claude/hooks/tests/"]
-status = "done"
+status = "in_flight"
 verify = "cat-heredoc .kt write blocked; ast-grep --rewrite allowed; Edit on api/*.api blocked; bash redirect to api/*.api blocked; updateKotlinAbi via gradle allowed; suites green; ci-gate green; per-edit latency still under ceiling"
 # [2026-07-03] done: added Bash source-write and ABI-dump guards using fleet command parser; direct, shell, adapter, ast-grep, gradle paths covered; hook suites and ci-gate PASS; final SHA in fleet report
+# [2026-07-03] REDO 2026-07-03: orchestrator live probes found the api-dump guard INERT for the real JVM dump — _is_api_dump uses path.parent == API_DIR (direct children only); api/jvm/torad-aisdk.api never matches on either surface (Edit allow, bash redirect allow) while builder tests used a direct-child path = green tests, dead guard (LP-1 shape). Interpreter blocks B1-B3 + all 5 allow-paths verified correct, incl. the guard correctly (conservatively) blocking the orchestrator's own inline python probe heredoc — file-based probe scripts are the sanctioned harness pattern. Fix dispatched: ancestor check + nested-path tests both surfaces.
 
 [[items]]
 id = "HD-10"
