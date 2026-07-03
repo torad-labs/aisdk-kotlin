@@ -148,6 +148,15 @@ jobs:
           done
 
           exit "$failed"
+      - name: Assert verify gate ledger
+        if: always()
+        run: |
+          node tools/assert-expected-gates.mjs verify \
+            "architecture-gate=${{ steps.architecture_gate.outcome }}" \
+            "hook-self-tests=${{ steps.hook_self_tests.outcome }}" \
+            "beta-readiness=${{ steps.beta_readiness.outcome }}" \
+            "gradle-check=${{ steps.gradle_check.outcome }}" \
+            "publish-to-maven-local=${{ steps.publish_to_maven_local.outcome }}"
 
   # Apple targets cannot build on Linux; without this leg the published iOS
   # frameworks were compiled/tested nowhere (kotlin.native.ignoreDisabledTargets
@@ -172,8 +181,16 @@ jobs:
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
       - name: Verify Apple targets (compile all, test simulator)
+        id: apple_targets
         run: ./gradlew iosSimulatorArm64Test compileKotlinIosArm64 compileKotlinIosX64
       - name: Verify Swift import smoke
+        id: swift_import_smoke
         env:
           REQUIRE_REAL_SMOKE: "1"
         run: tools/run-ios-swift-smoke
+      - name: Assert verify-apple gate ledger
+        if: always()
+        run: |
+          node tools/assert-expected-gates.mjs verify-apple \
+            "apple-targets=${{ steps.apple_targets.outcome }}" \
+            "swift-import-smoke=${{ steps.swift_import_smoke.outcome }}"
