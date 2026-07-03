@@ -1,0 +1,158 @@
+# dev/measurements.toml — the single home for measured project numbers.
+#
+# WHAT THIS IS: a measurements ledger for coverage, gate latency, hook-suite
+# counts, and other hardening metrics. Every measured number lives here with
+# provenance; docs and plans reference ledger keys instead of restating values.
+#
+# WHY: copied numbers rot independently. HD-04 found a stale coverage comment
+# that was mistaken for a live measurement. One home plus key references gives
+# every future reviewer a single reconciliation point. A doc that must mention
+# a number cites its key, for example `[meas: coverage_branch_percent]`.
+#
+# CONVENTIONS: status = "current" | "superseded". Never delete or overwrite a
+# measurement. Re-measure by superseding the current block and adding a new
+# dated block; history is evidence. Unverified estimates do not belong here.
+# Every entry carries date, HEAD, exact command, and tool_versions provenance.
+
+[[measurement]]
+key = "coverage_line_percent"
+value = 84.36
+unit = "% covered lines"
+date = "2026-07-03"
+head = "7d92f99"
+command = "./gradlew koverXmlReport; parse build/reports/kover/report.xml LINE counter"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "covered=25376 total=30079 at HD-09 seed HEAD; docs cite [meas: coverage_line_percent]."
+
+[[measurement]]
+key = "coverage_instruction_percent"
+value = 79.35
+unit = "% covered instructions"
+date = "2026-07-03"
+head = "7d92f99"
+command = "./gradlew koverXmlReport; parse build/reports/kover/report.xml INSTRUCTION counter"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "covered=200058 total=252131 at HD-09 seed HEAD; docs cite [meas: coverage_instruction_percent]."
+
+[[measurement]]
+key = "coverage_branch_percent"
+value = 50.71
+unit = "% covered branches"
+date = "2026-07-03"
+head = "7d92f99"
+command = "./gradlew koverXmlReport; parse build/reports/kover/report.xml BRANCH counter"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "covered=12615 total=24878 after HD-08; branch floor is separately tracked by [meas: kover_branch_floor_percent]."
+
+[[measurement]]
+key = "ci_gate_wall_clock_s"
+value = 11.22
+unit = "seconds, shell time -p real"
+date = "2026-07-03"
+head = "7d92f99"
+command = "time -p .claude/hooks/rules/ci-gate.sh"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "ci-gate PASS at seed HEAD; active rule parse count and fixture harness counts have separate keys."
+
+[[measurement]]
+key = "pretooluse_edit_hook_latency_ms"
+value = 480.4
+unit = "milliseconds, median of 5 harmless Edit payloads"
+date = "2026-07-03"
+head = "7d92f99"
+command = "python3 inline benchmark invoking .codex/hooks/claude_compat.py pretooluse .claude/hooks/orchestrator/pretooluse.py"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "samples_ms=480.4,489.6,471.5,474.8,487.4 on a temp Kotlin member-body edit."
+
+[[measurement]]
+key = "ast_grep_rule_count"
+value = 71
+unit = "active ast-grep rule files validated by ci-gate"
+date = "2026-07-03"
+head = "7d92f99"
+command = ".claude/hooks/rules/ci-gate.sh; read validate_rules.py output"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "ci-gate printed ok: all 71 rule files parse/match/satisfy hunk-mode expectations; raw yaml count includes non-manifest public-ABI helper rule."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 26
+unit = "fixture checks across 13 gates"
+date = "2026-07-03"
+head = "7d92f99"
+command = ".claude/hooks/rules/ci-gate.sh; read tools/run-gate-fixtures.mjs output"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "ci-gate printed gate fixture harness OK: 26 fixture checks across 13 gates."
+
+[[measurement]]
+key = "public_data_class_floor"
+value = 40
+unit = "tracked public commonMain data-class declarations"
+date = "2026-07-03"
+head = "7d92f99"
+command = "python3 -c parse data-class-budget.json publicDataClassesCommonMain"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "Budget file reports publicDataClassesCommonMain=40 and trackedPublicDataClassesCommonMain has 40 declarations."
+
+[[measurement]]
+key = "kover_branch_floor_percent"
+value = 49
+unit = "% covered branches minimum in build.gradle.kts"
+date = "2026-07-03"
+head = "7d92f99"
+command = "node_modules/.bin/ast-grep run -l kotlin -p 'minBound($N, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)' build.gradle.kts"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "HD-08 raised the Kover branch ratchet to 49 using actual-minus-2pp."
+
+[[measurement]]
+key = "hook_suite_kotlin_antipattern_checks"
+value = 44
+unit = "standalone script checks"
+date = "2026-07-03"
+head = "7d92f99"
+command = "python3 .claude/hooks/tests/test_kotlin_antipattern_policy.py"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "script output: ok 44."
+
+[[measurement]]
+key = "hook_suite_codex_adapter_checks"
+value = 5
+unit = "standalone script checks"
+date = "2026-07-03"
+head = "7d92f99"
+command = "python3 .claude/hooks/tests/test_codex_hook_adapter.py"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "script output: ok 5."
+
+[[measurement]]
+key = "hook_suite_fleet_protocol_checks"
+value = 26
+unit = "standalone script checks"
+date = "2026-07-03"
+head = "7d92f99"
+command = "python3 .claude/hooks/tests/test_fleet_protocol_policy.py"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "script output: ok 26."
+
+[[measurement]]
+key = "hook_suite_rule_selfcheck_checks"
+value = 6
+unit = "standalone script checks"
+date = "2026-07-03"
+head = "7d92f99"
+command = "python3 .claude/hooks/tests/test_rule_selfcheck_policy.py"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "script output: ok 6."
