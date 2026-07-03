@@ -270,12 +270,13 @@ id = "GH-22"
 phase = "gh3"
 title = "Apply GH-12 isolation to release.yml publish job; Maven Central publish step stays strictly fail-fast on the aggregator. Trust gate must stay green."
 files = [".github/workflows/release.yml"]
-status = "done"
+status = "verified"
 depends = ["GH-12"]
 verify = "non-publish steps report independently; publish only runs on aggregated green"
 
 # ---------------------------------------------------------------- phase rr: release path (operator-gated where noted)
 # [2026-07-02] publish job pre-publish gates now continue independently and aggregate before any Maven Central staging/upload path
+# [2026-07-02] orchestrator verified e7d711c: 5 pre-publish gates isolated w/ COE, always() aggregator, Central publish strictly fail-fast after aggregator (unreachable past red), GH-Packages/resolve-back best-effort w/ dry-run skips, trust gate green
 
 [[items]]
 id = "RR-01"
