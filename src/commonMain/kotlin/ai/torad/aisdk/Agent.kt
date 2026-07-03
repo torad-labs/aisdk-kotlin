@@ -111,7 +111,7 @@ public interface Agent<TContext, TOutput> {
  * @since 0.3.0-beta01
  */
 @Poko
-public class GenerateResult<TOutput>(
+public class GenerateResult<TOutput> internal constructor(
     internal val rawOutput: TOutput,
     /** @since 0.3.0-beta01 */
     public val text: String,

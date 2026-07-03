@@ -626,8 +626,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             )
         } else {
             emit(
-                GenerateResult(
-                    decodeFinalOutput(output, text, finishReason),
+                ResultConstruction.generateResult(
+                    rawOutput = decodeFinalOutput(output, text, finishReason),
                     text = text,
                     steps = steps,
                     finishReason = finishReason,
@@ -1396,7 +1396,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 stepFinishReason
             }
 
-            val step = StepResult(
+            val step = ResultConstruction.stepResult(
                 stepNumber = stepNumber,
                 text = stepText.toString(),
                 reasoning = stepReasoning.toString(),

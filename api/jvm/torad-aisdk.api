@@ -2193,8 +2193,6 @@ public final class ai/torad/aisdk/GenerateObjectResult {
 }
 
 public final class ai/torad/aisdk/GenerateResult {
-	public fun <init> (Ljava/lang/Object;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/Usage;Ljava/util/List;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/Object;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/Usage;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFinishReason ()Lai/torad/aisdk/FinishReason;
 	public final fun getMessages ()Ljava/util/List;
@@ -2222,8 +2220,6 @@ public final class ai/torad/aisdk/GenerateSpeechResult {
 }
 
 public final class ai/torad/aisdk/GenerateTextResult {
-	public fun <init> (Ljava/lang/Object;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/Object;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getContent ()Ljava/util/List;
 	public final fun getDynamicToolCalls ()Ljava/util/List;
@@ -4941,8 +4937,6 @@ public final class ai/torad/aisdk/StdioConfigBuilder {
 }
 
 public final class ai/torad/aisdk/StepResult {
-	public fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V
-	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDynamicToolCalls ()Ljava/util/List;
 	public final fun getDynamicToolResults ()Ljava/util/List;
@@ -5785,9 +5779,6 @@ public final class ai/torad/aisdk/StructuredObjectApiKt {
 }
 
 public final class ai/torad/aisdk/StructuredObjectFinish {
-	public fun <init> (Ljava/lang/Object;Ljava/lang/Throwable;Lkotlinx/serialization/json/JsonElement;)V
-	public fun <init> (Ljava/lang/Object;Ljava/lang/Throwable;Lkotlinx/serialization/json/JsonElement;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/Object;Ljava/lang/Throwable;Lkotlinx/serialization/json/JsonElement;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getError ()Ljava/lang/Throwable;
 	public final fun getRawValue ()Lkotlinx/serialization/json/JsonElement;
@@ -5832,9 +5823,6 @@ public abstract class ai/torad/aisdk/StructuredObjectPhase {
 }
 
 public final class ai/torad/aisdk/StructuredObjectPhase$Done : ai/torad/aisdk/StructuredObjectPhase {
-	public fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;)V
-	public fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getError ()Ljava/lang/Throwable;
 	public final fun getRaw ()Lkotlinx/serialization/json/JsonElement;
@@ -5852,9 +5840,6 @@ public final class ai/torad/aisdk/StructuredObjectPhase$Idle : ai/torad/aisdk/St
 }
 
 public final class ai/torad/aisdk/StructuredObjectPhase$Streaming : ai/torad/aisdk/StructuredObjectPhase {
-	public fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;)V
-	public fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getError ()Ljava/lang/Throwable;
 	public final fun getPartial ()Ljava/lang/Object;

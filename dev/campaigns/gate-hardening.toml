@@ -284,8 +284,9 @@ id = "RR-01"
 phase = "rr"
 title = "Demote public positional ctors on growable result types (GenerateResult Agent.kt:~108, GenerateTextResult Generate.kt:~23, StepResult Lifecycle.kt:~231, StructuredObjectFinish/Phase leaves StructuredObjectApi.kt) to internal; sanctioned test-fake construction via Mock* models or new factories. ABI-touching: updateKotlinAbi + CHANGELOG + INTERFACE_CONTRACT in-commit. AR-14 churned these once already."
 files = ["src/commonMain/kotlin/ai/torad/aisdk/"]
-status = "in_flight"
+status = "done"
 verify = "JVM dump shows no public positional <init> on the named growable result types; test-fake path documented; check green"
+# [2026-07-02] demoted result/phase positional constructors to internal; internal ResultConstruction factory covers production/tests; ABI dumps/docs updated
 
 [[items]]
 id = "RR-02"

@@ -41,17 +41,17 @@ class StructuredUiPokoTest {
         assertEquals(finish.hashCode(), equalFinish.hashCode())
         assertNotEquals(finish, differentFinish)
 
-        val phase: StructuredObjectPhase<String> = StructuredObjectPhase.Done(
+        val phase: StructuredObjectPhase<String> = ResultConstruction.structuredObjectDonePhase(
             value = "done",
             raw = JsonPrimitive("done"),
             error = null,
         )
-        val equalPhase: StructuredObjectPhase<String> = StructuredObjectPhase.Done(
+        val equalPhase: StructuredObjectPhase<String> = ResultConstruction.structuredObjectDonePhase(
             value = "done",
             raw = JsonPrimitive("done"),
             error = null,
         )
-        val differentPhase: StructuredObjectPhase<String> = StructuredObjectPhase.Streaming(
+        val differentPhase: StructuredObjectPhase<String> = ResultConstruction.structuredObjectStreamingPhase(
             partial = "done",
             raw = JsonPrimitive("done"),
             error = null,

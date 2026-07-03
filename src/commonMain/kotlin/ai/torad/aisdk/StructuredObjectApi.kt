@@ -24,7 +24,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import kotlin.jvm.JvmOverloads
 
 @Poko
 /** @since 0.3.0-beta01 */
@@ -117,7 +116,7 @@ internal class DirectStructuredObjectTransport<INPUT>(
 
 @Poko
 /** @since 0.3.0-beta01 */
-public class StructuredObjectFinish<RESULT> @JvmOverloads constructor(
+public class StructuredObjectFinish<RESULT> internal constructor(
     /** @since 0.3.0-beta01 */
     public val value: RESULT?,
     /** @since 0.3.0-beta01 */
@@ -235,7 +234,7 @@ public sealed class StructuredObjectPhase<out RESULT> {
 
     @Poko
     /** @since 0.3.0-beta01 */
-    public class Streaming<out RESULT> @JvmOverloads constructor(
+    public class Streaming<out RESULT> internal constructor(
         /** @since 0.3.0-beta01 */
         public val partial: RESULT?,
         /** @since 0.3.0-beta01 */
@@ -248,7 +247,7 @@ public sealed class StructuredObjectPhase<out RESULT> {
 
     @Poko
     /** @since 0.3.0-beta01 */
-    public class Done<out RESULT> @JvmOverloads constructor(
+    public class Done<out RESULT> internal constructor(
         /** @since 0.3.0-beta01 */
         public val value: RESULT?,
         /** @since 0.3.0-beta01 */
@@ -272,7 +271,7 @@ public class StructuredObject<RESULT, INPUT>(
 
     private val mutableState = MutableStateFlow<StructuredObjectPhase<RESULT>>(
         if (options.initialValue != null) {
-            StructuredObjectPhase.Done(options.initialValue, null, null)
+            ResultConstruction.structuredObjectDonePhase(options.initialValue, null, null)
         } else {
             StructuredObjectPhase.Idle
         },
@@ -335,7 +334,9 @@ public class StructuredObject<RESULT, INPUT>(
             // reaches Done (partial preserved) but must NOT fire onFinish — the host didn't finish.
             if (!controller.signal.isAborted) {
                 (mutableState.value as? StructuredObjectPhase.Done)?.let {
-                    options.onFinish(StructuredObjectFinish(it.value, it.error, it.raw, it.warnings))
+                    options.onFinish(
+                        ResultConstruction.structuredObjectFinish(it.value, it.error, it.raw, it.warnings),
+                    )
                 }
             }
         } catch (c: CancellationException) {
@@ -346,12 +347,12 @@ public class StructuredObject<RESULT, INPUT>(
             val current = mutableState.value
             val partial = (current as? StructuredObjectPhase.Streaming)?.partial
             val raw = (current as? StructuredObjectPhase.Streaming)?.raw
-            mutableState.value = StructuredObjectPhase.Done(partial, raw, t)
+            mutableState.value = ResultConstruction.structuredObjectDonePhase(partial, raw, t)
             options.onError(t)
         } finally {
             mutableState.update { p ->
                 if (p is StructuredObjectPhase.Streaming) {
-                    StructuredObjectPhase.Done(p.partial, p.raw, p.error)
+                    ResultConstruction.structuredObjectDonePhase(p.partial, p.raw, p.error)
                 } else {
                     p
                 }
@@ -366,7 +367,7 @@ public class StructuredObject<RESULT, INPUT>(
         abortController = null
         mutableState.update { p ->
             if (p is StructuredObjectPhase.Streaming) {
-                StructuredObjectPhase.Done(p.partial, p.raw, p.error)
+                ResultConstruction.structuredObjectDonePhase(p.partial, p.raw, p.error)
             } else {
                 p
             }
@@ -401,7 +402,7 @@ public class StructuredObject<RESULT, INPUT>(
             schema: Schema<RESULT>,
             abortSignal: AbortSignal,
         ): Flow<StructuredObjectPhase<RESULT>> = channelFlow {
-            send(StructuredObjectPhase.Streaming(null, null, null))
+            send(ResultConstruction.structuredObjectStreamingPhase(null, null, null))
             val accumulated = StringBuilder()
             var latestRaw: JsonElement? = null
             var currentValue: RESULT? = null
@@ -415,17 +416,23 @@ public class StructuredObject<RESULT, INPUT>(
                         when (val validated = Schemas.safeValidateTypes(parsed, schema)) {
                             is ValidationResult.Success -> {
                                 currentValue = validated.value
-                                send(StructuredObjectPhase.Streaming(currentValue, parsed, null))
+                                send(ResultConstruction.structuredObjectStreamingPhase(currentValue, parsed, null))
                             }
                             is ValidationResult.Failure ->
-                                send(StructuredObjectPhase.Streaming(currentValue, parsed, validated.error))
+                                send(
+                                    ResultConstruction.structuredObjectStreamingPhase(
+                                        currentValue,
+                                        parsed,
+                                        validated.error,
+                                    ),
+                                )
                         }
                     }
                 }
                 val finalRaw = latestRaw
                 if (finalRaw == null) {
                     send(
-                        StructuredObjectPhase.Done(
+                        ResultConstruction.structuredObjectDonePhase(
                             null,
                             null,
                             TypeValidationError.wrap(
@@ -438,15 +445,15 @@ public class StructuredObject<RESULT, INPUT>(
                     when (val validated = Schemas.safeValidateTypes(finalRaw, schema)) {
                         is ValidationResult.Success -> {
                             currentValue = validated.value
-                            send(StructuredObjectPhase.Done(currentValue, finalRaw, null))
+                            send(ResultConstruction.structuredObjectDonePhase(currentValue, finalRaw, null))
                         }
                         is ValidationResult.Failure ->
-                            send(StructuredObjectPhase.Done(currentValue, finalRaw, validated.error))
+                            send(ResultConstruction.structuredObjectDonePhase(currentValue, finalRaw, validated.error))
                     }
                 }
             } catch (ignored: AbortError) {
                 // Cooperative stop: keep the latest partial, no error (the host didn't fail).
-                send(StructuredObjectPhase.Done(currentValue, latestRaw, null))
+                send(ResultConstruction.structuredObjectDonePhase(currentValue, latestRaw, null))
             }
         }
 
@@ -509,13 +516,13 @@ public class StructuredObjectGenerator<RESULT>(
                 ).collect { phase ->
                     emit(
                         when (phase) {
-                            is StructuredObjectPhase.Streaming -> StructuredObjectPhase.Streaming(
+                            is StructuredObjectPhase.Streaming -> ResultConstruction.structuredObjectStreamingPhase(
                                 phase.partial,
                                 phase.raw,
                                 phase.error,
                                 warnings,
                             )
-                            is StructuredObjectPhase.Done -> StructuredObjectPhase.Done(
+                            is StructuredObjectPhase.Done -> ResultConstruction.structuredObjectDonePhase(
                                 phase.value,
                                 phase.raw,
                                 phase.error,
@@ -542,19 +549,19 @@ public class StructuredObjectGenerator<RESULT>(
     /** One-shot: drives the stream to [StructuredObjectPhase.Done] and returns the typed result. */
     public suspend fun generate(input: GenerationInput): StructuredObjectFinish<RESULT> =
         when (val terminal = stream(input).last()) {
-            is StructuredObjectPhase.Done -> StructuredObjectFinish(
-                terminal.value,
-                terminal.error,
-                terminal.raw,
-                terminal.warnings,
+            is StructuredObjectPhase.Done -> ResultConstruction.structuredObjectFinish(
+                value = terminal.value,
+                error = terminal.error,
+                rawValue = terminal.raw,
+                warnings = terminal.warnings,
             )
-            is StructuredObjectPhase.Streaming -> StructuredObjectFinish(
-                terminal.partial,
-                terminal.error,
-                terminal.raw,
-                terminal.warnings,
+            is StructuredObjectPhase.Streaming -> ResultConstruction.structuredObjectFinish(
+                value = terminal.partial,
+                error = terminal.error,
+                rawValue = terminal.raw,
+                warnings = terminal.warnings,
             )
-            StructuredObjectPhase.Idle -> StructuredObjectFinish(null, null, null)
+            StructuredObjectPhase.Idle -> ResultConstruction.structuredObjectFinish(null, null, null)
         }
     private fun buildParams(input: GenerationInput): LanguageModelCallParams =
         LanguageModelCallParams {

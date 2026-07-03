@@ -1573,8 +1573,6 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/GenerateObjectResult { // ai.torad.
 }
 
 final class <#A: kotlin/Any?> ai.torad.aisdk/GenerateResult { // ai.torad.aisdk/GenerateResult|null[0]
-    constructor <init>(#A, kotlin/String, kotlin.collections/List<ai.torad.aisdk/StepResult>, ai.torad.aisdk/FinishReason, ai.torad.aisdk/Usage, ai.torad.aisdk/Usage = ..., kotlin.collections/List<ai.torad.aisdk/PendingApproval> = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ...) // ai.torad.aisdk/GenerateResult.<init>|<init>(1:0;kotlin.String;kotlin.collections.List<ai.torad.aisdk.StepResult>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;ai.torad.aisdk.Usage;kotlin.collections.List<ai.torad.aisdk.PendingApproval>;kotlin.collections.List<ai.torad.aisdk.ModelMessage>){}[0]
-
     final val finishReason // ai.torad.aisdk/GenerateResult.finishReason|{}finishReason[0]
         final fun <get-finishReason>(): ai.torad.aisdk/FinishReason // ai.torad.aisdk/GenerateResult.finishReason.<get-finishReason>|<get-finishReason>(){}[0]
     final val messages // ai.torad.aisdk/GenerateResult.messages|{}messages[0]
@@ -1598,8 +1596,6 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/GenerateResult { // ai.torad.aisdk/
 }
 
 final class <#A: kotlin/Any?> ai.torad.aisdk/GenerateTextResult { // ai.torad.aisdk/GenerateTextResult|null[0]
-    constructor <init>(#A, kotlin/String, kotlin.collections/List<ai.torad.aisdk/ContentPart.ToolCall>, ai.torad.aisdk/FinishReason, ai.torad.aisdk/Usage, kotlin.collections/List<ai.torad.aisdk/ContentPart> = ..., kotlin.collections/List<ai.torad.aisdk/ContentPart.ToolResult> = ..., kotlin.collections/List<ai.torad.aisdk/ContentPart.Reasoning> = ..., kotlin/String? = ..., kotlin.collections/List<ai.torad.aisdk/ContentPart.File> = ..., kotlin.collections/List<ai.torad.aisdk/ContentPart.Source> = ..., ai.torad.aisdk/Usage = ..., kotlin.collections/List<ai.torad.aisdk/CallWarning> = ..., ai.torad.aisdk/LanguageModelRequestMetadata = ..., ai.torad.aisdk/LanguageModelResponseMetadata = ..., ai.torad.aisdk/ProviderMetadata = ..., kotlin.collections/List<ai.torad.aisdk/StepResult> = ..., kotlin/String? = ...) // ai.torad.aisdk/GenerateTextResult.<init>|<init>(1:0;kotlin.String;kotlin.collections.List<ai.torad.aisdk.ContentPart.ToolCall>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;kotlin.collections.List<ai.torad.aisdk.ContentPart>;kotlin.collections.List<ai.torad.aisdk.ContentPart.ToolResult>;kotlin.collections.List<ai.torad.aisdk.ContentPart.Reasoning>;kotlin.String?;kotlin.collections.List<ai.torad.aisdk.ContentPart.File>;kotlin.collections.List<ai.torad.aisdk.ContentPart.Source>;ai.torad.aisdk.Usage;kotlin.collections.List<ai.torad.aisdk.CallWarning>;ai.torad.aisdk.LanguageModelRequestMetadata;ai.torad.aisdk.LanguageModelResponseMetadata;ai.torad.aisdk.ProviderMetadata;kotlin.collections.List<ai.torad.aisdk.StepResult>;kotlin.String?){}[0]
-
     final val content // ai.torad.aisdk/GenerateTextResult.content|{}content[0]
         final fun <get-content>(): kotlin.collections/List<ai.torad.aisdk/ContentPart> // ai.torad.aisdk/GenerateTextResult.content.<get-content>|<get-content>(){}[0]
     final val dynamicToolCalls // ai.torad.aisdk/GenerateTextResult.dynamicToolCalls|{}dynamicToolCalls[0]
@@ -1826,8 +1822,6 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/StreamObjectResult { // ai.torad.ai
 }
 
 final class <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectFinish { // ai.torad.aisdk/StructuredObjectFinish|null[0]
-    constructor <init>(#A?, kotlin/Throwable?, kotlinx.serialization.json/JsonElement?, kotlin.collections/List<ai.torad.aisdk/CallWarning> = ...) // ai.torad.aisdk/StructuredObjectFinish.<init>|<init>(1:0?;kotlin.Throwable?;kotlinx.serialization.json.JsonElement?;kotlin.collections.List<ai.torad.aisdk.CallWarning>){}[0]
-
     final val error // ai.torad.aisdk/StructuredObjectFinish.error|{}error[0]
         final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/StructuredObjectFinish.error.<get-error>|<get-error>(){}[0]
     final val rawValue // ai.torad.aisdk/StructuredObjectFinish.rawValue|{}rawValue[0]
@@ -10662,8 +10656,6 @@ final class ai.torad.aisdk/StdioConfigBuilder { // ai.torad.aisdk/StdioConfigBui
 }
 
 final class ai.torad.aisdk/StepResult { // ai.torad.aisdk/StepResult|null[0]
-    constructor <init>(kotlin/Int, kotlin/String, kotlin/String, kotlin.collections/List<ai.torad.aisdk/ContentPart.ToolCall>, kotlin.collections/List<ai.torad.aisdk/ContentPart.ToolResult>, kotlin.collections/List<ai.torad.aisdk/ContentPart.ToolApprovalRequest>, ai.torad.aisdk/FinishReason, ai.torad.aisdk/Usage, kotlin.collections/List<ai.torad.aisdk/CallWarning> = ..., ai.torad.aisdk/LanguageModelRequestMetadata = ..., ai.torad.aisdk/LanguageModelResponseMetadata = ..., ai.torad.aisdk/ProviderMetadata = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/Any? = ...) // ai.torad.aisdk/StepResult.<init>|<init>(kotlin.Int;kotlin.String;kotlin.String;kotlin.collections.List<ai.torad.aisdk.ContentPart.ToolCall>;kotlin.collections.List<ai.torad.aisdk.ContentPart.ToolResult>;kotlin.collections.List<ai.torad.aisdk.ContentPart.ToolApprovalRequest>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;kotlin.collections.List<ai.torad.aisdk.CallWarning>;ai.torad.aisdk.LanguageModelRequestMetadata;ai.torad.aisdk.LanguageModelResponseMetadata;ai.torad.aisdk.ProviderMetadata;kotlin.String?;kotlin.String?;kotlin.Any?){}[0]
-
     final val dynamicToolCalls // ai.torad.aisdk/StepResult.dynamicToolCalls|{}dynamicToolCalls[0]
         final fun <get-dynamicToolCalls>(): kotlin.collections/List<ai.torad.aisdk/ContentPart.ToolCall> // ai.torad.aisdk/StepResult.dynamicToolCalls.<get-dynamicToolCalls>|<get-dynamicToolCalls>(){}[0]
     final val dynamicToolResults // ai.torad.aisdk/StepResult.dynamicToolResults|{}dynamicToolResults[0]
@@ -11689,8 +11681,6 @@ sealed class <#A: out kotlin/Any?> ai.torad.aisdk/ParseResult { // ai.torad.aisd
 
 sealed class <#A: out kotlin/Any?> ai.torad.aisdk/StructuredObjectPhase { // ai.torad.aisdk/StructuredObjectPhase|null[0]
     final class <#A1: out kotlin/Any?> Done : ai.torad.aisdk/StructuredObjectPhase<#A1> { // ai.torad.aisdk/StructuredObjectPhase.Done|null[0]
-        constructor <init>(#A1?, kotlinx.serialization.json/JsonElement?, kotlin/Throwable?, kotlin.collections/List<ai.torad.aisdk/CallWarning> = ...) // ai.torad.aisdk/StructuredObjectPhase.Done.<init>|<init>(1:0?;kotlinx.serialization.json.JsonElement?;kotlin.Throwable?;kotlin.collections.List<ai.torad.aisdk.CallWarning>){}[0]
-
         final val error // ai.torad.aisdk/StructuredObjectPhase.Done.error|{}error[0]
             final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/StructuredObjectPhase.Done.error.<get-error>|<get-error>(){}[0]
         final val raw // ai.torad.aisdk/StructuredObjectPhase.Done.raw|{}raw[0]
@@ -11706,8 +11696,6 @@ sealed class <#A: out kotlin/Any?> ai.torad.aisdk/StructuredObjectPhase { // ai.
     }
 
     final class <#A1: out kotlin/Any?> Streaming : ai.torad.aisdk/StructuredObjectPhase<#A1> { // ai.torad.aisdk/StructuredObjectPhase.Streaming|null[0]
-        constructor <init>(#A1?, kotlinx.serialization.json/JsonElement?, kotlin/Throwable?, kotlin.collections/List<ai.torad.aisdk/CallWarning> = ...) // ai.torad.aisdk/StructuredObjectPhase.Streaming.<init>|<init>(1:0?;kotlinx.serialization.json.JsonElement?;kotlin.Throwable?;kotlin.collections.List<ai.torad.aisdk.CallWarning>){}[0]
-
         final val error // ai.torad.aisdk/StructuredObjectPhase.Streaming.error|{}error[0]
             final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/StructuredObjectPhase.Streaming.error.<get-error>|<get-error>(){}[0]
         final val partial // ai.torad.aisdk/StructuredObjectPhase.Streaming.partial|{}partial[0]

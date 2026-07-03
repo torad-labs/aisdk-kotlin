@@ -9,21 +9,21 @@ class D11PokoResultLeafTest {
     @Test
     fun `D11 generate result types keep value semantics`() {
         assertValueSemantics(
-            GenerateResult(
+            ResultConstruction.generateResult(
                 rawOutput = "output",
                 text = "done",
                 steps = emptyList(),
                 finishReason = FinishReason.Stop,
                 usage = Usage.of(promptTokens = 1, completionTokens = 2),
             ),
-            GenerateResult(
+            ResultConstruction.generateResult(
                 rawOutput = "output",
                 text = "done",
                 steps = emptyList(),
                 finishReason = FinishReason.Stop,
                 usage = Usage.of(promptTokens = 1, completionTokens = 2),
             ),
-            GenerateResult(
+            ResultConstruction.generateResult(
                 rawOutput = "different",
                 text = "done",
                 steps = emptyList(),
@@ -38,21 +38,21 @@ class D11PokoResultLeafTest {
             input = JsonObject(emptyMap()),
         )
         assertValueSemantics(
-            GenerateTextResult(
+            ResultConstruction.generateTextResult(
                 output = "answer",
                 text = "answer",
                 toolCalls = listOf(toolCall),
                 finishReason = FinishReason.ToolCalls,
                 usage = Usage.of(promptTokens = 3, completionTokens = 4),
             ),
-            GenerateTextResult(
+            ResultConstruction.generateTextResult(
                 output = "answer",
                 text = "answer",
                 toolCalls = listOf(toolCall),
                 finishReason = FinishReason.ToolCalls,
                 usage = Usage.of(promptTokens = 3, completionTokens = 4),
             ),
-            GenerateTextResult(
+            ResultConstruction.generateTextResult(
                 output = "answer",
                 text = "different",
                 toolCalls = listOf(toolCall),

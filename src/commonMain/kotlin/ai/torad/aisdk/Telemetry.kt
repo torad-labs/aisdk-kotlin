@@ -548,7 +548,7 @@ private object TelemetryRedaction {
     }
 
     private fun StepResult.sanitizedStep(settings: TelemetrySettings, redactor: Redactor): StepResult =
-        StepResult(
+        ResultConstruction.stepResult(
             stepNumber = stepNumber,
             text = if (settings.recordOutputs) redactor.redactText(text) else "",
             reasoning = if (settings.recordOutputs) redactor.redactText(reasoning) else "",
