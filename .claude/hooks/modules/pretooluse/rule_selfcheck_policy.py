@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -29,41 +30,73 @@ MODULE_NAME = "rule_selfcheck_policy"
 WRITE_TOOLS = {"Write", "Edit", "MultiEdit"}
 
 HOOKS_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = HOOKS_ROOT.parents[1]
 RULES_DIR = HOOKS_ROOT / "rules" / "kotlin"
 MANIFEST_PATH = HOOKS_ROOT / "rules" / "manifest.json"
+SELFCHECK_SCAN_TIMEOUT = 2.0
 
 
 def applies(data: dict) -> bool:
     if data.get("tool_name") not in WRITE_TOOLS:
         return False
-    path = _target_path(data)
-    return path is not None
+    return bool(_target_paths(data))
 
 
 def run(data: dict) -> HookResult | None:
-    path = _target_path(data)
-    if path is None:
+    paths = _target_paths(data)
+    if not paths:
         return None
-    post = _post_edit_content(data, path)
-    if post is None:
-        return None  # cannot reconstruct the edit; commit-time GH-01 backstops
 
-    if path.name == "manifest.json":
-        return _check_manifest(post)
-    return _check_rule_file(path, post)
+    first_warn: HookResult | None = None
+    for path in paths:
+        post = _post_edit_content(data, path)
+        if post is None:
+            continue  # cannot reconstruct the edit; commit-time GH-01 backstops
+        result = _check_manifest(post) if path == MANIFEST_PATH else _check_rule_file(path, post)
+        if result is None:
+            continue
+        if result.kind == "block":
+            return result
+        if first_warn is None:
+            first_warn = result
+    return first_warn
 
 
-def _target_path(data: dict) -> Path | None:
-    raw = str((data.get("tool_input") or {}).get("file_path") or "")
-    if not raw:
-        return None
+def _target_paths(data: dict) -> list[Path]:
+    tool_input = data.get("tool_input") or {}
+    raw_paths: list[str] = []
+    top = tool_input.get("file_path")
+    if top:
+        raw_paths.append(str(top))
+    if data.get("tool_name") == "MultiEdit":
+        for edit in tool_input.get("edits") or []:
+            edit_path = edit.get("file_path")
+            if edit_path:
+                raw_paths.append(str(edit_path))
+
+    paths: list[Path] = []
+    for raw in raw_paths:
+        path = _resolve_event_path(data, raw)
+        if _is_checked_path(path) and path not in paths:
+            paths.append(path)
+    return paths
+
+
+def _resolve_event_path(data: dict, raw: str) -> Path:
     path = Path(raw)
-    normalized = str(path).replace("\\", "/")
-    if normalized.endswith(".claude/hooks/rules/manifest.json"):
-        return path
-    if "/.claude/hooks/rules/kotlin/" in normalized and path.suffix == ".yaml":
-        return path
-    return None
+    if path.is_absolute():
+        return path.resolve(strict=False)
+    cwd = Path(str(data.get("cwd") or REPO_ROOT))
+    return (cwd / path).resolve(strict=False)
+
+
+def _is_checked_path(path: Path) -> bool:
+    if path == MANIFEST_PATH.resolve(strict=False):
+        return True
+    try:
+        return path.suffix == ".yaml" and path.is_relative_to(RULES_DIR.resolve(strict=False))
+    except ValueError:
+        return False
 
 
 def _post_edit_content(data: dict, path: Path) -> str | None:
@@ -80,6 +113,9 @@ def _post_edit_content(data: dict, path: Path) -> str | None:
     )
     text = current
     for edit in edits:
+        edit_path = edit.get("file_path")
+        if edit_path and _resolve_event_path(data, str(edit_path)) != path:
+            continue
         old = str(edit.get("old_string") or "")
         new = str(edit.get("new_string") or "")
         if not old:
@@ -102,7 +138,7 @@ def _check_rule_file(path: Path, post: str) -> HookResult | None:
     rule_tmp = _write_temp(post, ".yaml")
     probe_tmp = _write_kt("val probe = 1\n")
     try:
-        returncode, _, stderr = _scan(binary, rule_tmp, probe_tmp)
+        returncode, _, stderr = _scan(binary, rule_tmp, probe_tmp, timeout=SELFCHECK_SCAN_TIMEOUT)
         if not _parses(stderr, returncode):
             first = next((ln for ln in stderr.splitlines() if ln.strip()), f"exit {returncode}")
             return _block(
@@ -124,7 +160,7 @@ def _check_rule_file(path: Path, post: str) -> HookResult | None:
         if bad:
             bad_tmp = _write_kt(str(bad))
             try:
-                _, matches, _ = _scan(binary, rule_tmp, bad_tmp)
+                _, matches, _ = _scan(binary, rule_tmp, bad_tmp, timeout=SELFCHECK_SCAN_TIMEOUT)
             finally:
                 os.unlink(bad_tmp)
             if matches == 0:
@@ -137,7 +173,7 @@ def _check_rule_file(path: Path, post: str) -> HookResult | None:
         if good:
             good_tmp = _write_kt(str(good))
             try:
-                _, matches, _ = _scan(binary, rule_tmp, good_tmp)
+                _, matches, _ = _scan(binary, rule_tmp, good_tmp, timeout=SELFCHECK_SCAN_TIMEOUT)
             finally:
                 os.unlink(good_tmp)
             if matches > 0:
@@ -154,6 +190,11 @@ def _check_rule_file(path: Path, post: str) -> HookResult | None:
                 f"`{rule_id}` — re-sync the manifest `yaml` field with the "
                 "rule file so semantic validation tests what actually runs."
             )
+    except subprocess.TimeoutExpired:
+        return _warn(
+            "RULE SELF-CHECK: selfcheck budget exceeded; ci-gate backstops "
+            f"`{path.name}`."
+        )
     finally:
         os.unlink(rule_tmp)
         os.unlink(probe_tmp)

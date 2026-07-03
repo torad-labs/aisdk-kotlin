@@ -39,11 +39,16 @@ def ast_grep_binary() -> str | None:
     return None
 
 
-def _scan(binary: str, rule_path: str, code_path: str) -> tuple[int, int, str]:
+def _scan(
+    binary: str,
+    rule_path: str,
+    code_path: str,
+    timeout: float = 10.0,
+) -> tuple[int, int, str]:
     """Return (returncode, match_count, stderr) for one rule against one file."""
     cp = subprocess.run(
         [binary, "scan", "--rule", rule_path, code_path, "--json=compact"],
-        capture_output=True, text=True, timeout=10,
+        capture_output=True, text=True, timeout=timeout,
     )
     count = 0
     raw = (cp.stdout or "").strip()

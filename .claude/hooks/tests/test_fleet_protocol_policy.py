@@ -57,6 +57,14 @@ check(
         "tool_input": {"command": ["bash", "-lc", "git push origin refactor/ts-residue-cleanup"]},
     })),
 )
+check(
+    "builder quoted git push subcommand is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "fleet_role": "builder",
+        "tool_input": {"command": 'git "push" origin main'},
+    })),
+)
 
 # 4 — builder staging an owned file is blocked; staging normal files is not.
 check(
@@ -75,6 +83,38 @@ check(
         "tool_input": {"command": "git add src/commonMain/kotlin/ai/torad/aisdk/Foo.kt"},
     })),
 )
+check(
+    "builder git add dot is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "fleet_role": "builder",
+        "tool_input": {"command": "git add ."},
+    })),
+)
+check(
+    "builder git add all is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "fleet_role": "builder",
+        "tool_input": {"command": "git add -A"},
+    })),
+)
+check(
+    "builder git commit all with message is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "fleet_role": "builder",
+        "tool_input": {"command": "git commit -am x"},
+    })),
+)
+check(
+    "builder shell write to owned ledger is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "fleet_role": "builder",
+        "tool_input": {"command": "printf x > docs/audit-remediation-backlog.md"},
+    })),
+)
 
 # 5/6 — role-agnostic gate/history safety.
 check(
@@ -85,10 +125,31 @@ check(
     })),
 )
 check(
+    "quoted --no-verify argument is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": 'git commit "--no-verify" -m x'},
+    })),
+)
+check(
+    "commit -n no-verify alias is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "git commit -n -m x"},
+    })),
+)
+check(
     "bare force push is blocked",
     blocked(run_target({
         "tool_name": "Bash",
         "tool_input": {"command": "git push --force origin main"},
+    })),
+)
+check(
+    "plus-refspec force push is blocked",
+    blocked(run_target({
+        "tool_name": "Bash",
+        "tool_input": {"command": "git push origin +HEAD:main"},
     })),
 )
 check(
@@ -105,6 +166,29 @@ check(
         "tool_input": {"command": 'git commit -m "guards block --no-verify and git push --force misuse"'},
     })),
 )
+check(
+    "heredoc prose mentioning git push is allowed",
+    not blocked(run_target({
+        "tool_name": "Bash",
+        "fleet_role": "builder",
+        "tool_input": {"command": "cat <<EOF\nplease run git push origin main\nEOF"},
+    })),
+)
+readme_mention_patch = {
+    "tool_name": "apply_patch",
+    "fleet_role": "builder",
+    "cwd": str(ROOT),
+    "tool_input": {
+        "command": """*** Begin Patch
+*** Update File: README.md
+@@
+ old
++Mention docs/audit-remediation-backlog.md in prose.
+*** End Patch
+"""
+    },
+}
+check("patch body mention of owned ledger is allowed", not blocked(run_target(readme_mention_patch)))
 
 # 7 — amend guard: blocked when HEAD is published, allowed when local-only.
 with tempfile.TemporaryDirectory() as tmp:
@@ -127,6 +211,23 @@ with tempfile.TemporaryDirectory() as tmp:
         "tool_input": {"command": "git commit --amend -m rewritten"},
     }
     check("amend of a published HEAD is blocked", blocked(run_target(amend_event)))
+
+    foreign = Path(tmp) / "foreign"
+    subprocess.run(["git", "init", "-q", str(foreign)], check=True)
+    foreign_git = ["git", "-C", str(foreign)]
+    subprocess.run(foreign_git + ["config", "user.email", "t@t"], check=True)
+    subprocess.run(foreign_git + ["config", "user.name", "t"], check=True)
+    (foreign / "local.txt").write_text("1")
+    subprocess.run(foreign_git + ["add", "local.txt"], check=True)
+    subprocess.run(foreign_git + ["commit", "-qm", "local"], check=True)
+    check(
+        "git -C published amend is checked against target repo",
+        blocked(run_target({
+            "tool_name": "Bash",
+            "cwd": str(foreign),
+            "tool_input": {"command": f"git -C {work} commit --amend -m rewritten"},
+        })),
+    )
 
     (work / "b.txt").write_text("2")
     subprocess.run(env_git + ["add", "b.txt"], check=True)

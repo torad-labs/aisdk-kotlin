@@ -13,7 +13,9 @@ still get the role-agnostic history-safety guards.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 import re
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -32,13 +34,37 @@ ORCHESTRATOR_OWNED = (
     ".claude/PLAN.md",
 )
 
-_GIT_PUSH_RE = re.compile(r"\bgit\b[^|;&]*\bpush\b")
-_GIT_STAGE_RE = re.compile(r"\bgit\b[^|;&]*\b(add|commit|rm|mv|restore|checkout)\b")
-_GIT_AMEND_RE = re.compile(r"\bgit\b[^|;&]*\bcommit\b[^|;&]*--amend")
-_NO_VERIFY_RE = re.compile(r"\bgit\b[^|;&]*\b(commit|push)\b[^|;&]*--no-verify")
-_FORCE_RE = re.compile(r"\bgit\b[^|;&]*\bpush\b[^|;&]*(\s--force\b|\s-f\b)")
+READ_ONLY_COMMANDS = {
+    "cat",
+    "less",
+    "head",
+    "tail",
+    "grep",
+    "rg",
+    "diff",
+    "wc",
+    "md5sum",
+    "sha256sum",
+}
+READ_ONLY_GIT_SUBCOMMANDS = {"diff", "log", "show", "status"}
+BROAD_ADD_ARGS = {".", "-A", "--all", "-u", "--update"}
+MESSAGE_OPTIONS = {"-m", "--message", "-F"}
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
+
+
+@dataclass(frozen=True)
+class CommandSegment:
+    tokens: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class GitCommand:
+    tokens: tuple[str, ...]
+    subcommand: str
+    args: tuple[str, ...]
+    cwd: Path
+    head_args: tuple[str, ...]
 
 
 def applies(data: dict) -> bool:
@@ -69,7 +95,10 @@ def run(data: dict) -> HookResult | None:
         if role != "builder":
             return None
         patch_text = _command_text(tool_input)
-        owned = next((o for o in ORCHESTRATOR_OWNED if o in patch_text), None)
+        owned = next(
+            (_owned_match(path) for path in _patch_target_paths(patch_text) if _owned_match(path)),
+            None,
+        )
         if owned:
             return _block(
                 f"FLEET PROTOCOL: this patch touches orchestrator-owned `{owned}`.\n"
@@ -78,47 +107,373 @@ def run(data: dict) -> HookResult | None:
         return None
 
     command = _command_text(tool_input)
-    if not command or "git" not in command:
+    if not command:
         return None
 
-    # Role-agnostic history/gate safety (protects the orchestrator too).
-    if _NO_VERIFY_RE.search(command):
-        return _block(
-            "GATE POLICY: `--no-verify` is never allowed (CLAUDE.md working "
-            "agreement). Fix the failing gate; do not bypass it."
-        )
-    force = _FORCE_RE.search(command)
-    if force and "--force-with-lease" not in command:
-        return _block(
-            "HISTORY SAFETY: bare `git push --force` is not allowed. Use "
-            "`--force-with-lease=<branch>:<expected-sha>` after verifying the "
-            "remote tip, so a concurrent push cannot be clobbered."
-        )
-    if _GIT_AMEND_RE.search(command) and _head_is_published(data):
-        return _block(
-            "HISTORY SAFETY: HEAD is already on origin — amending it forks "
-            "published history (this raced once on 2026-07-02). Make a "
-            "follow-up commit instead, or coordinate a lease-guarded rewrite "
-            "with the orchestrator."
-        )
+    segments, parse_failed = _command_segments(command)
+    if parse_failed:
+        if role == "builder":
+            return _block(
+                "FLEET PROTOCOL: could not parse this builder shell command "
+                "safely. Use a simpler command shape or split it into explicit "
+                "tool calls so the fleet guards can inspect it."
+            )
+        return None
 
-    if role == "builder":
-        if _GIT_PUSH_RE.search(command):
+    git_commands = [
+        git
+        for segment in segments
+        if (git := _git_command(segment.tokens, data)) is not None
+    ]
+
+    # Role-agnostic history/gate safety (protects the orchestrator too).
+    for git in git_commands:
+        args = _args_without_message(git.args)
+        if git.subcommand in {"commit", "push"} and _has_no_verify(args):
+            return _block(
+                "GATE POLICY: `--no-verify` is never allowed (CLAUDE.md working "
+                "agreement). Fix the failing gate; do not bypass it."
+            )
+        if git.subcommand == "push" and _forbidden_force_push(args):
+            return _block(
+                "HISTORY SAFETY: bare `git push --force` or `+refspec` is not "
+                "allowed. Use `--force-with-lease=<branch>:<expected-sha>` after "
+                "verifying the remote tip, so a concurrent push cannot be clobbered."
+            )
+        if git.subcommand == "commit" and "--amend" in args and _head_is_published(git):
+            return _block(
+                "HISTORY SAFETY: HEAD is already on origin — amending it forks "
+                "published history (this raced once on 2026-07-02). Make a "
+                "follow-up commit instead, or coordinate a lease-guarded rewrite "
+                "with the orchestrator."
+            )
+
+    if role != "builder":
+        return None
+
+    for segment in segments:
+        owned = _owned_token_in_segment(segment, data)
+        if owned and not _is_read_only_segment(segment, data):
+            return _block(
+                f"FLEET PROTOCOL: `{owned}` is orchestrator-owned. The builder "
+                "may read it, but must not write, stage, restore, or commit it. "
+                "Report status via sendMessage instead."
+            )
+
+    for git in git_commands:
+        if git.subcommand == "push":
             return _block(
                 "FLEET PROTOCOL: the builder never pushes. Commit locally and "
                 "report the SHA via sendMessage to aisdk-orchestrator; the "
                 "orchestrator reviews, then pushes."
             )
-        if _GIT_STAGE_RE.search(command):
-            owned = next((o for o in ORCHESTRATOR_OWNED if o in command), None)
-            if owned:
-                return _block(
-                    f"FLEET PROTOCOL: `{owned}` is orchestrator-owned; do not "
-                    "stage, restore, or commit it. Leave it untouched and "
-                    "report via sendMessage instead."
-                )
+        if git.subcommand == "add" and _broad_add(git):
+            return _block(
+                "FLEET PROTOCOL: builder staging must be explicit-file staging. "
+                "`git add .`, `git add -A/--all`, `git add -u/--update`, and "
+                "directory operands are blocked."
+            )
+        if git.subcommand == "commit" and _commit_uses_all(git.args):
+            return _block(
+                "FLEET PROTOCOL: `git commit -a/-am` is blocked for builders. "
+                "Stage explicit files first so orchestrator-owned ledgers cannot "
+                "be swept in."
+            )
 
     return None
+
+
+def _patch_target_paths(patch_text: str) -> list[str]:
+    targets: list[str] = []
+    for line in patch_text.splitlines():
+        if line.startswith("*** Add File: "):
+            targets.append(line.split(": ", 1)[1])
+        elif line.startswith("*** Update File: "):
+            targets.append(line.split(": ", 1)[1])
+        elif line.startswith("*** Delete File: "):
+            targets.append(line.split(": ", 1)[1])
+        elif line.startswith("*** Move to: "):
+            targets.append(line.split(": ", 1)[1])
+    return targets
+
+
+def _command_segments(command: str) -> tuple[list[CommandSegment], bool]:
+    stripped = _strip_heredoc_bodies(command)
+    raw_segments, split_ok = _split_command_segments(stripped)
+    if not split_ok:
+        return ([], True)
+    segments: list[CommandSegment] = []
+    for raw in raw_segments:
+        if not raw.strip():
+            continue
+        try:
+            tokens = tuple(shlex.split(raw, posix=True))
+        except ValueError:
+            return ([], True)
+        if tokens:
+            segments.append(CommandSegment(tokens=tokens))
+    return (segments, False)
+
+
+_HEREDOC_RE = re.compile(r"<<-?\s*(?:'([^']+)'|\"([^\"]+)\"|([A-Za-z_][A-Za-z0-9_]*))")
+
+
+def _strip_heredoc_bodies(text: str) -> str:
+    lines = text.splitlines(keepends=True)
+    output: list[str] = []
+    pending: list[tuple[str, bool]] = []
+    for line in lines:
+        if pending:
+            delimiter, allow_tabs = pending[0]
+            candidate = line.rstrip("\r\n")
+            if allow_tabs:
+                candidate = candidate.lstrip("\t")
+            if candidate == delimiter:
+                pending.pop(0)
+            continue
+
+        output.append(line)
+        for match in _HEREDOC_RE.finditer(line):
+            delimiter = next(group for group in match.groups() if group is not None)
+            pending.append((delimiter, match.group(0).startswith("<<-")))
+    return "".join(output)
+
+
+def _split_command_segments(text: str) -> tuple[list[str], bool]:
+    segments: list[str] = []
+    current: list[str] = []
+    quote: str | None = None
+    escaped = False
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if escaped:
+            current.append(char)
+            escaped = False
+            index += 1
+            continue
+        if char == "\\" and quote != "'":
+            current.append(char)
+            escaped = True
+            index += 1
+            continue
+        if quote:
+            current.append(char)
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in {"'", '"'}:
+            quote = char
+            current.append(char)
+            index += 1
+            continue
+        if char == ";":
+            segments.append("".join(current))
+            current = []
+            index += 1
+            continue
+        if char == "&" and index + 1 < len(text) and text[index + 1] == "&":
+            segments.append("".join(current))
+            current = []
+            index += 2
+            continue
+        if char == "|":
+            segments.append("".join(current))
+            current = []
+            index += 2 if index + 1 < len(text) and text[index + 1] == "|" else 1
+            continue
+        current.append(char)
+        index += 1
+    if quote or escaped:
+        return ([], False)
+    segments.append("".join(current))
+    return (segments, True)
+
+
+def _git_command(tokens: tuple[str, ...], data: dict) -> GitCommand | None:
+    index = 0
+    while index < len(tokens) and _is_env_assignment(tokens[index]):
+        index += 1
+    if index >= len(tokens) or Path(tokens[index]).name != "git":
+        return None
+
+    cwd = _event_cwd(data)
+    head_args: list[str] = []
+    index += 1
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "-C" and index + 1 < len(tokens):
+            cwd = _resolve_path(tokens[index + 1], cwd)
+            index += 2
+            continue
+        if token.startswith("-C") and len(token) > 2:
+            cwd = _resolve_path(token[2:], cwd)
+            index += 1
+            continue
+        if token == "-c" and index + 1 < len(tokens):
+            head_args.extend([token, tokens[index + 1]])
+            index += 2
+            continue
+        if token.startswith("--git-dir=") or token.startswith("--work-tree="):
+            head_args.append(token)
+            index += 1
+            continue
+        if token in {"--git-dir", "--work-tree"} and index + 1 < len(tokens):
+            head_args.extend([token, tokens[index + 1]])
+            index += 2
+            continue
+        if token in {"--no-pager", "--bare"}:
+            head_args.append(token)
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        return GitCommand(
+            tokens=tokens,
+            subcommand=token,
+            args=tuple(tokens[index + 1:]),
+            cwd=cwd,
+            head_args=tuple(head_args),
+        )
+    return None
+
+
+def _event_cwd(data: dict) -> Path:
+    return Path(str(data.get("cwd") or _REPO_ROOT)).resolve(strict=False)
+
+
+def _resolve_path(raw: str, base: Path) -> Path:
+    path = Path(raw)
+    if path.is_absolute():
+        return path.resolve(strict=False)
+    return (base / path).resolve(strict=False)
+
+
+def _is_env_assignment(token: str) -> bool:
+    return bool(re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", token))
+
+
+def _args_without_message(args: tuple[str, ...]) -> tuple[str, ...]:
+    kept: list[str] = []
+    skip_next = False
+    for token in args:
+        if skip_next:
+            skip_next = False
+            continue
+        if token in MESSAGE_OPTIONS:
+            skip_next = True
+            continue
+        if token.startswith("--message=") or token.startswith("--file="):
+            continue
+        if token.startswith("-") and not token.startswith("--"):
+            short_options = token[1:]
+            if "m" in short_options or "F" in short_options:
+                skip_next = short_options.endswith(("m", "F"))
+                continue
+        if token.startswith("-m") and token != "-m":
+            continue
+        if token.startswith("-F") and token != "-F":
+            continue
+        kept.append(token)
+    return tuple(kept)
+
+
+def _has_no_verify(args: tuple[str, ...]) -> bool:
+    return "--no-verify" in args or "-n" in args
+
+
+def _forbidden_force_push(args: tuple[str, ...]) -> bool:
+    if any(arg.startswith("+") for arg in args):
+        return True
+    has_lease = any(
+        arg == "--force-with-lease" or arg.startswith("--force-with-lease=")
+        for arg in args
+    )
+    if has_lease:
+        return False
+    return any(arg in {"--force", "-f"} for arg in args)
+
+
+def _owned_token_in_segment(segment: CommandSegment, data: dict) -> str | None:
+    git = _git_command(segment.tokens, data)
+    tokens = segment.tokens
+    if git is not None:
+        tokens = ("git", git.subcommand, *_args_without_message(git.args))
+    for token in tokens:
+        owned = _owned_token_match(token)
+        if owned:
+            return owned
+    return None
+
+
+def _owned_token_match(token: str) -> str | None:
+    candidates = [token, token.lstrip("<>")]
+    if "=" in token:
+        candidates.append(token.split("=", 1)[1].lstrip("<>"))
+    for candidate in candidates:
+        cleaned = candidate.strip().rstrip(",:)")
+        owned = _owned_match(cleaned)
+        if owned:
+            return owned
+    return None
+
+
+def _is_read_only_segment(segment: CommandSegment, data: dict) -> bool:
+    command = Path(segment.tokens[0]).name
+    if command in READ_ONLY_COMMANDS:
+        return True
+    git = _git_command(segment.tokens, data)
+    return git is not None and git.subcommand in READ_ONLY_GIT_SUBCOMMANDS
+
+
+def _broad_add(git: GitCommand) -> bool:
+    args = _args_without_message(git.args)
+    for arg in args:
+        if arg == "--":
+            continue
+        if arg in BROAD_ADD_ARGS:
+            return True
+        if arg.startswith("-"):
+            continue
+        if _is_directory_operand(arg, git.cwd):
+            return True
+    return False
+
+
+def _is_directory_operand(arg: str, cwd: Path) -> bool:
+    if arg.endswith("/"):
+        return True
+    if any(char in arg for char in "*?["):
+        return False
+    path = Path(arg)
+    candidate = path if path.is_absolute() else cwd / path
+    return candidate.is_dir()
+
+
+def _commit_uses_all(args: tuple[str, ...]) -> bool:
+    skip_next = False
+    for arg in args:
+        if skip_next:
+            skip_next = False
+            continue
+        if arg == "--":
+            break
+        if arg in MESSAGE_OPTIONS:
+            skip_next = True
+            continue
+        if arg.startswith("--message=") or arg.startswith("--file="):
+            continue
+        if arg in {"-a", "--all"}:
+            return True
+        if arg.startswith("-") and not arg.startswith("--") and "a" in arg[1:]:
+            return True
+        if arg.startswith("-") and not arg.startswith("--"):
+            short_options = arg[1:]
+            if "m" in short_options or "F" in short_options:
+                skip_next = short_options.endswith(("m", "F"))
+    return False
 
 
 def _owned_match(path: str) -> str | None:
@@ -134,28 +489,23 @@ def _owned_match(path: str) -> str | None:
 def _command_text(tool_input: dict) -> str:
     raw = tool_input.get("command", "")
     if isinstance(raw, list):
-        text = " ".join(str(part) for part in raw)
-    else:
-        text = str(raw)
-    return _strip_quoted(text)
+        parts = [str(part) for part in raw]
+        if parts and Path(parts[0]).name in {"bash", "sh", "zsh"}:
+            for index, part in enumerate(parts[:-1]):
+                if "c" in part.lstrip("-") and part.startswith("-"):
+                    return parts[index + 1]
+        return " ".join(shlex.quote(part) for part in parts)
+    return str(raw)
 
 
-_QUOTED_RE = re.compile(r"'[^']*'|\"[^\"]*\"")
-
-
-def _strip_quoted(text: str) -> str:
-    # Flags inside quoted strings (commit messages, heredoc-ish args) are prose,
-    # not arguments — this module's own announcement commit proved it. Strip
-    # quoted spans before any regex claim about the command's arguments.
-    return _QUOTED_RE.sub(" ", text)
-
-
-def _head_is_published(data: dict) -> bool:
-    cwd = str(data.get("cwd") or _REPO_ROOT)
+def _head_is_published(git: GitCommand) -> bool:
     try:
         result = subprocess.run(
-            ["git", "branch", "-r", "--contains", "HEAD"],
-            cwd=cwd, capture_output=True, text=True, timeout=3,
+            ["git", *git.head_args, "branch", "-r", "--contains", "HEAD"],
+            cwd=str(git.cwd),
+            capture_output=True,
+            text=True,
+            timeout=3,
         )
     except (subprocess.TimeoutExpired, OSError):
         return False  # heuristic guard only; --force-with-lease is the backstop

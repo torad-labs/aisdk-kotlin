@@ -145,24 +145,21 @@ def _synthetic_write_events(data: dict[str, Any]) -> list[dict[str, Any]]:
     cwd = Path(str(data.get("cwd") or os.getcwd()))
     events: list[dict[str, Any]] = []
     parsed_files = _parse_apply_patch(patch_text)
-    aggregate_edits: list[dict[str, str]] = []
-    aggregate_path = ""
     for patch_file in parsed_files:
         hook_path = _hook_path(cwd, patch_file.path)
+        edits: list[dict[str, str]] = []
         for hunk in patch_file.hunks:
             if hunk.old_lines or hunk.new_lines:
-                aggregate_edits.append({
+                edits.append({
                     "old_string": "\n".join(hunk.old_lines),
                     "new_string": "\n".join(hunk.new_lines),
                     "file_path": hook_path,
                 })
-                if not aggregate_path:
-                    aggregate_path = hook_path
-    if aggregate_edits:
-        event = dict(data)
-        event["tool_name"] = "MultiEdit"
-        event["tool_input"] = {"file_path": aggregate_path, "edits": aggregate_edits}
-        events.append(event)
+        if edits:
+            event = dict(data)
+            event["tool_name"] = "MultiEdit"
+            event["tool_input"] = {"file_path": hook_path, "edits": edits}
+            events.append(event)
 
     for patch_file in parsed_files:
         hook_path = _hook_path(cwd, patch_file.path)
