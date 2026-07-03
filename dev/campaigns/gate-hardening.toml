@@ -77,9 +77,10 @@ id = "GH-06"
 phase = "gh1"
 title = "Gate-misfire protocol section in CLAUDE.md (diagnose -> fix rule + fixture -> re-run; never bypass; where fixtures live; budget re-seed rules) + cross-link from ci-gate.sh failure banner."
 files = ["CLAUDE.md", ".claude/hooks/rules/ci-gate.sh"]
-status = "done"
+status = "verified"
 verify = "section exists; ci-gate.sh failure output names it"
 # [2026-07-02] done in GH-06 slice (final SHA in fleet report): gate-misfire protocol documented and ci-gate banner links it
+# [2026-07-02] orchestrator verified 5d383a5: section matches enforcement voice, encodes fixture law + ratchet rules; banner cross-links it; gate green
 
 [[items]]
 id = "GH-07"
