@@ -4,6 +4,7 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.Cohere
 import ai.torad.aisdk.providers.CohereProviderSettings
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -11,8 +12,11 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class CohereDefensiveParsingTest {
     /**
@@ -92,5 +96,39 @@ class CohereDefensiveParsingTest {
         )
 
         assertEquals("hi", result.text)
+    }
+
+    @Test
+    fun `stream surfaces unknown event payload as raw event`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        data: {"type":"vendor.event","payload":"kept"}
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                )
+            },
+        )
+        val provider = Cohere(
+            client,
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
+        )
+
+        val events = drainAllItems(
+            provider(ModelId("command-r-plus")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
+            ),
+        )
+
+        val raw = events.filterIsInstance<StreamEvent.Raw>().single()
+        assertIs<StreamEvent.Finish>(events.last())
+        assertEquals(JsonPrimitive("kept"), raw.rawValue.jsonObject["payload"])
     }
 }

@@ -282,6 +282,31 @@ class GoogleInteractionsProviderTest {
     }
 
     @Test
+    fun `interactions live stream surfaces unknown event payload as raw event`() = runTest {
+        val fixture = interactionsFixture(
+            UrlResponse.StreamChunks(
+                listOf(
+                    """
+                    data: {"event_type":"interaction.future","payload":"kept"}
+                    """.trimIndent(),
+                )
+            )
+        )
+
+        val events = drainAllItems(
+            googleInteractionsProvider(fixture).interactions(ModelId("gemini-2.5-flash")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ),
+        )
+
+        val raw = events.filterIsInstance<StreamEvent.Raw>().single()
+        assertIs<StreamEvent.Finish>(events.last())
+        assertEquals(JsonPrimitive("kept"), raw.rawValue.jsonObject["payload"])
+    }
+
+    @Test
     fun `interactions live stream error emits error event and fallback finish`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
