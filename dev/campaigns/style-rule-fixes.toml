@@ -329,7 +329,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/Agent.kt"]
 lines = "89,100"
 count = 2
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/Agent.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -341,7 +341,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/CompletionApi.kt"]
 lines = "151"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/CompletionApi.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -353,7 +353,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/EventStreamParser.kt"]
 lines = "28"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/EventStreamParser.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -365,7 +365,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt"]
 lines = "188"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -377,7 +377,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/Generate.kt"]
 lines = "140"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/Generate.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -389,7 +389,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/LanguageModel.kt"]
 lines = "70"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/LanguageModel.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -401,7 +401,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/Middleware.kt"]
 lines = "51"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/Middleware.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -413,7 +413,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/SimulateReadableStream.kt"]
 lines = "14"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/SimulateReadableStream.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -425,7 +425,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/SmoothStream.kt"]
 lines = "63"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/SmoothStream.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -437,7 +437,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/StreamObjectResult.kt"]
 lines = "146"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/StreamObjectResult.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -449,7 +449,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/StructuredObjectApi.kt"]
 lines = "108,507"
 count = 2
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/StructuredObjectApi.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -461,7 +461,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/TextGenerator.kt"]
 lines = "33,44,57"
 count = 3
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/TextGenerator.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -473,7 +473,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/Tool.kt"]
 lines = "135,203,536"
 count = 3
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/Tool.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -485,7 +485,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt"]
 lines = "687"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -497,7 +497,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModel.kt"
 lines = "848"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModel.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -509,7 +509,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/ui/Chat.kt"]
 lines = "72,253,257,321"
 count = 4
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/ui/Chat.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -521,7 +521,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/ui/ChatSession.kt"]
 lines = "68,96,115"
 count = 3
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/ui/ChatSession.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -533,7 +533,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/ui/MessageStreamReader.kt"]
 lines = "40"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/ui/MessageStreamReader.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -545,7 +545,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/ui/Streams.kt"]
 lines = "49,74,114,128"
 count = 4
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/ui/Streams.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
@@ -557,7 +557,7 @@ files = ["src/commonMain/kotlin/ai/torad/aisdk/ui/ToUIMessageStream.kt"]
 lines = "20"
 count = 1
 tier = "tier2"
-status = "todo"
+status = "verified"
 verify = "ast-grep scan --rule .rules/kotlin/ast-grep/rules-style/no-flow-return-without-wrapper.yaml src/commonMain/kotlin/ai/torad/aisdk/ui/ToUIMessageStream.kt --json=compact 2>/dev/null | grep -c ruleId returns 0"
 
 [[items]]
