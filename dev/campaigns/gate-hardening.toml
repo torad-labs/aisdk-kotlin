@@ -144,6 +144,7 @@ status = "done"
 depends = ["GH-09", "GH-10"]
 verify = "all 4 have whole-file + hunk fixture pairs passing --hunk-mode"
 # [2026-07-02] done in GH-11 slice (final SHA in fleet report): four scope-anchored rules declare no-match hunk fixtures with zero hunk matches
+# [2026-07-02] done in GH-11 revised slice (final SHA in fleet report): added memberExample assertions; kept hunkExpectation=same; marked three bare-fragment context-dependent rules hunkUnsafe
 
 [[items]]
 id = "GH-12"
