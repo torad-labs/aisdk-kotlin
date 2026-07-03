@@ -1,0 +1,51 @@
+id: migrate-generate-result-constructor
+language: Kotlin
+severity: warning
+message: "GenerateResult(...) is no longer public in 0.3.0-beta01. Receive it from Agent.generate(...).first(); tests should drive an Agent with MockLanguageModel instead of constructing the result directly."
+rule:
+  any:
+    - pattern: GenerateResult($$$ARGS)
+    - pattern: GenerateResult<$T>($$$ARGS)
+---
+id: migrate-generate-text-result-constructor
+language: Kotlin
+severity: warning
+message: "GenerateTextResult(...) is no longer public in 0.3.0-beta01. Receive it from TextGenerator(model).generate(...).first(); tests should use MockLanguageModel/MockLanguageModelTextOnly and exercise TextGenerator."
+rule:
+  any:
+    - pattern: GenerateTextResult($$$ARGS)
+    - pattern: GenerateTextResult<$T>($$$ARGS)
+---
+id: migrate-step-result-constructor
+language: Kotlin
+severity: warning
+message: "StepResult(...) is no longer public in 0.3.0-beta01. Observe step data through Agent.events(...), collectAgentEvents(...), or AgentEvent.StepFinished; tests should drive the loop with MockLanguageModel."
+rule:
+  pattern: StepResult($$$ARGS)
+---
+id: migrate-structured-object-finish-constructor
+language: Kotlin
+severity: warning
+message: "StructuredObjectFinish(...) is no longer public in 0.3.0-beta01. Receive finish data from StructuredObjectOptions.onFinish or StructuredObjectGenerator; direct construction has no public replacement."
+rule:
+  any:
+    - pattern: StructuredObjectFinish($$$ARGS)
+    - pattern: StructuredObjectFinish<$T>($$$ARGS)
+---
+id: migrate-structured-object-streaming-phase-constructor
+language: Kotlin
+severity: warning
+message: "StructuredObjectPhase.Streaming(...) is no longer public in 0.3.0-beta01. Observe streaming state from StructuredObject.state or StructuredObjectGenerator.stream(...); direct construction has no public replacement."
+rule:
+  any:
+    - pattern: StructuredObjectPhase.Streaming($$$ARGS)
+    - pattern: StructuredObjectPhase.Streaming<$T>($$$ARGS)
+---
+id: migrate-structured-object-done-phase-constructor
+language: Kotlin
+severity: warning
+message: "StructuredObjectPhase.Done(...) is no longer public in 0.3.0-beta01. Observe done state from StructuredObject.state or StructuredObjectGenerator.stream(...); direct construction has no public replacement."
+rule:
+  any:
+    - pattern: StructuredObjectPhase.Done($$$ARGS)
+    - pattern: StructuredObjectPhase.Done<$T>($$$ARGS)
