@@ -32,16 +32,32 @@ rule:
         context: |
           try {
             $$$TRY
-          } catch ($ERR: Throwable) {
+          } catch ($$$CATCH_PARAM: Throwable) {
             $$$BODY
           }
         selector: catch_block
+    - has:
+        kind: simple_identifier
+        pattern: $ERR
     - not:
         has: { kind: simple_identifier, regex: '^_$' }
     - not:
         has: { pattern: 'throw $X', stopBy: end }
+    - not:
+        inside:
+          kind: try_expression
+          stopBy: end
+          has:
+            pattern:
+              context: |
+                try {
+                  $$$TRY
+                } catch ($CE: CancellationException) {
+                  $$$CE_BODY
+                }
+              selector: catch_block
 fix: |-
-  catch ($ERR: Throwable) {
+  catch ($$$CATCH_PARAM: Throwable) {
       CancellationExceptions.asCancellationExceptionOrNull($ERR)?.let { throw it }
       $$$BODY
   }

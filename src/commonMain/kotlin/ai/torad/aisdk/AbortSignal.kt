@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -115,8 +116,10 @@ public class AbortController(
     private fun notifyCallback(onAbort: () -> Unit) {
         try {
             onAbort()
-        } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
+        } catch (ce: CancellationException) {
             // Abort delivery is best-effort: one callback failure must not skip remaining callbacks.
+            logCallbackFailure(ce)
+        } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
             logCallbackFailure(error)
         }
     }
