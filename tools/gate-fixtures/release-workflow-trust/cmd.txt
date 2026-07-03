@@ -1,0 +1,1 @@
+python3 "$REPO_ROOT/.claude/hooks/rules/detect-release-workflow-trust.py" "$FIXTURE_DIR/release.yml" --check
