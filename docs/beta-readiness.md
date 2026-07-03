@@ -77,9 +77,9 @@ Commands run:
   - root build: **2,306 tests, 0 failures**
   - detekt-rules: **17 tests, 0 failures**
 - Kover aggregate:
-  - line coverage: **81.32%**
-  - instruction coverage: **71.95%**
-  - branch coverage: **44.01%**
+  - line coverage: `[meas: coverage_line_percent]`
+  - instruction coverage: `[meas: coverage_instruction_percent]`
+  - branch coverage: `[meas: coverage_branch_percent]`
 - Detekt baseline:
   - **3,687 entries**
   - biggest buckets: `ArgumentListWrapping`, `MaxLineLength`, `MagicNumber`, `FunctionNaming`, `NoNotNullAssertion`, `LongMethod`, `LongParameterList`
@@ -166,8 +166,8 @@ Post-hardening gates additionally run green:
 
 - `build.gradle.kts` explicitly says Kover has “Measurement only for now — no enforced threshold”.
 - Current coverage is usable as a starting point:
-  - line: **81.32%**
-  - branch: **44.01%**
+  - line: `[meas: coverage_line_percent]`
+  - branch: `[meas: coverage_branch_percent]`
 - Low-covered/high-risk areas include:
   - `GatewayContentDecoder`
   - `GatewayContentEncoder`
