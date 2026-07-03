@@ -602,9 +602,11 @@ id = "HD-08"
 phase = "hd"
 title = "Branch-coverage hardening, slice 2: the next 4 clusters from HD-02s worst-10 ranking — GoogleProvider (2/50), GatewayContentEncoder (2/38), GatewayContentDecoder (2/32), Streaming (23/264 — pick the highest-value untested when-arms/error paths, not exhaustive). Same law as HD-02: REAL behavioral assertions (wire-field values, error propagation, boundary shapes), no line-touching; use ast-grep to enumerate untested when-expressions and catch clauses in these files; before/after branch numbers in the ledger note. After gains land, ratchet the branch floor again in the SAME slice this time (HD-04 pattern: actuals-minus-2pp, probe fail direction) so the gain locks immediately."
 files = ["src/commonTest/kotlin/", "build.gradle.kts"]
-status = "in_flight"
+status = "done"
 verify = "before/after branch numbers in note; new tests behavioral and passing; branch floor re-ratcheted with fail-direction probe; gradle check green; ci-gate green"
 # [2026-07-03] Started branch-coverage slice 2; measuring current kover baseline before test additions
+# [2026-07-03] done: branch coverage 49.92% (12418/24878) -> 50.71% (12615/24878); Google 16/50, GatewayContentEncoder 34/38, GatewayContentDecoder 23/32, Streaming 172/284; floor raised to 49; commit pending
+# [2026-07-03] verification: branch 49.92% (12418/24878) -> 50.71% (12615/24878); target counters Google 16/50, encoder 34/38, decoder 23/32, Streaming 172/284; floor 49 with fail probe; final SHA in fleet report
 
 [[items]]
 id = "HD-09"
