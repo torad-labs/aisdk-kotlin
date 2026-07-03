@@ -334,7 +334,6 @@ public interface ImageModelMiddleware {
         context.doGenerate(context.params)
 }
 
-@Poko
 /** @since 0.3.0-beta01 */
 public class ImageMiddlewareCallContext(
     /** @since 0.3.0-beta01 */

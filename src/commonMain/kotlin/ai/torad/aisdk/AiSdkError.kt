@@ -361,7 +361,11 @@ public class MessageConversionError(
     message: String,
 ) : AiSdkException(message)
 
-/** @since 0.3.0-beta01 */
+/**
+ * This enum may gain variants in future releases. Consumers must not rely on
+ * exhaustiveness — include an `else` branch when matching.
+ * @since 0.3.0-beta01
+ */
 public enum class RetryErrorReason {
     MaxRetriesExceeded,
     ErrorNotRetryable,

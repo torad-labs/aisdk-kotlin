@@ -1,10 +1,15 @@
 package ai.torad.aisdk
 
 /** @since 0.3.0-beta01 */
-public enum class PruneReasoning {
-    All,
-    BeforeLastMessage,
-    None,
+public sealed class PruneReasoning {
+    /** @since 0.3.0-beta01 */
+    public data object All : PruneReasoning()
+
+    /** @since 0.3.0-beta01 */
+    public data object BeforeLastMessage : PruneReasoning()
+
+    /** @since 0.3.0-beta01 */
+    public data object None : PruneReasoning()
 }
 
 /** @since 0.3.0-beta01 */

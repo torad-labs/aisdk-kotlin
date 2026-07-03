@@ -22,6 +22,11 @@ import kotlin.coroutines.coroutineContext
  * Idiomatic use: bind to the calling [CoroutineScope]'s job. When the
  * scope cancels, the signal aborts, and any subagent/tool execution
  * observing [throwIfAborted] or [register] surfaces the cancellation.
+ *
+ * Consumer implementations are supported: this interface is intentionally
+ * open (not sealed) so a host can bridge a platform-specific cancellation
+ * source (e.g. a JS `AbortSignal` or an iOS cancellation token) into it
+ * without going through [AbortController].
  */
 /** @since 0.3.0-beta01 */
 public interface AbortSignal {
@@ -192,24 +197,21 @@ internal object AbortSignalRuntime {
 }
 
 /**
- * Bind an abort signal to a [Job] so the signal fires when the job
- * completes (cancelled or otherwise). Lets a parent scope's lifetime
- * automatically cancel anything observing the signal.
- * @since 0.3.0-beta01
- */
-public fun AbortSignalFromJob(job: Job): AbortSignal {
-    val controller = AbortController()
-    job.invokeOnCompletion { controller.abort() }
-    return controller.signal
-}
-
-/**
  * Factory functions converting coroutine handles into [AbortSignal]s.
  * @since 0.3.0-beta01
  */
 public object AbortSignals {
-    /** @since 0.3.0-beta01 */
-    public fun from(job: Job): AbortSignal = AbortSignalFromJob(job)
+    /**
+     * Binds to [job] so the signal fires when the job completes (cancelled
+     * or otherwise). Lets a parent scope's lifetime automatically cancel
+     * anything observing the signal.
+     * @since 0.3.0-beta01
+     */
+    public fun from(job: Job): AbortSignal {
+        val controller = AbortController()
+        job.invokeOnCompletion { controller.abort() }
+        return controller.signal
+    }
 
     /**
      * Binds to [scope]'s job. Returns [AbortSignalNever] if the scope's
@@ -222,8 +224,8 @@ public object AbortSignals {
     }
 }
 
-// FunctionNaming/ReturnCount: PascalCase factory (matches AbortSignalFromJob) with intentional
-// early returns for the empty / single / already-aborted fast paths — long-standing, baselined.
+// FunctionNaming/ReturnCount: PascalCase factory (matches the AbortSignal* factory family) with
+// intentional early returns for the empty / single / already-aborted fast paths — long-standing, baselined.
 @OptIn(ExperimentalAtomicApi::class)
 @Suppress("FunctionNaming", "ReturnCount")
 /** @since 0.3.0-beta01 */

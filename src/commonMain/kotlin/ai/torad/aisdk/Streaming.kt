@@ -60,6 +60,36 @@ import kotlinx.serialization.json.doubleOrNull
 /** @since 0.3.0-beta01 */
 public sealed class StreamEvent {
 
+    /** @since 0.3.0-beta01 */
+    public val metadata: ProviderMetadata
+        get() = when (this) {
+            is StreamStart -> ProviderMetadata.None
+            is ResponseMetadata -> ProviderMetadata.None
+            is StepStart -> providerMetadata
+            is TextStart -> providerMetadata
+            is TextDelta -> providerMetadata
+            is TextEnd -> providerMetadata
+            is ReasoningStart -> providerMetadata
+            is ReasoningDelta -> providerMetadata
+            is ReasoningEnd -> providerMetadata
+            is SourcePart -> providerMetadata
+            is FilePart -> providerMetadata
+            is Data -> ProviderMetadata.None
+            is ToolInputStart -> providerMetadata
+            is ToolInputDelta -> providerMetadata
+            is ToolInputEnd -> providerMetadata
+            is ToolCall -> providerMetadata
+            is ToolResult -> providerMetadata
+            is ToolError -> providerMetadata
+            is ToolApprovalRequest -> providerMetadata
+            is ToolOutputDenied -> providerMetadata
+            is StepFinish -> providerMetadata
+            is Finish -> providerMetadata
+            Abort -> ProviderMetadata.None
+            is Error -> ProviderMetadata.None
+            is Raw -> ProviderMetadata.None
+        }
+
     /**
      * Stream began. Emitted exactly once at the very top.
      * @since 0.3.0-beta01
@@ -385,7 +415,7 @@ public sealed class StreamEvent {
         // Canonical error check — also true for Content(isError = true) (the MCP shape),
         // which the old inline expression missed, diverging from isToolResultError().
         /** @since 0.3.0-beta01 */
-        public val isError: Boolean = with(ToolResultOutputs) { modelOutput.isToolResultError() },
+        public val isError: Boolean = modelOutput.isToolResultError(),
         /** @since 0.3.0-beta01 */
         public val preliminary: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)

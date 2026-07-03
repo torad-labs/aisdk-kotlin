@@ -301,7 +301,6 @@ public interface EmbeddingModelMiddleware {
         context.doEmbed(context.params)
 }
 
-@Poko
 /** @since 0.3.0-beta01 */
 public class EmbeddingMiddlewareCallContext(
     /** @since 0.3.0-beta01 */

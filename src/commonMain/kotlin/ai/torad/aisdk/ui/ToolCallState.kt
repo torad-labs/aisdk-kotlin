@@ -26,6 +26,9 @@ import kotlinx.serialization.Serializable
  *   (any state can transition to)  Error
  *   (between states, optional)     ApprovalRequired
  *   ```
+ *
+ * This enum may gain variants in future releases. Consumers must not rely on
+ * exhaustiveness — include an `else` branch when matching.
  */
 @Serializable
 /** @since 0.3.0-beta01 */

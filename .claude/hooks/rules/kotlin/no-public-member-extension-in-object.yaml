@@ -1,0 +1,40 @@
+id: no-public-member-extension-in-object
+language: kotlin
+severity: error
+message: >-
+  A public extension function declared inside a public `object` forces every
+  call site into a member-import or `with(Object) { ... }` block. Move the
+  function onto the type it extends (a member, or a default method on its
+  interface) instead.
+note: >-
+  This is the pattern eliminated repo-wide in 0.3.0-beta01 (ProviderModels,
+  GeneratedFiles, AgentSessions, ChatSessionFactory, ToolResultOutputs,
+  UsageArithmetic, UIMessageMetadata — see CHANGELOG.md "Unreleased"): a
+  public member-extension parked in a public `object` is ergonomically worse
+  than a member on the owning type, with no offsetting benefit — decision-C
+  ("no loose top-level functions") is satisfied just as well by a member.
+  Plain (non-extension) functions in a public object remain the sanctioned
+  factory-namespace pattern (e.g. `AbortSignals.from(job)`); private
+  member-extensions inside a class, and member-extensions inside an
+  internal/private object, are implementation detail and are not flagged.
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: receiver_type
+    - not:
+        has:
+          kind: modifiers
+          has:
+            kind: visibility_modifier
+            regex: '^(private|internal|protected)$'
+    - inside:
+        kind: class_body
+        inside:
+          kind: object_declaration
+          not:
+            has:
+              kind: modifiers
+              has:
+                kind: visibility_modifier
+                regex: '^(private|internal|protected)$'

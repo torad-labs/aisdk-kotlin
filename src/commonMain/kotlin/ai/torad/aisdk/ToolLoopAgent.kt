@@ -406,7 +406,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // clobber a newer submit's state (the stale-write race AgentSession's active()
         // guard prevents). currentEngineJobRef was stored before start() (see callers).
         val ownJob = coroutineContext[Job]
-        val engineAbortSignal = CombineAbortSignals(abortSignal, ownJob?.let(::AbortSignalFromJob) ?: AbortSignalNever)
+        val engineAbortSignal = CombineAbortSignals(abortSignal, ownJob?.let(AbortSignals::from) ?: AbortSignalNever)
         // TOOL-004: seed the active context so approval-resume starts from the caller-supplied
         // context even before prepareStep overrides the running value inside streamInternal.
         currentActiveContextRef.store(context)
@@ -547,7 +547,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 is StreamEvent.TextDelta -> accumulator.append(event.text)
                 is StreamEvent.StepFinish -> {
                     finishReason = event.finishReason
-                    totalUsage = with(UsageArithmetic) { totalUsage + event.usage }
+                    totalUsage += event.usage
                 }
                 is StreamEvent.Finish -> {
                     finishReason = event.finishReason
@@ -1421,7 +1421,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             )
             completedSteps.add(step)
             stepsCapture?.steps?.add(step)
-            totalUsage = with(UsageArithmetic) { totalUsage + stepUsage }
+            totalUsage += stepUsage
             lastFinishReason = effectiveFinishReason
 
             val stepFinishEvent = AgentEvent.StepFinished(stepNumber, step)
@@ -1617,7 +1617,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     outputJson = outputJson,
                     output = output,
                     modelOutput = modelOutput,
-                    modelVisible = with(ToolResultOutputs) { modelOutput.toJsonElement() },
+                    modelVisible = modelOutput.toJsonElement(),
                 )
             }
         } catch (ce: CancellationException) {
@@ -1692,7 +1692,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         outputJson = outputJson,
                         output = output,
                         modelOutput = modelOutput,
-                        isError = with(ToolResultOutputs) { modelOutput.isToolResultError() },
+                        isError = modelOutput.isToolResultError(),
                         preliminary = true,
                     ),
                 )

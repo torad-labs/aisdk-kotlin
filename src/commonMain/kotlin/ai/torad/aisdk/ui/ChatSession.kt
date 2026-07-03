@@ -135,10 +135,3 @@ public fun ChatSession(
     ),
 )
 
-// Public Chat extension (was top-level `fun Chat.asSession()`), now a
-// member-extension. Callers use member-import or `with(ChatSessionFactory) { ... }`.
-/** @since 0.3.0-beta01 */
-public object ChatSessionFactory {
-    /** @since 0.3.0-beta01 */
-    public fun Chat.asSession(): ChatSession = ChatSession(this)
-}

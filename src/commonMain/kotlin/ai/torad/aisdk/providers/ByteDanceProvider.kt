@@ -222,10 +222,16 @@ public fun ByteDanceProviderSettings(
 ): ByteDanceProviderSettings =
     ByteDanceProviderSettingsBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
-public interface ByteDanceProvider : Provider {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class ByteDanceProvider : Provider {
     /** @since 0.3.0-beta01 */
-    public fun video(modelId: ModelId): VideoModel
+    public abstract fun video(modelId: ModelId): VideoModel
     override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
 }
 
@@ -235,8 +241,8 @@ public fun ByteDance(
     settings: ByteDanceProviderSettings = ByteDanceProviderSettings(),
 ): ByteDanceProvider = DefaultByteDanceProvider(client, settings)
 
-/** @since 0.3.0-beta01 */
-public val byteDance: ByteDanceProvider = object : ByteDanceProvider {
+// Named (not anonymous) because a sealed class's direct subtypes must be named declarations.
+private object UnconfiguredByteDanceProvider : ByteDanceProvider() {
     override val providerId: String = "bytedance"
     override fun video(modelId: ModelId): VideoModel =
         throw UnsupportedFunctionalityError(
@@ -245,10 +251,13 @@ public val byteDance: ByteDanceProvider = object : ByteDanceProvider {
         )
 }
 
+/** @since 0.3.0-beta01 */
+public val byteDance: ByteDanceProvider = UnconfiguredByteDanceProvider
+
 private class DefaultByteDanceProvider(
     private val client: HttpClient,
     private val settings: ByteDanceProviderSettings,
-) : ByteDanceProvider {
+) : ByteDanceProvider() {
     override val providerId: String = "bytedance"
     override fun video(modelId: ModelId): VideoModel = ByteDanceVideoModel(client, settings, modelId.value)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(

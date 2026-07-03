@@ -546,5 +546,15 @@
     "hunkExpectation": "same",
     "badHunkExample": "suspend fun fetch(): Result<String> = runCatching { \"ok\" }\n",
     "goodHunkExample": "fun parse(): Result<String> = runCatching { \"ok\" }\n"
+  },
+  {
+    "id": "no-public-member-extension-in-object",
+    "severity": "error",
+    "yaml": "id: no-public-member-extension-in-object\nlanguage: kotlin\nseverity: error\nmessage: >-\n  A public extension function declared inside a public `object` forces every\n  call site into a member-import or `with(Object) { ... }` block. Move the\n  function onto the type it extends (a member, or a default method on its\n  interface) instead.\nnote: >-\n  This is the pattern eliminated repo-wide in 0.3.0-beta01 (ProviderModels,\n  GeneratedFiles, AgentSessions, ChatSessionFactory, ToolResultOutputs,\n  UsageArithmetic, UIMessageMetadata \u2014 see CHANGELOG.md \"Unreleased\"): a\n  public member-extension parked in a public `object` is ergonomically worse\n  than a member on the owning type, with no offsetting benefit \u2014 decision-C\n  (\"no loose top-level functions\") is satisfied just as well by a member.\n  Plain (non-extension) functions in a public object remain the sanctioned\n  factory-namespace pattern (e.g. `AbortSignals.from(job)`); private\n  member-extensions inside a class, and member-extensions inside an\n  internal/private object, are implementation detail and are not flagged.\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: receiver_type\n    - not:\n        has:\n          kind: modifiers\n          has:\n            kind: visibility_modifier\n            regex: '^(private|internal|protected)$'\n    - inside:\n        kind: class_body\n        inside:\n          kind: object_declaration\n          not:\n            has:\n              kind: modifiers\n              has:\n                kind: visibility_modifier\n                regex: '^(private|internal|protected)$'",
+    "badExample": "public object ProviderModels {\n    public fun Provider.languageModel(id: ModelId): LanguageModel = languageModel(id.value)\n}\n",
+    "goodExample": "public object AbortSignals {\n    public fun from(job: Job): AbortSignal = AbortSignalFromJob(job)\n}\n\ninternal object ToolResultOutputs {\n    internal fun ToolResultOutput.plusOne(): Int = 1\n}\n\npublic class DeepInfraFacade {\n    private fun Usage.fixDeepInfraUsage(): Usage = this\n}\n",
+    "hunkExpectation": "same",
+    "badHunkExample": "public object ProviderModels {\n    public fun Provider.languageModel(id: ModelId): LanguageModel = languageModel(id.value)\n}\n",
+    "goodHunkExample": "public object AbortSignals {\n    public fun from(job: Job): AbortSignal = AbortSignalFromJob(job)\n}\n"
   }
 ]

@@ -180,13 +180,19 @@ public fun AnthropicAwsProviderSettings(
 ): AnthropicAwsProviderSettings =
     AnthropicAwsProviderSettingsBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
-public interface AnthropicAwsProvider : Provider {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class AnthropicAwsProvider : Provider {
     /** @since 0.3.0-beta01 */
-    public val settings: AnthropicAwsProviderSettings
+    public abstract val settings: AnthropicAwsProviderSettings
 
     /** @since 0.3.0-beta01 */
-    public val tools: AnthropicTools
+    public abstract val tools: AnthropicTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
@@ -210,8 +216,8 @@ public fun AnthropicAws(
     settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings(),
 ): AnthropicAwsProvider = DefaultAnthropicAwsProvider(client, settings)
 
-/** @since 0.3.0-beta01 */
-public val anthropicAws: AnthropicAwsProvider = object : AnthropicAwsProvider {
+// Named (not anonymous) because a sealed class's direct subtypes must be named declarations.
+private object UnconfiguredAnthropicAwsProvider : AnthropicAwsProvider() {
     override val providerId: String = "anthropic-aws"
     override val settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings()
     override val tools: AnthropicTools = anthropicTools
@@ -228,10 +234,13 @@ public val anthropicAws: AnthropicAwsProvider = object : AnthropicAwsProvider {
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
+/** @since 0.3.0-beta01 */
+public val anthropicAws: AnthropicAwsProvider = UnconfiguredAnthropicAwsProvider
+
 private class DefaultAnthropicAwsProvider(
     private val client: HttpClient,
     override val settings: AnthropicAwsProviderSettings,
-) : AnthropicAwsProvider {
+) : AnthropicAwsProvider() {
     override val providerId: String = "anthropic-aws"
     override val tools: AnthropicTools = anthropicTools
 

@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlin.jvm.JvmOverloads
 
+@Suppress("TooManyFunctions")
 /** @since 0.3.0-beta01 */
 public interface Provider {
     /** @since 0.3.0-beta01 */
@@ -34,6 +35,76 @@ public interface Provider {
     /** @since 0.3.0-beta01 */
     public fun videoModel(modelId: String): VideoModel =
         throw NoSuchModelError(providerId, "video", modelId)
+
+    /** @since 0.3.0-beta01 */
+    public fun provider(providerId: ProviderId): Provider =
+        when (this) {
+            is ProviderRegistry -> provider(providerId.value)
+            else -> if (this.providerId == providerId.value) this else throw NoSuchProviderError(providerId.value)
+        }
+
+    /** @since 0.3.0-beta01 */
+    public fun languageModel(modelId: ModelId): LanguageModel =
+        languageModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun embeddingModel(modelId: ModelId): EmbeddingModel =
+        embeddingModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun imageModel(modelId: ModelId): ImageModel =
+        imageModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun speechModel(modelId: ModelId): SpeechModel =
+        speechModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun transcriptionModel(modelId: ModelId): TranscriptionModel =
+        transcriptionModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun rerankingModel(modelId: ModelId): RerankingModel =
+        rerankingModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun videoModel(modelId: ModelId): VideoModel =
+        videoModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun languageModel(ref: ModelRef): LanguageModel =
+        resolveModelRef(ref) { languageModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun embeddingModel(ref: ModelRef): EmbeddingModel =
+        resolveModelRef(ref) { embeddingModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun imageModel(ref: ModelRef): ImageModel =
+        resolveModelRef(ref) { imageModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun speechModel(ref: ModelRef): SpeechModel =
+        resolveModelRef(ref) { speechModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun transcriptionModel(ref: ModelRef): TranscriptionModel =
+        resolveModelRef(ref) { transcriptionModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun rerankingModel(ref: ModelRef): RerankingModel =
+        resolveModelRef(ref) { rerankingModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun videoModel(ref: ModelRef): VideoModel =
+        resolveModelRef(ref) { videoModel(it) }
+
+    private fun <T> resolveModelRef(ref: ModelRef, getter: Provider.(String) -> T): T =
+        when {
+            this is ProviderRegistry -> getter(ref.qualifiedName)
+            ref.providerId == null || ref.providerId.value == providerId -> getter(ref.modelId.value)
+            else -> throw NoSuchProviderError(ref.providerId.value)
+        }
 }
 
 /** @since 0.3.0-beta01 */

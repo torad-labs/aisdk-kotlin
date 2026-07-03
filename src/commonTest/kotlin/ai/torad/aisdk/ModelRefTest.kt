@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.ProviderModels.languageModel
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -368,10 +368,16 @@ public fun BlackForestLabsProviderSettings(
 ): BlackForestLabsProviderSettings =
     BlackForestLabsProviderSettingsBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
-public interface BlackForestLabsProvider : Provider {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class BlackForestLabsProvider : Provider {
     /** @since 0.3.0-beta01 */
-    public fun image(modelId: ModelId): ImageModel
+    public abstract fun image(modelId: ModelId): ImageModel
     override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
 
     /** @since 0.3.0-beta01 */
@@ -388,8 +394,8 @@ public fun BlackForestLabs(
     settings: BlackForestLabsProviderSettings = BlackForestLabsProviderSettings(),
 ): BlackForestLabsProvider = DefaultBlackForestLabsProvider(client, settings)
 
-/** @since 0.3.0-beta01 */
-public val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsProvider {
+// Named (not anonymous) because a sealed class's direct subtypes must be named declarations.
+private object UnconfiguredBlackForestLabsProvider : BlackForestLabsProvider() {
     override val providerId: String = "black-forest-labs"
     override fun image(modelId: ModelId): ImageModel =
         throw UnsupportedFunctionalityError(
@@ -398,10 +404,13 @@ public val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsPr
         )
 }
 
+/** @since 0.3.0-beta01 */
+public val blackForestLabs: BlackForestLabsProvider = UnconfiguredBlackForestLabsProvider
+
 private class DefaultBlackForestLabsProvider(
     private val client: HttpClient,
     private val settings: BlackForestLabsProviderSettings,
-) : BlackForestLabsProvider {
+) : BlackForestLabsProvider() {
     override val providerId: String = "black-forest-labs"
     override fun image(modelId: ModelId): ImageModel = BlackForestLabsImageModel(client, settings, modelId.value)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(

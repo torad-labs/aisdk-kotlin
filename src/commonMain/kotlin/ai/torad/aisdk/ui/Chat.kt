@@ -104,7 +104,11 @@ public class TextStreamChatTransport(
         TransformTextToUiMessageStream(handler(request), assistantMessageId(request))
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * This enum may gain variants in future releases. Consumers must not rely on
+ * exhaustiveness — include an `else` branch when matching.
+ * @since 0.3.0-beta01
+ */
 public enum class ChatStatus {
     Ready,
     Submitted,
@@ -307,6 +311,9 @@ public class Chat(
     /** @since 0.3.0-beta01 */
     public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         reconnectToStream(headers) ?: emptyFlow()
+
+    /** @since 0.3.0-beta01 */
+    public fun asSession(): ChatSession = ChatSession(this)
 
     private fun appendToolMessage(part: UIMessagePart.ToolUI) {
         applyState {

@@ -57,10 +57,51 @@ public sealed class ToolResultOutput {
         /** @since 0.3.0-beta01 */
         public val isError: Boolean = false,
     ) : ToolResultOutput()
+
+    /** @since 0.3.0-beta01 */
+    public fun isToolResultError(): Boolean = when (this) {
+        is Error,
+        is ErrorJson,
+        is ExecutionDenied -> true
+        is Content -> isError
+        is Text,
+        is Json -> false
+    }
+
+    /**
+     * Inverse of [ToolResultOutputs.toolResultOutputFromWire] — that internal
+     * decoder recognizes exactly the wire shapes this emits for each variant.
+     * @since 0.3.0-beta01
+     */
+    public fun toJsonElement(): JsonElement = when (this) {
+        is Text -> JsonPrimitive(text)
+        is Json -> json
+        // Typed discriminators so the three error/denial subtypes round-trip through
+        // toolResultOutputFromWire() (which keys on `type`). Bare values fell through
+        // its fallback and lost their error/denial identity (and baked-in "Error: ").
+        is Error -> buildJsonObject {
+            put("type", JsonPrimitive("error-text"))
+            put("value", JsonPrimitive(message))
+        }
+        is ErrorJson -> buildJsonObject {
+            put("type", JsonPrimitive("error-json"))
+            put("value", json)
+        }
+        is ExecutionDenied -> buildJsonObject {
+            put("type", JsonPrimitive("execution-denied"))
+            reason?.let { put("reason", JsonPrimitive(it)) }
+        }
+        is Content -> buildJsonObject {
+            put("type", JsonPrimitive("content"))
+            put("value", JsonArray(value))
+            if (isError) {
+                put("isError", JsonPrimitive(true))
+            }
+        }
+    }
 }
 
-/** @since 0.3.0-beta01 */
-public object ToolResultOutputs {
+internal object ToolResultOutputs {
     internal fun toolResultOutputFromJson(json: JsonElement): ToolResultOutput =
         if (json is JsonPrimitive && json.isString) {
             ToolResultOutput.Text(json.content)
@@ -109,43 +150,5 @@ public object ToolResultOutputs {
         val malformedReason = obj.containsKey("reason") && stringFieldOrNull(obj, "reason") == null
         if (foreignKey || malformedReason) return null
         return ToolResultOutput.ExecutionDenied(stringFieldOrNull(obj, "reason"))
-    }
-
-    /** @since 0.3.0-beta01 */
-    public fun ToolResultOutput.isToolResultError(): Boolean = when (this) {
-        is ToolResultOutput.Error,
-        is ToolResultOutput.ErrorJson,
-        is ToolResultOutput.ExecutionDenied -> true
-        is ToolResultOutput.Content -> isError
-        is ToolResultOutput.Text,
-        is ToolResultOutput.Json -> false
-    }
-
-    /** @since 0.3.0-beta01 */
-    public fun ToolResultOutput.toJsonElement(): JsonElement = when (this) {
-        is ToolResultOutput.Text -> JsonPrimitive(text)
-        is ToolResultOutput.Json -> json
-        // Typed discriminators so the three error/denial subtypes round-trip through
-        // toolResultOutputFromWire() (which keys on `type`). Bare values fell through
-        // its fallback and lost their error/denial identity (and baked-in "Error: ").
-        is ToolResultOutput.Error -> buildJsonObject {
-            put("type", JsonPrimitive("error-text"))
-            put("value", JsonPrimitive(message))
-        }
-        is ToolResultOutput.ErrorJson -> buildJsonObject {
-            put("type", JsonPrimitive("error-json"))
-            put("value", json)
-        }
-        is ToolResultOutput.ExecutionDenied -> buildJsonObject {
-            put("type", JsonPrimitive("execution-denied"))
-            reason?.let { put("reason", JsonPrimitive(it)) }
-        }
-        is ToolResultOutput.Content -> buildJsonObject {
-            put("type", JsonPrimitive("content"))
-            put("value", JsonArray(value))
-            if (isError) {
-                put("isError", JsonPrimitive(true))
-            }
-        }
     }
 }

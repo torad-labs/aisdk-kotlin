@@ -243,13 +243,19 @@ public data object GatewayTransportNotConfigured : GatewayTransport
 public class GatewayTransportNotConfiguredError :
     AiSdkException("Gateway transport is not configured. Provide GatewayProviderSettings.transport.")
 
-/** @since 0.3.0-beta01 */
-public interface GatewayProvider : Provider {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class GatewayProvider : Provider {
     /** @since 0.3.0-beta01 */
-    public val settings: GatewayProviderSettings
+    public abstract val settings: GatewayProviderSettings
 
     /** @since 0.3.0-beta01 */
-    public val tools: GatewayTools
+    public abstract val tools: GatewayTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
@@ -271,10 +277,10 @@ public interface GatewayProvider : Provider {
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
 
-    public suspend fun getAvailableModels(): GatewayFetchMetadataResponse
-    public suspend fun getCredits(): GatewayCreditsResponse
-    public suspend fun getSpendReport(params: GatewaySpendReportParams): GatewaySpendReportResponse
-    public suspend fun getGenerationInfo(params: GatewayGenerationInfoParams): GatewayGenerationInfo
+    public abstract suspend fun getAvailableModels(): GatewayFetchMetadataResponse
+    public abstract suspend fun getCredits(): GatewayCreditsResponse
+    public abstract suspend fun getSpendReport(params: GatewaySpendReportParams): GatewaySpendReportResponse
+    public abstract suspend fun getGenerationInfo(params: GatewayGenerationInfoParams): GatewayGenerationInfo
 }
 
 /** @since 0.3.0-beta01 */
@@ -298,7 +304,7 @@ public val gateway: GatewayProvider = GatewayProvider()
 
 private class DefaultGatewayProvider(
     override val settings: GatewayProviderSettings,
-) : GatewayProvider {
+) : GatewayProvider() {
     override val providerId: String = "gateway"
     override val tools: GatewayTools = GatewayTools()
 
