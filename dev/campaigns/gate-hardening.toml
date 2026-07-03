@@ -316,8 +316,9 @@ id = "RR-04"
 phase = "rr"
 title = "OPERATOR-GATED: require verify + verify-apple as required status checks on main branch protection (verified today: required_status_checks entirely absent — red PR + 1 approval can merge). gh api PUT on branches/main/protection. Changes operator's own merge workflow — explicit go needed."
 files = []
-status = "todo"
+status = "verified"
 verify = "API shows both checks required; a red-CI scratch PR is unmergeable"
+# [2026-07-02] operator approved 2026-07-03; orchestrator applied via gh api: required_status_checks strict [verify, verify-apple] + 1-approval preserved; API GET confirms. Gates now binding at merge boundary.
 
 [[items]]
 id = "RR-05"
@@ -327,6 +328,7 @@ files = []
 status = "todo"
 depends = ["RR-04"]
 verify = "PR merged; main run green"
+# [2026-07-02] operator chose SQUASH merge (overrides merge-commit recommendation, locked); mitigation: refactor/ts-residue-cleanup branch is KEPT as archival ref so manifest/backlog per-item SHAs stay reachable
 
 [[items]]
 id = "RR-06"
