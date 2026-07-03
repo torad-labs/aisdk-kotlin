@@ -14,8 +14,24 @@ set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT"
 RULES_DIR=".claude/hooks/rules/kotlin"
-AG="$(command -v ast-grep || echo "$HOME/.local/bin/ast-grep")"
+if [ -z "${AG:-}" ]; then
+  if [ -x "$ROOT/node_modules/.bin/ast-grep" ]; then
+    AG="$ROOT/node_modules/.bin/ast-grep"
+  else
+    AG="$(command -v ast-grep || echo "$HOME/.local/bin/ast-grep")"
+  fi
+fi
 [ -x "$AG" ] || { echo "ci-gate: ast-grep not found"; exit 2; }
+expected_ag_version="$(node -e "const v = require('./package.json').devDependencies['@ast-grep/cli']; if (!v) process.exit(1); console.log(v)")" || {
+  echo "ci-gate: cannot read package.json @ast-grep/cli version"
+  exit 2
+}
+actual_ag_version="$("$AG" --version 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+[.][0-9]+[.][0-9]+$' | tail -1)"
+if [ "$actual_ag_version" != "$expected_ag_version" ]; then
+  echo "ci-gate: ast-grep version mismatch: $AG reports ${actual_ag_version:-unknown}, package.json pins @ast-grep/cli=$expected_ag_version."
+  echo "Use the GH-13-pinned ast-grep version locally (for example, run npm ci) or update package.json together with the CI AST_GREP_VERSION/AST_GREP_SHA256 pin."
+  exit 1
+fi
 
 fail=0
 
