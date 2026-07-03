@@ -44,10 +44,25 @@ for (const gate of gateDirs) {
     }
 
     checks += 1;
+    // Git hooks export GIT_DIR/GIT_INDEX_FILE/GIT_WORK_TREE; child git commands
+    // in fixture scratch repos would inherit them and operate on the LIVE repo's
+    // mid-commit index ("invalid object ... Error building trees", observed
+    // 2026-07-03 only during pre-commit). Strip git's hook environment so every
+    // fixture is self-contained regardless of what invokes the harness.
+    const fixtureEnv = { ...process.env };
+    for (const key of Object.keys(fixtureEnv)) {
+      if (
+        key === "GIT_DIR" || key === "GIT_WORK_TREE" || key === "GIT_INDEX_FILE" ||
+        key === "GIT_PREFIX" || key === "GIT_OBJECT_DIRECTORY" ||
+        key.startsWith("GIT_AUTHOR_") || key.startsWith("GIT_COMMITTER_")
+      ) {
+        delete fixtureEnv[key];
+      }
+    }
     const result = spawnSync("bash", ["-lc", command], {
       cwd: caseDir,
       env: {
-        ...process.env,
+        ...fixtureEnv,
         REPO_ROOT: repoRoot,
         GATE_NAME: gate.name,
         CASE_KIND: caseKind,
