@@ -621,3 +621,11 @@ title = "No-interpreter-source-writes + ABI-dump guard (qgre steal module 40 + o
 files = [".claude/hooks/modules/pretooluse/", ".claude/hooks/tests/"]
 status = "todo"
 verify = "cat-heredoc .kt write blocked; ast-grep --rewrite allowed; Edit on api/*.api blocked; bash redirect to api/*.api blocked; updateKotlinAbi via gradle allowed; suites green; ci-gate green; per-edit latency still under ceiling"
+
+[[items]]
+id = "HD-10"
+phase = "hd"
+title = "Ledger-CLI-only + no-versioned-filename hooks (qgre steals, modules 43+10 at /home/marcos/Documents/dev/qgre/qgre-main/.claude/hooks/modules/pretooluse/ — read both). New pretooluse modules in our stack idiom: (a) ledger_cli_only_policy — block Write/Edit/MultiEdit on dev/campaigns/*.toml + dev/measurements.toml; carve-out: file does not exist yet (seed-once); override env AISDK_LEDGER_RAW_OK loud+operator-only; CLI path via Bash untouched. (b) no_versioned_filename_policy — block CREATING files whose basename ends in _v<digits>, _new, _final, _old, _backup, or _copy before the extension, for kt/kts/py/yaml extensions (rename-in-place is the sanctioned move); warn-only for md. Both: tests in the suite (both directions + carve-outs), codex adapter parity (same events)."
+files = [".claude/hooks/modules/pretooluse/", ".claude/hooks/tests/"]
+status = "todo"
+verify = "raw ledger edit blocked, seed-new-file allowed, override env allows; v2-filename Write blocked, normal Write passes; suites green incl new tests; ci-gate green"
