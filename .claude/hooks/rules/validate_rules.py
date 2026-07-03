@@ -35,6 +35,7 @@ This gate has two modes:
 
   SCAFFOLD mode — emit a fill-in manifest entry for an existing rule file.
       python3 validate_rules.py --new <rule-id>
+      python3 validate_rules.py --new <rule-id> --fix
 
 Exit 0 if all checks pass; 1 listing offenders; 2 on environment error.
 """
@@ -53,6 +54,9 @@ PARSE_ERROR_MARKERS = ("Cannot parse", "not a valid ast-grep rule", "Rule must s
 PROBE = "package probe\n\npublic class Probe {\n    public fun run(): Int = 0\n}\n"
 STUB_BAD_EXAMPLE = "TODO: replace with code that MUST match this rule"
 STUB_GOOD_EXAMPLE = "TODO: replace with code that MUST NOT match this rule"
+STUB_FIX_TEMPLATE = "TODO: replace with an ast-grep fix template"
+STUB_FIX_INPUT = "TODO: replace with code BEFORE applying this fix"
+STUB_FIX_OUTPUT = "TODO: replace with code AFTER applying this fix"
 RELATIONAL_ANCHOR_RE = re.compile(r"(?m)^\s*-?\s*(inside|precedes|follows):")
 FIX_RE = re.compile(r"(?m)^\s*fix\s*:")
 
@@ -412,6 +416,9 @@ def _validate_autofix_registry(
                 if not isinstance(before, str) or not isinstance(after, str):
                     failures.append((rid, f"fixExamples[{index}] needs string input and output"))
                     continue
+                if _needs_fix_examples(before, after):
+                    failures.append((rid, f"fixExamples[{index}] needs examples"))
+                    continue
                 reason = _check_fix_example(binary, rule_path, before, after)
                 if reason:
                     failures.append((rid, f"fixExamples[{index}] {reason}"))
@@ -535,7 +542,16 @@ def _count_tree_hits(binary: str, rule_path: Path, targets: list[str]) -> int:
     return len(payload) if isinstance(payload, list) else 0
 
 
-def new_entry_mode(rule_id: str, rules_dir: Path) -> int:
+def _needs_fix_examples(before: object, after: object) -> bool:
+    return (
+        not isinstance(before, str)
+        or not isinstance(after, str)
+        or before.strip() in {"", STUB_FIX_INPUT}
+        or after.strip() in {"", STUB_FIX_OUTPUT}
+    )
+
+
+def new_entry_mode(rule_id: str, rules_dir: Path, include_fix: bool = False) -> int:
     rule_path = rules_dir / f"{rule_id}.yaml"
     try:
         yaml_text = rule_path.read_text(encoding="utf-8")
@@ -545,12 +561,26 @@ def new_entry_mode(rule_id: str, rules_dir: Path) -> int:
     entry = {
         "id": rule_id,
         "severity": _severity_for_rule(yaml_text),
-        "yaml": yaml_text,
+        "yaml": _yaml_with_fix_stub(yaml_text) if include_fix else yaml_text,
         "badExample": STUB_BAD_EXAMPLE,
         "goodExample": STUB_GOOD_EXAMPLE,
     }
+    if include_fix:
+        entry["fixExamples"] = [
+            {
+                "input": STUB_FIX_INPUT,
+                "output": STUB_FIX_OUTPUT,
+            }
+        ]
     print(json.dumps(entry, indent=2))
     return 0
+
+
+def _yaml_with_fix_stub(yaml_text: str) -> str:
+    if FIX_RE.search(yaml_text):
+        return yaml_text
+    separator = "" if yaml_text.endswith("\n") else "\n"
+    return f"{yaml_text}{separator}fix: |-\n  {STUB_FIX_TEMPLATE}\n"
 
 
 def _severity_for_rule(yaml_text: str) -> str:
@@ -567,7 +597,7 @@ def main() -> int:
         if len(args) < 2:
             print("ERROR: --new requires a rule id")
             return 2
-        return new_entry_mode(args[1], Path(__file__).resolve().parent / "kotlin")
+        return new_entry_mode(args[1], Path(__file__).resolve().parent / "kotlin", "--fix" in args[2:])
 
     binary = ast_grep_binary()
     if binary is None:

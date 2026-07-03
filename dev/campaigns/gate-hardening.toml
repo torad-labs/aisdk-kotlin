@@ -749,8 +749,9 @@ id = "HD-20"
 phase = "hd"
 title = "Extend validate_rules --new with fix scaffolding (LP-3 descendant, closes the HD-05-era gap): --new <rule-id> --fix additionally emits a fix template stub in the rule yaml and fixExamples stubs (before/after/idempotent) in the manifest entry, wired so the stub state fails the registry gate with a needs-examples message exactly like detection stubs do today. Read GH-08s --new implementation + HD-05s fixExamples validator first; keep the no-fix default unchanged."
 files = [".claude/hooks/rules/validate_rules.py", ".claude/hooks/tests/"]
-status = "todo"
+status = "done"
 verify = "--new --fix emits stubs; stub state fails loud; filled example passes; existing --new behavior unchanged; suites green"
+# [2026-07-03] HD-20 done: validate_rules --new --fix emits fix template and fixExamples stubs; registry rejects stub fixExamples with needs examples; default --new remains no-fix; SHA in fleet report.
 
 [[items]]
 id = "HD-21"
