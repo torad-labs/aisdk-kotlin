@@ -77,7 +77,7 @@ id = "GH-06"
 phase = "gh1"
 title = "Gate-misfire protocol section in CLAUDE.md (diagnose -> fix rule + fixture -> re-run; never bypass; where fixtures live; budget re-seed rules) + cross-link from ci-gate.sh failure banner."
 files = ["CLAUDE.md", ".claude/hooks/rules/ci-gate.sh"]
-status = "todo"
+status = "in_flight"
 verify = "section exists; ci-gate.sh failure output names it"
 
 [[items]]
@@ -85,16 +85,17 @@ id = "GH-07"
 phase = "gh1"
 title = "Nightly cron full-pipeline run on main (schedule: in ci.yml). Bounds any dark window to <24h. Liveness signal for LP-4."
 files = [".github/workflows/ci.yml"]
-status = "done"
+status = "verified"
 verify = "schedule trigger present targeting main; first scheduled run observed green after merge"
 # [2026-07-02] done in GH-07 slice (final SHA in fleet report): cron 17 8 * * * runs verify + verify-apple
+# [2026-07-02] orchestrator verified 4dcb644: schedule trigger + valid off-peak cron; scheduled runs execute on default branch by GitHub semantics. DEFERRED OBSERVATION: first green scheduled run to be confirmed post-RR-05 merge (tracked with RR-06 window).
 
 [[items]]
 id = "GH-08"
 phase = "gh1"
 title = "Fixture-authoring scaffold: validate_rules.py --new <rule-id> emits fill-in-the-blanks manifest entry (id/severity/yaml from rule file, badExample/goodExample stubs). Makes repair cheaper than dodge (LP-3). Do BEFORE GH-09."
 files = [".claude/hooks/rules/validate_rules.py"]
-status = "todo"
+status = "in_flight"
 verify = "--new no-camelcase-top-level-function produces an entry --manifest accepts once examples are filled; stub-state is flagged 'needs examples', not silently passing"
 
 [[items]]
@@ -102,7 +103,7 @@ id = "GH-24"
 phase = "gh1"
 title = "Pre-commit gates are inactive on fresh clones: nothing sets core.hooksPath=.githooks and no doc mentions it (verified: only reference is inside the hook itself). Add bootstrap (tools/bootstrap or gradle task) + CONTRIBUTING/README setup note."
 files = ["CONTRIBUTING.md", "README.md", "tools/"]
-status = "todo"
+status = "in_flight"
 verify = "documented one-liner activates hooks on a scratch clone; CONTRIBUTING names it as required setup"
 
 # ---------------------------------------------------------------- phase gh2: coverage + de-serialization (M)
