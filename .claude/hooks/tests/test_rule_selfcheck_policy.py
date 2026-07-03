@@ -60,6 +60,17 @@ check(
         "tool_input": {"file_path": str(covered_path), "content": "id: broken\nrule: {kind: ["},
     })),
 )
+check(
+    "relative rule path is self-checked",
+    blocked(run_target({
+        "tool_name": "Write",
+        "cwd": str(ROOT),
+        "tool_input": {
+            "file_path": str(covered_path.relative_to(ROOT)),
+            "content": "id: broken\nrule: {kind: [",
+        },
+    })),
+)
 
 # 3 — a rule edited to no longer match its own badExample fixture is blocked.
 neutered = covered_text.replace("kotlin", "kotlin") + (

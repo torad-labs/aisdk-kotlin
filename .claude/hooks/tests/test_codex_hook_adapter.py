@@ -12,6 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 ADAPTER = ROOT / ".codex" / "hooks" / "claude_compat.py"
 TARGET = ROOT / ".claude" / "hooks" / "orchestrator" / "pretooluse.py"
+RULES_DIR = ROOT / ".claude" / "hooks" / "rules" / "kotlin"
+MANIFEST = ROOT / ".claude" / "hooks" / "rules" / "manifest.json"
 
 failures: list[str] = []
 ran = 0
@@ -72,6 +74,46 @@ with tempfile.TemporaryDirectory() as tmp:
 """
     top_level_result = run_adapter(top_level_patch)
     check("top-level function hunk edit is still blocked", '"decision": "block"' in top_level_result.stdout)
+
+    normal_file = Path(tmp) / "Normal.txt"
+    normal_file.write_text("old\n", encoding="utf-8")
+    two_file_kotlin_patch = f"""*** Begin Patch
+*** Update File: {normal_file}
+@@
+-old
++new
+*** Update File: {top_level_file}
+@@
+ package x
++public fun generateText(): Unit = Unit
+*** End Patch
+"""
+    two_file_kotlin_result = run_adapter(two_file_kotlin_patch)
+    check(
+        "two-file patch with Kotlin violation second is blocked",
+        '"decision": "block"' in two_file_kotlin_result.stdout,
+    )
+
+    entries = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    covered = next(e for e in entries if isinstance(e, dict) and e.get("badExample") and e.get("goodExample"))
+    rule_file = RULES_DIR / f"{covered['id']}.yaml"
+    first_rule_line = rule_file.read_text(encoding="utf-8").splitlines()[0]
+    two_file_rule_patch = f"""*** Begin Patch
+*** Update File: {normal_file}
+@@
+-old
++new
+*** Update File: {rule_file}
+@@
+-{first_rule_line}
++id: [
+*** End Patch
+"""
+    two_file_rule_result = run_adapter(two_file_rule_patch)
+    check(
+        "two-file patch with rule violation second is blocked",
+        '"decision": "block"' in two_file_rule_result.stdout,
+    )
 
 if failures:
     print(f"FAILED {ran - len(failures)}/{ran}")

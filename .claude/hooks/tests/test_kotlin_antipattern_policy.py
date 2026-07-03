@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -17,6 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOKS_ROOT = ROOT / ".claude" / "hooks"
+ADAPTER = ROOT / ".codex" / "hooks" / "claude_compat.py"
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(HOOKS_ROOT))
 
@@ -137,6 +139,37 @@ allowed = run_local_hook({"tool_name": "Write", "tool_input": {
     "content": "package x\n\npublic fun TextGenerator(model: String): String = model\n",
 }})
 check("orchestrator does NOT block a PascalCase factory", '"decision": "block"' not in allowed.stdout)
+
+with tempfile.TemporaryDirectory() as tmp:
+    normal = Path(tmp) / "Normal.txt"
+    kotlin = Path(tmp) / "Second.kt"
+    normal.write_text("old\n", encoding="utf-8")
+    kotlin.write_text("package x\n", encoding="utf-8")
+    patch = f"""*** Begin Patch
+*** Update File: {normal}
+@@
+-old
++new
+*** Update File: {kotlin}
+@@
+ package x
++public fun generateText(): Unit = Unit
+*** End Patch
+"""
+    env = dict(os.environ)
+    env["CLAUDE_PROJECT_DIR"] = str(ROOT)
+    adapter_blocked = subprocess.run(
+        [sys.executable, str(ADAPTER), "pretooluse", str(HOOKS_ROOT / "orchestrator" / "pretooluse.py")],
+        input=json.dumps({"tool_name": "apply_patch", "cwd": str(ROOT), "tool_input": {"command": patch}}),
+        capture_output=True,
+        text=True,
+        timeout=15,
+        env=env,
+    )
+    check(
+        "adapter blocks Kotlin violation when Kotlin file is second",
+        '"decision": "block"' in adapter_blocked.stdout,
+    )
 
 
 # === full rule set: parse gate + foundry semantic gate ===
