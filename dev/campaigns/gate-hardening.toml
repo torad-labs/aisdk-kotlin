@@ -670,8 +670,11 @@ id = "HD-14"
 phase = "hd"
 title = "Branch-coverage slice 3: GoogleProvider (16/50 after HD-08, weakest remaining cluster) + highest-value remaining Streaming arms (172/284). Same law as HD-02/HD-08: real behavioral assertions (wire-field values, error propagation, when-arm outcomes), ast-grep enumeration of untested arms, before/after numbers appended as measurements-ledger supersede entries (coverage keys), floor re-ratchet in the same slice if gains land (actuals-minus-2pp, probe fail direction)."
 files = ["src/commonTest/kotlin/", "build.gradle.kts", "dev/measurements.toml"]
-status = "todo"
+status = "done"
 verify = "before/after via measurements CLI supersede; behavioral tests pass; floor re-ratcheted with probe if gains; gradle check + ci-gate green"
+# [2026-07-03] HD-14 done pending commit: Google coverage branch 50.71->51.46, line 84.36->85.05, instruction 79.35->80.08; branch floor 49->50 with 52 fail probe; budgets re-seeded to exact tool counts.
+# [2026-07-03] HD-14 correction before commit: final Kover branch is 51.47 (12804/24878); exact architecture budgets lowered to GoogleProviderTest=781 and GoogleInteractionsProviderTest=612 after refactor.
+# [2026-07-03] HD-14 budget correction: architecture checker basis requires GoogleProviderTest=782 and GoogleInteractionsProviderTest=613; wc basis was lower and not authoritative.
 
 [[items]]
 id = "HD-15"

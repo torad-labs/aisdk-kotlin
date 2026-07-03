@@ -22,7 +22,7 @@ date = "2026-07-03"
 head = "7d92f99"
 command = "./gradlew koverXmlReport; parse build/reports/kover/report.xml LINE counter"
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
-status = "current"
+status = "superseded"
 note = "covered=25376 total=30079 at HD-09 seed HEAD; docs cite [meas: coverage_line_percent]."
 
 [[measurement]]
@@ -33,7 +33,7 @@ date = "2026-07-03"
 head = "7d92f99"
 command = "./gradlew koverXmlReport; parse build/reports/kover/report.xml INSTRUCTION counter"
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
-status = "current"
+status = "superseded"
 note = "covered=200058 total=252131 at HD-09 seed HEAD; docs cite [meas: coverage_instruction_percent]."
 
 [[measurement]]
@@ -44,7 +44,7 @@ date = "2026-07-03"
 head = "7d92f99"
 command = "./gradlew koverXmlReport; parse build/reports/kover/report.xml BRANCH counter"
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
-status = "current"
+status = "superseded"
 note = "covered=12615 total=24878 after HD-08; branch floor is separately tracked by [meas: kover_branch_floor_percent]."
 
 [[measurement]]
@@ -110,7 +110,7 @@ date = "2026-07-03"
 head = "7d92f99"
 command = "node_modules/.bin/ast-grep run -l kotlin -p 'minBound($N, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)' build.gradle.kts"
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
-status = "current"
+status = "superseded"
 note = "HD-08 raised the Kover branch ratchet to 49 using actual-minus-2pp."
 
 [[measurement]]
@@ -167,3 +167,69 @@ command = "python3 inline benchmark invoking .claude/hooks/orchestrator/pretoolu
 tool_versions = "Python 3.13.7; ast-grep 0.42.1"
 status = "current"
 note = "Direct-orchestrator surface (Claude-session edits). Companion to [meas: pretooluse_edit_hook_latency_ms] which measures the codex-adapter surface (builder-session edits); the ~230ms delta is adapter overhead. samples min 245 max 261."
+
+[[measurement]]
+key = "coverage_line_percent"
+value = 85.05
+unit = "% covered lines"
+date = "2026-07-03"
+head = "d7571d1"
+command = "./gradlew koverXmlReport; parse build/reports/kover/report.xml LINE counter"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "covered=25583 total=30080 after HD-14 coverage slice; docs cite [meas: coverage_line_percent]."
+
+[[measurement]]
+key = "coverage_instruction_percent"
+value = 80.08
+unit = "% covered instructions"
+date = "2026-07-03"
+head = "d7571d1"
+command = "./gradlew koverXmlReport; parse build/reports/kover/report.xml INSTRUCTION counter"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "covered=201918 total=252136 after HD-14 coverage slice; docs cite [meas: coverage_instruction_percent]."
+
+[[measurement]]
+key = "coverage_branch_percent"
+value = 51.46
+unit = "% covered branches"
+date = "2026-07-03"
+head = "d7571d1"
+command = "./gradlew koverXmlReport; parse build/reports/kover/report.xml BRANCH counter"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "superseded"
+note = "covered=12803 total=24878 after HD-14; GoogleInteractions 268/531 and GoogleInteractionsStreamState 271/525; GoogleGenerativeAIProviderSettings stayed 16/50 due synthetic settings branches; branch floor is separately tracked by [meas: kover_branch_floor_percent]."
+
+[[measurement]]
+key = "kover_branch_floor_percent"
+value = 50
+unit = "% covered branches minimum in build.gradle.kts"
+date = "2026-07-03"
+head = "d7571d1"
+command = "node_modules/.bin/ast-grep run -l kotlin -p 'minBound(50|52, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)' build.gradle.kts; ./gradlew koverVerify"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "superseded"
+note = "HD-14 raised the Kover branch ratchet to 50 after branch actual 51.46; fail probe at 52 failed and restored floor 50 passed."
+
+[[measurement]]
+key = "coverage_branch_percent"
+value = 51.47
+unit = "% covered branches"
+date = "2026-07-03"
+head = "d7571d1"
+command = "./gradlew koverXmlReport; parse build/reports/kover/report.xml BRANCH counter"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "covered=12804 total=24878 after HD-14; GoogleInteractions 269/531 and GoogleInteractionsStreamState 271/525; GoogleGenerativeAIProviderSettings stayed 16/50 due synthetic settings branches; branch floor is separately tracked by [meas: kover_branch_floor_percent]."
+
+[[measurement]]
+key = "kover_branch_floor_percent"
+value = 50
+unit = "% covered branches minimum in build.gradle.kts"
+date = "2026-07-03"
+head = "d7571d1"
+command = "node_modules/.bin/ast-grep run -l kotlin -p 'minBound(50|52, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)' build.gradle.kts; ./gradlew koverVerify"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "HD-14 raised the Kover branch ratchet to 50 after branch actual 51.47; fail probe at 52 failed and restored floor 50 passed."

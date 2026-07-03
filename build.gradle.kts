@@ -283,7 +283,7 @@ kover {
                 minBound(76, CoverageUnit.INSTRUCTION, AggregationType.COVERED_PERCENTAGE)
             }
             rule("branch coverage ratchet") {
-                minBound(49, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)
+                minBound(50, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)
             }
         }
     }
