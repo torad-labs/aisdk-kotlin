@@ -97,9 +97,10 @@ id = "GH-08"
 phase = "gh1"
 title = "Fixture-authoring scaffold: validate_rules.py --new <rule-id> emits fill-in-the-blanks manifest entry (id/severity/yaml from rule file, badExample/goodExample stubs). Makes repair cheaper than dodge (LP-3). Do BEFORE GH-09."
 files = [".claude/hooks/rules/validate_rules.py"]
-status = "done"
+status = "verified"
 verify = "--new no-camelcase-top-level-function produces an entry --manifest accepts once examples are filled; stub-state is flagged 'needs examples', not silently passing"
 # [2026-07-02] done in GH-08 slice (final SHA in fleet report): validate_rules --new scaffolds fixtures and --manifest flags stubs
+# [2026-07-02] orchestrator verified 5c54ace: --new emits real rule yaml + TODO stubs; stub state exits 1 'needs examples' (clean-probe confirmed); filled entry passes; hook-module import contract intact (selfcheck ok 6)
 
 [[items]]
 id = "GH-24"
