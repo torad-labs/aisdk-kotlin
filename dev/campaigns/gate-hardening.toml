@@ -19,6 +19,16 @@
 # Safety: worktree-not-stash; no bypass; builder reports before amending;
 # orchestrator commits ALWAYS name pathspecs (git commit <paths> -m ...) —
 # bare `git commit` sweeps the shared index (learned 978502d, both roles now).
+#
+# TOOLING LAW (operator directive, 2026-07-03): ast-grep is the standard
+# instrument for ALL code work, BOTH roles, MCP + CLI. Find code with
+# find_code / `ast-grep run --pattern`; audit with find_code_by_rule / YAML
+# rules; EDIT with `--rewrite` / `fix:` — single-file, multi-file, and mass
+# rewrites alike. For large or many-file edits: PLAN THE RULES CAREFULLY
+# FIRST — dump_syntax_tree to learn the node kinds, test_match_code_rule to
+# prove the rule matches the violation AND skips the compliant form — then
+# rewrite. Structural rewrites over regex/sed on code, always; grep/rg stays
+# only for non-code text. More effective and more correct: that is the point.
 
 [campaign]
 name = "gate-hardening-beta-release"
@@ -513,3 +523,19 @@ status = "verified"
 verify = "version-mismatch simulation fails ci-gate with clear message; matching version passes; snapshots.yml parses; ci-gate green"
 # [2026-07-03] Ast-grep version parity added to ci-gate and snapshots publish concurrency queued; mismatch/match simulations and ci-gate passed; final SHA via fleet
 # [2026-07-03] VERIFIED at fd40247 with LIVE CATCH: on first orchestrator run the parity gate FAILED — ~/.local/bin/ast-grep had drifted to 0.44.0 vs the 0.42.1 pin (F-05's hypothetical drift was real on this machine; FR-02 measured 0.42.1 hours earlier). Gate message + remediation correct: npm ci restored lockfile 0.42.1 via the new node_modules/.bin preference; full ci-gate then exit 0. CI unaffected by the node_modules preference: verify job runs the gate at ci.yml:103 BEFORE npm ci at :115, so CI always uses the GH-13-pinned PATH binary. RECONCILE: builder's 'match simulation passed' validated comparison logic with a stub, not the live env — the live env was in drift at claim time. Mismatch direction re-proven with fake 0.39.9 binary (exit 1, clear message). snapshots.yml concurrency group parses, queue-not-cancel semantics as specced.
+
+[[items]]
+id = "HD-01"
+phase = "hd"
+title = "Scope-aware data-class budget (fix the instrument, not the data). The regex detector counts 17 non-public nested/local types as public ABI (audit doc lines 572-594). Orchestrator planned+validated the ast-grep rule at .claude/hooks/rules/public-abi-data-class.yaml (matches public top-level/nested-in-public data classes; excludes own-visibility internal/private/protected, nested-inside-internal/private class or object at any depth, function-local, lambda-local; live count on src/commonMain = 40 = exactly the adjudicated KEEP floor). Builder wires detect-public-data-class-budget.py to measure via this rule (shell to ast-grep, resolve binary node_modules/.bin then PATH like ci-gate.sh; rule path defaults relative to __file__), keeps --budget/--check/--update semantics + refuse-raise ratchet, RE-SEEDS budget 57->40 with the 40 true-ABI tracked symbols IN THE SAME COMMIT (downward ratchet, sanctioned), extends fixtures: violation/ adds a case proving a NEW public top-level data class still fails; compliant/ adds a nested-in-internal public data class that must NOT count (scope-awareness regression, both directions). Update audit doc NON-PUBLIC section (resolved by instrument fix) + CLAUDE.md '57' mentions to 40. DO NOT add the rule to rules/kotlin/ (it is a measurement rule, not an architecture-gate rule; kotlin/ membership would drag it into manifest fixture completeness + hook scans)."
+files = [".claude/hooks/rules/detect-public-data-class-budget.py", ".claude/hooks/rules/public-abi-data-class.yaml", "data-class-budget.json", "tools/gate-fixtures/public-data-class-budget/", "docs/data-class-audit.md", "CLAUDE.md"]
+status = "todo"
+verify = "detector reports 40/40 on commonMain matching orchestrator ast-grep count; nested-internal fixture case not counted; new-public-data-class fixture still fails; refuse-raise probe intact; ci-gate + harness + suites green"
+
+[[items]]
+id = "HD-02"
+phase = "hd"
+title = "Branch-coverage hardening, slice 1 (measure then lift). Kover actuals 81.32 line / 71.95 instruction / 44.01 branch vs floors 80/70/43 — branch is the thin spot and margins are ~1pp. (a) Generate the kover XML/HTML report at tip; (b) rank the 10 worst branch-covered production classes (exclude generated/serializer noise) and record the ranking in the ledger note; (c) land targeted tests for the top 3 clusters exercising untested branches (error paths, when-arms, boundary conditions) — REAL behavioral assertions, not line-touching; (d) re-measure and report new branch %; floor ratchet is a LATER slice once gains land. Use ast-grep to find untested branch shapes where useful (e.g. when-expressions and catch clauses in the worst classes)."
+files = ["src/commonTest/kotlin/", "build.gradle.kts"]
+status = "todo"
+verify = "ranking recorded; new tests pass and demonstrably raise branch coverage (before/after numbers in note); gradle check green; no floor changes this slice"

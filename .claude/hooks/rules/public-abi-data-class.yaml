@@ -1,0 +1,30 @@
+id: public-abi-data-class
+language: kotlin
+rule:
+  kind: class_declaration
+  has:
+    kind: modifiers
+    has: { kind: class_modifier, regex: '^data$' }
+  not:
+    any:
+      - has:
+          kind: modifiers
+          has: { kind: visibility_modifier, regex: '^(internal|private|protected)$' }
+      - inside:
+          stopBy: end
+          kind: class_declaration
+          has:
+            kind: modifiers
+            has: { kind: visibility_modifier, regex: '^(internal|private)$' }
+      - inside:
+          stopBy: end
+          kind: object_declaration
+          has:
+            kind: modifiers
+            has: { kind: visibility_modifier, regex: '^(internal|private)$' }
+      - inside:
+          stopBy: end
+          kind: function_declaration
+      - inside:
+          stopBy: end
+          kind: lambda_literal
