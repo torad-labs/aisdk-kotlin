@@ -1,0 +1,356 @@
+# Campaign: gate-hardening + beta-release (concept #942 manifest)
+# THE MANIFEST IS THE MEMORY. Statuses live HERE and only here:
+#   todo | in_flight | done (builder reports complete) | verified (orchestrator independently verified)
+# Nothing closes outside this file. Honesty-reconciles are APPENDED as
+# `reconcile = "..."` fields, never silently edited. Commits reference item ids.
+# Full rationale/provenance: docs/gate-hardening-backlog.md (narrative record —
+# no statuses there). Fleet adaptation of #942: implementer = aisdk-builder
+# (codex via torad-fleet) in the Sonnet slot; builder commits locally (pre-commit
+# gates run in its session), NEVER pushes — the orchestrator's reviewed push is
+# the single publication gate point. Enforced by fleet_protocol_policy hooks.
+
+[campaign]
+name = "gate-hardening-beta-release"
+started = "2026-07-02"
+plan_of_record = "docs/gate-hardening-backlog.md"
+done_definition = "every item verified (or operator-vetoed); fully-green CI at tip; RR-06 canary green after tag"
+
+# ---------------------------------------------------------------- phase gh1: wire what exists (all S)
+
+[[items]]
+id = "GH-01"
+phase = "gh1"
+title = "Wire validate_rules.py (parse + --manifest semantic) into ci-gate.sh. Two lines, same idiom as the four detect-*.py gates (ci-gate.sh:57-67). Activates 50 dormant fixtures + parse-checks all 64 rules per commit. Highest leverage in campaign."
+files = [".claude/hooks/rules/ci-gate.sh"]
+status = "todo"
+verify = "break one manifest fixture in a scratch copy -> ci-gate.sh exits 1; pristine tree -> exits 0; both directions demonstrated in the report"
+
+[[items]]
+id = "GH-02"
+phase = "gh1"
+title = "Run the four hook self-test suites (test_kotlin_antipattern_policy, test_codex_hook_adapter, test_fleet_protocol_policy, test_rule_selfcheck_policy) as a CI step in ci.yml verify job. CI-only, NOT pre-commit (keeps commit latency flat; GH-01 covers per-commit). Adjudication: docs/gate-hardening-backlog.md §GH-02."
+files = [".github/workflows/ci.yml"]
+status = "todo"
+verify = "CI step runs all four suites; a deliberately broken assertion fails the job (demonstrate in a scratch branch run or local equivalent)"
+
+[[items]]
+id = "GH-03"
+phase = "gh1"
+title = "Split reference-freshness (vercel/ai clone at ci.yml:38-45 + check-ai-sdk-reference + parity check) into a parallel non-blocking CI job so network failure cannot mask internal gates. The 8-day-dark vector."
+files = [".github/workflows/ci.yml"]
+status = "todo"
+verify = "workflow YAML shows independent job; internal gates run when freshness job is forced red (yamllint + job-dependency inspection acceptable pre-merge)"
+
+[[items]]
+id = "GH-04"
+phase = "gh1"
+title = "Freshness NETWORK failure -> warn+continue: wrap check-ai-sdk-reference.mjs npm view (lines ~14-21, no try/catch today) AND the git-clone/pin-test step; genuine pin/version mismatch stays fatal. Extends AR-03 which only demoted the newer-version case."
+files = ["tools/check-ai-sdk-reference.mjs", ".github/workflows/ci.yml"]
+status = "todo"
+verify = "unreachable-registry simulation exits 0 with ::warning::; corrupted AI_SDK_REFERENCE_COMMIT exits 1"
+
+[[items]]
+id = "GH-05"
+phase = "gh1"
+title = "Regression-lock run-ios-swift-smoke: in verify-apple, taking the skip branch must FAIL (REQUIRE_REAL_SMOKE=1 env in ci.yml + script honors it). Live hole already closed; this prevents silent-skip recurrence."
+files = ["tools/run-ios-swift-smoke", ".github/workflows/ci.yml"]
+status = "todo"
+verify = "script with REQUIRE_REAL_SMOKE=1 on non-Darwin exits 1; without the env exits 0 (skip); Darwin path unchanged"
+
+[[items]]
+id = "GH-06"
+phase = "gh1"
+title = "Gate-misfire protocol section in CLAUDE.md (diagnose -> fix rule + fixture -> re-run; never bypass; where fixtures live; budget re-seed rules) + cross-link from ci-gate.sh failure banner."
+files = ["CLAUDE.md", ".claude/hooks/rules/ci-gate.sh"]
+status = "todo"
+verify = "section exists; ci-gate.sh failure output names it"
+
+[[items]]
+id = "GH-07"
+phase = "gh1"
+title = "Nightly cron full-pipeline run on main (schedule: in ci.yml). Bounds any dark window to <24h. Liveness signal for LP-4."
+files = [".github/workflows/ci.yml"]
+status = "todo"
+verify = "schedule trigger present targeting main; first scheduled run observed green after merge"
+
+[[items]]
+id = "GH-08"
+phase = "gh1"
+title = "Fixture-authoring scaffold: validate_rules.py --new <rule-id> emits fill-in-the-blanks manifest entry (id/severity/yaml from rule file, badExample/goodExample stubs). Makes repair cheaper than dodge (LP-3). Do BEFORE GH-09."
+files = [".claude/hooks/rules/validate_rules.py"]
+status = "todo"
+verify = "--new no-camelcase-top-level-function produces an entry --manifest accepts once examples are filled; stub-state is flagged 'needs examples', not silently passing"
+
+[[items]]
+id = "GH-24"
+phase = "gh1"
+title = "Pre-commit gates are inactive on fresh clones: nothing sets core.hooksPath=.githooks and no doc mentions it (verified: only reference is inside the hook itself). Add bootstrap (tools/bootstrap or gradle task) + CONTRIBUTING/README setup note."
+files = ["CONTRIBUTING.md", "README.md", "tools/"]
+status = "todo"
+verify = "documented one-liner activates hooks on a scratch clone; CONTRIBUTING names it as required setup"
+
+# ---------------------------------------------------------------- phase gh2: coverage + de-serialization (M)
+
+[[items]]
+id = "GH-09"
+phase = "gh2"
+title = "Manifest fixtures for the 14 uncovered ast-grep rules (list: no-camelcase-top-level-function, no-empty-string-sentinel, no-jsonnull-sentinel, no-lateinit-var, no-mutable-companion-state, no-not-null-assertion, no-nullable-prompt-messages-bag, no-provideroptions-jsonobject-cast, no-public-mutable-var, no-sealed-interface, no-secondary-constructor, no-throw-in-stream-error-fn, no-top-level-mutable-var, no-typealias-string). Use GH-08 scaffold. Also make validate_rules error on rules missing manifest entries."
+files = [".claude/hooks/rules/manifest.json", ".claude/hooks/rules/validate_rules.py"]
+status = "todo"
+depends = ["GH-01", "GH-08"]
+verify = "validate_rules --manifest reports 64/64; removing an entry fails it"
+
+[[items]]
+id = "GH-10"
+phase = "gh2"
+title = "Hunk/snippet-context probe mode in validate_rules.py: scan badExample/goodExample as bare member-level fragments (no package/enclosing scope) in addition to whole-file; assert match result does not flip. Root class of the AR-15 misfire."
+files = [".claude/hooks/rules/validate_rules.py"]
+status = "todo"
+verify = "--hunk-mode exists and runs in ci-gate; a deliberately context-fragile scratch rule is caught"
+
+[[items]]
+id = "GH-11"
+phase = "gh2"
+title = "Hunk fixtures for the 4 uncovered scope-anchored rules (no-camelcase-top-level-function, no-mutable-companion-state, no-public-mutable-var, no-top-level-mutable-var): prove each does NOT match a same-shaped class member scanned in isolation."
+files = [".claude/hooks/rules/manifest.json"]
+status = "todo"
+depends = ["GH-09", "GH-10"]
+verify = "all 4 have whole-file + hunk fixture pairs passing --hunk-mode"
+
+[[items]]
+id = "GH-12"
+phase = "gh2"
+title = "continue-on-error + step ids + final if:always() aggregator in ci.yml verify job: gates report independently, job fails via aggregator table. Do NOT touch gradle-internal task graph."
+files = [".github/workflows/ci.yml"]
+status = "todo"
+verify = "forcing an early gate red still shows later gate results in the same run; job conclusion red via aggregator"
+
+[[items]]
+id = "GH-13"
+phase = "gh2"
+title = "Decouple ci-gate.sh from npm ci in CI: pinned ast-grep binary via GitHub release + actions/cache (npm -g forbidden by beta-readiness workflow gate); run architecture gate before/independent of node-dependent steps."
+files = [".github/workflows/ci.yml"]
+status = "todo"
+verify = "architecture gate step precedes npm ci and passes with node steps stubbed broken"
+
+[[items]]
+id = "GH-14"
+phase = "gh2"
+title = "ONE shared fixture-pair harness for zero-self-test mjs/py gates: runner walks tools/gate-fixtures/<gate>/{violation,compliant}/, asserts violation->nonzero, compliant->zero. New gates = two directories, zero runner code."
+files = ["tools/run-gate-fixtures.mjs", "tools/gate-fixtures/"]
+status = "todo"
+verify = "runner wired into CI; adding a scratch gate with fixtures needs no runner edit"
+
+[[items]]
+id = "GH-15"
+phase = "gh2"
+title = "First harness tenant: detect-release-workflow-trust.py (guards release.yml, zero tests today). Violation fixture: release job missing preflight dependency or workflow-level packages:write."
+files = ["tools/gate-fixtures/release-workflow-trust/"]
+status = "todo"
+depends = ["GH-14"]
+verify = "tampered fixture fails; compliant real-shape fixture passes; runs in CI via GH-14 runner"
+
+[[items]]
+id = "GH-16"
+phase = "gh2"
+title = "Resolve-or-remove inert SuspendFunSwallowedCancellation detekt rule (enabled, cannot fire without type resolution). Either wire classpath-aware detekt or remove + document the custom-rule stopgap. No enabled-but-inert rule remains."
+files = ["detekt.yml"]
+status = "todo"
+verify = "rule provably fires via fixture OR is gone with rationale comment"
+
+[[items]]
+id = "GH-17"
+phase = "gh2"
+title = "Release workflow_dispatch dry-run: staging + signing + local-staging smoke, SKIP Sonatype/GH-Packages curls; logs 'would publish N artifacts'. Honest limit: cannot prove Central auth/state-machine. release.yml edits must keep detect-release-workflow-trust green."
+files = [".github/workflows/release.yml"]
+status = "todo"
+verify = "dry_run=true manual run completes green on a non-tag ref with zero publish-endpoint calls"
+
+[[items]]
+id = "GH-23"
+phase = "gh2"
+title = "Budget ratchets must localize new debt (this week: 9 new data classes hid inside count headroom). detect-public-data-class-budget tracks the SET of declarations (like detekt baseline), so any NEW symbol surfaces for explicit acknowledgment even under budget; pure removals frictionless. Evaluate same for architecture/api-since budgets."
+files = [".claude/hooks/rules/detect-public-data-class-budget.py", "data-class-budget.json"]
+status = "todo"
+verify = "adding a new public data class while total <= budget still fails/flags until acknowledged; removal-only change passes untouched"
+
+# ---------------------------------------------------------------- phase gh3: structural (L)
+
+[[items]]
+id = "GH-18"
+phase = "gh3"
+title = "Harness rollout to remaining CI-wired mjs/py gates incl. two regression-locks: golden-coverage dangling-reference fixture; api-review base-resolution fixture under CI-like shallow/detached checkout."
+files = ["tools/gate-fixtures/"]
+status = "todo"
+depends = ["GH-14"]
+verify = "every CI-wired mjs/py gate has a fixture pair in the harness; both regression fixtures fire on regression"
+
+[[items]]
+id = "GH-19"
+phase = "gh3"
+title = "Gate execution ledger (LP-4): each context emits {gate,status} to gate-manifest.json artifact; final step asserts EXPECTED set ran (checked-in expected-gates list = canonical what-runs-where registry). Catches gates silently dropping out of pipelines (live example: validate_rules was unwired for weeks)."
+files = [".github/workflows/ci.yml", "tools/"]
+status = "todo"
+depends = ["GH-12"]
+verify = "commenting out one gate invocation without updating expected set fails CI"
+
+[[items]]
+id = "GH-20"
+phase = "gh3"
+title = "Mechanical dual-fixture contract: rules using inside:/relational anchors MUST ship whole-file AND hunk fixtures; validate_rules fails on missing pair. Backfill all 13 existing inside: rules (not just the 4 from GH-11)."
+files = [".claude/hooks/rules/validate_rules.py", ".claude/hooks/rules/manifest.json"]
+status = "todo"
+depends = ["GH-10", "GH-11"]
+verify = "new relational rule without hunk fixture fails validation with explicit message"
+
+[[items]]
+id = "GH-21"
+phase = "gh3"
+title = "Extend NoRunCatchingInSuspendFunction to coroutine-builder lambdas: launch { runCatching { suspendCall() } } currently missed (rule only checks lexically-enclosing named suspend fun). Fixture proves the builder-lambda shape fires."
+files = ["detekt-rules/src/main/kotlin/ai/torad/aisdk/detekt/CoroutineRules.kt", "detekt-rules/src/test/"]
+status = "todo"
+verify = "builder-lambda fixture trips the rule in detekt-rules tests; compliant code does not"
+
+[[items]]
+id = "GH-22"
+phase = "gh3"
+title = "Apply GH-12 isolation to release.yml publish job; Maven Central publish step stays strictly fail-fast on the aggregator. Trust gate must stay green."
+files = [".github/workflows/release.yml"]
+status = "todo"
+depends = ["GH-12"]
+verify = "non-publish steps report independently; publish only runs on aggregated green"
+
+# ---------------------------------------------------------------- phase rr: release path (operator-gated where noted)
+
+[[items]]
+id = "RR-01"
+phase = "rr"
+title = "Demote public positional ctors on growable result types (GenerateResult Agent.kt:~108, GenerateTextResult Generate.kt:~23, StepResult Lifecycle.kt:~231, StructuredObjectFinish/Phase leaves StructuredObjectApi.kt) to internal; sanctioned test-fake construction via Mock* models or new factories. ABI-touching: updateKotlinAbi + CHANGELOG + INTERFACE_CONTRACT in-commit. AR-14 churned these once already."
+files = ["src/commonMain/kotlin/ai/torad/aisdk/"]
+status = "todo"
+verify = "JVM dump shows no public positional <init> on the named growable result types; test-fake path documented; check green"
+
+[[items]]
+id = "RR-02"
+phase = "rr"
+title = "LiteRT usage/finishReason seam (DROPPED between audit ship-list and AR backlog — recovered item): LiteRTMessage builder gains optional usage + finishReason; adapter stops fabricating Stop on truncation (currently sends decodeFinalOutput parsing truncated JSON) and zero usage. Builder-additive = ABI-safe."
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModel.kt", "src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModelMapping.kt"]
+status = "todo"
+verify = "truncated engine response maps to Length not Stop; engine-provided usage propagates; tests for both paths"
+
+[[items]]
+id = "RR-03"
+phase = "rr"
+title = "Roll AR-35 deterministic-delayer across remaining real-time tests in McpHttpTransportTest (17 waitForRealTime/Dispatchers.Default refs). Zero timing-window assertions remain; bounded event-awaits only."
+files = ["src/commonTest/kotlin/ai/torad/aisdk/McpHttpTransportTest.kt"]
+status = "todo"
+verify = "grep count of waitForRealTime + Dispatchers.Default in file == 0 (bounded awaits excepted, justified per case); 3x repeated suite runs green"
+
+[[items]]
+id = "RR-04"
+phase = "rr"
+title = "OPERATOR-GATED: require verify + verify-apple as required status checks on main branch protection (verified today: required_status_checks entirely absent — red PR + 1 approval can merge). gh api PUT on branches/main/protection. Changes operator's own merge workflow — explicit go needed."
+files = []
+status = "todo"
+verify = "API shows both checks required; a red-CI scratch PR is unmergeable"
+
+[[items]]
+id = "RR-05"
+phase = "rr"
+title = "OPERATOR-GATED: merge PR #10 (~370 reviewed commits). Recommendation: merge commit not squash (granular history referenced by two backlogs + this manifest). Confirm main CI green at merge commit."
+files = []
+status = "todo"
+depends = ["RR-04"]
+verify = "PR merged; main run green"
+
+[[items]]
+id = "RR-06"
+phase = "rr"
+title = "Release execution: GH-17 dry-run first, then tag v0.3.0-beta01 (first-ever real release-workflow run). Post-Central-propagation consumer canary: fresh project resolves ai.torad:torad-aisdk:0.3.0-beta01 from real Central, compiles + runs README sample on JVM + one native target."
+files = []
+status = "todo"
+depends = ["RR-05", "GH-17"]
+verify = "Central shows artifact; canary green; release run archived green"
+
+[[items]]
+id = "RR-07"
+phase = "rr"
+title = "GitHub Release for the tag: CHANGELOG excerpt + beta stability promise (what may change pre-1.0: @ExperimentalAiSdkApi surfaces, sealed hierarchies gain leaves per AR-33; what won't: published ABI per dumps without version bump). Link from README."
+files = ["README.md"]
+status = "todo"
+depends = ["RR-06"]
+verify = "release page live with promise; README links it"
+
+[[items]]
+id = "RR-08"
+phase = "rr"
+title = "Schedule upstream triage: ai@6.0.208 -> v7.x delta review as tracked post-beta issue/milestone with owner, so DEC-2's freshness pin has an expiry (warning fires every CI run today)."
+files = []
+status = "todo"
+verify = "tracked issue/milestone exists"
+
+# ---------------------------------------------------------------- phase bp: ecosystem (mostly post-beta)
+
+[[items]]
+id = "BP-01"
+phase = "bp"
+title = "Published evolution policy (EVOLUTION.md or contract section), Apollo-style per-stage guarantees + deprecation timeline (>=1 minor WARNING -> >=1 ERROR -> removal at major) + Kotlin-version update policy. Consolidates AR-33/RR-07."
+files = ["docs/"]
+status = "todo"
+
+[[items]]
+id = "BP-02"
+phase = "bp"
+title = "Kotlin consumer-compatibility policy, Okio-style: document supported consumer Kotlin range; evaluate current-compiler + older-stdlib (apiVersion/languageVersion) so JVM/Android consumers update independently; klib KGP floor documented separately."
+files = ["build.gradle.kts", "docs/"]
+status = "todo"
+
+[[items]]
+id = "BP-03"
+phase = "bp"
+title = "Snapshot channel: -SNAPSHOT to Central Portal snapshots on push to main; deliberate carve-out from refuse-SNAPSHOT publish guard (guard stays for release path)."
+files = [".github/workflows/", "build.gradle.kts"]
+status = "todo"
+
+[[items]]
+id = "BP-04"
+phase = "bp"
+title = "Dokka HTML to GitHub Pages on release + sourceLink + externalDocumentationLinks for coroutines/serialization/ktor (verified: neither configured)."
+files = ["build.gradle.kts", ".github/workflows/"]
+status = "todo"
+
+[[items]]
+id = "BP-05"
+phase = "bp"
+title = "POM enrichment: issueManagement + ciManagement blocks (verified absent), unique artifact description; verify klibs.io listing ~1 month post-beta."
+files = ["build.gradle.kts", "gradle.properties"]
+status = "todo"
+
+[[items]]
+id = "BP-06"
+phase = "bp"
+title = "Artifact provenance attestations: actions/attest over staged release bundle (SLSA, Sigstore, free for public repos); document gh attestation verify for consumers. Trust gate stays green."
+files = [".github/workflows/release.yml"]
+status = "todo"
+
+[[items]]
+id = "BP-07"
+phase = "bp"
+title = "Target-matrix expansion evaluation (deliberate decision, not default): macosArm64/X64 (near-free), wasmJs + js (deps support them), mingwX64. Each target = conformance surface."
+files = []
+status = "todo"
+
+[[items]]
+id = "BP-08"
+phase = "bp"
+title = "User-facing samples/ (JVM chat CLI first; Compose host later per BL-018); seed from compile-guarded README/wiki snippets."
+files = ["samples/"]
+status = "todo"
+
+[[items]]
+id = "BP-10"
+phase = "bp"
+title = "Recurring consumer-boundary canary (LP-5's gate): scheduled workflow resolving latest from real Central, compiling+running README sample (JVM + native), docs-URL liveness, gh attestation verify (post BP-06), monthly klibs.io check. Failures notify owner, not a dead log."
+files = [".github/workflows/"]
+status = "todo"
+depends = ["RR-06"]
