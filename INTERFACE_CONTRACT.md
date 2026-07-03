@@ -9,6 +9,9 @@
 
 ### Versioning and Source Compatibility
 
+- Stage guarantees and the deprecation timeline live in the
+  [evolution policy](docs/EVOLUTION.md). This section records API-specific
+  compatibility rules for the current public surface.
 - Ktor client types are part of the public ABI. Provider constructors and
   factories that accept `io.ktor.client.HttpClient` couple consumers to the
   SDK's `ktor-client-core` major version, so a future Ktor major-version bump

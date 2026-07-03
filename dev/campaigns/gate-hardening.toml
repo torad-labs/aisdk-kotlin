@@ -363,7 +363,8 @@ id = "BP-01"
 phase = "bp"
 title = "Published evolution policy (EVOLUTION.md or contract section), Apollo-style per-stage guarantees + deprecation timeline (>=1 minor WARNING -> >=1 ERROR -> removal at major) + Kotlin-version update policy. Consolidates AR-33/RR-07."
 files = ["docs/"]
-status = "in_flight"
+status = "done"
+# [2026-07-02] Evolution policy published and linked from README/interface contract; readiness and link checks passed; final SHA reported via fleet.
 
 [[items]]
 id = "BP-02"
