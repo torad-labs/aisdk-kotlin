@@ -183,10 +183,11 @@ id = "GH-15"
 phase = "gh2"
 title = "First harness tenant: detect-release-workflow-trust.py (guards release.yml, zero tests today). Violation fixture: release job missing preflight dependency or workflow-level packages:write."
 files = ["tools/gate-fixtures/release-workflow-trust/"]
-status = "done"
+status = "verified"
 depends = ["GH-14"]
 verify = "tampered fixture fails; compliant real-shape fixture passes; runs in CI via GH-14 runner"
 # [2026-07-02] done in GH-15 slice (final SHA in fleet report): release-workflow-trust fixture tenant added; violation packages:write fails, compliant release shape passes
+# [2026-07-02] orchestrator verified 1b8eadf: violation (workflow-level packages:write) exits 1, compliant exits 0, harness reports 2 checks across 1 gate — the release-workflow detector is no longer test-free
 
 [[items]]
 id = "GH-16"
