@@ -3,14 +3,11 @@ version: 2
 # per ecosystem per week; majors stay individual PRs and are excluded from auto-merge by
 # dependabot-automerge.yml.
 #
-# GRADLE BUMPS AND DEPENDENCY VERIFICATION — read before triaging a red Dependabot PR.
-# This repo pins every dependency by checksum in gradle/verification-metadata.xml
-# (verify-metadata: true). Dependabot edits the version but CANNOT regenerate the
-# checksums, so every Gradle version-update PR lands RED until a maintainer runs:
-#     ./gradlew --write-verification-metadata sha256 help
-# and commits the regenerated metadata onto the PR branch. This is expected, not a
-# defect. Auto-merge is safe regardless: `gh pr merge --auto` only merges once required
-# checks pass, so an un-regenerated PR simply waits instead of merging a broken build.
+# GRADLE BUMPS AND DEPENDENCY VERIFICATION — Dependabot edits the version but cannot
+# regenerate gradle/verification-metadata.xml checksums. The
+# dependabot-verification-metadata.yml workflow does that automatically on Dependabot
+# PRs (commit + push). Auto-merge still waits for required checks (verify +
+# dependency-review); dependency-submission keeps the Gradle graph visible to review.
 #
 # Unlike splice, org.jetbrains.kotlin* is NOT ignored here. Splice pinned it because
 # CodeQL's Kotlin extractor rejected 2.4.x (KotlinVersionTooRecentError, splice #18/#37);
