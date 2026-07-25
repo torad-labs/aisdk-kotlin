@@ -89,15 +89,24 @@ with tempfile.TemporaryDirectory() as tmp:
         check(f"WARN: {name}", kind_of(content, kt) == "warn")
 
     # === PASS — the C-world idioms ===
+    # Every public declaration carries `/** @since */`. That is not decoration: the policy
+    # loads BOTH lanes (rules/ and rules-style/), so the opt-in `no-public-without-since`
+    # rule sees these fixtures too and returns a WARN for any bare public declaration —
+    # which makes `kind_of(...) is None` false and failed all 8 of these checks. The fixtures
+    # were written when only the LAW lane was loaded, before e674eb5 split the package.
+    # Adding the tag is the honest repair: it keeps the assertion at its strictest ("no
+    # finding of ANY severity") while making the fixtures genuinely compliant with the rule
+    # set they are run against, rather than relaxing the check to tolerate warnings.
+    S = "/** @since 0.3.0-beta01 */\n"
     passes = {
-        "PascalCase factory faux-constructor": P + "public fun TextGenerator(model: String): String = model\n",
-        "public member function": P + "public class C {\n    public fun m(): Int = 1\n}\n",
-        "private member function": P + "public class C {\n    private fun m(): Int = 1\n}\n",
-        "member extension function": P + "public class C {\n    public fun String.ext(): String = this\n}\n",
-        "private member var": P + "public class C {\n    private var secret: Int = 0\n}\n",
-        "val property": P + "public class C {\n    val identity: String = \"x\"\n}\n",
-        "non-sealed interface": P + "public interface Transport {\n    public fun send(): Int\n}\n",
-        "sealed class": P + "public sealed class Outcome\n",
+        "PascalCase factory faux-constructor": P + S + "public fun TextGenerator(model: String): String = model\n",
+        "public member function": P + S + "public class C {\n" + S + "    public fun m(): Int = 1\n}\n",
+        "private member function": P + S + "public class C {\n    private fun m(): Int = 1\n}\n",
+        "member extension function": P + S + "public class C {\n" + S + "    public fun String.ext(): String = this\n}\n",
+        "private member var": P + S + "public class C {\n    private var secret: Int = 0\n}\n",
+        "val property": P + S + "public class C {\n" + S + "    val identity: String = \"x\"\n}\n",
+        "non-sealed interface": P + S + "public interface Transport {\n" + S + "    public fun send(): Int\n}\n",
+        "sealed class": P + S + "public sealed class Outcome\n",
     }
     for name, content in passes.items():
         check(f"PASS: {name}", kind_of(content, kt) is None)
@@ -188,9 +197,21 @@ if manifest.exists():
     check("foundry rules pass semantic gate (match bad, skip good)", sem_gate.returncode == 0)
 
     manifest_entries = json.loads(manifest.read_text(encoding="utf-8"))
+    # Drop a LAW-lane entry specifically. The semantic gate only audits rules/ (LAW) for
+    # missing manifest coverage — a rules-style entry has no such requirement — so the old
+    # `manifest_entries[:-1]` only worked while the manifest happened to END with a LAW rule.
+    # It now ends with style rules, so the fixture silently stopped exercising the gate and
+    # asserted a failure that could never happen. Selecting by lane removes the ordering
+    # dependency entirely.
+    law_lane = ROOT / ".rules" / "kotlin" / "ast-grep" / "rules"
+    law_ids = {p.stem for p in law_lane.glob("*.yaml")}
+    dropped = next(e for e in manifest_entries if e.get("id") in law_ids)
     with tempfile.TemporaryDirectory() as tmp:
         off_path_manifest = Path(tmp) / "manifest.json"
-        off_path_manifest.write_text(json.dumps(manifest_entries[:-1]), encoding="utf-8")
+        off_path_manifest.write_text(
+            json.dumps([e for e in manifest_entries if e is not dropped]),
+            encoding="utf-8",
+        )
         missing_entry_gate = subprocess.run(
             [
                 sys.executable,
@@ -315,9 +336,19 @@ fix: GoodName()
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
-        rules_dir = tmp_path / "kotlin"
-        rules_dir.mkdir()
-        registry = tmp_path / "autofix-registry.json"
+        # Mirror the real layout the policy discovers: <root>/rules (LAW) + <root>/rules-style
+        # (opt-in). e674eb5 moved the package from a flat .claude/hooks/rules/kotlin/ to
+        # .rules/kotlin/ast-grep/{rules,rules-style}/ and renamed the module constant
+        # RULES_DIR -> RULES_ROOT; this fixture was never updated, so it patched an attribute
+        # that no longer exists and the test died on AttributeError before asserting anything.
+        rules_root = tmp_path / "ast-grep"
+        rules_dir = rules_root / "rules"
+        rules_dir.mkdir(parents=True)
+        # registry.json must sit ALONGSIDE rules/ — apply_autofix_mode resolves rule files
+        # relative to the registry's own parent (registry_parent/rules, /rules-style, and the
+        # legacy /kotlin). The old fixture put it one level above, so no rule was ever found
+        # and the autofix checks asserted against a no-op run.
+        registry = rules_root / "registry.json"
         sample_dir = tmp_path / "src"
         sample_dir.mkdir()
         rule_file = rules_dir / "test-replace-bad-name.yaml"
@@ -357,10 +388,10 @@ fix: GoodName()
         )
         check("autofix pre-pass is idempotent after review", apply_again.returncode == 0)
 
-        original_rules_dir = policy.RULES_DIR
+        original_rules_root = policy.RULES_ROOT
         original_registry = policy.AUTOFIX_REGISTRY
         try:
-            policy.RULES_DIR = rules_dir
+            policy.RULES_ROOT = rules_root
             policy.AUTOFIX_REGISTRY = registry
             fixed = policy.run({"tool_name": "Write", "tool_input": {
                 "file_path": str(sample),
@@ -377,7 +408,7 @@ fix: GoodName()
                 ),
             )
         finally:
-            policy.RULES_DIR = original_rules_dir
+            policy.RULES_ROOT = original_rules_root
             policy.AUTOFIX_REGISTRY = original_registry
 
 
