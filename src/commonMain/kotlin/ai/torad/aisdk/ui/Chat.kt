@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.jvm.JvmSynthetic
 
 private const val ADD_TOOL_RESULT_REPLACEMENT = "addToolOutput(toolCallId, output, toolName)"
 

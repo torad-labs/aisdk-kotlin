@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
+import kotlin.jvm.JvmSynthetic
 
 @Poko
 /** @since 0.3.0-beta01 */

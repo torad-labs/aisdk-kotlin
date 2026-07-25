@@ -5,6 +5,7 @@ package ai.torad.aisdk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlin.jvm.JvmOverloads
+import kotlin.jvm.JvmSynthetic
 
 /**
  * High-level text generation facade for a single [LanguageModel].

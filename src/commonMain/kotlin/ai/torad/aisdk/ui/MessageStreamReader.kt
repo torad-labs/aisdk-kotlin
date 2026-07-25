@@ -11,6 +11,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Convert a raw agent [StreamEvent] flow into a flow of growing

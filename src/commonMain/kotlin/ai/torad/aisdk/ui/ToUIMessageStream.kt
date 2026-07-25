@@ -5,6 +5,7 @@ import ai.torad.aisdk.ToUIMessageChunk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.JsonObject
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Bridge an agent [StreamEvent] flow to the v6 UI-message-stream wire protocol:

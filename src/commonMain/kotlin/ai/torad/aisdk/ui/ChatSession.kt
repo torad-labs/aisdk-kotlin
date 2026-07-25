@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonElement
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public data class ChatState(
