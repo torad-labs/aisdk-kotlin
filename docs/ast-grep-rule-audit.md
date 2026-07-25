@@ -7,7 +7,7 @@ model) and [data-class-audit.md](data-class-audit.md) (the public data-class
 migration, a dedupe example this audit reuses rather than duplicates). This
 document is the standing dedupe table CLAUDE.md's "Ast-grep rule authoring"
 section points to: consult and extend it before adding a new rule to
-`.claude/hooks/rules/kotlin/`.
+`.rules/kotlin/ast-grep/`.
 
 ## Method
 

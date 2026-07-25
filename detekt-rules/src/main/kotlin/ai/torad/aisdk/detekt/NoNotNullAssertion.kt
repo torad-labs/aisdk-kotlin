@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtPostfixExpression
 
 /**
- * Mirror of `.claude/hooks/rules/kotlin/no-not-null-assertion.yaml`.
+ * Mirror of `.rules/kotlin/ast-grep/rules/no-not-null-assertion.yaml`.
  *
  * The `!!` not-null assertion throws `NullPointerException` at runtime — it converts a
  * compile-time nullability question into a runtime crash. Model absence in the type system
