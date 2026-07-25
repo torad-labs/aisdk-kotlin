@@ -579,8 +579,27 @@ def _needs_fix_examples(before: object, after: object) -> bool:
     )
 
 
-def new_entry_mode(rule_id: str, rules_dir: Path, include_fix: bool = False) -> int:
-    rule_path = rules_dir / f"{rule_id}.yaml"
+def resolve_rule_path(rule_id: str) -> Path | None:
+    """Find a rule by id across both lanes.
+
+    e674eb5 split the package into .rules/kotlin/ast-grep/rules (LAW) and rules-style
+    (opt-in), so no single directory holds every rule any more. The legacy flat directory
+    is still searched last for a checkout mid-migration.
+    """
+    repo_root = Path(__file__).resolve().parents[3]
+    rules_root = repo_root / ".rules" / "kotlin" / "ast-grep"
+    for lane in (rules_root / "rules", rules_root / "rules-style", Path(__file__).resolve().parent / "kotlin"):
+        candidate = lane / f"{rule_id}.yaml"
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def new_entry_mode(rule_id: str, include_fix: bool = False) -> int:
+    rule_path = resolve_rule_path(rule_id)
+    if rule_path is None:
+        print(f"ERROR: rule {rule_id!r} not found in the LAW or style lane", file=sys.stderr)
+        return 2
     try:
         yaml_text = rule_path.read_text(encoding="utf-8")
     except OSError as exc:
@@ -625,7 +644,7 @@ def main() -> int:
         if len(args) < 2:
             print("ERROR: --new requires a rule id")
             return 2
-        return new_entry_mode(args[1], Path(__file__).resolve().parent / "kotlin", "--fix" in args[2:])
+        return new_entry_mode(args[1], "--fix" in args[2:])
 
     binary = ast_grep_binary()
     if binary is None:
