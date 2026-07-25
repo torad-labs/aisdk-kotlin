@@ -179,11 +179,19 @@ def check_release_version_and_changelog(reporter: Reporter) -> None:
     if not version:
         reporter.fail("VERSION_NAME missing from gradle.properties")
         return
-    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8", errors="replace")
-    if re.search(rf"(?m)^##\s+\[?{re.escape(version)}\]?\s*$", changelog):
-        reporter.ok(f"CHANGELOG.md has an entry for VERSION_NAME={version}")
+    # Report a missing CHANGELOG.md as a normal failure. Reading it unguarded raised
+    # FileNotFoundError, which aborted the whole check run and silently skipped every
+    # later check (tag/version, staging fixture, @since, parity, taxonomy budgets) —
+    # a crash that reads as "gate broken" instead of "gate found a problem".
+    changelog_path = ROOT / "CHANGELOG.md"
+    if not changelog_path.exists():
+        reporter.fail("CHANGELOG.md is missing")
     else:
-        reporter.fail(f"CHANGELOG.md is missing a '## {version}' entry")
+        changelog = changelog_path.read_text(encoding="utf-8", errors="replace")
+        if re.search(rf"(?m)^##\s+\[?{re.escape(version)}\]?\s*$", changelog):
+            reporter.ok(f"CHANGELOG.md has an entry for VERSION_NAME={version}")
+        else:
+            reporter.fail(f"CHANGELOG.md is missing a '## {version}' entry")
 
     ref_name = os.environ.get("GITHUB_REF_NAME", "")
     if ref_name.startswith("v"):
