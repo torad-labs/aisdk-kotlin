@@ -1,9 +1,12 @@
 package ai.torad.aisdk
 
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.io.IOException
 import kotlin.jvm.JvmSynthetic
 import kotlin.random.Random
 import kotlin.time.Clock
@@ -45,6 +48,23 @@ private const val MAX_RETRY_AFTER_MS: Long = 60L * 1_000L
 private val HTTP_DATE_REGEX =
     Regex("^[A-Za-z]{3}, (\\d{2}) ([A-Za-z]{3}) (\\d{4}) (\\d{2}):(\\d{2}):(\\d{2}) GMT$")
 
+/**
+ * Default classifier: is [t] a transient failure worth another attempt?
+ *
+ * The Ktor and kotlinx.io types are matched with `is`, not by comparing
+ * `KClass.qualifiedName` against a string. Both artifacts are `api()` dependencies of
+ * commonMain, so the types are directly referenceable, and a real type check also catches
+ * SUBCLASSES — which name equality silently missed — and survives R8/ProGuard renaming in a
+ * consumer's minified build, where a fully-qualified-name comparison would quietly stop
+ * recognising transient failures and degrade to no-retry with no error anywhere.
+ *
+ * Two name-based checks remain, deliberately, because no common type covers them:
+ * `java.io.IOException` is JVM-only and cannot be referenced from commonMain at all, and
+ * the platform socket exceptions below are JDK/Android types with no common supertype
+ * reachable here. Both are matched on the SIMPLE name against a closed allowlist rather
+ * than a qualified-name string, so minification cannot turn them into a false negative
+ * against a name this SDK controls. `RetryClassificationTest` pins every branch.
+ */
 private fun IsDefaultRetryable(t: Throwable): Boolean =
     (t as? APICallError)?.isRetryable == true ||
         (t as? GatewayError)?.isRetryable == true ||
@@ -52,17 +72,21 @@ private fun IsDefaultRetryable(t: Throwable): Boolean =
         (
             t !is CancellationException &&
                 (
-                    t::class.qualifiedName.orEmpty() == "io.ktor.client.plugins.HttpRequestTimeoutException" ||
-                        t::class.qualifiedName.orEmpty() == "io.ktor.client.network.sockets.ConnectTimeoutException" ||
-                        t::class.qualifiedName.orEmpty() == "io.ktor.utils.io.errors.IOException" ||
-                        t::class.qualifiedName.orEmpty() == "kotlinx.io.IOException" ||
-                        t::class.qualifiedName.orEmpty() == "java.io.IOException" ||
-                        t::class.qualifiedName.orEmpty().endsWith(".IOException") ||
+                    t is HttpRequestTimeoutException ||
+                        t is ConnectTimeoutException ||
+                        t is IOException ||
                         t::class.simpleName.orEmpty() in transientNetworkExceptionNames
                     )
             )
 
+/**
+ * Platform socket failures with no common supertype reachable from commonMain — these are
+ * JDK/Android types, so they are matched on SIMPLE name against this closed allowlist.
+ * `java.io.IOException` is here for the same reason: it is JVM-only and cannot be named in
+ * common code, so the `is IOException` check above (kotlinx.io) does not cover it.
+ */
 private val transientNetworkExceptionNames = setOf(
+    "IOException",
     "ConnectException",
     "ConnectionResetException",
     "EOFException",
