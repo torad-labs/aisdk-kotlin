@@ -148,7 +148,8 @@ ledger.
 
 ## Ast-grep rule authoring — discovery, dedupe, and codemod discipline
 
-The Kotlin rule package (`.claude/hooks/rules/kotlin/*.yaml` + `manifest.json`)
+The Kotlin rule package (`.rules/kotlin/ast-grep/rules/*.yaml` LAW +
+`rules-style/*.yaml` opt-in, fixtures in `.claude/hooks/rules/manifest.json`)
 buys project-specific structural invariants, multi-file codemods, and
 structural search — NOT generic linting. detekt/ktlint/Android-Lint-shaped
 concerns are out of scope for a new rule here; see the dedupe law below.
@@ -233,4 +234,4 @@ wire interop is explicitly out of scope.
 - Public API changes regenerate the ABI dumps (`./gradlew updateKotlinAbi`) and
   update `CHANGELOG.md` + `INTERFACE_CONTRACT.md` (the API-review gate expects it).
 - Match the surrounding code's idioms; the architecture gate (ast-grep rules in
-  `.claude/hooks/rules/kotlin/`) encodes many of them.
+  `.rules/kotlin/ast-grep/`) encodes many of them.

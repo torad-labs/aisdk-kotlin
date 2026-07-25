@@ -9,7 +9,7 @@ import io.gitlab.arturbosch.detekt.api.RuleSetProvider
  * `META-INF/services/io.gitlab.arturbosch.detekt.api.RuleSetProvider`.
  *
  * Each rule here mirrors an ast-grep PreToolUse hook rule under
- * `.claude/hooks/rules/kotlin/`, re-expressed as a detekt rule so the same architectural
+ * `.rules/kotlin/ast-grep/`, re-expressed as a detekt rule so the same architectural
  * tenet is enforced for every developer in the IDE + `./gradlew check`, not only for
  * Claude's edits. Rules are configured (active/inactive) under the `torad-aisdk` block in
  * `detekt.yml`.

@@ -13,7 +13,7 @@ import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtExpression
 
 /**
- * Mirror of `.claude/hooks/rules/kotlin/no-float-equality-comparison.yaml`.
+ * Mirror of `.rules/kotlin/ast-grep/rules-style/no-float-equality-comparison.yaml`.
  * Exact `==`/`!=` against a floating-point literal is unreliable (rounding); compare within
  * a tolerance. Without type resolution this matches the literal-operand form the ast-grep
  * rule also targets.

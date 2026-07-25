@@ -14,7 +14,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 
 /**
- * Mirror of `.claude/hooks/rules/kotlin/no-deferred-wiring-comment.yaml`.
+ * Mirror of `.rules/kotlin/ast-grep/rules/no-deferred-wiring-comment.yaml`.
  *
  * A comment admitting that a declaration was added without connecting its producer is the
  * fingerprint the pipeline-xray uncovered for non-integrated code: a public surface that
