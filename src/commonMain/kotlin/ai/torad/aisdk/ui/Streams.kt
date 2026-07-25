@@ -1,7 +1,5 @@
 package ai.torad.aisdk.ui
 
-import kotlin.jvm.JvmSynthetic
-
 import ai.torad.aisdk.CancellationExceptions
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.aiSdkOutputJson
@@ -14,6 +12,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonElement
+import kotlin.jvm.JvmSynthetic
 
 @Poko
 /** @since 0.3.0-beta01 */

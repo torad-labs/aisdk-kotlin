@@ -5,13 +5,12 @@
 
 package ai.torad.aisdk
 
-import kotlin.jvm.JvmSynthetic
-
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.jvm.JvmSynthetic
 
 /**
  * The base64 bytes + media type of a downloaded asset.

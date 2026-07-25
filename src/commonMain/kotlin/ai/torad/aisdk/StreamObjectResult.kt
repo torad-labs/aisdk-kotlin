@@ -1,13 +1,12 @@
 package ai.torad.aisdk
 
-import kotlin.jvm.JvmSynthetic
-
 import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public class StreamObjectResult<TOutput> internal constructor(

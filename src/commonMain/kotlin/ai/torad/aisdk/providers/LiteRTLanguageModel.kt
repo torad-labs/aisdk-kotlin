@@ -3,12 +3,9 @@
 
 package ai.torad.aisdk.providers
 
-import kotlin.jvm.JvmSynthetic
-
 import ai.torad.aisdk.CallWarning
 import ai.torad.aisdk.FinishReason
 import ai.torad.aisdk.GenerateId
-import ai.torad.aisdk.IdGenerator
 import ai.torad.aisdk.LanguageModel
 import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelResult
@@ -24,6 +21,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Provider-options payload consumed by [LiteRTLanguageModel].
