@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -174,6 +175,12 @@ private class MemoizedStreamReplay(
     private val buffer = mutableListOf<StreamEvent>()
     private val progress = MutableStateFlow(ReplayProgress())
     private var producer: Job? = null
+
+    // The scope is held, not just the job it launched. CoroutineScope(producerContext) builds a
+    // fresh Job (producerContext has its own removed via minusKey), so cancelling only the child
+    // left that Job uncancelled — the class owned a scope it never released. Cancelling the scope
+    // cancels its children, so this is a superset of the previous teardown.
+    private var producerScope: CoroutineScope? = null
     private var runId = 0L
     private var activeCollectors = 0
 
@@ -211,28 +218,31 @@ private class MemoizedStreamReplay(
             runId++
             val producerRunId = runId
             val producerContext = collectionContext.minusKey(Job)
-            val producerScope = CoroutineScope(producerContext)
-            val job = producerScope.launch(start = CoroutineStart.LAZY) {
+            val scope = CoroutineScope(producerContext)
+            val job = scope.launch(start = CoroutineStart.LAZY) {
                 collectUpstream(producerRunId)
             }
+            producerScope = scope
             producer = job
             job.start()
         }
     }
 
     private suspend fun unregisterCollector() {
-        val abandonedProducer = mutex.withLock {
+        val abandonedScope = mutex.withLock {
             activeCollectors--
             check(activeCollectors >= 0) { "Stream replay collector count underflow" }
             if (activeCollectors != 0 || progress.value.terminal != null) return@withLock null
-            val job = producer
+            val scope = producerScope
             producer = null
+            producerScope = null
             runId++
             buffer.clear()
             progress.value = ReplayProgress()
-            job
+            scope
         }
-        abandonedProducer?.cancel()
+        // Cancels the launched producer AND releases the scope's own Job.
+        abandonedScope?.cancel()
     }
 
     private suspend fun collectUpstream(producerRunId: Long) {
