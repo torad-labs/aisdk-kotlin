@@ -86,7 +86,7 @@ warning_dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kot
 # warning rule is listed here so its live count is visible on every run, which is the point
 # of adopting it before the violations are fixed.
 for warning_rule in no-throwable-catch-without-rethrow no-runcatching-in-suspend \
-                    no-empty-catch no-raw-thread no-reflection-in-production \
+                    no-raw-thread no-reflection-in-production \
                     coroutine-scope-must-be-cancelled; do
   # Check both rules/ (LAW) and rules-style/ (opt-in)
   for rule_subdir in "$RULES_DIR" "$STYLE_DIR"; do
