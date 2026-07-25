@@ -1,0 +1,41 @@
+# TENET: No empty catch blocks.
+# Rationale: Silent failures hide bugs. At minimum, log the exception.
+# Better yet, handle the error properly or let it propagate.
+# Grammar note: an empty catch body `{}` produces NO statements node, so the
+# original `has: statements regex ^\s*$` form could never match anything
+# (calibration 2026-07-03: zero hits because the rule was dead, not because
+# code was clean). Match the ABSENCE of a statements child instead.
+# Vendored from torad-toolkit (2026-07-25); severity lowered to warning on adoption.
+#
+# ACTIVE INVENTORY at vendoring — 9 sites, each needing a per-site decision:
+#   MCPStdioProcess.jvmAndAndroid.kt:76,85,92   catch (_: IOException) — teardown best-effort
+#   AgentTelemetryDispatcher.kt:59,75           telemetry hooks must never break the agent
+#   MCP.kt:1008,1454,2194,2202                  transport teardown best-effort
+#
+# The matcher is `catch_block not has statements`, so a catch whose body is ONLY a comment
+# still counts as empty — deliberately, because a comment is not error handling. Eight of
+# these carry an explanatory comment and are defensible; AgentTelemetryDispatcher.kt:75 is a
+# bare `{}` with no comment at all and should at minimum record why it swallows.
+#
+# Warning rather than error because every site is a documented deliberate swallow rather than
+# a defect. Promoting to LAW means resolving all nine, NOT adding a path ignore — a file-level
+# ignore would also exempt future empty catches in the same file, which is exactly what the
+# toolkit's exclude-scope doctrine warns against.
+id: no-empty-catch
+language: kotlin
+severity: warning
+# Scope law: exclude-based only — new files/folders are inside this law by default.
+# Promoted from torad-fleet (2026-07-13, CR-TOOLKIT-PROMOTE); this pack is the clean
+# canonical form — see sgconfig.yml for the full exclude-scope doctrine banner.
+ignores:
+  - "**/build/**"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/*.gradle.kts"
+  # grandfather entries are per-repo; installs append their own
+message: "Empty catch blocks swallow errors silently. Log or handle the exception."
+rule:
+  kind: catch_block
+  not:
+    has:
+      kind: statements
