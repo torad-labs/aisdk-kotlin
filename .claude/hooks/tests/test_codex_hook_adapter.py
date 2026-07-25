@@ -12,7 +12,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 ADAPTER = ROOT / ".codex" / "hooks" / "claude_compat.py"
 TARGET = ROOT / ".claude" / "hooks" / "orchestrator" / "pretooluse.py"
-RULES_DIR = ROOT / ".claude" / "hooks" / "rules" / "kotlin"
+# e674eb5 moved the rule package out of .claude/hooks/rules/kotlin/ and split it into two
+# lanes under .rules/kotlin/ast-grep/: rules/ (LAW, severity: error) and rules-style/
+# (opt-in, warning). This fixture still pointed at the old flat directory, so it died on
+# FileNotFoundError before reaching its assertion.
+RULES_ROOT = ROOT / ".rules" / "kotlin" / "ast-grep"
+RULE_LANES = (RULES_ROOT / "rules", RULES_ROOT / "rules-style")
+
+
+def resolve_rule_file(rule_id: str):
+    """Locate a rule by id across both lanes; the manifest does not record which one."""
+    for lane in RULE_LANES:
+        candidate = lane / f"{rule_id}.yaml"
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(f"rule {rule_id!r} not found in {[str(p) for p in RULE_LANES]}")
 MANIFEST = ROOT / ".claude" / "hooks" / "rules" / "manifest.json"
 
 failures: list[str] = []
@@ -96,7 +110,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
     entries = json.loads(MANIFEST.read_text(encoding="utf-8"))
     covered = next(e for e in entries if isinstance(e, dict) and e.get("badExample") and e.get("goodExample"))
-    rule_file = RULES_DIR / f"{covered['id']}.yaml"
+    rule_file = resolve_rule_file(covered["id"])
     first_rule_line = rule_file.read_text(encoding="utf-8").splitlines()[0]
     two_file_rule_patch = f"""*** Begin Patch
 *** Update File: {normal_file}

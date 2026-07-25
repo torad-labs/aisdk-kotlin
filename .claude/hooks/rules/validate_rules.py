@@ -647,7 +647,21 @@ def main() -> int:
             print("ERROR: --apply-autofix requires a registry path")
             return 2
         return apply_autofix_mode(binary, Path(args[1]), args[2:])
-    rules_dir = Path(args[0]) if args else Path(__file__).resolve().parent / "kotlin"
+    # Default to the canonical LAW lane. e674eb5 moved the package to
+    # .rules/kotlin/ast-grep/{rules,rules-style}/ but left this default pointing at the old
+    # flat .claude/hooks/rules/kotlin/, so every argument-less invocation errored with
+    # "rules dir not found" — which is how the hook self-test's parse gate had been failing
+    # silently. ci-gate.sh always passes an explicit directory, so it never noticed.
+    # The legacy path is still honoured if it exists, for a checkout mid-migration.
+    if args:
+        rules_dir = Path(args[0])
+    else:
+        repo_root = Path(__file__).resolve().parents[3]
+        rules_dir = repo_root / ".rules" / "kotlin" / "ast-grep" / "rules"
+        if not rules_dir.is_dir():
+            legacy = Path(__file__).resolve().parent / "kotlin"
+            if legacy.is_dir():
+                rules_dir = legacy
     if not rules_dir.is_dir():
         print(f"ERROR: rules dir not found: {rules_dir}")
         return 2
