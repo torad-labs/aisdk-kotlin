@@ -44,7 +44,17 @@ rule:
     - has:
         stopBy: end
         pattern: CoroutineScope($$$ARGS)
+    # The cancel side is kind-based, NOT `pattern: $SCOPE.cancel()`. A safe call
+    # `scope?.cancel()` parses as navigation_expression > navigation_suffix with a `?.`
+    # token instead of `.`, so the pattern form missed it and kept flagging a class that
+    # does cancel correctly. Both spellings share this shape, so matching the suffix
+    # identifier covers them. Found by fixing Generate.kt and watching the rule stay red.
     - not:
         has:
           stopBy: end
-          pattern: $SCOPE.cancel()
+          kind: call_expression
+          has:
+            kind: navigation_expression
+            has:
+              kind: navigation_suffix
+              has: { kind: simple_identifier, regex: '^cancel$' }
