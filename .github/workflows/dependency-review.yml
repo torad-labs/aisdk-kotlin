@@ -2,23 +2,12 @@
 # This library ships under Apache-2.0 to downstream Kotlin/KMP consumers, so a copyleft
 # transitive dependency is a licensing hazard for every consumer, not just for us.
 #
-# PREREQUISITE — this job CANNOT pass until Dependency graph is enabled for the repository.
-# Measured on PR #14 (its first run): the action fails in ~5s with
-#   "Dependency review is not supported on this repository."
-# and the underlying API it calls,
-#   GET /repos/torad-labs/aisdk-kotlin/dependency-graph/compare/{base}...{head}
-# returns 403 Forbidden — even though Dependabot alerts are already on
-# (/vulnerability-alerts returns 204). That combination means the toggle is off at the
-# ORG level, not the repo level, so it cannot be fixed from a workflow or with a
-# repo-scoped token.
-#
-# Fix (repo or org owner, one toggle):
-#   Settings -> Code security and analysis -> Dependency graph -> Enable
-#   or org-wide: https://github.com/organizations/torad-labs/settings/security_analysis
+# Requires Dependency graph (enabled for this repo). Reviews the PR's manifest diff via
+#   GET /repos/{owner}/{repo}/dependency-graph/compare/{base}...{head}
+# and fails on moderate+ advisories or denied licenses.
 #
 # Deliberately NOT given `continue-on-error: true`. A green-but-inert security check is
-# worse than an absent one — it reads as coverage while reviewing nothing. The red here is
-# truthful: dependency review is genuinely not running.
+# worse than an absent one. Required on main (branch protection) once the graph is on.
 name: dependency-review
 
 on:

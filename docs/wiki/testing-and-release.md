@@ -129,14 +129,22 @@ GitHub provides `GITHUB_TOKEN` for the package mirror.
 
 ## Release Checklist
 
-1. Update `VERSION_NAME` in `gradle.properties`.
-2. Update `CHANGELOG.md`.
+1. Pick a **new** `VERSION_NAME` in `gradle.properties`. Maven Central
+   coordinates are immutable — never reuse a version already on repo1
+   (release preflight fails closed if it is).
+2. Move the relevant `CHANGELOG.md` notes under `## <version>` (leave a thin
+   `## Unreleased` if needed).
 3. Run parity checks.
 4. Run `./gradlew check publishToMavenLocal`.
 5. Run `tools/beta-readiness-check --strict-readme`.
 6. Confirm generated artifacts and POM metadata.
-7. Commit to `main` and tag with `v<version>`.
-8. Push the tag and verify the release workflow.
+7. Land the release commit on `main` (tag ancestry requires main reachability).
+8. Tag with `v<version>` on that main SHA and push the tag.
+9. Watch the Release workflow: Central `PUBLISHED`, SBOM + provenance
+   attestations, Docs Pages deploy.
+10. After the tag ships, bump `VERSION_NAME` again before re-arming
+    `snapshots.yml` push-to-main, so snapshots do not republish the frozen
+    release line as `-SNAPSHOT`.
 
 ## Related
 

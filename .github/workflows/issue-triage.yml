@@ -12,6 +12,8 @@
 #
 # Ported from torad-labs/splice. Deviation: both jobs carry timeout-minutes, which
 # this repo's beta-readiness gate requires on every job (splice's copy has none).
+# Permissions are job-scoped (not workflow-level) so classify does not inherit
+# issues: write when it only needs contents:read + the default GITHUB_TOKEN for gh.
 name: issue-triage
 
 on:
@@ -23,14 +25,17 @@ on:
         description: 'Issue number to (re)classify'
         required: true
 
-permissions:
-  issues: write
+# Least privilege at workflow level; each job opts into what it needs.
+permissions: {}
 
 jobs:
   lifecycle:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      # add/remove the needs-triage label only
+      issues: write
     steps:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -51,6 +56,10 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.action == 'opened'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      # gh issue edit --add-label
+      issues: write
     concurrency:
       group: issue-classify-${{ github.event.issue.number || inputs.issue_number }}
       cancel-in-progress: true

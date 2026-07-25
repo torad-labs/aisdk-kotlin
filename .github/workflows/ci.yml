@@ -10,6 +10,11 @@ on:
 permissions:
   contents: read
 
+# Cancel superseded runs on the same ref so a push-train does not burn runners.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AI_SDK_REFERENCE_VERSION: 6.0.208
