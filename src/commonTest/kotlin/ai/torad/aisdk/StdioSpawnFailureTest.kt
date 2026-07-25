@@ -1,9 +1,12 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalAiSdkApi::class)
 class StdioSpawnFailureTest {
@@ -12,6 +15,10 @@ class StdioSpawnFailureTest {
      * CreateMCPStdioProcess. If the spawn threw (a non-existent command, bad cwd, permission error),
      * start() propagated with no cleanup — leaving the lifecycle wedged Active (every later start()
      * threw "already started") and the freshly built scope leaked.
+     *
+     * The same catch path also NonCancellably finishes a stale-process close and clears the
+     * process field when start fails after begin() (cancellation mid-close included), so a
+     * later start does not race a dangling handle.
      */
     @Test
     fun `stdio start that fails to spawn resets the lifecycle instead of wedging Active`() = runTest {
@@ -30,5 +37,67 @@ class StdioSpawnFailureTest {
             second.message?.contains("already started") == true,
             "spawn failure reset the lifecycle to Idle (pre-fix it stayed Active)",
         )
+    }
+
+    @Test
+    fun `cancel during stale process close clears the handle and allows a succeeding retry`() = runTest {
+        // Review regression: cancellation during closeProcessPreservingCancellation(stale) used to
+        // reset the lifecycle while leaving `process` pointing at stale. A concurrent restart then
+        // raced the dangling handle. The catch path must NonCancellably finish teardown and null
+        // the field before rethrowing.
+        val staleCloseCalls = mutableListOf<String>()
+        val stale = object : MCPStdioProcess {
+            override suspend fun readLine(): String? = null
+            override suspend fun writeLine(line: String) = Unit
+            override suspend fun close() {
+                staleCloseCalls += "close"
+                throw CancellationException("cancelled during stale close")
+            }
+        }
+
+        var spawnCount = 0
+        val live = object : MCPStdioProcess {
+            override suspend fun readLine(): String? = null // EOF immediately after start
+            override suspend fun writeLine(line: String) = Unit
+            override suspend fun close() {
+                staleCloseCalls += "live-close"
+            }
+        }
+
+        val transport = Experimental_StdioMCPTransport(
+            StdioConfig { command("unused-with-injected-factory") },
+        )
+        transport.prepareProcessForTest(
+            stale = stale,
+            factory = {
+                spawnCount += 1
+                live
+            },
+        )
+
+        assertTrue(transport.hasProcessForTest, "seeded stale handle is visible before start")
+
+        val first = assertFails { transport.start() }
+        assertTrue(
+            first is CancellationException,
+            "stale-close cancellation propagates after cleanup, got: ${first::class.simpleName}: ${first.message}",
+        )
+        assertFalse(
+            transport.hasProcessForTest,
+            "process field must be cleared even when stale close is cancelled",
+        )
+        assertEquals(0, spawnCount, "spawn must not run when stale close cancels first")
+        // NonCancellable teardown path invokes close again (best-effort) after the cancelled close.
+        assertTrue(
+            staleCloseCalls.isNotEmpty(),
+            "stale close must have been attempted",
+        )
+
+        // Retry: lifecycle Idle + process null → factory runs and start completes.
+        // (close() is permanent Closed — reconnect is Active→Idle via reader EOF, not via close.)
+        transport.start()
+        assertEquals(1, spawnCount, "retry start reaches the process factory")
+        transport.close()
+        assertFalse(transport.hasProcessForTest, "close releases the process handle")
     }
 }

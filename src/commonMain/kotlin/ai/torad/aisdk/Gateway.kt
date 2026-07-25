@@ -25,7 +25,9 @@ internal suspend fun GatewayAuthTokenFromSettings(settings: GatewayProviderSetti
     // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
     // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).
     return settings.authTokenProvider?.invoke()
-        ?: settings.environment["VERCEL_OIDC_TOKEN"]?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
+        ?: settings.environment["VERCEL_OIDC_TOKEN"]
+            ?.takeIf { it.isNotBlank() }
+            ?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
 }
 
 /** @since 0.3.0-beta01 */

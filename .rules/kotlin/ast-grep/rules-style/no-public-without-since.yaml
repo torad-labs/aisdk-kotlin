@@ -2,6 +2,8 @@ id: no-public-without-since
 language: kotlin
 severity: warning
 message: "Public declaration has no KDoc `@since` tag (either no KDoc at all, or a KDoc missing `@since`). This is a published, ABI-validated library — consumers and changelog tooling rely on `@since` to know which release introduced a symbol. Add a `/** ... @since X.Y.Z */` block directly above the declaration."
+# Require the KDoc opening token (`/**`). A plain block comment `/* @since ... */` is NOT
+# published by Dokka, so accepting any multiline_comment let non-KDoc markers slip through.
 rule:
   all:
     - any:
@@ -15,4 +17,4 @@ rule:
     - not:
         follows:
           kind: multiline_comment
-          regex: '@since'
+          regex: '^/\*\*[\s\S]*@since'

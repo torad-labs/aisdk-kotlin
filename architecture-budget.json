@@ -4,19 +4,20 @@
     "src/commonMain/kotlin/ai/torad/aisdk/AgentSession.kt": 555,
     "src/commonMain/kotlin/ai/torad/aisdk/Context.kt": 660,
     "src/commonMain/kotlin/ai/torad/aisdk/KtorGatewayTransport.kt": 613,
-    "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt": 2210,
+    "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt": 2240,
     "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt": 902,
     "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt": 1880,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt": 931,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/BedrockRequest.kt": 607,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/FalProvider.kt": 598,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsMapping.kt": 730,
-    "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt": 647,
-    "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleLanguageModel.kt": 779,
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt": 650,
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleLanguageModel.kt": 781,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/HuggingFaceProvider.kt": 947,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAICompatibleHttp.kt": 663,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAICompatibleModels.kt": 597,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesProvider.kt": 1079,
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesRequestMapping.kt": 516,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/ProdiaProvider.kt": 533,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/XaiProvider.kt": 655,
     "src/commonMain/kotlin/ai/torad/aisdk/ui/MessageStreamReader.kt": 555,
@@ -54,6 +55,6 @@
     "src/commonTest/kotlin/ai/torad/aisdk/HuggingFaceProviderTest.kt": 501,
     "src/commonTest/kotlin/ai/torad/aisdk/LiteRTLanguageModelTest.kt": 685,
     "src/commonTest/kotlin/ai/torad/aisdk/MCPClientTest.kt": 514,
-    "src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt": 554
+    "src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt": 614
   }
 }

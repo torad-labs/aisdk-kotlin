@@ -64,11 +64,13 @@ jobs:
         with:
           persist-credentials: false
       - name: Classify and label
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
         run: |
           if [ -z "$OPENROUTER_API_KEY" ]; then
             echo "OPENROUTER_API_KEY not configured; skipping AI classification."
             exit 0
           fi
-          .github/scripts/triage/triage-issue.sh \
-            "${{ github.event.issue.number || inputs.issue_number }}" \
+          [[ "$ISSUE_NUMBER" =~ ^[0-9]+$ ]] || { echo "invalid issue number: $ISSUE_NUMBER"; exit 1; }
+          .github/scripts/triage/triage-issue.sh "$ISSUE_NUMBER" \
             || echo "::warning::issue triage classification failed (non-blocking)"

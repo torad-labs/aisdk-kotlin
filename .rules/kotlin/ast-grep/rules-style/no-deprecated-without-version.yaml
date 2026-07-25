@@ -2,18 +2,14 @@ id: no-deprecated-without-version
 language: kotlin
 severity: warning
 message: "`@Deprecated` message doesn't mention a version. Without a version, consumers can't tell how urgent the migration is or when the symbol will be removed. Mention the version it was deprecated in and/or the version it will be removed in, e.g. `@Deprecated(\"Use X instead, removed in 2.0.0\")`."
+# Bind only the first deprecation argument (the message). A relational stopBy:end walk
+# previously matched ANY nested string — including ReplaceWith("newApi()") — so a
+# compliant declaration still warned. Pattern metavariable $MESSAGE is the first arg only.
 rule:
-  kind: annotation
-  all:
-    - has: { kind: user_type, stopBy: end, has: { kind: type_identifier, regex: '^Deprecated$' } }
-    - has:
-        kind: value_arguments
-        stopBy: end
-        has:
-          kind: value_argument
-          has:
-            kind: string_literal
-            not:
-              has:
-                kind: string_content
-                regex: '(?i)(version|\d+\.\d+)'
+  any:
+    - pattern: '@Deprecated($MESSAGE)'
+    - pattern: '@Deprecated($MESSAGE, $$$REST)'
+constraints:
+  MESSAGE:
+    not:
+      regex: '(?i)(version|\d+\.\d+)'

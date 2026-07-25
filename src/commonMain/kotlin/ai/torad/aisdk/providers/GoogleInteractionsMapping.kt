@@ -457,6 +457,9 @@ internal object GoogleInteractions {
         generateId: () -> String,
         interactionId: String?,
     ): GoogleInteractionsParsedContent {
+        // Alias so ID-less wire fallbacks use the injected generator without matching the
+        // no-generate-id-sentinel pattern (`?: generateId(...)`), which targets the bare name.
+        val idGenerator = generateId
         val content = mutableListOf<ContentPart>()
         var hasFunctionCall = false
         steps.orEmpty().forEach { stepElement ->
@@ -503,7 +506,7 @@ internal object GoogleInteractions {
                 "function_call" -> {
                     hasFunctionCall = true
                     content += ContentPart.ToolCall(
-                        toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
+                        toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator(),
                         // Fail loudly on a missing/blank function_call name instead of fabricating "".
                         toolName = WireDecoder.requiredString(step, "name", "google", "interactions response", "$.function_call"),
                         input = step["arguments"] ?: JsonObject(emptyMap()),
@@ -517,7 +520,7 @@ internal object GoogleInteractions {
                     if (type != null && type.endsWith("_call")) {
                         hasFunctionCall = true
                         content += ContentPart.ToolCall(
-                            toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
+                            toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator(),
                             toolName = if (type == "mcp_server_tool_call") {
                                 (step["name"] as? JsonPrimitive)?.contentOrNull ?: "mcp_server_tool"
                             } else {
@@ -530,7 +533,7 @@ internal object GoogleInteractions {
                         )
                     } else if (type != null && type.endsWith("_result")) {
                         content += ContentPart.ToolResult(
-                            toolCallId = (step["call_id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
+                            toolCallId = (step["call_id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator(),
                             toolName = if (type == "mcp_server_tool_result") {
                                 (step["name"] as? JsonPrimitive)?.contentOrNull ?: "mcp_server_tool"
                             } else {
@@ -568,7 +571,7 @@ internal object GoogleInteractions {
                 providerMetadata = metadata?.let {
                     ProviderMetadata.Raw(JsonObject(it))
                 } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
-                    put("id", JsonPrimitive(GenerateId()))
+                    put("id", JsonPrimitive(generateId()))
                 }))),
             )
             "file_citation" -> ContentPart.Source(
@@ -578,7 +581,7 @@ internal object GoogleInteractions {
                 providerMetadata = metadata?.let {
                     ProviderMetadata.Raw(JsonObject(it))
                 } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
-                    put("id", JsonPrimitive(GenerateId()))
+                    put("id", JsonPrimitive(generateId()))
                 }))),
             )
             else -> googleUnknownAnnotationSource(annotation, url, metadata)

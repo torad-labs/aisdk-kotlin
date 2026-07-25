@@ -1,0 +1,4 @@
+# Test-only seams on Experimental_StdioMCPTransport. Referenced from commonTest
+# (StdioSpawnFailureTest) which this gate does not scan — main-src refs stay at 1.
+MCP.kt::hasProcessForTest
+MCP.kt::prepareProcessForTest

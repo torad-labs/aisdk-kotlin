@@ -50,12 +50,14 @@ class LoggingMiddlewareTest {
         // GIVEN a model emitting the tool-open + tool-call boundary.
         val model = MockLanguageModel(
             responses = listOf(
-                ScriptedResponse(
-                    events = listOf(
-                        StreamEvent.ToolInputStart("ti1", "weather"),
-                        StreamEvent.ToolCall("call_1", "weather", JsonPrimitive("paris")),
-                    ),
-                ),
+                ScriptedResponse {
+                    events(
+                        listOf(
+                            StreamEvent.ToolInputStart("ti1", "weather"),
+                            StreamEvent.ToolCall("call_1", "weather", JsonPrimitive("paris")),
+                        ),
+                    )
+                },
             ),
         )
         val logger = RecordingLogger()
@@ -78,9 +80,9 @@ class LoggingMiddlewareTest {
             val boom = AgentError.ToolExecution("weather", "call_1", IllegalStateException("db down"))
             val model = MockLanguageModel(
                 responses = listOf(
-                    ScriptedResponse(
-                        events = listOf(StreamEvent.ToolError("call_1", "weather", "db down", boom)),
-                    ),
+                    ScriptedResponse {
+                        events(listOf(StreamEvent.ToolError("call_1", "weather", "db down", boom)))
+                    },
                 ),
             )
             val logger = RecordingLogger()
@@ -105,9 +107,9 @@ class LoggingMiddlewareTest {
         }
         val model = MockLanguageModel(
             responses = listOf(
-                ScriptedResponse(
-                    events = listOf(StreamEvent.ToolCall("call_1", "weather", secretArgs)),
-                ),
+                ScriptedResponse {
+                    events(listOf(StreamEvent.ToolCall("call_1", "weather", secretArgs)))
+                },
             ),
         )
         val logger = RecordingLogger()
@@ -131,8 +133,12 @@ class LoggingMiddlewareTest {
         }
         val model = MockLanguageModel(
             responses = listOf(
-                ScriptedResponse(events = listOf(StreamEvent.ToolCall("call_1", "weather", secretArgs))),
-                ScriptedResponse(events = listOf(StreamEvent.ToolCall("call_2", "weather", secretArgs))),
+                ScriptedResponse {
+                    events(listOf(StreamEvent.ToolCall("call_1", "weather", secretArgs)))
+                },
+                ScriptedResponse {
+                    events(listOf(StreamEvent.ToolCall("call_2", "weather", secretArgs)))
+                },
             ),
         )
 

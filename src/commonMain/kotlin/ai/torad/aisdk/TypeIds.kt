@@ -14,6 +14,7 @@ public value class ToolCallId(public val value: String) {
     override fun toString(): String = value
 
     public companion object {
+        /** @since 0.3.0-beta01 */
         public operator fun invoke(value: String): ToolCallId = of(value)
 
         @JvmExposeBoxed
@@ -32,6 +33,7 @@ public value class ToolName(public val value: String) {
     override fun toString(): String = value
 
     public companion object {
+        /** @since 0.3.0-beta01 */
         public operator fun invoke(value: String): ToolName = of(value)
 
         @JvmExposeBoxed
@@ -50,6 +52,7 @@ public value class ApprovalId(public val value: String) {
     override fun toString(): String = value
 
     public companion object {
+        /** @since 0.3.0-beta01 */
         public operator fun invoke(value: String): ApprovalId = of(value)
 
         @JvmExposeBoxed

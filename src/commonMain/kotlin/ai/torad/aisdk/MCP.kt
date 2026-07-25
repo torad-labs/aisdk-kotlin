@@ -2078,6 +2078,7 @@ internal expect fun CreateMCPStdioProcess(config: StdioConfig): MCPStdioProcess
 
 @ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
+@Suppress("TooManyFunctions") // transport surface + private teardown helpers + test seams
 public class Experimental_StdioMCPTransport(
     /** @since 0.3.0-beta01 */
     public val config: StdioConfig,
@@ -2088,10 +2089,29 @@ public class Experimental_StdioMCPTransport(
     private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
     private val protocolVersion = AtomicReference<String?>(null)
 
+    // Default: platform actual. Tests swap this before start() to drive lifecycle paths
+    // (cancel-during-stale-close, spawn failure) without a real child process.
+    private var processFactory: (StdioConfig) -> MCPStdioProcess = { CreateMCPStdioProcess(it) }
+
     override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
     override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
     override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
     override fun setProtocolVersion(version: String?) { protocolVersion.store(version) }
+
+    /**
+     * Test seam: plant a stale process and/or replace the platform factory before [start]
+     * so lifecycle/teardown paths can be driven without a real child process.
+     */
+    internal fun prepareProcessForTest(
+        stale: MCPStdioProcess? = null,
+        factory: ((StdioConfig) -> MCPStdioProcess)? = null,
+    ) {
+        if (stale != null) process = stale
+        if (factory != null) processFactory = factory
+    }
+
+    /** Test-only: true while a live process handle is retained. */
+    internal val hasProcessForTest: Boolean get() = process != null
 
     private val lifecycle = McpConnectionLifecycle()
     private var process: MCPStdioProcess? = null
@@ -2099,16 +2119,18 @@ public class Experimental_StdioMCPTransport(
     override suspend fun start() {
         val readerScope = lifecycle.begin { CoroutineScope(SupervisorJob() + engineContext) }
             ?: throw MCPClientError("StdioMCPTransport already started.")
+        // Close any pre-existing process before overwriting the field — a reconnect after the
+        // reader EOF'd would otherwise leak the prior child + its FDs. Retain the handle so a
+        // cancellation mid-close can still finish teardown NonCancellably and clear the field;
+        // otherwise a concurrent restart races a dangling process reference after lifecycle is Idle.
+        val stale = process
         val started = try {
-            // Close any pre-existing process before overwriting the field — a reconnect after the
-            // reader EOF'd would otherwise leak the prior child + its FDs.
-            process?.let { stale -> closeProcessPreservingCancellation(stale) }
-            CreateMCPStdioProcess(config)
+            stale?.let { closeProcessPreservingCancellation(it) }
+            processFactory(config)
         } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
-            // Spawn failed, or the stale-process close was cancelled, AFTER begin() won Idle->Active:
-            // undo the transition and cancel the freshly built scope, else the transport is wedged
-            // Active (a later start() throws "already started") with a leaked scope. Rethrow the cause.
-            lifecycle.onReaderExited()?.cancel()
+            // Cleanup BEFORE rethrow — including CancellationException from a cancelled stale
+            // close. Rethrowing CE first would skip teardown and leave process dangling.
+            undoFailedStart(stale)
             throw error
         }
         process = started
@@ -2143,6 +2165,17 @@ public class Experimental_StdioMCPTransport(
                 }
             },
         )
+    }
+
+    /** Finish stale teardown + lifecycle reset after start fails post-begin(). */
+    private suspend fun undoFailedStart(stale: MCPStdioProcess?) {
+        withContext(NonCancellable) {
+            if (process === stale) {
+                stale?.let { closeProcessForTeardown(it) }
+                process = null
+            }
+        }
+        lifecycle.onReaderExited()?.cancel()
     }
 
     override suspend fun send(message: JSONRPCMessage) {

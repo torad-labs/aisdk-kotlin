@@ -6,6 +6,35 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+- **PR review follow-ups (release hardening):**
+  - **Security:** `issue-triage.yml` no longer interpolates `workflow_dispatch` input
+    into Bash source; the issue number is passed via `env` and validated as decimal.
+  - **Wire:** `ToolResultOutput.Json.toJsonElement()` now emits a `type=json` envelope
+    (matching the existing decoder), so a success payload that collides with an
+    error/denial shape cannot be re-decoded as `Error`.
+  - **Provider registry:** `ModelRef` resolution on `ProviderRegistry` dispatches from
+    the typed `providerId`/`modelId` components and no longer re-stringifies through
+    colon-hardcoded `qualifiedName` (custom separators work on the typed path).
+  - **MCP stdio:** `start()` failure after `begin()` (including cancellation during a
+    stale-process close) finishes teardown under `NonCancellable`, clears the process
+    field, and resets the lifecycle before rethrowing.
+  - **IDs:** Google Interactions / Google Language Model / Bedrock Mantle ID-less
+    fallbacks use the injected `generateId` callback instead of the global
+    `GenerateId()`.
+  - **Gateway:** blank `VERCEL_OIDC_TOKEN` is treated as absent (same as blank API key).
+  - **Mock:** `ScriptedResponse` is `@Poko` + internal constructor + DSL factory
+    (no public `data class` / `copy`); data-class budget ratcheted 40 → 39.
+  - **Triage:** `classify.sh` partitions labels into at most one type + two areas.
+  - **Rules:** `no-deprecated-without-version` binds only the message argument
+    (ReplaceWith strings no longer false-positive); `no-public-without-since` requires
+    a real KDoc `/**` opener.
+  - **Open Responses:** unknown provider-tool types still passthrough for forward-compat
+    but now emit a local `CallWarning("unsupported", …)` so a typo'd `providerToolId`
+    does not look like a remote 4xx outage.
+  - **KDoc:** `ProviderId`/`ModelId`/`ToolCallId`/`ToolName`/`ApprovalId` companion
+    `invoke` factories tagged `@since 0.3.0-beta01` alongside their `of()` siblings.
+  - **Bugfix:** `ModelRef(providerId, modelId)` factory no longer recurses into itself.
+
 - **Breaking (source):** every public `companion object` factory moved to a top-level
   declaration, completing the `no-companion-objects` migration. The capabilities are
   unchanged — only the call syntax moves — and the committed ABI dumps now record it.

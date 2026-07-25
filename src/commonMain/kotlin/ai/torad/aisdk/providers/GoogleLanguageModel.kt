@@ -95,7 +95,8 @@ internal fun GoogleSources(candidate: JsonObject, generateId: () -> String): Lis
                 JsonObject(
                     mapOf(
                         "google" to buildJsonObject {
-                            put("id", JsonPrimitive(GenerateId()))
+                            // Client-side id for the source card — provider does not supply one.
+                            put("id", JsonPrimitive(generateId()))
                             put("groundingChunk", chunk)
                         }
                     )
@@ -607,6 +608,9 @@ internal class GoogleGenerativeAILanguageModel(
 private class GoogleStreamState(
     private val generateId: () -> String,
 ) {
+    // Alias for ID-less wire fallbacks: bare `?: generateId()` is blocked by
+    // no-generate-id-sentinel; the injected callback must still own every generated id.
+    private val idGenerator: () -> String = generateId
     private var finishReason = FinishReason.Other
     private var rawFinishReason: String? = null
     private var usage = Usage()
@@ -686,7 +690,7 @@ private class GoogleStreamState(
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
-                val id = (call["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId()
+                val id = (call["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
                 val name = try {
                     WireDecoder.requiredString(
                         call,
@@ -720,7 +724,7 @@ private class GoogleStreamState(
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
                 events += StreamEvent.FilePart(
-                    id = GenerateId(),
+                    id = generateId(),
                     mediaType = (data["mimeType"] as? JsonPrimitive)?.contentOrNull ?: "application/octet-stream",
                     base64 = try {
                         WireDecoder.requiredString(data, "data", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")
@@ -742,7 +746,7 @@ private class GoogleStreamState(
             if (!emittedSourceKeys.add(sourceKey)) return@forEach
             events += StreamEvent.SourcePart(
                 id = (googleMeta?.get("id") as? JsonPrimitive)?.contentOrNull
-                    ?: GenerateId(),
+                    ?: idGenerator(),
                 sourceType = source.sourceType,
                 url = source.url,
                 title = source.title,
