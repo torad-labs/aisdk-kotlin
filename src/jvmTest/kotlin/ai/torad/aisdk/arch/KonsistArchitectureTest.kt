@@ -16,6 +16,9 @@ import kotlin.test.Test
  * as test source (it expects the JVM `src/test/` convention), so these tenets — which apply to
  * the library's production surface, not test helpers — filter test source sets out by path
  * (`Test/` matches commonTest/jvmTest/…), matching the commonMain scope the ast-grep ci-gate enforces.
+ *
+ * Paths are normalized to `/` so Windows (`src\jvmTest\…`) does not leak test helpers into
+ * production-surface checks (Konsist returns OS-native separators).
  */
 class KonsistArchitectureTest {
 
@@ -25,7 +28,7 @@ class KonsistArchitectureTest {
         // AgentEvent), never a free-floating flat struct delivered through a callback bag.
         Konsist.scopeFromProject()
             .classes()
-            .filter { !it.path.contains("Test/") && it.hasDataModifier && it.name.endsWith("Event") }
+            .filter { !unixPath(it.path).contains("Test/") && it.hasDataModifier && it.name.endsWith("Event") }
             .assertTrue { it.parents().isNotEmpty() }
     }
 
@@ -38,7 +41,7 @@ class KonsistArchitectureTest {
         // check is what caught ToolChoice, which the ast-grep rule's pattern gap was missing.
         Konsist.scopeFromProject()
             .interfaces()
-            .filter { !it.path.contains("Test/") }
+            .filter { !unixPath(it.path).contains("Test/") }
             .filter { !it.hasAnnotationWithName("Serializable") && !it.hasPrivateModifier }
             .assertFalse { it.hasSealedModifier }
     }
@@ -46,14 +49,14 @@ class KonsistArchitectureTest {
     @Test
     fun `providers do not depend on ui or framework layer`() {
         commonMainFiles()
-            .filter { it.path.contains("/providers/") }
+            .filter { unixPath(it.path).contains("/providers/") }
             .assertFalse { it.dependsOnPackage("ai.torad.aisdk.ui") }
     }
 
     @Test
     fun `core agent protocol and ui layers do not import provider implementations`() {
         commonMainFiles()
-            .filter { !it.path.contains("/providers/") }
+            .filter { !unixPath(it.path).contains("/providers/") }
             .assertFalse { it.dependsOnPackage("ai.torad.aisdk.providers") }
     }
 
@@ -67,7 +70,7 @@ class KonsistArchitectureTest {
         )
 
         commonMainFiles()
-            .filter { it.path.contains("/protocol/") }
+            .filter { unixPath(it.path).contains("/protocol/") }
             .assertFalse { file ->
                 file.dependsOnPackage("ai.torad.aisdk.providers") ||
                     file.dependsOnPackage("ai.torad.aisdk.ui") ||
@@ -78,7 +81,10 @@ class KonsistArchitectureTest {
 
     private fun commonMainFiles(): List<KoFileDeclaration> = Konsist.scopeFromProject()
         .files
-        .filter { it.path.contains("/src/commonMain/") }
+        .filter { unixPath(it.path).contains("/src/commonMain/") }
+
+    /** Konsist returns OS-native separators; normalize so filters match on Windows too. */
+    private fun unixPath(path: String): String = path.replace('\\', '/')
 
     private fun KoFileDeclaration.dependsOnPackage(packageName: String): Boolean {
         val packagePrefix = "$packageName."
