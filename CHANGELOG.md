@@ -6,6 +6,21 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+- **CI/CD hardening:**
+  - CI cancels superseded runs on the same ref (`concurrency` on `ci.yml`).
+  - Release preflight refuses a `VERSION_NAME` already present on Maven
+    Central (immutable coordinates) and documents the main→tag checklist.
+  - Release publish emits an SPDX SBOM of the staged Maven layout and attests
+    it alongside the Central bundle.
+  - Weekly OpenSSF Scorecard workflow publishes SARIF to code scanning.
+  - `workflow-lint` runs checksum-pinned `actionlint` + `zizmor` on workflow
+    changes.
+  - Branch protection: stale reviews dismiss, conversation resolution
+    required, admins enforced, `dependency-review` required. Repo security:
+    secret scanning, push protection, Dependabot security updates enabled.
+  - Snapshots workflow documents the post-release `VERSION_NAME` bump before
+    re-arming push-to-main.
+
 - **PR review follow-ups (release hardening):**
   - **Security:** `issue-triage.yml` no longer interpolates `workflow_dispatch` input
     into Bash source; the issue number is passed via `env` and validated as decimal.

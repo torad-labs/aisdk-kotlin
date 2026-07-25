@@ -1,6 +1,10 @@
 name: Docs
 
-on:
+# workflow_run is intentional: Docs must deploy only after a successful tag-push
+# Release (not on every main push, not on dry-run dispatch). The job further
+# filters to conclusion==success && event==push and checks out the release SHA
+# with contents:read only — no PR code, no write to the source repo.
+on: # zizmor: ignore[dangerous-triggers] gated deploy after successful Release tag push
   workflow_run:
     workflows:
       - Release

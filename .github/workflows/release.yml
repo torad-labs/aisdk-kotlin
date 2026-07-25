@@ -29,23 +29,40 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Verify release tag
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
         run: |
-          if [ "${DRY_RUN}" = "true" ]; then
-            project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
-            echo "Dry-run release preflight for ${project_version} on ${GITHUB_REF_NAME}; tag and main-ancestry checks are publish-only."
-            exit 0
-          fi
-          tag_version="${GITHUB_REF_NAME#v}"
+          set -euo pipefail
           project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
-          test "${tag_version}" = "${project_version}"
+          group="$(awk -F= '$1 == "GROUP" { print $2 }' gradle.properties)"
+          artifact="$(awk -F= '$1 == "POM_ARTIFACT_ID" { print $2 }' gradle.properties)"
+
           if [[ "${project_version}" == *-SNAPSHOT ]]; then
             echo "Release tags must not publish SNAPSHOT versions: ${project_version}" >&2
             exit 1
           fi
+
+          # Maven Central coordinates are immutable. Fail closed if this VERSION_NAME
+          # is already on repo1 so we never plan a retag/republish of a shipped line
+          # (the 0.3.0-beta01 trap). Dry-run still checks so local smoke cannot lie.
+          group_path="${group//.//}"
+          central_pom="https://repo1.maven.org/maven2/${group_path}/${artifact}/${project_version}/${artifact}-${project_version}.pom"
+          central_code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "${central_pom}" || true)"
+          if [ "${central_code}" = "200" ]; then
+            echo "::error::VERSION_NAME ${project_version} is already on Maven Central (${central_pom}). Bump VERSION_NAME (e.g. beta02) before releasing." >&2
+            exit 1
+          fi
+          echo "Maven Central does not yet list ${project_version} (HTTP ${central_code:-unknown})."
+
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "Dry-run release preflight for ${project_version} on ${GITHUB_REF_NAME}; tag and main-ancestry checks are publish-only."
+            exit 0
+          fi
+          tag_version="${GITHUB_REF_NAME#v}"
+          test "${tag_version}" = "${project_version}"
           git fetch origin main
           git merge-base --is-ancestor "${GITHUB_SHA}" origin/main
       - name: Beta readiness gate
@@ -59,17 +76,24 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Release produces signed artifacts; never write caches from this path
+          # (zizmor cache-poisoning: PR-poisoned cache must not enter a publish).
+          cache-read-only: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
+          lookup-only: true
       - name: Verify Apple targets (compile all, test simulator)
         run: ./gradlew iosSimulatorArm64Test compileKotlinIosArm64 compileKotlinIosX64
       - name: Verify Swift import smoke
@@ -94,6 +118,7 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
@@ -101,12 +126,17 @@ jobs:
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Release produces signed artifacts; never write caches from this path
+          # (zizmor cache-poisoning: PR-poisoned cache must not enter a publish).
+          cache-read-only: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
+          lookup-only: true
       - name: Fetch Vercel AI SDK v6 reference
         run: |
           mkdir -p .reference
@@ -185,6 +215,7 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
@@ -192,12 +223,17 @@ jobs:
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Release produces signed artifacts; never write caches from this path
+          # (zizmor cache-poisoning: PR-poisoned cache must not enter a publish).
+          cache-read-only: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
+          lookup-only: true
       # Maven Central is the release target. The Central Portal takes a single zip
       # in Maven Repository Layout, validates it asynchronously, and (with
       # publishingType=AUTOMATIC) syncs to Maven Central if validation passes.
@@ -230,11 +266,27 @@ jobs:
             echo "DRY RUN: would publish ${artifact_count} artifacts"
           fi
           echo "artifact_count=${artifact_count}" >> "${GITHUB_OUTPUT}"
+      # SBOM of the staged Maven layout (not the whole runner FS). Attested on
+      # real publishes so consumers can verify the release coordinate set.
+      - name: Generate release SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: build/staging-deploy
+          format: spdx-json
+          artifact-name: torad-aisdk-sbom.spdx.json
+          output-file: torad-aisdk-sbom.spdx.json
+          upload-artifact: true
+          upload-release-assets: false
       - name: Attest Maven Central bundle provenance
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: bundle.zip
+      - name: Attest release SBOM provenance
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: torad-aisdk-sbom.spdx.json
       - name: Publish to Maven Central
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
         env:
