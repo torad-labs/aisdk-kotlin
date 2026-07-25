@@ -42,7 +42,11 @@ public class TextGenerator @JvmOverloads constructor(
      * should collect exactly one value, usually with `.first()`.
      * @since 0.3.0-beta01
      */
-    @JvmSynthetic public fun <T> generate(input: GenerationInput, output: Output<T>): Flow<GenerateTextResult<T>> = flow {
+    @JvmSynthetic
+    public fun <T> generate(
+        input: GenerationInput,
+        output: Output<T>,
+    ): Flow<GenerateTextResult<T>> = flow {
         emit(doGenerate(input, output, output::decode))
     }
 

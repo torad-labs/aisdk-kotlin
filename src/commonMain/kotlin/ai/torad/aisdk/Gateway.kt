@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.time.Clock
 import kotlin.jvm.JvmSynthetic
+import kotlin.time.Clock
 
 public const val AI_GATEWAY_PROTOCOL_VERSION: String = "0.0.1"
 public const val AI_GATEWAY_DEFAULT_BASE_URL: String = "https://ai-gateway.vercel.sh/v3/ai"
@@ -285,10 +285,13 @@ public sealed class GatewayProvider : Provider {
 
     @JvmSynthetic
     public abstract suspend fun getAvailableModels(): GatewayFetchMetadataResponse
+
     @JvmSynthetic
     public abstract suspend fun getCredits(): GatewayCreditsResponse
+
     @JvmSynthetic
     public abstract suspend fun getSpendReport(params: GatewaySpendReportParams): GatewaySpendReportResponse
+
     @JvmSynthetic
     public abstract suspend fun getGenerationInfo(params: GatewayGenerationInfoParams): GatewayGenerationInfo
 }

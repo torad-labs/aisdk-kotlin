@@ -540,4 +540,3 @@ public class AgentSession<TContext, TOutput>(
         }
     }
 }
-

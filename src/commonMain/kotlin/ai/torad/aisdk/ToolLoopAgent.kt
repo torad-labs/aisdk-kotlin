@@ -1586,6 +1586,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     ),
                 )
             }
+
             @Suppress("UNCHECKED_CAST")
             val typedTool = resolvedTool as Tool<Any?, Any?, TContext>
             val input = resolvedInput

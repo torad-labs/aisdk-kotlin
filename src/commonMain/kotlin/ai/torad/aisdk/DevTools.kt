@@ -61,8 +61,10 @@ public class DevToolsStepResult(
 public interface DevToolsRecorder {
     @JvmSynthetic
     public suspend fun createRun(runId: String)
+
     @JvmSynthetic
     public suspend fun createStep(step: DevToolsStep)
+
     @JvmSynthetic
     public suspend fun updateStepResult(stepId: String, result: DevToolsStepResult)
 }

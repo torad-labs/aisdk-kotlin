@@ -43,6 +43,7 @@ public interface ServerResponseWriter {
 
     /** @since 0.3.0-beta01 */
     public fun setHeader(name: String, value: String)
+
     @JvmSynthetic
     public suspend fun write(chunk: String)
 }
@@ -69,8 +70,10 @@ public fun CreateUiMessageStreamResponse(
 public interface UIMessageStreamWriter {
     @JvmSynthetic
     public suspend fun write(message: UIMessage)
+
     @JvmSynthetic
     public suspend fun merge(stream: Flow<UIMessage>)
+
     @JvmSynthetic
     public suspend fun error(message: String)
 }

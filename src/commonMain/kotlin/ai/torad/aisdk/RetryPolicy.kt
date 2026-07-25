@@ -4,9 +4,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.jvm.JvmSynthetic
 import kotlin.random.Random
 import kotlin.time.Clock
-import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public fun RetryDelayGeneratorFullJitter(random: Random = Random.Default): RetryDelayGenerator =
