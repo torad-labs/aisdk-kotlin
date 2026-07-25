@@ -51,28 +51,33 @@ internal class AgentTelemetryDispatcher<TContext>(
             block()
         } catch (t: Throwable) {
             CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
-            val event = AgentEvent.Errored(t, stepNumber, AgentEvent.Errored.ErrorSource.Hook)
-            try {
-                hooks?.onError?.invoke(event)
-            } catch (ce: CancellationException) {
-                throw ce
-            } catch (_: Throwable) {
-                // reporting hook's own failure is best-effort
-            }
-            fireTelemetry(feed) { onEvent(it, event) }
+            emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.Hook, hooks, feed)
         }
     }
 
-    /** Fire [AgentEvent.Errored] to the per-call [hooks] (Flow bridge / engine) and telemetry. */
+    /**
+     * Fire [AgentEvent.Errored] to the per-call [hooks] (Flow bridge / engine) and telemetry.
+     * The single guarded-report site: [runHook] routes its own failures through here too.
+     */
     suspend fun emitError(
-        t: Throwable,
+        error: Throwable,
         stepNumber: Int,
         source: AgentEvent.Errored.ErrorSource,
         hooks: AgentCallHooks?,
         feed: TelemetryFeed? = null,
     ) {
-        val event = AgentEvent.Errored(t, stepNumber, source)
-        try { hooks?.onError?.invoke(event) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}
+        val event = AgentEvent.Errored(error, stepNumber, source)
+        try {
+            hooks?.onError?.invoke(event)
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            // The error REPORT's own failure is best-effort — it must never replace or mask
+            // [error], which is what the caller is actually reporting. Swallowed, but left as a
+            // logger tell so a broken consumer hook stays discoverable, exactly as a broken
+            // telemetry integration does in fireTelemetry above.
+            logger.warn("error hook threw while reporting a $source error — the report was dropped", t)
+        }
         fireTelemetry(feed) { onEvent(it, event) }
     }
 }
