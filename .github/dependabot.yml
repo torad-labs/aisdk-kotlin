@@ -1,0 +1,75 @@
+version: 2
+# Cadence mirrored from torad-labs/splice: patch+minor updates arrive as ONE grouped PR
+# per ecosystem per week; majors stay individual PRs and are excluded from auto-merge by
+# dependabot-automerge.yml.
+#
+# GRADLE BUMPS AND DEPENDENCY VERIFICATION — read before triaging a red Dependabot PR.
+# This repo pins every dependency by checksum in gradle/verification-metadata.xml
+# (verify-metadata: true). Dependabot edits the version but CANNOT regenerate the
+# checksums, so every Gradle version-update PR lands RED until a maintainer runs:
+#     ./gradlew --write-verification-metadata sha256 help
+# and commits the regenerated metadata onto the PR branch. This is expected, not a
+# defect. Auto-merge is safe regardless: `gh pr merge --auto` only merges once required
+# checks pass, so an un-regenerated PR simply waits instead of merging a broken build.
+#
+# Unlike splice, org.jetbrains.kotlin* is NOT ignored here. Splice pinned it because
+# CodeQL's Kotlin extractor rejected 2.4.x (KotlinVersionTooRecentError, splice #18/#37);
+# that limit was lifted in CodeQL 2.26.0 and the extractor now supports Kotlin 1.8.0
+# through 2.4.1x. A Kotlin bump still needs the ABI dumps regenerated
+# (./gradlew updateKotlinAbi) when it changes the public surface.
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      gradle-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # Consumer-shaped builds with their own settings.gradle.kts. They are compiled by the
+  # release smoke gate (tools/run-local-staging-smoke, beta-readiness-check), so a stale
+  # dependency here breaks release verification rather than the library itself.
+  - package-ecosystem: "gradle"
+    directory: "/smoke-tests/local-staging"
+    schedule:
+      interval: "weekly"
+    groups:
+      smoke-gradle-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "gradle"
+    directory: "/samples/jvm-chat-cli"
+    schedule:
+      interval: "weekly"
+    groups:
+      sample-gradle-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # Node tooling only (ast-grep CLI). ci-gate.sh hard-fails on an ast-grep version that
+  # disagrees with the package.json pin, so an @ast-grep/cli bump must be matched by the
+  # AST_GREP_VERSION/AST_GREP_SHA256 pin in ci.yml in the same PR.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
