@@ -12,6 +12,30 @@ note: >-
   AiSdkJvmStatic, AbortSignal.kt's AbortErrorCancellationBridge) are internal;
   keep new ones internal too so a platform bridge never becomes an ABI
   commitment across every target.
+
+
+  GRAMMAR NOTE (measured 2026-07-25, ast-grep 0.44.0 / tree-sitter-kotlin) —
+  read before adding a multi-declaration fixture here or to any expect rule.
+  Consecutive top-level `expect` declarations in ONE file do not each produce a
+  `modifiers` node: a bodyless declaration swallows the ones that follow it, so a
+  file with three public expect declarations reports 1 match, not 3. Verified
+  counts: object(bodyless)+class+fun -> 1; class+fun+object(last) -> 2;
+  class+fun -> 1. This is a tree-sitter grammar limitation, not Kotlin semantics.
+
+  It is NOT an enforcement hole, and that distinction is the point: the rule
+  UNDER-COUNTS multiple violations in one file but never goes silent on a file
+  that contains one. Verified in the direction that matters — a compliant
+  declaration placed before a violating one (internal object then public fun;
+  internal fun then public class; internal class then public fun) still reports
+  the violation in every case, so a compliant declaration cannot mask a
+  non-compliant one and the gate still goes red.
+
+  Consequence for fixtures: a multi-form badExample would satisfy the validator
+  (which requires >=1 match) while exercising only ONE form — coverage that reads
+  as three and is one. Each form is instead verified directly: `public expect
+  object`, `public expect class`, `public abstract expect class` and `public
+  expect fun` each match alone; the internal/private/protected counterparts and
+  ordinary public declarations each match zero times.
 rule:
   kind: modifiers
   all:
