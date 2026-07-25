@@ -75,17 +75,22 @@ jobs:
       - name: Verify Swift import smoke
         run: tools/run-ios-swift-smoke
 
-  publish:
+  # Verification runs WITHOUT publish credentials. Everything here resolves or executes
+  # third-party code -- an upstream clone, npm dependency lifecycle scripts, the Gradle
+  # test suite and its plugins -- so none of it may share a job with SIGNING_KEY or
+  # id-token: write. A compromised dependency running beside the signing key would yield
+  # SIGNED artifacts on Maven Central, which is unrecoverable for a published library.
+  #
+  # Fail-closed behaviour is unchanged: the aggregator below still exits non-zero when any
+  # gate fails, and publish consumes this job via needs:, so a red gate stops the release
+  # before anything is staged.
+  verify-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
     needs:
       - preflight
-      - verify-apple
     permissions:
       contents: read
-      packages: write
-      id-token: write
-      attestations: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -158,6 +163,41 @@ jobs:
           done
 
           exit "$failed"
+
+  # Credentialed job. It holds SIGNING_KEY / SONATYPE_* and id-token: write, so it runs
+  # ONLY the staging publish, signing, attestation and upload. Those cannot move -- the
+  # signed bundle has to be produced here -- so Gradle plugins still execute in this job
+  # by necessity; that residual exposure is the honest limit of this split. What it does
+  # remove from the key's blast radius is the whole test suite, npm, and the upstream
+  # clone. Enforced by detect-release-workflow-trust.py.
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    needs:
+      - preflight
+      - verify-apple
+      - verify-release
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - name: Cache Kotlin/Native toolchain (~/.konan)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
       # Maven Central is the release target. The Central Portal takes a single zip
       # in Maven Repository Layout, validates it asynchronously, and (with
       # publishingType=AUTOMATIC) syncs to Maven Central if validation passes.
