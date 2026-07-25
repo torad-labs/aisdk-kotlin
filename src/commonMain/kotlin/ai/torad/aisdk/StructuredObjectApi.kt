@@ -428,7 +428,11 @@ public class StructuredObject<RESULT, INPUT>(
         }
         try {
             // Reuse the shared parse/validate loop; drive the StateFlow from its phases.
-            StructuredObjectPhases(options.transport.submit(request), options.schema, controller.signal).collect { phase ->
+            StructuredObjectPhases(
+                options.transport.submit(request),
+                options.schema,
+                controller.signal,
+            ).collect { phase ->
                 mutableState.value = phase
             }
             // Normal completion: the validation error (if any) rides on Done.error. An abort also
