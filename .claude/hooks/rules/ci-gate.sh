@@ -62,6 +62,11 @@ for f in "$RULES_DIR"/*.yaml; do
       dirs="src/commonMain/kotlin src/nativeMain/kotlin" ;;
     no-camelcase-top-level-function)
       dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin src/commonTest/kotlin" ;;
+    # Build-script rule: its subject IS build.gradle.kts, which no src/ dir contains. Without
+    # this case the rule parses, validates against its fixture, reports "ok" — and scans
+    # nothing. An inert rule is worse than an absent one because it reads as coverage.
+    kmp-manual-refines-needs-hierarchy-template)
+      dirs="build.gradle.kts" ;;
     *)
       dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin" ;;
   esac
