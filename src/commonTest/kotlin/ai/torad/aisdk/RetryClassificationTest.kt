@@ -48,14 +48,26 @@ class RetryClassificationTest {
         maxDelayMs(2)
     }
 
-    /** Runs [failure] on every attempt and reports how many attempts were made. */
+    /**
+     * Runs [failure] on every attempt and reports how many attempts were made.
+     *
+     * Explicit try/catch rather than `runCatching`: this is a suspend function, and
+     * `runCatching` would capture a CancellationException into the Result instead of letting
+     * it propagate — the exact structured-concurrency break these tests exist to detect.
+     * Cancellation is rethrown first; everything else is the expected terminal failure whose
+     * only interesting property here is the attempt count.
+     */
     private suspend fun attemptsFor(failure: () -> Throwable): Int {
         var attempts = 0
-        runCatching {
+        try {
             policy().execute<String> {
                 attempts++
                 throw failure()
             }
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (@Suppress("TooGenericExceptionCaught") expected: Throwable) {
+            // The call is meant to fail; only `attempts` is under test.
         }
         return attempts
     }
@@ -133,7 +145,7 @@ class RetryClassificationTest {
     @Test
     fun `retries stop at maxRetries`() = runTest {
         var attempts = 0
-        runCatching {
+        assertFailsWith<RetryError> {
             policy(maxRetries = 4).execute<String> {
                 attempts++
                 throw IOException("still failing")
@@ -157,7 +169,7 @@ class RetryClassificationTest {
     @Test
     fun `an explicit shouldRetry overrides the default classifier`() = runTest {
         var attempts = 0
-        runCatching {
+        assertFailsWith<RetryError> {
             policy().execute<String>(shouldRetry = { it is NotRetryable }) {
                 attempts++
                 throw NotRetryable("normally terminal")
