@@ -207,8 +207,13 @@ class StreamTextResultTest {
             result.fullStream.collect { secondEvents += it }
         }
 
-        assertEquals("boom", first.message)
-        assertEquals("boom", second.message)
+        // InvalidArgumentError formats its own message ("Invalid argument `arg`: reason") — the
+        // bare reason is never the exposed message. These two assertions exist to pin that the
+        // SAME throwable instance is replayed, not to check formatting; the subject of the test
+        // is the memoisation below (collections == 1, identical replayed events).
+        val expectedMessage = "Invalid argument `stream`: boom"
+        assertEquals(expectedMessage, first.message)
+        assertEquals(expectedMessage, second.message)
         assertEquals(1, collections)
         assertEquals(firstEvents, secondEvents)
         assertEquals(listOf("partial"), secondEvents.filterIsInstance<StreamEvent.TextDelta>().map { it.text })

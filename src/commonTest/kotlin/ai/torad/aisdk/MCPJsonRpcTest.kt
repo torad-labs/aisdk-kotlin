@@ -57,7 +57,11 @@ class MCPJsonRpcTest : MCPClientTestBase() {
             )
         }
 
-        assertEquals("Failed to parse server response", error.message)
+        // A null `result` is now diagnosed at its own guard (MCP.kt) and names the method,
+        // instead of falling through to the generic decode failure. The point of this test is
+        // that the pending request SETTLES rather than hanging; asserting the sharper message
+        // keeps that guard pinned to the branch it actually covers.
+        assertEquals("Server response returned null result for tools/list", error.message)
         assertTrue(uncaught.isEmpty(), "null result response should not be routed to uncaught parse errors")
         client.close()
     }
