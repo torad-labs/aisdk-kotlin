@@ -1,0 +1,42 @@
+# TENET: a callbackFlow producer block must call awaitClose.
+#
+# callbackFlow registers a listener with some callback-based API and bridges it to a Flow.
+# Without awaitClose the builder throws IllegalStateException("Please call awaitClose...")
+# at collection time, and in the shapes where it does not throw, the registered listener is
+# never unregistered on collector cancellation and leaks for the process lifetime.
+#
+# Scope law (toolkit doctrine): exclusion only — new files are inside this law by default.
+#
+# ONE INVARIANT PER RULE. An earlier attempt tried to express "awaitClose present AND in the
+# right place" in a single matcher and got both halves wrong: it carried a `close`
+# alternative in a regex alternation that suppressed genuine findings, and it still missed
+# awaitClose misplaced inside a nested `launch { }`. Those are two different invariants, so
+# they are two rules — this one owns PRESENCE, and no-awaitclose-inside-coroutine-builder
+# owns PLACEMENT. Each is simple enough to verify in both directions.
+#
+# The `not:` uses stopBy: end deliberately: awaitClose is legitimately wrapped (a try/finally
+# around it is idiomatic, and the repo would flag that as a false positive if the search were
+# depth-limited). Placement is not this rule's business — the companion rule owns it — so
+# searching the whole subtree is correct here rather than lenient.
+#
+# Verified: a callbackFlow with no awaitClose matches; one with a direct awaitClose does not;
+# one with awaitClose inside try/finally does not; one with awaitClose nested in launch does
+# not match THIS rule (it is the companion rule's finding, not a miss). 0 hits in the repo —
+# callbackFlow is currently unused, so this is preventive for a callback-wrapping SDK.
+id: no-callbackflow-without-awaitclose
+language: kotlin
+severity: error
+message: "This callbackFlow never calls awaitClose. Collection throws IllegalStateException, or the registered callback is never unregistered on cancellation and leaks for the process lifetime. End the producer block with awaitClose { /* unregister */ }."
+ignores:
+  - "**/build/**"
+  - "**/test/**"
+  - "**/*Test/**"
+rule:
+  kind: call_expression
+  all:
+    - has: { kind: simple_identifier, regex: '^callbackFlow$' }
+    - not:
+        has:
+          stopBy: end
+          kind: call_expression
+          has: { kind: simple_identifier, regex: '^awaitClose$' }

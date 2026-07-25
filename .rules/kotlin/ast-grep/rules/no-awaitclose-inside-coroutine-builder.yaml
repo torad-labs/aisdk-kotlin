@@ -1,0 +1,47 @@
+# TENET: awaitClose belongs to the callbackFlow producer block, not to a coroutine started
+# inside it.
+#
+# awaitClose suspends until the channel is closed and then runs its teardown. Nested inside
+# `launch { }` or `async { }` it suspends the CHILD coroutine instead of the producer block,
+# so the producer returns as soon as launch schedules the child. CallbackFlowBuilder's
+# `!scope.isClosedForSend` check then fires — the exact failure awaitClose exists to prevent,
+# reached by code that appears to call it. This is the classic callbackFlow mistake and it
+# reads as correct in review.
+#
+# Scope law (toolkit doctrine): exclusion only — new files are inside this law by default.
+#
+# Companion to no-callbackflow-without-awaitclose, which owns PRESENCE while this owns
+# PLACEMENT. Splitting them is what makes each verifiable: a single matcher trying to express
+# both missed this case entirely while also suppressing real findings through a regex
+# alternation. Not a dedupe violation — disjoint predicates, and a block can fail either one
+# independently (present-but-misplaced fails only this rule; absent fails only the other).
+#
+# stopBy: end on the `inside:` is required and safe. Required because launch/async sit
+# arbitrarily deep — inside a `let`, a `forEach`, a `try` — so the relation is genuinely
+# transitive and omitting stopBy makes it structurally unsatisfiable (a silently dead rule).
+# Safe because the anchor is a coroutine BUILDER call specifically: an awaitClose sitting
+# directly in the producer block has no launch/async ancestor at all, so it cannot match.
+#
+# Verified: awaitClose inside `launch { }` matches; a direct awaitClose does not; awaitClose
+# inside try/finally does not. 0 hits in the repo — preventive.
+id: no-awaitclose-inside-coroutine-builder
+language: kotlin
+severity: error
+message: "awaitClose is nested inside launch/async, so it suspends that child coroutine instead of the callbackFlow producer block — the producer returns immediately and the callback still leaks. Call awaitClose directly in the producer block."
+ignores:
+  - "**/build/**"
+  - "**/test/**"
+  - "**/*Test/**"
+rule:
+  kind: call_expression
+  has: { kind: simple_identifier, regex: '^awaitClose$' }
+  inside:
+    stopBy: end
+    kind: call_expression
+    has:
+      any:
+        - { kind: simple_identifier, regex: '^(launch|async)$' }
+        - kind: navigation_expression
+          has:
+            kind: navigation_suffix
+            has: { kind: simple_identifier, regex: '^(launch|async)$' }
