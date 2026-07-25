@@ -1,7 +1,5 @@
 package ai.torad.aisdk
 
-import kotlin.jvm.JvmSynthetic
-
 import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -11,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonElement
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public enum class CompletionStreamProtocol(public val wireValue: String) {

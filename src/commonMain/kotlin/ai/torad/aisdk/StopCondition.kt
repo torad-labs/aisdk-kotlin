@@ -1,8 +1,7 @@
 package ai.torad.aisdk
 
-import kotlin.jvm.JvmSynthetic
-
 import dev.drewhamilton.poko.Poko
+import kotlin.jvm.JvmSynthetic
 
 /**
  * First-class loop stop conditions (invariant I-7). The SDK manages the

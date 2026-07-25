@@ -3,9 +3,8 @@
 
 package ai.torad.aisdk
 
-import kotlin.jvm.JvmSynthetic
-
 import dev.drewhamilton.poko.Poko
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public interface TranscriptionModel {

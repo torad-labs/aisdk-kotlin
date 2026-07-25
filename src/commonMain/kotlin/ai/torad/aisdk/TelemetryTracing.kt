@@ -1,11 +1,10 @@
 package ai.torad.aisdk
 
-import kotlin.jvm.JvmSynthetic
-
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.jvm.JvmSynthetic
 
 // The LEGACY tracer/span half of telemetry (pre-v7): manual spans, attribute selection,
 // and the in-memory tracer the parity tests exercise. The v7 integration seam — the
