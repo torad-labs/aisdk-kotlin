@@ -465,7 +465,10 @@ of producing a normal abort completion for the step.
 
 - `cosineSimilarity`, `splitArray`, `asArray`, `mergeJsonObjects`, `isDeepEqualData`.
 - `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`. `DataUrl` remains public because data URL parsing is documented general utility surface and `DataUrl.parse(...)` returns the consumer-facing value.
-- `RetryPolicy { maxRetries(2); baseDelayMs(100); maxDelayMs(2000); clock(Clock.System); delayGenerator(...); totalTimeoutMs(null); perAttemptTimeoutMs(null) }`, `RetryDelayGenerator`, `RetryAttemptDetail`, `retryWithExponentialBackoff`, `SerialJobExecutor`. Defaults retry only typed retryable `APICallError` / `GatewayError`, honor `Retry-After`, use full jitter, and preserve attempt history in `RetryError.attempts`. `RetryPolicy` is a regular builder-backed class because delay generators may be stateful; the positional constructor, `copy()`, and `componentN()` are not public.
+- `RetryPolicy { maxRetries(2); baseDelayMs(100); maxDelayMs(2000); clock(Clock.System); delayGenerator(...); totalTimeoutMs(null); perAttemptTimeoutMs(null) }`, `RetryDelayGenerator` (built by the top-level `RetryDelayGeneratorFullJitter(random)` /
+`RetryDelayGeneratorDeterministic(vararg delaysMs)` factories — the former companion
+object was removed under `no-companion-objects`), `RetryAttemptDetail`,
+`retryWithExponentialBackoff`, `SerialJobExecutor`. Defaults retry only typed retryable `APICallError` / `GatewayError`, honor `Retry-After`, use full jitter, and preserve attempt history in `RetryError.attempts`. `RetryPolicy` is a regular builder-backed class because delay generators may be stateful; the positional constructor, `copy()`, and `componentN()` are not public.
 - `CombineAbortSignals`, `AbortSignals.from`.
 
 ### DevTools

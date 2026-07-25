@@ -6,6 +6,33 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+- **Breaking (source):** every public `companion object` factory moved to a top-level
+  declaration, completing the `no-companion-objects` migration. The capabilities are
+  unchanged — only the call syntax moves — and the committed ABI dumps now record it.
+  39 members across 28 companions, in two shapes:
+  - **Invoke-style factories** become a PascalCase function of the same name:
+    `DataUrl.parse(s)` → `DataUrl(s)`, `ProviderOptions.ofPairs(...)` →
+    `ProviderOptions(...)`, `ProviderMetadata.ofPairs(...)` → `ProviderMetadata(...)`,
+    `ProviderRegistry.createProviderRegistry(...)` → `ProviderRegistry(...)`,
+    `Usage.of(...)` → `Usage(...)`, and each `LiteRTContent.<Kind>.invoke(...)` →
+    `LiteRTContent<Kind>(...)`.
+  - **Named factories** become `<Type><Member>`: `Output.obj/array/choice/json` →
+    `OutputObj` / `OutputArray` / `OutputChoice` / `OutputJson`;
+    `RetryDelayGenerator.Companion.fullJitter` / `.deterministic` →
+    `RetryDelayGeneratorFullJitter` / `RetryDelayGeneratorDeterministic`;
+    `ModelRef.parse` → `ParseModelRef`; `TypeValidationError.wrap` →
+    `WrapTypeValidationError`; `Telemetry.registerTelemetry` / `.clearGlobalTelemetry`
+    → `RegisterTelemetry` / `ClearGlobalTelemetry`;
+    `GenerationInput.from` → `GenerationInputFrom`; `TextGenerationRequest.Input.messages`
+    / `.messagesWithPrompt` / `.prompt` → `InputMessages` / `InputMessagesWithPrompt` /
+    `InputPrompt`; `DefaultGeneratedFile.fromBase64` / `.fromBytes` →
+    `DefaultGeneratedFileFromBase64` / `DefaultGeneratedFileFromBytes`;
+    `AnthropicMessagesLanguageModel.forwardAnthropicContainerIdFromLastStep` →
+    `ForwardAnthropicContainerIdFromLastStep`.
+  - `ToolExecutionPolicy`'s `DEFAULT_MAX_PARALLEL_TOOL_CALLS`,
+    `DEFAULT_MAX_TOOL_CALLS_PER_STEP` and `DEFAULT_PROGRESS_BUFFER_CAPACITY` are now
+    top-level `public const val` in the same package.
+
 - Pre-tag ABI-evolvability hardening (see `docs/reports/pre-beta-abi-audit.md`):
   - `MCPClient`, `AnthropicAwsProvider`, `BlackForestLabsProvider`,
     `ByteDanceProvider`, `OpenAICompatibleProvider`, `OpenResponsesProvider`,
