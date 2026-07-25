@@ -17,7 +17,9 @@ This project follows Semantic Versioning once the first stable release is cut.
   - `workflow-lint` runs checksum-pinned `actionlint` + `zizmor` on workflow
     changes.
   - `dependency-submission` publishes the Gradle graph so dependency-review
-    sees shipping deps; Dependabot PRs auto-regenerate verification-metadata.
+    sees shipping deps; Dependabot PR helpers (verification-metadata regen +
+    patch/minor auto-merge) live in one Actions workflow
+    (`.github/workflows/dependabot.yml`).
   - CI builds `samples/jvm-chat-cli`, runs Windows `jvmTest`, uploads reports
     on failure, generates Dokka on every verify, and opens issues on scheduled
     job failures.
