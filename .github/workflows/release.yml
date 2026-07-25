@@ -15,6 +15,12 @@ on:
 permissions:
   contents: read
 
+# One release at a time per ref. cancel-in-progress: false so a tag push is never
+# cancelled mid-Central-upload by a concurrent dry-run dispatch.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AI_SDK_REFERENCE_VERSION: 6.0.208
@@ -208,7 +214,9 @@ jobs:
       - verify-apple
       - verify-release
     permissions:
-      contents: read
+      # contents:write — create the GitHub Release + attach bundle.zip/SBOM so
+      # consumer-canary can gh release download + attest-verify (gap #1).
+      contents: write
       packages: write
       id-token: write
       attestations: write
@@ -275,6 +283,7 @@ jobs:
           format: spdx-json
           artifact-name: torad-aisdk-sbom.spdx.json
           output-file: torad-aisdk-sbom.spdx.json
+          # Attached to the GitHub Release below (not only the ephemeral Actions artifact).
           upload-artifact: true
           upload-release-assets: false
       - name: Attest Maven Central bundle provenance
@@ -370,3 +379,16 @@ jobs:
           }
           EOF
           ./gradlew -b build/release-smoke.gradle.kts verifyPublishedArtifact --refresh-dependencies
+      # Consumer-canary downloads bundle.zip from the GitHub Release and runs
+      # `gh attestation verify` on it. Without this step that canary is permanently
+      # stuck on "waiting on first release". Also attaches the SPDX SBOM next to
+      # the bundle so the release coordinate set is durable beyond artifact retention.
+      - name: Create GitHub Release (bundle.zip + SBOM)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          files: |
+            bundle.zip
+            torad-aisdk-sbom.spdx.json
+          fail_on_unmatched_files: true
+          generate_release_notes: true

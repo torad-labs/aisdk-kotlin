@@ -140,7 +140,8 @@ GitHub provides `GITHUB_TOKEN` for the package mirror.
 6. Confirm generated artifacts and POM metadata.
 7. Land the release commit on `main` (tag ancestry requires main reachability).
 8. Tag with `v<version>` on that main SHA and push the tag.
-9. Watch the Release workflow: Central `PUBLISHED`, SBOM + provenance
+9. Watch the Release workflow: Central `PUBLISHED`, GitHub Release with
+   `bundle.zip` + SPDX SBOM (consumer-canary downloads these), provenance
    attestations, Docs Pages deploy.
 10. After the tag ships, bump `VERSION_NAME` again before re-arming
     `snapshots.yml` push-to-main, so snapshots do not republish the frozen

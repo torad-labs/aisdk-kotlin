@@ -38,6 +38,11 @@ jobs:
     name: codeql-${{ matrix.language }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+      packages: read
+      issues: write # scheduled-failure issue creation
     strategy:
       fail-fast: false
       matrix:
@@ -69,3 +74,8 @@ jobs:
         run: ./gradlew compileKotlinJvm --no-daemon --stacktrace
       - name: analyze
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+      - name: Open issue on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: tools/open-ci-failure-issue.sh "codeql/${{ matrix.language }}"

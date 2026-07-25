@@ -11,10 +11,16 @@ This project follows Semantic Versioning once the first stable release is cut.
   - Release preflight refuses a `VERSION_NAME` already present on Maven
     Central (immutable coordinates) and documents the main→tag checklist.
   - Release publish emits an SPDX SBOM of the staged Maven layout and attests
-    it alongside the Central bundle.
+    it alongside the Central bundle; creates a GitHub Release attaching
+    `bundle.zip` + SBOM so consumer-canary attestation can fire.
   - Weekly OpenSSF Scorecard workflow publishes SARIF to code scanning.
   - `workflow-lint` runs checksum-pinned `actionlint` + `zizmor` on workflow
     changes.
+  - `dependency-submission` publishes the Gradle graph so dependency-review
+    sees shipping deps; Dependabot PRs auto-regenerate verification-metadata.
+  - CI builds `samples/jvm-chat-cli`, runs Windows `jvmTest`, uploads reports
+    on failure, generates Dokka on every verify, and opens issues on scheduled
+    job failures.
   - Branch protection: stale reviews dismiss, conversation resolution
     required, admins enforced, `dependency-review` required. Repo security:
     secret scanning, push protection, Dependabot security updates enabled.
