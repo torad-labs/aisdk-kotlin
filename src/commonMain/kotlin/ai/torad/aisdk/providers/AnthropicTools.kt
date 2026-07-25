@@ -1,3 +1,11 @@
+// ConstructorParameterNaming: every property on AnthropicTools carries Anthropic's own
+// dated tool identifier — bash_20241022, codeExecution_20250522, webFetch_20260209 — so the
+// underscore mirrors the wire protocol's versioning scheme and makes the mapping to the
+// provider's `type` string checkable by eye. These names are in the committed ABI dump, so
+// renaming them to satisfy detekt's default `[a-z][A-Za-z0-9]*` would break consumers to fix
+// a non-problem. Suppressed at the file rather than carried as 20 baseline entries, matching
+// the precedent in MCP.kt / McpProtocol.kt / McpCrypto.kt.
+@file:Suppress("ConstructorParameterNaming")
 @file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
 
 package ai.torad.aisdk.providers
@@ -112,7 +120,7 @@ internal fun AnthropicProviderExecutedTool(tool: LanguageModelTool, betas: Mutab
                 put(
                     "type",
                     JsonPrimitive("code_execution_20250522")
-                );
+                )
                 put("name", JsonPrimitive("code_execution"))
             }
         }
@@ -122,7 +130,7 @@ internal fun AnthropicProviderExecutedTool(tool: LanguageModelTool, betas: Mutab
                 put(
                     "type",
                     JsonPrimitive("code_execution_20250825")
-                );
+                )
                 put("name", JsonPrimitive("code_execution"))
             }
         }
@@ -131,20 +139,20 @@ internal fun AnthropicProviderExecutedTool(tool: LanguageModelTool, betas: Mutab
                 put(
                     "type",
                     JsonPrimitive("code_execution_20260120")
-                );
+                )
                 put("name", JsonPrimitive("code_execution"))
             }
         "anthropic.bash_20241022" -> {
             betas += "computer-use-2024-10-22"
             buildJsonObject {
-                put("type", JsonPrimitive("bash_20241022"));
+                put("type", JsonPrimitive("bash_20241022"))
                 put("name", JsonPrimitive("bash"))
             }
         }
         "anthropic.bash_20250124" -> {
             betas += "computer-use-2025-01-24"
             buildJsonObject {
-                put("type", JsonPrimitive("bash_20250124"));
+                put("type", JsonPrimitive("bash_20250124"))
                 put("name", JsonPrimitive("bash"))
             }
         }
@@ -185,7 +193,7 @@ internal fun AnthropicProviderExecutedTool(tool: LanguageModelTool, betas: Mutab
                 put(
                     "type",
                     JsonPrimitive("memory_20250818")
-                );
+                )
                 put("name", JsonPrimitive("memory"))
             }
         }
@@ -195,7 +203,7 @@ internal fun AnthropicProviderExecutedTool(tool: LanguageModelTool, betas: Mutab
                 put(
                     "type",
                     JsonPrimitive("text_editor_20241022")
-                );
+                )
                 put("name", JsonPrimitive("str_replace_editor"))
             }
         }
@@ -205,7 +213,7 @@ internal fun AnthropicProviderExecutedTool(tool: LanguageModelTool, betas: Mutab
                 put(
                     "type",
                     JsonPrimitive("text_editor_20250124")
-                );
+                )
                 put("name", JsonPrimitive("str_replace_editor"))
             }
         }
@@ -215,7 +223,7 @@ internal fun AnthropicProviderExecutedTool(tool: LanguageModelTool, betas: Mutab
                 put(
                     "type",
                     JsonPrimitive("text_editor_20250429")
-                );
+                )
                 put("name", JsonPrimitive("str_replace_based_edit_tool"))
             }
         }
@@ -272,7 +280,7 @@ internal fun AnthropicProviderExecutedTool(tool: LanguageModelTool, betas: Mutab
                 put(
                     "type",
                     JsonPrimitive("tool_search_tool_regex_20251119")
-                );
+                )
                 put("name", JsonPrimitive("tool_search_tool_regex"))
             }
         "anthropic.tool_search_bm25_20251119" ->
@@ -280,7 +288,7 @@ internal fun AnthropicProviderExecutedTool(tool: LanguageModelTool, betas: Mutab
                 put(
                     "type",
                     JsonPrimitive("tool_search_tool_bm25_20251119")
-                );
+                )
                 put("name", JsonPrimitive("tool_search_tool_bm25"))
             }
         "anthropic.advisor_20260301" -> {

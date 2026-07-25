@@ -28,7 +28,10 @@ internal object SchemaSanitizer {
                     when {
                         key == "\$schema" || key == "title" -> Unit
                         dropAdditionalProperties && key == "additionalProperties" -> Unit
-                        else -> put(key, SchemaSanitizer.stripUnsupportedSchemaKeys(value, dropAdditionalProperties, target))
+                        else -> put(
+                            key,
+                            SchemaSanitizer.stripUnsupportedSchemaKeys(value, dropAdditionalProperties, target),
+                        )
                     }
                 }
             }

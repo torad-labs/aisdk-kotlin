@@ -303,7 +303,10 @@ public fun TextGenerationRequestInputMessages(
 public fun TextGenerationRequestInputMessagesWithPrompt(
     history: TextGenerationRequest.NonEmptyMessages,
     prompt: String,
-): TextGenerationRequest.Input = TextGenerationRequest.Input.MessageHistoryWithPrompt(history = history, prompt = prompt)
+): TextGenerationRequest.Input = TextGenerationRequest.Input.MessageHistoryWithPrompt(
+    history = history,
+    prompt = prompt,
+)
 
 internal fun TextGenerationRequestInputFrom(
     prompt: String?,
@@ -311,9 +314,13 @@ internal fun TextGenerationRequestInputFrom(
 ): TextGenerationRequest.Input =
     when {
         prompt != null && messages.isNotEmpty() ->
-            TextGenerationRequest.Input.MessageHistoryWithPrompt(TextGenerationRequestNonEmptyMessages(messages), prompt)
+            TextGenerationRequest.Input.MessageHistoryWithPrompt(
+                TextGenerationRequestNonEmptyMessages(messages),
+                prompt,
+            )
         prompt != null -> TextGenerationRequest.Input.PromptText(prompt)
-        messages.isNotEmpty() -> TextGenerationRequest.Input.MessageHistory(TextGenerationRequestNonEmptyMessages(messages))
+        messages.isNotEmpty() ->
+            TextGenerationRequest.Input.MessageHistory(TextGenerationRequestNonEmptyMessages(messages))
         else -> throw IllegalArgumentException(
             "TextGenerationRequest requires prompt text or non-empty messages"
         )
