@@ -6617,8 +6617,6 @@ final class ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder { // 
 }
 
 final class ai.torad.aisdk.providers/ScriptedResponse { // ai.torad.aisdk.providers/ScriptedResponse|null[0]
-    constructor <init>(kotlin.collections/List<ai.torad.aisdk/StreamEvent>, ai.torad.aisdk/FinishReason = ..., ai.torad.aisdk/Usage = ..., ai.torad.aisdk/ProviderMetadata = ..., kotlin/String? = ..., kotlin.collections/List<ai.torad.aisdk/CallWarning> = ..., ai.torad.aisdk/LanguageModelRequestMetadata = ..., ai.torad.aisdk/LanguageModelResponseMetadata = ...) // ai.torad.aisdk.providers/ScriptedResponse.<init>|<init>(kotlin.collections.List<ai.torad.aisdk.StreamEvent>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;ai.torad.aisdk.ProviderMetadata;kotlin.String?;kotlin.collections.List<ai.torad.aisdk.CallWarning>;ai.torad.aisdk.LanguageModelRequestMetadata;ai.torad.aisdk.LanguageModelResponseMetadata){}[0]
-
     final val events // ai.torad.aisdk.providers/ScriptedResponse.events|{}events[0]
         final fun <get-events>(): kotlin.collections/List<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk.providers/ScriptedResponse.events.<get-events>|<get-events>(){}[0]
     final val finishReason // ai.torad.aisdk.providers/ScriptedResponse.finishReason|{}finishReason[0]
@@ -6636,18 +6634,20 @@ final class ai.torad.aisdk.providers/ScriptedResponse { // ai.torad.aisdk.provid
     final val warnings // ai.torad.aisdk.providers/ScriptedResponse.warnings|{}warnings[0]
         final fun <get-warnings>(): kotlin.collections/List<ai.torad.aisdk/CallWarning> // ai.torad.aisdk.providers/ScriptedResponse.warnings.<get-warnings>|<get-warnings>(){}[0]
 
-    final fun component1(): kotlin.collections/List<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk.providers/ScriptedResponse.component1|component1(){}[0]
-    final fun component2(): ai.torad.aisdk/FinishReason // ai.torad.aisdk.providers/ScriptedResponse.component2|component2(){}[0]
-    final fun component3(): ai.torad.aisdk/Usage // ai.torad.aisdk.providers/ScriptedResponse.component3|component3(){}[0]
-    final fun component4(): ai.torad.aisdk/ProviderMetadata // ai.torad.aisdk.providers/ScriptedResponse.component4|component4(){}[0]
-    final fun component5(): kotlin/String? // ai.torad.aisdk.providers/ScriptedResponse.component5|component5(){}[0]
-    final fun component6(): kotlin.collections/List<ai.torad.aisdk/CallWarning> // ai.torad.aisdk.providers/ScriptedResponse.component6|component6(){}[0]
-    final fun component7(): ai.torad.aisdk/LanguageModelRequestMetadata // ai.torad.aisdk.providers/ScriptedResponse.component7|component7(){}[0]
-    final fun component8(): ai.torad.aisdk/LanguageModelResponseMetadata // ai.torad.aisdk.providers/ScriptedResponse.component8|component8(){}[0]
-    final fun copy(kotlin.collections/List<ai.torad.aisdk/StreamEvent> = ..., ai.torad.aisdk/FinishReason = ..., ai.torad.aisdk/Usage = ..., ai.torad.aisdk/ProviderMetadata = ..., kotlin/String? = ..., kotlin.collections/List<ai.torad.aisdk/CallWarning> = ..., ai.torad.aisdk/LanguageModelRequestMetadata = ..., ai.torad.aisdk/LanguageModelResponseMetadata = ...): ai.torad.aisdk.providers/ScriptedResponse // ai.torad.aisdk.providers/ScriptedResponse.copy|copy(kotlin.collections.List<ai.torad.aisdk.StreamEvent>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;ai.torad.aisdk.ProviderMetadata;kotlin.String?;kotlin.collections.List<ai.torad.aisdk.CallWarning>;ai.torad.aisdk.LanguageModelRequestMetadata;ai.torad.aisdk.LanguageModelResponseMetadata){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/ScriptedResponse.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/ScriptedResponse.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/ScriptedResponse.toString|toString(){}[0]
+}
+
+final class ai.torad.aisdk.providers/ScriptedResponseBuilder { // ai.torad.aisdk.providers/ScriptedResponseBuilder|null[0]
+    final fun events(kotlin.collections/List<ai.torad.aisdk/StreamEvent>) // ai.torad.aisdk.providers/ScriptedResponseBuilder.events|events(kotlin.collections.List<ai.torad.aisdk.StreamEvent>){}[0]
+    final fun finishReason(ai.torad.aisdk/FinishReason) // ai.torad.aisdk.providers/ScriptedResponseBuilder.finishReason|finishReason(ai.torad.aisdk.FinishReason){}[0]
+    final fun providerMetadata(ai.torad.aisdk/ProviderMetadata) // ai.torad.aisdk.providers/ScriptedResponseBuilder.providerMetadata|providerMetadata(ai.torad.aisdk.ProviderMetadata){}[0]
+    final fun rawFinishReason(kotlin/String?) // ai.torad.aisdk.providers/ScriptedResponseBuilder.rawFinishReason|rawFinishReason(kotlin.String?){}[0]
+    final fun request(ai.torad.aisdk/LanguageModelRequestMetadata) // ai.torad.aisdk.providers/ScriptedResponseBuilder.request|request(ai.torad.aisdk.LanguageModelRequestMetadata){}[0]
+    final fun response(ai.torad.aisdk/LanguageModelResponseMetadata) // ai.torad.aisdk.providers/ScriptedResponseBuilder.response|response(ai.torad.aisdk.LanguageModelResponseMetadata){}[0]
+    final fun usage(ai.torad.aisdk/Usage) // ai.torad.aisdk.providers/ScriptedResponseBuilder.usage|usage(ai.torad.aisdk.Usage){}[0]
+    final fun warnings(kotlin.collections/List<ai.torad.aisdk/CallWarning>) // ai.torad.aisdk.providers/ScriptedResponseBuilder.warnings|warnings(kotlin.collections.List<ai.torad.aisdk.CallWarning>){}[0]
 }
 
 final class ai.torad.aisdk.providers/TogetherAIImageModelOptions { // ai.torad.aisdk.providers/TogetherAIImageModelOptions|null[0]
@@ -10271,13 +10271,20 @@ final class ai.torad.aisdk/ProviderRegistry : ai.torad.aisdk/Provider { // ai.to
     final val providerId // ai.torad.aisdk/ProviderRegistry.providerId|{}providerId[0]
         final fun <get-providerId>(): kotlin/String // ai.torad.aisdk/ProviderRegistry.providerId.<get-providerId>|<get-providerId>(){}[0]
 
+    final fun embeddingModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk/ProviderRegistry.embeddingModel|embeddingModel(ai.torad.aisdk.ModelRef){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk/ProviderRegistry.embeddingModel|embeddingModel(kotlin.String){}[0]
+    final fun imageModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/ImageModel // ai.torad.aisdk/ProviderRegistry.imageModel|imageModel(ai.torad.aisdk.ModelRef){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk/ProviderRegistry.imageModel|imageModel(kotlin.String){}[0]
+    final fun languageModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/LanguageModel // ai.torad.aisdk/ProviderRegistry.languageModel|languageModel(ai.torad.aisdk.ModelRef){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk/ProviderRegistry.languageModel|languageModel(kotlin.String){}[0]
     final fun provider(kotlin/String): ai.torad.aisdk/Provider // ai.torad.aisdk/ProviderRegistry.provider|provider(kotlin.String){}[0]
+    final fun rerankingModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/RerankingModel // ai.torad.aisdk/ProviderRegistry.rerankingModel|rerankingModel(ai.torad.aisdk.ModelRef){}[0]
     final fun rerankingModel(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk/ProviderRegistry.rerankingModel|rerankingModel(kotlin.String){}[0]
+    final fun speechModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/SpeechModel // ai.torad.aisdk/ProviderRegistry.speechModel|speechModel(ai.torad.aisdk.ModelRef){}[0]
     final fun speechModel(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk/ProviderRegistry.speechModel|speechModel(kotlin.String){}[0]
+    final fun transcriptionModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk/ProviderRegistry.transcriptionModel|transcriptionModel(ai.torad.aisdk.ModelRef){}[0]
     final fun transcriptionModel(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk/ProviderRegistry.transcriptionModel|transcriptionModel(kotlin.String){}[0]
+    final fun videoModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/VideoModel // ai.torad.aisdk/ProviderRegistry.videoModel|videoModel(ai.torad.aisdk.ModelRef){}[0]
     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk/ProviderRegistry.videoModel|videoModel(kotlin.String){}[0]
 }
 
@@ -14339,6 +14346,7 @@ final fun ai.torad.aisdk.providers/ReplicateVideoModelOptions(kotlin/Function1<a
 final fun ai.torad.aisdk.providers/Revai(io.ktor.client/HttpClient, ai.torad.aisdk.providers/RevaiProviderSettings = ...): ai.torad.aisdk.providers/RevaiProvider // ai.torad.aisdk.providers/Revai|Revai(io.ktor.client.HttpClient;ai.torad.aisdk.providers.RevaiProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/RevaiProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/RevaiProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/RevaiProviderSettings // ai.torad.aisdk.providers/RevaiProviderSettings|RevaiProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.RevaiProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/RevaiTranscriptionModelOptions(kotlin/Function1<ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/RevaiTranscriptionModelOptions // ai.torad.aisdk.providers/RevaiTranscriptionModelOptions|RevaiTranscriptionModelOptions(kotlin.Function1<ai.torad.aisdk.providers.RevaiTranscriptionModelOptionsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/ScriptedResponse(kotlin/Function1<ai.torad.aisdk.providers/ScriptedResponseBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/ScriptedResponse // ai.torad.aisdk.providers/ScriptedResponse|ScriptedResponse(kotlin.Function1<ai.torad.aisdk.providers.ScriptedResponseBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/TogetherAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/TogetherAIProviderSettings = ...): ai.torad.aisdk.providers/TogetherAIProvider // ai.torad.aisdk.providers/TogetherAI|TogetherAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.TogetherAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/TogetherAIImageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/TogetherAIImageModelOptions // ai.torad.aisdk.providers/TogetherAIImageModelOptions|TogetherAIImageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.TogetherAIImageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/TogetherAIProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/TogetherAIProviderSettings // ai.torad.aisdk.providers/TogetherAIProviderSettings|TogetherAIProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.TogetherAIProviderSettingsBuilder,kotlin.Unit>){}[0]

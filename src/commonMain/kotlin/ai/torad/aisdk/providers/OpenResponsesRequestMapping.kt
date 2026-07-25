@@ -23,6 +23,7 @@ private data class OpenResponsesRequestBuildContext(
     val providerOptions: OpenResponsesOptions?,
     val include: JsonArray?,
     val topLogprobs: Int?,
+    val warnings: MutableList<CallWarning>,
 )
 
 internal fun PreparedOpenResponsesRequest(
@@ -45,6 +46,7 @@ internal fun PreparedOpenResponsesRequest(
         providerOptions = providerOptions,
         include = include,
         topLogprobs = topLogprobs,
+        warnings = warnings,
     )
     return PreparedOpenResponsesRequest(
         body = OpenResponsesRequestBody(context),
@@ -94,7 +96,21 @@ private fun PutToolAndTextFields(builder: JsonObjectBuilder, context: OpenRespon
     val providerOptions = context.providerOptions
     val reasoning = OpenResponsesReasoning(providerOptions)
     if (reasoning.isNotEmpty()) builder.put("reasoning", JsonObject(reasoning))
-    if (params.tools.isNotEmpty()) builder.put("tools", JsonArray(params.tools.map(::OpenResponsesToolJson)))
+    if (params.tools.isNotEmpty()) {
+        builder.put(
+            "tools",
+            JsonArray(
+                params.tools.map { tool ->
+                    // Warn before mapping so OpenResponsesProviderToolJson keeps its baselined
+                    // shape; unknown types still passthrough for forward-compat.
+                    if (tool.providerExecuted) {
+                        WarnUnknownOpenResponsesProviderTool(tool, context.warnings)
+                    }
+                    OpenResponsesToolJson(tool)
+                },
+            ),
+        )
+    }
     OpenResponsesToolChoice(params.toolChoice, providerOptions)?.let { builder.put("tool_choice", it) }
     val text = OpenResponsesText(params.responseFormat, providerOptions)
     if (text.isNotEmpty()) builder.put("text", JsonObject(text))
@@ -174,6 +190,38 @@ private fun OpenResponsesFunctionToolJson(tool: LanguageModelTool): JsonObject =
     put("description", JsonPrimitive(tool.description))
     put("parameters", openResponsesJson.parseToJsonElement(tool.parametersSchemaJson))
     tool.strict?.let { put("strict", JsonPrimitive(it)) }
+}
+
+/**
+ * Local signal for a provider-executed tool whose resolved wire type is not one we map
+ * field-by-field. Passthrough remains deliberate (forward-compat with new server tools);
+ * the warning stops a typo'd `providerToolId` looking like a remote 4xx outage.
+ */
+private fun WarnUnknownOpenResponsesProviderTool(
+    tool: LanguageModelTool,
+    warnings: MutableList<CallWarning>,
+) {
+    val type = OpenResponsesProviderToolType(tool)
+    // Dedicated branches + intentional type-only shapes (apply_patch, local_shell) + custom.
+    val handled = setOf(
+        "apply_patch",
+        "code_interpreter",
+        "custom",
+        "file_search",
+        "image_generation",
+        "local_shell",
+        "mcp",
+        "shell",
+        "tool_search",
+        "web_search",
+        "web_search_preview",
+    )
+    if (type !in handled) {
+        warnings += CallWarning(
+            "unsupported",
+            "unknown Open Responses provider tool type '$type' for '${tool.name}'",
+        )
+    }
 }
 
 private fun OpenResponsesProviderToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {

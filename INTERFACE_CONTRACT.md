@@ -108,6 +108,11 @@ Tool result/output holders (`ToolResult.Success`, `ValidationResult.Success` /
 and `ToolResultOutput` leaves) are `@Poko class` value-semantics types; sealed
 parents and serialization wire names remain unchanged, while public `copy()` /
 `componentN()` ABI is intentionally absent.
+- `ToolResultOutput.toJsonElement()` wire shapes: `Text` is a bare JSON string;
+  `Json` is `{"type":"json","value":…}` (enveloped so a success payload cannot
+  collide with error/denial tags); `Error` / `ErrorJson` / `ExecutionDenied` /
+  `Content` keep their typed discriminators. `toolResultOutputFromWire` is the
+  inverse for every variant.
 - Approval flow: tool calls `needsApproval` → loop ends → host inspects `pendingApprovals` →
   resumes with `agent.generate(messages = result.messages + ToolApprovalResponseMessage(toolCallId, approved, reason?, approvalId?))`
 
@@ -229,6 +234,9 @@ of producing a normal abort completion for the step.
 - `@Poko class LanguageModelRequestMetadata(body?)`
 - `@Poko class LanguageModelResponseMetadata(id?, timestampMillis?, modelId?, headers, body?)`
 - `class ai.torad.aisdk.providers.MockLanguageModel(...)` — for tests only
+- `@Poko class ScriptedResponse` (internal constructor) + `ScriptedResponse { … }`
+  DSL / `ScriptedResponseBuilder` — one scripted mock response; no public
+  positional constructor, `copy()`, or `componentN()`. Construct via the DSL.
 
 ### Middleware
 

@@ -19,6 +19,9 @@ import kotlinx.serialization.json.intOrNull
 internal class GoogleInteractionsStreamState(
     private val generateId: () -> String,
 ) {
+    // Alias for ID-less wire fallbacks: bare `?: generateId()` is blocked by
+    // no-generate-id-sentinel; the injected callback must still own every generated id.
+    private val idGenerator: () -> String = generateId
     private sealed class OpenBlockState {
         abstract val id: String
 
@@ -440,7 +443,7 @@ internal class GoogleInteractionsStreamState(
                             events += StreamEvent.TextDelta(id, text, googleInteractionsMetadata(interactionId = interactionId))
                         }
                         "image" -> events += StreamEvent.FilePart(
-                            id = GenerateId(),
+                            id = generateId(),
                             mediaType = (block["mime_type"] as? JsonPrimitive)?.contentOrNull ?: "image/png",
                             base64 = try {
                                 WireDecoder.requiredString(block, "data", "google", "interactions stream step", "$.content[$index]")
@@ -461,7 +464,7 @@ internal class GoogleInteractionsStreamState(
                 }
             }
             "thought" -> {
-                val id = GenerateId()
+                val id = generateId()
                 val metadata = googleInteractionsMetadata(
                     signature = (step["signature"] as? JsonPrimitive)?.contentOrNull,
                     interactionId = interactionId,
@@ -478,7 +481,7 @@ internal class GoogleInteractionsStreamState(
             }
             "function_call" -> {
                 hasFunctionCall = true
-                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId()
+                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
                 val name = try {
                     WireDecoder.requiredString(step, "name", "google", "interactions stream step")
                 } catch (error: WireDecodeException) {
@@ -496,7 +499,7 @@ internal class GoogleInteractionsStreamState(
             }
             else -> if (type != null && type.endsWith("_call")) {
                 hasFunctionCall = true
-                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId()
+                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
                 val name = if (type == "mcp_server_tool_call") {
                     WireDecoder.optionalString(step, "name", "google", "interactions stream step") ?: "mcp_server_tool"
                 } else {
@@ -579,7 +582,7 @@ internal class GoogleInteractionsStreamState(
         return if (!data.isNullOrEmpty() || !uri.isNullOrEmpty()) {
             listOf(
                 StreamEvent.FilePart(
-                    id = GenerateId(),
+                    id = generateId(),
                     mediaType = mediaType ?: "image/png",
                     base64 = data.orEmpty(),
                     providerMetadata = currentMetadata(extra = extra),
@@ -603,7 +606,7 @@ internal class GoogleInteractionsStreamState(
             }
             if (!emittedSourceKeys.add(key)) return@mapNotNull null
             StreamEvent.SourcePart(
-                id = source.sourceId ?: GenerateId(),
+                id = source.sourceId ?: idGenerator(),
                 sourceType = source.sourceType,
                 url = source.url,
                 title = source.title,

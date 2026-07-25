@@ -11426,6 +11426,8 @@ public final class ai/torad/aisdk/providers/MockLanguageModelKt {
 	public static final fun MockLanguageModelToolThenText (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/providers/MockLanguageModel;
 	public static synthetic fun MockLanguageModelToolThenText$default (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/MockLanguageModel;
 	public static final fun MockToolInput ([Lkotlin/Pair;)Lkotlinx/serialization/json/JsonObject;
+	public static final fun ScriptedResponse (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ScriptedResponse;
+	public static synthetic fun ScriptedResponse$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ScriptedResponse;
 }
 
 public final class ai/torad/aisdk/providers/MockModelsKt {
@@ -12629,18 +12631,6 @@ public final class ai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilde
 }
 
 public final class ai/torad/aisdk/providers/ScriptedResponse {
-	public fun <init> (Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;)V
-	public synthetic fun <init> (Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Lai/torad/aisdk/FinishReason;
-	public final fun component3 ()Lai/torad/aisdk/Usage;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/util/List;
-	public final fun component7 ()Lai/torad/aisdk/LanguageModelRequestMetadata;
-	public final fun component8 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun copy (Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;)Lai/torad/aisdk/providers/ScriptedResponse;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/ScriptedResponse;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;ILjava/lang/Object;)Lai/torad/aisdk/providers/ScriptedResponse;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEvents ()Ljava/util/List;
 	public final fun getFinishReason ()Lai/torad/aisdk/FinishReason;
@@ -12652,6 +12642,17 @@ public final class ai/torad/aisdk/providers/ScriptedResponse {
 	public final fun getWarnings ()Ljava/util/List;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/providers/ScriptedResponseBuilder {
+	public final fun events (Ljava/util/List;)V
+	public final fun finishReason (Lai/torad/aisdk/FinishReason;)V
+	public final fun providerMetadata (Lai/torad/aisdk/ProviderMetadata;)V
+	public final fun rawFinishReason (Ljava/lang/String;)V
+	public final fun request (Lai/torad/aisdk/LanguageModelRequestMetadata;)V
+	public final fun response (Lai/torad/aisdk/LanguageModelResponseMetadata;)V
+	public final fun usage (Lai/torad/aisdk/Usage;)V
+	public final fun warnings (Ljava/util/List;)V
 }
 
 public final class ai/torad/aisdk/providers/TogetherAIFacadeKt {

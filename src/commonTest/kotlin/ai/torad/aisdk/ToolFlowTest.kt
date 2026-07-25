@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.serializer
@@ -137,6 +138,31 @@ class ToolFlowTest {
             assertEquals(original, restored, "round-trip lost identity for $original")
             assertTrue(restored.isToolResultError(), "$restored must still read as an error/denial")
         }
+    }
+
+    @Test
+    fun `Json success that collides with an error envelope round-trips as Json not Error`() {
+        // toJsonElement() used to emit bare JSON for the Json variant. A success payload that
+        // happened to look like {"type":"error-text","value":"ok"} was then re-decoded as
+        // Error by toolResultOutputFromWire, flipping isError. Json is now enveloped.
+        val colliding = buildJsonObject {
+            put("type", JsonPrimitive("error-text"))
+            put("value", JsonPrimitive("ok"))
+        }
+        val original = ToolResultOutput.Json(colliding)
+        val restored = ToolResultOutputs.toolResultOutputFromWire(original.toJsonElement())
+        assertEquals(original, restored)
+        assertTrue(restored is ToolResultOutput.Json, "success Json must not be re-tagged as Error")
+        assertTrue(!restored.isToolResultError(), "colliding success payload must stay non-error")
+    }
+
+    @Test
+    fun `Json variant round-trips through the type=json envelope`() {
+        val original = ToolResultOutput.Json(buildJsonObject { put("answer", JsonPrimitive(42)) })
+        val encoded = original.toJsonElement()
+        val obj = assertIs<JsonObject>(encoded)
+        assertEquals("json", (obj["type"] as? JsonPrimitive)?.content)
+        assertEquals(original, ToolResultOutputs.toolResultOutputFromWire(encoded))
     }
 
     @Test

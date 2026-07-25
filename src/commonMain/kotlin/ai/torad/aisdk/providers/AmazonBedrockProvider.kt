@@ -594,7 +594,7 @@ private class BedrockMantleChatLanguageModel(
             val toolName = (function["name"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
             val arguments = (function["arguments"] as? JsonPrimitive)?.contentOrNull
             ContentPart.ToolCall(
-                toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId("call"),
+                toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: settings.generateId(),
                 toolName = toolName,
                 input = ParseOpenAIToolInput(arguments),
             )

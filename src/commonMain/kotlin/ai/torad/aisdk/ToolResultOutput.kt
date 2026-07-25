@@ -74,8 +74,15 @@ public sealed class ToolResultOutput {
      * @since 0.3.0-beta01
      */
     public fun toJsonElement(): JsonElement = when (this) {
+        // Bare string stays the common success path (toolResultOutputFromWire reads it as Text).
         is Text -> JsonPrimitive(text)
-        is Json -> json
+        // Envelope successful JSON so a payload that happens to look like an error/denial
+        // tag (e.g. {"type":"error-text","value":"ok"}) cannot be re-decoded as Error.
+        // toolResultOutputFromWire already keys on type=json + value.
+        is Json -> buildJsonObject {
+            put("type", JsonPrimitive("json"))
+            put("value", json)
+        }
         // Typed discriminators so the three error/denial subtypes round-trip through
         // toolResultOutputFromWire() (which keys on `type`). Bare values fell through
         // its fallback and lost their error/denial identity (and baked-in "Error: ").

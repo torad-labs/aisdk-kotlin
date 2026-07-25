@@ -1,5 +1,5 @@
 {
-  "publicDataClassesCommonMain": 40,
+  "publicDataClassesCommonMain": 39,
   "trackedPublicDataClassesCommonMain": [
     "ai/torad/aisdk/AgentSession.kt:AgentSessionState#1",
     "ai/torad/aisdk/CompletionApi.kt:CompletionState#1",
@@ -38,7 +38,6 @@
     "ai/torad/aisdk/providers/GoogleProvider.kt:Agent#1",
     "ai/torad/aisdk/providers/GoogleProvider.kt:ManagedAgent#1",
     "ai/torad/aisdk/providers/GoogleProvider.kt:Model#1",
-    "ai/torad/aisdk/providers/MockLanguageModel.kt:ScriptedResponse#1",
     "ai/torad/aisdk/ui/ChatSession.kt:ChatState#1",
     "ai/torad/aisdk/ui/UIMessage.kt:UIMessage#1"
   ]

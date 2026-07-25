@@ -16,6 +16,7 @@ public value class ProviderId(public val value: String) {
     override fun toString(): String = value
 
     public companion object {
+        /** @since 0.3.0-beta01 */
         public operator fun invoke(value: String): ProviderId = of(value)
 
         @JvmExposeBoxed
@@ -36,6 +37,7 @@ public value class ModelId(public val value: String) {
     override fun toString(): String = value
 
     public companion object {
+        /** @since 0.3.0-beta01 */
         public operator fun invoke(value: String): ModelId = of(value)
 
         @JvmExposeBoxed
@@ -83,10 +85,17 @@ public object ModelIdentifiers {
 /** @since 0.3.0-beta01 */
 public fun ModelRef(value: String): ModelRef = ParseModelRef(value)
 
-/** @since 0.3.0-beta01 */
+/**
+ * Build a [ModelRef] from typed ids.
+ *
+ * Uses the positional primary constructor (`modelId` first). A previous body that
+ * re-invoked `ModelRef(modelId = …, providerId = …)` resolved back to this factory
+ * and stack-overflowed.
+ * @since 0.3.0-beta01
+ */
 public fun ModelRef(providerId: ProviderId, modelId: ModelId): ModelRef =
-    ModelRef(modelId = modelId, providerId = providerId)
+    ModelRef(modelId, providerId)
 
 /** @since 0.3.0-beta01 */
 public fun ModelRef(providerId: String, modelId: String): ModelRef =
-    ModelRef(ProviderId(providerId), ModelId(modelId))
+    ModelRef(ModelId(modelId), ProviderId(providerId))

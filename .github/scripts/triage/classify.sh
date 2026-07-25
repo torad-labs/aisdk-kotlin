@@ -74,4 +74,25 @@ jq -r --arg allow "$ALLOWLIST" '
   | (.labels // [])
   | map(select(type == "string"))
   | map(select(. as $l | ($allow | split(" ")) | index($l)))
-  | unique | .[0:3] | join(",")' "$resp"
+  | unique
+  | . as $labels
+  | [
+      $labels[]
+      | select(
+          . == "bug"
+          or . == "enhancement"
+          or . == "documentation"
+          or . == "question"
+        )
+    ][0:1] as $types
+  | [
+      $labels[]
+      | select(
+          . != "bug"
+          and . != "enhancement"
+          and . != "documentation"
+          and . != "question"
+        )
+    ][0:2] as $areas
+  | ($types + $areas)
+  | join(",")' "$resp"
