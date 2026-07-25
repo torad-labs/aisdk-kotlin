@@ -1,0 +1,44 @@
+# TENET (G60, imported+adapted from torad-toolkit resources/configs/kotlin-rules/ast-grep):
+# Reflection bypasses compile-time safety, is slow on Kotlin/JS (where these APIs are frequently
+# unsupported or stubbed anyway), and breaks minification/obfuscation. Use interfaces, generics,
+# sealed types, or explicit dispatch for runtime polymorphism instead.
+# Vendored from torad-toolkit (2026-07-25); severity lowered to warning on adoption.
+#
+# ACTIVE INVENTORY at vendoring — 6 sites, all one expression:
+#   RetryPolicy.kt:55-60  IsDefaultRetryable classifies transient network failures by
+#                         comparing t::class.qualifiedName against fully-qualified strings
+#
+# NOT a portability bug — checked rather than assumed. KClass.qualifiedName IS declared in
+# Kotlin/Native's actual interface and resolves on every target this SDK ships (jvm, android,
+# iosX64, iosArm64, iosSimulatorArm64, linuxX64). JS and Wasm are the platforms that lack it,
+# and neither is a target here.
+#
+# It is still fragile for a published library: matching third-party exception types by
+# fully-qualified STRING breaks silently under R8/ProGuard renaming in a consumer's minified
+# build — retry classification would quietly stop recognising transient failures, degrading to
+# no-retry with no error anywhere. It is also slower than a type check.
+#
+# The durable fix is `is` checks against the Ktor exception types this module already depends
+# on. That changes retry classification behaviour and needs its own test coverage first, so it
+# is warning rather than error until that lands.
+id: no-reflection-in-production
+language: kotlin
+severity: warning
+# Scope law: exclude-based only — new files/folders are inside this law by default.
+# Promoted from torad-fleet (2026-07-13, CR-TOOLKIT-PROMOTE); this pack is the clean
+# canonical form — see sgconfig.yml for the full exclude-scope doctrine banner.
+ignores:
+  - "**/build/**"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/*.gradle.kts"
+  - "**/src/*Test/kotlin/**"
+  - "**/src/test/kotlin/**"
+  # grandfather entries are per-repo; installs append their own
+message: "no-reflection-in-production: avoid reflection. Use interfaces, generics, or sealed types instead."
+rule:
+  any:
+    - pattern: $T::class.java
+    - pattern: $T::class.qualifiedName
+    - pattern: $X.javaClass
+    - pattern: Class.forName($$$ARGS)
