@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Creates a cold [Flow] that emits [chunks] in order with [delayMillis]

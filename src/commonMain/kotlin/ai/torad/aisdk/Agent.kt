@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlin.jvm.JvmSynthetic
 
 /**
  * The agent contract — what application code depends on (best practice #7).
