@@ -1,13 +1,13 @@
 version: 2
 # Cadence mirrored from torad-labs/splice: patch+minor updates arrive as ONE grouped PR
 # per ecosystem per week; majors stay individual PRs and are excluded from auto-merge by
-# dependabot-automerge.yml.
+# .github/workflows/dependabot.yml (automerge job).
 #
 # GRADLE BUMPS AND DEPENDENCY VERIFICATION — Dependabot edits the version but cannot
-# regenerate gradle/verification-metadata.xml checksums. The
-# dependabot-verification-metadata.yml workflow does that automatically on Dependabot
-# PRs (commit + push). Auto-merge still waits for required checks (verify +
-# dependency-review); dependency-submission keeps the Gradle graph visible to review.
+# regenerate gradle/verification-metadata.xml checksums. The same Actions workflow
+# (.github/workflows/dependabot.yml, verification-metadata job) regenerates and pushes
+# on Dependabot PRs, then arms auto-merge for patch/minor. Merge still waits for
+# required checks; dependency-submission keeps the Gradle graph visible to review.
 #
 # Unlike splice, org.jetbrains.kotlin* is NOT ignored here. Splice pinned it because
 # CodeQL's Kotlin extractor rejected 2.4.x (KotlinVersionTooRecentError, splice #18/#37);

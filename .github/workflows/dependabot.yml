@@ -1,0 +1,79 @@
+# Dependabot PR helpers (Actions). Config for *what* Dependabot bumps lives in
+# .github/dependabot.yml (GitHub-reserved path — not a workflow).
+#
+# Jobs (Dependabot PRs only):
+#   1. verification-metadata — regenerate gradle/verification-metadata.xml checksums
+#      and push onto the PR branch (Dependabot cannot do this itself).
+#   2. automerge — enable auto-merge for patch/minor; GitHub merges only after
+#      required checks pass (verify, verify-apple, dependency-review).
+#
+# automerge needs verification-metadata so checksum regen finishes before we arm
+# merge (a push from regen re-triggers checks on the updated tip).
+name: dependabot
+
+on: pull_request
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependabot-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verification-metadata:
+    if: >-
+      github.actor == 'dependabot[bot]' &&
+      github.repository == 'torad-labs/aisdk-kotlin'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # push regenerated metadata onto the Dependabot branch
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - name: Regenerate verification-metadata checksums
+        run: ./gradlew --write-verification-metadata sha256 help
+      - name: Commit and push if changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- gradle/verification-metadata.xml; then
+            echo "verification-metadata.xml unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gradle/verification-metadata.xml
+          git commit -m "chore(deps): regenerate verification-metadata.xml for Dependabot"
+          git push
+
+  automerge:
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.repository == 'torad-labs/aisdk-kotlin'
+    needs: verification-metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # gh pr merge --auto
+      pull-requests: write
+    steps:
+      - uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        id: meta
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Enable auto-merge for patch/minor updates
+        if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
