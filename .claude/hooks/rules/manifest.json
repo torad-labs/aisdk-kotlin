@@ -620,5 +620,21 @@
     "badExample": "kotlin {\n    jvm()\n    iosArm64()\n    sourceSets {\n        val jvmAndAndroidMain by creating { dependsOn(commonMain.get()) }\n    }\n}\n",
     "goodExample": "kotlin {\n    applyDefaultHierarchyTemplate()\n    jvm()\n    iosArm64()\n    sourceSets {\n        val jvmAndAndroidMain by creating { dependsOn(commonMain.get()) }\n    }\n}\n",
     "hunkExpectation": "same"
+  },
+  {
+    "id": "no-hardcoded-secrets",
+    "severity": "error",
+    "yaml": "# Vendored verbatim from torad-toolkit resources/configs/kotlin-rules (2026-07-25).\n# Matcher unchanged on purpose: the upstream form is proven and re-deriving it is the\n# waste this repo's rule work kept repeating. Especially load-bearing here — this SDK\n# handles provider API keys, so a hardcoded `sk-...` in source is a live credential leak.\n# Measured at vendoring: 0 hits across every scanned source set.\n# TENET: No hardcoded secrets in code.\n# Rationale: Secrets belong in environment variables or secure vaults.\n# Never commit API keys, passwords, or tokens to source control.\nid: no-hardcoded-secrets\nlanguage: kotlin\nseverity: error\n# Scope law: exclude-based only — new files/folders are inside this law by default.\n# Promoted from torad-fleet (2026-07-13, CR-TOOLKIT-PROMOTE); this pack is the clean\n# canonical form — see sgconfig.yml for the full exclude-scope doctrine banner.\nignores:\n  - \"**/build/**\"\n  - \"**/node_modules/**\"\n  - \"**/dist/**\"\n  - \"**/*.gradle.kts\"\n  - \"**/test/**\"\n  - \"**/*Test/**\"\n  - \"**/testFixtures/**\"\n  # grandfather entries are per-repo; installs append their own\nmessage: \"Don't hardcode secrets. Use environment variables or secure vaults.\"\nrule:\n  kind: string_content\n  regex: \"(sk-[a-zA-Z0-9]{20,}|api[_-]?key\\\\s*=\\\\s*['\\\"][^'\\\"]{10,}|password\\\\s*=\\\\s*['\\\"][^'\\\"]+['\\\"]|Bearer\\\\s+[a-zA-Z0-9._-]{20,})\"\n",
+    "badExample": "internal object Config {\n    val key: String = \"sk-EXAMPLEONLYNOTAREALKEY123456\"\n}\n",
+    "goodExample": "internal object Config {\n    val key: String? = readEnvironmentVariable(\"OPENAI_API_KEY\")\n}\n",
+    "hunkExpectation": "same"
+  },
+  {
+    "id": "no-system-exit",
+    "severity": "error",
+    "yaml": "# Vendored verbatim from torad-toolkit resources/configs/kotlin-rules (2026-07-25).\n# Matcher unchanged on purpose. A published LIBRARY must never terminate its host\n# process: exitProcess in SDK code kills the consumer's application, which is why this\n# matters more here than in an app. Measured at vendoring: 0 hits.\n# TENET (G60, imported+adapted from torad-toolkit resources/configs/kotlin-rules/ast-grep):\n# System.exit()/exitProcess() bypasses cleanup, finally blocks, and shutdown hooks — a hard\n# process kill instead of a graceful shutdown. Throw an exception and let the caller (or the\n# application's own top-level entry point) decide how to shut down.\nid: no-system-exit\nlanguage: kotlin\nseverity: error\n# Scope law: exclude-based only — new files/folders are inside this law by default.\n# Promoted from torad-fleet (2026-07-13, CR-TOOLKIT-PROMOTE); this pack is the clean\n# canonical form — see sgconfig.yml for the full exclude-scope doctrine banner.\nignores:\n  - \"**/build/**\"\n  - \"**/node_modules/**\"\n  - \"**/dist/**\"\n  - \"**/*.gradle.kts\"\n  # grandfather entries are per-repo; installs append their own\nmessage: \"no-system-exit: don't call System.exit()/exitProcess(). Throw an exception for graceful shutdown.\"\nrule:\n  any:\n    - pattern: System.exit($CODE)\n    - pattern: exitProcess($CODE)\n",
+    "badExample": "internal object Shutdown {\n    fun halt(code: Int) { exitProcess(code) }\n}\n",
+    "goodExample": "internal object Shutdown {\n    fun halt(code: Int): Nothing = throw AiSdkShutdownError(code)\n}\n",
+    "hunkExpectation": "same"
   }
 ]
