@@ -133,7 +133,11 @@ public abstract class Tool<TInput, TOutput, TContext> {
      * Extend [StreamingTool] and override [StreamingTool.executeStream] for the streaming case.
      * @since 0.3.0-beta01
      */
-    @JvmSynthetic public abstract fun execute(input: TInput, ctx: ToolExecutionContext<TContext>): Flow<ToolResult<TOutput>>
+    @JvmSynthetic
+    public abstract fun execute(
+        input: TInput,
+        ctx: ToolExecutionContext<TContext>,
+    ): Flow<ToolResult<TOutput>>
 
     // Backward-compat properties so ToolLoopAgent compiles unchanged.
     /** @since 0.3.0-beta01 */
@@ -169,8 +173,10 @@ public abstract class Tool<TInput, TOutput, TContext> {
 
     @JvmSynthetic
     public open suspend fun onInputStart(streamingId: String): Unit = Unit
+
     @JvmSynthetic
     public open suspend fun onInputDelta(streamingId: String, delta: String): Unit = Unit
+
     @JvmSynthetic
     public open suspend fun onInputAvailable(toolCallId: String, input: TInput): Unit = Unit
 
@@ -622,6 +628,7 @@ public object Schemas {
     ): ValidationResult<T> =
         try {
             val validated = schema.validate?.invoke(value) ?: schemaFallbackValue(value, schema.jsonSchema)
+
             @Suppress("UNCHECKED_CAST")
             ValidationResult.Success(validated as T, value)
         } catch (error: Throwable) {
@@ -791,6 +798,7 @@ public sealed class ToolChoice {
 public interface ToolStreamWriter {
     @JvmSynthetic
     public suspend fun write(event: StreamEvent)
+
     @JvmSynthetic
     public suspend fun writeData(value: JsonElement)
 }

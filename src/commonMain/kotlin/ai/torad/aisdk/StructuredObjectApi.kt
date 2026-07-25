@@ -87,6 +87,7 @@ public class StructuredObjectRequestBuilder<INPUT> {
     /** @since 0.3.0-beta01 */
     public fun build(): StructuredObjectRequest<INPUT> {
         check(inputSet) { "StructuredObjectRequest.input is required" }
+
         @Suppress("UNCHECKED_CAST")
         return StructuredObjectRequest(
             api = requireNotNull(api) { "StructuredObjectRequest.api is required" },

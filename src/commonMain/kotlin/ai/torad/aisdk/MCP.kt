@@ -51,9 +51,9 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
+import kotlin.jvm.JvmSynthetic
 import kotlin.math.pow
 import kotlin.math.roundToLong
-import kotlin.jvm.JvmSynthetic
 
 public const val MCP_PACKAGE_VERSION: String = "1.0.46"
 public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"

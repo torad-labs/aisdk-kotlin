@@ -256,8 +256,11 @@ public class Chat(
     ): Unit = addToolOutput(toolCallId, output, toolName)
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
-        sendInternal(body) { it + message }
+    @JvmSynthetic
+    public fun sendMessage(
+        message: UIMessage,
+        body: Map<String, JsonElement> = emptyMap(),
+    ): Flow<UIMessage> = sendInternal(body) { it + message }
 
     /** @since 0.3.0-beta01 */
     @JvmSynthetic public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {

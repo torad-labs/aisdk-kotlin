@@ -66,7 +66,11 @@ public class ChatSession(
     }
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
+    @JvmSynthetic
+    public fun sendMessage(
+        message: UIMessage,
+        body: Map<String, JsonElement> = emptyMap(),
+    ): Flow<UIMessage> = flow {
         // L-3 (eager vs cold): this stays a cold Flow — its contract, exercised
         // by ChatSessionTest, is that no turn starts until collection. So the
         // optimistic Submitted/append happens at collection time, not at call
@@ -135,4 +139,3 @@ public fun ChatSession(
         transport = transport,
     ),
 )
-
