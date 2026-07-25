@@ -77,7 +77,7 @@ date = "2026-07-03"
 head = "7d92f99"
 command = ".claude/hooks/rules/ci-gate.sh; read validate_rules.py output"
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
-status = "current"
+status = "superseded"
 note = "ci-gate printed ok: all 71 rule files parse/match/satisfy hunk-mode expectations; raw yaml count includes non-manifest public-ABI helper rule."
 
 [[measurement]]
@@ -88,7 +88,7 @@ date = "2026-07-03"
 head = "7d92f99"
 command = ".claude/hooks/rules/ci-gate.sh; read tools/run-gate-fixtures.mjs output"
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
-status = "current"
+status = "superseded"
 note = "ci-gate printed gate fixture harness OK: 26 fixture checks across 13 gates."
 
 [[measurement]]
@@ -233,3 +233,25 @@ command = "node_modules/.bin/ast-grep run -l kotlin -p 'minBound(50|52, Coverage
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
 status = "current"
 note = "HD-14 raised the Kover branch ratchet to 50 after branch actual 51.47; fail probe at 52 failed and restored floor 50 passed."
+
+[[measurement]]
+key = "ast_grep_rule_count"
+value = 112
+unit = "active ast-grep rule files validated by ci-gate"
+date = "2026-07-25"
+head = "b216ef8"
+command = "bash .claude/hooks/rules/ci-gate.sh; read validate_rules.py output"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "Rules moved to .rules/kotlin/ast-grep/ in e674eb5; ci-gate now validates two lanes and printed 'ok: all 41 rule files parse' (rules/, LAW) + 'ok: all 71 rule files parse' (rules-style/, opt-in) = 112, plus 'ok: all 73 rules satisfy hunk-mode expectations' against manifest.json. Prior entry (71, head 7d92f99) predated the split. Working tree carried doc/KDoc path fixes and a beta-readiness-check crash fix at measure time; none touch rule files or counts."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 30
+unit = "fixture checks across 15 gates"
+date = "2026-07-25"
+head = "b216ef8"
+command = "bash .claude/hooks/rules/ci-gate.sh; read tools/run-gate-fixtures.mjs output"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "ci-gate printed 'gate fixture harness OK: 30 fixture checks across 15 gate(s)'. Prior entry (26 across 13, head 7d92f99) predated the rule migration. Working tree carried doc/KDoc path fixes and a beta-readiness-check crash fix at measure time; neither adds gates or fixtures."
