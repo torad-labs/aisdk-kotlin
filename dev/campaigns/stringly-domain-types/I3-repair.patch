@@ -1,0 +1,254 @@
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsMapping.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsMapping.kt
+index db0e5da..babad83 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsMapping.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsMapping.kt
+@@ -23,6 +23,28 @@ import kotlinx.serialization.json.intOrNull
+ import kotlinx.serialization.json.jsonObject
+ 
+ internal object GoogleInteractions {
++    private sealed interface GoogleInteractionStatus {
++        data object Completed : GoogleInteractionStatus
++        data object RequiresAction : GoogleInteractionStatus
++        data object Failed : GoogleInteractionStatus
++        data object Incomplete : GoogleInteractionStatus
++        data object BudgetExceeded : GoogleInteractionStatus
++        data object Cancelled : GoogleInteractionStatus
++        data object InProgress : GoogleInteractionStatus
++        data class Unknown(val raw: String?) : GoogleInteractionStatus
++    }
++
++    private fun parseGoogleInteractionStatus(raw: String?): GoogleInteractionStatus = when (raw) {
++        "completed" -> GoogleInteractionStatus.Completed
++        "requires_action" -> GoogleInteractionStatus.RequiresAction
++        "failed" -> GoogleInteractionStatus.Failed
++        "incomplete" -> GoogleInteractionStatus.Incomplete
++        "budget_exceeded" -> GoogleInteractionStatus.BudgetExceeded
++        "cancelled" -> GoogleInteractionStatus.Cancelled
++        "in_progress" -> GoogleInteractionStatus.InProgress
++        else -> GoogleInteractionStatus.Unknown(raw)
++    }
++
+     fun googleInteractionsRequestBody(
+         input: GoogleInteractionsModelInput,
+         params: LanguageModelCallParams,
+@@ -650,18 +672,32 @@ internal object GoogleInteractions {
+         )
+     }
+ 
+-    fun googleInteractionsFinishReason(status: String?, hasFunctionCall: Boolean): FinishReason = when (status) {
+-        "completed" -> if (hasFunctionCall) FinishReason.ToolCalls else FinishReason.Stop
+-        "requires_action" -> FinishReason.ToolCalls
+-        "failed" -> FinishReason.Error
+-        "incomplete" -> FinishReason.Length
+-        "budget_exceeded" -> FinishReason.Length
+-        "cancelled" -> FinishReason.Other
+-        else -> FinishReason.Other
+-    }
++    fun googleInteractionsFinishReason(status: String?, hasFunctionCall: Boolean): FinishReason =
++        when (parseGoogleInteractionStatus(status)) {
++            GoogleInteractionStatus.Completed -> if (hasFunctionCall) FinishReason.ToolCalls else FinishReason.Stop
++            GoogleInteractionStatus.RequiresAction -> FinishReason.ToolCalls
++            GoogleInteractionStatus.Failed -> FinishReason.Error
++            GoogleInteractionStatus.Incomplete,
++            GoogleInteractionStatus.BudgetExceeded,
++            -> FinishReason.Length
++            GoogleInteractionStatus.Cancelled,
++            GoogleInteractionStatus.InProgress,
++            is GoogleInteractionStatus.Unknown,
++            -> FinishReason.Other
++        }
+ 
+-    fun googleInteractionsTerminal(status: String?): Boolean =
+-        status in setOf("completed", "failed", "cancelled", "incomplete", "budget_exceeded")
++    fun googleInteractionsTerminal(status: String?): Boolean = when (parseGoogleInteractionStatus(status)) {
++        GoogleInteractionStatus.Completed,
++        GoogleInteractionStatus.Failed,
++        GoogleInteractionStatus.Incomplete,
++        GoogleInteractionStatus.BudgetExceeded,
++        GoogleInteractionStatus.Cancelled,
++        -> true
++        GoogleInteractionStatus.RequiresAction,
++        GoogleInteractionStatus.InProgress,
++        is GoogleInteractionStatus.Unknown,
++        -> false
++    }
+ 
+     private suspend fun googleGetJson(
+         client: HttpClient,
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt
+index 09c567e..32b3d9a 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt
+@@ -129,7 +129,8 @@ internal class GoogleInteractionsStreamState(
+     private var textId: String? = null
+     private var textCounter = 0
+     private var usage = Usage()
+-    private var finishReason = FinishReason.Other
++    private val finishReason: FinishReason
++        get() = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
+     private var rawFinishReason: String? = null
+     private var hasFunctionCall = false
+     private var finished = false
+@@ -163,7 +164,6 @@ internal class GoogleInteractionsStreamState(
+         }
+         usage = googleInteractionsUsage(response["usage"])
+         rawFinishReason = (response["status"] as? JsonPrimitive)?.contentOrNull
+-        finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
+         events += closeText()
+         events += StreamEvent.Finish(
+             1,
+@@ -180,7 +180,6 @@ internal class GoogleInteractionsStreamState(
+         val interaction = JsonAccess.obj(event, "interaction") ?: return emptyList()
+         liveInteractionId[0] = normalizeInteractionId((interaction["id"] as? JsonPrimitive)?.contentOrNull)
+         rawFinishReason = (interaction["status"] as? JsonPrimitive)?.contentOrNull ?: rawFinishReason
+-        finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
+         return listOf(
+             StreamEvent.ResponseMetadata(
+                 id = liveInteractionId[0],
+@@ -376,7 +375,6 @@ internal class GoogleInteractionsStreamState(
+             "interaction.requires_action" -> "requires_action"
+             else -> rawFinishReason ?: "in_progress"
+         }
+-        finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
+         return emptyList()
+     }
+ 
+@@ -386,7 +384,6 @@ internal class GoogleInteractionsStreamState(
+         liveServiceTier[0] = (interaction["service_tier"] as? JsonPrimitive)?.contentOrNull ?: liveServiceTier[0]
+         usage = googleInteractionsUsage(interaction["usage"])
+         rawFinishReason = (interaction["status"] as? JsonPrimitive)?.contentOrNull ?: rawFinishReason
+-        finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
+         val events = mutableListOf<StreamEvent>()
+         events += closeOpenBlocks()
+         events += closeText()
+@@ -403,7 +400,6 @@ internal class GoogleInteractionsStreamState(
+ 
+     private fun acceptError(event: JsonObject): List<StreamEvent> {
+         rawFinishReason = "failed"
+-        finishReason = FinishReason.Error
+         val error = JsonAccess.obj(event, "error")
+         val message = (error?.get("message") as? JsonPrimitive)?.contentOrNull
+             ?: (error?.get("code") as? JsonPrimitive)?.contentOrNull
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/GoogleInteractionsDefensiveParsingTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/GoogleInteractionsDefensiveParsingTest.kt
+index c48c1d8..0dc2639 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/GoogleInteractionsDefensiveParsingTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/GoogleInteractionsDefensiveParsingTest.kt
+@@ -1,7 +1,10 @@
+ package ai.torad.aisdk
+ 
++import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings
+ import ai.torad.aisdk.providers.GoogleInteractions
++import ai.torad.aisdk.providers.GoogleInteractionsStreamState
+ import kotlinx.serialization.json.JsonArray
++import kotlinx.serialization.json.JsonObject
+ import kotlinx.serialization.json.JsonPrimitive
+ import kotlinx.serialization.json.buildJsonObject
+ import kotlinx.serialization.json.put
+@@ -45,4 +48,106 @@ class GoogleInteractionsDefensiveParsingTest {
+         assertEquals("https://source.test", source.url)
+         assertEquals(annotation, source.providerMetadata.toMap()["google"])
+     }
++
++    @Test
++    fun `status table maps finish reason and terminality`() {
++        val cases = listOf(
++            StatusCase("completed", FinishReason.Stop, terminal = true),
++            StatusCase("requires_action", FinishReason.ToolCalls, terminal = false),
++            StatusCase("failed", FinishReason.Error, terminal = true),
++            StatusCase("incomplete", FinishReason.Length, terminal = true),
++            StatusCase("budget_exceeded", FinishReason.Length, terminal = true),
++            StatusCase("cancelled", FinishReason.Other, terminal = true),
++            StatusCase("in_progress", FinishReason.Other, terminal = false),
++            StatusCase("future_provider_status", FinishReason.Other, terminal = false),
++            StatusCase(null, FinishReason.Other, terminal = false),
++        )
++
++        cases.forEach { case ->
++            assertEquals(
++                case.finishReason,
++                GoogleInteractions.googleInteractionsFinishReason(case.raw, hasFunctionCall = false),
++                "finish reason for ${case.raw}",
++            )
++            assertEquals(
++                case.terminal,
++                GoogleInteractions.googleInteractionsTerminal(case.raw),
++                "terminality for ${case.raw}",
++            )
++        }
++        assertEquals(
++            FinishReason.ToolCalls,
++            GoogleInteractions.googleInteractionsFinishReason("completed", hasFunctionCall = true),
++        )
++    }
++
++    @Test
++    fun `sync and live stream preserve unknown and absent raw status`() {
++        val settings = GoogleGenerativeAIProviderSettings()
++
++        listOf("future_provider_status", "", " ", "Completed", null).forEach { raw ->
++            assertEquals(false, GoogleInteractions.googleInteractionsTerminal(raw), "terminality for $raw")
++            val response = buildJsonObject {
++                put("id", "interaction-status")
++                raw?.let { put("status", it) }
++            }
++            val result = GoogleInteractions.googleInteractionsResult(
++                response = response,
++                requestBody = JsonObject(emptyMap()),
++                headers = emptyMap(),
++                rawBody = response,
++                warnings = emptyList(),
++                settings = settings,
++            )
++
++            assertEquals(FinishReason.Other, result.finishReason)
++            assertEquals(raw, result.rawFinishReason)
++
++            val streamState = GoogleInteractionsStreamState { "generated-id" }
++            streamState.accept(
++                buildJsonObject {
++                    put("event_type", "interaction.created")
++                    put("interaction", response)
++                }
++            )
++            val finish = streamState.finishIfNeeded().filterIsInstance<StreamEvent.Finish>().single()
++
++            assertEquals(FinishReason.Other, finish.finishReason)
++            assertEquals(raw, finish.rawFinishReason)
++        }
++    }
++
++    @Test
++    fun `background synthesize preserves open raw statuses`() {
++        listOf("future_provider_status", null).forEach { raw ->
++            val response = buildJsonObject {
++                put("id", "interaction-background-status")
++                raw?.let { put("status", it) }
++            }
++            val streamState = GoogleInteractionsStreamState { "generated-id" }
++
++            val finish = streamState.synthesize(response).filterIsInstance<StreamEvent.Finish>().single()
++
++            assertEquals(FinishReason.Other, finish.finishReason)
++            assertEquals(raw, finish.rawFinishReason)
++        }
++    }
++
++    @Test
++    fun `status-less requires action fallback remains canonical`() {
++        val streamState = GoogleInteractionsStreamState { "generated-id" }
++        streamState.accept(buildJsonObject { put("event_type", "interaction.requires_action") })
++
++        val finish = streamState.finishIfNeeded().filterIsInstance<StreamEvent.Finish>().single()
++
++        assertEquals(FinishReason.ToolCalls, finish.finishReason)
++        assertEquals("requires_action", finish.rawFinishReason)
++        assertEquals(false, GoogleInteractions.googleInteractionsTerminal("requires_action"))
++    }
++
++    private class StatusCase(
++        val raw: String?,
++        val finishReason: FinishReason,
++        val terminal: Boolean,
++    )
+ }
+
