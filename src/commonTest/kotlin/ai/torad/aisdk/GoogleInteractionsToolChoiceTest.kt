@@ -206,7 +206,7 @@ class GoogleInteractionsToolChoiceTest {
             toolTypes,
         )
         assertEquals(
-            listOf("vertex_ai_search"),
+            listOf("rag_store"),
             prepared.body.getValue("tools")
                 .jsonArray
                 .last()

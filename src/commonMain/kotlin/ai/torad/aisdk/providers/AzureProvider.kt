@@ -80,17 +80,30 @@ public class AzureOpenAIProviderSettingsBuilder {
     }
 
     /** @since 0.3.0-beta01 */
-    public fun build(): AzureOpenAIProviderSettings =
-        AzureOpenAIProviderSettings(
+    public fun build(): AzureOpenAIProviderSettings {
+        // Classic deployment URLs require a dated api-version (e.g. 2024-10-21). The v1
+        // OpenAI-compat path uses api-version=v1 with /openai/v1/... — mixing
+        // useDeploymentBasedUrls=true with apiVersion="v1" produces an invalid URL.
+        val resolvedApiVersion =
+            if (useDeploymentBasedUrls && apiVersion == "v1") {
+                AZURE_CLASSIC_DEPLOYMENT_API_VERSION
+            } else {
+                apiVersion
+            }
+        return AzureOpenAIProviderSettings(
             resourceName = resourceName,
             baseURL = baseURL,
             apiKey = apiKey,
             tokenProvider = tokenProvider,
             headers = headers,
-            apiVersion = apiVersion,
+            apiVersion = resolvedApiVersion,
             useDeploymentBasedUrls = useDeploymentBasedUrls,
         )
+    }
 }
+
+/** Default dated api-version used when deployment-based URLs are enabled without an override. */
+internal const val AZURE_CLASSIC_DEPLOYMENT_API_VERSION: String = "2024-10-21"
 
 /** @since 0.3.0-beta01 */
 public fun AzureOpenAIProviderSettings(
@@ -200,13 +213,24 @@ public class AzureOpenAIProvider(
         val baseUrlPrefix = settings.baseURL?.trimEnd('/')
             ?: settings.resourceName?.takeIf { it.isNotBlank() }?.let { "https://$it.openai.azure.com/openai" }
             ?: throw InvalidArgumentError("resourceName", "Azure OpenAI resourceName or baseURL must be provided")
-        val endpoint = if (settings.useDeploymentBasedUrls) {
+        // Media/audio paths are only documented on classic deployment URLs. Force the
+        // deployment shape for those even when useDeploymentBasedUrls is false (v1 path
+        // is documented for chat/responses only).
+        val forceDeployment = path.startsWith("/images/") ||
+            path.startsWith("/audio/") ||
+            settings.useDeploymentBasedUrls
+        val endpoint = if (forceDeployment) {
             "$baseUrlPrefix/deployments/$modelId$path"
         } else {
             "$baseUrlPrefix/v1$path"
         }
+        val apiVersion = when {
+            forceDeployment && settings.apiVersion == "v1" ->
+                AZURE_CLASSIC_DEPLOYMENT_API_VERSION
+            else -> settings.apiVersion
+        }
         val separator = if ('?' in endpoint) "&" else "?"
-        return "$endpoint${separator}api-version=${UrlOps.encode(settings.apiVersion)}"
+        return "$endpoint${separator}api-version=${UrlOps.encode(apiVersion)}"
     }
 }
 

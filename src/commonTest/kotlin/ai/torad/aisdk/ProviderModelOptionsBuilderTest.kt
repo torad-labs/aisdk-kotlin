@@ -620,6 +620,8 @@ class ProviderModelOptionsBuilderTest {
             maxOutputTokens(256)
             autoCrop(true)
             targetSize(1024)
+            viewBox(0.0, 0.0, 512.0, 512.0)
+            attributes(buildJsonObject { put("fill", JsonPrimitive("currentColor")) })
         }
         val togetherImage = TogetherAIImageModelOptions {
             steps(20)

@@ -6,6 +6,7 @@ import ai.torad.aisdk.providers.AnthropicProviderSettings
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
@@ -135,7 +136,9 @@ class AnthropicProviderValidationTest {
     }
 
     @Test
-    fun `messages model rejects provider tool result missing name`() = runTest {
+    fun `messages model accepts provider tool result without name`() = runTest {
+        // The Messages API does not send `name` on server-tool result blocks; generate() must
+        // still decode them (falling back to the block type as the tool name).
         val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
@@ -161,17 +164,13 @@ class AnthropicProviderValidationTest {
         val provider =
             Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
-        val error = assertFailsWith<WireDecodeException> {
-            provider.messages(ModelId("claude-sonnet-4-5")).generate(
-                LanguageModelCallParams {
-                    messages(listOf(UserMessage("hi")))
-                }
-            )
-        }
-
-        val message = error.message.orEmpty()
-        assertTrue(message.contains("anthropic"), message)
-        assertTrue(message.contains("response content"), message)
-        assertTrue(message.contains("name"), message)
+        val result = provider.messages(ModelId("claude-sonnet-4-5")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
+        )
+        val toolResult = result.content.filterIsInstance<ContentPart.ToolResult>().single()
+        assertEquals("srv_1", toolResult.toolCallId)
+        assertEquals("web_search_tool", toolResult.toolName)
     }
 }

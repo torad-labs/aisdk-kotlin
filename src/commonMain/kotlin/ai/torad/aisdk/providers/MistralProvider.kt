@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
@@ -25,17 +26,23 @@ public typealias MistralProviderOptions = MistralLanguageModelOptions
 
 /**
  * Rewrites the OpenAI-compatible chat body into Mistral's wire shape:
- * - tool_choice "required" / {function:{name}} → "any" (specific also filters `tools`),
+ * - tool_choice "required" → "any"; specific `{type:function,function:{name}}` is preserved
+ *   (and `tools` is still filtered to that name as a belt-and-suspenders),
  * - tool messages gain `name` (from the assistant tool_calls' id→name map),
  * - user `file` content parts (PDFs) become `document_url` parts,
- * - the final assistant message gets `prefix: true`.
+ * - `prefix: true` is opt-in via providerOptions.mistral.prefix (or a top-level body
+ *   `prefix` flag). When enabled, it is applied only if the conversation ends on an
+ *   assistant message (true prefix-continuation). Never rewrite assistant messages by default.
  */
 private fun MistralTransformChatBody(body: JsonObject): JsonObject {
     val messages = JsonAccess.arr(body, "messages")
     val toolCallNames = MistralToolCallNameMap(messages)
-    val lastAssistantIndex = messages?.indexOfLast {
-        ((it as? JsonObject)?.get("role") as? JsonPrimitive)?.content == "assistant"
-    } ?: -1
+    val lastIndex = messages?.lastIndex ?: -1
+    val lastIsAssistant = lastIndex >= 0 &&
+        (((messages?.getOrNull(lastIndex) as? JsonObject)?.get("role") as? JsonPrimitive)?.content == "assistant")
+    // Opt-in only. A bare boolean body key is stripped below so it is not sent top-level.
+    val prefixEnabled = (body["prefix"] as? JsonPrimitive)?.booleanOrNull == true
+    val prefixAssistantIndex = if (prefixEnabled && lastIsAssistant) lastIndex else -1
 
     return buildJsonObject {
         for ((key, value) in body) {
@@ -44,8 +51,10 @@ private fun MistralTransformChatBody(body: JsonObject): JsonObject {
                 "tools" -> put("tools", MistralFilterTools(value, body["tool_choice"]))
                 "messages" -> put(
                     "messages",
-                    MistralRewriteMessages(messages, toolCallNames, lastAssistantIndex)
+                    MistralRewriteMessages(messages, toolCallNames, prefixAssistantIndex)
                 )
+                // Message-level flag only — never a top-level chat field.
+                "prefix" -> Unit
                 else -> put(key, value)
             }
         }
@@ -64,10 +73,14 @@ private fun MistralToolCallNameMap(messages: JsonArray?): Map<String, String> = 
     }
 }
 
-/** "required"/{function:{name}} → "any"; otherwise pass through ("auto"/"none"). */
+/**
+ * Mistral accepts "auto"/"none"/"any" and the OpenAI-shaped specific-tool object
+ * `{"type":"function","function":{"name":...}}`. Only map the OpenAI "required" alias
+ * to Mistral's "any"; do not collapse specific-tool objects.
+ */
 private fun MistralToolChoice(value: JsonElement?): JsonElement = when {
     value is JsonPrimitive && value.content == "required" -> JsonPrimitive("any")
-    value is JsonObject -> JsonPrimitive("any")
+    value is JsonObject -> value
     else -> value ?: JsonPrimitive("auto")
 }
 
@@ -273,6 +286,12 @@ public class MistralLanguageModelOptions internal constructor(
     public val parallelToolCalls: Boolean? = null,
     /** @since 0.3.0-beta01 */
     public val reasoningEffort: String? = null,
+    /**
+     * When true and the final message is an assistant turn, set `prefix: true` on that
+     * message so Mistral continues it. Off by default — automatic rewrite changes semantics.
+     * @since 0.3.0-beta01
+     */
+    public val prefix: Boolean? = null,
 )
 
 /** @since 0.3.0-beta01 */
@@ -284,6 +303,7 @@ public class MistralLanguageModelOptionsBuilder {
     private var strictJsonSchema: Boolean? = null
     private var parallelToolCalls: Boolean? = null
     private var reasoningEffort: String? = null
+    private var prefix: Boolean? = null
 
     /** @since 0.3.0-beta01 */
     public fun safePrompt(value: Boolean?): MistralLanguageModelOptionsBuilder {
@@ -328,6 +348,12 @@ public class MistralLanguageModelOptionsBuilder {
     }
 
     /** @since 0.3.0-beta01 */
+    public fun prefix(value: Boolean?): MistralLanguageModelOptionsBuilder {
+        prefix = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
     public fun build(): MistralLanguageModelOptions =
         MistralLanguageModelOptions(
             safePrompt = safePrompt,
@@ -337,6 +363,7 @@ public class MistralLanguageModelOptionsBuilder {
             strictJsonSchema = strictJsonSchema,
             parallelToolCalls = parallelToolCalls,
             reasoningEffort = reasoningEffort,
+            prefix = prefix,
         )
 }
 

@@ -63,7 +63,7 @@ class VoyageProviderTest {
         )
 
         assertEquals("voyage.embedding", model.provider)
-        assertEquals(128, model.maxEmbeddingsPerCall)
+        assertEquals(1000, model.maxEmbeddingsPerCall)
         assertEquals(true, model.supportsParallelCalls)
         assertEquals(listOf(listOf(0.1f, 0.2f), listOf(0.3f, 0.4f)), result.embeddings)
         assertEquals(7, result.usage.tokens)
@@ -146,12 +146,12 @@ class VoyageProviderTest {
         val error = assertFailsWith<InvalidArgumentError> {
             model.embed(
                 EmbeddingModelCallParams {
-                    values(List(129) { "value-$it" })
+                    values(List(1001) { "value-$it" })
                 }
             )
         }
 
-        assertTrue(error.message.orEmpty().contains("128 values"))
+        assertTrue(error.message.orEmpty().contains("1000 values"))
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

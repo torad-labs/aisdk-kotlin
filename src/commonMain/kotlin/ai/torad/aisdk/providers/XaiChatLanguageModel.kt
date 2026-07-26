@@ -54,6 +54,9 @@ internal class XaiChatLanguageModel(
                     "logprobs" -> {
                         put(key, value)
                     }
+                    // Documented wire key is parallel_tool_calls (not parallel_function_calling).
+                    "parallel_function_calling", "parallelFunctionCalling" ->
+                        put("parallel_tool_calls", value)
                     "searchParameters" -> put("search_parameters", XaiSnakeCaseJson(value))
                     else -> put(key, value)
                 }

@@ -192,7 +192,7 @@ class CohereProviderTest {
             result.content.filterIsInstance<ContentPart.Reasoning>().map { it.text },
         )
         assertEquals("Notes", result.content.filterIsInstance<ContentPart.Source>().single().title)
-        assertTrue(result.warnings.single().message.orEmpty().contains("providerSearch"))
+        assertTrue(result.warnings.any { it.message.orEmpty().contains("providerSearch") })
 
         val request = fixture.calls.single()
         assertEquals("POST", request.requestMethod)

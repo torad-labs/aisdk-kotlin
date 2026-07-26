@@ -10,6 +10,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 
 internal class ProdiaLanguageModel(
     private val client: HttpClient,
@@ -222,10 +223,13 @@ internal class ProdiaVideoModel(
             )
         }
         val input = params.image?.let { FromGeneratedFile(client, it) }
+        // Docs offer /job/async for long-running video jobs; sync /job can time out.
+        val useAsync = (options["async"] as? JsonPrimitive)?.contentOrNull?.lowercase() != "false"
+        val jobPath = if (useAsync) "/job/async" else "/job"
         val response = if (input == null) {
             settings.prodiaPostJsonForMultipart(
                 client = client,
-                url = "${settings.baseURL.trimEnd('/')}/job?price=true",
+                url = "${settings.baseURL.trimEnd('/')}$jobPath?price=true",
                 body = body,
                 accept = "multipart/form-data; video/mp4",
                 headers = settings.prodiaHeaders(params.headers),
@@ -233,7 +237,7 @@ internal class ProdiaVideoModel(
         } else {
             settings.prodiaPostMultipart(
                 client = client,
-                url = "${settings.baseURL.trimEnd('/')}/job?price=true",
+                url = "${settings.baseURL.trimEnd('/')}$jobPath?price=true",
                 body = body,
                 input = input,
                 accept = "multipart/form-data; video/mp4",

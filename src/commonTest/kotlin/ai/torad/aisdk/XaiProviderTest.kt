@@ -263,7 +263,7 @@ class XaiProviderTest {
 
     @Test
     @Suppress("LongMethod")
-    fun `chat body drops stop and strips additionalProperties and maps xHandles alias`() = runTest {
+    fun `chat body keeps stop strips additionalProperties and maps xHandles alias`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.x.ai/v1/chat/completions" to UrlHandler(
@@ -321,7 +321,8 @@ class XaiProviderTest {
             },
         )
         val body = fixture.calls.single().requestBodyJson.jsonObject
-        assertEquals(null, body["stop"], "stop dropped (xAI unsupported)")
+        // stop is documented as supported on non-reasoning models — forward it.
+        assertEquals("END", body["stop"]?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
         val toolFn = body["tools"]?.jsonArray?.single()?.jsonObject?.get("function")?.jsonObject
         val toolParams = toolFn?.get("parameters")?.jsonObject
         assertEquals(null, toolParams?.get("additionalProperties"), "additionalProperties stripped from tool schema")
@@ -448,16 +449,95 @@ class XaiProviderTest {
 
         val generateBody = fixture.calls[0].requestBodyJson.jsonObject
         assertEquals("16:9", generateBody["aspect_ratio"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("jpeg", generateBody["output_format"]?.jsonPrimitive?.contentOrNull)
-        assertEquals(true, generateBody["sync_mode"]?.jsonPrimitive?.booleanOrNull)
+        // Documented field is response_format (set to b64_json); output_format is off-schema.
+        assertEquals("b64_json", generateBody["response_format"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, generateBody["output_format"])
+        // sync_mode / quality are not in /v1/images/generations schema — dropped on the wire.
+        assertEquals(null, generateBody["sync_mode"])
         assertEquals("2k", generateBody["resolution"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("high", generateBody["quality"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, generateBody["quality"])
         assertEquals("user-1", generateBody["user"]?.jsonPrimitive?.contentOrNull)
 
         val editBody = fixture.calls[1].requestBodyJson.jsonObject
         val images = editBody["images"]?.jsonArray.orEmpty()
         assertEquals("https://example.com/input.png", images[0].jsonObject["url"]?.jsonPrimitive?.contentOrNull)
         assertEquals("data:image/png;base64,iVBORw==", images[1].jsonObject["url"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `inline base64 images use response mime type and preserve request filtering`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://xai.test/v1/images/generations" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "data":[
+                                {"b64_json":"jpeg-image","mime_type":"image/jpeg"},
+                                {"b64_json":"webp-image","mime_type":"image/webp"},
+                                {"b64_json":"legacy-image"},
+                                {"b64_json":"null-mime-image","mime_type":null},
+                                {"b64_json":"blank-mime-image","mime_type":"   "},
+                                {"b64_json":"spaced-image","mime_type":" image/jpeg "}
+                              ]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(
+            fixture.httpClient(),
+            XaiProviderSettings {
+                baseURL("https://xai.test/v1")
+                apiKey("key")
+            },
+        )
+
+        val result = provider.image(ModelId("grok-imagine-image")).generate(
+            ImageGenerationParams {
+                prompt("Generate images")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "xai" to buildJsonObject {
+                                    put("output_format", JsonPrimitive("jpeg"))
+                                    put("outputFormat", JsonPrimitive("webp"))
+                                    put("sync_mode", JsonPrimitive(true))
+                                    put("syncMode", JsonPrimitive(true))
+                                    put("quality", JsonPrimitive("high"))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
+        )
+
+        assertEquals(
+            listOf("image/jpeg", "image/webp", "image/png", "image/png", "image/png", " image/jpeg "),
+            result.images.map { it.mediaType },
+        )
+        assertEquals(
+            listOf(
+                "jpeg-image",
+                "webp-image",
+                "legacy-image",
+                "null-mime-image",
+                "blank-mime-image",
+                "spaced-image",
+            ),
+            result.images.map { it.base64 },
+        )
+        val requestBody = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals("b64_json", requestBody["response_format"]?.jsonPrimitive?.contentOrNull)
+        listOf("output_format", "outputFormat", "sync_mode", "syncMode", "quality").forEach { field ->
+            assertEquals(null, requestBody[field], "$field must remain off the xAI image request wire")
+        }
     }
 
     @Test
@@ -583,7 +663,7 @@ class XaiProviderTest {
             XaiProviderSettings { apiKey("key") },
         )
 
-        assertProviderTool(provider.tools.codeExecution, "code_execution", "xai.code_execution")
+        assertProviderTool(provider.tools.codeExecution, "code_interpreter", "xai.code_interpreter")
         assertProviderTool(provider.tools.fileSearch, "file_search", "xai.file_search")
         assertProviderTool(provider.tools.mcpServer, "mcp", "xai.mcp")
         assertProviderTool(provider.tools.viewImage, "view_image", "xai.view_image")

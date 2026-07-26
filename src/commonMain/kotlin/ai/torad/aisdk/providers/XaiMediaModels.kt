@@ -51,7 +51,20 @@ internal class XaiImageModel(
             (params.aspectRatio ?: (options["aspect_ratio"] as? JsonPrimitive)?.contentOrNull)?.let {
                 put("aspect_ratio", JsonPrimitive(it))
             }
-            settings.putXaiProviderOptions(this, options, setOf("aspect_ratio"))
+            // /v1/images/generations does not accept sync_mode, quality, or output_format
+            // (documented field is response_format, already set above).
+            settings.putXaiProviderOptions(
+                this,
+                options,
+                setOf(
+                    "aspect_ratio",
+                    "sync_mode",
+                    "syncMode",
+                    "quality",
+                    "output_format",
+                    "outputFormat",
+                ),
+            )
             putXaiImageInputs(this, params.files)
         }
         val response = settings.xaiPostJson(
@@ -66,7 +79,10 @@ internal class XaiImageModel(
             val obj = image as? JsonObject ?: return@mapNotNull null
             val base64 = (obj["b64_json"] as? JsonPrimitive)?.contentOrNull
             if (base64 != null) {
-                GeneratedFile(mediaType = "image/png", base64 = base64)
+                val mediaType = (obj["mime_type"] as? JsonPrimitive)?.contentOrNull
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "image/png"
+                GeneratedFile(mediaType = mediaType, base64 = base64)
             } else {
                 val url = (obj["url"] as? JsonPrimitive)?.contentOrNull
                     ?: throw NoImageGeneratedError("xAI image response is missing b64_json and url")
@@ -261,11 +277,11 @@ internal class XaiVideoModel(
                     xaiVideoResolutionMap[it] ?: it.also {
                         warnings += CallWarning(
                             "unsupported",
-                            "Unrecognized resolution \"$it\". Use providerOptions.xai.resolution with \"480p\" or \"720p\" instead.",
+                            "Unrecognized resolution \"$it\". Use providerOptions.xai.resolution with \"480p\", \"720p\", or \"1080p\" instead.",
                         )
                     }
                 }
-            if (resolution in setOf("480p", "720p")) put("resolution", JsonPrimitive(resolution))
+            if (resolution in setOf("480p", "720p", "1080p")) put("resolution", JsonPrimitive(resolution))
         }
         if (isEdit || isExtension) {
             val videoUrl = (options["videoUrl"] as? JsonPrimitive)?.contentOrNull
@@ -316,8 +332,8 @@ internal class XaiVideoModel(
             val video = JsonAccess.obj(body, "video")
             val hasVideoUrl = (video?.get("url") as? JsonPrimitive)?.contentOrNull != null
             if (statusValue == "done" || (statusValue == null && hasVideoUrl)) return status
-            if (statusValue in setOf("failed", "error")) throw NoVideoGeneratedError(
-                "xAI video generation failed: $body"
+            if (statusValue in setOf("failed", "error", "expired")) throw NoVideoGeneratedError(
+                "xAI video generation $statusValue: $body"
             )
         }
         throw NoVideoGeneratedError("xAI video generation timed out after ${pollTimeoutMs}ms")
@@ -328,6 +344,7 @@ private const val DEFAULT_XAI_VIDEO_POLL_INTERVAL_MS: Long = 5_000L
 private const val DEFAULT_XAI_VIDEO_POLL_TIMEOUT_MS: Long = 600_000L
 
 private val xaiVideoResolutionMap = mapOf(
+    "1920x1080" to "1080p",
     "1280x720" to "720p",
     "854x480" to "480p",
     "640x480" to "480p",

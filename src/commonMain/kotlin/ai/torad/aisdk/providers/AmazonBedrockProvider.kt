@@ -488,6 +488,14 @@ private class BedrockImageModel(
             parseJson = true,
         )
         val obj = response.value.jsonObject
+        // Docs: moderated responses carry an `error` string (not a `status` field).
+        val moderatedError = (obj["error"] as? JsonPrimitive)?.contentOrNull
+        if (moderatedError != null &&
+            (moderatedError.contains("Moderat", ignoreCase = true) ||
+                moderatedError.contains("Request Moderated", ignoreCase = true))
+        ) {
+            throw NoImageGeneratedError("Amazon Bedrock request was moderated: $moderatedError")
+        }
         if ((obj["status"] as? JsonPrimitive)?.contentOrNull == "Request Moderated") {
             throw NoImageGeneratedError("Amazon Bedrock request was moderated: ${obj["details"] ?: "Unknown"}")
         }
@@ -562,16 +570,35 @@ private class BedrockMantleChatLanguageModel(
     override val provider: String,
     private val path: String,
 ) : LanguageModel {
+    private val isResponsesApi: Boolean = path.endsWith("/responses")
+
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val body = buildJsonObject {
-            put("model", JsonPrimitive(modelId))
-            put("messages", JsonArray(params.messages.map { BedrockRequest.bedrockMantleMessage(it) }))
-            params.temperature?.let { put("temperature", JsonPrimitive(it)) }
-            params.topP?.let { put("top_p", JsonPrimitive(it)) }
-            params.maxOutputTokens?.let { put("max_tokens", JsonPrimitive(it)) }
-            if (params.stopSequences.isNotEmpty()) put("stop", JsonArray(params.stopSequences.map(::JsonPrimitive)))
-            if (params.tools.isNotEmpty()) {
-                put("tools", JsonArray(params.tools.map { BedrockRequest.bedrockMantleTool(it) }))
+        val body = if (isResponsesApi) {
+            // Responses contract: `input` (not `messages`), no `choices` in the reply.
+            buildJsonObject {
+                put("model", JsonPrimitive(modelId))
+                put("input", bedrockMantleResponsesInput(params.messages))
+                params.temperature?.let { put("temperature", JsonPrimitive(it)) }
+                params.topP?.let { put("top_p", JsonPrimitive(it)) }
+                params.maxOutputTokens?.let { put("max_output_tokens", JsonPrimitive(it)) }
+                if (params.stopSequences.isNotEmpty()) {
+                    put("stop", JsonArray(params.stopSequences.map(::JsonPrimitive)))
+                }
+                if (params.tools.isNotEmpty()) {
+                    put("tools", JsonArray(params.tools.map { BedrockRequest.bedrockMantleResponsesTool(it) }))
+                }
+            }
+        } else {
+            buildJsonObject {
+                put("model", JsonPrimitive(modelId))
+                put("messages", JsonArray(params.messages.map { BedrockRequest.bedrockMantleMessage(it) }))
+                params.temperature?.let { put("temperature", JsonPrimitive(it)) }
+                params.topP?.let { put("top_p", JsonPrimitive(it)) }
+                params.maxOutputTokens?.let { put("max_tokens", JsonPrimitive(it)) }
+                if (params.stopSequences.isNotEmpty()) put("stop", JsonArray(params.stopSequences.map(::JsonPrimitive)))
+                if (params.tools.isNotEmpty()) {
+                    put("tools", JsonArray(params.tools.map { BedrockRequest.bedrockMantleTool(it) }))
+                }
             }
         }
         val response = BedrockHttp.bedrockPostJson(
@@ -585,6 +612,18 @@ private class BedrockMantleChatLanguageModel(
             parseJson = true,
         )
         val obj = response.value.jsonObject
+        return if (isResponsesApi) {
+            parseMantleResponsesResult(obj, body, response.headers)
+        } else {
+            parseMantleChatCompletionsResult(obj, body, response.headers)
+        }
+    }
+
+    private fun parseMantleChatCompletionsResult(
+        obj: JsonObject,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): LanguageModelResult {
         val choice = ((JsonAccess.arr(obj, "choices"))?.firstOrNull() as? JsonObject)
         val message = (choice?.get("message") as? JsonObject)
         val content = (message?.get("content") as? JsonPrimitive)?.contentOrNull.orEmpty()
@@ -608,11 +647,82 @@ private class BedrockMantleChatLanguageModel(
             response = LanguageModelResponseMetadata(
                 id = (obj["id"] as? JsonPrimitive)?.contentOrNull,
                 modelId = (obj["model"] as? JsonPrimitive)?.contentOrNull ?: modelId,
-                headers = response.headers,
-                body = response.value,
+                headers = headers,
+                body = obj,
             ),
             rawFinishReason = (choice?.get("finish_reason") as? JsonPrimitive)?.contentOrNull,
         )
+    }
+
+    private fun parseMantleResponsesResult(
+        obj: JsonObject,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): LanguageModelResult {
+        val output = JsonAccess.arr(obj, "output").orEmpty()
+        val textParts = mutableListOf<String>()
+        val toolCalls = mutableListOf<ContentPart.ToolCall>()
+        for (item in output) {
+            val itemObj = item as? JsonObject ?: continue
+            when ((itemObj["type"] as? JsonPrimitive)?.contentOrNull) {
+                "message" -> {
+                    val content = JsonAccess.arr(itemObj, "content").orEmpty()
+                    for (part in content) {
+                        val partObj = part as? JsonObject ?: continue
+                        val partType = (partObj["type"] as? JsonPrimitive)?.contentOrNull
+                        if (partType == "output_text" || partType == "text") {
+                            (partObj["text"] as? JsonPrimitive)?.contentOrNull?.let { textParts += it }
+                        }
+                    }
+                }
+                "function_call" -> {
+                    val name = (itemObj["name"] as? JsonPrimitive)?.contentOrNull ?: continue
+                    val arguments = (itemObj["arguments"] as? JsonPrimitive)?.contentOrNull
+                    toolCalls += ContentPart.ToolCall(
+                        toolCallId = (itemObj["call_id"] as? JsonPrimitive)?.contentOrNull
+                            ?: (itemObj["id"] as? JsonPrimitive)?.contentOrNull
+                            ?: settings.generateId(),
+                        toolName = name,
+                        input = ParseOpenAIToolInput(arguments),
+                    )
+                }
+            }
+        }
+        val status = (obj["status"] as? JsonPrimitive)?.contentOrNull
+        val rawFinish = status ?: (obj["incomplete_details"] as? JsonObject)?.let { "incomplete" }
+        return LanguageModelResult(
+            text = textParts.joinToString(""),
+            toolCalls = toolCalls,
+            finishReason = when {
+                toolCalls.isNotEmpty() -> FinishReason.ToolCalls
+                status == "incomplete" -> FinishReason.Length
+                status == "failed" -> FinishReason.Error
+                else -> FinishReason.Stop
+            },
+            usage = bedrockOpenAILikeUsage(obj["usage"]),
+            request = LanguageModelRequestMetadata(body),
+            response = LanguageModelResponseMetadata(
+                id = (obj["id"] as? JsonPrimitive)?.contentOrNull,
+                modelId = (obj["model"] as? JsonPrimitive)?.contentOrNull ?: modelId,
+                headers = headers,
+                body = obj,
+            ),
+            rawFinishReason = rawFinish,
+        )
+    }
+
+    /** Flatten chat messages into the Responses `input` value (string or item array). */
+    private fun bedrockMantleResponsesInput(messages: List<ModelMessage>): JsonElement {
+        if (messages.size == 1) {
+            val only = messages.single()
+            if (only.role == MessageRole.User) {
+                val texts = only.content.filterIsInstance<ContentPart.Text>().map { it.text }
+                if (texts.size == only.content.size && texts.isNotEmpty()) {
+                    return JsonPrimitive(texts.joinToString("\n"))
+                }
+            }
+        }
+        return JsonArray(messages.map { BedrockRequest.bedrockMantleMessage(it) })
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
@@ -645,9 +755,17 @@ private class BedrockMantleChatLanguageModel(
 
     private fun bedrockOpenAILikeUsage(element: JsonElement?): Usage {
         val obj = element as? JsonObject ?: return Usage()
+        // Chat Completions: prompt_tokens/completion_tokens
+        // Responses API: input_tokens/output_tokens
+        val prompt = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull
+            ?: (obj["input_tokens"] as? JsonPrimitive)?.intOrNull
+            ?: 0
+        val completion = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull
+            ?: (obj["output_tokens"] as? JsonPrimitive)?.intOrNull
+            ?: 0
         return Usage(
-            promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
-            completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
+            promptTokens = prompt,
+            completionTokens = completion,
         )
     }
 

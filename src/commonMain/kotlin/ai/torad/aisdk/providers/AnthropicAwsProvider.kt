@@ -66,11 +66,17 @@ public class AnthropicAwsProviderSettings internal constructor(
         if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
             throw LoadAPIKeyError("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
         }
+        // Derive signing region from the endpoint host when possible (docs: host/region
+        // mismatch → signature rejection). Falls back to configured credentials/settings.
+        val signingRegion = AnthropicAwsRegionFromHost(url)
+            ?: credentials.region
+            ?: region
+            ?: "us-east-1"
         return AwsSigV4.awsSigV4SignedHeaders(
             method = "POST",
             url = url,
             service = "aws-external-anthropic",
-            region = credentials.region ?: region ?: "us-east-1",
+            region = signingRegion,
             headers = headers + (HttpHeaders.ContentType to "application/json"),
             body = body,
             credentials = AwsSigV4Credentials(
@@ -81,6 +87,26 @@ public class AnthropicAwsProviderSettings internal constructor(
             amzDate = amzDate,
         )
     }
+}
+
+/**
+ * Extracts the AWS region from hosts like
+ * `aws-external-anthropic.us-east-1.api.aws` or `service.region.amazonaws.com`.
+ */
+internal fun AnthropicAwsRegionFromHost(url: String): String? {
+    val host = url.substringAfter("://").substringBefore('/').substringBefore(':')
+    val labels = host.split('.')
+    // service.region.api.aws
+    if (labels.size >= 4 && labels[labels.lastIndex - 1] == "api" && labels.last() == "aws") {
+        val candidate = labels[1]
+        if (candidate.matches(Regex("[a-z]{2}(-[a-z]+)+-\\d+"))) return candidate
+    }
+    // service.region.amazonaws.com
+    if (labels.size >= 4 && labels[labels.lastIndex - 1] == "amazonaws" && labels.last() == "com") {
+        val candidate = labels[1]
+        if (candidate.matches(Regex("[a-z]{2}(-[a-z]+)+-\\d+"))) return candidate
+    }
+    return null
 }
 
 /** @since 0.3.0-beta01 */

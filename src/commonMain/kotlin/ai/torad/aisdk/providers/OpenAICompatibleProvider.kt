@@ -18,6 +18,7 @@ internal fun ForFacade(
     transformChatRequestBody: ((JsonObject) -> JsonObject)? = null,
     convertUsage: ((JsonElement?) -> Usage)? = null,
     transformChatResponse: ((JsonObject) -> JsonObject)? = null,
+    chatMaxOutputTokensKey: String = "max_tokens",
 ): OpenAICompatibleProviderSettings =
     OpenAICompatibleProviderSettings {
         name(name)
@@ -32,6 +33,7 @@ internal fun ForFacade(
         transformChatRequestBody(transformChatRequestBody)
         convertUsage(convertUsage)
         transformChatResponse(transformChatResponse)
+        chatMaxOutputTokensKey(chatMaxOutputTokensKey)
     }
 
 /** @since 0.3.0-beta01 */

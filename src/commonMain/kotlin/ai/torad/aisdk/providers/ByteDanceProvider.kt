@@ -345,7 +345,8 @@ private class ByteDanceVideoModel(
         put("model", JsonPrimitive(modelId))
         put("content", byteDanceContent(params, options))
         params.aspectRatio?.let { put("ratio", JsonPrimitive(it)) }
-        params.durationSeconds?.let { put("duration", JsonPrimitive(it.toDouble())) }
+        // Docs: duration is integer seconds (JSON number without a fractional part).
+        params.durationSeconds?.let { put("duration", JsonPrimitive(it.toInt())) }
         params.seed?.let { put("seed", JsonPrimitive(it)) }
         (params.resolution ?: params.size)?.let { put("resolution", JsonPrimitive(byteDanceResolutionMap[it] ?: it)) }
         putBooleanIfPresent("watermark", options["watermark"])
@@ -477,8 +478,17 @@ private class ByteDanceVideoModel(
 
     private fun byteDanceErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
-            ?: raw.ifBlank { "request failed" }
+        // Docs: top-level error_code + message (not nested error.message).
+        val topMessage = (obj?.get("message") as? JsonPrimitive)?.contentOrNull
+        val topCode = (obj?.get("error_code") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error_code") as? JsonPrimitive)?.content
+        val nested = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
+        val detail = when {
+            topMessage != null && topCode != null -> "$topCode: $topMessage"
+            topMessage != null -> topMessage
+            nested != null -> nested
+            else -> raw.ifBlank { "request failed" }
+        }
         return "ByteDance request failed ($statusCode): $detail"
     }
 

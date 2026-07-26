@@ -1031,6 +1031,16 @@ private class OpenResponsesLanguageModel(
                     usage = openResponsesUsage(response["usage"])
                     events += StreamEvent.Error(OpenResponsesStreamFailure.message(response))
                 }
+                // Standalone SSE error event (not nested under response.failed).
+                "error" -> {
+                    finishReason = FinishReason.Error
+                    val message = (obj["message"] as? JsonPrimitive)?.contentOrNull
+                        ?: ((JsonAccess.obj(obj, "error"))?.get("message") as? JsonPrimitive)?.contentOrNull
+                        ?: obj.toString()
+                    rawFinishReason = (obj["code"] as? JsonPrimitive)?.contentOrNull
+                        ?: ((JsonAccess.obj(obj, "error"))?.get("code") as? JsonPrimitive)?.contentOrNull
+                    events += StreamEvent.Error(message)
+                }
             }
             return events
         }

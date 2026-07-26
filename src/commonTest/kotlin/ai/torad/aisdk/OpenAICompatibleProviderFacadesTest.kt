@@ -324,7 +324,8 @@ class OpenAICompatibleProviderFacadesTest {
         val body = fixture.calls.single().requestBodyJson.jsonObject
         assertEquals(null, body["tools"])
         assertEquals(null, body["tool_choice"])
-        assertEquals(null, body["stop"])
+        // stop is documented on /v1/sonar — keep it. seed remains dropped.
+        assertEquals("END", body["stop"]?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
         assertEquals(null, body["seed"])
         val messages = body["messages"]!!.jsonArray.map { it.jsonObject }
         assertEquals(listOf("user", "assistant"), messages.map { it["role"]?.jsonPrimitive?.contentOrNull })

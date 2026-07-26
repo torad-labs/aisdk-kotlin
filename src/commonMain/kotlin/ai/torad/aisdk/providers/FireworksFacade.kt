@@ -361,8 +361,11 @@ public class FireworksImageModel(
                 "Fireworks image generation response is missing request_id",
             )
         val imageUrl = pollForImageUrl(requestId, requestHeaders, abortSignal)
+        // Only forward Authorization when the image host matches the API origin — never leak
+        // the Fireworks bearer token to a CDN/third-party host returned in result.sample.
+        val imageHeaders = headersForImageDownload(imageUrl, requestHeaders)
         val imageResponse = AbortSignalRuntime.withAbortCancellation(abortSignal) {
-            getFacadeBinary(client, imageUrl, requestHeaders, abortSignal = abortSignal)
+            getFacadeBinary(client, imageUrl, imageHeaders, abortSignal = abortSignal)
         }
         return ImageModelResult(
             images = listOf(imageResponse.toGeneratedFile(modelId)),
@@ -389,11 +392,25 @@ public class FireworksImageModel(
                     abortSignal = abortSignal,
                 )
             }
-            val status = (response.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull
+            val responseObject = response.value as? JsonObject
+                ?: throw InvalidResponseDataError(
+                    response.value,
+                    "Fireworks poll response is missing a string status",
+                )
+            val status = (responseObject["status"] as? JsonPrimitive)
+                ?.takeIf { it.isString }
+                ?.contentOrNull
+                ?: throw InvalidResponseDataError(
+                    response.value,
+                    "Fireworks poll response is missing a string status",
+                )
             when (status) {
+                "Pending" -> Unit
                 "Ready" -> {
-                    val sample = (JsonAccess.obj(response.value.jsonObject, "result"))?.get("sample")
-                    return (sample as? JsonPrimitive)?.contentOrNull
+                    val sample = (JsonAccess.obj(responseObject, "result"))?.get("sample")
+                    return (sample as? JsonPrimitive)
+                        ?.takeIf { it.isString }
+                        ?.contentOrNull
                         ?: throw InvalidResponseDataError(
                             response.value,
                             "Fireworks poll response is Ready but missing result.sample",
@@ -402,6 +419,10 @@ public class FireworksImageModel(
                 "Error", "Failed" -> throw APICallError(
                     message = "Fireworks image generation failed with status: $status",
                     url = pollUrl,
+                )
+                else -> throw InvalidResponseDataError(
+                    response.value,
+                    "Fireworks poll response has unknown status: '$status'",
                 )
             }
             if (attempt < FIREWORKS_MAX_POLL_ATTEMPTS - 1) {
@@ -447,6 +468,30 @@ public class FireworksImageModel(
                 add(CallWarning("unsupported", "This Fireworks model does not support aspectRatio."))
             }
         }
+
+    private fun headersForImageDownload(
+        imageUrl: String,
+        requestHeaders: Map<String, String>,
+    ): Map<String, String> {
+        if (sameOrigin(settings.baseURL, imageUrl)) return requestHeaders
+        return requestHeaders.filterKeys { key ->
+            !key.equals("Authorization", ignoreCase = true) &&
+                !key.equals("x-api-key", ignoreCase = true)
+        }
+    }
+
+    private fun sameOrigin(apiBaseUrl: String, targetUrl: String): Boolean {
+        fun origin(url: String): String? {
+            val schemeEnd = url.indexOf("://")
+            if (schemeEnd < 0) return null
+            val rest = url.substring(schemeEnd + 3)
+            val hostEnd = rest.indexOf('/').let { if (it < 0) rest.length else it }
+            return url.substring(0, schemeEnd + 3 + hostEnd).lowercase()
+        }
+        val a = origin(apiBaseUrl) ?: return false
+        val b = origin(targetUrl) ?: return false
+        return a == b
+    }
 }
 
 internal enum class FireworksImageUrlFormat {

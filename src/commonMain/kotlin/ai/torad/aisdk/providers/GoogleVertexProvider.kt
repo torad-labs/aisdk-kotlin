@@ -44,7 +44,7 @@ public class GoogleVertexProviderSettings internal constructor(
                 "https://aiplatform.googleapis.com/v1/publishers/google"
             } else {
                 // Project-scoped Vertex publisher generateContent is served under v1beta1
-                // (the generateContent surface is not on v1 for project paths).
+                // (also available on some v1 paths; v1beta1 is the stable documented surface).
                 "https://${googleVertexApiHost(location)}/v1beta1/projects/" +
                     "${googleVertexProject()}/locations/$location/publishers/google"
             }

@@ -463,7 +463,9 @@ private class ElevenLabsTranscriptionModel(
                 MultiPartFormDataContent(
                     formData {
                         append("model_id", modelId)
-                        append("diarize", (options["diarize"] as? JsonPrimitive)?.contentOrNull ?: "true")
+                        // Match API default (false). Only enable when the caller opts in —
+                        // diarization is billing-relevant and used to be forced on silently.
+                        (options["diarize"] as? JsonPrimitive)?.contentOrNull?.let { append("diarize", it) }
                         ((options["languageCode"] as? JsonPrimitive)?.contentOrNull ?: params.language)?.let {
                             append("language_code", it)
                         }
@@ -507,6 +509,8 @@ private class ElevenLabsTranscriptionModel(
                     text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     startSeconds = (obj["start"] as? JsonPrimitive)?.floatOrNull,
                     endSeconds = (obj["end"] as? JsonPrimitive)?.floatOrNull,
+                    speakerId = (obj["speaker_id"] as? JsonPrimitive)?.contentOrNull
+                        ?: (obj["speakerId"] as? JsonPrimitive)?.contentOrNull,
                 )
             },
             response = LanguageModelResponseMetadata(

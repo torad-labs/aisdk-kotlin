@@ -5142,6 +5142,8 @@ final class ai.torad.aisdk.providers/LiteRTConversationRequest { // ai.torad.ais
         final fun <get-initialMessages>(): kotlin.collections/List<ai.torad.aisdk.providers/LiteRTMessage> // ai.torad.aisdk.providers/LiteRTConversationRequest.initialMessages.<get-initialMessages>|<get-initialMessages>(){}[0]
     final val message // ai.torad.aisdk.providers/LiteRTConversationRequest.message|{}message[0]
         final fun <get-message>(): ai.torad.aisdk.providers/LiteRTMessage // ai.torad.aisdk.providers/LiteRTConversationRequest.message.<get-message>|<get-message>(){}[0]
+    final val responseFormat // ai.torad.aisdk.providers/LiteRTConversationRequest.responseFormat|{}responseFormat[0]
+        final fun <get-responseFormat>(): ai.torad.aisdk/ResponseFormat // ai.torad.aisdk.providers/LiteRTConversationRequest.responseFormat.<get-responseFormat>|<get-responseFormat>(){}[0]
     final val samplerConfig // ai.torad.aisdk.providers/LiteRTConversationRequest.samplerConfig|{}samplerConfig[0]
         final fun <get-samplerConfig>(): ai.torad.aisdk.providers/LiteRTSamplerConfig? // ai.torad.aisdk.providers/LiteRTConversationRequest.samplerConfig.<get-samplerConfig>|<get-samplerConfig>(){}[0]
     final val systemInstruction // ai.torad.aisdk.providers/LiteRTConversationRequest.systemInstruction|{}systemInstruction[0]
@@ -5162,6 +5164,7 @@ final class ai.torad.aisdk.providers/LiteRTConversationRequestBuilder { // ai.to
     final fun extraContext(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.extraContext|extraContext(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
     final fun initialMessages(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTMessage>): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.initialMessages|initialMessages(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTMessage>){}[0]
     final fun message(ai.torad.aisdk.providers/LiteRTMessage): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.message|message(ai.torad.aisdk.providers.LiteRTMessage){}[0]
+    final fun responseFormat(ai.torad.aisdk/ResponseFormat): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.responseFormat|responseFormat(ai.torad.aisdk.ResponseFormat){}[0]
     final fun samplerConfig(ai.torad.aisdk.providers/LiteRTSamplerConfig?): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.samplerConfig|samplerConfig(ai.torad.aisdk.providers.LiteRTSamplerConfig?){}[0]
     final fun systemInstruction(kotlin.collections/List<ai.torad.aisdk.providers/LiteRTContent>): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.systemInstruction|systemInstruction(kotlin.collections.List<ai.torad.aisdk.providers.LiteRTContent>){}[0]
     final fun tools(kotlin.collections/List<ai.torad.aisdk/LanguageModelTool>): ai.torad.aisdk.providers/LiteRTConversationRequestBuilder // ai.torad.aisdk.providers/LiteRTConversationRequestBuilder.tools|tools(kotlin.collections.List<ai.torad.aisdk.LanguageModelTool>){}[0]
@@ -5254,6 +5257,12 @@ final class ai.torad.aisdk.providers/LiteRTMessageBuilder { // ai.torad.aisdk.pr
 }
 
 final class ai.torad.aisdk.providers/LiteRTSamplerConfig { // ai.torad.aisdk.providers/LiteRTSamplerConfig|null[0]
+    final val frequencyPenalty // ai.torad.aisdk.providers/LiteRTSamplerConfig.frequencyPenalty|{}frequencyPenalty[0]
+        final fun <get-frequencyPenalty>(): kotlin/Double? // ai.torad.aisdk.providers/LiteRTSamplerConfig.frequencyPenalty.<get-frequencyPenalty>|<get-frequencyPenalty>(){}[0]
+    final val maxOutputTokens // ai.torad.aisdk.providers/LiteRTSamplerConfig.maxOutputTokens|{}maxOutputTokens[0]
+        final fun <get-maxOutputTokens>(): kotlin/Int? // ai.torad.aisdk.providers/LiteRTSamplerConfig.maxOutputTokens.<get-maxOutputTokens>|<get-maxOutputTokens>(){}[0]
+    final val presencePenalty // ai.torad.aisdk.providers/LiteRTSamplerConfig.presencePenalty|{}presencePenalty[0]
+        final fun <get-presencePenalty>(): kotlin/Double? // ai.torad.aisdk.providers/LiteRTSamplerConfig.presencePenalty.<get-presencePenalty>|<get-presencePenalty>(){}[0]
     final val seed // ai.torad.aisdk.providers/LiteRTSamplerConfig.seed|{}seed[0]
         final fun <get-seed>(): kotlin/Int // ai.torad.aisdk.providers/LiteRTSamplerConfig.seed.<get-seed>|<get-seed>(){}[0]
     final val temperature // ai.torad.aisdk.providers/LiteRTSamplerConfig.temperature|{}temperature[0]
@@ -5272,6 +5281,9 @@ final class ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder { // ai.torad.ai
     constructor <init>() // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.<init>|<init>(){}[0]
 
     final fun build(): ai.torad.aisdk.providers/LiteRTSamplerConfig // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.build|build(){}[0]
+    final fun frequencyPenalty(kotlin/Double?): ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.frequencyPenalty|frequencyPenalty(kotlin.Double?){}[0]
+    final fun maxOutputTokens(kotlin/Int?): ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.maxOutputTokens|maxOutputTokens(kotlin.Int?){}[0]
+    final fun presencePenalty(kotlin/Double?): ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.presencePenalty|presencePenalty(kotlin.Double?){}[0]
     final fun seed(kotlin/Int): ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.seed|seed(kotlin.Int){}[0]
     final fun temperature(kotlin/Double): ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.temperature|temperature(kotlin.Double){}[0]
     final fun topK(kotlin/Int): ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder // ai.torad.aisdk.providers/LiteRTSamplerConfigBuilder.topK|topK(kotlin.Int){}[0]
@@ -5400,6 +5412,8 @@ final class ai.torad.aisdk.providers/MistralLanguageModelOptions { // ai.torad.a
         final fun <get-documentPageLimit>(): kotlin/Int? // ai.torad.aisdk.providers/MistralLanguageModelOptions.documentPageLimit.<get-documentPageLimit>|<get-documentPageLimit>(){}[0]
     final val parallelToolCalls // ai.torad.aisdk.providers/MistralLanguageModelOptions.parallelToolCalls|{}parallelToolCalls[0]
         final fun <get-parallelToolCalls>(): kotlin/Boolean? // ai.torad.aisdk.providers/MistralLanguageModelOptions.parallelToolCalls.<get-parallelToolCalls>|<get-parallelToolCalls>(){}[0]
+    final val prefix // ai.torad.aisdk.providers/MistralLanguageModelOptions.prefix|{}prefix[0]
+        final fun <get-prefix>(): kotlin/Boolean? // ai.torad.aisdk.providers/MistralLanguageModelOptions.prefix.<get-prefix>|<get-prefix>(){}[0]
     final val reasoningEffort // ai.torad.aisdk.providers/MistralLanguageModelOptions.reasoningEffort|{}reasoningEffort[0]
         final fun <get-reasoningEffort>(): kotlin/String? // ai.torad.aisdk.providers/MistralLanguageModelOptions.reasoningEffort.<get-reasoningEffort>|<get-reasoningEffort>(){}[0]
     final val safePrompt // ai.torad.aisdk.providers/MistralLanguageModelOptions.safePrompt|{}safePrompt[0]
@@ -5434,6 +5448,7 @@ final class ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder { // ai.
     final fun documentImageLimit(kotlin/Int?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.documentImageLimit|documentImageLimit(kotlin.Int?){}[0]
     final fun documentPageLimit(kotlin/Int?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.documentPageLimit|documentPageLimit(kotlin.Int?){}[0]
     final fun parallelToolCalls(kotlin/Boolean?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.parallelToolCalls|parallelToolCalls(kotlin.Boolean?){}[0]
+    final fun prefix(kotlin/Boolean?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.prefix|prefix(kotlin.Boolean?){}[0]
     final fun reasoningEffort(kotlin/String?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
     final fun safePrompt(kotlin/Boolean?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.safePrompt|safePrompt(kotlin.Boolean?){}[0]
     final fun strictJsonSchema(kotlin/Boolean?): ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.strictJsonSchema|strictJsonSchema(kotlin.Boolean?){}[0]
@@ -6199,6 +6214,8 @@ final class ai.torad.aisdk.providers/ProdiaVideoModelOptionsBuilder { // ai.tora
 }
 
 final class ai.torad.aisdk.providers/QuiverAIImageModelOptions { // ai.torad.aisdk.providers/QuiverAIImageModelOptions|null[0]
+    final val attributes // ai.torad.aisdk.providers/QuiverAIImageModelOptions.attributes|{}attributes[0]
+        final fun <get-attributes>(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/QuiverAIImageModelOptions.attributes.<get-attributes>|<get-attributes>(){}[0]
     final val autoCrop // ai.torad.aisdk.providers/QuiverAIImageModelOptions.autoCrop|{}autoCrop[0]
         final fun <get-autoCrop>(): kotlin/Boolean? // ai.torad.aisdk.providers/QuiverAIImageModelOptions.autoCrop.<get-autoCrop>|<get-autoCrop>(){}[0]
     final val instructions // ai.torad.aisdk.providers/QuiverAIImageModelOptions.instructions|{}instructions[0]
@@ -6215,6 +6232,8 @@ final class ai.torad.aisdk.providers/QuiverAIImageModelOptions { // ai.torad.ais
         final fun <get-temperature>(): kotlin/Double? // ai.torad.aisdk.providers/QuiverAIImageModelOptions.temperature.<get-temperature>|<get-temperature>(){}[0]
     final val topP // ai.torad.aisdk.providers/QuiverAIImageModelOptions.topP|{}topP[0]
         final fun <get-topP>(): kotlin/Double? // ai.torad.aisdk.providers/QuiverAIImageModelOptions.topP.<get-topP>|<get-topP>(){}[0]
+    final val viewBox // ai.torad.aisdk.providers/QuiverAIImageModelOptions.viewBox|{}viewBox[0]
+        final fun <get-viewBox>(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/QuiverAIImageModelOptions.viewBox.<get-viewBox>|<get-viewBox>(){}[0]
 
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/QuiverAIImageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/QuiverAIImageModelOptions.hashCode|hashCode(){}[0]
@@ -6237,6 +6256,7 @@ final class ai.torad.aisdk.providers/QuiverAIImageModelOptions { // ai.torad.ais
 final class ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder { // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder|null[0]
     constructor <init>() // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.<init>|<init>(){}[0]
 
+    final fun attributes(kotlinx.serialization.json/JsonObject?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.attributes|attributes(kotlinx.serialization.json.JsonObject?){}[0]
     final fun autoCrop(kotlin/Boolean?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.autoCrop|autoCrop(kotlin.Boolean?){}[0]
     final fun build(): ai.torad.aisdk.providers/QuiverAIImageModelOptions // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.build|build(){}[0]
     final fun instructions(kotlin/String?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.instructions|instructions(kotlin.String?){}[0]
@@ -6246,6 +6266,8 @@ final class ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder { // ai.to
     final fun targetSize(kotlin/Int?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.targetSize|targetSize(kotlin.Int?){}[0]
     final fun temperature(kotlin/Double?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.temperature|temperature(kotlin.Double?){}[0]
     final fun topP(kotlin/Double?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.topP|topP(kotlin.Double?){}[0]
+    final fun viewBox(kotlin/Double, kotlin/Double, kotlin/Double, kotlin/Double): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.viewBox|viewBox(kotlin.Double;kotlin.Double;kotlin.Double;kotlin.Double){}[0]
+    final fun viewBox(kotlinx.serialization.json/JsonObject?): ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder // ai.torad.aisdk.providers/QuiverAIImageModelOptionsBuilder.viewBox|viewBox(kotlinx.serialization.json.JsonObject?){}[0]
 }
 
 final class ai.torad.aisdk.providers/QuiverAIProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/QuiverAIProvider|null[0]
@@ -10976,10 +10998,12 @@ final class ai.torad.aisdk/TranscribeResult { // ai.torad.aisdk/TranscribeResult
 }
 
 final class ai.torad.aisdk/TranscriptSegment { // ai.torad.aisdk/TranscriptSegment|null[0]
-    constructor <init>(kotlin/String, kotlin/Float? = ..., kotlin/Float? = ...) // ai.torad.aisdk/TranscriptSegment.<init>|<init>(kotlin.String;kotlin.Float?;kotlin.Float?){}[0]
+    constructor <init>(kotlin/String, kotlin/Float? = ..., kotlin/Float? = ..., kotlin/String? = ...) // ai.torad.aisdk/TranscriptSegment.<init>|<init>(kotlin.String;kotlin.Float?;kotlin.Float?;kotlin.String?){}[0]
 
     final val endSeconds // ai.torad.aisdk/TranscriptSegment.endSeconds|{}endSeconds[0]
         final fun <get-endSeconds>(): kotlin/Float? // ai.torad.aisdk/TranscriptSegment.endSeconds.<get-endSeconds>|<get-endSeconds>(){}[0]
+    final val speakerId // ai.torad.aisdk/TranscriptSegment.speakerId|{}speakerId[0]
+        final fun <get-speakerId>(): kotlin/String? // ai.torad.aisdk/TranscriptSegment.speakerId.<get-speakerId>|<get-speakerId>(){}[0]
     final val startSeconds // ai.torad.aisdk/TranscriptSegment.startSeconds|{}startSeconds[0]
         final fun <get-startSeconds>(): kotlin/Float? // ai.torad.aisdk/TranscriptSegment.startSeconds.<get-startSeconds>|<get-startSeconds>(){}[0]
     final val text // ai.torad.aisdk/TranscriptSegment.text|{}text[0]
@@ -14030,6 +14054,8 @@ final object ai.torad.aisdk/VideoGeneration { // ai.torad.aisdk/VideoGeneration|
     final suspend fun generateVideo(ai.torad.aisdk/VideoModel, kotlin/String, kotlin/Int = ..., ai.torad.aisdk/GeneratedFile? = ..., kotlin/Float? = ..., kotlin/String? = ..., kotlin/String? = ..., ai.torad.aisdk/ProviderOptions = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/AbortSignal = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin/String? = ..., ai.torad.aisdk/Logger = ..., kotlin/Int = ...): ai.torad.aisdk/GenerateVideoResult // ai.torad.aisdk/VideoGeneration.generateVideo|generateVideo(ai.torad.aisdk.VideoModel;kotlin.String;kotlin.Int;ai.torad.aisdk.GeneratedFile?;kotlin.Float?;kotlin.String?;kotlin.String?;ai.torad.aisdk.ProviderOptions;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.AbortSignal;kotlin.Int?;kotlin.Int?;kotlin.String?;ai.torad.aisdk.Logger;kotlin.Int){}[0]
 }
 
+final const val ai.torad.aisdk.providers/AI_GATEWAY_OPENAI_COMPAT_BASE_URL // ai.torad.aisdk.providers/AI_GATEWAY_OPENAI_COMPAT_BASE_URL|{}AI_GATEWAY_OPENAI_COMPAT_BASE_URL[0]
+    final fun <get-AI_GATEWAY_OPENAI_COMPAT_BASE_URL>(): kotlin/String // ai.torad.aisdk.providers/AI_GATEWAY_OPENAI_COMPAT_BASE_URL.<get-AI_GATEWAY_OPENAI_COMPAT_BASE_URL>|<get-AI_GATEWAY_OPENAI_COMPAT_BASE_URL>(){}[0]
 final const val ai.torad.aisdk.providers/ALIBABA_VERSION // ai.torad.aisdk.providers/ALIBABA_VERSION|{}ALIBABA_VERSION[0]
     final fun <get-ALIBABA_VERSION>(): kotlin/String // ai.torad.aisdk.providers/ALIBABA_VERSION.<get-ALIBABA_VERSION>|<get-ALIBABA_VERSION>(){}[0]
 final const val ai.torad.aisdk.providers/AMAZON_BEDROCK_VERSION // ai.torad.aisdk.providers/AMAZON_BEDROCK_VERSION|{}AMAZON_BEDROCK_VERSION[0]
@@ -14102,6 +14128,8 @@ final const val ai.torad.aisdk.providers/REVAI_VERSION // ai.torad.aisdk.provide
     final fun <get-REVAI_VERSION>(): kotlin/String // ai.torad.aisdk.providers/REVAI_VERSION.<get-REVAI_VERSION>|<get-REVAI_VERSION>(){}[0]
 final const val ai.torad.aisdk.providers/TOGETHERAI_VERSION // ai.torad.aisdk.providers/TOGETHERAI_VERSION|{}TOGETHERAI_VERSION[0]
     final fun <get-TOGETHERAI_VERSION>(): kotlin/String // ai.torad.aisdk.providers/TOGETHERAI_VERSION.<get-TOGETHERAI_VERSION>|<get-TOGETHERAI_VERSION>(){}[0]
+final const val ai.torad.aisdk.providers/VERCEL_V0_BASE_URL // ai.torad.aisdk.providers/VERCEL_V0_BASE_URL|{}VERCEL_V0_BASE_URL[0]
+    final fun <get-VERCEL_V0_BASE_URL>(): kotlin/String // ai.torad.aisdk.providers/VERCEL_V0_BASE_URL.<get-VERCEL_V0_BASE_URL>|<get-VERCEL_V0_BASE_URL>(){}[0]
 final const val ai.torad.aisdk.providers/VERCEL_VERSION // ai.torad.aisdk.providers/VERCEL_VERSION|{}VERCEL_VERSION[0]
     final fun <get-VERCEL_VERSION>(): kotlin/String // ai.torad.aisdk.providers/VERCEL_VERSION.<get-VERCEL_VERSION>|<get-VERCEL_VERSION>(){}[0]
 final const val ai.torad.aisdk.providers/VERSION // ai.torad.aisdk.providers/VERSION|{}VERSION[0]
@@ -14352,6 +14380,7 @@ final fun ai.torad.aisdk.providers/TogetherAIImageModelOptions(kotlin/Function1<
 final fun ai.torad.aisdk.providers/TogetherAIProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/TogetherAIProviderSettings // ai.torad.aisdk.providers/TogetherAIProviderSettings|TogetherAIProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.TogetherAIProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/TogetherAIRerankingModelOptions(kotlin/Function1<ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/TogetherAIRerankingModelOptions // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions|TogetherAIRerankingModelOptions(kotlin.Function1<ai.torad.aisdk.providers.TogetherAIRerankingModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Vercel(io.ktor.client/HttpClient, ai.torad.aisdk.providers/VercelProviderSettings = ...): ai.torad.aisdk.providers/VercelProvider // ai.torad.aisdk.providers/Vercel|Vercel(io.ktor.client.HttpClient;ai.torad.aisdk.providers.VercelProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/VercelAIGateway(io.ktor.client/HttpClient, ai.torad.aisdk.providers/VercelProviderSettings = ...): ai.torad.aisdk.providers/VercelProvider // ai.torad.aisdk.providers/VercelAIGateway|VercelAIGateway(io.ktor.client.HttpClient;ai.torad.aisdk.providers.VercelProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/VercelProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/VercelProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/VercelProviderSettings // ai.torad.aisdk.providers/VercelProviderSettings|VercelProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.VercelProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/ViewImage(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/ViewImage|ViewImage(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/ViewXVideo(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/ViewXVideo|ViewXVideo(kotlinx.serialization.json.JsonElement){}[0]

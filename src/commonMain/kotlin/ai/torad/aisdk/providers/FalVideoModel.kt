@@ -34,7 +34,7 @@ internal class FalVideoModel(
         val body = falVideoRequestBody(params, options)
         val queue = settings.falPostJson(
             client = client,
-            url = "https://queue.fal.run/fal-ai/${falNormalizedVideoModelId(modelId)}",
+            url = "${FalQueueBaseUrl(settings.baseURL)}/fal-ai/${falNormalizedVideoModelId(modelId)}",
             body = body,
             headers = settings.falHeaders(params.headers),
         )
@@ -77,9 +77,19 @@ internal class FalVideoModel(
         options: JsonObject,
     ): JsonObject = buildJsonObject {
         params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
-        params.image?.let { put("image_url", JsonPrimitive(it.url ?: "data:${it.mediaType};base64,${it.base64}")) }
+        params.image?.let {
+            val imageRef = it.url ?: "data:${it.mediaType};base64,${it.base64}"
+            // Kling v3 i2v (and several successors) require start_image_url; older models take image_url.
+            // Emit both so either schema accepts the payload.
+            put("image_url", JsonPrimitive(imageRef))
+            put("start_image_url", JsonPrimitive(imageRef))
+        }
         params.aspectRatio?.let { put("aspect_ratio", JsonPrimitive(it)) }
-        params.durationSeconds?.let { put("duration", JsonPrimitive("${formatFalSeconds(it)}s")) }
+        params.durationSeconds?.let {
+            // Kling v3 (and several other fal video models) expect a bare number string ("5");
+            // the historical "5s" suffix 400s on those schemas. Keep the bare form universally.
+            put("duration", JsonPrimitive(formatFalSeconds(it)))
+        }
         params.seed?.let { put("seed", JsonPrimitive(it)) }
         (options["resolution"] ?: params.resolution?.let(::JsonPrimitive))?.let { put("resolution", it) }
         options["loop"]?.takeUnless { it is JsonNull }?.let { put("loop", it) }

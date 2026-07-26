@@ -63,12 +63,8 @@ public class DeepgramSpeechModel(
                 message = "Deepgram TTS models embed the voice in the model ID. The voice parameter \"${params.voice}\" was ignored.",
             )
         }
-        if (params.speed != null) {
-            warnings += CallWarning(
-                type = "unsupported",
-                message = "Deepgram TTS REST API does not support speed adjustment. Speed parameter was ignored.",
-            )
-        }
+        // Deepgram TTS documents `speed` as a supported query param.
+        params.speed?.let { queryParams["speed"] = it.toString() }
         if (params.instructions != null) {
             warnings += CallWarning(
                 type = "unsupported",

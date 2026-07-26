@@ -37,6 +37,9 @@ internal class LiteRTCallPreparer(
 
     fun prepare(params: LanguageModelCallParams): PreparedLiteRTCall {
         val warnings = warnings(params).toMutableList()
+        // Keep prompt-side schema injection as a portable fallback for hosts without
+        // native constrained decoding, AND surface responseFormat on the request so
+        // engines that do support it can use guaranteed-schema decoding.
         val messages = when (val format = params.responseFormat) {
             is ResponseFormat.Json -> JsonInstruction.injectJsonInstructionIntoMessages(
                 messages = params.messages,
@@ -61,27 +64,16 @@ internal class LiteRTCallPreparer(
             extraContext(extraContext(params.providerOptions))
             warnings(warnings)
             callParams(params)
+            responseFormat(params.responseFormat)
         }
         return PreparedLiteRTCall(request, warnings)
     }
 
     fun warnings(params: LanguageModelCallParams): List<CallWarning> = buildList {
-        if (params.maxOutputTokens != null) {
-            add(
-                CallWarning(
-                    "unsupported",
-                    "LiteRT-LM does not expose per-call maxOutputTokens; configure EngineConfig.maxNumTokens instead.",
-                ),
-            )
-        }
+        // maxOutputTokens / presencePenalty / frequencyPenalty are first-class sampler
+        // slots now — do not warn them away. stopSequences still has no LiteRT-LM hook.
         if (params.stopSequences.isNotEmpty()) {
             add(CallWarning("unsupported", "LiteRT-LM does not expose per-call stopSequences."))
-        }
-        if (params.presencePenalty != null) {
-            add(CallWarning("unsupported", "LiteRT-LM does not expose presencePenalty."))
-        }
-        if (params.frequencyPenalty != null) {
-            add(CallWarning("unsupported", "LiteRT-LM does not expose frequencyPenalty."))
         }
     }
 
@@ -132,6 +124,9 @@ internal class LiteRTCallPreparer(
             topP(params.topP?.toDouble() ?: base.topP)
             temperature(params.temperature?.toDouble() ?: base.temperature)
             seed(params.seed ?: base.seed)
+            maxOutputTokens(params.maxOutputTokens ?: base.maxOutputTokens)
+            presencePenalty(params.presencePenalty?.toDouble() ?: base.presencePenalty)
+            frequencyPenalty(params.frequencyPenalty?.toDouble() ?: base.frequencyPenalty)
         }
     }
 
@@ -139,7 +134,10 @@ internal class LiteRTCallPreparer(
         params.topK != null ||
             params.topP != null ||
             params.temperature != null ||
-            params.seed != null
+            params.seed != null ||
+            params.maxOutputTokens != null ||
+            params.presencePenalty != null ||
+            params.frequencyPenalty != null
 
     fun extraContext(providerOptions: ProviderOptions): Map<String, JsonElement> {
         val options = options(providerOptions) ?: return settings.extraContext
@@ -149,6 +147,10 @@ internal class LiteRTCallPreparer(
         }
         options["enableThinking"]?.let { extra["enable_thinking"] = it }
         options["enable_thinking"]?.let { extra["enable_thinking"] = it }
+        // Host engines that expose a thinking-token budget read this extra_context key.
+        (options["thinkingTokenBudget"] ?: options["thinking_token_budget"])?.let {
+            extra["thinking_token_budget"] = it
+        }
         return extra
     }
 
