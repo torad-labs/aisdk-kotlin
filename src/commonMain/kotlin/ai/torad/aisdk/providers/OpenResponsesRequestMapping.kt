@@ -111,7 +111,7 @@ private fun PutToolAndTextFields(builder: JsonObjectBuilder, context: OpenRespon
             ),
         )
     }
-    OpenResponsesToolChoice(params.toolChoice, providerOptions)?.let { builder.put("tool_choice", it) }
+    OpenResponsesToolChoice(params.toolChoice, providerOptions, params.tools)?.let { builder.put("tool_choice", it) }
     val text = OpenResponsesText(params.responseFormat, providerOptions)
     if (text.isNotEmpty()) builder.put("text", JsonObject(text))
 }
@@ -234,13 +234,22 @@ private fun OpenResponsesProviderToolJson(tool: LanguageModelTool): JsonObject =
             OpenResponsesRankingOptions(args)?.let { put("ranking_options", it) }
             PutOpenResponsesField("filters", args["filters"])
         }
-        "web_search", "web_search_preview" -> {
+        "web_search" -> {
             put("type", JsonPrimitive(type))
             PutOpenResponsesField(
                 "external_web_access",
                 args["externalWebAccess"] ?: args["external_web_access"]
             )
             PutOpenResponsesField("filters", OpenResponsesWebSearchFilters(args["filters"]))
+            PutOpenResponsesField(
+                "search_context_size",
+                args["searchContextSize"] ?: args["search_context_size"]
+            )
+            PutOpenResponsesField("user_location", args["userLocation"] ?: args["user_location"])
+        }
+        // web_search_preview does not accept filters / external_web_access (400s if sent).
+        "web_search_preview" -> {
+            put("type", JsonPrimitive(type))
             PutOpenResponsesField(
                 "search_context_size",
                 args["searchContextSize"] ?: args["search_context_size"]
@@ -307,6 +316,7 @@ private fun OpenResponsesProviderToolJson(tool: LanguageModelTool): JsonObject =
 private fun OpenResponsesToolChoice(
     choice: ToolChoice,
     options: OpenResponsesOptions?,
+    tools: List<LanguageModelTool> = emptyList(),
 ): JsonElement? {
     options?.allowedTools?.takeIf { it.toolNames.isNotEmpty() }?.let { allowed ->
         return buildJsonObject {
@@ -330,9 +340,19 @@ private fun OpenResponsesToolChoice(
         ToolChoice.None -> JsonPrimitive("none")
         ToolChoice.Required -> JsonPrimitive("required")
         is ToolChoice.Specific -> buildJsonObject {
-            val providerToolType = OpenResponsesProviderToolTypeOrNull(choice.toolName)
-            if (providerToolType != null) {
+            val matchedTool = tools.firstOrNull { it.name == choice.toolName }
+            val providerToolType = matchedTool?.let { OpenResponsesProviderToolType(it) }
+                ?: OpenResponsesProviderToolTypeOrNull(choice.toolName)
+            if (providerToolType != null && providerToolType != "custom" && providerToolType != "function") {
                 put("type", JsonPrimitive(providerToolType))
+                // MCP tool_choice requires server_label (docs) — pull from tool args when present.
+                if (providerToolType == "mcp") {
+                    val args = matchedTool?.let { OpenResponsesProviderToolArgs(it) } ?: JsonObject(emptyMap())
+                    val label = (args["serverLabel"] as? JsonPrimitive)?.contentOrNull
+                        ?: (args["server_label"] as? JsonPrimitive)?.contentOrNull
+                        ?: choice.toolName.takeIf { it.isNotBlank() && it != "mcp" }
+                    label?.let { put("server_label", JsonPrimitive(it)) }
+                }
             } else {
                 put("type", JsonPrimitive("function"))
                 put("name", JsonPrimitive(choice.toolName))
@@ -403,7 +423,15 @@ private fun OpenResponsesProviderToolArgs(tool: LanguageModelTool): JsonObject =
 
 private fun OpenResponsesProviderToolType(tool: LanguageModelTool): String {
     val providerToolId = (tool.metadata["providerToolId"] as? JsonPrimitive)?.contentOrNull
-    return providerToolId?.removePrefix("openai.") ?: OpenResponsesProviderToolTypeOrNull(tool.name) ?: "custom"
+    // Strip known provider prefixes so xai.code_interpreter / openai.code_interpreter both
+    // land on the wire as the bare Responses type (`code_interpreter`, `web_search`, …).
+    val stripped = providerToolId
+        ?.removePrefix("openai.")
+        ?.removePrefix("xai.")
+    return stripped?.takeIf { it.isNotBlank() && !it.contains('.') }
+        ?: OpenResponsesProviderToolTypeOrNull(tool.name)
+        ?: stripped
+        ?: "custom"
 }
 
 private fun OpenResponsesProviderToolTypeOrNull(toolName: String): String? = when (toolName) {
@@ -440,9 +468,23 @@ private fun OpenResponsesCodeInterpreterContainer(value: JsonElement?): JsonElem
     when (value) {
         null, JsonNull -> buildJsonObject { put("type", JsonPrimitive("auto")) }
         is JsonPrimitive -> value
-        is JsonObject -> buildJsonObject {
-            put("type", JsonPrimitive("auto"))
-            PutOpenResponsesField("file_ids", value["fileIds"] ?: value["file_ids"])
+        is JsonObject -> {
+            val explicitType = (value["type"] as? JsonPrimitive)?.contentOrNull
+            when {
+                // Already a container id / reference string-shaped object — pass through known keys.
+                explicitType == "container_reference" || value["container_id"] != null || value["containerId"] != null ->
+                    buildJsonObject {
+                        put("type", JsonPrimitive(explicitType ?: "container_reference"))
+                        PutOpenResponsesField("container_id", value["containerId"] ?: value["container_id"])
+                    }
+                else -> buildJsonObject {
+                    put("type", JsonPrimitive(explicitType ?: "auto"))
+                    PutOpenResponsesField("file_ids", value["fileIds"] ?: value["file_ids"])
+                    // Docs: auto containers accept memory_limit + network_policy.
+                    PutOpenResponsesField("memory_limit", value["memoryLimit"] ?: value["memory_limit"])
+                    PutOpenResponsesField("network_policy", value["networkPolicy"] ?: value["network_policy"])
+                }
+            }
         }
         else -> value
     }

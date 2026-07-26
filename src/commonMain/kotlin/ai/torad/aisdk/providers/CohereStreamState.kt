@@ -37,6 +37,37 @@ internal class CohereChatStreamState(
             "tool-call-start" -> acceptToolCallStart(value)
             "tool-call-delta" -> acceptToolCallDelta(value)
             "tool-call-end" -> acceptToolCallEnd(value)
+            // tool-plan / citation deltas are reasoning-adjacent; surface as reasoning text
+            // rather than opaque Raw so consumers don't lose them.
+            "tool-plan-delta", "tool_plan_delta" -> {
+                val delta = (JsonAccess.obj(value, "delta")) ?: value
+                val text = (delta["text"] as? JsonPrimitive)?.contentOrNull
+                    ?: (delta["tool_plan"] as? JsonPrimitive)?.contentOrNull
+                    ?: return emptyList()
+                val id = "tool-plan"
+                listOf(StreamEvent.ReasoningDelta(id, text))
+            }
+            "citation-start", "citation-end", "citation-delta",
+            "citation_start", "citation_end", "citation_delta",
+            -> {
+                // Preserve citations as Source parts when a URL is present; otherwise Raw.
+                val delta = (JsonAccess.obj(value, "delta")) ?: value
+                val url = (delta["url"] as? JsonPrimitive)?.contentOrNull
+                    ?: ((JsonAccess.obj(delta, "citation"))?.get("url") as? JsonPrimitive)?.contentOrNull
+                if (url != null) {
+                    listOf(
+                        StreamEvent.SourcePart(
+                            id = (delta["id"] as? JsonPrimitive)?.contentOrNull
+                                ?: url,
+                            sourceType = StreamEvent.SourcePart.SourceType.Url,
+                            url = url,
+                            title = (delta["title"] as? JsonPrimitive)?.contentOrNull,
+                        ),
+                    )
+                } else {
+                    listOf(StreamEvent.Raw(value))
+                }
+            }
             "message-end" -> acceptMessageEnd(value)
             else -> listOf(StreamEvent.Raw(value))
         }

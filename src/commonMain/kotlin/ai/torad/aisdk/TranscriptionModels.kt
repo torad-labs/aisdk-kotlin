@@ -114,6 +114,11 @@ public class TranscriptSegment(
     public val startSeconds: Float? = null,
     /** @since 0.3.0-beta01 */
     public val endSeconds: Float? = null,
+    /**
+     * Speaker label when the provider returned diarization (e.g. ElevenLabs `speaker_id`).
+     * @since 0.3.0-beta01
+     */
+    public val speakerId: String? = null,
 )
 
 @Poko

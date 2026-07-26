@@ -347,11 +347,11 @@ class AnthropicProviderTest {
         )
         assertEquals("Example", result.content.filterIsInstance<ContentPart.Source>().single().title)
         assertEquals(listOf("lookup", "web_search"), result.toolCalls.map { it.toolName })
+        assertEquals(true, result.toolCalls[1].providerExecuted)
         assertEquals(
-            true,
-            result.toolCalls[1].providerMetadata.toMap()["anthropic"]?.jsonObject?.get(
-                "providerExecuted"
-            )?.jsonPrimitive?.booleanOrNull
+            "server_tool_use",
+            result.toolCalls[1].providerMetadata.toMap()["anthropic"]?.jsonObject?.get("type")
+                ?.jsonPrimitive?.contentOrNull,
         )
         assertEquals(
             "container-1",
@@ -380,7 +380,7 @@ class AnthropicProviderTest {
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/anthropic/$ANTHROPIC_VERSION"))
         val betaHeader = request.requestHeaders.headerValue("anthropic-beta").orEmpty()
         assertTrue(betaHeader.contains("pdfs-2024-09-25"))
-        assertTrue(betaHeader.contains("mcp-client-2025-04-04"))
+        assertTrue(betaHeader.contains("mcp-client-2025-11-20"))
         assertTrue(betaHeader.contains("skills-2025-10-02"))
         assertTrue(betaHeader.contains("custom-beta"))
 
@@ -397,11 +397,24 @@ class AnthropicProviderTest {
             "json_schema",
             body["output_config"]?.jsonObject?.get("format")?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull
         )
+        val mcpServer = body["mcp_servers"]?.jsonArray?.single()?.jsonObject
         assertEquals(
             "token",
-            body["mcp_servers"]?.jsonArray?.single()?.jsonObject?.get(
-                "authorization_token"
-            )?.jsonPrimitive?.contentOrNull
+            mcpServer?.get("authorization_token")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(null, mcpServer?.get("tool_configuration"), "tool_configuration moved to mcp_toolset")
+        val mcpToolset = body["tools"]?.jsonArray
+            ?.mapNotNull { it.jsonObject }
+            ?.firstOrNull { it["type"]?.jsonPrimitive?.contentOrNull == "mcp_toolset" }
+        assertEquals("tools", mcpToolset?.get("mcp_server_name")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            false,
+            mcpToolset?.get("default_config")?.jsonObject?.get("enabled")?.jsonPrimitive?.booleanOrNull,
+        )
+        assertEquals(
+            true,
+            mcpToolset?.get("configs")?.jsonObject?.get("lookup")?.jsonObject
+                ?.get("enabled")?.jsonPrimitive?.booleanOrNull,
         )
         assertEquals(
             "pptx",
@@ -415,9 +428,11 @@ class AnthropicProviderTest {
             body["tool_choice"]?.jsonObject?.get("disable_parallel_tool_use")?.jsonPrimitive?.booleanOrNull
         )
         assertEquals(false, body["tools"]?.jsonArray?.first()?.jsonObject?.get("strict")?.jsonPrimitive?.booleanOrNull)
-        assertEquals(
-            "web_search_20260209",
-            body["tools"]?.jsonArray?.last()?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull
+        assertTrue(
+            body["tools"]?.jsonArray.orEmpty().any {
+                it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "web_search_20260209"
+            },
+            "provider-executed web_search tool must still be present",
         )
         assertEquals(
             "Follow policy.",

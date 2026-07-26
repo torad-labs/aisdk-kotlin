@@ -84,14 +84,13 @@ public class XaiProviderSettings internal constructor(
         JsonAccess.obj(providerOptions.toMap(), "xai") ?: JsonObject(emptyMap())
 
     /**
-     * Rewrites the OpenAI-shaped chat body into xAI's shape: drops `stop` (xAI does not
-     * support stop sequences and rejects the key) and strips `additionalProperties: false`
+     * Rewrites the OpenAI-shaped chat body into xAI's shape: strips `additionalProperties: false`
      * from every tool's parameters schema (xAI structured-output requires it removed).
+     * `stop` is documented as supported on non-reasoning models and is forwarded as-is.
      */
     internal fun xaiTransformChatBody(body: JsonObject): JsonObject = buildJsonObject {
         for ((key, value) in body) {
             when (key) {
-                "stop" -> Unit // dropped — unsupported by xAI
                 "tools" -> put("tools", xaiStripToolSchemas(value))
                 else -> put(key, value)
             }
@@ -605,7 +604,8 @@ public val xaiTools: XaiTools = XaiTools()
 
 /** @since 0.3.0-beta01 */
 public fun CodeExecution(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    XaiProviderTool("code_execution", "Execute code in xAI's hosted code execution environment.", args)
+    // Responses API wire type is `code_interpreter` (OpenAI-shaped); `code_execution` 400s.
+    XaiProviderTool("code_interpreter", "Execute code in xAI's hosted code execution environment.", args)
 
 /** @since 0.3.0-beta01 */
 public fun FileSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =

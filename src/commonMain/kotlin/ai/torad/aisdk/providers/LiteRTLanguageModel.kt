@@ -12,6 +12,7 @@ import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.LanguageModelStreamResult
 import ai.torad.aisdk.LanguageModelTool
 import ai.torad.aisdk.ProviderMetadata
+import ai.torad.aisdk.ResponseFormat
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.Usage
 import dev.drewhamilton.poko.Poko
@@ -90,6 +91,10 @@ public val LiteRTSamplerConfigDefault: LiteRTSamplerConfig = LiteRTSamplerConfig
  * Values mirror the common per-call sampling knobs. When a call does not
  * provide an override, [LiteRTLanguageModelSettings.defaultSamplerConfig] or
  * [LiteRTSamplerConfigDefault] supplies the base values.
+ *
+ * Optional fields ([maxOutputTokens], [presencePenalty], [frequencyPenalty])
+ * map onto current LiteRT-LM engine knobs; hosts should forward them when the
+ * bound engine supports them.
  * @since 0.3.0-beta01
  */
 public class LiteRTSamplerConfig internal constructor(
@@ -101,6 +106,22 @@ public class LiteRTSamplerConfig internal constructor(
     public val temperature: Double,
     /** @since 0.3.0-beta01 */
     public val seed: Int = 0,
+    /**
+     * Per-call decode budget (LiteRT-LM `maxOutputToken`). Distinct from engine
+     * `maxNumTokens`, which sizes the KV cache rather than capping generation.
+     * @since 0.3.0-beta01
+     */
+    public val maxOutputTokens: Int? = null,
+    /**
+     * Presence penalty when the bound engine supports it.
+     * @since 0.3.0-beta01
+     */
+    public val presencePenalty: Double? = null,
+    /**
+     * Frequency penalty when the bound engine supports it.
+     * @since 0.3.0-beta01
+     */
+    public val frequencyPenalty: Double? = null,
 )
 
 /**
@@ -114,6 +135,9 @@ public class LiteRTSamplerConfigBuilder {
     private var topP: Double? = null
     private var temperature: Double? = null
     private var seed: Int = 0
+    private var maxOutputTokens: Int? = null
+    private var presencePenalty: Double? = null
+    private var frequencyPenalty: Double? = null
 
     /** @since 0.3.0-beta01 */
     public fun topK(value: Int): LiteRTSamplerConfigBuilder {
@@ -140,12 +164,33 @@ public class LiteRTSamplerConfigBuilder {
     }
 
     /** @since 0.3.0-beta01 */
+    public fun maxOutputTokens(value: Int?): LiteRTSamplerConfigBuilder {
+        maxOutputTokens = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun presencePenalty(value: Double?): LiteRTSamplerConfigBuilder {
+        presencePenalty = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun frequencyPenalty(value: Double?): LiteRTSamplerConfigBuilder {
+        frequencyPenalty = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
     public fun build(): LiteRTSamplerConfig =
         LiteRTSamplerConfig(
             topK = topK ?: LiteRTSamplerConfigDefault.topK,
             topP = topP ?: LiteRTSamplerConfigDefault.topP,
             temperature = temperature ?: LiteRTSamplerConfigDefault.temperature,
             seed = seed,
+            maxOutputTokens = maxOutputTokens,
+            presencePenalty = presencePenalty,
+            frequencyPenalty = frequencyPenalty,
         )
 }
 
@@ -717,6 +762,13 @@ public class LiteRTConversationRequest internal constructor(
     public val warnings: List<CallWarning> = emptyList(),
     /** @since 0.3.0-beta01 */
     public val callParams: LanguageModelCallParams,
+    /**
+     * Structured-output / constrained-decoding request. Hosts that bind a
+     * LiteRT-LM engine with native JSON/schema decoding should honor this
+     * instead of relying solely on prompt-injected schema text.
+     * @since 0.3.0-beta01
+     */
+    public val responseFormat: ResponseFormat = ResponseFormat.Text,
 )
 
 /**
@@ -734,6 +786,7 @@ public class LiteRTConversationRequestBuilder {
     private var extraContext: Map<String, JsonElement> = emptyMap()
     private var warnings: List<CallWarning> = emptyList()
     private var callParams: LanguageModelCallParams? = null
+    private var responseFormat: ResponseFormat = ResponseFormat.Text
 
     /** @since 0.3.0-beta01 */
     public fun systemInstruction(value: List<LiteRTContent>): LiteRTConversationRequestBuilder {
@@ -796,6 +849,12 @@ public class LiteRTConversationRequestBuilder {
     }
 
     /** @since 0.3.0-beta01 */
+    public fun responseFormat(value: ResponseFormat): LiteRTConversationRequestBuilder {
+        responseFormat = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
     public fun build(): LiteRTConversationRequest =
         LiteRTConversationRequest(
             systemInstruction = systemInstruction,
@@ -808,6 +867,7 @@ public class LiteRTConversationRequestBuilder {
             extraContext = extraContext,
             warnings = warnings,
             callParams = requireNotNull(callParams) { "LiteRTConversationRequest.callParams is required" },
+            responseFormat = responseFormat,
         )
 }
 
@@ -1103,8 +1163,10 @@ private class LiteRTStreamState(
     )
 
     suspend fun accept(message: LiteRTMessage, out: FlowCollector<StreamEvent>) {
-        terminalUsage = message.usage
-        terminalFinishReason = message.finishReason
+        // Only adopt terminal fields when the host actually provided them. A trailing
+        // empty stream message with null usage/finish must not wipe earlier values.
+        message.usage?.let { terminalUsage = it }
+        message.finishReason?.let { terminalFinishReason = it }
         val textParts = message.content.filterIsInstance<LiteRTContent.Text>()
         if (textParts.isNotEmpty()) {
             val text = textParts.joinToString("") { it.text }

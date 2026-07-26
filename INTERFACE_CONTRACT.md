@@ -274,6 +274,10 @@ of producing a normal abort completion for the step.
 - Image: `ImageModel`, `ImageGenerationParams`, `ImageModelResult`, `GenerateImageResult`, `ImageGeneration.generateImage(..., maxParallelCalls = 8)`
 - Speech: `SpeechModel`, `SpeechGenerationParams`, `SpeechModelResult`, `GenerateSpeechResult`, `SpeechGeneration.generateSpeech(...)`
 - Transcription: `TranscriptionModel`, `AudioSource`, `TranscriptionParams`, `TranscriptSegment`, `TranscribeResult`, `Transcription.transcribe(...)`
+  - `TranscriptSegment` carries an appended, defaulted `speakerId: String?`
+    (populated when a provider diarizes, e.g. ElevenLabs `diarize=true`) — the
+    produced read-only `@Poko` field-append is ABI-dump-recorded and safe for
+    every read site.
   - Audio input is currently base64-backed in memory; providers decode the
     base64 payload before upload, so large inputs can briefly require roughly
     twice the audio size in memory. Streaming upload input is future work.
@@ -431,6 +435,16 @@ of producing a normal abort completion for the step.
   definitions, middleware instances, retry delay generators, arbitrary context
   values, model input objects, language models, or tool sets. The positional
   constructors, `copy()`, and `componentN()` are not public.
+- Provider-surface constants and factories: `VERCEL_V0_BASE_URL` (the default
+  base URL of the v0 product API targeted by `Vercel(...)`),
+  `AI_GATEWAY_OPENAI_COMPAT_BASE_URL`, and the
+  `VercelAIGateway(client, VercelProviderSettings)` factory for the Vercel AI
+  Gateway's OpenAI-compatible endpoint — the two are distinct Vercel surfaces
+  and the names say which is which. Option-type field additions on the builder
+  track: `MistralLanguageModelOptions.prefix` (opt-in assistant prefix
+  continuation) and `QuiverAIImageModelOptions.attributes` / `.viewBox`
+  (plus the `viewBox(minX, minY, width, height)` builder convenience), each
+  exposed through its existing DSL builder.
 - LiteRT on-device bridge types use typed JSON context at the public boundary:
   `LiteRTConversationRequest.extraContext`, `LiteRTLanguageModelSettings.extraContext`,
   and `LiteRTConversation.send/stream(..., extraContext = ...)` are
@@ -438,10 +452,17 @@ of producing a normal abort completion for the step.
   `LiteRTSamplerConfig.Default`; `LiteRTConversation.cancel()` and `close()` are
   documented no-op defaults that abortable/resource-owning engines must
   override. `LiteRTContent.ToolResponse` correlates by tool name only and does
-  not carry a tool-call id. `LiteRTLanguageModel` applies
+  not carry a tool-call id. `LiteRTSamplerConfig` additionally carries optional
+  `maxOutputTokens` / `presencePenalty` / `frequencyPenalty` slots that hosts
+  forward to engines exposing those per-call knobs, and
+  `LiteRTConversationRequest.responseFormat` surfaces the structured-output
+  request so engines with native constrained decoding (LiteRT-LM
+  `enableResponseFormat` + `ResponseFormat.json/regex`) can use it;
+  `LiteRTLanguageModel` still applies
   `JsonInstruction.injectJsonInstructionIntoMessages` for
-  `ResponseFormat.Json`, so on-device engines receive the same schema prompt
-  guidance as the shared structured-output utilities. `LiteRTMessage.usage`
+  `ResponseFormat.Json` as a portable fallback, so on-device engines receive
+  the same schema prompt guidance as the shared structured-output utilities.
+  `LiteRTMessage.usage`
   and `LiteRTMessage.finishReason` are optional host-engine terminal metadata;
   when present they are propagated to `LanguageModelResult` /
   `StreamEvent.Finish`, and when absent the adapter preserves the existing

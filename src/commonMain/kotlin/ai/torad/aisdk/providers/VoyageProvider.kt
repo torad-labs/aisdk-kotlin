@@ -265,6 +265,7 @@ private class VoyageEmbeddingModel(
             (options["truncation"] ?: params.truncate?.let(::JsonPrimitive))?.let { put("truncation", it) }
             options["outputDimension"]?.let { put("output_dimension", it) }
             options["outputDtype"]?.let { put("output_dtype", it) }
+            (options["encodingFormat"] ?: options["encoding_format"])?.let { put("encoding_format", it) }
         }
         val response = settings.voyagePostJson(
             client = client,
@@ -333,4 +334,5 @@ private class VoyageRerankingModel(
     }
 }
 
-private const val VOYAGE_MAX_EMBEDDINGS_PER_CALL: Int = 128
+// Documented Voyage batch limit is 1,000 inputs per embeddings call.
+private const val VOYAGE_MAX_EMBEDDINGS_PER_CALL: Int = 1_000

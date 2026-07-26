@@ -142,6 +142,15 @@ internal fun PreparedAnthropicRequest(
     )
     warnings += preparedTools.warnings
     betas += preparedTools.betas
+    val mcpToolsets = AnthropicMcpToolsets(options)
+    val toolsForBody = run {
+        val base = preparedTools.tools?.toList().orEmpty()
+        if (mcpToolsets.isEmpty()) {
+            preparedTools.tools
+        } else {
+            JsonArray(base + mcpToolsets)
+        }
+    }
     val outputConfig = AnthropicOutputConfig(options, params.responseFormat)
     if (params.responseFormat is ResponseFormat.Json && params.responseFormat.schemaJson != null) {
         betas += "structured-outputs-2025-11-13"
@@ -165,7 +174,11 @@ internal fun PreparedAnthropicRequest(
                     "thinking",
                     buildJsonObject {
                         put("type", JsonPrimitive(thinkingType))
-                        thinkingBudget?.let { put("budget_tokens", JsonPrimitive(it)) }
+                        // budget_tokens is only valid for type=enabled. Adaptive thinking
+                        // rejects budget_tokens as off-spec (400).
+                        if (thinkingType == "enabled") {
+                            thinkingBudget?.let { put("budget_tokens", JsonPrimitive(it)) }
+                        }
                         thinking["display"]?.let { put("display", it) }
                     },
                 )
@@ -177,7 +190,9 @@ internal fun PreparedAnthropicRequest(
             AnthropicMetadata(options)?.let { put("metadata", it) }
             AnthropicMcpServers(options)?.let {
                 put("mcp_servers", it)
-                betas += "mcp-client-2025-04-04"
+                // Prefer the current MCP connector beta; fall back only if callers pin the legacy
+                // header via providerOptions.anthropicBeta.
+                betas += "mcp-client-2025-11-20"
             }
             AnthropicRequestJson.container(options)?.let { container ->
                 put("container", container)
@@ -191,7 +206,7 @@ internal fun PreparedAnthropicRequest(
             }
             prompt.system?.let { put("system", it) }
             put("messages", prompt.messages)
-            preparedTools.tools?.let { put("tools", it) }
+            toolsForBody?.let { put("tools", it) }
             preparedTools.toolChoice?.let { put("tool_choice", it) }
             if (stream) put("stream", JsonPrimitive(true))
         },
@@ -225,15 +240,67 @@ private fun AnthropicMcpServers(options: JsonObject): JsonArray? {
     return JsonArray(
         servers.mapNotNull { server ->
             val obj = server as? JsonObject ?: return@mapNotNull null
+            // mcp-client-2025-11-20: connection details only. Tool config moved to mcp_toolset
+            // entries in `tools` (see AnthropicMcpToolsets). Do not emit deprecated
+            // tool_configuration on the server object — it 400s under the current beta.
             buildJsonObject {
                 put("type", obj["type"] ?: JsonPrimitive("url"))
                 put("name", obj["name"] ?: JsonPrimitive(""))
                 put("url", obj["url"] ?: JsonPrimitive(""))
                 obj["authorizationToken"]?.let { put("authorization_token", it) }
-                JsonAccess.obj(obj, "toolConfiguration")?.let { put("tool_configuration", CamelToSnakeJson(it)) }
             }
         }
     )
+}
+
+/**
+ * Builds `mcp_toolset` tool entries for every mcp_servers name. Required by
+ * mcp-client-2025-11-20: every server must be referenced by exactly one toolset.
+ * Callers may still pass toolConfiguration on the server option object; it is
+ * translated into default_config / configs on the toolset.
+ */
+internal fun AnthropicMcpToolsets(options: JsonObject): List<JsonObject> {
+    val servers = JsonAccess.arr(options, "mcpServers") ?: return emptyList()
+    return servers.mapNotNull { server ->
+        val obj = server as? JsonObject ?: return@mapNotNull null
+        val name = (obj["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+            ?: return@mapNotNull null
+        val toolConfig = JsonAccess.obj(obj, "toolConfiguration")
+            ?: JsonAccess.obj(obj, "tool_configuration")
+        buildJsonObject {
+            put("type", JsonPrimitive("mcp_toolset"))
+            put("mcp_server_name", JsonPrimitive(name))
+            if (toolConfig != null) {
+                val enabled = toolConfig["enabled"]
+                val allowed = JsonAccess.arr(toolConfig, "allowedTools")
+                    ?: JsonAccess.arr(toolConfig, "allowed_tools")
+                when {
+                    allowed != null && allowed.isNotEmpty() -> {
+                        // Allowlist pattern: default off, enable named tools.
+                        put(
+                            "default_config",
+                            buildJsonObject { put("enabled", JsonPrimitive(false)) },
+                        )
+                        put(
+                            "configs",
+                            buildJsonObject {
+                                for (tool in allowed) {
+                                    val toolName = (tool as? JsonPrimitive)?.contentOrNull ?: continue
+                                    put(toolName, buildJsonObject { put("enabled", JsonPrimitive(true)) })
+                                }
+                            },
+                        )
+                    }
+                    enabled != null -> {
+                        put(
+                            "default_config",
+                            buildJsonObject { put("enabled", enabled) },
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 internal fun CamelToSnakeJson(element: JsonElement): JsonElement = when (element) {
@@ -418,21 +485,68 @@ private fun AnthropicAssistantPart(
     }
     is ContentPart.Reasoning -> when {
         !sendReasoning -> null
-        else -> buildJsonObject {
+        else -> {
+            // Redacted thinking must be echoed byte-exact as `redacted_thinking` + `data`.
+            // Resending as plain `thinking` is a guaranteed 400 on multi-turn.
             val metadata = JsonAccess.obj(part.providerMetadata.toMap(), "anthropic")
-            put("type", JsonPrimitive("thinking"))
-            put("thinking", JsonPrimitive(part.text))
-            metadata?.get("signature")?.let { put("signature", it) }
+            val redactedData = metadata?.get("redactedData")
+            if (redactedData != null && redactedData !is kotlinx.serialization.json.JsonNull) {
+                buildJsonObject {
+                    put("type", JsonPrimitive("redacted_thinking"))
+                    put("data", redactedData)
+                }
+            } else {
+                buildJsonObject {
+                    put("type", JsonPrimitive("thinking"))
+                    put("thinking", JsonPrimitive(part.text))
+                    metadata?.get("signature")?.let { put("signature", it) }
+                }
+            }
         }
     }
-    is ContentPart.ToolCall -> buildJsonObject {
-        put("type", JsonPrimitive("tool_use"))
-        put("id", JsonPrimitive(part.toolCallId))
-        put("name", JsonPrimitive(part.toolName))
-        put("input", part.input)
-        AnthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
+    is ContentPart.ToolCall -> {
+        val metadata = JsonAccess.obj(part.providerMetadata.toMap(), "anthropic")
+        val wireType = (metadata?.get("type") as? JsonPrimitive)?.contentOrNull
+        val providerExecuted = part.providerExecuted ||
+            wireType in setOf("server_tool_use", "mcp_tool_use") ||
+            (metadata?.get("providerExecuted") as? JsonPrimitive)?.contentOrNull == "true"
+        if (providerExecuted && metadata != null) {
+            // Byte-exact echo of provider-executed tool_use blocks (type + encrypted_content).
+            // Rewriting as client tool_use is a multi-turn 400.
+            metadata
+        } else if (providerExecuted) {
+            buildJsonObject {
+                put("type", JsonPrimitive(wireType ?: "server_tool_use"))
+                put("id", JsonPrimitive(part.toolCallId))
+                put("name", JsonPrimitive(part.toolName))
+                put("input", part.input)
+                AnthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
+            }
+        } else {
+            buildJsonObject {
+                put("type", JsonPrimitive("tool_use"))
+                put("id", JsonPrimitive(part.toolCallId))
+                put("name", JsonPrimitive(part.toolName))
+                put("input", part.input)
+                AnthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
+            }
+        }
     }
-    is ContentPart.ToolResult,
+    is ContentPart.ToolResult -> {
+        // Provider-executed results live on the assistant turn and must be echoed with their
+        // original wire type (web_search_tool_result, …). Client tool_result stays on the tool role.
+        val metadata = JsonAccess.obj(part.providerMetadata.toMap(), "anthropic")
+        val wireType = (metadata?.get("type") as? JsonPrimitive)?.contentOrNull
+        if (part.providerExecuted || (wireType != null && wireType.endsWith("_tool_result")) || wireType == "mcp_tool_result") {
+            metadata ?: buildJsonObject {
+                put("type", JsonPrimitive(wireType ?: "${part.toolName}_tool_result"))
+                put("tool_use_id", JsonPrimitive(part.toolCallId))
+                put("content", part.output)
+            }
+        } else {
+            null
+        }
+    }
     is ContentPart.ToolApprovalRequest,
     is ContentPart.ToolApprovalResponse,
     is ContentPart.Source,

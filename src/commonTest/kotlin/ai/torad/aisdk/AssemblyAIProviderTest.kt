@@ -123,7 +123,10 @@ class AssemblyAIProviderTest {
         assertEquals("POST", submit.requestMethod)
         assertEquals("key", submit.requestHeaders.headerValue(HttpHeaders.Authorization))
         val body = submit.requestBodyJson.jsonObject
-        assertEquals("best", body["speech_model"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            listOf("best"),
+            body["speech_models"]?.jsonArray?.map { it.jsonPrimitive.contentOrNull },
+        )
         assertEquals("https://cdn.example/audio", body["audio_url"]?.jsonPrimitive?.contentOrNull)
         assertEquals(10, body["audio_end_at"]?.jsonPrimitive?.intOrNull)
         assertEquals(true, body["auto_chapters"]?.jsonPrimitive?.contentOrNull.toBoolean())

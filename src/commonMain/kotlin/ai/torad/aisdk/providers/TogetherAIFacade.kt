@@ -29,7 +29,8 @@ public typealias TogetherAIErrorData = JsonElement
 public class TogetherAIImageModelOptions internal constructor(
     /** @since 0.3.0-beta01 */
     public val steps: Int? = null,
-    /** @since 0.3.0-beta01 */
+    /** Wire key is `guidance_scale` (Together image API). @since 0.3.0-beta01 */
+    @SerialName("guidance_scale")
     public val guidance: Float? = null,
     @SerialName("negative_prompt") public val negativePrompt: String? = null,
     @SerialName("disable_safety_checker") public val disableSafetyChecker: Boolean? = null,

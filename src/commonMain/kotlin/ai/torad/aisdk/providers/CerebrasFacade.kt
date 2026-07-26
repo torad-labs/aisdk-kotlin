@@ -23,7 +23,16 @@ public class CerebrasProviderSettings internal constructor(
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        ForFacade(name, version, baseURL, apiKey, headers, capabilities)
+        ForFacade(
+            name = name,
+            version = version,
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+            capabilities = capabilities,
+            // Cerebras chat uses max_completion_tokens (changelog rename from max_tokens).
+            chatMaxOutputTokensKey = "max_completion_tokens",
+        )
 }
 
 /** @since 0.3.0-beta01 */

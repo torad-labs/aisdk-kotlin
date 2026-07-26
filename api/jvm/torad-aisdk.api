@@ -6746,10 +6746,11 @@ public final class ai/torad/aisdk/TranscribeResult {
 }
 
 public final class ai/torad/aisdk/TranscriptSegment {
-	public fun <init> (Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEndSeconds ()Ljava/lang/Float;
+	public final fun getSpeakerId ()Ljava/lang/String;
 	public final fun getStartSeconds ()Ljava/lang/Float;
 	public final fun getText ()Ljava/lang/String;
 	public fun hashCode ()I
@@ -10987,6 +10988,7 @@ public final class ai/torad/aisdk/providers/LiteRTConversationRequest {
 	public final fun getExtraContext ()Ljava/util/Map;
 	public final fun getInitialMessages ()Ljava/util/List;
 	public final fun getMessage ()Lai/torad/aisdk/providers/LiteRTMessage;
+	public final fun getResponseFormat ()Lai/torad/aisdk/ResponseFormat;
 	public final fun getSamplerConfig ()Lai/torad/aisdk/providers/LiteRTSamplerConfig;
 	public final fun getSystemInstruction ()Ljava/util/List;
 	public final fun getTools ()Ljava/util/List;
@@ -11002,6 +11004,7 @@ public final class ai/torad/aisdk/providers/LiteRTConversationRequestBuilder {
 	public final fun extraContext (Ljava/util/Map;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
 	public final fun initialMessages (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
 	public final fun message (Lai/torad/aisdk/providers/LiteRTMessage;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
+	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
 	public final fun samplerConfig (Lai/torad/aisdk/providers/LiteRTSamplerConfig;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
 	public final fun systemInstruction (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
 	public final fun tools (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
@@ -11111,6 +11114,9 @@ public final class ai/torad/aisdk/providers/LiteRTMessageRole : java/lang/Enum {
 
 public final class ai/torad/aisdk/providers/LiteRTSamplerConfig {
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFrequencyPenalty ()Ljava/lang/Double;
+	public final fun getMaxOutputTokens ()Ljava/lang/Integer;
+	public final fun getPresencePenalty ()Ljava/lang/Double;
 	public final fun getSeed ()I
 	public final fun getTemperature ()D
 	public final fun getTopK ()I
@@ -11122,6 +11128,9 @@ public final class ai/torad/aisdk/providers/LiteRTSamplerConfig {
 public final class ai/torad/aisdk/providers/LiteRTSamplerConfigBuilder {
 	public fun <init> ()V
 	public final fun build ()Lai/torad/aisdk/providers/LiteRTSamplerConfig;
+	public final fun frequencyPenalty (Ljava/lang/Double;)Lai/torad/aisdk/providers/LiteRTSamplerConfigBuilder;
+	public final fun maxOutputTokens (Ljava/lang/Integer;)Lai/torad/aisdk/providers/LiteRTSamplerConfigBuilder;
+	public final fun presencePenalty (Ljava/lang/Double;)Lai/torad/aisdk/providers/LiteRTSamplerConfigBuilder;
 	public final fun seed (I)Lai/torad/aisdk/providers/LiteRTSamplerConfigBuilder;
 	public final fun temperature (D)Lai/torad/aisdk/providers/LiteRTSamplerConfigBuilder;
 	public final fun topK (I)Lai/torad/aisdk/providers/LiteRTSamplerConfigBuilder;
@@ -11271,6 +11280,7 @@ public final class ai/torad/aisdk/providers/MistralLanguageModelOptions {
 	public final fun getDocumentImageLimit ()Ljava/lang/Integer;
 	public final fun getDocumentPageLimit ()Ljava/lang/Integer;
 	public final fun getParallelToolCalls ()Ljava/lang/Boolean;
+	public final fun getPrefix ()Ljava/lang/Boolean;
 	public final fun getReasoningEffort ()Ljava/lang/String;
 	public final fun getSafePrompt ()Ljava/lang/Boolean;
 	public final fun getStrictJsonSchema ()Ljava/lang/Boolean;
@@ -11300,6 +11310,7 @@ public final class ai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder {
 	public final fun documentImageLimit (Ljava/lang/Integer;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
 	public final fun documentPageLimit (Ljava/lang/Integer;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
 	public final fun parallelToolCalls (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
+	public final fun prefix (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
 	public final fun reasoningEffort (Ljava/lang/String;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
 	public final fun safePrompt (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
 	public final fun strictJsonSchema (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
@@ -12193,6 +12204,7 @@ public final class ai/torad/aisdk/providers/ProdiaVideoModelOptionsBuilder {
 public final class ai/torad/aisdk/providers/QuiverAIImageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/QuiverAIImageModelOptions$Companion;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAttributes ()Lkotlinx/serialization/json/JsonObject;
 	public final fun getAutoCrop ()Ljava/lang/Boolean;
 	public final fun getInstructions ()Ljava/lang/String;
 	public final fun getMaxOutputTokens ()Ljava/lang/Integer;
@@ -12201,6 +12213,7 @@ public final class ai/torad/aisdk/providers/QuiverAIImageModelOptions {
 	public final fun getTargetSize ()Ljava/lang/Integer;
 	public final fun getTemperature ()Ljava/lang/Double;
 	public final fun getTopP ()Ljava/lang/Double;
+	public final fun getViewBox ()Lkotlinx/serialization/json/JsonObject;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -12222,6 +12235,7 @@ public final class ai/torad/aisdk/providers/QuiverAIImageModelOptions$Companion 
 
 public final class ai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder {
 	public fun <init> ()V
+	public final fun attributes (Lkotlinx/serialization/json/JsonObject;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
 	public final fun autoCrop (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
 	public final fun build ()Lai/torad/aisdk/providers/QuiverAIImageModelOptions;
 	public final fun instructions (Ljava/lang/String;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
@@ -12231,6 +12245,8 @@ public final class ai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder {
 	public final fun targetSize (Ljava/lang/Integer;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
 	public final fun temperature (Ljava/lang/Double;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
 	public final fun topP (Ljava/lang/Double;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
+	public final fun viewBox (DDDD)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
+	public final fun viewBox (Lkotlinx/serialization/json/JsonObject;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/QuiverAIProvider : ai/torad/aisdk/Provider {
@@ -12813,9 +12829,13 @@ public final class ai/torad/aisdk/providers/TogetherAIRerankingModelOptionsBuild
 }
 
 public final class ai/torad/aisdk/providers/VercelFacadeKt {
+	public static final field AI_GATEWAY_OPENAI_COMPAT_BASE_URL Ljava/lang/String;
+	public static final field VERCEL_V0_BASE_URL Ljava/lang/String;
 	public static final field VERCEL_VERSION Ljava/lang/String;
 	public static final fun Vercel (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/VercelProviderSettings;)Lai/torad/aisdk/providers/VercelProvider;
 	public static synthetic fun Vercel$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/VercelProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/VercelProvider;
+	public static final fun VercelAIGateway (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/VercelProviderSettings;)Lai/torad/aisdk/providers/VercelProvider;
+	public static synthetic fun VercelAIGateway$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/VercelProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/VercelProvider;
 	public static final fun VercelProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/VercelProviderSettings;
 	public static synthetic fun VercelProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/VercelProviderSettings;
 }

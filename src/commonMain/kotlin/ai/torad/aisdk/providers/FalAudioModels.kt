@@ -29,9 +29,13 @@ internal class FalSpeechModel(
             body = prepared.body,
             headers = settings.falHeaders(params.headers),
         )
-        val audioObj = JsonAccess.obj(response.value.jsonObject, "audio")
+        val root = response.value.jsonObject
+        val audioObj = JsonAccess.obj(root, "audio")
+        // MiniMax-style: audio.url; F5-style: top-level audio_url; some return audio as a string URL.
         val audioUrl = (audioObj?.get("url") as? JsonPrimitive)?.contentOrNull
-            ?: throw NoSpeechGeneratedError("fal speech response is missing audio.url")
+            ?: (root["audio_url"] as? JsonPrimitive)?.contentOrNull
+            ?: (root["audio"] as? JsonPrimitive)?.contentOrNull
+            ?: throw NoSpeechGeneratedError("fal speech response is missing audio.url / audio_url")
         val audio = settings.falGetBinary(client, audioUrl, emptyMap(), params.abortSignal)
         return SpeechModelResult(
             audio = GeneratedFile(
@@ -61,8 +65,11 @@ internal class FalSpeechModel(
                 "url"
             }
         }
+        // MiniMax speech schemas require `prompt`; several other fal TTS models still take `text`.
+        // Emit both with the same value so neither family 400s on a missing required field.
         return FalSpeechRequest(
             body = buildJsonObject {
+                put("prompt", JsonPrimitive(params.text))
                 put("text", JsonPrimitive(params.text))
                 put("output_format", JsonPrimitive(outputFormat))
                 params.voice?.let { put("voice", JsonPrimitive(it)) }
@@ -84,9 +91,13 @@ internal class FalTranscriptionModel(
     override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
         params.abortSignal.throwIfAborted()
         val body = falTranscriptionRequestBody(params)
+        // Callers may pass a full endpoint id (`fal-ai/whisper`); strip the prefix so the
+        // queue URL does not double up (`/fal-ai/fal-ai/whisper`).
+        val normalizedModelId = modelId.removePrefix("fal-ai/").removePrefix("fal/")
+        val queueBase = FalQueueBaseUrl(settings.baseURL)
         val queue = settings.falPostJson(
             client = client,
-            url = "https://queue.fal.run/fal-ai/$modelId",
+            url = "$queueBase/fal-ai/$normalizedModelId",
             body = body,
             headers = settings.falHeaders(params.headers),
         )
@@ -94,7 +105,7 @@ internal class FalTranscriptionModel(
             ?: throw InvalidResponseDataError(queue.value, "fal transcription queue response is missing request_id")
         val result = settings.falPollJson(
             client = client,
-            url = "https://queue.fal.run/fal-ai/$modelId/requests/$requestId",
+            url = "$queueBase/fal-ai/$normalizedModelId/requests/$requestId",
             headers = settings.falHeaders(params.headers),
             abortSignal = params.abortSignal,
             pollIntervalMillis = settings.transcriptionPollIntervalMillis,

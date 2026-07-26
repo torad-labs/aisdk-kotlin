@@ -568,13 +568,22 @@ private class KlingAIVideoModel(
                 "KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode."
             )
         }
+        val imageUrl = params.image?.let { img ->
+            img.url?.takeIf { it.isNotBlank() } ?: img.base64.takeIf { it.isNotBlank() }
+        }
+        if (imageUrl.isNullOrBlank()) {
+            throw InvalidArgumentError(
+                "image",
+                "KlingAI Motion Control requires an image (image_url) for the character reference.",
+            )
+        }
         return buildJsonObject {
             put("model_name", JsonPrimitive(klingAIModelName(modelId, KlingAIVideoMode.MotionControl)))
             put("video_url", JsonPrimitive(videoUrl))
             put("character_orientation", JsonPrimitive(characterOrientation))
             put("mode", JsonPrimitive(mode))
             params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
-            params.image?.let { put("image_url", JsonPrimitive(it.url ?: it.base64)) }
+            put("image_url", JsonPrimitive(imageUrl))
             options["keepOriginalSound"]?.let { put("keep_original_sound", it) }
             (options["watermarkEnabled"] as? JsonPrimitive)?.booleanOrNull?.let {
                 put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) })

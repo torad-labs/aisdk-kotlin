@@ -46,7 +46,8 @@ public class PerplexityProviderSettings internal constructor(
         for ((key, value) in body) {
             when (key) {
                 "messages" -> put("messages", perplexityMessages(value as? JsonArray))
-                "stop", "seed", "tools", "tool_choice" -> Unit
+                // stop is documented on /v1/sonar — forward it. seed/tools remain unsupported.
+                "seed", "tools", "tool_choice" -> Unit
                 else -> put(key, value)
             }
         }

@@ -93,9 +93,9 @@ class LumaProviderTest {
         assertEquals("cinematic", body["style"]?.jsonPrimitive?.contentOrNull)
         assertEquals(
             "https://example.com/ref-a.png",
-            body["image"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
+            body["image_ref"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
         )
-        assertEquals(0.9f, body["image"]?.jsonArray?.first()?.jsonObject?.get("weight")?.jsonPrimitive?.floatOrNull)
+        assertEquals(0.9f, body["image_ref"]?.jsonArray?.first()?.jsonObject?.get("weight")?.jsonPrimitive?.floatOrNull)
     }
 
     @Test
@@ -146,7 +146,7 @@ class LumaProviderTest {
             },
         )
 
-        val character = fixture.calls.first().requestBodyJson.jsonObject["character"]?.jsonObject?.get(
+        val character = fixture.calls.first().requestBodyJson.jsonObject["character_ref"]?.jsonObject?.get(
             "hero"
         )?.jsonObject
         assertEquals(2, character?.get("images")?.jsonArray?.size)

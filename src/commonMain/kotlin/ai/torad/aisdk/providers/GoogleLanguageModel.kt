@@ -69,7 +69,11 @@ internal fun MapGoogleFinishReason(reason: String?, hasToolCalls: Boolean): Fini
             "SAFETY", "IMAGE_SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII",
             -> FinishReason.ContentFilter
             // Upstream maps MALFORMED_FUNCTION_CALL to 'error', not content-filter.
-            "MALFORMED_FUNCTION_CALL" -> FinishReason.Error
+            "MALFORMED_FUNCTION_CALL",
+            "UNEXPECTED_TOOL_CALL",
+            "TOO_MANY_TOOL_CALLS",
+            "MISSING_THOUGHT_SIGNATURE",
+            -> FinishReason.Error
             else -> FinishReason.Other
         }
     }
@@ -211,15 +215,37 @@ internal class GoogleGenerativeAILanguageModel(
             options["mediaResolution"]?.let { put("mediaResolution", it) }
             options["imageConfig"]?.let { put("imageConfig", it) }
         }
+        val isGemma = modelId.startsWith("gemma-", ignoreCase = true)
+        val gemmaFoldedContents = if (isGemma && converted.systemInstruction != null) {
+            // Gemma rejects systemInstruction; Google's documented pattern is folding system
+            // text into the first user turn instead of dropping it silently.
+            foldGemmaSystemIntoContents(converted.contents, converted.systemInstruction)
+        } else {
+            converted.contents
+        }
+        val gemmaWarnings = buildList {
+            if (isGemma && converted.systemInstruction != null) {
+                add(
+                    CallWarning(
+                        "other",
+                        "Gemma models do not accept systemInstruction; system text was folded into the first user turn.",
+                    ),
+                )
+            }
+            if (stream && options["streamFunctionCallArguments"] != null) {
+                add(
+                    CallWarning(
+                        "other",
+                        "streamFunctionCallArguments is only supported on Vertex AI and is ignored by the Gemini API facade.",
+                    ),
+                )
+            }
+        }
         return GooglePreparedRequest(
             body = buildJsonObject {
                 put("generationConfig", generationConfig)
-                put("contents", converted.contents)
-                if (!modelId.startsWith(
-                        "gemma-",
-                        ignoreCase = true
-                    )
-                ) {
+                put("contents", gemmaFoldedContents)
+                if (!isGemma) {
                     converted.systemInstruction?.let { put("systemInstruction", it) }
                 }
                 options["safetySettings"]?.let { put("safetySettings", it) }
@@ -229,12 +255,44 @@ internal class GoogleGenerativeAILanguageModel(
                 options["labels"]?.let { put("labels", it) }
                 options["serviceTier"]?.let { put("serviceTier", it) }
             },
-            warnings = warnings + if (stream && options["streamFunctionCallArguments"] != null) {
-                listOf(CallWarning("other", "streamFunctionCallArguments is only supported on Vertex AI and is ignored by the Gemini API facade."))
-            } else {
-                emptyList()
-            },
+            warnings = warnings + gemmaWarnings,
         )
+    }
+
+    private fun foldGemmaSystemIntoContents(contents: JsonArray, systemInstruction: JsonObject): JsonArray {
+        val systemText = (JsonAccess.arr(systemInstruction, "parts")).orEmpty()
+            .mapNotNull { part ->
+                ((part as? JsonObject)?.get("text") as? JsonPrimitive)?.contentOrNull
+            }
+            .joinToString("\n\n")
+            .takeIf { it.isNotBlank() }
+            ?: return contents
+        if (contents.isEmpty()) {
+            return JsonArray(
+                listOf(
+                    buildJsonObject {
+                        put("role", JsonPrimitive("user"))
+                        put("parts", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(systemText)) })))
+                    },
+                ),
+            )
+        }
+        val first = contents.first() as? JsonObject ?: return contents
+        val firstRole = (first["role"] as? JsonPrimitive)?.contentOrNull
+        val firstParts = (JsonAccess.arr(first, "parts")).orEmpty().toMutableList()
+        if (firstRole == "user") {
+            firstParts.add(0, buildJsonObject { put("text", JsonPrimitive(systemText)) })
+            val folded = buildJsonObject {
+                put("role", JsonPrimitive("user"))
+                put("parts", JsonArray(firstParts))
+            }
+            return JsonArray(listOf(folded) + contents.drop(1))
+        }
+        val systemUser = buildJsonObject {
+            put("role", JsonPrimitive("user"))
+            put("parts", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(systemText)) })))
+        }
+        return JsonArray(listOf(systemUser) + contents)
     }
 
     private fun googleMessages(messages: List<ModelMessage>, isGemini3: Boolean = false): GoogleConvertedMessages {

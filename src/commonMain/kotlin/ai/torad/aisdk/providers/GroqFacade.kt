@@ -16,7 +16,11 @@ import kotlinx.serialization.json.contentOrNull
 public const val GROQ_VERSION: String = "3.0.39"
 
 // Groq supports the browser_search tool only on these models; elsewhere it is dropped.
-private val GROQ_BROWSER_SEARCH_MODELS = setOf("openai/gpt-oss-20b", "openai/gpt-oss-120b")
+private val GROQ_BROWSER_SEARCH_MODELS = setOf(
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-safeguard-20b",
+)
 
 @Serializable
 @Poko
@@ -44,6 +48,8 @@ public class GroqProviderSettings internal constructor(
             transformChatRequestBody = ::groqTransformChatBody,
             transformChatResponse = ::groqTransformChatResponse,
             convertUsage = ::groqUsage,
+            // Groq renamed max_tokens → max_completion_tokens (deprecation on max_tokens).
+            chatMaxOutputTokensKey = "max_completion_tokens",
         )
 
     private fun groqTransformChatBody(body: JsonObject): JsonObject {

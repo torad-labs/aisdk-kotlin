@@ -193,11 +193,11 @@ class AzureProviderTest {
         assertEquals("base64-image-1", image.images.single().base64)
         assertEquals("Hello, world!", transcript.text)
         assertEquals(
-            "https://proxy.example/openai/deployments/dalle-deployment/images/generations?api-version=v1",
+            "https://proxy.example/openai/deployments/dalle-deployment/images/generations?api-version=2024-10-21",
             seenRequests[0].url.toString(),
         )
         assertEquals(
-            "https://proxy.example/openai/deployments/whisper-1/audio/transcriptions?api-version=v1",
+            "https://proxy.example/openai/deployments/whisper-1/audio/transcriptions?api-version=2024-10-21",
             seenRequests[1].url.toString(),
         )
         assertEquals("natural", seenBodies.single()["style"]?.jsonPrimitive?.contentOrNull)

@@ -6,6 +6,104 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+- **Provider wire fixes (Tier 1 — live-API breakages against current docs):**
+  - **Anthropic:** server-tool result blocks no longer require `name` (API omits it);
+    5-series flagships default `max_tokens` to 128k; `redacted_thinking` is resent
+    byte-exact with `data` instead of as plain `thinking`.
+  - **Bedrock:** `topK` moved from invalid `inferenceConfig` into
+    `additionalModelRequestFields.top_k`; Mantle `responses()` uses the Responses
+    contract (`input` / `output`, not Chat Completions) with Responses tool shape +
+    `input_tokens`/`output_tokens` usage; redacted reasoning reads wire key
+    `redactedContent`; stream handles `serviceUnavailableException`;
+    `additionalModelResponseFieldPaths` is `/stop_sequence` (not `/delta/...`);
+    `outputConfig.textFormat.structure` wraps `jsonSchema`; legacy `json`
+    pseudo-tool dual-path removed.
+  - **Google Interactions:** `function_result` is a top-level input step; initial
+    text on `step.start` is emitted; retrieval defaults to documented
+    `rag_store` types + config passthrough; `budget_exceeded` is terminal.
+  - **Mistral:** specific `tool_choice` objects are preserved; `prefix: true` is
+    opt-in via `providerOptions.mistral.prefix` and only applied when the
+    conversation ends on an assistant message.
+  - **xAI:** `stop` forwarded; `parallel_function_calling` maps to
+    `parallel_tool_calls`; Responses code tool is `code_interpreter`; image
+    options drop undocumented `sync_mode`/`quality`.
+  - **Speech/STT:** AssemblyAI `speech_models` (plural array); Deepgram TTS
+    forwards `speed`; Gladia `language_config` is `{languages[], code_switching}`
+    only and `audio_to_llm_config` uses `prompts` + auto-enables `audio_to_llm`;
+    Rev.ai errors parse RFC 7807.
+  - **Media:** BFL FLUX.2 uses `disable_pup`, 8-image cap, aspect_ratio gated off
+    for FLUX.2 / FLUX.1 [pro], validation `detail[].msg` extracted; Fal speech
+    sends `prompt`+`text` and accepts `audio_url`, video sends `start_image_url`,
+    queue host honors `baseURL`; Luma refs use `*_ref` keys; Kling Motion Control
+    requires `image_url`; Alibaba wan2.7 media types `first_frame` /
+    `reference_image` + `parameters.ratio`; ByteDance errors read top-level
+    `error_code`/`message`; Together `guidance` → `guidance_scale`; xAI drops
+    image `output_format`, maps `1080p`, treats video `expired` as terminal;
+    Replicate image output accepts `{url}` objects.
+  - **LMNT:** wire key `format`, default model `blizzard`, required
+    `lmnt-version` header, documented format allowlist incl. `pcm_f32le`; drops
+    unsupported `speed`/`conversational`/`length` body fields.
+  - **Security:** Fireworks image download strips `Authorization` off-origin.
+
+- **Provider wire fixes (Tier 2 — silent loss / wrong defaults):**
+  - **LiteRT:** sampler carries `maxOutputTokens` / `presencePenalty` /
+    `frequencyPenalty`; request carries native `responseFormat` (prompt injection
+    kept as fallback); `thinkingTokenBudget` maps into extra context; stream
+    terminal usage/finish no longer wiped by trailing empty messages.
+  - **Voyage:** embeddings batch cap 128 → 1_000 (documented max); forwards
+    `encoding_format`.
+  - **Groq / Cerebras:** chat max-output key is `max_completion_tokens`; Groq
+    browser_search allowlist includes `openai/gpt-oss-safeguard-20b`.
+  - **Perplexity:** `stop` is forwarded (documented on `/v1/sonar`).
+  - **ElevenLabs STT:** no longer force `diarize=true`; parse `speaker_id` into
+    `TranscriptSegment.speakerId`.
+  - **Anthropic:** sampling-rejection set covers full 5-series flagships.
+  - **Azure:** deployment-based URLs no longer pair with `api-version=v1`
+    (auto-use dated `2024-10-21` classic version).
+  - **Open Responses:** `web_search_preview` no longer sends unsupported
+    `filters`/`external_web_access`; code-interpreter containers keep
+    `memory_limit`/`network_policy`; MCP `tool_choice` includes `server_label`;
+    standalone SSE `error` events surface as stream errors.
+  - **Bedrock:** Converse `outputConfig.textFormat` for structured JSON (not
+    thinking-gated only); image moderation reads the documented `error` string.
+  - **Google Interactions:** `generate()` polls non-terminal model runs;
+    `requires_action` is terminal for the poll loop; default poll cap 60 min;
+    `mcp_server` tools send name/url from args.
+  - **Google Gemini:** Gemma system instructions fold into the first user turn
+    (with a warning); finish-reason map covers `UNEXPECTED_TOOL_CALL` /
+    `TOO_MANY_TOOL_CALLS` / `MISSING_THOUGHT_SIGNATURE`.
+  - **Cohere:** `tool-plan-delta` → reasoning; citation events with URLs →
+    `SourcePart`.
+  - **Hume:** default voice provider `CUSTOM_VOICE` (override via options).
+  - **Prodia video:** defaults to `/job/async` for long jobs.
+  - **Replicate:** `Prefer: wait=` coerces to integer seconds.
+  - **Quiver:** prefers documented `credits` over deprecated `usage`.
+  - **Anthropic multi-turn/stream:** provider-executed tool calls/results store
+    full wire blocks and echo them on resend (incl. `encrypted_content`); stream
+    emits server-tool result blocks (`web_search_tool_result`,
+    `bash_code_execution_tool_result`, …); adaptive thinking no longer sends
+    `budget_tokens`; MCP connector beta → `mcp-client-2025-11-20` and emits
+    required `mcp_toolset` entries in `tools` (no deprecated
+    `tool_configuration` on servers).
+  - **Google Interactions multi-turn/media:** provider-executed steps echo
+    exact wire type on resend (buffered + stream paths store full wire step);
+    model_output accepts audio/video/document.
+  - **Quiver:** surfaces response/image `attributes` in providerMetadata; request
+    supports `attributes` + `viewBox` (typed options + providerOptions).
+  - **LMNT:** `pcm_f32le` MIME falls back to octet-stream; default voice is `leah`
+    (docs canonical system voice).
+  - **Google Interactions:** stop inventing `signature` on client `function_call` /
+    `function_result` (thought-signatures live on `thought` only).
+  - **Cohere:** documents Specific→REQUIRED+filter approximation via warning.
+  - **Vercel:** clarifies v0 vs AI Gateway; adds `VercelAIGateway` +
+    `AI_GATEWAY_OPENAI_COMPAT_BASE_URL` (full gateway remains `Gateway`).
+  - **AnthropicAws:** SigV4 signing region derived from endpoint host (host/region
+    mismatch was a signature rejection).
+  - **Azure media:** image/audio paths always use classic deployment URLs (v1
+    path is chat/responses only).
+  - **Vertex:** comment corrected — v1beta1 is the documented surface (not "v1
+    unavailable").
+
 - **CI/CD hardening:**
   - CI cancels superseded runs on the same ref (`concurrency` on `ci.yml`).
   - Release preflight refuses a `VERSION_NAME` already present on Maven

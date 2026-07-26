@@ -197,17 +197,79 @@ class MistralProviderTest {
             },
         )
         val body = fixture.calls.single().requestBodyJson.jsonObject
-        // tool_choice "any" + tools filtered to the named one.
-        assertEquals("any", body["tool_choice"]?.jsonPrimitive?.contentOrNull)
+        // Specific tool_choice object is preserved; tools still filtered to the named one.
         assertEquals(1, body["tools"]?.jsonArray?.size, "tools filtered to the named tool")
+        assertEquals("function", body["tool_choice"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "lookup",
+            body["tool_choice"]?.jsonObject?.get("function")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull,
+        )
         val msgs = body["messages"]!!.jsonArray
         fun role(m: kotlinx.serialization.json.JsonElement) = m.jsonObject["role"]?.jsonPrimitive?.contentOrNull
         // The tool-result message carries the tool name.
         val toolMsg = msgs.first { role(it) == "tool" }.jsonObject
         assertEquals("lookup", toolMsg["name"]?.jsonPrimitive?.contentOrNull)
-        // The final assistant message gets prefix:true.
+        // Conversation ends on a tool message, so prefix must NOT be set (prefix is only for
+        // true assistant-continuation when the last message overall is assistant).
         val asstMsg = msgs.last { role(it) == "assistant" }.jsonObject
-        assertEquals(true, asstMsg["prefix"]?.jsonPrimitive?.booleanOrNull)
+        assertEquals(null, asstMsg["prefix"])
+    }
+
+    @Test
+    fun `prefix is opt-in and only applied when the last message is assistant`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.mistral.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            "{\"id\":\"c\",\"model\":\"m\",\"choices\":[{\"message\":" +
+                                "{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}]," +
+                                "\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Mistral(fixture.httpClient(), MistralProviderSettings { apiKey("key") })
+        // Default: last message is assistant, but prefix is NOT applied without opt-in.
+        provider.chat(ModelId("mistral-small-latest")).generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        UserMessage("go"),
+                        ModelMessage(MessageRole.Assistant, listOf(ContentPart.Text("partial"))),
+                    )
+                )
+            },
+        )
+        val defaultBody = fixture.calls[0].requestBodyJson.jsonObject
+        val defaultAsst = defaultBody["messages"]!!.jsonArray.last().jsonObject
+        assertEquals(null, defaultAsst["prefix"], "prefix must be opt-in")
+        assertEquals(null, defaultBody["prefix"], "prefix must not be a top-level chat field")
+
+        // Opt-in: providerOptions.mistral.prefix = true + last is assistant → message-level prefix.
+        provider.chat(ModelId("mistral-small-latest")).generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        UserMessage("go"),
+                        ModelMessage(MessageRole.Assistant, listOf(ContentPart.Text("partial"))),
+                    )
+                )
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf("mistral" to buildJsonObject { put("prefix", JsonPrimitive(true)) }),
+                        ),
+                    ),
+                )
+            },
+        )
+        val opted = fixture.calls[1].requestBodyJson.jsonObject
+        val optedAsst = opted["messages"]!!.jsonArray.last().jsonObject
+        assertEquals(true, optedAsst["prefix"]?.jsonPrimitive?.booleanOrNull)
+        assertEquals(null, opted["prefix"], "top-level prefix flag must be stripped")
     }
 
     @Test

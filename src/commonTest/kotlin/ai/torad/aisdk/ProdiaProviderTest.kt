@@ -196,7 +196,7 @@ class ProdiaProviderTest {
     fun `video model supports text and image job request paths`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
-                "https://prodia.test/v2/job?price=true" to UrlHandler { options ->
+                "https://prodia.test/v2/job/async?price=true" to UrlHandler { options ->
                     if (options.callNumber == 0) {
                         prodiaMultipartResponse(
                             jobJson = """{"id":"job-video-json","metrics":{"elapsed":2.0}}""",
