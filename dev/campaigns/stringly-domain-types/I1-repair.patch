@@ -1,0 +1,526 @@
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/RevaiProvider.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/RevaiProvider.kt
+index 2ccfec4..6c1f9c6 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/RevaiProvider.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/RevaiProvider.kt
+@@ -24,7 +24,6 @@ import kotlinx.serialization.json.JsonPrimitive
+ import kotlinx.serialization.json.buildJsonObject
+ import kotlinx.serialization.json.contentOrNull
+ import kotlinx.serialization.json.floatOrNull
+-import kotlinx.serialization.json.jsonObject
+ 
+ public const val REVAI_VERSION: String = "2.0.33"
+ 
+@@ -410,37 +409,21 @@ private class RevaiTranscriptionModel(
+             params = params,
+             headers = settings.revaiHeaders(params.headers),
+         )
+-        var job = submit.value.jsonObject
+-        if ((job["status"] as? JsonPrimitive)?.contentOrNull == "failed") {
++        val submitted = RevaiJobSnapshotDecoder.decode(submit.value)
++        if (submitted.state is RevaiJobState.Failed) {
+             throw NoTranscriptGeneratedError("Failed to submit transcription job to Rev.ai")
+         }
+-        val jobId = (job["id"] as? JsonPrimitive)?.contentOrNull
++        val jobId = submitted.id
+             ?: throw InvalidResponseDataError(submit.value, "Rev.ai transcription job response is missing id")
++        if (submitted.state is RevaiJobState.Unknown) submitted.throwInvalidStatus()
+ 
+-        repeat(settings.maxPollAttempts.coerceAtLeast(1)) { attempt ->
+-            params.abortSignal.throwIfAborted()
+-            val status = (job["status"] as? JsonPrimitive)?.contentOrNull
+-            if (status == "transcribed") return@repeat
+-            if (attempt > 0 || status != "transcribed") {
+-                val poll = revaiGetJson(
+-                    url = "$REVAI_BASE_URL/speechtotext/v1/jobs/$jobId",
+-                    headers = settings.revaiHeaders(params.headers),
+-                    abortSignal = params.abortSignal,
+-                )
+-                job = poll.value.jsonObject
+-                when ((job["status"] as? JsonPrimitive)?.contentOrNull) {
+-                    "transcribed" -> return@repeat
+-                    "failed" -> throw NoTranscriptGeneratedError("Rev.ai transcription job failed")
+-                }
+-            }
+-            if ((job["status"] as? JsonPrimitive)?.contentOrNull != "transcribed" && settings.pollingIntervalMillis > 0 && attempt < settings.maxPollAttempts - 1) {
+-                delay(settings.pollingIntervalMillis)
+-            }
+-        }
+-        if ((job["status"] as? JsonPrimitive)?.contentOrNull != "transcribed") {
+-            throw NoTranscriptGeneratedError("Rev.ai transcription job polling timed out")
++        val terminal = if (submitted.state is RevaiJobState.InProgress) {
++            pollRevaiJob(jobId, params)
++        } else {
++            submitted
+         }
+ 
++        params.abortSignal.throwIfAborted()
+         val transcript = revaiGetJson(
+             url = "$REVAI_BASE_URL/speechtotext/v1/jobs/$jobId/transcript",
+             headers = settings.revaiHeaders(params.headers),
+@@ -456,11 +439,37 @@ private class RevaiTranscriptionModel(
+                 body = transcript.value,
+             ),
+             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("revai" to transcript.value))),
+-            language = (job["language"] as? JsonPrimitive)?.contentOrNull,
++            language = terminal.language,
+             durationInSeconds = mapped.durationInSeconds,
+         )
+     }
+ 
++    private suspend fun pollRevaiJob(
++        jobId: String,
++        params: TranscriptionParams,
++    ): RevaiJobSnapshot {
++        val attempts = settings.maxPollAttempts.coerceAtLeast(1)
++        for (attempt in 0 until attempts) {
++            params.abortSignal.throwIfAborted()
++            val poll = revaiGetJson(
++                url = "$REVAI_BASE_URL/speechtotext/v1/jobs/$jobId",
++                headers = settings.revaiHeaders(params.headers),
++                abortSignal = params.abortSignal,
++            )
++            val snapshot = RevaiJobSnapshotDecoder.decode(poll.value)
++            when (snapshot.state) {
++                RevaiJobState.Transcribed -> return snapshot
++                RevaiJobState.Failed -> throw NoTranscriptGeneratedError("Rev.ai transcription job failed")
++                RevaiJobState.InProgress -> Unit
++                is RevaiJobState.Unknown -> snapshot.throwInvalidStatus()
++            }
++            if (settings.pollingIntervalMillis > 0 && attempt < attempts - 1) {
++                delay(settings.pollingIntervalMillis)
++            }
++        }
++        throw NoTranscriptGeneratedError("Rev.ai transcription job polling timed out")
++    }
++
+     private suspend fun revaiPostMultipart(
+         url: String,
+         params: TranscriptionParams,
+@@ -510,7 +519,7 @@ private class RevaiTranscriptionModel(
+         }
+ 
+     private fun revaiConfigBody(params: TranscriptionParams): JsonObject {
+-        val options = revaiOptions(params.providerOptions)
++        val options = JsonAccess.obj(params.providerOptions.toMap(), "revai") ?: JsonObject(emptyMap())
+         return buildJsonObject {
+             put("transcriber", JsonPrimitive(modelId))
+             putRevaiOptions(options)
+@@ -588,9 +597,6 @@ private class RevaiTranscriptionModel(
+         return RevaiTranscriptMapping(text = text, segments = segments, durationInSeconds = durationInSeconds)
+     }
+ 
+-    private fun revaiOptions(providerOptions: ProviderOptions): JsonObject =
+-        JsonAccess.obj(providerOptions.toMap(), "revai") ?: JsonObject(emptyMap())
+-
+     private fun revaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+         val obj = parsed as? JsonObject
+         val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
+@@ -600,6 +606,49 @@ private class RevaiTranscriptionModel(
+     }
+ }
+ 
++private data class RevaiJobSnapshot(
++    val value: JsonElement,
++    val state: RevaiJobState,
++    val id: String?,
++    val language: String?,
++) {
++    fun throwInvalidStatus(): Nothing =
++        throw InvalidResponseDataError(
++            value,
++            "Rev.ai transcription job response has missing, non-string, or unsupported status",
++        )
++}
++
++private sealed interface RevaiJobState {
++    data object Transcribed : RevaiJobState
++    data object Failed : RevaiJobState
++    data object InProgress : RevaiJobState
++    data class Unknown(val raw: JsonElement?) : RevaiJobState
++}
++
++private object RevaiJobSnapshotDecoder {
++    fun decode(value: JsonElement): RevaiJobSnapshot {
++        val job = value as? JsonObject ?: JsonObject(emptyMap())
++        val rawStatus = job["status"]
++        val state = if (rawStatus is JsonPrimitive && rawStatus.isString) {
++            when (rawStatus.content) {
++                "transcribed" -> RevaiJobState.Transcribed
++                "failed" -> RevaiJobState.Failed
++                "in_progress" -> RevaiJobState.InProgress
++                else -> RevaiJobState.Unknown(rawStatus)
++            }
++        } else {
++            RevaiJobState.Unknown(rawStatus)
++        }
++        return RevaiJobSnapshot(
++            value = value,
++            state = state,
++            id = (job["id"] as? JsonPrimitive)?.contentOrNull,
++            language = (job["language"] as? JsonPrimitive)?.contentOrNull,
++        )
++    }
++}
++
+ private const val REVAI_BASE_URL: String = "https://api.rev.ai"
+ 
+ internal data class RevaiTranscriptMapping(
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/RevaiProviderTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/RevaiProviderTest.kt
+index 034307e..dd79e05 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/RevaiProviderTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/RevaiProviderTest.kt
+@@ -1,8 +1,10 @@
+ package ai.torad.aisdk
++
+ import ai.torad.aisdk.providers.REVAI_VERSION
+ import ai.torad.aisdk.providers.Revai
+ import ai.torad.aisdk.providers.RevaiProviderSettings
+ import io.ktor.http.HttpHeaders
++import kotlinx.coroutines.ExperimentalCoroutinesApi
+ import kotlinx.coroutines.test.runTest
+ import kotlinx.serialization.json.Json
+ import kotlinx.serialization.json.JsonObject
+@@ -18,6 +20,7 @@ import kotlin.test.assertEquals
+ import kotlin.test.assertFailsWith
+ import kotlin.test.assertTrue
+ 
++@OptIn(ExperimentalCoroutinesApi::class)
+ class RevaiProviderTest {
+     @Test
+     fun `transcription model submits multipart job polls status and maps transcript`() = runTest {
+@@ -139,6 +142,7 @@ class RevaiProviderTest {
+                 ?.get("value")?.jsonPrimitive?.contentOrNull
+         )
+ 
++        assertEquals(3, fixture.calls.size)
+         val submit = fixture.calls[0]
+         assertEquals("POST", submit.requestMethod)
+         assertEquals("Bearer key", submit.requestHeaders.headerValue(HttpHeaders.Authorization))
+@@ -158,31 +162,249 @@ class RevaiProviderTest {
+     }
+ 
+     @Test
+-    fun `transcription model throws when submission fails`() = runTest {
++    fun `failed submission retains precedence over missing id`() = runTest {
++        val fixture = revaiFixture(submitBody = """{"status":"failed"}""")
++        val model = revaiModel(fixture)
++
++        val error = assertFailsWith<NoTranscriptGeneratedError> {
++            model.transcribe(revaiTranscriptionParams())
++        }
++
++        assertTrue(error.message.orEmpty().contains("Failed to submit"))
++        assertEquals(1, fixture.calls.size)
++        assertEquals("POST", fixture.calls.single().requestMethod)
++    }
++
++    @Test
++    fun `failed submission with id stops after post`() = runTest {
++        val fixture = revaiFixture(submitBody = """{"id":"job1","status":"failed"}""")
++        val model = revaiModel(fixture)
++
++        val error = assertFailsWith<NoTranscriptGeneratedError> {
++            model.transcribe(revaiTranscriptionParams())
++        }
++
++        assertTrue(error.message.orEmpty().contains("Failed to submit"))
++        assertEquals(1, fixture.calls.size)
++        assertEquals("POST", fixture.calls.single().requestMethod)
++    }
++
++    @Test
++    fun `transcribed submission fetches transcript without polling status`() = runTest {
++        val fixture = revaiFixture(
++            submitBody = """{"id":"job1","status":"transcribed","language":"en"}""",
++            transcriptBody = """{"monologues":[]}""",
++        )
++        val model = revaiModel(fixture)
++
++        val result = model.transcribe(revaiTranscriptionParams())
++
++        assertEquals("en", result.language)
++        assertEquals(2, fixture.calls.size)
++        assertEquals("POST", fixture.calls[0].requestMethod)
++        assertEquals("GET", fixture.calls[1].requestMethod)
++        assertEquals(
++            "https://api.rev.ai/speechtotext/v1/jobs/job1/transcript",
++            fixture.calls[1].requestUrl,
++        )
++    }
++
++    @Test
++    fun `failed poll stops after one status request`() = runTest {
++        val fixture = revaiFixture(
++            submitBody = """{"id":"job1","status":"in_progress"}""",
++            pollBody = """{"id":"job1","status":"failed"}""",
++        )
++        val model = revaiModel(fixture)
++
++        val error = assertFailsWith<NoTranscriptGeneratedError> {
++            model.transcribe(revaiTranscriptionParams())
++        }
++
++        assertTrue(error.message.orEmpty().contains("job failed"))
++        assertEquals(2, fixture.calls.size)
++        assertEquals(listOf("POST", "GET"), fixture.calls.map { it.requestMethod })
++    }
++
++    @Test
++    fun `pending poll exhausts exact attempt bound before timeout`() = runTest {
++        val fixture = revaiFixture(
++            submitBody = """{"id":"job1","status":"in_progress"}""",
++            pollBody = """{"id":"job1","status":"in_progress"}""",
++        )
++        val model = revaiModel(fixture, maxPollAttempts = 2)
++
++        val error = assertFailsWith<NoTranscriptGeneratedError> {
++            model.transcribe(revaiTranscriptionParams())
++        }
++
++        assertTrue(error.message.orEmpty().contains("timed out"))
++        assertEquals(3, fixture.calls.size)
++        assertEquals(listOf("POST", "GET", "GET"), fixture.calls.map { it.requestMethod })
++    }
++
++    @Test
++    fun `missing id retains precedence over malformed initial status`() = runTest {
++        val fixture = revaiFixture(submitBody = """{"status":1}""")
++        val model = revaiModel(fixture)
++
++        val error = assertFailsWith<InvalidResponseDataError> {
++            model.transcribe(revaiTranscriptionParams())
++        }
++
++        assertTrue(error.message.orEmpty().contains("missing id"))
++        assertEquals(1, fixture.calls.size)
++        assertEquals("POST", fixture.calls.single().requestMethod)
++    }
++
++    @Test
++    fun `missing initial status fails without polling`() = runTest {
++        assertInvalidInitialStatus("""{"id":"job1"}""")
++    }
++
++    @Test
++    fun `non-string initial status fails without polling`() = runTest {
++        assertInvalidInitialStatus("""{"id":"job1","status":1}""")
++    }
++
++    @Test
++    fun `unknown initial status fails without polling`() = runTest {
++        assertInvalidInitialStatus("""{"id":"job1","status":"queued"}""")
++    }
++
++    @Test
++    fun `malformed initial status retains entire response`() = runTest {
++        val body = """{"id":"job1","status":{"future":true},"provider_field":"must-survive"}"""
++        val response = Json.parseToJsonElement(body)
+         val fixture = TestServer.createTestServer(
+             mutableMapOf(
+                 "https://api.rev.ai/speechtotext/v1/jobs" to UrlHandler(
+-                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"job1","status":"failed"}""")),
++                    UrlResponse.JsonValue(response),
+                 ),
+             ),
++        ).also { it.server.start() }
++        val model = revaiModel(fixture)
++
++        val error = assertFailsWith<InvalidResponseDataError> {
++            model.transcribe(revaiTranscriptionParams())
++        }
++
++        assertEquals(response, error.data)
++        assertEquals(1, fixture.calls.size)
++        assertEquals("POST", fixture.calls.single().requestMethod)
++    }
++
++    @Test
++    fun `malformed polled statuses retain entire response`() = runTest {
++        val pollBodies = listOf(
++            """{"id":"job1","status":{"future":true},"provider_field":"must-survive"}""",
++            """{"id":"job1","status":null,"provider_field":"must-survive"}""",
++            """{"id":"job1","status":[],"provider_field":"must-survive"}""",
++            """{"id":"job1","status":true,"provider_field":"must-survive"}""",
+         )
+-        fixture.server.start()
+-        val model = Revai(
+-            fixture.httpClient(),
+-            RevaiProviderSettings {
+-                apiKey("key")
+-                pollingIntervalMillis(0)
+-            },
+-        ).transcription(ModelId("machine"))
++        for (body in pollBodies) {
++            val response = Json.parseToJsonElement(body)
++            val fixture = TestServer.createTestServer(
++                mutableMapOf(
++                    "https://api.rev.ai/speechtotext/v1/jobs" to UrlHandler(
++                        UrlResponse.JsonValue(
++                            Json.parseToJsonElement("""{"id":"job1","status":"in_progress"}"""),
++                        ),
++                    ),
++                    "https://api.rev.ai/speechtotext/v1/jobs/job1" to UrlHandler(
++                        UrlResponse.JsonValue(response),
++                    ),
++                ),
++            ).also { it.server.start() }
++            val model = revaiModel(fixture)
++
++            val error = assertFailsWith<InvalidResponseDataError> {
++                model.transcribe(revaiTranscriptionParams())
++            }
+ 
+-        val error = assertFailsWith<AiSdkException> {
+-            model.transcribe(
+-                TranscriptionParams {
+-                    audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+-                }
++            assertEquals(response, error.data)
++            assertEquals(2, fixture.calls.size)
++            assertEquals(listOf("POST", "GET"), fixture.calls.map { it.requestMethod })
++            assertEquals(
++                "https://api.rev.ai/speechtotext/v1/jobs/job1",
++                fixture.calls[1].requestUrl,
+             )
+         }
+-        assertTrue(error.message.orEmpty().contains("Failed to submit"))
++    }
++
++    @Test
++    fun `pending then pending then transcribed delays once and fetches transcript`() = runTest {
++        var statusCalls = 0
++        val fixture = TestServer.createTestServer(
++            mutableMapOf(
++                "https://api.rev.ai/speechtotext/v1/jobs" to UrlHandler(
++                    UrlResponse.JsonValue(
++                        Json.parseToJsonElement("""{"id":"job1","status":"in_progress"}"""),
++                    ),
++                ),
++                "https://api.rev.ai/speechtotext/v1/jobs/job1" to UrlHandler { _ ->
++                    when (statusCalls++) {
++                        0 -> UrlResponse.JsonValue(
++                            Json.parseToJsonElement("""{"id":"job1","status":"in_progress"}"""),
++                        )
++                        1 -> UrlResponse.JsonValue(
++                            Json.parseToJsonElement(
++                                """{"id":"job1","status":"transcribed","language":"en"}""",
++                            ),
++                        )
++                        else -> throw AssertionError("unexpected additional Rev.ai status request")
++                    }
++                },
++                "https://api.rev.ai/speechtotext/v1/jobs/job1/transcript" to UrlHandler(
++                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"monologues":[]}""")),
++                ),
++            ),
++        ).also { it.server.start() }
++        val model = revaiModel(
++            fixture = fixture,
++            pollingIntervalMillis = 1,
++            maxPollAttempts = 3,
++        )
++
++        val result = model.transcribe(revaiTranscriptionParams())
++
++        assertEquals("en", result.language)
++        assertEquals(1L, testScheduler.currentTime)
++        assertEquals(4, fixture.calls.size)
++        assertEquals(listOf("POST", "GET", "GET", "GET"), fixture.calls.map { it.requestMethod })
++        assertEquals(
++            listOf(
++                "https://api.rev.ai/speechtotext/v1/jobs",
++                "https://api.rev.ai/speechtotext/v1/jobs/job1",
++                "https://api.rev.ai/speechtotext/v1/jobs/job1",
++                "https://api.rev.ai/speechtotext/v1/jobs/job1/transcript",
++            ),
++            fixture.calls.map { it.requestUrl },
++        )
++        assertEquals(1, fixture.calls.count { it.requestUrl.endsWith("/transcript") })
++    }
++
++    @Test
++    fun `nonpositive attempt bound still polls once`() = runTest {
++        for (maxPollAttempts in listOf(0, -1)) {
++            val fixture = revaiFixture(
++                submitBody = """{"id":"job1","status":"in_progress"}""",
++                pollBody = """{"id":"job1","status":"in_progress"}""",
++            )
++            val model = revaiModel(
++                fixture = fixture,
++                pollingIntervalMillis = 0,
++                maxPollAttempts = maxPollAttempts,
++            )
++
++            val error = assertFailsWith<NoTranscriptGeneratedError> {
++                model.transcribe(revaiTranscriptionParams())
++            }
++
++            assertTrue(error.message.orEmpty().contains("timed out"))
++            assertEquals(2, fixture.calls.size)
++            assertEquals(listOf("POST", "GET"), fixture.calls.map { it.requestMethod })
++        }
+     }
+ 
+     @Test
+@@ -194,6 +416,60 @@ class RevaiProviderTest {
+         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
+     }
+ 
++    private fun revaiFixture(
++        submitBody: String,
++        pollBody: String? = null,
++        transcriptBody: String? = null,
++    ): CreatedTestServer {
++        val routes = mutableMapOf(
++            "https://api.rev.ai/speechtotext/v1/jobs" to UrlHandler(
++                UrlResponse.JsonValue(Json.parseToJsonElement(submitBody)),
++            ),
++        )
++        pollBody?.let {
++            routes["https://api.rev.ai/speechtotext/v1/jobs/job1"] = UrlHandler(
++                UrlResponse.JsonValue(Json.parseToJsonElement(it)),
++            )
++        }
++        transcriptBody?.let {
++            routes["https://api.rev.ai/speechtotext/v1/jobs/job1/transcript"] = UrlHandler(
++                UrlResponse.JsonValue(Json.parseToJsonElement(it)),
++            )
++        }
++        return TestServer.createTestServer(routes).also { it.server.start() }
++    }
++
++    private fun revaiModel(
++        fixture: CreatedTestServer,
++        pollingIntervalMillis: Long = 0,
++        maxPollAttempts: Int = 60,
++    ): TranscriptionModel =
++        Revai(
++            fixture.httpClient(),
++            RevaiProviderSettings {
++                apiKey("key")
++                pollingIntervalMillis(pollingIntervalMillis)
++                maxPollAttempts(maxPollAttempts)
++            },
++        ).transcription(ModelId("machine"))
++
++    private fun revaiTranscriptionParams(): TranscriptionParams =
++        TranscriptionParams {
++            audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
++        }
++
++    private suspend fun assertInvalidInitialStatus(submitBody: String) {
++        val fixture = revaiFixture(submitBody = submitBody)
++        val model = revaiModel(fixture)
++
++        assertFailsWith<InvalidResponseDataError> {
++            model.transcribe(revaiTranscriptionParams())
++        }
++
++        assertEquals(1, fixture.calls.size)
++        assertEquals("POST", fixture.calls.single().requestMethod)
++    }
++
+     private fun Map<String, String>.headerValue(name: String): String? =
+         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+ }
+

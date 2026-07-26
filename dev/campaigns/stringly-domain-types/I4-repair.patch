@@ -1,0 +1,379 @@
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/FireworksFacade.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/FireworksFacade.kt
+index 9214079..5745c5b 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/FireworksFacade.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/FireworksFacade.kt
+@@ -392,11 +392,25 @@ public class FireworksImageModel(
+                     abortSignal = abortSignal,
+                 )
+             }
+-            val status = (response.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull
++            val responseObject = response.value as? JsonObject
++                ?: throw InvalidResponseDataError(
++                    response.value,
++                    "Fireworks poll response is missing a string status",
++                )
++            val status = (responseObject["status"] as? JsonPrimitive)
++                ?.takeIf { it.isString }
++                ?.contentOrNull
++                ?: throw InvalidResponseDataError(
++                    response.value,
++                    "Fireworks poll response is missing a string status",
++                )
+             when (status) {
++                "Pending" -> Unit
+                 "Ready" -> {
+-                    val sample = (JsonAccess.obj(response.value.jsonObject, "result"))?.get("sample")
+-                    return (sample as? JsonPrimitive)?.contentOrNull
++                    val sample = (JsonAccess.obj(responseObject, "result"))?.get("sample")
++                    return (sample as? JsonPrimitive)
++                        ?.takeIf { it.isString }
++                        ?.contentOrNull
+                         ?: throw InvalidResponseDataError(
+                             response.value,
+                             "Fireworks poll response is Ready but missing result.sample",
+@@ -406,6 +420,10 @@ public class FireworksImageModel(
+                     message = "Fireworks image generation failed with status: $status",
+                     url = pollUrl,
+                 )
++                else -> throw InvalidResponseDataError(
++                    response.value,
++                    "Fireworks poll response has unknown status: '$status'",
++                )
+             }
+             if (attempt < FIREWORKS_MAX_POLL_ATTEMPTS - 1) {
+                 delay(pollDelayMillis)
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/BlackForestLabsPollingStatusTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/BlackForestLabsPollingStatusTest.kt
+new file mode 100644
+index 0000000..186a4f3
+--- /dev/null
++++ b/src/commonTest/kotlin/ai/torad/aisdk/BlackForestLabsPollingStatusTest.kt
+@@ -0,0 +1,110 @@
++package ai.torad.aisdk
++
++import ai.torad.aisdk.providers.BlackForestLabs
++import ai.torad.aisdk.providers.BlackForestLabsProviderSettings
++import kotlinx.coroutines.test.runTest
++import kotlinx.serialization.json.Json
++import kotlinx.serialization.json.JsonElement
++import kotlinx.serialization.json.JsonPrimitive
++import kotlinx.serialization.json.buildJsonObject
++import kotlin.test.Test
++import kotlin.test.assertEquals
++import kotlin.test.assertFailsWith
++import kotlin.test.assertTrue
++
++class BlackForestLabsPollingStatusTest {
++    @Test
++    fun `named terminal statuses fail after one poll`() = runTest {
++        val statuses = listOf(
++            "Error",
++            "Failed",
++            "Content Moderated",
++            "Request Moderated",
++            "Task not found",
++        )
++
++        for (status in statuses) {
++            val fixture = bflFixture(
++                buildJsonObject { put("status", JsonPrimitive(status)) },
++            )
++
++            val error = assertFailsWith<NoImageGeneratedError> {
++                fixture.model.generateOne()
++            }
++
++            assertTrue(error.message.orEmpty().contains(status))
++            assertEquals(1, fixture.server.calls.count { it.requestUrl == POLL_URL })
++            assertEquals(2, fixture.server.calls.size)
++        }
++    }
++
++    @Test
++    fun `missing status fails as malformed after one poll`() = runTest {
++        val fixture = bflFixture(Json.parseToJsonElement("{}"))
++
++        val error = assertFailsWith<InvalidResponseDataError> {
++            fixture.model.generateOne()
++        }
++
++        assertTrue(error.message.orEmpty().contains("Missing status"))
++        assertEquals(1, fixture.server.calls.count { it.requestUrl == POLL_URL })
++        assertEquals(2, fixture.server.calls.size)
++    }
++
++    @Test
++    fun `unknown string remains retryable until timeout`() = runTest {
++        val fixture = bflFixture(
++            buildJsonObject { put("status", JsonPrimitive("Queued")) },
++        )
++
++        val error = assertFailsWith<NoImageGeneratedError> {
++            fixture.model.generateOne()
++        }
++
++        assertTrue(error.message.orEmpty().contains("timed out"))
++        assertEquals(3, fixture.server.calls.count { it.requestUrl == POLL_URL })
++        assertEquals(4, fixture.server.calls.size)
++    }
++
++    private fun bflFixture(pollResponse: JsonElement): BflFixture {
++        val server = TestServer.createTestServer(
++            mutableMapOf(
++                SUBMIT_URL to UrlHandler(
++                    UrlResponse.JsonValue(
++                        Json.parseToJsonElement(
++                            """{"id":"req1","polling_url":"$POLL_BASE_URL"}""",
++                        ),
++                    ),
++                ),
++                POLL_URL to UrlHandler(UrlResponse.JsonValue(pollResponse)),
++            ),
++        )
++        server.server.start()
++        val model = BlackForestLabs(
++            server.httpClient(),
++            BlackForestLabsProviderSettings {
++                apiKey("key")
++                baseURL(BASE_URL)
++                pollIntervalMillis(1)
++                pollTimeoutMillis(3)
++            },
++        ).image(ModelId(MODEL_ID))
++        return BflFixture(server, model)
++    }
++
++    private suspend fun ImageModel.generateOne(): ImageModelResult =
++        generate(ImageGenerationParams { prompt("x") })
++
++    private data class BflFixture(
++        val server: CreatedTestServer,
++        val model: ImageModel,
++    )
++
++    private companion object {
++        const val BASE_URL = "https://bfl.test/v1"
++        const val MODEL_ID = "flux-pro-1.1"
++        const val SUBMIT_URL = "$BASE_URL/$MODEL_ID"
++        const val POLL_BASE_URL = "$BASE_URL/poll"
++        const val POLL_URL = "$POLL_BASE_URL?id=req1"
++    }
++}
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/FireworksPollingStatusTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/FireworksPollingStatusTest.kt
+new file mode 100644
+index 0000000..d104132
+--- /dev/null
++++ b/src/commonTest/kotlin/ai/torad/aisdk/FireworksPollingStatusTest.kt
+@@ -0,0 +1,212 @@
++package ai.torad.aisdk
++
++import ai.torad.aisdk.providers.Fireworks
++import ai.torad.aisdk.providers.FireworksProviderSettings
++import io.ktor.http.HttpHeaders
++import kotlinx.coroutines.test.runTest
++import kotlinx.serialization.json.Json
++import kotlinx.serialization.json.JsonElement
++import kotlinx.serialization.json.JsonPrimitive
++import kotlinx.serialization.json.buildJsonObject
++import kotlinx.serialization.json.contentOrNull
++import kotlinx.serialization.json.jsonObject
++import kotlinx.serialization.json.jsonPrimitive
++import kotlin.test.Test
++import kotlin.test.assertEquals
++import kotlin.test.assertFailsWith
++import kotlin.test.assertNull
++import kotlin.test.assertTrue
++
++class FireworksPollingStatusTest {
++    @Test
++    fun `Pending retries and Ready returns its validated sample`() = runTest {
++        val fixture = fireworksFixture(
++            listOf(
++                buildJsonObject { put("status", JsonPrimitive("Pending")) },
++                readyResponse(SAME_ORIGIN_IMAGE_URL),
++            ),
++        )
++
++        val result = fixture.model.generateOne()
++
++        assertEquals(Base64Codec.encode(IMAGE_BYTES), result.images.single().base64)
++        val polls = fixture.server.calls.filter { it.requestUrl == POLL_URL }
++        assertEquals(2, polls.size)
++        assertTrue(polls.all { it.requestMethod == "POST" })
++        assertTrue(
++            polls.all {
++                it.requestBodyJson.jsonObject["id"]?.jsonPrimitive?.contentOrNull == "req1"
++            },
++        )
++
++        val download = fixture.server.calls.single { it.requestUrl == SAME_ORIGIN_IMAGE_URL }
++        assertEquals("Bearer key", download.requestHeaders.headerValue(HttpHeaders.Authorization))
++        assertEquals("secondary", download.requestHeaders.headerValue("x-api-key"))
++    }
++
++    @Test
++    fun `Ready does not send credentials to a cross-origin sample`() = runTest {
++        val fixture = fireworksFixture(
++            pollResponses = listOf(readyResponse(CROSS_ORIGIN_IMAGE_URL)),
++            imageUrl = CROSS_ORIGIN_IMAGE_URL,
++        )
++
++        fixture.model.generateOne()
++
++        assertEquals(1, fixture.server.calls.count { it.requestUrl == POLL_URL })
++        val download = fixture.server.calls.single { it.requestUrl == CROSS_ORIGIN_IMAGE_URL }
++        assertNull(download.requestHeaders.headerValue(HttpHeaders.Authorization))
++        assertNull(download.requestHeaders.headerValue("x-api-key"))
++    }
++
++    @Test
++    fun `Ready requires a string result sample without another poll`() = runTest {
++        val responses = listOf(
++            buildJsonObject {
++                put("status", JsonPrimitive("Ready"))
++                put("result", buildJsonObject {})
++            },
++            buildJsonObject {
++                put("status", JsonPrimitive("Ready"))
++                put("result", buildJsonObject { put("sample", JsonPrimitive(42)) })
++            },
++        )
++
++        for (response in responses) {
++            val fixture = fireworksFixture(listOf(response))
++
++            val error = assertFailsWith<InvalidResponseDataError> {
++                fixture.model.generateOne()
++            }
++
++            assertTrue(error.message.orEmpty().contains("missing result.sample"))
++            assertEquals(1, fixture.server.calls.count { it.requestUrl == POLL_URL })
++            assertEquals(2, fixture.server.calls.size)
++            assertEquals(0, fixture.server.calls.count { it.requestUrl == SAME_ORIGIN_IMAGE_URL })
++        }
++    }
++
++    @Test
++    fun `Error and Failed preserve immediate API call errors`() = runTest {
++        for (status in listOf("Error", "Failed")) {
++            val fixture = fireworksFixture(
++                listOf(buildJsonObject { put("status", JsonPrimitive(status)) }),
++            )
++
++            val error = assertFailsWith<APICallError> {
++                fixture.model.generateOne()
++            }
++
++            assertEquals(POLL_URL, error.url)
++            assertTrue(error.message.orEmpty().contains(status))
++            assertEquals(1, fixture.server.calls.count { it.requestUrl == POLL_URL })
++            assertEquals(2, fixture.server.calls.size)
++        }
++    }
++
++    @Test
++    fun `missing null non-string and non-object statuses fail as malformed after one poll`() = runTest {
++        val responses = listOf(
++            Json.parseToJsonElement("{}"),
++            Json.parseToJsonElement("""{"status":null}"""),
++            buildJsonObject { put("status", JsonPrimitive(123)) },
++            Json.parseToJsonElement("""{"status":true}"""),
++            Json.parseToJsonElement("""{"status":[]}"""),
++            buildJsonObject { put("status", buildJsonObject { put("phase", JsonPrimitive("Pending")) }) },
++            Json.parseToJsonElement("[]"),
++            Json.parseToJsonElement("null"),
++            Json.parseToJsonElement("\"payload\""),
++            Json.parseToJsonElement("123"),
++            Json.parseToJsonElement("true"),
++        )
++
++        for (response in responses) {
++            val fixture = fireworksFixture(listOf(response))
++
++            val error = assertFailsWith<InvalidResponseDataError> {
++                fixture.model.generateOne()
++            }
++
++            assertTrue(error.message.orEmpty().contains("Fireworks poll response is missing a string status"))
++            assertEquals(response, error.data)
++            assertEquals(1, fixture.server.calls.count { it.requestUrl == POLL_URL })
++            assertEquals(2, fixture.server.calls.size)
++            assertEquals(0, fixture.server.calls.count { it.requestUrl == SAME_ORIGIN_IMAGE_URL })
++        }
++    }
++
++    @Test
++    fun `unknown and blank string statuses preserve the raw value without retrying`() = runTest {
++        for (status in listOf("Queued", "", " ")) {
++            val response = buildJsonObject { put("status", JsonPrimitive(status)) }
++            val fixture = fireworksFixture(listOf(response))
++
++            val error = assertFailsWith<InvalidResponseDataError> {
++                fixture.model.generateOne()
++            }
++
++            assertTrue(error.message.orEmpty().contains("unknown status: '$status'"))
++            assertEquals(response, error.data)
++            assertEquals(1, fixture.server.calls.count { it.requestUrl == POLL_URL })
++            assertEquals(2, fixture.server.calls.size)
++        }
++    }
++
++    private fun fireworksFixture(
++        pollResponses: List<JsonElement>,
++        imageUrl: String = SAME_ORIGIN_IMAGE_URL,
++    ): FireworksFixture {
++        var pollResponseIndex = 0
++        val server = TestServer.createTestServer(
++            mutableMapOf(
++                SUBMIT_URL to UrlHandler(
++                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req1"}""")),
++                ),
++                POLL_URL to UrlHandler {
++                    val response = pollResponses.getOrElse(pollResponseIndex) { pollResponses.last() }
++                    pollResponseIndex++
++                    UrlResponse.JsonValue(response)
++                },
++                imageUrl to UrlHandler(
++                    UrlResponse.Binary(IMAGE_BYTES, headers = mapOf(HttpHeaders.ContentType to "image/png")),
++                ),
++            ),
++        )
++        server.server.start()
++        val model = Fireworks(
++            server.httpClient(),
++            FireworksProviderSettings {
++                apiKey("key")
++                baseURL(BASE_URL)
++                headers(mapOf("X-Api-Key" to "secondary"))
++            },
++        ).image(ModelId(MODEL_ID))
++        return FireworksFixture(server, model)
++    }
++
++    private suspend fun ImageModel.generateOne(): ImageModelResult =
++        generate(ImageGenerationParams { prompt("x") })
++
++    private fun readyResponse(imageUrl: String): JsonElement = buildJsonObject {
++        put("status", JsonPrimitive("Ready"))
++        put("result", buildJsonObject { put("sample", JsonPrimitive(imageUrl)) })
++    }
++
++    private fun Map<String, String>.headerValue(name: String): String? =
++        entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
++
++    private data class FireworksFixture(
++        val server: CreatedTestServer,
++        val model: ImageModel,
++    )
++
++    private companion object {
++        const val BASE_URL = "https://fireworks.test"
++        const val MODEL_ID = "accounts/fireworks/models/flux-kontext-pro"
++        const val SUBMIT_URL = "$BASE_URL/workflows/$MODEL_ID"
++        const val POLL_URL = "$SUBMIT_URL/get_result"
++        const val SAME_ORIGIN_IMAGE_URL = "$BASE_URL/image.png"
++        const val CROSS_ORIGIN_IMAGE_URL = "https://cdn.example/image.png"
++        val IMAGE_BYTES = byteArrayOf(1, 2, 3)
++    }
++}
+

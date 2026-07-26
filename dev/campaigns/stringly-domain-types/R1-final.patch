@@ -1,0 +1,103 @@
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/XaiMediaModels.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/XaiMediaModels.kt
+index c2d7eab..e71cfcc 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/XaiMediaModels.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/XaiMediaModels.kt
+@@ -79,7 +79,10 @@ internal class XaiImageModel(
+             val obj = image as? JsonObject ?: return@mapNotNull null
+             val base64 = (obj["b64_json"] as? JsonPrimitive)?.contentOrNull
+             if (base64 != null) {
+-                GeneratedFile(mediaType = "image/png", base64 = base64)
++                val mediaType = (obj["mime_type"] as? JsonPrimitive)?.contentOrNull
++                    ?.takeIf { it.isNotBlank() }
++                    ?: "image/png"
++                GeneratedFile(mediaType = mediaType, base64 = base64)
+             } else {
+                 val url = (obj["url"] as? JsonPrimitive)?.contentOrNull
+                     ?: throw NoImageGeneratedError("xAI image response is missing b64_json and url")
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/XaiProviderTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/XaiProviderTest.kt
+index 711df7e..d5bc6ac 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/XaiProviderTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/XaiProviderTest.kt
+@@ -464,6 +464,82 @@ class XaiProviderTest {
+         assertEquals("data:image/png;base64,iVBORw==", images[1].jsonObject["url"]?.jsonPrimitive?.contentOrNull)
+     }
+ 
++    @Test
++    fun `inline base64 images use response mime type and preserve request filtering`() = runTest {
++        val fixture = TestServer.createTestServer(
++            mutableMapOf(
++                "https://xai.test/v1/images/generations" to UrlHandler(
++                    UrlResponse.JsonValue(
++                        Json.parseToJsonElement(
++                            """
++                            {
++                              "data":[
++                                {"b64_json":"jpeg-image","mime_type":"image/jpeg"},
++                                {"b64_json":"webp-image","mime_type":"image/webp"},
++                                {"b64_json":"legacy-image"},
++                                {"b64_json":"null-mime-image","mime_type":null},
++                                {"b64_json":"blank-mime-image","mime_type":"   "},
++                                {"b64_json":"spaced-image","mime_type":" image/jpeg "}
++                              ]
++                            }
++                            """.trimIndent(),
++                        ),
++                    ),
++                ),
++            ),
++        )
++        fixture.server.start()
++        val provider = Xai(
++            fixture.httpClient(),
++            XaiProviderSettings {
++                baseURL("https://xai.test/v1")
++                apiKey("key")
++            },
++        )
++
++        val result = provider.image(ModelId("grok-imagine-image")).generate(
++            ImageGenerationParams {
++                prompt("Generate images")
++                providerOptions(
++                    ProviderOptions.Raw(
++                        JsonObject(
++                            mapOf(
++                                "xai" to buildJsonObject {
++                                    put("output_format", JsonPrimitive("jpeg"))
++                                    put("outputFormat", JsonPrimitive("webp"))
++                                    put("sync_mode", JsonPrimitive(true))
++                                    put("syncMode", JsonPrimitive(true))
++                                    put("quality", JsonPrimitive("high"))
++                                },
++                            )
++                        )
++                    )
++                )
++            },
++        )
++
++        assertEquals(
++            listOf("image/jpeg", "image/webp", "image/png", "image/png", "image/png", " image/jpeg "),
++            result.images.map { it.mediaType },
++        )
++        assertEquals(
++            listOf(
++                "jpeg-image",
++                "webp-image",
++                "legacy-image",
++                "null-mime-image",
++                "blank-mime-image",
++                "spaced-image",
++            ),
++            result.images.map { it.base64 },
++        )
++        val requestBody = fixture.calls.single().requestBodyJson.jsonObject
++        assertEquals("b64_json", requestBody["response_format"]?.jsonPrimitive?.contentOrNull)
++        listOf("output_format", "outputFormat", "sync_mode", "syncMode", "quality").forEach { field ->
++            assertEquals(null, requestBody[field], "$field must remain off the xAI image request wire")
++        }
++    }
++
+     @Test
+     fun `video model submits polls maps modes warnings and metadata`() = runTest {
+         val fixture = TestServer.createTestServer(
