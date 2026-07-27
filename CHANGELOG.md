@@ -47,10 +47,13 @@ This project follows Semantic Versioning once the first stable release is cut.
     off-origin. The download URL comes from the provider's `result.sample`, so the
     cross-origin path now forwards only `User-Agent` (an allowlist) rather than
     stripping a fixed `Authorization`/`x-api-key` pair — a denylist could not cover
-    a `Cookie` or bespoke auth header set through `settings.headers`. Redirects are
-    followed manually (bounded hop count) so that decision is re-made for every hop:
-    a same-origin URL that redirects to a third-party CDN is the ordinary shape of a
-    signed download, and Ktor's own redirect handling drops only `Authorization`.
+    a `Cookie` or bespoke auth header set through `settings.headers`. The decision is
+    re-made on every physical send, so it survives redirects: a same-origin URL that
+    redirects to a third-party CDN is the ordinary shape of a signed download, and
+    Ktor's own redirect handling drops only `Authorization`. Same-origin hops keep the
+    full provider + per-call header baseline, so gateway/proxy deployments are
+    unaffected. Ktor keeps ownership of redirect mechanics; the download additionally
+    refuses an HTTPS-to-HTTP hop even if the caller's client allows downgrades.
 
 - **Provider wire fixes (Tier 2 — silent loss / wrong defaults):**
   - **LiteRT:** sampler carries `maxOutputTokens` / `presencePenalty` /
