@@ -21,6 +21,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class MistralProviderTest {
@@ -244,7 +245,7 @@ class MistralProviderTest {
             },
         )
         val defaultBody = fixture.calls[0].requestBodyJson.jsonObject
-        val defaultAsst = defaultBody["messages"]!!.jsonArray.last().jsonObject
+        val defaultAsst = assertNotNull(defaultBody["messages"]).jsonArray.last().jsonObject
         assertEquals(null, defaultAsst["prefix"], "prefix must be opt-in")
         assertEquals(null, defaultBody["prefix"], "prefix must not be a top-level chat field")
 
@@ -267,7 +268,7 @@ class MistralProviderTest {
             },
         )
         val opted = fixture.calls[1].requestBodyJson.jsonObject
-        val optedAsst = opted["messages"]!!.jsonArray.last().jsonObject
+        val optedAsst = assertNotNull(opted["messages"]).jsonArray.last().jsonObject
         assertEquals(true, optedAsst["prefix"]?.jsonPrimitive?.booleanOrNull)
         assertEquals(null, opted["prefix"], "top-level prefix flag must be stripped")
     }
