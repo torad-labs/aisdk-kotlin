@@ -652,5 +652,20 @@
     "badExample": "internal fun retryable(t: Throwable): Boolean = t::class.qualifiedName == \"java.io.IOException\"\n",
     "goodExample": "internal fun retryable(t: Throwable): Boolean = t is IOException\n",
     "hunkExpectation": "same"
+  },
+  {
+    "id": "no-deprecated-without-version",
+    "severity": "warning",
+    "yaml": "id: no-deprecated-without-version\nlanguage: kotlin\nseverity: warning\nmessage: \"`@Deprecated` message doesn't mention a version. Without a version, consumers can't tell how urgent the migration is or when the symbol will be removed. Mention the version it was deprecated in and/or the version it will be removed in, e.g. `@Deprecated(\\\"Use X instead, removed in 2.0.0\\\")`.\"\n# Bind only the first deprecation argument (the message). A relational stopBy:end walk\n# previously matched ANY nested string — including ReplaceWith(\"newApi()\") — so a\n# compliant declaration still warned. Pattern metavariable $MESSAGE is the first arg only.\nrule:\n  any:\n    - pattern: '@Deprecated($MESSAGE)'\n    - pattern: '@Deprecated($MESSAGE, $$$REST)'\nconstraints:\n  MESSAGE:\n    not:\n      regex: '(?i)(version|\\d+\\.\\d+)'\n",
+    "badExample": "@Deprecated(\"Use newApi instead\", ReplaceWith(\"newApi()\"))\npublic fun oldApi(): Int = 1\n",
+    "goodExample": "@Deprecated(\"Use newApi instead, removed in 2.0.0\", ReplaceWith(\"newApi()\"))\npublic fun oldApi(): Int = 1\n"
+  },
+  {
+    "id": "no-public-without-since",
+    "severity": "warning",
+    "hunkUnsafe": true,
+    "yaml": "id: no-public-without-since\nlanguage: kotlin\nseverity: warning\nmessage: \"Public declaration has no KDoc `@since` tag (either no KDoc at all, or a KDoc missing `@since`). This is a published, ABI-validated library — consumers and changelog tooling rely on `@since` to know which release introduced a symbol. Add a `/** ... @since X.Y.Z */` block directly above the declaration.\"\n# Require the KDoc opening token (`/**`). A plain block comment `/* @since ... */` is NOT\n# published by Dokka, so accepting any multiline_comment let non-KDoc markers slip through.\nrule:\n  all:\n    - any:\n        - kind: function_declaration\n        - kind: class_declaration\n        - kind: property_declaration\n        - kind: object_declaration\n    - has:\n        kind: modifiers\n        has: { kind: visibility_modifier, regex: '^public$' }\n    - not:\n        follows:\n          kind: multiline_comment\n          regex: '^/\\*\\*[\\s\\S]*@since'\n",
+    "badExample": "/* @since 0.3.0-beta01 */\npublic fun notKdoc(): Int = 1\n",
+    "goodExample": "/** Does a thing.\n * @since 0.3.0-beta01\n */\npublic fun isKdoc(): Int = 1\n"
   }
 ]
