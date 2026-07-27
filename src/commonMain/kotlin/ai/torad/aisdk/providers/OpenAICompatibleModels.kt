@@ -529,7 +529,9 @@ internal class OpenAICompatibleTranscriptionModel(
                 params.language?.let { append("language", it) }
                 params.prompt?.let { append("prompt", it) }
                 for ((key, value) in options) {
-                    if (key !in setOf("response_format", "file")) append(key, openAIFormValue(value))
+                    if (key !in setOf("responseFormat", "response_format", "file") && value !is JsonNull) {
+                        append(key, openAIFormValue(value))
+                    }
                 }
                 append(
                     "file",

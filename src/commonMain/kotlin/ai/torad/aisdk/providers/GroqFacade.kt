@@ -201,6 +201,10 @@ public class GroqTranscriptionModelOptions internal constructor(
     /** @since 0.3.0-beta01 */
     public val temperature: Float? = null,
     /** @since 0.3.0-beta01 */
+    @Deprecated(
+        "Deprecated after 0.3.0-beta01: ignored; Groq transcription always requests JSON. Omit this option.",
+        level = DeprecationLevel.WARNING,
+    )
     public val responseFormat: String? = null,
 )
 
@@ -230,6 +234,10 @@ public class GroqTranscriptionModelOptionsBuilder {
     }
 
     /** @since 0.3.0-beta01 */
+    @Deprecated(
+        "Deprecated after 0.3.0-beta01: ignored; Groq transcription always requests JSON. Omit this option.",
+        level = DeprecationLevel.WARNING,
+    )
     public fun responseFormat(value: String?): GroqTranscriptionModelOptionsBuilder {
         responseFormat = value
         return this

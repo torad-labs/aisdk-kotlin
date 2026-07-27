@@ -469,12 +469,7 @@ class ProviderModelOptionsBuilderTest {
         val groqLanguage = GroqLanguageModelOptions {
             raw(mapOf("reasoning_effort" to JsonPrimitive("low")))
         }
-        val groqTranscription = GroqTranscriptionModelOptions {
-            language("en")
-            prompt("Domain terms")
-            temperature(0.2f)
-            responseFormat("json")
-        }
+        val groqTranscription = legacyGroqTranscriptionOptions()
         val hume = HumeSpeechModelOptions {
             context(buildJsonObject { put("utterance", JsonPrimitive("hello")) })
         }
@@ -518,15 +513,7 @@ class ProviderModelOptionsBuilderTest {
             groqLanguage,
             aiSdkJson.decodeFromString<GroqLanguageModelOptions>(aiSdkOutputJson.encodeToString(groqLanguage))
         )
-        assertEquals(
-            groqTranscription,
-            GroqTranscriptionModelOptions {
-                language("en")
-                prompt("Domain terms")
-                temperature(0.2f)
-                responseFormat("json")
-            }
-        )
+        assertEquals(groqTranscription, legacyGroqTranscriptionOptions())
         assertEquals(hume, aiSdkJson.decodeFromString<HumeSpeechModelOptions>(aiSdkOutputJson.encodeToString(hume)))
         assertEquals(kling, aiSdkJson.decodeFromString<KlingAIVideoModelOptions>(aiSdkOutputJson.encodeToString(kling)))
         assertEquals(luma, aiSdkJson.decodeFromString<LumaImageModelOptions>(aiSdkOutputJson.encodeToString(luma)))
@@ -722,6 +709,15 @@ class ProviderModelOptionsBuilderTest {
         assertTrue(xaiImageJson.contains("\"output_format\""))
         assertTrue(xaiImageJson.contains("\"sync_mode\""))
     }
+
+    @Suppress("DEPRECATION")
+    private fun legacyGroqTranscriptionOptions(): GroqTranscriptionModelOptions =
+        GroqTranscriptionModelOptions {
+            language("en")
+            prompt("Domain terms")
+            temperature(0.2f)
+            responseFormat("json")
+        }
 
     @Test
     fun `gateway params use value semantics and auth options use identity semantics`() {
