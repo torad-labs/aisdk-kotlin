@@ -12,6 +12,7 @@ public const val VERCEL_VERSION: String = "2.0.50"
  * Default base URL for [Vercel] — the **v0** product API (`api.v0.dev`), not the
  * Vercel AI Gateway. For the AI Gateway use [ai.torad.aisdk.Gateway] /
  * [AI_GATEWAY_OPENAI_COMPAT_BASE_URL], or [VercelAIGateway].
+ * @since 0.3.0-beta01
  */
 public const val VERCEL_V0_BASE_URL: String = "https://api.v0.dev/v1"
 
@@ -19,6 +20,7 @@ public const val VERCEL_V0_BASE_URL: String = "https://api.v0.dev/v1"
  * OpenAI-compatible base URL for the Vercel AI Gateway.
  * Prefer [ai.torad.aisdk.Gateway] for full gateway features (OIDC, metadata, …);
  * this facade is the thin chat/completions path only.
+ * @since 0.3.0-beta01
  */
 public const val AI_GATEWAY_OPENAI_COMPAT_BASE_URL: String = "https://ai-gateway.vercel.sh/v1"
 

@@ -144,6 +144,7 @@ public class StreamObjectResult<TOutput> internal constructor(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
         val textBlocks = OrderedTextBlocks()
         val decoder = ElementStreamDecoder(arrayOutput)
@@ -183,6 +184,7 @@ public class StreamObjectResult<TOutput> internal constructor(
         decoder.ready(textBlocks.joinedText(), complete = true).forEach { emit(it) }
     }
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun finish(): StreamObjectFinish<TOutput> {
         val textBlocks = OrderedTextBlocks()
@@ -234,6 +236,7 @@ public class StreamObjectResult<TOutput> internal constructor(
         )
     }
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun objectValue(): TOutput = finish().value
 

@@ -161,7 +161,10 @@ public abstract class Tool<TInput, TOutput, TContext> {
     /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions get() = schema.providerOptions
 
-    /** Approval gate — return true to pause the loop for host approval. Default: never gates. */
+    /**
+     * Approval gate — return true to pause the loop for host approval. Default: never gates.
+     * @since 0.3.0-beta01
+     */
     @JvmSynthetic
     public open suspend fun needsApproval(input: TInput, options: ToolPredicateOptions<TContext>): Boolean = false
 
@@ -171,12 +174,15 @@ public abstract class Tool<TInput, TOutput, TContext> {
      */
     public open fun toModelOutput(output: TOutput, options: ToolPredicateOptions<TContext>): ToolResultOutput? = null
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public open suspend fun onInputStart(streamingId: String): Unit = Unit
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public open suspend fun onInputDelta(streamingId: String, delta: String): Unit = Unit
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public open suspend fun onInputAvailable(toolCallId: String, input: TInput): Unit = Unit
 
@@ -543,7 +549,10 @@ public fun <TInput, TOutput, TContext> ProviderExecutedTool(
     }
 }
 
-/** Execute a tool outside the agent loop with one-step lookahead semantics. */
+/**
+ * Execute a tool outside the agent loop with one-step lookahead semantics.
+ * @since 0.3.0-beta01
+ */
 @JvmSynthetic public fun <TInput, TOutput, TContext> ExecuteTool(
     tool: Tool<TInput, TOutput, TContext>,
     input: TInput,
@@ -796,9 +805,11 @@ public sealed class ToolChoice {
  * Distinct from the streaming-tool mechanism — pushes arbitrary [StreamEvent]s.
  */
 public interface ToolStreamWriter {
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun write(event: StreamEvent)
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun writeData(value: JsonElement)
 }

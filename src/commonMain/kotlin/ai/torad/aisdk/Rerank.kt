@@ -12,6 +12,7 @@ public interface RerankingModel {
     public val provider: String
         get() = "unknown"
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun rerank(params: RerankingParams): RerankingModelResult
 }
@@ -152,6 +153,7 @@ public class RerankResult<T>(
 /** @since 0.3.0-beta01 */
 public object Reranking {
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun rerank(
         model: RerankingModel,

@@ -712,6 +712,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     /**
      * Convenience over [events]: collect the lifecycle stream with one suspend handler —
      * `agent.collectAgentEvents { when (it) { is AgentEvent.Chunk -> … } }`.
+     * @since 0.3.0-beta01
      */
     @JvmSynthetic
     public suspend fun collectAgentEvents(

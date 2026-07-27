@@ -43,7 +43,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   - **LMNT:** wire key `format`, default model `blizzard`, required
     `lmnt-version` header, documented format allowlist incl. `pcm_f32le`; drops
     unsupported `speed`/`conversational`/`length` body fields.
-  - **Security:** Fireworks image download strips `Authorization` off-origin.
+  - **Security:** Fireworks image download sends no caller-configured credentials
+    off-origin. The download URL comes from the provider's `result.sample`, so the
+    cross-origin path now forwards only `User-Agent` (an allowlist) rather than
+    stripping a fixed `Authorization`/`x-api-key` pair — a denylist could not cover
+    a `Cookie` or bespoke auth header set through `settings.headers`.
 
 - **Provider wire fixes (Tier 2 — silent loss / wrong defaults):**
   - **LiteRT:** sampler carries `maxOutputTokens` / `presencePenalty` /

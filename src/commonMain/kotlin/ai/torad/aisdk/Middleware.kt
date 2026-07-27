@@ -33,6 +33,7 @@ public interface LanguageModelMiddleware {
      * the downstream call. This is the params-only seam — a middleware can implement
      * just this (e.g. `ai.torad.aisdk.middleware.defaultSettingsMiddleware`).
      * Default: pass through. Mirrors v6's `transformParams({ type, params, model })`.
+     * @since 0.3.0-beta01
      */
     @JvmSynthetic
     public suspend fun transformParams(
@@ -41,7 +42,10 @@ public interface LanguageModelMiddleware {
         model: LanguageModel,
     ): LanguageModelCallParams = params
 
-    /** Wrap the one-shot generate call. Default: pass through. */
+    /**
+     * Wrap the one-shot generate call. Default: pass through.
+     * @since 0.3.0-beta01
+     */
     @JvmSynthetic
     public suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
         context.doGenerate(context.params)

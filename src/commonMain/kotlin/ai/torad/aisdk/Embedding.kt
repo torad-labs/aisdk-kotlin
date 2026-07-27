@@ -31,6 +31,7 @@ public interface EmbeddingModel {
     public val supportsParallelCalls: Boolean
         get() = false
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult
 }
@@ -202,6 +203,7 @@ public object Embedding {
         return chunked(chunkSize)
     }
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun embed(
         model: EmbeddingModel,
@@ -301,6 +303,7 @@ public object Embedding {
 
 /** @since 0.3.0-beta01 */
 public interface EmbeddingModelMiddleware {
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun wrapEmbed(context: EmbeddingMiddlewareCallContext): EmbeddingModelResult =
         context.doEmbed(context.params)

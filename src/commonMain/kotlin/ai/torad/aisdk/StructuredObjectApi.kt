@@ -414,6 +414,7 @@ public class StructuredObject<RESULT, INPUT>(
 
     private var abortController: AbortController? = null
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun submit(input: INPUT) {
         clearObject()
@@ -574,7 +575,10 @@ public class StructuredObjectGenerator<RESULT>(
             }
         }.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
-    /** One-shot: drives the stream to [StructuredObjectPhase.Done] and returns the typed result. */
+    /**
+     * One-shot: drives the stream to [StructuredObjectPhase.Done] and returns the typed result.
+     * @since 0.3.0-beta01
+     */
     @JvmSynthetic
     public suspend fun generate(input: GenerationInput): StructuredObjectFinish<RESULT> =
         when (val terminal = stream(input).last()) {

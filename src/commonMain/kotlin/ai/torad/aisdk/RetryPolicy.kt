@@ -138,6 +138,7 @@ public class RetryPolicy internal constructor(
      * - a non-retryable error on the first attempt → the bare error, unwrapped;
      * - a non-retryable error on a later attempt → [RetryError] (`ErrorNotRetryable`);
      * - retries exhausted → [RetryError] (`MaxRetriesExceeded`).
+     * @since 0.3.0-beta01
      */
     @JvmSynthetic
     public suspend fun <T> execute(

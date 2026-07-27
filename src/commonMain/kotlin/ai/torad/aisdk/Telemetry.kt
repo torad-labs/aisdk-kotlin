@@ -202,7 +202,10 @@ public interface Telemetry {
     /** @since 0.3.0-beta01 */
     public val name: String
 
-    /** Receives one lifecycle [event] for this [call]. Dispatch with `when (event)`. */
+    /**
+     * Receives one lifecycle [event] for this [call]. Dispatch with `when (event)`.
+     * @since 0.3.0-beta01
+     */
     @JvmSynthetic
     public suspend fun onEvent(call: TelemetryCall, event: AgentEvent)
 }

@@ -181,6 +181,7 @@ internal fun GatewayTransportMissing(): Nothing = throw GatewayTransportNotConfi
 
 /** @since 0.3.0-beta01 */
 public interface GatewayTransport {
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun generateText(
         context: GatewayRequestContext,
@@ -195,6 +196,7 @@ public interface GatewayTransport {
         params: LanguageModelCallParams,
     ): Flow<StreamEvent> = flow { throw GatewayTransportNotConfiguredError() }
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun embed(
         context: GatewayRequestContext,
@@ -202,6 +204,7 @@ public interface GatewayTransport {
         params: EmbeddingModelCallParams,
     ): EmbeddingModelResult = GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun generateImage(
         context: GatewayRequestContext,
@@ -209,6 +212,7 @@ public interface GatewayTransport {
         params: ImageGenerationParams,
     ): ImageModelResult = GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun generateVideo(
         context: GatewayRequestContext,
@@ -216,6 +220,7 @@ public interface GatewayTransport {
         params: VideoGenerationParams,
     ): VideoModelResult = GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun rerank(
         context: GatewayRequestContext,
@@ -223,20 +228,24 @@ public interface GatewayTransport {
         params: RerankingParams,
     ): RerankingModelResult = GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun getAvailableModels(context: GatewayRequestContext): GatewayFetchMetadataResponse =
         GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun getCredits(context: GatewayRequestContext): GatewayCreditsResponse =
         GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun getSpendReport(
         context: GatewayRequestContext,
         params: GatewaySpendReportParams,
     ): GatewaySpendReportResponse = GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun getGenerationInfo(
         context: GatewayRequestContext,
@@ -285,15 +294,19 @@ public sealed class GatewayProvider : Provider {
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public abstract suspend fun getAvailableModels(): GatewayFetchMetadataResponse
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public abstract suspend fun getCredits(): GatewayCreditsResponse
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public abstract suspend fun getSpendReport(params: GatewaySpendReportParams): GatewaySpendReportResponse
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public abstract suspend fun getGenerationInfo(params: GatewayGenerationInfoParams): GatewayGenerationInfo
 }

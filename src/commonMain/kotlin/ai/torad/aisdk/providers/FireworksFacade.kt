@@ -10,6 +10,7 @@ import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
+import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -361,8 +362,8 @@ public class FireworksImageModel(
                 "Fireworks image generation response is missing request_id",
             )
         val imageUrl = pollForImageUrl(requestId, requestHeaders, abortSignal)
-        // Only forward Authorization when the image host matches the API origin — never leak
-        // the Fireworks bearer token to a CDN/third-party host returned in result.sample.
+        // Only forward caller headers when the image host matches the API origin — never leak
+        // credentials to a CDN/third-party host returned in result.sample.
         val imageHeaders = headersForImageDownload(imageUrl, requestHeaders)
         val imageResponse = AbortSignalRuntime.withAbortCancellation(abortSignal) {
             getFacadeBinary(client, imageUrl, imageHeaders, abortSignal = abortSignal)
@@ -474,10 +475,12 @@ public class FireworksImageModel(
         requestHeaders: Map<String, String>,
     ): Map<String, String> {
         if (sameOrigin(settings.baseURL, imageUrl)) return requestHeaders
-        return requestHeaders.filterKeys { key ->
-            !key.equals("Authorization", ignoreCase = true) &&
-                !key.equals("x-api-key", ignoreCase = true)
-        }
+        // Cross-origin: allowlist, never denylist. `imageUrl` comes from the provider's
+        // `result.sample`, so the destination host is not ours to trust, and `requestHeaders`
+        // carries whatever the host configured via settings.headers / params.headers —
+        // a Cookie, a Proxy-Authorization, a bespoke `x-org-token`. Naming the two headers
+        // we happen to set ourselves would leak every credential we did not think of.
+        return requestHeaders.filterKeys { it.equals(HttpHeaders.UserAgent, ignoreCase = true) }
     }
 
     private fun sameOrigin(apiBaseUrl: String, targetUrl: String): Boolean {

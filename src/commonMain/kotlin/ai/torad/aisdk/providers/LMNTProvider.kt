@@ -195,6 +195,7 @@ public class LMNTProvider(
 ) : Provider {
     override val providerId: String = "lmnt"
 
+    /** @since 0.3.0-beta01 */
     public operator fun invoke(modelId: ModelId = ModelId("blizzard")): SpeechModel = speech(modelId)
 
     /** @since 0.3.0-beta01 */
