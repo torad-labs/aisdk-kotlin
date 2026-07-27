@@ -684,6 +684,61 @@ class OpenAICompatibleProviderFacadesTest {
     }
 
     @Test
+    fun `fireworks async image download sends no caller credentials across a redirect`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-kontext-pro" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req_1"}""")),
+                ),
+                "https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-kontext-pro/get_result" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"Ready","result":{"sample":""" +
+                                """"https://fireworks.test/inference/v1/download/1"}}""",
+                        ),
+                    ),
+                ),
+                // Same-origin sample URL — headers are legitimately forwarded here — that
+                // bounces to a third-party CDN. The hop, not the first request, is the leak.
+                "https://fireworks.test/inference/v1/download/1" to UrlHandler(
+                    UrlResponse.Empty(
+                        status = 302,
+                        headers = mapOf(HttpHeaders.Location to "https://cdn.test/result.png"),
+                    ),
+                ),
+                "https://cdn.test/result.png" to UrlHandler(
+                    UrlResponse.Binary(byteArrayOf(9, 8, 7), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Fireworks(
+            fixture.httpClient(),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("https://fireworks.test/inference/v1")
+                headers(mapOf("Cookie" to "session=secret", "x-org-token" to "org-secret"))
+            },
+        )
+
+        provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(
+            ImageGenerationParams { prompt("edit") }
+        )
+
+        fun Map<String, String>.header(name: String): String? =
+            entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+
+        val download = fixture.calls.single { it.requestUrl == "https://cdn.test/result.png" }
+        listOf(HttpHeaders.Authorization, "x-api-key", "Cookie", "x-org-token").forEach { header ->
+            assertEquals(
+                null,
+                download.requestHeaders.header(header),
+                "$header must not survive a redirect to a cross-origin image host",
+            )
+        }
+    }
+
+    @Test
     fun `fireworks async image download sends no caller credentials cross-origin`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

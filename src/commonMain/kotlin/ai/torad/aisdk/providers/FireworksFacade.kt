@@ -3,14 +3,19 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.FacadeHttp.getFacadeBinary
 import ai.torad.aisdk.providers.FacadeHttp.postFacadeBinary
 import ai.torad.aisdk.providers.FacadeHttp.postFacadeJson
 import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
+import io.ktor.client.request.header
+import io.ktor.client.request.request
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLBuilder
+import io.ktor.http.takeFrom
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -304,6 +309,11 @@ public class FireworksImageModel(
     override val provider: String = "fireworks.image"
     override val maxImagesPerCall: Int = 1
 
+    // Shares [client]'s engine; only the redirect policy differs, so the asset download can
+    // re-derive its headers per hop. Derived clients do not own the engine, so this never
+    // closes the caller's transport.
+    private val downloadClient: HttpClient by lazy { client.config { followRedirects = false } }
+
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         val backend = fireworksImageBackend(modelId)
         val warnings = fireworksImageWarnings(params, backend)
@@ -362,11 +372,11 @@ public class FireworksImageModel(
                 "Fireworks image generation response is missing request_id",
             )
         val imageUrl = pollForImageUrl(requestId, requestHeaders, abortSignal)
-        // Only forward caller headers when the image host matches the API origin — never leak
-        // credentials to a CDN/third-party host returned in result.sample.
-        val imageHeaders = headersForImageDownload(imageUrl, requestHeaders)
+        // Only forward caller headers when the host matches the API origin — never leak
+        // credentials to a CDN/third-party host returned in result.sample. Redirects are
+        // followed manually so this decision is re-made for every hop, not just the first.
         val imageResponse = AbortSignalRuntime.withAbortCancellation(abortSignal) {
-            getFacadeBinary(client, imageUrl, imageHeaders, abortSignal = abortSignal)
+            downloadImageFollowingRedirects(imageUrl, requestHeaders, abortSignal)
         }
         return ImageModelResult(
             images = listOf(imageResponse.toGeneratedFile(modelId)),
@@ -470,6 +480,52 @@ public class FireworksImageModel(
             }
         }
 
+    /**
+     * GET the generated image, following redirects MANUALLY so the header decision in
+     * [headersForImageDownload] is re-made against every hop's URL.
+     *
+     * Letting the client follow redirects is not safe here: it recomputes nothing, and Ktor
+     * drops only `Authorization` when the origin changes — every other caller-configured
+     * header (a `Cookie`, a bespoke `x-org-token`) rides along to whatever host the provider
+     * pointed us at. A same-origin URL that 302s to a third-party CDN is the ordinary shape
+     * of a signed download, so the hop, not the first request, is where credentials escape.
+     */
+    private suspend fun downloadImageFollowingRedirects(
+        imageUrl: String,
+        requestHeaders: Map<String, String>,
+        abortSignal: AbortSignal,
+    ): FacadeHttp.ProviderFacadeBinaryResponse {
+        var currentUrl = imageUrl
+        repeat(FIREWORKS_MAX_DOWNLOAD_REDIRECTS) {
+            val abortRegistrations = mutableListOf<AbortSignal.AbortRegistration>()
+            val response = try {
+                downloadClient.request(currentUrl) {
+                    abortSignal.throwIfAborted()
+                    abortRegistrations += abortSignal.register {
+                        executionContext.cancel(
+                            with(AbortErrorCancellationBridge) { AbortError().asCoroutineCancellation() }
+                        )
+                    }
+                    method = HttpMethod.Get
+                    headersForImageDownload(currentUrl, requestHeaders)
+                        .forEach { (name, value) -> header(name, value) }
+                }
+            } finally {
+                abortRegistrations.forEach { it.cancel() }
+            }
+            val location = response.headers[HttpHeaders.Location]
+                ?.takeIf { response.status.value in FIREWORKS_REDIRECT_STATUS_CODES }
+                ?: return with(FacadeHttp) { response.parseFacadeBinary(currentUrl) }
+            // Location may be relative; resolve it against the hop we just made.
+            currentUrl = URLBuilder(currentUrl).takeFrom(location).buildString()
+        }
+        throw DownloadError(
+            url = imageUrl,
+            message = "Fireworks image download exceeded " +
+                "$FIREWORKS_MAX_DOWNLOAD_REDIRECTS redirects starting from $imageUrl",
+        )
+    }
+
     private fun headersForImageDownload(
         imageUrl: String,
         requestHeaders: Map<String, String>,
@@ -511,3 +567,8 @@ internal data class FireworksImageBackend(
 private const val FIREWORKS_POLL_INTERVAL_MILLIS: Long = 500
 private const val FIREWORKS_MAX_POLL_INTERVAL_MILLIS: Long = 30_000
 private const val FIREWORKS_MAX_POLL_ATTEMPTS: Int = 240
+
+/** Bound on manually-followed download hops; matches Ktor's own default redirect ceiling. */
+private const val FIREWORKS_MAX_DOWNLOAD_REDIRECTS: Int = 20
+private val FIREWORKS_REDIRECT_STATUS_CODES =
+    HttpStatusCode.MultipleChoices.value until HttpStatusCode.BadRequest.value
