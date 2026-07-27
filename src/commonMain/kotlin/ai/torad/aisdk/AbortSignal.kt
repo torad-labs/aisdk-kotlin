@@ -45,9 +45,15 @@ public interface AbortSignal {
     /**
      * Register a callback that fires exactly once on abort. If already
      * aborted, fires synchronously. Returns a handle to deregister.
+     *
+     * The parameter is named `onAbort` deliberately. `no-callback-style-api`
+     * flags the `onXxx` shape, but that rule is about preferring suspend/Flow
+     * over Java-style callbacks — renaming the parameter silences the check
+     * without changing the shape, and this name is already published in
+     * INTERFACE_CONTRACT.md, so moving it breaks named-argument call sites.
      * @since 0.3.0-beta01
      */
-    public fun register(handler: () -> Unit): AbortRegistration
+    public fun register(onAbort: () -> Unit): AbortRegistration
 
     /** @since 0.3.0-beta01 */
     public interface AbortRegistration {
@@ -63,7 +69,7 @@ public interface AbortSignal {
 public val AbortSignalNever: AbortSignal = object : AbortSignal {
     override val isAborted: Boolean = false
     override fun throwIfAborted() = Unit
-    override fun register(handler: () -> Unit): AbortSignal.AbortRegistration =
+    override fun register(onAbort: () -> Unit): AbortSignal.AbortRegistration =
         object : AbortSignal.AbortRegistration { override fun cancel() = Unit }
 }
 
@@ -145,12 +151,12 @@ public class AbortController(
             if (backing.isCancelled) throw AbortError()
         }
 
-        override fun register(handler: () -> Unit): AbortSignal.AbortRegistration {
+        override fun register(onAbort: () -> Unit): AbortSignal.AbortRegistration {
             if (backing.isCancelled) {
-                notifyCallback(handler)
+                notifyCallback(onAbort)
                 return NoopRegistration
             }
-            addCallback(handler)
+            addCallback(onAbort)
             // abort() may have drained between the isCancelled check and the
             // add; if so this callback was missed — fire any stragglers now.
             if (backing.isCancelled) {
@@ -159,7 +165,7 @@ public class AbortController(
                 }
             }
             return object : AbortSignal.AbortRegistration {
-                override fun cancel() = removeCallback(handler)
+                override fun cancel() = removeCallback(onAbort)
             }
         }
     }
