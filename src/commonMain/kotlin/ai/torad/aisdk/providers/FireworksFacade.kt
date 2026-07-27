@@ -3,21 +3,19 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import ai.torad.aisdk.providers.FacadeHttp.getFacadeBinary
 import ai.torad.aisdk.providers.FacadeHttp.postFacadeBinary
 import ai.torad.aisdk.providers.FacadeHttp.postFacadeJson
 import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.prepareRequest
+import io.ktor.client.plugins.api.ClientPlugin
+import io.ktor.client.plugins.api.Send
+import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.isSecure
-import io.ktor.http.takeFrom
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -370,10 +368,10 @@ public class FireworksImageModel(
             )
         val imageUrl = pollForImageUrl(requestId, requestHeaders, abortSignal)
         // Only forward caller headers when the host matches the API origin — never leak
-        // credentials to a CDN/third-party host returned in result.sample. Redirects are
-        // followed manually so this decision is re-made for every hop, not just the first.
+        // credentials to a CDN/third-party host returned in result.sample. The decision is
+        // re-made per physical send, so a redirect cannot carry them off-origin.
         val imageResponse = AbortSignalRuntime.withAbortCancellation(abortSignal) {
-            downloadImageFollowingRedirects(imageUrl, requestHeaders, abortSignal)
+            downloadImage(imageUrl, requestHeaders, abortSignal)
         }
         return ImageModelResult(
             images = listOf(imageResponse.toGeneratedFile(modelId)),
@@ -478,81 +476,68 @@ public class FireworksImageModel(
         }
 
     /**
-     * GET the generated image, following redirects MANUALLY so the header decision in
-     * [headersForImageDownload] is re-made against every hop's URL.
+     * GET the generated image through the CALLER's client, with a header policy applied to
+     * every physical send.
      *
-     * Letting the client follow redirects is not safe here: it recomputes nothing, and Ktor
-     * drops only `Authorization` when the origin changes — every other caller-configured
-     * header (a `Cookie`, a bespoke `x-org-token`) rides along to whatever host the provider
-     * pointed us at. A same-origin URL that redirects to a third-party CDN is the ordinary
-     * shape of a signed download, so the hop, not the first request, is where credentials
-     * escape. Everything else here mirrors `HttpRedirect`'s own semantics deliberately —
-     * this replaces that plugin for one request, it does not get to be laxer than it.
+     * Ktor's `HttpRedirect` keeps ownership of redirect mechanics — status selection, `Location`
+     * resolution, query replacement, response disposal, the send ceiling. What it does NOT do is
+     * re-decide which headers a hop may carry: it drops `Authorization` on an authority change
+     * and forwards everything else, so a caller-configured `Cookie` or bespoke `x-org-token`
+     * would ride to whatever host the provider's `result.sample` pointed at. A same-origin URL
+     * that redirects to a third-party CDN is the ordinary shape of a signed download, so the
+     * hop — not the first request — is where credentials escape.
+     *
+     * The policy below is installed LAST, so it runs per physical send and after every inherited
+     * plugin; that ordering is what lets it strip credentials a caller's `Auth`, `HttpCookies`,
+     * or `DefaultRequest` would otherwise re-add downstream of the origin check.
+     *
+     * Deriving with `config { }` (rather than a fresh client over the engine) deliberately keeps
+     * the caller's non-header transport policy — `HttpTimeout`, `ContentEncoding`, tracing,
+     * response validators — applied to the download, as it was before this seam existed.
      */
-    private suspend fun downloadImageFollowingRedirects(
+    private suspend fun downloadImage(
         imageUrl: String,
         requestHeaders: Map<String, String>,
         abortSignal: AbortSignal,
     ): FacadeHttp.ProviderFacadeBinaryResponse =
-        // A fresh client over the caller's ENGINE, not `client.config { }`: deriving would copy
-        // the caller's plugins, so an explicitly installed HttpRedirect would keep following
-        // hops before this loop ever regained control, and `followRedirects = false` only
-        // suppresses the DEFAULT installation. Closed deterministically — the engine is
-        // externally owned, so closing this child never touches the caller's transport.
-        HttpClient(client.engine) { followRedirects = false }.use { hopClient ->
-            var currentUrl = imageUrl
-            repeat(FIREWORKS_MAX_DOWNLOAD_REDIRECTS) {
-                when (val hop = requestImageHop(hopClient, currentUrl, requestHeaders, abortSignal)) {
-                    is ImageDownloadHop.Done -> return hop.response
-                    is ImageDownloadHop.Redirect -> currentUrl = hop.url
-                }
+        client.config { install(imageDownloadHeaderPolicy(imageUrl, requestHeaders)) }
+            .use { policed ->
+                // Headers are supplied by the policy, per hop — including for this first send.
+                getFacadeBinary(policed, imageUrl, emptyMap(), abortSignal = abortSignal)
             }
-            throw DownloadError(
-                url = imageUrl,
-                message = "Fireworks image download exceeded " +
-                    "$FIREWORKS_MAX_DOWNLOAD_REDIRECTS redirects starting from $imageUrl",
-            )
-        }
 
-    /**
-     * One hop. Streams the response so a redirect's body is never buffered — a redirecting
-     * endpoint could otherwise force a large body into memory before [HttpHeaders.Location]
-     * is even read. Only the terminal image response is materialised.
-     */
-    private suspend fun requestImageHop(
-        hopClient: HttpClient,
-        currentUrl: String,
+    private fun imageDownloadHeaderPolicy(
+        imageUrl: String,
         requestHeaders: Map<String, String>,
-        abortSignal: AbortSignal,
-    ): ImageDownloadHop {
-        val abortRegistrations = mutableListOf<AbortSignal.AbortRegistration>()
-        try {
-            return hopClient.prepareRequest(currentUrl) {
-                abortSignal.throwIfAborted()
-                abortRegistrations += abortSignal.register {
-                    executionContext.cancel(
-                        with(AbortErrorCancellationBridge) { AbortError().asCoroutineCancellation() }
+    ): ClientPlugin<Unit> {
+        val startedSecure = Url(imageUrl).protocol.isSecure()
+        return createClientPlugin("FireworksImageDownloadHeaderPolicy") {
+            on(Send) { request ->
+                val hopUrl = request.url.build()
+                // Independent of HttpRedirect's `allowHttpsDowngrade`: a caller that enabled it
+                // must not thereby put this download's bytes on the wire in clear text.
+                if (startedSecure && !hopUrl.protocol.isSecure()) {
+                    throw DownloadError(
+                        url = imageUrl,
+                        message = "Fireworks image download refused an HTTPS-to-HTTP redirect to " +
+                            "${hopUrl.protocol.name}://${hopUrl.host}",
                     )
                 }
-                method = HttpMethod.Get
-                headersForImageDownload(currentUrl, requestHeaders)
-                    .forEach { (name, value) -> header(name, value) }
-            }.execute { response ->
-                if (response.status.value !in FIREWORKS_REDIRECT_STATUS_CODES) {
-                    return@execute ImageDownloadHop.Done(
-                        with(FacadeHttp) { response.parseFacadeBinary(currentUrl) },
-                    )
+                val allowed = headersForImageDownload(hopUrl.toString(), requestHeaders)
+                val allowedNames = allowed.keys.map { it.lowercase() }.toSet()
+                requestHeaders.keys
+                    .filterNot { it.lowercase() in allowedNames }
+                    .forEach { request.headers.remove(it) }
+                if (!sameOrigin(settings.baseURL, hopUrl.toString())) {
+                    // Credentials a caller plugin may have added after the baseline was computed.
+                    FIREWORKS_OFF_ORIGIN_FORBIDDEN_HEADERS.forEach { request.headers.remove(it) }
                 }
-                val location = response.headers[HttpHeaders.Location]
-                    ?: throw DownloadError(
-                        url = currentUrl,
-                        statusCode = response.status.value,
-                        message = "Fireworks image download redirect is missing a Location header",
-                    )
-                ImageDownloadHop.Redirect(FireworksRedirect.resolve(currentUrl, location))
+                allowed.forEach { (name, value) ->
+                    request.headers.remove(name)
+                    request.headers.append(name, value)
+                }
+                proceed(request)
             }
-        } finally {
-            abortRegistrations.forEach { it.cancel() }
         }
     }
 
@@ -598,44 +583,13 @@ private const val FIREWORKS_POLL_INTERVAL_MILLIS: Long = 500
 private const val FIREWORKS_MAX_POLL_INTERVAL_MILLIS: Long = 30_000
 private const val FIREWORKS_MAX_POLL_ATTEMPTS: Int = 240
 
-/** Bound on manually-followed download hops; matches Ktor's own default redirect ceiling. */
-private const val FIREWORKS_MAX_DOWNLOAD_REDIRECTS: Int = 20
-
 /**
- * The statuses Ktor's own `HttpRedirect` follows — NOT the whole 3xx block, which would sweep
- * in `304 Not Modified`, the deprecated `305 Use Proxy`, and reserved/unassigned codes.
+ * Credential headers scrubbed from any off-origin hop even when they are absent from the
+ * computed baseline — a caller's `Auth`, `HttpCookies`, or `DefaultRequest` can add these
+ * downstream of the origin decision.
  */
-private val FIREWORKS_REDIRECT_STATUS_CODES: Set<Int> = setOf(
-    HttpStatusCode.MovedPermanently.value,
-    HttpStatusCode.Found.value,
-    HttpStatusCode.SeeOther.value,
-    HttpStatusCode.TemporaryRedirect.value,
-    HttpStatusCode.PermanentRedirect.value,
+private val FIREWORKS_OFF_ORIGIN_FORBIDDEN_HEADERS: List<String> = listOf(
+    HttpHeaders.Authorization,
+    HttpHeaders.Cookie,
+    HttpHeaders.ProxyAuthorization,
 )
-
-private object FireworksRedirect {
-    /**
-     * Resolve a `Location` against the hop that produced it, clearing the previous URL's
-     * query first — `takeFrom` APPENDS parameters, so without the clear a capability-bearing
-     * `?token=`/`?X-Amz-Signature=` would ride to the redirect target. This is exactly what
-     * `HttpRedirect` does before its own `takeFrom`. A secure→insecure hop is refused, which
-     * is that plugin's `allowHttpsDowngrade = false` default.
-     */
-    fun resolve(currentUrl: String, location: String): String {
-        val resolved = URLBuilder(currentUrl).apply { parameters.clear() }.takeFrom(location).build()
-        if (Url(currentUrl).protocol.isSecure() && !resolved.protocol.isSecure()) {
-            throw DownloadError(
-                url = currentUrl,
-                message = "Fireworks image download refused an HTTPS-to-HTTP redirect to " +
-                    "${resolved.protocol.name}://${resolved.host}",
-            )
-        }
-        return resolved.toString()
-    }
-}
-
-/** One step of the manual redirect walk in [FireworksImageModel]. */
-private sealed class ImageDownloadHop {
-    class Done(val response: FacadeHttp.ProviderFacadeBinaryResponse) : ImageDownloadHop()
-    class Redirect(val url: String) : ImageDownloadHop()
-}
