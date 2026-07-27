@@ -6,11 +6,23 @@ id: no-platform-import-in-common
 language: kotlin
 severity: warning
 message: "Platform-specific import (java./javax./android./dalvik.) in commonMain — these packages don't exist on JS/wasm/Native targets. Move the platform-specific code behind an expect/actual seam."
-files:
-  - "src/commonMain/**"
+# Scope by EXCLUSION, not a `files:` allowlist. Two reasons, both load-bearing:
+#   1. A narrow `files:` glob can never match the validator's fixture, which is written to a
+#      random temp path — so the rule could not be given a fixture at all, and went
+#      unvalidated in both directions.
+#   2. New source sets land inside the law by default instead of silently escaping it.
+# java/javax/android imports are legitimate in the JVM/Android source sets; everywhere else
+# (commonMain, commonTest, nativeMain) they do not exist on Native/JS and are a compile error.
+ignores:
+  - "**/build/**"
+  - "src/jvmAndAndroidMain/**"
+  - "src/jvmTest/**"
 rule:
   any:
-    - pattern: import java.$$$
-    - pattern: import javax.$$$
-    - pattern: import android.$$$
-    - pattern: import dalvik.$$$
+    # NAMED multi-metavariables. With the anonymous `$$$` these four patterns matched
+    # NOTHING — the rule installed clean, kept the gate green, and enforced nothing. Found
+    # while writing its first fixture: `import java.io.File` scored 0 matches.
+    - pattern: import java.$$$REST
+    - pattern: import javax.$$$REST
+    - pattern: import android.$$$REST
+    - pattern: import dalvik.$$$REST

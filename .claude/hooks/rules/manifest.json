@@ -667,5 +667,283 @@
     "yaml": "id: no-public-without-since\nlanguage: kotlin\nseverity: warning\nmessage: \"Public declaration has no KDoc `@since` tag (either no KDoc at all, or a KDoc missing `@since`). This is a published, ABI-validated library — consumers and changelog tooling rely on `@since` to know which release introduced a symbol. Add a `/** ... @since X.Y.Z */` block directly above the declaration.\"\n# Require the KDoc opening token (`/**`). A plain block comment `/* @since ... */` is NOT\n# published by Dokka, so accepting any multiline_comment let non-KDoc markers slip through.\nrule:\n  all:\n    - any:\n        - kind: function_declaration\n        - kind: class_declaration\n        - kind: property_declaration\n        - kind: object_declaration\n    - has:\n        kind: modifiers\n        has: { kind: visibility_modifier, regex: '^public$' }\n    - not:\n        follows:\n          kind: multiline_comment\n          regex: '^/\\*\\*[\\s\\S]*@since'\n",
     "badExample": "/* @since 0.3.0-beta01 */\npublic fun notKdoc(): Int = 1\n",
     "goodExample": "/** Does a thing.\n * @since 0.3.0-beta01\n */\npublic fun isKdoc(): Int = 1\n"
+  },
+  {
+    "id": "no-any-in-public-signature",
+    "severity": "warning",
+    "yaml": "id: no-any-in-public-signature\nlanguage: kotlin\nseverity: warning\nmessage: \"Any/Any? used as a parameter or return type on a public function erases type information from the API — callers have to unsafe-cast it back to something useful. Use a concrete type, a reified/generic type parameter, or a sealed hierarchy instead of Any/Any?.\"\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: visibility_modifier\n          regex: '^public$'\n    - any:\n        - has:\n            kind: function_value_parameters\n            has:\n              kind: parameter\n              has:\n                any:\n                  - all:\n                      - kind: user_type\n                      - has: { kind: type_identifier, regex: '^Any$' }\n                  - all:\n                      - kind: nullable_type\n                      - has:\n                          kind: user_type\n                          has: { kind: type_identifier, regex: '^Any$' }\n        - has:\n            any:\n              - all:\n                  - kind: user_type\n                  - has: { kind: type_identifier, regex: '^Any$' }\n                  - follows: { kind: function_value_parameters, stopBy: end }\n              - all:\n                  - kind: nullable_type\n                  - has:\n                      kind: user_type\n                      has: { kind: type_identifier, regex: '^Any$' }\n                  - follows: { kind: function_value_parameters, stopBy: end }\n",
+    "badExample": "public fun handle(value: Any): Int = 1\n",
+    "goodExample": "public fun handle(value: String): Int = 1\n",
+    "hunkUnsafe": true
+  },
+  {
+    "id": "no-callback-style-api",
+    "severity": "warning",
+    "yaml": "id: no-callback-style-api\nlanguage: kotlin\nseverity: warning\nmessage: \"Public function takes a callback/listener parameter; prefer a suspend function or a Flow-returning function over a Java-style callback.\"\nnote: |\n  Flags a non-suspend, non-Flow-returning, publicly-visible function that\n  declares a parameter named like a callback (`onXxx`, `callback`,\n  `listener`, case-insensitive) or typed as a `*Callback`/`*Listener`. This\n  is a naming-convention heuristic, not a generic \"no lambda parameters\"\n  rule: ordinary higher-order functions (`map { }`, a DSL builder lambda\n  named `block`) are intentionally NOT flagged — only the callback/listener\n  naming shape is. `suspend` functions, `private`/`internal`/`protected`\n  functions, and functions that already return `Flow<T>` are excluded, since\n  those are the target replacement shapes, not the anti-pattern.\nrule:\n  kind: function_declaration\n  all:\n    - not:\n        has:\n          kind: modifiers\n          has:\n            kind: function_modifier\n            regex: '^suspend$'\n    - not:\n        has:\n          kind: modifiers\n          has:\n            kind: visibility_modifier\n            regex: '^(private|internal|protected)$'\n    - not:\n        has:\n          kind: user_type\n          has:\n            kind: type_identifier\n            regex: '^Flow$'\n    - has:\n        kind: function_value_parameters\n        has:\n          kind: parameter\n          all:\n            - any:\n                - has: { kind: simple_identifier, regex: '(?i)^(on[A-Z]\\w*|callback|listener)$' }\n                - has: { kind: user_type, has: { kind: type_identifier, regex: '(Callback|Listener)$' } }\n            - not: { regex: '\\bsuspend\\b' }\n",
+    "badExample": "public fun load(onDone: (String) -> Unit) { onDone(\"\") }\n",
+    "goodExample": "public suspend fun load(): String = \"\"\n"
+  },
+  {
+    "id": "no-channel-in-public-api",
+    "severity": "warning",
+    "yaml": "id: no-channel-in-public-api\nlanguage: kotlin\nseverity: warning\nmessage: \"Public function takes or returns a kotlinx.coroutines.Channel. Channel is a low-level primitive with close/cancel/backpressure semantics that leak implementation details once they're in a public signature, and (like Flow) it has no natural Java/Swift interop shape. Expose a Flow (for a read-only stream consumers collect) or a suspend function instead, and keep the Channel itself private to the implementation.\"\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: visibility_modifier\n          regex: '^public$'\n    - any:\n        - has:\n            kind: user_type\n            all:\n              - has:\n                  kind: type_identifier\n                  regex: '^Channel$'\n                  stopBy: end\n              - not:\n                  precedes:\n                    regex: '^\\.$'\n        - has:\n            kind: function_value_parameters\n            has:\n              kind: parameter\n              has:\n                kind: user_type\n                has:\n                  kind: type_identifier\n                  regex: '^Channel$'\n                  stopBy: end\n",
+    "hunkUnsafe": true,
+    "badExample": "public fun events(): Channel<String> = TODO()\n",
+    "goodExample": "public fun events(): Flow<String> = TODO()\n"
+  },
+  {
+    "id": "no-companion-factory-without-invoke",
+    "severity": "warning",
+    "yaml": "id: no-companion-factory-without-invoke\nlanguage: kotlin\nseverity: warning\nmessage: \"Companion object exposes a create()/of()/from() factory without an `operator fun invoke`; add `operator fun invoke(...)` so callers can construct with `Type(...)` instead of `Type.create(...)`.\"\nnote: |\n  General Kotlin idiom: a companion `operator fun invoke` lets callers write\n  `Type(args)` instead of `Type.create(args)`/`Type.of(args)`, which reads\n  like ordinary construction. This repo's own construct-type convention\n  (see CLAUDE.md's builder/DSL pattern, e.g. `CohereProviderSettings { ... }`)\n  already achieves the same \"looks like construction\" ergonomic via a\n  top-level PascalCase factory FUNCTION rather than a companion `invoke` —\n  that pattern does not trip this rule (it has no companion `create`/`of`/\n  `from`). This rule targets the specific shape of a companion object that\n  chose the create/of/from naming without also adding invoke; it does not\n  mandate invoke over this repo's established DSL-factory convention.\nrule:\n  kind: companion_object\n  all:\n    - has:\n        kind: class_body\n        has:\n          kind: function_declaration\n          has:\n            kind: simple_identifier\n            regex: '^(create|of|from)$'\n    - not:\n        has:\n          kind: class_body\n          has:\n            kind: function_declaration\n            all:\n              - has:\n                  kind: simple_identifier\n                  regex: '^invoke$'\n              - has:\n                  kind: modifiers\n                  has:\n                    kind: function_modifier\n                    regex: '^operator$'\n",
+    "badExample": "public class Widget {\n    public companion object {\n        public fun create(): Widget = Widget()\n    }\n}\n",
+    "goodExample": "public class Widget {\n    public companion object {\n        public fun create(): Widget = Widget()\n        public operator fun invoke(): Widget = create()\n    }\n}\n"
+  },
+  {
+    "id": "no-deprecated-without-replacewith",
+    "severity": "warning",
+    "yaml": "id: no-deprecated-without-replacewith\nlanguage: kotlin\nseverity: warning\nmessage: \"@Deprecated is missing ReplaceWith — add ReplaceWith(\\\"...\\\") so IDEs can auto-migrate callers, or explain why no mechanical replacement exists.\"\nrule:\n  kind: annotation\n  all:\n    - has: { kind: type_identifier, regex: '^Deprecated$', stopBy: end }\n    - not:\n        has: { kind: simple_identifier, regex: '^ReplaceWith$', stopBy: end }\n",
+    "badExample": "@Deprecated(\"Gone in 2.0.0\")\npublic fun old(): Int = 1\n",
+    "goodExample": "@Deprecated(\"Gone in 2.0.0\", ReplaceWith(\"newer()\"))\npublic fun old(): Int = 1\n"
+  },
+  {
+    "id": "no-direct-koin-get-in-class",
+    "severity": "warning",
+    "yaml": "id: no-direct-koin-get-in-class\nlanguage: kotlin\nseverity: warning\nmessage: \"Direct Koin `get()`/`inject()` call inside a class body (property initializer, delegate, or method). This is the service-locator anti-pattern — dependencies resolved this way are invisible to the constructor signature and untestable without a running Koin container. Declare the dependency as a constructor parameter and wire it in the `module { }` DSL instead.\"\nrule:\n  kind: call_expression\n  all:\n    - has: { kind: simple_identifier, regex: '^(get|inject)$' }\n    - has: { kind: call_suffix }\n    - inside: { kind: class_body, stopBy: end }\n    - not:\n        inside:\n          stopBy: end\n          kind: call_expression\n          has:\n            kind: simple_identifier\n            regex: '^(module|single|factory|scoped|viewModel|factoryOf|singleOf|worker)$'\nnote: >-\n  Name-based (matches identifiers literally named `get`/`inject` called as a\n  function) since ast-grep does not resolve imports — a locally-declared function\n  also named `get()`/`inject()` would false-positive. The module-DSL exclusion\n  walks all enclosing call_expressions, not just the immediate one, so a `get()`\n  nested inside `single { OtherImpl(get()) }` is correctly excluded even though\n  it's several calls deep.\n",
+    "hunkUnsafe": true,
+    "badExample": "internal class Service {\n    private val dep: Repo = get()\n}\n",
+    "goodExample": "internal class Service(private val dep: Repo)\n"
+  },
+  {
+    "id": "no-either-without-fold",
+    "severity": "warning",
+    "yaml": "id: no-either-without-fold\nlanguage: kotlin\nseverity: warning\nmessage: \"Reading `.left`/`.right` directly assumes which branch is present; prefer `fold`/`map`/`getOrElse` so both branches are handled explicitly.\"\nnote: |\n  Flags a property read shaped `$X.left` / `$X.right` (an `Either`/`Result`-\n  style discriminated union accessed positionally instead of exhaustively).\n  Structural matching cannot see declared types, so this is a name-based\n  heuristic: `.left()`/`.right()` method calls are excluded (different\n  shape: `navigation_expression` wrapped in a `call_expression` with a\n  `call_suffix`), and assignment targets (`x.left = value`) are excluded\n  (Kotlin parses those as `directly_assignable_expression`, not\n  `navigation_expression`, so they never reach this rule). A type that\n  legitimately has `left`/`right` fields (e.g. a UI/geometry rect or\n  margin/padding holder) will false-positive here; that is expected for a\n  name-only heuristic — suppress or ignore such call sites.\nrule:\n  kind: navigation_expression\n  all:\n    - has:\n        kind: navigation_suffix\n        has:\n          kind: simple_identifier\n          regex: '^(left|right)$'\n    - not:\n        inside:\n          kind: call_expression\n          stopBy: neighbor\n          has:\n            kind: call_suffix\n            stopBy: neighbor\n",
+    "hunkUnsafe": true,
+    "badExample": "internal fun read(e: Either): Int {\n    val v = e.left\n    return 1\n}\n",
+    "goodExample": "internal fun read(e: Either): Int = e.fold({ 0 }, { 1 })\n"
+  },
+  {
+    "id": "no-experimental-without-optin",
+    "severity": "warning",
+    "yaml": "id: no-experimental-without-optin\nlanguage: kotlin\nseverity: warning\nmessage: \"Class/function name reads as Experimental/Preview but carries no @RequiresOptIn. If this IS the opt-in marker annotation class, add @RequiresOptIn to it; otherwise annotate it with the project's opt-in marker so consumers must explicitly acknowledge the instability.\"\nrule:\n  any:\n    - kind: class_declaration\n      all:\n        - has: { kind: type_identifier, regex: '(Experimental|Preview)' }\n        - not:\n            has:\n              kind: modifiers\n              has:\n                kind: annotation\n                has: { kind: type_identifier, regex: '^(RequiresOptIn|Experimental[A-Za-z0-9_]*Api)$', stopBy: end }\n    - kind: function_declaration\n      all:\n        - has: { kind: simple_identifier, regex: '(Experimental|Preview)' }\n        - not:\n            has:\n              kind: modifiers\n              has:\n                kind: annotation\n                has: { kind: type_identifier, regex: '^(RequiresOptIn|Experimental[A-Za-z0-9_]*Api)$', stopBy: end }\n",
+    "badExample": "public class ExperimentalFeature\n",
+    "goodExample": "@RequiresOptIn\npublic annotation class ExperimentalFeature\n"
+  },
+  {
+    "id": "no-extension-on-platform-type",
+    "severity": "warning",
+    "yaml": "id: no-extension-on-platform-type\nlanguage: kotlin\nseverity: warning\nmessage: \"Extension function receiver is a Java platform type (nullability unknown to Kotlin) declared without `?`; a Java caller can pass null and crash inside the extension. Mark the receiver nullable (`Date?`) and handle null explicitly.\"\nnote: |\n  Kotlin cannot spell \"platform type\" in source (it is the compiler's\n  internal `T!` for a value whose nullness Kotlin can't verify because it\n  came from Java); this rule is a structural proxy that flags an extension\n  function whose receiver type resolves to a well-known JDK class — either\n  referenced by FQN (`java.util.Date`, detected via a `java` segment in the\n  receiver's `user_type`) or by a curated list of common ambiguous-null JDK\n  types (Date, File, BigDecimal, UUID, Optional, Thread, ...) — declared\n  without the explicit `?` Kotlin uses to force a null check. A receiver\n  already written `Date?` is excluded (the nullable case parses as\n  `nullable_type` wrapping `user_type`, a different direct child of\n  `receiver_type`, so it never matches `has: kind: user_type`). Kotlin\n  stdlib-aliased types (`String`, `Int`, ...) are not in the curated list\n  and are unaffected.\nrule:\n  kind: function_declaration\n  has:\n    field: receiver\n    kind: receiver_type\n    has:\n      kind: user_type\n      any:\n        - has: { kind: type_identifier, regex: '^java$' }\n        - has: { kind: type_identifier, regex: '^(Date|File|BigDecimal|BigInteger|UUID|Pattern|Optional|Thread|Random|Scanner|Properties|Calendar|TimeZone|URL|URI|Locale|Matcher)$' }\n",
+    "badExample": "internal fun File.sizeKb(): Int = 1\n",
+    "goodExample": "internal fun String.sizeKb(): Int = 1\n"
+  },
+  {
+    "id": "no-flow-collect-in-init",
+    "severity": "warning",
+    "yaml": "id: no-flow-collect-in-init\nlanguage: kotlin\nseverity: warning\nmessage: \"`.collect` inside init starts flow collection during construction, before the instance has a lifecycle-scoped CoroutineScope to cancel it with. Start collection from an explicit start()/onCreate() method instead.\"\nnote: |\n  Matches `.collect { ... }` and `.collect(...)` anywhere under an init\n  block (including inside a `launch { }`/`async { }` started in init, which\n  is the common real-world shape of this bug: the coroutine is scheduled as\n  a direct effect of construction, before the caller ever gets a reference\n  to cancel it). A `.collect` inside a lambda that is merely assigned to a\n  property for later invocation (a stored callback, not an\n  immediately-scheduled coroutine builder) is a narrower false-positive\n  risk this heuristic does not special-case; treat such a hit as a false\n  positive. Tenet: explicit construction over magic (construction should\n  not have side effects that outlive the constructor call).\nrule:\n  kind: anonymous_initializer\n  has:\n    stopBy: end\n    any:\n      - pattern: $FLOW.collect { $$$BODY }\n      - pattern: $FLOW.collect($$$ARGS)\n",
+    "badExample": "internal class C(private val source: Flow<Int>) {\n    init {\n        source.collect { }\n    }\n}\n",
+    "goodExample": "internal class C(private val source: Flow<Int>) {\n    init {\n        require(true)\n    }\n}\n"
+  },
+  {
+    "id": "no-flow-return-without-wrapper",
+    "severity": "warning",
+    "yaml": "id: no-flow-return-without-wrapper\nlanguage: kotlin\nseverity: warning\nmessage: \"Public function returns Flow<...> directly. kotlinx.coroutines.Flow has no stable ABI for Java/Swift/Obj-C consumers of this KMP library — a raw Flow in the public surface forces every non-Kotlin caller to hand-roll a collector. Provide (or pair this with) a blocking/callback-friendly wrapper — a suspend function returning the terminal value, a listener-based API, or a platform-specific bridge — instead of exposing Flow as the only entry point.\"\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        all:\n          - has:\n              kind: visibility_modifier\n              regex: '^public$'\n          # Exclude functions already marked @JvmSynthetic (hidden from Java)\n          - not:\n              has:\n                kind: annotation\n                has:\n                  kind: user_type\n                  has:\n                    kind: type_identifier\n                    regex: '^JvmSynthetic$'\n    - has:\n        kind: user_type\n        all:\n          - has:\n              kind: type_identifier\n              regex: '^Flow$'\n          - follows:\n              kind: function_value_parameters\n              stopBy: end\n",
+    "badExample": "public fun stream(): Flow<String> = TODO()\n",
+    "goodExample": "@JvmSynthetic\npublic fun stream(): Flow<String> = TODO()\n",
+    "hunkUnsafe": true
+  },
+  {
+    "id": "no-hardcoded-baseurl",
+    "severity": "warning",
+    "yaml": "id: no-hardcoded-baseurl\nlanguage: kotlin\nseverity: warning\nmessage: \"A URL literal is hardcoded directly into HTTP client setup (a `baseUrl`-shaped property, or an argument to `url(...)`/`host(...)`). Hardcoding the endpoint bypasses any configurable settings surface (e.g. a provider's `baseURL` builder property) and forces a recompile to point at a different environment (staging, a proxy, a self-hosted instance). Make it a constructor/builder parameter with the literal only as its default.\"\nrule:\n  kind: string_literal\n  all:\n    - has: { kind: string_content, regex: '^https?://' }\n    - inside:\n        stopBy: end\n        any:\n          - kind: call_expression\n            has: { kind: simple_identifier, regex: '(?i)^(url|host|baseurl)$' }\n          - kind: property_declaration\n            has:\n              kind: variable_declaration\n              has: { kind: simple_identifier, regex: '(?i)(base.?url|endpoint|apiurl)' }\n",
+    "badExample": "internal val baseUrl: String = \"https://api.example.com\"\n",
+    "goodExample": "internal val baseUrl: String = readConfigValue()\n",
+    "hunkUnsafe": true
+  },
+  {
+    "id": "no-hardcoded-dispatcher",
+    "severity": "warning",
+    "yaml": "# Broader superset of `no-hardcoded-dispatcher-in-builder.yaml` (which only catches\n# Dispatchers.$D as a direct argument to withContext/launch/async). This rule catches ANY\n# other direct reference — property initializers, val assignments, non-builder call sites —\n# while excluding the sanctioned injection pattern this package's own message recommends:\n# a CoroutineContext/CoroutineDispatcher parameter defaulted to Dispatchers.$D\n# (`context: CoroutineContext = Dispatchers.Default`), for both plain functions and\n# constructor parameters. Running both rules together will double-report the builder-call\n# case; that's expected overlap between a narrow and a broad tenet, not silent duplication.\nid: no-hardcoded-dispatcher\nlanguage: kotlin\nseverity: warning\nmessage: \"Hardcoded Dispatchers.IO/Main/Default reference; inject a CoroutineContext/CoroutineDispatcher parameter instead so callers (and tests) can supply their own.\"\nrule:\n  kind: navigation_expression\n  all:\n    - has: { kind: simple_identifier, regex: '^Dispatchers$' }\n    - has:\n        kind: navigation_suffix\n        has: { kind: simple_identifier, regex: '^(IO|Main|Default)$' }\n  not:\n    any:\n      - inside: { kind: function_value_parameters }\n      - inside: { kind: class_parameter }\n",
+    "badExample": "internal suspend fun load(): Int = withContext(Dispatchers.IO) { 1 }\n",
+    "goodExample": "internal suspend fun load(dispatcher: CoroutineDispatcher): Int = withContext(dispatcher) { 1 }\n",
+    "hunkUnsafe": true
+  },
+  {
+    "id": "no-jvmoverloads-on-expect",
+    "severity": "warning",
+    "yaml": "id: no-jvmoverloads-on-expect\nlanguage: kotlin\nseverity: warning\nmessage: \"@JvmOverloads on an expect declaration has no effect — expect declares only a signature with no body, so there's no bytecode to generate overloads for. Move @JvmOverloads to the actual implementation(s) that need it.\"\nrule:\n  kind: modifiers\n  all:\n    - has:\n        kind: annotation\n        has: { kind: type_identifier, regex: '^JvmOverloads$', stopBy: end }\n    - has: { kind: platform_modifier, regex: '^expect$' }\n",
+    "badExample": "@JvmOverloads\nexpect fun build(a: Int)\n",
+    "goodExample": "@JvmOverloads\nfun build(a: Int) { }\n"
+  },
+  {
+    "id": "no-jvmstatic-on-expect",
+    "severity": "warning",
+    "yaml": "id: no-jvmstatic-on-expect\nlanguage: kotlin\nseverity: warning\nmessage: \"@JvmStatic on an expect declaration has no effect — expect declares only a signature with no body, so there's no member to make static. Move @JvmStatic to the actual implementation(s) that need it.\"\nrule:\n  kind: modifiers\n  all:\n    - has:\n        kind: annotation\n        has: { kind: type_identifier, regex: '^JvmStatic$', stopBy: end }\n    - has: { kind: platform_modifier, regex: '^expect$' }\n",
+    "badExample": "@JvmStatic\nexpect fun build(a: Int)\n",
+    "goodExample": "@JvmStatic\nfun build(a: Int) { }\n"
+  },
+  {
+    "id": "no-kdoc-todo",
+    "severity": "warning",
+    "yaml": "id: no-kdoc-todo\nlanguage: kotlin\nseverity: warning\nmessage: \"KDoc contains a TODO/FIXME marker; user-facing docs must not carry unresolved work items.\"\nnote: |\n  Matches a `/** ... */` (KDoc) comment whose text contains TODO or FIXME.\n  Kotlin's grammar has one comment kind for both KDoc and plain block\n  comments (`multiline_comment`), so the rule anchors on the leading `/**`\n  to distinguish KDoc from a plain `/* ... */` block comment; `//` line\n  comments never match either way. A TODO/FIXME in KDoc ships to consumers\n  via generated docs (Dokka); track the work item in an issue tracker and\n  either remove the marker or state the constraint as a fact (\"Currently\n  limited to X\") instead of a to-do.\nrule:\n  kind: multiline_comment\n  regex: '^/\\*\\*[\\s\\S]*(TODO|FIXME)'\n",
+    "badExample": "/** TODO: document this properly. */\npublic fun f(): Int = 1\n",
+    "goodExample": "/** Returns one. */\npublic fun f(): Int = 1\n"
+  },
+  {
+    "id": "no-lateinit-in-data-class",
+    "severity": "warning",
+    "yaml": "id: no-lateinit-in-data-class\nlanguage: kotlin\nseverity: warning\nmessage: \"lateinit var inside a data class breaks the generated equals/hashCode/toString/copy before the property is initialized; prefer a constructor parameter or a non-data holder.\"\nnote: |\n  `lateinit var` is already banned everywhere by the blocking LAW rule\n  `no-lateinit-var` (severity error). This style rule is a narrower,\n  data-class-specific companion that exists purely for its message: it\n  names the extra hazard a `data class` adds on top of the general\n  lateinit risk — the compiler-generated `equals`/`hashCode`/`toString`/\n  `copy` all read the property, so any call into them before the lateinit\n  var is set throws `UninitializedPropertyAccessException` from generated\n  code the author never wrote. In this repo the LAW rule already makes\n  this specific shape unreachable in committed code; keep this rule for\n  the more precise diagnostic message if `no-lateinit-var` is ever loosened\n  to allow lateinit in ordinary classes.\nrule:\n  kind: property_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: member_modifier\n          regex: '^lateinit$'\n    - inside:\n        kind: class_body\n        inside:\n          kind: class_declaration\n          stopBy: neighbor\n          has:\n            kind: modifiers\n            has:\n              kind: class_modifier\n              regex: '^data$'\n",
+    "hunkUnsafe": true,
+    "badExample": "public data class D(val a: Int) {\n    lateinit var b: String\n}\n",
+    "goodExample": "public class D(val a: Int) {\n    lateinit var b: String\n}\n"
+  },
+  {
+    "id": "no-many-params-without-builder",
+    "severity": "warning",
+    "yaml": "id: no-many-params-without-builder\nlanguage: kotlin\nseverity: warning\nmessage: \"Class constructor has 5 or more parameters. A long positional parameter list is error-prone at call sites (easy to transpose two same-typed args) and freezes a wide surface into the ABI the moment it's public. Front construction with a DSL builder instead: a private-var-backed Builder class with public setter methods + an internal primary constructor + a factory function (see CLAUDE.md's construct-type pattern), so fields can be added later without breaking callers.\"\nrule:\n  kind: class_parameter\n  follows:\n    kind: class_parameter\n    stopBy: end\n    follows:\n      kind: class_parameter\n      stopBy: end\n      follows:\n        kind: class_parameter\n        stopBy: end\n        follows:\n          kind: class_parameter\n          stopBy: end\n",
+    "hunkUnsafe": true,
+    "badExample": "public class C(val a: Int, val b: Int, val c: Int, val d: Int, val e: Int)\n",
+    "goodExample": "public class C(val a: Int, val b: Int)\n"
+  },
+  {
+    "id": "no-mutable-collection-return",
+    "severity": "warning",
+    "yaml": "id: no-mutable-collection-return\nlanguage: kotlin\nseverity: warning\nmessage: \"Public function returns MutableList/MutableMap/MutableSet directly. Callers can mutate what you handed them behind your back, breaking any invariant the producer relied on. Return the read-only interface (List/Map/Set) and keep the mutable backing collection private to the function or class.\"\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: visibility_modifier\n          regex: '^public$'\n    - has:\n        kind: user_type\n        all:\n          - has:\n              kind: type_identifier\n              regex: '^Mutable(List|Map|Set)$'\n              stopBy: end\n          - follows:\n              kind: function_value_parameters\n              stopBy: end\n",
+    "badExample": "public fun items(): MutableList<String> = TODO()\n",
+    "goodExample": "public fun items(): List<String> = TODO()\n",
+    "hunkUnsafe": true
+  },
+  {
+    "id": "no-nullable-in-sealed-error",
+    "severity": "warning",
+    "yaml": "id: no-nullable-in-sealed-error\nlanguage: kotlin\nseverity: warning\nmessage: \"A variant of a sealed Result/Error hierarchy carries a nullable payload field. If this variant exists, the payload is presumably always present — a nullable type here means the illegal state (variant present, payload absent) is still representable. Make the field non-null, or split into variants that don't need it.\"\nrule:\n  kind: class_parameter\n  all:\n    - has: { kind: nullable_type }\n    - inside:\n        kind: primary_constructor\n        inside:\n          kind: class_declaration\n          any:\n            - has:\n                kind: delegation_specifier\n                has:\n                  kind: constructor_invocation\n                  has:\n                    kind: user_type\n                    has: { kind: type_identifier, regex: '(?i)(result|error)' }\n            - inside:\n                kind: class_body\n                inside:\n                  kind: class_declaration\n                  has: { kind: type_identifier, regex: '(?i)(result|error)' }\nnote: >-\n  Matches both shapes: a variant nested inside the sealed type's own class_body\n  (`sealed class ResultX { data class Failure(val error: String?) : ResultX() }`)\n  and a variant declared as a top-level sibling delegating to it\n  (`data class Failure(val error: String?) : ResultX()`). Naming-based (Result/Error\n  in the sealed type's identifier) since ast-grep does not resolve `sealed`-ness\n  across files.\n",
+    "hunkUnsafe": true,
+    "badExample": "public class LoadFailure(val cause: String?) : AppError()\n",
+    "goodExample": "public class LoadFailure(val cause: String) : AppError()\n"
+  },
+  {
+    "id": "no-platform-import-in-common",
+    "severity": "warning",
+    "yaml": "# Broader than the LAW rule `rules/no-java-import.yaml` (which bans `import java.$$$`\n# everywhere, all source sets). This style tenet additionally covers javax./android./dalvik.\n# and is scoped to commonMain specifically — those packages don't exist on JS/wasm/Native\n# targets, so importing them there is a compile error, not just a style nit.\nid: no-platform-import-in-common\nlanguage: kotlin\nseverity: warning\nmessage: \"Platform-specific import (java./javax./android./dalvik.) in commonMain — these packages don't exist on JS/wasm/Native targets. Move the platform-specific code behind an expect/actual seam.\"\n# Scope by EXCLUSION, not a `files:` allowlist. Two reasons, both load-bearing:\n#   1. A narrow `files:` glob can never match the validator's fixture, which is written to a\n#      random temp path — so the rule could not be given a fixture at all, and went\n#      unvalidated in both directions.\n#   2. New source sets land inside the law by default instead of silently escaping it.\n# java/javax/android imports are legitimate in the JVM/Android source sets; everywhere else\n# (commonMain, commonTest, nativeMain) they do not exist on Native/JS and are a compile error.\nignores:\n  - \"**/build/**\"\n  - \"src/jvmAndAndroidMain/**\"\n  - \"src/jvmTest/**\"\nrule:\n  any:\n    # NAMED multi-metavariables. With the anonymous `$$$` these four patterns matched\n    # NOTHING — the rule installed clean, kept the gate green, and enforced nothing. Found\n    # while writing its first fixture: `import java.io.File` scored 0 matches.\n    - pattern: import java.$$$REST\n    - pattern: import javax.$$$REST\n    - pattern: import android.$$$REST\n    - pattern: import dalvik.$$$REST\n",
+    "badExample": "import java.io.File\n",
+    "goodExample": "import kotlin.jvm.JvmSynthetic\n"
+  },
+  {
+    "id": "no-primitive-amount",
+    "severity": "warning",
+    "yaml": "id: no-primitive-amount\nlanguage: kotlin\nseverity: warning\nmessage: \"Parameter named `amount`/`price`/`duration` is typed as a raw Long/Double/Int. A bare primitive carries no unit or currency, so callers can pass cents where dollars were expected, or milliseconds where seconds were expected, and the compiler won't catch it. Wrap it in a value class that encodes the unit (e.g. `@JvmInline value class Cents(val value: Long)`, `@JvmInline value class Duration(val millis: Long)`, or `kotlin.time.Duration` for durations).\"\nrule:\n  kind: parameter\n  all:\n    - has: { kind: simple_identifier, regex: '^(amount|price|duration)$' }\n    - has:\n        kind: user_type\n        has: { kind: type_identifier, regex: '^(Long|Double|Int)$' }\n",
+    "badExample": "internal fun pay(amount: Long) { }\n",
+    "goodExample": "internal fun pay(amount: Money) { }\n"
+  },
+  {
+    "id": "no-public-const-val-object",
+    "severity": "warning",
+    "yaml": "id: no-public-const-val-object\nlanguage: kotlin\nseverity: warning\nmessage: \"const val inside a public object is inlined at every call site (not a companion — those are exempt). Bumping the value later doesn't take effect for already-compiled callers until they recompile — a silent binary-compat trap for a public constant.\"\nrule:\n  kind: property_declaration\n  all:\n    - has:\n        kind: modifiers\n        has: { kind: property_modifier, regex: '^const$' }\n    - inside:\n        kind: class_body\n        inside:\n          kind: object_declaration\n          has:\n            kind: modifiers\n            has: { kind: visibility_modifier, regex: '^public$' }\n",
+    "hunkUnsafe": true,
+    "badExample": "public object Keys {\n    const val A: String = \"a\"\n}\n",
+    "goodExample": "internal object Keys {\n    const val A: String = \"a\"\n}\n"
+  },
+  {
+    "id": "no-public-constructor-with-defaults",
+    "severity": "warning",
+    "yaml": "id: no-public-constructor-with-defaults\nlanguage: kotlin\nseverity: warning\nmessage: \"Public class has a public constructor parameter with a default value. A public positional constructor with defaults freezes the parameter list into the ABI: appending, reordering, or removing a defaulted param is binary-incompatible for already-compiled callers, and @JvmOverloads/default-args don't rescue it. Front construction with a builder/DSL factory instead (internal constructor + Builder class + factory function) so the constructor itself is never part of the public contract.\"\nrule:\n  kind: class_parameter\n  all:\n    - has:\n        follows:\n          any:\n            - kind: user_type\n            - kind: nullable_type\n    - not:\n        has:\n          kind: visibility_modifier\n          regex: '^(private|internal|protected)$'\n          stopBy: end\n    - inside:\n        kind: primary_constructor\n        not:\n          has:\n            kind: modifiers\n            has:\n              kind: visibility_modifier\n              regex: '^(private|internal)$'\n    - inside:\n        stopBy: end\n        kind: class_declaration\n        not:\n          has:\n            kind: modifiers\n            has:\n              kind: visibility_modifier\n              regex: '^(private|internal)$'\n",
+    "hunkUnsafe": true,
+    "badExample": "public class C(val a: Int = 1)\n",
+    "goodExample": "public class C internal constructor(val a: Int = 1)\n"
+  },
+  {
+    "id": "no-public-inline-calling-internal",
+    "severity": "warning",
+    "yaml": "id: no-public-inline-calling-internal\nlanguage: kotlin\nseverity: warning\nmessage: \"Public inline fun found — inline function bodies are copied into every call site, so any internal/private member they reference must be @PublishedApi (or the reference is a compile error at the call site's module boundary). Manually verify this body doesn't reach for an internal declaration without @PublishedApi.\"\nrule:\n  kind: function_declaration\n  has:\n    kind: modifiers\n    all:\n      - has: { kind: visibility_modifier, regex: '^public$' }\n      - has: { kind: function_modifier, regex: '^inline$' }\n",
+    "badExample": "public inline fun run(block: () -> Unit) { block() }\n",
+    "goodExample": "internal inline fun run(block: () -> Unit) { block() }\n"
+  },
+  {
+    "id": "no-public-suspend-without-jvmsynthetic",
+    "severity": "warning",
+    "yaml": "# expect suspend functions are exempt: @JvmSynthetic has no bytecode to attach to on a\n# body-less expect declaration (same reasoning as no-jvmoverloads-on-expect /\n# no-jvmstatic-on-expect) — the actual implementation is where it would matter.\nid: no-public-suspend-without-jvmsynthetic\nlanguage: kotlin\nseverity: warning\nmessage: \"Public suspend fun without @JvmSynthetic — Java callers see the raw Continuation<T> parameter, which is an ugly, unusable signature from Java. Add @JvmSynthetic to hide it from Java entirely, or provide a Java-friendly overload.\"\nrule:\n  kind: function_declaration\n  has:\n    kind: modifiers\n    all:\n      - has: { kind: visibility_modifier, regex: '^public$' }\n      - has: { kind: function_modifier, regex: '^suspend$' }\n      - not:\n          has:\n            kind: annotation\n            has: { kind: type_identifier, regex: '^JvmSynthetic$', stopBy: end }\n      - not:\n          has: { kind: platform_modifier, regex: '^expect$' }\n",
+    "badExample": "public suspend fun load(): Int = 1\n",
+    "goodExample": "@JvmSynthetic\npublic suspend fun load(): Int = 1\n"
+  },
+  {
+    "id": "no-public-typealias-to-internal",
+    "severity": "warning",
+    "yaml": "id: no-public-typealias-to-internal\nlanguage: kotlin\nseverity: warning\nmessage: \"A public typealias resolves to an `internal` type. This leaks an internal type into the public ABI under a public name — consumers can construct/reference it, and it can't be changed or removed the way other internal types can. Either make the target type `public` (if it's meant to be public API) or make the typealias `internal` too.\"\nrule:\n  kind: type_alias\n  all:\n    - has: { kind: modifiers, has: { kind: visibility_modifier, regex: '^public$' } }\n    - has: { kind: user_type, has: { kind: type_identifier, pattern: $TARGET } }\n    - any:\n        - follows: { stopBy: end, pattern: 'internal class $TARGET' }\n        - follows: { stopBy: end, pattern: 'internal object $TARGET' }\n        - follows: { stopBy: end, pattern: 'internal interface $TARGET' }\n        - follows: { stopBy: end, pattern: 'internal data class $TARGET' }\n        - follows: { stopBy: end, pattern: 'internal sealed class $TARGET' }\n        - follows: { stopBy: end, pattern: 'internal sealed interface $TARGET' }\n        - follows: { stopBy: end, pattern: 'internal value class $TARGET' }\n        - precedes: { stopBy: end, pattern: 'internal class $TARGET' }\n        - precedes: { stopBy: end, pattern: 'internal object $TARGET' }\n        - precedes: { stopBy: end, pattern: 'internal interface $TARGET' }\n        - precedes: { stopBy: end, pattern: 'internal data class $TARGET' }\n        - precedes: { stopBy: end, pattern: 'internal sealed class $TARGET' }\n        - precedes: { stopBy: end, pattern: 'internal sealed interface $TARGET' }\n        - precedes: { stopBy: end, pattern: 'internal value class $TARGET' }\nnote: >-\n  Correlates the typealias's target name against a sibling top-level declaration\n  of the same name via a shared $TARGET metavariable (ast-grep unifies metavariables\n  across relational fields within one rule). Only catches the target when it's\n  declared in the same file; a target declared elsewhere in the module is out of\n  reach for a single-file structural rule.\n",
+    "badExample": "internal class Impl\npublic typealias Alias = Impl\n",
+    "goodExample": "public class Impl\npublic typealias Alias = Impl\n",
+    "hunkUnsafe": true
+  },
+  {
+    "id": "no-result-getorthrow-naked",
+    "severity": "warning",
+    "yaml": "id: no-result-getorthrow-naked\nlanguage: kotlin\nseverity: warning\nmessage: \"Result.getOrThrow() rethrows the original exception with no added context and isn't wrapped in a try/catch at this call site. A naked getOrThrow() gives the caller a stack trace with no clue which operation failed. Wrap the call in a try/catch that adds context (what was being done, with which inputs) before rethrowing, or use fold { onSuccess, onFailure } / getOrElse { } to handle both branches explicitly instead.\"\nrule:\n  pattern: $OBJ.getOrThrow()\n  not:\n    inside:\n      kind: try_expression\n      stopBy: end\n",
+    "hunkUnsafe": true,
+    "badExample": "internal fun unwrap(r: Result<Int>): Int = r.getOrThrow()\n",
+    "goodExample": "internal fun unwrap(r: Result<Int>): Int = try { r.getOrThrow() } catch (e: Throwable) { 0 }\n"
+  },
+  {
+    "id": "no-scope-function-chain",
+    "severity": "warning",
+    "yaml": "id: no-scope-function-chain\nlanguage: kotlin\nseverity: warning\nmessage: \"Three or more chained scope functions (.let/.also/.apply/.run) are hard to read and debug; extract intermediate steps into named locals or a small function.\"\nnote: |\n  Matches a call chain of 3+ scope functions (`.let { }.also { }.apply { }`\n  and similar), detected as a `call_expression` whose receiver is itself a\n  scope-function `call_expression` two levels deep. A 2-link chain\n  (`.let { }.also { }`) is common and intentionally not flagged; the third\n  link is where readability drops off and step-through debugging gets hard\n  (a breakpoint inside the chain can't easily tell you which link's\n  intermediate value you're looking at). On a 4+ link chain this rule\n  reports at more than one nesting depth (once for the outermost 3-link\n  window, once for the inner 3-link sub-chain it contains); that is\n  expected duplicate signal for a warning-tier heuristic, not a bug.\nrule:\n  kind: call_expression\n  all:\n    - has:\n        kind: call_suffix\n    - has:\n        kind: navigation_expression\n        all:\n          - has:\n              kind: navigation_suffix\n              has: { kind: simple_identifier, regex: '^(let|also|apply|run)$' }\n          - has:\n              kind: call_expression\n              has:\n                kind: navigation_expression\n                all:\n                  - has:\n                      kind: navigation_suffix\n                      has: { kind: simple_identifier, regex: '^(let|also|apply|run)$' }\n                  - has:\n                      kind: call_expression\n                      has:\n                        kind: navigation_expression\n                        has:\n                          kind: navigation_suffix\n                          has: { kind: simple_identifier, regex: '^(let|also|apply|run)$' }\n",
+    "badExample": "internal fun f(x: String): String = x.let { it }.also { it }.apply { }\n",
+    "goodExample": "internal fun f(x: String): String = x.let { it }.also { it }\n"
+  },
+  {
+    "id": "no-singleton-object-with-state",
+    "severity": "warning",
+    "yaml": "id: no-singleton-object-with-state\nlanguage: kotlin\nseverity: warning\nmessage: \"A property inside an `object` singleton is mutable (`var`) or holds a mutable collection (`MutableList`/`MutableMap`/...). Every property of an `object` is process-wide shared state — mutating it is a hidden global and a data race under concurrent access. Model the state with a StateFlow/Mutex-guarded holder, or pass it explicitly instead of storing it on the singleton.\"\nrule:\n  kind: property_declaration\n  inside:\n    kind: class_body\n    inside: { kind: object_declaration }\n  any:\n    - has: { kind: binding_pattern_kind, regex: '^var$' }\n    - has:\n        kind: variable_declaration\n        has:\n          kind: user_type\n          has:\n            kind: type_identifier\n            regex: '^(MutableList|MutableMap|MutableSet|MutableCollection|ArrayList|HashMap|LinkedHashMap|HashSet|LinkedHashSet)$'\nnote: >-\n  Overlaps by design with the LAW-tier `no-var-in-object-declaration` rule (which\n  blocks the `var` case with severity: error) — this style rule additionally covers\n  the mutable-collection-`val` case for the same \"singleton state\" concern, and is\n  meant to be run as a single combined check rather than a replacement for the LAW rule.\n",
+    "hunkUnsafe": true,
+    "badExample": "public object S {\n    var count: Int = 0\n}\n",
+    "goodExample": "public object S {\n    val count: Int = 0\n}\n"
+  },
+  {
+    "id": "no-star-projection-in-public",
+    "severity": "warning",
+    "yaml": "id: no-star-projection-in-public\nlanguage: kotlin\nseverity: warning\nmessage: \"KClass<*>/Class<*> in a public function's parameter or return type throws away the type information the caller could otherwise get back, and forces unchecked casts wherever the value is used. Take a reified type parameter (inline fun <reified T>) or a concrete KClass<T>/Class<T> instead of a star projection.\"\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: visibility_modifier\n          regex: '^public$'\n    - any:\n        - has:\n            kind: function_value_parameters\n            has:\n              kind: parameter\n              has:\n                kind: user_type\n                all:\n                  - has: { kind: type_identifier, regex: '^(KClass|Class)$' }\n                  - has:\n                      kind: type_arguments\n                      has:\n                        kind: type_projection\n                        not: { has: { kind: user_type } }\n        - has:\n            kind: user_type\n            all:\n              - has: { kind: type_identifier, regex: '^(KClass|Class)$' }\n              - has:\n                  kind: type_arguments\n                  has:\n                    kind: type_projection\n                    not: { has: { kind: user_type } }\n              - follows: { kind: function_value_parameters, stopBy: end }\n",
+    "badExample": "public fun register(type: KClass<*>) { }\n",
+    "goodExample": "public fun register(type: KClass<String>) { }\n",
+    "hunkUnsafe": true
+  },
+  {
+    "id": "no-string-typed-id",
+    "severity": "warning",
+    "yaml": "id: no-string-typed-id\nlanguage: kotlin\nseverity: warning\nmessage: \"Parameter named like an id (`id`, `...Id`) is typed as raw `String`. A bare String accepts any string, so callers can pass the wrong id (or a display name) and the compiler won't catch it. Wrap it in a value class (e.g. `@JvmInline value class UserId(val value: String)`) so mismatched ids become a compile error.\"\nrule:\n  kind: parameter\n  all:\n    - has: { kind: simple_identifier, regex: '(^id$|Id$)' }\n    - has:\n        kind: user_type\n        has: { kind: type_identifier, regex: '^String$' }\n",
+    "badExample": "internal fun load(userId: String) { }\n",
+    "goodExample": "internal fun load(userId: UserId) { }\n"
+  },
+  {
+    "id": "no-suspend-default-dispatcher",
+    "severity": "warning",
+    "yaml": "id: no-suspend-default-dispatcher\nlanguage: kotlin\nseverity: warning\nmessage: \"The entire suspend function body is `withContext(Dispatchers.Default) { ... }`; inject the dispatcher as a parameter (e.g. `context: CoroutineContext = Dispatchers.Default`) instead of hardcoding it so callers/tests can override it.\"\nnote: |\n  Narrower companion to the existing `no-hardcoded-dispatcher-in-builder`\n  rule, which already flags `withContext(Dispatchers.$D) { ... }` for ANY\n  dispatcher, anywhere in a function body. This rule matches only the\n  strongest instance of that shape: a `suspend fun`'s entire body (its `=`\n  expression body, with or without a declared return type) is exactly\n  `withContext(Dispatchers.Default) { ... }` — i.e. the function exists\n  solely to hardcode a dispatcher hop. That specific shape is the clearest\n  signal the function should just take an injected `CoroutineContext`\n  parameter (defaulted to `Dispatchers.Default`) instead. A `withContext`\n  call nested inside a larger block body, or using any dispatcher other\n  than `Default`, is left to `no-hardcoded-dispatcher-in-builder`.\nrule:\n  kind: function_declaration\n  any:\n    - pattern: 'suspend fun $NAME($$$PARAMS): $RET = withContext(Dispatchers.Default) { $$$BODY }'\n    - pattern: 'suspend fun $NAME($$$PARAMS) = withContext(Dispatchers.Default) { $$$BODY }'\n",
+    "badExample": "suspend fun compute(): Int = withContext(Dispatchers.Default) { 1 }\n",
+    "goodExample": "suspend fun compute(): Int = withContext(Dispatchers.IO) { 1 }\n"
+  },
+  {
+    "id": "no-throws-generic-exception",
+    "severity": "warning",
+    "yaml": "id: no-throws-generic-exception\nlanguage: kotlin\nseverity: warning\nmessage: \"@Throws(Exception::class) / @Throws(Throwable::class) is too broad to be useful to JVM/Swift callers that rely on it for checked-exception or NSError bridging — it documents nothing about what actually goes wrong. List the specific typed exception(s) the function can actually throw instead.\"\nrule:\n  kind: annotation\n  regex: '^@Throws\\(.*\\b(Exception|Throwable)::class.*\\)$'\n",
+    "badExample": "@Throws(Exception::class)\npublic fun f(): Int = 1\n",
+    "goodExample": "@Throws(IOException::class)\npublic fun f(): Int = 1\n"
+  },
+  {
+    "id": "no-untyped-map-key",
+    "severity": "warning",
+    "yaml": "id: no-untyped-map-key\nlanguage: kotlin\nseverity: warning\nmessage: \"`Map<String, ...>` uses a raw String as the key. If the key set is a closed, meaningful domain (a header name, a provider id, a locale), a bare String lets any string in — typos and lookups against the wrong key compile fine and fail at runtime. Prefer a value class or enum for the key, or confirm the key genuinely is open-ended user text.\"\nrule:\n  kind: type_projection\n  all:\n    - has: { kind: user_type, has: { kind: type_identifier, regex: '^String$' } }\n    - not: { follows: { kind: type_projection, stopBy: end } }\n    - inside:\n        kind: type_arguments\n        inside:\n          kind: user_type\n          has: { kind: type_identifier, regex: '^(Map|MutableMap)$' }\nnote: >-\n  Matches only the first type argument of Map/MutableMap (the key position) via\n  \"no preceding type_projection sibling\" — Map<Foo, String> (String as the value)\n  is intentionally not flagged.\n",
+    "hunkUnsafe": true,
+    "badExample": "internal fun f(m: Map<String, Int>): Int = 1\n",
+    "goodExample": "internal fun f(m: Map<UserId, Int>): Int = 1\n"
+  },
+  {
+    "id": "no-var-in-builder",
+    "severity": "warning",
+    "yaml": "id: no-var-in-builder\nlanguage: kotlin\nseverity: warning\nmessage: \"public var property in a *Builder class exposes a raw mutable field instead of a controlled setter API. Match the CallSettingsBuilder pattern this SDK already uses elsewhere: a private var backing field + a public fun name(value) setter method, so the builder can validate input or add fields later without it being a public-var ABI commitment (a public var also fails the no-public-mutable-var gate).\"\nrule:\n  kind: property_declaration\n  all:\n    - has: { kind: binding_pattern_kind, regex: '^var$' }\n    - not:\n        has:\n          kind: visibility_modifier\n          regex: '^(private|internal|protected)$'\n          stopBy: end\n    - inside:\n        kind: class_body\n        inside:\n          kind: class_declaration\n          has:\n            kind: type_identifier\n            regex: 'Builder'\n",
+    "hunkUnsafe": true,
+    "badExample": "public class FooBuilder {\n    var name: String = \"\"\n}\n",
+    "goodExample": "public class FooBuilder {\n    private var name: String = \"\"\n}\n"
+  },
+  {
+    "id": "no-when-subject-mutation",
+    "severity": "warning",
+    "yaml": "id: no-when-subject-mutation\nlanguage: kotlin\nseverity: warning\nmessage: \"Reassigning the `when` subject inside a branch has no effect on branch selection (the subject is evaluated once); the mutation reads as if it changes matching but it doesn't. Use a separate local for the new value.\"\nnote: |\n  Matches `when (subject) { ... }` where some branch body assigns back to\n  `subject`. Uses an ast-grep shared metavariable ($SUBJECT) to require the\n  when-subject identifier and the assignment target identifier be the exact\n  same name, so mutating an unrelated variable inside a branch does not\n  match. `when` without a subject (the boolean-branches form,\n  `when { cond -> ... }`) has no `when_subject` node and never matches.\n  This is purely a readability/intent trap, not a runtime bug: Kotlin\n  evaluates the subject once up front, so the mutation is dead as far as\n  branch dispatch is concerned — but it reads to a maintainer as if later\n  branches (or a hypothetical loop) would see the new value.\nrule:\n  kind: when_expression\n  all:\n    - has:\n        kind: when_subject\n        has:\n          kind: simple_identifier\n          pattern: $SUBJECT\n    - has:\n        stopBy: end\n        kind: when_entry\n        has:\n          stopBy: end\n          kind: assignment\n          has:\n            kind: directly_assignable_expression\n            has:\n              kind: simple_identifier\n              pattern: $SUBJECT\n",
+    "badExample": "internal fun f(): Int {\n    var state = 1\n    return when (state) {\n        1 -> { state = 2; 0 }\n        else -> 0\n    }\n}\n",
+    "goodExample": "internal fun f(): Int {\n    var state = 1\n    return when (state) {\n        1 -> 0\n        else -> 0\n    }\n}\n"
   }
 ]
