@@ -8,6 +8,7 @@ import io.ktor.http.HttpMethod
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -15,6 +16,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 
 public const val VOYAGE_VERSION: String = "1.0.4"
 
@@ -274,13 +276,19 @@ private class VoyageEmbeddingModel(
             headers = settings.voyageHeaders(params.headers),
         )
         val value = response.value.jsonObject
+        val outputDtype = voyageOutputDtype(body)
+        val requestedOutputDimension = (body["output_dimension"] as? JsonPrimitive)?.intOrNull
+        val embeddings = JsonAccess.arr(value, "data").orEmpty()
+            .mapIndexed { index, item ->
+                normalizeVoyageEmbedding(
+                    value = (item as? JsonObject)?.get("embedding"),
+                    outputDtype = outputDtype,
+                    provider = provider,
+                    path = "$.data[$index].embedding",
+                )
+            }
         return EmbeddingModelResult(
-            embeddings = (JsonAccess.arr(value, "data")).orEmpty()
-                .map { item ->
-                    val embedding = item as? JsonObject
-                    val row = JsonAccess.arr(embedding, "embedding").orEmpty()
-                    row.map { WireDecoder.embeddingFloat(it, provider) }
-                },
+            embeddings = embeddings,
             usage = EmbeddingUsage(
                 tokens = (JsonAccess.obj(value, "usage")?.get("total_tokens") as? JsonPrimitive)?.intOrNull
                     ?: 0,
@@ -288,7 +296,196 @@ private class VoyageEmbeddingModel(
             ),
             request = LanguageModelRequestMetadata(body = body),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
+            providerMetadata = voyageEmbeddingRepresentation(
+                outputDtype = outputDtype,
+                requestedOutputDimension = requestedOutputDimension,
+                embeddings = embeddings,
+            ),
         )
+    }
+
+    private fun voyageOutputDtype(body: JsonObject): VoyageOutputDtype =
+        if ("output_dtype" !in body) {
+            VoyageOutputDtype.Missing
+        } else {
+            val raw = body.getValue("output_dtype")
+            if (raw is JsonPrimitive && raw.isString) {
+                VoyageOutputDtype.PresentString(raw.content)
+            } else {
+                VoyageOutputDtype.PresentInvalid(raw)
+            }
+        }
+
+    private fun normalizeVoyageEmbedding(
+        value: JsonElement?,
+        outputDtype: VoyageOutputDtype,
+        provider: String,
+        path: String,
+    ): List<Float> =
+        when (value) {
+            is JsonArray -> value.mapIndexed { index, item ->
+                WireDecoder.embeddingFloat(item, provider, path = "$path[$index]")
+            }
+            is JsonPrimitive -> if (value.isString) {
+                decodeVoyageBase64Embedding(value.content, outputDtype, provider, path)
+            } else {
+                emptyList()
+            }
+            else -> emptyList()
+        }
+
+    private fun decodeVoyageBase64Embedding(
+        value: String,
+        outputDtype: VoyageOutputDtype,
+        provider: String,
+        path: String,
+    ): List<Float> {
+        val effectiveOutputDtype = when (outputDtype) {
+            VoyageOutputDtype.Missing -> VOYAGE_OUTPUT_DTYPE_FLOAT
+            is VoyageOutputDtype.PresentString -> outputDtype.value
+            is VoyageOutputDtype.PresentInvalid -> WireDecoder.fail(
+                provider = provider,
+                operation = "embedding response",
+                path = path,
+                message = "present output_dtype must be a JSON string for base64 decoding",
+                value = outputDtype.raw,
+            )
+        }
+        val storage = voyageBase64Storage(effectiveOutputDtype)
+            ?: WireDecoder.fail(
+                provider = provider,
+                operation = "embedding response",
+                path = path,
+                message = "cannot decode base64 for custom output_dtype '$effectiveOutputDtype'",
+            )
+        val bytes = try {
+            Base64Codec.decode(value)
+        } catch (error: IllegalArgumentException) {
+            WireDecoder.fail(
+                provider = provider,
+                operation = "embedding response",
+                path = path,
+                message = "expected valid base64 for output_dtype '$effectiveOutputDtype'",
+                cause = error,
+            )
+        }
+        return when (storage) {
+            VoyageBase64Storage.Float32 -> decodeVoyageFloat32(bytes, provider, path)
+            VoyageBase64Storage.SignedInt8 -> bytes.map { it.toFloat() }
+            VoyageBase64Storage.UnsignedInt8 -> bytes.map { (it.toInt() and 0xff).toFloat() }
+        }
+    }
+
+    private fun decodeVoyageFloat32(
+        bytes: ByteArray,
+        provider: String,
+        path: String,
+    ): List<Float> {
+        if (bytes.size % Float.SIZE_BYTES != 0) {
+            WireDecoder.fail(
+                provider = provider,
+                operation = "embedding response",
+                path = path,
+                message = "expected a float32 byte length divisible by ${Float.SIZE_BYTES}, got ${bytes.size}",
+            )
+        }
+        return List(bytes.size / Float.SIZE_BYTES) { index ->
+            val offset = index * Float.SIZE_BYTES
+            // Voyage base64 float embeddings are little-endian NumPy float32 buffers.
+            val bits =
+                (bytes[offset].toInt() and 0xff) or
+                    ((bytes[offset + 1].toInt() and 0xff) shl 8) or
+                    ((bytes[offset + 2].toInt() and 0xff) shl 16) or
+                    ((bytes[offset + 3].toInt() and 0xff) shl 24)
+            Float.fromBits(bits)
+        }
+    }
+
+    private fun voyageEmbeddingRepresentation(
+        outputDtype: VoyageOutputDtype,
+        requestedOutputDimension: Int?,
+        embeddings: List<List<Float>>,
+    ): ProviderMetadata {
+        val rawOutputDtype: JsonElement = when (outputDtype) {
+            VoyageOutputDtype.Missing -> JsonNull
+            is VoyageOutputDtype.PresentString -> JsonPrimitive(outputDtype.value)
+            is VoyageOutputDtype.PresentInvalid -> outputDtype.raw
+        }
+        val effectiveOutputDtype: String? = when (outputDtype) {
+            VoyageOutputDtype.Missing -> VOYAGE_OUTPUT_DTYPE_FLOAT
+            is VoyageOutputDtype.PresentString -> outputDtype.value
+            is VoyageOutputDtype.PresentInvalid -> null
+        }
+        val packing = when (outputDtype) {
+            VoyageOutputDtype.Missing -> voyageEmbeddingPacking(VOYAGE_OUTPUT_DTYPE_FLOAT)
+            is VoyageOutputDtype.PresentString -> voyageEmbeddingPacking(outputDtype.value)
+            is VoyageOutputDtype.PresentInvalid -> "unknown"
+        }
+        val logicalDimension = when (outputDtype) {
+            VoyageOutputDtype.Missing ->
+                voyageLogicalDimension(requestedOutputDimension, VOYAGE_OUTPUT_DTYPE_FLOAT, embeddings)
+            is VoyageOutputDtype.PresentString ->
+                voyageLogicalDimension(requestedOutputDimension, outputDtype.value, embeddings)
+            is VoyageOutputDtype.PresentInvalid -> requestedOutputDimension
+        }
+        return ProviderMetadata(
+            "voyage" to buildJsonObject {
+                put(
+                    "embeddingRepresentation",
+                    buildJsonObject {
+                        put("rawOutputDtype", rawOutputDtype)
+                        put("effectiveOutputDtype", effectiveOutputDtype?.let(::JsonPrimitive) ?: JsonNull)
+                        put("packing", packing)
+                        put("logicalDimension", logicalDimension?.let(::JsonPrimitive) ?: JsonNull)
+                        put("storedElementCounts", JsonArray(embeddings.map { JsonPrimitive(it.size) }))
+                    },
+                )
+            },
+        )
+    }
+
+    private fun voyageLogicalDimension(
+        requestedOutputDimension: Int?,
+        effectiveOutputDtype: String,
+        embeddings: List<List<Float>>,
+    ): Int? {
+        if (requestedOutputDimension != null) return requestedOutputDimension
+        if (voyageBase64Storage(effectiveOutputDtype) == null || embeddings.isEmpty()) return null
+        val storedDimension = embeddings.first().size
+        if (storedDimension == 0 || embeddings.any { it.size != storedDimension }) return null
+        return when (effectiveOutputDtype) {
+            VOYAGE_OUTPUT_DTYPE_BINARY, VOYAGE_OUTPUT_DTYPE_UBINARY -> storedDimension * 8
+            else -> storedDimension
+        }
+    }
+
+    private fun voyageEmbeddingPacking(effectiveOutputDtype: String): String =
+        when (effectiveOutputDtype) {
+            VOYAGE_OUTPUT_DTYPE_FLOAT, VOYAGE_OUTPUT_DTYPE_INT8, VOYAGE_OUTPUT_DTYPE_UINT8 -> "none"
+            VOYAGE_OUTPUT_DTYPE_BINARY, VOYAGE_OUTPUT_DTYPE_UBINARY -> "bit-packed"
+            else -> "unknown"
+        }
+
+    private fun voyageBase64Storage(effectiveOutputDtype: String): VoyageBase64Storage? =
+        when (effectiveOutputDtype) {
+            VOYAGE_OUTPUT_DTYPE_FLOAT -> VoyageBase64Storage.Float32
+            VOYAGE_OUTPUT_DTYPE_INT8, VOYAGE_OUTPUT_DTYPE_BINARY -> VoyageBase64Storage.SignedInt8
+            VOYAGE_OUTPUT_DTYPE_UINT8, VOYAGE_OUTPUT_DTYPE_UBINARY -> VoyageBase64Storage.UnsignedInt8
+            else -> null
+        }
+
+    private sealed interface VoyageOutputDtype {
+        object Missing : VoyageOutputDtype
+
+        class PresentString(val value: String) : VoyageOutputDtype
+
+        class PresentInvalid(val raw: JsonElement) : VoyageOutputDtype
+    }
+
+    private enum class VoyageBase64Storage {
+        Float32,
+        SignedInt8,
+        UnsignedInt8,
     }
 }
 
@@ -336,3 +533,8 @@ private class VoyageRerankingModel(
 
 // Documented Voyage batch limit is 1,000 inputs per embeddings call.
 private const val VOYAGE_MAX_EMBEDDINGS_PER_CALL: Int = 1_000
+private const val VOYAGE_OUTPUT_DTYPE_FLOAT: String = "float"
+private const val VOYAGE_OUTPUT_DTYPE_INT8: String = "int8"
+private const val VOYAGE_OUTPUT_DTYPE_UINT8: String = "uint8"
+private const val VOYAGE_OUTPUT_DTYPE_BINARY: String = "binary"
+private const val VOYAGE_OUTPUT_DTYPE_UBINARY: String = "ubinary"

@@ -261,6 +261,25 @@ of producing a normal abort completion for the step.
 - `interface EmbeddingModel { val modelId; val provider; suspend fun embed(params): EmbeddingModelResult }`
 - `@Poko class EmbeddingModelCallParams(values, maxEmbeddingsPerCall?, truncate?, providerOptions, abortSignal, headers)` — field access and value equality remain; construct with `EmbeddingModelCallParams { values(...); ... }`. Public `copy()` / `componentN()` ABI is intentionally absent; embedding middleware uses `params.toBuilder().providerOptions(...).build()` for one-field overrides.
 - `@Poko class EmbeddingModelResult(embeddings, usage, warnings, request, response, providerMetadata)`
+  - Voyage keeps this public ABI unchanged: numeric-array and base64 responses both
+    normalize into `List<List<Float>>`, while `response.body` retains the raw provider
+    JSON. Base64 `float` is little-endian float32; `int8`/`binary` use signed-byte
+    storage; `uint8`/`ubinary` use unsigned-byte storage; binary forms remain bit-packed.
+  - Voyage results set `providerMetadata.voyage.embeddingRepresentation` to an object
+    with exactly `rawOutputDtype`, `effectiveOutputDtype`, `packing`,
+    `logicalDimension`, and `storedElementCounts`. Request `output_dtype` has three
+    states: omission emits raw null and effective `float`; a present JSON string is
+    preserved and interpreted with the existing known/custom behavior; a present
+    non-string (including explicit JSON null, which is distinct from omission) retains
+    its original `JsonElement` as raw, emits effective null, reports unknown packing,
+    and records the requested dimension or null. Numeric-array rows remain permissive
+    in all three states; base64 rejects a present non-string before decoding. For the
+    missing and string states, requested dimension wins; otherwise inference requires
+    nonempty uniform rows of a known dtype (packed lengths multiply by 8). Counts
+    preserve every returned row, including zero-length rows. Row-count, empty-row,
+    unequal-row, and requested-dimension mismatches remain permissive. Custom string
+    dtypes accept numeric arrays with unknown packing but reject base64 because their
+    storage interpretation is unavailable.
 - `@Poko class EmbeddingUsage(tokens, raw?)`
 - `suspend fun Embedding.embed(model, value, providerOptions?, abortSignal?, headers?): EmbedResult<String>`
 - `suspend fun Embedding.embedMany(model, values, maxEmbeddingsPerCall?, maxParallelCalls = 8, providerOptions?, abortSignal?, headers?): EmbedManyResult<String>`
@@ -281,6 +300,15 @@ of producing a normal abort completion for the step.
   - Audio input is currently base64-backed in memory; providers decode the
     base64 payload before upload, so large inputs can briefly require roughly
     twice the audio size in memory. Streaming upload input is future work.
+  - Groq transcription always sends the canonical multipart field
+    `response_format=json` and decodes a JSON object response. The published
+    `GroqTranscriptionModelOptions.responseFormat` getter and builder method
+    remain for source/binary compatibility but are warning-deprecated after
+    0.3.0-beta01 because they have no effect; no replacement is offered until
+    non-JSON transport/decoding exists. Provider-option passthrough excludes
+    both `responseFormat` and `response_format` so neither can create a second
+    multipart format field, and omits `JsonNull` values so nullable typed
+    defaults do not become literal `null` form fields.
 - Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `VideoGeneration.generateVideo(..., maxParallelCalls = 8)`
 - Rerank: `RerankingModel`, `RerankingParams`, `RerankedItem<T>`, `RerankResult<T>`, `Reranking.rerank(...)`
   - Rerank result holders are `@Poko class` value-semantics types; field

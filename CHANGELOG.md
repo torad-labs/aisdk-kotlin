@@ -51,9 +51,20 @@ This project follows Semantic Versioning once the first stable release is cut.
     kept as fallback); `thinkingTokenBudget` maps into extra context; stream
     terminal usage/finish no longer wiped by trailing empty messages.
   - **Voyage:** embeddings batch cap 128 → 1_000 (documented max); forwards
-    `encoding_format`.
+    `encoding_format`; normalizes documented JSON-array and base64 float32/int8/uint8
+    storage into the existing `List<List<Float>>` result while keeping binary/ubinary
+    bit-packed. `providerMetadata.voyage.embeddingRepresentation` now records dtype,
+    packing, logical dimension, and each row's stored-element count without adding
+    strict shape validation; custom dtypes remain compatible for numeric arrays and
+    fail explicitly for uninterpretable base64 storage.
   - **Groq / Cerebras:** chat max-output key is `max_completion_tokens`; Groq
     browser_search allowlist includes `openai/gpt-oss-safeguard-20b`.
+  - **Groq transcription:** legacy `responseFormat` access remains source/binary
+    compatible but is warning-deprecated after 0.3.0-beta01 because the transport
+    only requests and decodes JSON. The pre-existing raw `response_format`
+    exclusion is preserved; multipart passthrough now also excludes serialized
+    camel `responseFormat` and omits null-valued typed defaults instead of
+    emitting literal `null` form fields.
   - **Perplexity:** `stop` is forwarded (documented on `/v1/sonar`).
   - **ElevenLabs STT:** no longer force `diarize=true`; parse `speaker_id` into
     `TranscriptSegment.speakerId`.
