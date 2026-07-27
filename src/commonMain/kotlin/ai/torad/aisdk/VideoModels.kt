@@ -22,6 +22,7 @@ public interface VideoModel {
     public val maxVideosPerCall: Int?
         get() = null
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun generate(params: VideoGenerationParams): VideoModelResult
 }

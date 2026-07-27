@@ -45,6 +45,7 @@ public object PromptConversion {
      *
      * Call this before handing a prompt to a provider that doesn't natively accept
      * asset URLs. It is a no-op for prompts that are already inline and well-formed.
+     * @since 0.3.0-beta01
      */
     @JvmSynthetic
     public suspend fun convertToLanguageModelPrompt(

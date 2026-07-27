@@ -15,6 +15,7 @@ public interface SpeechModel {
     public val provider: String
         get() = "unknown"
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun generate(params: SpeechGenerationParams): SpeechModelResult
 }
@@ -161,6 +162,7 @@ public class GenerateSpeechResult(
 
 /** @since 0.3.0-beta01 */
 public object SpeechGeneration {
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun generateSpeech(
         model: SpeechModel,

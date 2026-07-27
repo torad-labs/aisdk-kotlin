@@ -657,6 +657,107 @@ class XaiProviderTest {
     }
 
     @Test
+    fun `video poll treats expired as terminal and stops polling`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://xai.test/v1/videos/generations" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req-1"}""")),
+                ),
+                "https://xai.test/v1/videos/req-1" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"status":"expired"}""")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(
+            fixture.httpClient(),
+            XaiProviderSettings {
+                baseURL("https://xai.test/v1")
+                apiKey("key")
+            },
+        )
+
+        val error = assertFailsWith<NoVideoGeneratedError> {
+            provider.video(ModelId("grok-imagine-video")).generate(
+                VideoGenerationParams {
+                    prompt("A chicken flying into the sunset")
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf(
+                                    "xai" to buildJsonObject {
+                                        put("pollIntervalMs", JsonPrimitive(0))
+                                        // Room for 1000 attempts: if `expired` were not terminal
+                                        // the loop would keep polling instead of failing fast.
+                                        put("pollTimeoutMs", JsonPrimitive(1000))
+                                    }
+                                )
+                            )
+                        )
+                    )
+                },
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("expired"), "error must name the terminal status")
+        assertEquals(
+            listOf("https://xai.test/v1/videos/generations", "https://xai.test/v1/videos/req-1"),
+            fixture.calls.map { it.requestUrl },
+            "polling must stop on the first expired response",
+        )
+    }
+
+    @Test
+    fun `video request maps 1920x1080 to the provider 1080p spelling`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://xai.test/v1/videos/generations" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req-1"}""")),
+                ),
+                "https://xai.test/v1/videos/req-1" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"done","video":{"url":"https://cdn.example/video.mp4"}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(
+            fixture.httpClient(),
+            XaiProviderSettings {
+                baseURL("https://xai.test/v1")
+                apiKey("key")
+            },
+        )
+
+        provider.video(ModelId("grok-imagine-video")).generate(
+            VideoGenerationParams {
+                prompt("A chicken flying into the sunset")
+                resolution("1920x1080")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "xai" to buildJsonObject {
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(1))
+                                }
+                            )
+                        )
+                    )
+                )
+            },
+        )
+
+        assertEquals(
+            "1080p",
+            fixture.calls.first().requestBodyJson.jsonObject["resolution"]?.jsonPrimitive?.contentOrNull,
+        )
+    }
+
+    @Test
     fun `tools unsupported embeddings and default singleton match provider surface`() {
         val provider = Xai(
             TestServer.createTestServer(mutableMapOf()).httpClient(),

@@ -3,13 +3,22 @@ package ai.torad.aisdk
 import dev.drewhamilton.poko.Poko
 import kotlin.time.Duration
 
-/** Default cap for concurrently executing tool calls in a single step. */
+/**
+ * Default cap for concurrently executing tool calls in a single step.
+ * @since 0.3.0-beta01
+ */
 public const val DEFAULT_MAX_PARALLEL_TOOL_CALLS: Int = 8
 
-/** Default cap for total tool calls accepted from a single model step. */
+/**
+ * Default cap for total tool calls accepted from a single model step.
+ * @since 0.3.0-beta01
+ */
 public const val DEFAULT_MAX_TOOL_CALLS_PER_STEP: Int = 128
 
-/** Default buffer capacity for streaming/preliminary tool progress events. */
+/**
+ * Default buffer capacity for streaming/preliminary tool progress events.
+ * @since 0.3.0-beta01
+ */
 public const val DEFAULT_PROGRESS_BUFFER_CAPACITY: Int = 64
 
 /**

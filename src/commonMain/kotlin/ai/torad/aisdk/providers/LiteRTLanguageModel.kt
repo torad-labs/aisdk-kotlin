@@ -889,6 +889,7 @@ public fun LiteRTConversationRequest(
  * @since 0.3.0-beta01
  */
 public fun interface LiteRTConversationFactory {
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun create(request: LiteRTConversationRequest): LiteRTConversation
 }

@@ -29,6 +29,7 @@ public interface ImageModel {
     public val maxImagesPerCall: Int?
         get() = null
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun generate(params: ImageGenerationParams): ImageModelResult
 }
@@ -332,6 +333,7 @@ public object ImageGeneration {
 
 /** @since 0.3.0-beta01 */
 public interface ImageModelMiddleware {
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun wrapGenerate(context: ImageMiddlewareCallContext): ImageModelResult =
         context.doGenerate(context.params)

@@ -15,6 +15,7 @@ public interface TranscriptionModel {
     public val provider: String
         get() = "unknown"
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult
 }
@@ -175,6 +176,7 @@ public class TranscribeResult(
 
 /** @since 0.3.0-beta01 */
 public object Transcription {
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun transcribe(
         model: TranscriptionModel,

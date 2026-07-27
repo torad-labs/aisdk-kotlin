@@ -428,6 +428,7 @@ public fun CallCompletionApiOptions(
 
 /** @since 0.3.0-beta01 */
 public object CompletionApi {
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun callCompletionApi(options: CallCompletionApiOptions): String? {
         val request = CompletionRequest {
@@ -558,6 +559,7 @@ public class Completion(
         mutableState.update { it.copy(phase = CompletionPhase.Done(completion)) }
     }
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun complete(
         prompt: String,
@@ -612,6 +614,7 @@ public class Completion(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun handleSubmit(): String? =
         input.takeIf { it.isNotEmpty() }?.let { complete(it) }

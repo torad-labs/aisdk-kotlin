@@ -20,7 +20,10 @@ import kotlin.jvm.JvmSynthetic
  */
 /** @since 0.3.0-beta01 */
 public fun interface StopCondition {
-    /** True if the loop should stop after the just-completed step. */
+    /**
+     * True if the loop should stop after the just-completed step.
+     * @since 0.3.0-beta01
+     */
     @JvmSynthetic
     public suspend fun shouldStop(state: LoopState): Boolean
 }

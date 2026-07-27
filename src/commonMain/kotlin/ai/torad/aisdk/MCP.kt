@@ -189,10 +189,15 @@ public interface MCPTransport {
     /** @since 0.3.0-beta01 */
     public fun setProtocolVersion(version: String?)
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun start()
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun send(message: JSONRPCMessage)
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun close()
 }
@@ -293,37 +298,44 @@ public sealed class MCPClient {
     /** @since 0.3.0-beta01 */
     public abstract val instructions: String?
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public abstract suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public abstract suspend fun listTools(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListToolsResult
 
+    /** @since 0.3.0-beta01 */
     public abstract fun <TContext> toolsFromDefinitions(
         definitions: ListToolsResult,
         schemas: MCPToolSchemas? = null,
     ): ToolSet<TContext>
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public abstract suspend fun listResources(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListResourcesResult
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public abstract suspend fun readResource(
         uri: String,
         options: MCPRequestOptions? = null,
     ): ReadResourceResult
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public abstract suspend fun listResourceTemplates(
         options: MCPRequestOptions? = null,
     ): ListResourceTemplatesResult
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     @ExperimentalAiSdkApi
     public abstract suspend fun experimental_listPrompts(
@@ -331,6 +343,7 @@ public sealed class MCPClient {
         options: MCPRequestOptions? = null,
     ): ListPromptsResult
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     @ExperimentalAiSdkApi
     public abstract suspend fun experimental_getPrompt(
@@ -345,6 +358,7 @@ public sealed class MCPClient {
         handler: suspend (ElicitationRequest) -> ElicitResult,
     )
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public abstract suspend fun close()
 }
@@ -352,6 +366,7 @@ public sealed class MCPClient {
 @ExperimentalAiSdkApi
 public typealias experimental_MCPClient = MCPClient
 
+/** @since 0.3.0-beta01 */
 @JvmSynthetic
 public suspend fun CreateMCPClient(config: MCPClientConfig): MCPClient =
     DefaultMCPClient(config).also { it.init() }
@@ -867,29 +882,51 @@ public interface OAuthClientProvider {
     /** @since 0.3.0-beta01 */
     public val clientMetadata: OAuthClientMetadata
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun tokens(): OAuthTokens?
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun saveTokens(tokens: OAuthTokens)
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun redirectToAuthorization(authorizationUrl: String)
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun saveCodeVerifier(codeVerifier: String)
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun codeVerifier(): String
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun clientInformation(): OAuthClientInformation?
 
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun saveClientInformation(clientInformation: OAuthClientInformation): Unit = Unit
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun invalidateCredentials(scope: String): Unit = Unit
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun state(): String? = null
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun saveState(state: String): Unit = Unit
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun storedState(): String? = null
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun validateResourceURL(serverUrl: String, resource: String?): String? {
         if (resource == null) return null
@@ -899,6 +936,8 @@ public interface OAuthClientProvider {
         }
         return McpResourceUrl.stripSlash(resource)
     }
+
+    /** @since 0.3.0-beta01 */
     @JvmSynthetic
     public suspend fun addClientAuthentication(
         headers: Map<String, String>,
