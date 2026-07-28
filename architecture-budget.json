@@ -26,7 +26,7 @@
     "src/commonTest/kotlin/ai/torad/aisdk/GoogleInteractionsProviderTest.kt": 659,
     "src/commonTest/kotlin/ai/torad/aisdk/HardeningBranchCoverageTest.kt": 504,
     "src/commonTest/kotlin/ai/torad/aisdk/McpHttpTransportTest.kt": 685,
-    "src/commonTest/kotlin/ai/torad/aisdk/OpenAICompatibleProviderFacadesTest.kt": 1284,
+    "src/commonTest/kotlin/ai/torad/aisdk/OpenAICompatibleProviderFacadesTest.kt": 1328,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenAICompatibleProviderTest.kt": 627,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenAIProviderTest.kt": 588,
     "src/commonMain/kotlin/ai/torad/aisdk/CompletionApi.kt": 645,
@@ -58,7 +58,7 @@
     "src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt": 614,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/MistralProvider.kt": 505,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/QuiverAIProvider.kt": 540,
-    "src/commonMain/kotlin/ai/torad/aisdk/providers/FireworksFacade.kt": 587,
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/FireworksFacade.kt": 592,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/VoyageProvider.kt": 541
   }
 }

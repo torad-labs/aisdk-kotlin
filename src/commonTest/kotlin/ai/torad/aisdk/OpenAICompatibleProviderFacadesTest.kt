@@ -31,7 +31,7 @@ import ai.torad.aisdk.providers.Vercel
 import ai.torad.aisdk.providers.VercelProviderSettings
 import ai.torad.aisdk.providers.browserSearch
 import io.ktor.client.plugins.HttpRedirect
-import io.ktor.client.plugins.api.Send
+import io.ktor.client.plugins.api.SendingRequest
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -914,8 +914,11 @@ class OpenAICompatibleProviderFacadesTest {
         val callerPluginSawUrls = mutableListOf<String>()
         val injecting = fixture.httpClient().config {
             install(
+                // SendingRequest is the LATEST client-side header hook — a Send-based policy runs
+                // before it and would be overwritten here. Injecting from this hook is what makes
+                // the test adversarial rather than merely a same-hook ordering check.
                 createClientPlugin("InjectsCredentialEverywhere") {
-                    on(Send) { request ->
+                    on(SendingRequest) { request, _ ->
                         callerPluginSawUrls += request.url.buildString()
                         request.headers.remove(HttpHeaders.Cookie)
                         request.headers.append(HttpHeaders.Cookie, "injected=leak")
@@ -923,7 +926,6 @@ class OpenAICompatibleProviderFacadesTest {
                         // A denylist of known credential headers cannot catch this one.
                         request.headers.remove("X-Org-Token")
                         request.headers.append("X-Org-Token", "injected=leak")
-                        proceed(request)
                     }
                 },
             )
@@ -953,6 +955,48 @@ class OpenAICompatibleProviderFacadesTest {
                 "$header injected by a caller plugin must not survive the off-origin hop",
             )
         }
+    }
+
+    @Test
+    fun `fireworks image download treats an explicit default port as the same origin`() = runTest {
+        // Ktor normalises :443 away on the hop, so a textual authority compare would call this
+        // asset cross-origin and strip the very headers its own API needs.
+        val base = "https://fireworks.test:443/inference/v1"
+        val model = "accounts/fireworks/models/flux-kontext-pro"
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://fireworks.test/inference/v1/workflows/$model" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req_1"}""")),
+                ),
+                "https://fireworks.test/inference/v1/workflows/$model/get_result" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"Ready","result":{"sample":"https://fireworks.test/inference/v1/a.png"}}""",
+                        ),
+                    ),
+                ),
+                "https://fireworks.test/inference/v1/a.png" to UrlHandler(
+                    UrlResponse.Binary(byteArrayOf(4, 5, 6), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Fireworks(
+            fixture.httpClient(),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL(base)
+                headers(mapOf("x-org-token" to "org-secret"))
+            },
+        )
+
+        generateFireworksImage(provider)
+
+        val download = fixture.calls.single { it.requestUrl.endsWith("/a.png") }
+        fun Map<String, String>.header(name: String): String? =
+            entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+        assertEquals("Bearer key", download.requestHeaders.header(HttpHeaders.Authorization))
+        assertEquals("org-secret", download.requestHeaders.header("x-org-token"))
     }
 
     @Test
