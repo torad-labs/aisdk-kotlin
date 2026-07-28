@@ -10,9 +10,7 @@ import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.api.ClientPlugin
-import io.ktor.client.plugins.api.MonitoringEvent
-import io.ktor.client.plugins.api.createClientPlugin
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.utils.HttpRequestIsReadyForSending
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Url
@@ -501,16 +499,31 @@ public class FireworksImageModel(
         requestHeaders: Map<String, String>,
         abortSignal: AbortSignal,
     ): FacadeHttp.ProviderFacadeBinaryResponse =
-        client.config { install(imageDownloadHeaderPolicy(imageUrl, requestHeaders)) }
-            .use { policed ->
-                // Headers are supplied by the policy, per hop — including for this first send.
-                getFacadeBinary(policed, imageUrl, emptyMap(), abortSignal = abortSignal)
+        client.config { }.use { policed ->
+            // Subscribed on the BUILT client, not installed as a plugin inside `config { }`.
+            // Ktor applies a config in two categories — every ClientPlugin first, then every
+            // string-keyed `install(name) { }` interceptor — so a plugin-based policy is still
+            // followed by a caller's string-keyed subscriber to this same event. Subscribing
+            // here, after `config { }` has finished both categories, makes this genuinely the
+            // last handler. Below it only the consumer-supplied engine remains, which no
+            // client-side policy can police.
+            policed.monitor.subscribe(HttpRequestIsReadyForSending) { request ->
+                applyImageDownloadHeaderPolicy(request, imageUrl, requestHeaders)
             }
+            // Headers are supplied by the policy, per hop — including for this first send.
+            getFacadeBinary(policed, imageUrl, emptyMap(), abortSignal = abortSignal)
+        }
 
-    private fun imageDownloadHeaderPolicy(
+    /**
+     * The download's header contract, applied to one physical request immediately before Ktor
+     * snapshots it for the engine. `HttpRequestIsReadyForSending` is raised after every
+     * send-pipeline interceptor, so this runs last among client-side header mutation.
+     */
+    private fun applyImageDownloadHeaderPolicy(
+        request: HttpRequestBuilder,
         imageUrl: String,
         requestHeaders: Map<String, String>,
-    ): ClientPlugin<Unit> {
+    ) {
         // Anchored to the CONFIGURED origin as well as the returned URL: an HTTPS API must not be
         // talked out of TLS by the `result.sample` it handed back, whether by a redirect or by
         // naming an `http://` asset outright. A deliberately-HTTP dev gateway still works, since
@@ -518,35 +531,25 @@ public class FireworksImageModel(
         val requiresSecureTransport =
             runCatching { Url(settings.baseURL).protocol.isSecure() }.getOrElse { true } ||
                 runCatching { Url(imageUrl).protocol.isSecure() }.getOrElse { true }
-        return createClientPlugin("FireworksImageDownloadHeaderPolicy") {
-            // `HttpRequestIsReadyForSending`, not `Send` or `SendingRequest`: Ktor raises this
-            // event AFTER every send-pipeline interceptor and immediately before `builder.build()`
-            // snapshots the request for the engine. Both earlier hooks were verified bypassable —
-            // an inherited plugin on the later hook simply re-adds the credential once the policy
-            // has cleared it. Installed last, so this handler is the final subscriber; below it
-            // only the consumer-supplied engine remains, which no client policy can police.
-            on(MonitoringEvent(HttpRequestIsReadyForSending)) { request ->
-                val hopUrl = request.url.build()
-                // Independent of HttpRedirect's `allowHttpsDowngrade`: a caller that enabled it
-                // must not thereby put this download's bytes on the wire in clear text.
-                if (requiresSecureTransport && !hopUrl.protocol.isSecure()) {
-                    throw DownloadError(
-                        url = imageUrl,
-                        message = "Fireworks image download refused an insecure hop to " +
-                            "${hopUrl.protocol.name}://${hopUrl.host}",
-                    )
-                }
-                if (!sameOrigin(settings.baseURL, hopUrl.toString())) {
-                    // A real ALLOWLIST, not a list of credential names to drop. Anything a caller
-                    // plugin added — under any name we have never heard of — goes with it. Naming
-                    // the headers to remove is precisely how the original leak happened.
-                    request.headers.clear()
-                }
-                headersForImageDownload(hopUrl.toString(), requestHeaders).forEach { (name, value) ->
-                    request.headers.remove(name)
-                    request.headers.append(name, value)
-                }
-            }
+        val hopUrl = request.url.build()
+        // Independent of HttpRedirect's `allowHttpsDowngrade`: a caller that enabled it must not
+        // thereby put this download's bytes on the wire in clear text.
+        if (requiresSecureTransport && !hopUrl.protocol.isSecure()) {
+            throw DownloadError(
+                url = imageUrl,
+                message = "Fireworks image download refused an insecure hop to " +
+                    "${hopUrl.protocol.name}://${hopUrl.host}",
+            )
+        }
+        if (!sameOrigin(settings.baseURL, hopUrl.toString())) {
+            // A real ALLOWLIST, not a list of credential names to drop. Anything a caller plugin
+            // added — under any name we have never heard of — goes with it. Naming the headers to
+            // remove is precisely how the original leak happened.
+            request.headers.clear()
+        }
+        headersForImageDownload(hopUrl.toString(), requestHeaders).forEach { (name, value) ->
+            request.headers.remove(name)
+            request.headers.append(name, value)
         }
     }
 

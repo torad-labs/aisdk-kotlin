@@ -31,8 +31,6 @@ import ai.torad.aisdk.providers.Vercel
 import ai.torad.aisdk.providers.VercelProviderSettings
 import ai.torad.aisdk.providers.browserSearch
 import io.ktor.client.plugins.HttpRedirect
-import io.ktor.client.plugins.api.MonitoringEvent
-import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.utils.HttpRequestIsReadyForSending
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -914,23 +912,21 @@ class OpenAICompatibleProviderFacadesTest {
         // do. The policy is installed after it, so it must still win.
         val callerPluginSawUrls = mutableListOf<String>()
         val injecting = fixture.httpClient().config {
-            install(
-                // HttpRequestIsReadyForSending is the LAST point a client plugin can touch the
-                // builder — Ktor raises it after every send interceptor, immediately before the
-                // request is snapshotted for the engine. Injecting from an earlier hook would
-                // only prove ordering within that hook and could not catch a later bypass.
-                createClientPlugin("InjectsCredentialEverywhere") {
-                    on(MonitoringEvent(HttpRequestIsReadyForSending)) { request ->
-                        callerPluginSawUrls += request.url.buildString()
-                        request.headers.remove(HttpHeaders.Cookie)
-                        request.headers.append(HttpHeaders.Cookie, "injected=leak")
-                        // A name the SDK has never heard of, absent from the settings baseline.
-                        // A denylist of known credential headers cannot catch this one.
-                        request.headers.remove("X-Org-Token")
-                        request.headers.append("X-Org-Token", "injected=leak")
-                    }
-                },
-            )
+            // The STRING-KEYED category on purpose: Ktor installs every ClientPlugin first and
+            // these afterwards, so this subscriber runs after any plugin-based policy on the same
+            // event. Injecting from a ClientPlugin would only prove plugin-vs-plugin ordering and
+            // could not catch that bypass.
+            install("injector") {
+                monitor.subscribe(HttpRequestIsReadyForSending) { request ->
+                    callerPluginSawUrls += request.url.buildString()
+                    request.headers.remove(HttpHeaders.Cookie)
+                    request.headers.append(HttpHeaders.Cookie, "injected=leak")
+                    // A name the SDK has never heard of, absent from the settings baseline.
+                    // A denylist of known credential headers cannot catch this one.
+                    request.headers.remove("X-Org-Token")
+                    request.headers.append("X-Org-Token", "injected=leak")
+                }
+            }
         }
         val provider = Fireworks(
             injecting,

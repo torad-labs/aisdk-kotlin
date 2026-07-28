@@ -58,7 +58,7 @@
     "src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt": 614,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/MistralProvider.kt": 505,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/QuiverAIProvider.kt": 540,
-    "src/commonMain/kotlin/ai/torad/aisdk/providers/FireworksFacade.kt": 595,
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/FireworksFacade.kt": 598,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/VoyageProvider.kt": 541
   }
 }
