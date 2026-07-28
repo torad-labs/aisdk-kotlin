@@ -31,8 +31,9 @@ import ai.torad.aisdk.providers.Vercel
 import ai.torad.aisdk.providers.VercelProviderSettings
 import ai.torad.aisdk.providers.browserSearch
 import io.ktor.client.plugins.HttpRedirect
-import io.ktor.client.plugins.api.SendingRequest
+import io.ktor.client.plugins.api.MonitoringEvent
 import io.ktor.client.plugins.api.createClientPlugin
+import io.ktor.client.utils.HttpRequestIsReadyForSending
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -914,11 +915,12 @@ class OpenAICompatibleProviderFacadesTest {
         val callerPluginSawUrls = mutableListOf<String>()
         val injecting = fixture.httpClient().config {
             install(
-                // SendingRequest is the LATEST client-side header hook — a Send-based policy runs
-                // before it and would be overwritten here. Injecting from this hook is what makes
-                // the test adversarial rather than merely a same-hook ordering check.
+                // HttpRequestIsReadyForSending is the LAST point a client plugin can touch the
+                // builder — Ktor raises it after every send interceptor, immediately before the
+                // request is snapshotted for the engine. Injecting from an earlier hook would
+                // only prove ordering within that hook and could not catch a later bypass.
                 createClientPlugin("InjectsCredentialEverywhere") {
-                    on(SendingRequest) { request, _ ->
+                    on(MonitoringEvent(HttpRequestIsReadyForSending)) { request ->
                         callerPluginSawUrls += request.url.buildString()
                         request.headers.remove(HttpHeaders.Cookie)
                         request.headers.append(HttpHeaders.Cookie, "injected=leak")
