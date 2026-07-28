@@ -894,7 +894,7 @@ class OpenAICompatibleProviderFacadesTest {
     }
 
     @Test
-    fun `fireworks image download strips credentials a caller plugin adds off-origin`() = runTest {
+    fun `fireworks image download strips credentials a caller interceptor adds off-origin`() = runTest {
         val fixture = fireworksRedirectFixture(
             sample = "https://fireworks.test/inference/v1/download/1",
             "https://fireworks.test/inference/v1/download/1" to UrlHandler(
@@ -908,9 +908,10 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        // A caller plugin that injects a credential on EVERY request, the way Auth/DefaultRequest
-        // do. The policy is installed after it, so it must still win.
-        val callerPluginSawUrls = mutableListOf<String>()
+        // A caller interceptor that injects a credential on EVERY request, the way Auth or
+        // DefaultRequest would. The policy is SUBSCRIBED after derived-client configuration
+        // completes — not merely installed after it — so it must still win.
+        val callerInterceptorSawUrls = mutableListOf<String>()
         val injecting = fixture.httpClient().config {
             // The STRING-KEYED category on purpose: Ktor installs every ClientPlugin first and
             // these afterwards, so this subscriber runs after any plugin-based policy on the same
@@ -918,7 +919,7 @@ class OpenAICompatibleProviderFacadesTest {
             // could not catch that bypass.
             install("injector") {
                 monitor.subscribe(HttpRequestIsReadyForSending) { request ->
-                    callerPluginSawUrls += request.url.buildString()
+                    callerInterceptorSawUrls += request.url.buildString()
                     request.headers.remove(HttpHeaders.Cookie)
                     request.headers.append(HttpHeaders.Cookie, "injected=leak")
                     // A name the SDK has never heard of, absent from the settings baseline.
@@ -941,8 +942,8 @@ class OpenAICompatibleProviderFacadesTest {
         // Without this the test would be vacuous: it also passes if the caller's plugin never
         // ran on the download at all. This is what proves config{} keeps caller transport policy.
         assertTrue(
-            callerPluginSawUrls.any { it == "https://cdn.test/result.png" },
-            "the caller's own plugin must still run on the download hop: $callerPluginSawUrls",
+            callerInterceptorSawUrls.any { it == "https://cdn.test/result.png" },
+            "the caller's own interceptor must still run on the download hop: $callerInterceptorSawUrls",
         )
 
         val download = fixture.calls.single { it.requestUrl == "https://cdn.test/result.png" }
@@ -950,7 +951,7 @@ class OpenAICompatibleProviderFacadesTest {
             assertEquals(
                 null,
                 download.requestHeaders.entries.firstOrNull { it.key.equals(header, true) }?.value,
-                "$header injected by a caller plugin must not survive the off-origin hop",
+                "$header injected by a caller interceptor must not survive the off-origin hop",
             )
         }
     }
