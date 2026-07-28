@@ -11,8 +11,9 @@ import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.api.ClientPlugin
-import io.ktor.client.plugins.api.SendingRequest
+import io.ktor.client.plugins.api.MonitoringEvent
 import io.ktor.client.plugins.api.createClientPlugin
+import io.ktor.client.utils.HttpRequestIsReadyForSending
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Url
 import io.ktor.http.isSecure
@@ -518,11 +519,13 @@ public class FireworksImageModel(
             runCatching { Url(settings.baseURL).protocol.isSecure() }.getOrElse { true } ||
                 runCatching { Url(imageUrl).protocol.isSecure() }.getOrElse { true }
         return createClientPlugin("FireworksImageDownloadHeaderPolicy") {
-            // SendingRequest, not Send: `Send` handlers run BEFORE this pipeline stage, so an
-            // inherited plugin using the standard `SendingRequest` hook could re-add a credential
-            // after a `Send`-based policy had cleared it — verified against Ktor 3.5.0. This is
-            // the last client-side seam that can still mutate the headers going to the engine.
-            on(SendingRequest) { request, _ ->
+            // `HttpRequestIsReadyForSending`, not `Send` or `SendingRequest`: Ktor raises this
+            // event AFTER every send-pipeline interceptor and immediately before `builder.build()`
+            // snapshots the request for the engine. Both earlier hooks were verified bypassable —
+            // an inherited plugin on the later hook simply re-adds the credential once the policy
+            // has cleared it. Installed last, so this handler is the final subscriber; below it
+            // only the consumer-supplied engine remains, which no client policy can police.
+            on(MonitoringEvent(HttpRequestIsReadyForSending)) { request ->
                 val hopUrl = request.url.build()
                 // Independent of HttpRedirect's `allowHttpsDowngrade`: a caller that enabled it
                 // must not thereby put this download's bytes on the wire in clear text.
