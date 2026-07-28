@@ -798,7 +798,7 @@ class OpenAICompatibleProviderFacadesTest {
         val error = assertFailsWith<DownloadError> { generateFireworksImage(provider) }
 
         assertTrue(
-            error.message.orEmpty().contains("HTTPS-to-HTTP"),
+            error.message.orEmpty().contains("insecure hop"),
             "the download's own guard must refuse it: ${error.message}",
         )
         assertTrue(
@@ -919,6 +919,10 @@ class OpenAICompatibleProviderFacadesTest {
                         callerPluginSawUrls += request.url.buildString()
                         request.headers.remove(HttpHeaders.Cookie)
                         request.headers.append(HttpHeaders.Cookie, "injected=leak")
+                        // A name the SDK has never heard of, absent from the settings baseline.
+                        // A denylist of known credential headers cannot catch this one.
+                        request.headers.remove("X-Org-Token")
+                        request.headers.append("X-Org-Token", "injected=leak")
                         proceed(request)
                     }
                 },
@@ -942,11 +946,74 @@ class OpenAICompatibleProviderFacadesTest {
         )
 
         val download = fixture.calls.single { it.requestUrl == "https://cdn.test/result.png" }
-        assertEquals(
-            null,
-            download.requestHeaders.entries.firstOrNull { it.key.equals(HttpHeaders.Cookie, true) }?.value,
-            "a credential injected by a caller plugin must not survive the off-origin hop",
+        listOf(HttpHeaders.Cookie, "X-Org-Token").forEach { header ->
+            assertEquals(
+                null,
+                download.requestHeaders.entries.firstOrNull { it.key.equals(header, true) }?.value,
+                "$header injected by a caller plugin must not survive the off-origin hop",
+            )
+        }
+    }
+
+    @Test
+    fun `fireworks image download refuses a plain HTTP sample URL from an HTTPS api`() = runTest {
+        // No redirect involved: the HTTPS API names an insecure asset outright. Stripping the
+        // headers is not enough — the bytes and any signed query would still be in the clear.
+        val insecureSample = "http://cdn.test/result.png?signature=secret"
+        val fixture = fireworksRedirectFixture(
+            sample = insecureSample,
+            insecureSample to UrlHandler(
+                UrlResponse.Binary(byteArrayOf(9, 8, 7), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+            ),
         )
+        fixture.server.start()
+
+        val error = assertFailsWith<DownloadError> {
+            generateFireworksImage(fireworksRedirectProvider(fixture))
+        }
+
+        assertTrue(
+            error.message.orEmpty().contains("insecure hop"),
+            "an HTTPS API must not be talked out of TLS by the URL it returned: ${error.message}",
+        )
+        assertTrue(
+            fixture.calls.none { it.requestUrl.startsWith("http://") },
+            "the insecure asset must never be requested",
+        )
+    }
+
+    @Test
+    fun `fireworks image download allows plain HTTP when the configured api is itself HTTP`() = runTest {
+        // A deliberately-insecure local gateway must keep working: neither anchor is secure.
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "http://local.test/v1/workflows/accounts/fireworks/models/flux-kontext-pro" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req_1"}""")),
+                ),
+                "http://local.test/v1/workflows/accounts/fireworks/models/flux-kontext-pro/get_result" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"Ready","result":{"sample":"http://local.test/v1/asset.png"}}""",
+                        ),
+                    ),
+                ),
+                "http://local.test/v1/asset.png" to UrlHandler(
+                    UrlResponse.Binary(byteArrayOf(1, 2, 3), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Fireworks(
+            fixture.httpClient(),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("http://local.test/v1")
+            },
+        )
+
+        val result = generateFireworksImage(provider)
+
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.images.single().base64)
     }
 
     @Test

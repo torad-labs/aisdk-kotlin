@@ -510,29 +510,31 @@ public class FireworksImageModel(
         imageUrl: String,
         requestHeaders: Map<String, String>,
     ): ClientPlugin<Unit> {
-        val startedSecure = Url(imageUrl).protocol.isSecure()
+        // Anchored to the CONFIGURED origin as well as the returned URL: an HTTPS API must not be
+        // talked out of TLS by the `result.sample` it handed back, whether by a redirect or by
+        // naming an `http://` asset outright. A deliberately-HTTP dev gateway still works, since
+        // neither anchor is secure there.
+        val requiresSecureTransport =
+            Url(settings.baseURL).protocol.isSecure() || Url(imageUrl).protocol.isSecure()
         return createClientPlugin("FireworksImageDownloadHeaderPolicy") {
             on(Send) { request ->
                 val hopUrl = request.url.build()
                 // Independent of HttpRedirect's `allowHttpsDowngrade`: a caller that enabled it
                 // must not thereby put this download's bytes on the wire in clear text.
-                if (startedSecure && !hopUrl.protocol.isSecure()) {
+                if (requiresSecureTransport && !hopUrl.protocol.isSecure()) {
                     throw DownloadError(
                         url = imageUrl,
-                        message = "Fireworks image download refused an HTTPS-to-HTTP redirect to " +
+                        message = "Fireworks image download refused an insecure hop to " +
                             "${hopUrl.protocol.name}://${hopUrl.host}",
                     )
                 }
-                val allowed = headersForImageDownload(hopUrl.toString(), requestHeaders)
-                val allowedNames = allowed.keys.map { it.lowercase() }.toSet()
-                requestHeaders.keys
-                    .filterNot { it.lowercase() in allowedNames }
-                    .forEach { request.headers.remove(it) }
                 if (!sameOrigin(settings.baseURL, hopUrl.toString())) {
-                    // Credentials a caller plugin may have added after the baseline was computed.
-                    FIREWORKS_OFF_ORIGIN_FORBIDDEN_HEADERS.forEach { request.headers.remove(it) }
+                    // A real ALLOWLIST, not a list of credential names to drop. Anything a caller
+                    // plugin added — under any name we have never heard of — goes with it. Naming
+                    // the headers to remove is precisely how the original leak happened.
+                    request.headers.clear()
                 }
-                allowed.forEach { (name, value) ->
+                headersForImageDownload(hopUrl.toString(), requestHeaders).forEach { (name, value) ->
                     request.headers.remove(name)
                     request.headers.append(name, value)
                 }
@@ -582,14 +584,3 @@ internal data class FireworksImageBackend(
 private const val FIREWORKS_POLL_INTERVAL_MILLIS: Long = 500
 private const val FIREWORKS_MAX_POLL_INTERVAL_MILLIS: Long = 30_000
 private const val FIREWORKS_MAX_POLL_ATTEMPTS: Int = 240
-
-/**
- * Credential headers scrubbed from any off-origin hop even when they are absent from the
- * computed baseline — a caller's `Auth`, `HttpCookies`, or `DefaultRequest` can add these
- * downstream of the origin decision.
- */
-private val FIREWORKS_OFF_ORIGIN_FORBIDDEN_HEADERS: List<String> = listOf(
-    HttpHeaders.Authorization,
-    HttpHeaders.Cookie,
-    HttpHeaders.ProxyAuthorization,
-)
