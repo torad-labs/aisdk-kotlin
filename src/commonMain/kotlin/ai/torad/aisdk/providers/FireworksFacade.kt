@@ -11,7 +11,7 @@ import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.api.ClientPlugin
-import io.ktor.client.plugins.api.Send
+import io.ktor.client.plugins.api.SendingRequest
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Url
@@ -515,9 +515,14 @@ public class FireworksImageModel(
         // naming an `http://` asset outright. A deliberately-HTTP dev gateway still works, since
         // neither anchor is secure there.
         val requiresSecureTransport =
-            Url(settings.baseURL).protocol.isSecure() || Url(imageUrl).protocol.isSecure()
+            runCatching { Url(settings.baseURL).protocol.isSecure() }.getOrElse { true } ||
+                runCatching { Url(imageUrl).protocol.isSecure() }.getOrElse { true }
         return createClientPlugin("FireworksImageDownloadHeaderPolicy") {
-            on(Send) { request ->
+            // SendingRequest, not Send: `Send` handlers run BEFORE this pipeline stage, so an
+            // inherited plugin using the standard `SendingRequest` hook could re-add a credential
+            // after a `Send`-based policy had cleared it — verified against Ktor 3.5.0. This is
+            // the last client-side seam that can still mutate the headers going to the engine.
+            on(SendingRequest) { request, _ ->
                 val hopUrl = request.url.build()
                 // Independent of HttpRedirect's `allowHttpsDowngrade`: a caller that enabled it
                 // must not thereby put this download's bytes on the wire in clear text.
@@ -538,7 +543,6 @@ public class FireworksImageModel(
                     request.headers.remove(name)
                     request.headers.append(name, value)
                 }
-                proceed(request)
             }
         }
     }
@@ -556,17 +560,18 @@ public class FireworksImageModel(
         return requestHeaders.filterKeys { it.equals(HttpHeaders.UserAgent, ignoreCase = true) }
     }
 
+    /**
+     * Compare PARSED origins, not authority text. `https://host:443` and `https://host` are the
+     * same origin, but differ as strings — and Ktor normalises the default port away on the hop,
+     * so a string compare would call a consumer's explicit-port `baseURL` cross-origin and strip
+     * the headers its own asset needs. Fails closed (cross-origin) on an unparseable URL.
+     */
     private fun sameOrigin(apiBaseUrl: String, targetUrl: String): Boolean {
-        fun origin(url: String): String? {
-            val schemeEnd = url.indexOf("://")
-            if (schemeEnd < 0) return null
-            val rest = url.substring(schemeEnd + 3)
-            val hostEnd = rest.indexOf('/').let { if (it < 0) rest.length else it }
-            return url.substring(0, schemeEnd + 3 + hostEnd).lowercase()
-        }
-        val a = origin(apiBaseUrl) ?: return false
-        val b = origin(targetUrl) ?: return false
-        return a == b
+        val api = runCatching { Url(apiBaseUrl) }.getOrNull() ?: return false
+        val target = runCatching { Url(targetUrl) }.getOrNull() ?: return false
+        return api.protocol == target.protocol &&
+            api.host.equals(target.host, ignoreCase = true) &&
+            api.port == target.port
     }
 }
 
