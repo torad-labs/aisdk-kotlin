@@ -2,17 +2,50 @@ id: no-many-params-without-builder
 language: kotlin
 severity: warning
 message: "Class constructor has 5 or more parameters. A long positional parameter list is error-prone at call sites (easy to transpose two same-typed args) and freezes a wide surface into the ABI the moment it's public. Front construction with a DSL builder instead: a private-var-backed Builder class with public setter methods + an internal primary constructor + a factory function (see CLAUDE.md's construct-type pattern), so fields can be added later without breaking callers."
+note: |
+  The message argues an ABI consequence ("freezes a wide surface into the ABI the moment it's
+  public"), so the rule now CHECKS that: the visibility clauses below mirror the sibling rule
+  `no-public-constructor-with-defaults`. Without them this matched any run of 5+ class parameters
+  with no visibility test at all, firing on internal constructors already fronted by the sanctioned
+  builder pattern, on private data classes, and on test code — places where the stated consequence
+  cannot occur.
 rule:
-  kind: class_parameter
-  follows:
-    kind: class_parameter
-    stopBy: end
-    follows:
-      kind: class_parameter
-      stopBy: end
+  all:
+    - kind: class_parameter
       follows:
         kind: class_parameter
         stopBy: end
         follows:
           kind: class_parameter
           stopBy: end
+          follows:
+            kind: class_parameter
+            stopBy: end
+            follows:
+              kind: class_parameter
+              stopBy: end
+    # A non-public parameter is not part of the public surface.
+    - not:
+        has:
+          kind: visibility_modifier
+          regex: '^(private|internal|protected)$'
+          stopBy: end
+    # An internal/private primary constructor is exactly the sanctioned construct-type pattern.
+    - inside:
+        kind: primary_constructor
+        not:
+          has:
+            kind: modifiers
+            has:
+              kind: visibility_modifier
+              regex: '^(private|internal)$'
+    # ...and a non-public class has no public ABI to freeze.
+    - inside:
+        stopBy: end
+        kind: class_declaration
+        not:
+          has:
+            kind: modifiers
+            has:
+              kind: visibility_modifier
+              regex: '^(private|internal)$'
