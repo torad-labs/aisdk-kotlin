@@ -114,13 +114,19 @@ echo "== ast-grep autofix pre-pass =="
 python3 .claude/hooks/rules/validate_rules.py --apply-autofix "$RULES_ROOT/registry.json" src/commonMain/kotlin src/commonTest/kotlin || exit 1
 
 echo "== sealed-when codemod =="
+# --check, like the sibling codemods: report violations and RESTORE the tree. Running it in
+# applying mode here wrote rewrites into the working tree and then told the operator to stage
+# whatever it produced — and a rewrite this codemod declines to make by hand is exactly the case
+# where its output should not be blessed sight-unseen.
 if [ -f "dev/codemods/fix_sealed_when.py" ]; then
-  output=$(python3 dev/codemods/fix_sealed_when.py src/commonMain 2>&1)
-  if echo "$output" | grep -qE "^Applying [1-9]"; then
-    echo "$output" | grep -E "^(Applying|  Replace)"
-    echo "sealed-when codemod applied fixes — stage changes and re-commit"
-    exit 1
+  if ! output=$(python3 dev/codemods/fix_sealed_when.py --check src/commonMain 2>&1); then
+    echo "$output" | grep -E "^(Would apply|  Replace|  SKIP|  UNRESOLVED)"
+    echo "sealed-when codemod found else branches in sealed whens — expand them by review"
+    fail=1
   fi
+  # Coverage gaps are reported even on a passing run: a violation the codemod cannot resolve must
+  # not look like an absence of violations.
+  echo "$output" | grep -E "^  (SKIP|UNRESOLVED)" || true
 fi
 echo "sealed-when codemod OK: no fixes needed"
 
