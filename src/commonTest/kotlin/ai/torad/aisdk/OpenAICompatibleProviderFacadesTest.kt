@@ -939,8 +939,9 @@ class OpenAICompatibleProviderFacadesTest {
 
         generateFireworksImage(provider)
 
-        // Without this the test would be vacuous: it also passes if the caller's plugin never
-        // ran on the download at all. This is what proves config{} keeps caller transport policy.
+        // Without this the test would be vacuous: it also passes if the caller's interceptor
+        // never ran on the download at all. This is what proves config{} keeps caller transport
+        // policy.
         assertTrue(
             callerInterceptorSawUrls.any { it == "https://cdn.test/result.png" },
             "the caller's own interceptor must still run on the download hop: $callerInterceptorSawUrls",
