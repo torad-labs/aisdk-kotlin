@@ -279,6 +279,9 @@ private class MemoizedStreamReplay(
             if (producerRunId != runId || progress.value.terminal != null) return
             onTerminalSnapshot(buffer.toList())
             producer = null
+            // After terminal, registerCollector returns early forever, so the completed scope has
+            // no further use; dropping it releases its Job and the collector-derived context.
+            producerScope = null
             progress.value = ReplayProgress(size = buffer.size, terminal = terminal)
         }
     }

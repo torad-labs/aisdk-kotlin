@@ -323,8 +323,15 @@ private class VoyageEmbeddingModel(
         path: String,
     ): List<Float> =
         when (value) {
-            is JsonArray -> value.mapIndexed { index, item ->
-                WireDecoder.embeddingFloat(item, provider, path = "$path[$index]")
+            is JsonArray -> {
+                val stored = value.mapIndexed { index, item ->
+                    WireDecoder.embeddingFloat(item, provider, path = "$path[$index]")
+                }
+                // A JSON-array response carries the same PACKED integers base64 does, so the
+                // bit-packed dtypes are expanded here too. Otherwise `binary` would hand back one
+                // value per byte over JSON and one per dimension over base64 — the same dtype
+                // yielding two different vector lengths depending on `encoding_format`.
+                VoyagePackedBits.expandIfNeeded(stored, voyageEffectiveDtypeOrNull(outputDtype))
             }
             is JsonPrimitive -> if (value.isString) {
                 decodeVoyageBase64Embedding(value.content, outputDtype, provider, path)
@@ -373,8 +380,21 @@ private class VoyageEmbeddingModel(
             VoyageBase64Storage.Float32 -> decodeVoyageFloat32(bytes, provider, path)
             VoyageBase64Storage.SignedInt8 -> bytes.map { it.toFloat() }
             VoyageBase64Storage.UnsignedInt8 -> bytes.map { (it.toInt() and 0xff).toFloat() }
+            // `binary` stores the packed byte in OFFSET BINARY: the wire int8 is
+            // (packed_uint8 - 128), so the offset is added back before the bits are read.
+            VoyageBase64Storage.OffsetBinaryBits ->
+                bytes.flatMap { VoyagePackedBits.unpack(it.toInt() + VOYAGE_BINARY_OFFSET) }
+            VoyageBase64Storage.UnsignedBits ->
+                bytes.flatMap { VoyagePackedBits.unpack(it.toInt() and 0xff) }
         }
     }
+
+    private fun voyageEffectiveDtypeOrNull(outputDtype: VoyageOutputDtype): String? =
+        when (outputDtype) {
+            VoyageOutputDtype.Missing -> VOYAGE_OUTPUT_DTYPE_FLOAT
+            is VoyageOutputDtype.PresentString -> outputDtype.value
+            is VoyageOutputDtype.PresentInvalid -> null
+        }
 
     private fun decodeVoyageFloat32(
         bytes: ByteArray,
@@ -437,7 +457,14 @@ private class VoyageEmbeddingModel(
                         put("effectiveOutputDtype", effectiveOutputDtype?.let(::JsonPrimitive) ?: JsonNull)
                         put("packing", packing)
                         put("logicalDimension", logicalDimension?.let(::JsonPrimitive) ?: JsonNull)
-                        put("storedElementCounts", JsonArray(embeddings.map { JsonPrimitive(it.size) }))
+                        put(
+                            "storedElementCounts",
+                            JsonArray(
+                                embeddings.map {
+                                    JsonPrimitive(VoyagePackedBits.storedElementCount(effectiveOutputDtype, it.size))
+                                },
+                            ),
+                        )
                     },
                 )
             },
@@ -451,12 +478,12 @@ private class VoyageEmbeddingModel(
     ): Int? {
         if (requestedOutputDimension != null) return requestedOutputDimension
         if (voyageBase64Storage(effectiveOutputDtype) == null || embeddings.isEmpty()) return null
-        val storedDimension = embeddings.first().size
-        if (storedDimension == 0 || embeddings.any { it.size != storedDimension }) return null
-        return when (effectiveOutputDtype) {
-            VOYAGE_OUTPUT_DTYPE_BINARY, VOYAGE_OUTPUT_DTYPE_UBINARY -> storedDimension * 8
-            else -> storedDimension
-        }
+        val decodedDimension = embeddings.first().size
+        if (decodedDimension == 0 || embeddings.any { it.size != decodedDimension }) return null
+        // Bit-packed rows are expanded to one value per dimension at decode time, so the decoded
+        // length already IS the logical dimension for every dtype. Multiplying by 8 here again
+        // (as this did while binary/ubinary decoded one value per BYTE) would double-count.
+        return decodedDimension
     }
 
     private fun voyageEmbeddingPacking(effectiveOutputDtype: String): String =
@@ -469,8 +496,10 @@ private class VoyageEmbeddingModel(
     private fun voyageBase64Storage(effectiveOutputDtype: String): VoyageBase64Storage? =
         when (effectiveOutputDtype) {
             VOYAGE_OUTPUT_DTYPE_FLOAT -> VoyageBase64Storage.Float32
-            VOYAGE_OUTPUT_DTYPE_INT8, VOYAGE_OUTPUT_DTYPE_BINARY -> VoyageBase64Storage.SignedInt8
-            VOYAGE_OUTPUT_DTYPE_UINT8, VOYAGE_OUTPUT_DTYPE_UBINARY -> VoyageBase64Storage.UnsignedInt8
+            VOYAGE_OUTPUT_DTYPE_INT8 -> VoyageBase64Storage.SignedInt8
+            VOYAGE_OUTPUT_DTYPE_UINT8 -> VoyageBase64Storage.UnsignedInt8
+            VOYAGE_OUTPUT_DTYPE_BINARY -> VoyageBase64Storage.OffsetBinaryBits
+            VOYAGE_OUTPUT_DTYPE_UBINARY -> VoyageBase64Storage.UnsignedBits
             else -> null
         }
 
@@ -486,6 +515,8 @@ private class VoyageEmbeddingModel(
         Float32,
         SignedInt8,
         UnsignedInt8,
+        OffsetBinaryBits,
+        UnsignedBits,
     }
 }
 
@@ -538,3 +569,49 @@ private const val VOYAGE_OUTPUT_DTYPE_INT8: String = "int8"
 private const val VOYAGE_OUTPUT_DTYPE_UINT8: String = "uint8"
 private const val VOYAGE_OUTPUT_DTYPE_BINARY: String = "binary"
 private const val VOYAGE_OUTPUT_DTYPE_UBINARY: String = "ubinary"
+
+/** Offset-binary bias for `output_dtype: binary`; documented as 128 for signed 8-bit integers. */
+private const val VOYAGE_BINARY_OFFSET: Int = 128
+
+/** Single-bit dimensions packed into one wire byte, for `output_dtype` `binary` / `ubinary`. */
+private const val VOYAGE_BITS_PER_PACKED_BYTE: Int = 8
+
+/** Widens a signed `Byte`/`Int` to its unsigned 0..255 value. */
+private const val UNSIGNED_BYTE_MASK: Int = 0xff
+
+/**
+ * Bit-packing arithmetic for Voyage's `binary` / `ubinary` embeddings, which carry 8 single-bit
+ * dimensions per wire byte — the returned integer list is 1/8 of the real dimension.
+ *
+ * Voyage's own unpack example reads each bit as a boolean, so a set bit decodes to `1f` and a
+ * clear bit to `0f` for BOTH dtypes; the only difference is the signedness of the wire byte, which
+ * callers normalise before calling in (`binary` is offset binary, so add [VOYAGE_BINARY_OFFSET]).
+ */
+private object VoyagePackedBits {
+    /** Most-significant bit first, matching the documented `01001101` packing order. */
+    fun unpack(packedByte: Int): List<Float> =
+        (VOYAGE_BITS_PER_PACKED_BYTE - 1 downTo 0)
+            .map { bit -> if ((packedByte shr bit) and 1 == 1) 1f else 0f }
+
+    /**
+     * Expand a JSON-array row, which carries the same packed integers base64 does. Without this a
+     * given dtype would yield one value per byte over JSON and one per dimension over base64.
+     */
+    fun expandIfNeeded(stored: List<Float>, effectiveOutputDtype: String?): List<Float> =
+        when (effectiveOutputDtype) {
+            VOYAGE_OUTPUT_DTYPE_BINARY -> stored.flatMap { unpack(it.toInt() + VOYAGE_BINARY_OFFSET) }
+            VOYAGE_OUTPUT_DTYPE_UBINARY -> stored.flatMap { unpack(it.toInt() and UNSIGNED_BYTE_MASK) }
+            else -> stored
+        }
+
+    /**
+     * How many elements Voyage actually sent for a row, given the decoded length. Equal for the
+     * byte-per-value dtypes; one eighth for the bit-packed ones.
+     */
+    fun storedElementCount(effectiveOutputDtype: String?, decodedSize: Int): Int =
+        when (effectiveOutputDtype) {
+            VOYAGE_OUTPUT_DTYPE_BINARY, VOYAGE_OUTPUT_DTYPE_UBINARY ->
+                decodedSize / VOYAGE_BITS_PER_PACKED_BYTE
+            else -> decodedSize
+        }
+}

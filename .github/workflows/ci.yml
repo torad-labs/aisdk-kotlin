@@ -62,6 +62,10 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
+          # This job runs `npm ci` (third-party lifecycle scripts), a downloaded ast-grep
+          # binary, and the full Gradle build, so the job token must not sit in .git/config
+          # for them to read. The failure-issue step gets it through env instead.
+          persist-credentials: false
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
