@@ -1,7 +1,16 @@
 id: no-public-constructor-with-defaults
 language: kotlin
 severity: warning
-message: "Public class has a public constructor parameter with a default value. A public positional constructor with defaults freezes the parameter list into the ABI: appending, reordering, or removing a defaulted param is binary-incompatible for already-compiled callers, and @JvmOverloads/default-args don't rescue it. Front construction with a builder/DSL factory instead (internal constructor + Builder class + factory function) so the constructor itself is never part of the public contract."
+message: "Public class has a public constructor parameter with a default value. A public positional constructor with defaults freezes the parameter list into the ABI: appending, reordering, or removing a defaulted param is binary-incompatible for already-compiled callers, and @JvmOverloads/default-args don't rescue it. Front construction with a builder/DSL factory instead (internal constructor + Builder class + factory function) so the constructor itself is never part of the public contract. `@Poko` classes are exempt: CLAUDE.md settles that produced read-only types keep a public positional constructor."
+note: |
+  The `@Poko` exemption is not a loophole — it is the repo's settled decision (CLAUDE.md, dated
+  2026-07-03, `docs/reports/pre-beta-abi-audit.md` F1): produced read-only `@Poko` types
+  intentionally keep a PUBLIC positional constructor, because `@Poko` omits `copy()`/`componentN()`
+  and appending a field is compatible for every READ site, which is all a consumer does with a
+  produced type. Without this clause the rule fired on the very pattern the project mandates —
+  result/response/usage types such as `StreamEvent` and `TranscriptSegment` — which trains
+  dismissal of the whole style pack. Construct-types, which consumers BUILD, still use an
+  `internal constructor` + builder and are still covered here.
 rule:
   kind: class_parameter
   all:
@@ -32,3 +41,12 @@ rule:
             has:
               kind: visibility_modifier
               regex: '^(private|internal)$'
+    - not:
+        inside:
+          stopBy: end
+          kind: class_declaration
+          has:
+            kind: modifiers
+            has:
+              kind: annotation
+              regex: '^@Poko$'
