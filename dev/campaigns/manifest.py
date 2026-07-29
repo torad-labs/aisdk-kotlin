@@ -1146,6 +1146,14 @@ def _fleet_journal_path(_root: str | Path | None = None) -> Path:
 JOURNAL_LOCK_RETRY_SECONDS = 0.005
 JOURNAL_LOCK_TIMEOUT_SECONDS = 2.0
 JOURNAL_LOCK_STALE_SECONDS = 5.0
+# Refresh interval for a HELD lock's mtime. The lock dir's mtime is set at mkdir and at owner-file
+# creation and was never touched again, so a holder that stayed in its critical section longer than
+# JOURNAL_LOCK_STALE_SECONDS (an fsync stall, a SIGSTOPped process on a loaded box) was
+# indistinguishable from a crashed one: the witness recheck still matched because the holder never
+# changed, the steal succeeded, and both processes then ran _next_journal_seq over the same tail and
+# appended DUPLICATE seqs — breaking the very invariant the lock docstring claims. Well under the
+# stale window so several beats are missed before anything is considered stale.
+JOURNAL_LOCK_HEARTBEAT_SECONDS = 1.0
 # FQ-FIX-JOURNAL-LOCK: sole member of a new-protocol lock dir (presence = protocol v2).
 # Format is language-neutral plain UTF-8; compared by byte-equality only across all five lanes.
 JOURNAL_LOCK_OWNER_FILE = "owner"
@@ -1177,6 +1185,80 @@ def _write_journal_lock_owner(lock_path: Path, nonce: str) -> None:
     _journal_lock_owner_path(lock_path).write_text(nonce, encoding="utf-8")
 
 
+def _journal_lock_owner_pid(owner: str | None) -> int | None:
+    """
+    The pid embedded in the leading component of a nonce, or None when it is not in that shape.
+
+    The owner FILE format is deliberately untouched — it stays byte-for-byte what all five lanes
+    write and compare by equality — because the nonce already begins with the minting pid
+    ("<pid>-<uuid>-<epoch-ms>"). A lane whose nonce is shaped differently simply yields None here
+    and the caller falls back to the mtime-only decision, i.e. today's behaviour.
+    """
+    if not owner:
+        return None
+    head = owner.strip().split("-", 1)[0]
+    if not head.isdigit():
+        return None
+    try:
+        return int(head)
+    except ValueError:
+        return None
+
+
+def _journal_lock_owner_is_alive(owner: str | None) -> bool:
+    """
+    True when the nonce names a process that still exists on this host.
+
+    Fails SAFE in both unknown directions: an unparseable nonce or an unsupported platform reports
+    False (fall back to mtime staleness, today's behaviour), while a pid that does exist reports
+    True and blocks the steal. A cross-host lock whose pid coincidentally matches a local process
+    therefore costs a lock timeout rather than a duplicated seq.
+    """
+    pid = _journal_lock_owner_pid(owner)
+    if pid is None or pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # Exists but is owned by another user.
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def _start_journal_lock_heartbeat(lock_path: Path) -> tuple[object, object] | None:
+    """
+    Touch a held lock's mtime periodically so a slow-but-live holder does not read as crashed.
+
+    This is the half of the fix that the OTHER lanes benefit from without changing: they decide
+    staleness from mtime alone, so a Python holder that keeps its mtime fresh is simply never
+    mistaken for a dead one. Best-effort — a failure to start leaves the previous behaviour.
+    """
+    import threading
+
+    stop = threading.Event()
+
+    def beat() -> None:
+        while not stop.wait(JOURNAL_LOCK_HEARTBEAT_SECONDS):
+            try:
+                os.utime(lock_path, None)
+            except OSError:
+                return
+
+    try:
+        thread = threading.Thread(target=beat, name="journal-lock-heartbeat", daemon=True)
+        thread.start()
+    except RuntimeError:
+        return None
+    return stop, thread
+
+
+_JOURNAL_LOCK_HEARTBEATS: dict[tuple[str, str], tuple[object, object]] = {}
+
+
 def _remove_stolen_journal_lock_dir(stolen_path: Path) -> None:
     try:
         _journal_lock_owner_path(stolen_path).unlink()
@@ -1200,6 +1282,11 @@ def _try_rename_steal_journal_lock(lock_path: Path, nonce: str) -> bool:
     except OSError:
         return False
     if not stale:
+        return False
+    # mtime staleness alone cannot tell a crashed holder from a stalled live one, and stealing from
+    # a live holder lets both sides mint the same seq. A holder that still exists is never stolen
+    # from, regardless of how long it has been quiet.
+    if _journal_lock_owner_is_alive(witness):
         return False
 
     steal_path = Path(str(lock_path) + f".{nonce}.steal")
@@ -1238,6 +1325,9 @@ def _acquire_journal_lock(lock_path: Path) -> str:
         try:
             os.mkdir(lock_path)
             _write_journal_lock_owner(lock_path, nonce)
+            beat = _start_journal_lock_heartbeat(lock_path)
+            if beat is not None:
+                _JOURNAL_LOCK_HEARTBEATS[(str(lock_path), nonce)] = beat
             return nonce
         except FileExistsError:
             _try_rename_steal_journal_lock(lock_path, nonce)
@@ -1250,6 +1340,11 @@ def _release_journal_lock(lock_path: Path, nonce: str) -> None:
     """F28 owned-release: rmdir ONLY if <lock>/owner equals our nonce. Else no-op."""
     if not nonce:
         return
+    beat = _JOURNAL_LOCK_HEARTBEATS.pop((str(lock_path), nonce), None)
+    if beat is not None:
+        stop, thread = beat
+        stop.set()  # type: ignore[attr-defined]
+        thread.join(timeout=JOURNAL_LOCK_HEARTBEAT_SECONDS)  # type: ignore[attr-defined]
     current = _read_journal_lock_owner(lock_path)
     if current is None or current != nonce:
         return
@@ -3958,23 +4053,34 @@ def cmd_set_status(
     require_proof = new_status == "verified" and _campaign_proof_required()
 
     notify = _notify_orchestrator if _notify is None else _notify
-    attest_lines = []
-    if new_status == "in_flight":
-        tree, detail = _capture_in_flight_attribution(path)
-        attest_lines = [_attest_line(ATTR_START_NOTE, detail if tree else f"unavailable ({detail})")]
-    elif new_status == "done":
-        _tree, attest_note = _done_attribution(path, item_id)
-        attest_lines = [f"# [{date.today().isoformat()}] {attest_note}\n"]
-    elif new_status == "verified":
-        # G24: close an OPEN bracket on any forward transition — a builder that skipped
-        # `done` must not leave an unattributed landing (the P6-K3 hole). Only fires when
-        # an ATTEST-START exists with no closing ATTEST line.
-        lines0 = _read(path)
-        s0, e0 = _find(lines0, item_id)
-        block_text = "".join(lines0[s0:e0])
-        if f"{ATTR_START_NOTE}: tree=" in block_text and f"] {ATTR_NOTE}: " not in block_text:
+
+    def compute_attest_lines(lines_under_lock):
+        """
+        Snapshot the tree and write the attribution sidecars.
+
+        REVIEW 4813532855: this used to run BEFORE _locked_rewrite. _done_attribution reads the
+        ledger unlocked, snapshots the git tree, runs git diff and writes the sidecar files, so a
+        concurrent mutation on the same ledger could land between the sidecar write and the locked
+        transition — leaving a persisted diff and diffstat that describe a different tree state than
+        the one the ledger's ATTEST line attests to, silently. Computing it here, from the lines the
+        lock already handed us, makes the bracket atomic with the transition it proves.
+        """
+        if new_status == "in_flight":
+            tree, detail = _capture_in_flight_attribution(path)
+            return [_attest_line(ATTR_START_NOTE, detail if tree else f"unavailable ({detail})")]
+        if new_status == "done":
             _tree, attest_note = _done_attribution(path, item_id)
-            attest_lines = [f"# [{date.today().isoformat()}] {attest_note}\n"]
+            return [f"# [{date.today().isoformat()}] {attest_note}\n"]
+        if new_status == "verified":
+            # G24: close an OPEN bracket on any forward transition — a builder that skipped
+            # `done` must not leave an unattributed landing (the P6-K3 hole). Only fires when
+            # an ATTEST-START exists with no closing ATTEST line.
+            s0, e0 = _find(lines_under_lock, item_id)
+            block_text = "".join(lines_under_lock[s0:e0])
+            if f"{ATTR_START_NOTE}: tree=" in block_text and f"] {ATTR_NOTE}: " not in block_text:
+                _tree, attest_note = _done_attribution(path, item_id)
+                return [f"# [{date.today().isoformat()}] {attest_note}\n"]
+        return []
 
     # H4 FENCE-RELEASED (supersedes FENCE-AUTONARROW): a verified item stops fencing anything.
     # VERIFIED-COMMITS-IMMEDIATELY makes verified => committed a law-level invariant, so the
@@ -3991,6 +4097,8 @@ def cmd_set_status(
 
     def mutate(lines):
         s, e = _find(lines, item_id)
+        # Under the flock, so the snapshot and its sidecars cannot drift from this transition.
+        attest_lines = compute_attest_lines(lines)
 
         def refuse(reason: str):
             _append_manifest_verb_journal_line(
@@ -4772,7 +4880,7 @@ def cmd_handover(
 
 
 def cmd_add(path, item_id, phase, title, files, verify, status="todo", override_bare_dir=False):
-    bare_dirs = _bare_directory_fence_entries([f.strip() for f in files.split(",")])
+    bare_dirs = _bare_directory_fence_entries([f.strip() for f in files.split(",") if f.strip()])
     if bare_dirs and not override_bare_dir:
         sys.exit(_bare_dir_fence_block_error(item_id, bare_dirs))
 
@@ -4806,7 +4914,12 @@ def cmd_add(path, item_id, phase, title, files, verify, status="todo", override_
         # string and forge a second [[items]] block (e.g. status="verified"), defeating the
         # campaign-proof control; a lone backslash silently became a TOML escape. Lockstep with the
         # TS engine (construction.ts addVerb tomlString on every field) — parity-harness gated.
-        files_toml = _toml_string_list([f.strip() for f in files.split(",")])
+        # Blank-filter the split: the dispatcher passes "" when --files is omitted, and
+        # "".split(",") is [""], so the item persisted as files = [""]. _packet_eligible then
+        # rejected it with "item missing files" — undispatchable and unpacketable even though the
+        # usage text advertises --files as optional — and the empty string polluted the fence
+        # database. An omitted --files must yield an EMPTY list, not a list holding nothing.
+        files_toml = _toml_string_list([f.strip() for f in files.split(",") if f.strip()])
         block = (
             f"\n[[items]]\nid = {_toml_basic_string(item_id)}\n"
             f"phase = {_toml_basic_string(phase)}\n"
