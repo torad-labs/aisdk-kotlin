@@ -1300,10 +1300,15 @@ internal class McpConnectionLifecycle {
     }
 
     /** Publish (or replace, e.g. on an inbound retry) the reader job while Active; no-op otherwise. */
-    fun setReader(job: Job?) {
+    /**
+     * Attach the reader job to the Active state. Returns false when the connection is no longer
+     * Active — a concurrent [close] won the transition — in which case the CALLER still owns
+     * whatever it created for this reader, because close() cannot see it.
+     */
+    fun setReader(job: Job?): Boolean {
         while (true) {
-            val current = state.load() as? State.Active ?: return
-            if (state.compareAndSet(current, State.Active(current.scope, job))) return
+            val current = state.load() as? State.Active ?: return false
+            if (state.compareAndSet(current, State.Active(current.scope, job))) return true
         }
     }
 
@@ -2173,7 +2178,7 @@ public class Experimental_StdioMCPTransport(
             throw error
         }
         process = started
-        lifecycle.setReader(
+        val readerJob =
             readerScope.launch {
                 try {
                     while (true) {
@@ -2202,8 +2207,29 @@ public class Experimental_StdioMCPTransport(
                         }
                     }
                 }
-            },
-        )
+            }
+        adoptReaderOrUndoLostStart(readerJob)
+    }
+
+    /**
+     * Attach the reader, or clean up after a concurrent [close] that won the lifecycle transition.
+     *
+     * close() reads the `process` field AFTER winning, so a close() that won before
+     * `process = started` captured the stale handle (or null) and cannot see the new child:
+     * setReader no-ops, the reader lands in an already-cancelled scope, and its onReaderExited()
+     * returns null for Closed — so nothing would ever destroy the child or clear the field, while
+     * send() could still write to it. Claim whatever the field now holds and tear it down here; if
+     * close() did see `started` it already nulled the field, so nothing is closed twice.
+     */
+    private suspend fun adoptReaderOrUndoLostStart(readerJob: Job) {
+        if (lifecycle.setReader(readerJob)) return
+        readerJob.cancel()
+        withContext(NonCancellable) {
+            val orphan = process
+            process = null
+            orphan?.let { closeProcessForTeardown(it) }
+        }
+        throw MCPClientError("StdioMCPTransport was closed during start.")
     }
 
     /** Finish stale teardown + lifecycle reset after start fails post-begin(). */

@@ -92,17 +92,40 @@ class VoyageProviderTest {
         assertEquals("int8", body["output_dtype"]?.jsonPrimitive?.contentOrNull)
     }
 
+    private val voyageBase64DtypeCases: List<VoyageBase64EmbeddingCase> = listOf(
+        VoyageBase64EmbeddingCase(null, "AACAPwAAIMA=", listOf(1f, -2.5f), "none", 2),
+        VoyageBase64EmbeddingCase("int8", "gH8=", listOf(-128f, 127f), "none", 2),
+        VoyageBase64EmbeddingCase("uint8", "AP8=", listOf(0f, 255f), "none", 2),
+        // binary/ubinary are BIT-PACKED: 8 single-bit dimensions per stored byte, so two bytes
+        // decode to 16 values, matching the logicalDimension the metadata reports. `binary` is
+        // offset binary — the wire int8 is (packed_uint8 - 128) — so 0x80 is packed 0 (all bits
+        // clear) and 0x7F is packed 255 (all bits set); ubinary uses the byte directly.
+        VoyageBase64EmbeddingCase("binary", "gH8=", List(8) { 0f } + List(8) { 1f }, "bit-packed", 16),
+        VoyageBase64EmbeddingCase("ubinary", "AP8=", List(8) { 0f } + List(8) { 1f }, "bit-packed", 16),
+        // Voyage's own documented worked example, which pins BOTH the bit order (MSB first) and the
+        // offset: bits 0,1,0,0,1,1,0,1 pack to 01001101 = 77, reported as ubinary 77 and as binary
+        // -51 (77 - 128). The uniform bytes above cannot catch a reversed bit order.
+        VoyageBase64EmbeddingCase("ubinary", "TQ==", listOf(0f, 1f, 0f, 0f, 1f, 1f, 0f, 1f), "bit-packed", 8),
+        VoyageBase64EmbeddingCase("binary", "zQ==", listOf(0f, 1f, 0f, 0f, 1f, 1f, 0f, 1f), "bit-packed", 8),
+    )
+
+    private val voyageJsonDtypeCases: List<VoyageJsonEmbeddingCase> = listOf(
+        VoyageJsonEmbeddingCase("float", "[1.5,-2.25]", listOf(1.5f, -2.25f), "none", 2),
+        VoyageJsonEmbeddingCase("int8", "[-128,127]", listOf(-128f, 127f), "none", 2),
+        VoyageJsonEmbeddingCase("uint8", "[0,255]", listOf(0f, 255f), "none", 2),
+        // A JSON-array response carries the same packed integers as base64, so the bit-packed
+        // dtypes expand identically here: `binary` -128 is packed 0, 127 is packed 255.
+        VoyageJsonEmbeddingCase("binary", "[-128,127]", List(8) { 0f } + List(8) { 1f }, "bit-packed", 16),
+        VoyageJsonEmbeddingCase("ubinary", "[0,255]", List(8) { 0f } + List(8) { 1f }, "bit-packed", 16),
+        // Voyage's documented example again, over the JSON-array path: ubinary 77 / binary -51 both
+        // unpack to bits 0,1,0,0,1,1,0,1. Pins that both encodings agree.
+        VoyageJsonEmbeddingCase("ubinary", "[77]", listOf(0f, 1f, 0f, 0f, 1f, 1f, 0f, 1f), "bit-packed", 8),
+        VoyageJsonEmbeddingCase("binary", "[-51]", listOf(0f, 1f, 0f, 0f, 1f, 1f, 0f, 1f), "bit-packed", 8),
+    )
+
     @Test
     fun `embedding model preserves all known JSON array dtypes and describes storage`() = runTest {
-        val cases = listOf(
-            VoyageJsonEmbeddingCase("float", "[1.5,-2.25]", listOf(1.5f, -2.25f), "none", 2),
-            VoyageJsonEmbeddingCase("int8", "[-128,127]", listOf(-128f, 127f), "none", 2),
-            VoyageJsonEmbeddingCase("uint8", "[0,255]", listOf(0f, 255f), "none", 2),
-            VoyageJsonEmbeddingCase("binary", "[-128,127]", listOf(-128f, 127f), "bit-packed", 16),
-            VoyageJsonEmbeddingCase("ubinary", "[0,255]", listOf(0f, 255f), "bit-packed", 16),
-        )
-
-        for (case in cases) {
+        for (case in voyageJsonDtypeCases) {
             val responseBody = Json.parseToJsonElement(
                 """{"data":[{"embedding":${case.rowJson}}]}""",
             )
@@ -124,7 +147,9 @@ class VoyageProviderTest {
                 effectiveOutputDtype = case.outputDtype,
                 packing = case.packing,
                 logicalDimension = case.logicalDimension,
-                storedElementCounts = listOf(case.expected.size),
+                storedElementCounts = listOf(
+                    if (case.packing == "bit-packed") case.expected.size / 8 else case.expected.size,
+                ),
             )
         }
     }
@@ -180,15 +205,7 @@ class VoyageProviderTest {
 
     @Test
     fun `embedding model decodes all base64 storage classes and preserves the raw response`() = runTest {
-        val cases = listOf(
-            VoyageBase64EmbeddingCase(null, "AACAPwAAIMA=", listOf(1f, -2.5f), "none", 2),
-            VoyageBase64EmbeddingCase("int8", "gH8=", listOf(-128f, 127f), "none", 2),
-            VoyageBase64EmbeddingCase("uint8", "AP8=", listOf(0f, 255f), "none", 2),
-            VoyageBase64EmbeddingCase("binary", "gH8=", listOf(-128f, 127f), "bit-packed", 16),
-            VoyageBase64EmbeddingCase("ubinary", "AP8=", listOf(0f, 255f), "bit-packed", 16),
-        )
-
-        for (case in cases) {
+        for (case in voyageBase64DtypeCases) {
             val responseBody = Json.parseToJsonElement(
                 """{"data":[{"embedding":"${case.base64}"}],"usage":{"total_tokens":1}}""",
             )
@@ -215,7 +232,11 @@ class VoyageProviderTest {
                 effectiveOutputDtype = case.outputDtype ?: "float",
                 packing = case.packing,
                 logicalDimension = case.logicalDimension,
-                storedElementCounts = listOf(case.expected.size),
+                // Stored count is the WIRE element count: one eighth of the decoded length for
+                // the bit-packed dtypes, equal for the byte-per-value ones.
+                storedElementCounts = listOf(
+                    if (case.packing == "bit-packed") case.expected.size / 8 else case.expected.size,
+                ),
             )
         }
     }

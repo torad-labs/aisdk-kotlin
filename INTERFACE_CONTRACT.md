@@ -344,7 +344,7 @@ of producing a normal abort completion for the step.
 ### Provider Registry
 
 - `interface Provider` with `languageModel`, `embeddingModel`, `imageModel`, `speechModel`, `transcriptionModel`, `rerankingModel`, and `videoModel`.
-- `Provider(providerId, languageModels, embeddingModels, imageModels, speechModels, transcriptionModels, rerankingModels, videoModels, fallbackProvider)`, `CustomProvider { providerId(...); languageModel(id, model); embeddingModel(id, model); imageModel(id, model); speechModel(id, model); transcriptionModel(id, model); rerankingModel(id, model); videoModel(id, model); fallbackProvider(...) }`, `ProviderRegistry`, `ProviderRegistry.createProviderRegistry(...)`, `WrapProvider(...)`, `ProviderMiddleware { languageModelMiddlewares(...); embeddingModelMiddlewares(...); imageModelMiddlewares(...) }`.
+- `Provider(providerId, languageModels, embeddingModels, imageModels, speechModels, transcriptionModels, rerankingModels, videoModels, fallbackProvider)`, `CustomProvider { providerId(...); languageModel(id, model); embeddingModel(id, model); imageModel(id, model); speechModel(id, model); transcriptionModel(id, model); rerankingModel(id, model); videoModel(id, model); fallbackProvider(...) }`, `ProviderRegistry`, `ProviderRegistry(vararg Pair<String, Provider>, ...)`, `WrapProvider(...)`, `ProviderMiddleware { languageModelMiddlewares(...); embeddingModelMiddlewares(...); imageModelMiddlewares(...) }`.
 - `CustomProvider` is a regular builder-backed class with identity equality
   because it holds model objects; the positional constructor, `copy()`, and
   `componentN()` are not public.

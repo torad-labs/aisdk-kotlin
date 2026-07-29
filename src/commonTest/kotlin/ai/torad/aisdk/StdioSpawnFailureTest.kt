@@ -100,4 +100,48 @@ class StdioSpawnFailureTest {
         transport.close()
         assertFalse(transport.hasProcessForTest, "close releases the process handle")
     }
+
+    /**
+     * Review regression: close() reads the `process` field only AFTER it wins the lifecycle
+     * transition, so a close() landing between begin() and `process = started` captured the stale
+     * handle (or null) and never saw the freshly spawned child. setReader() then no-opped, the
+     * reader landed in an already-cancelled scope, and its onReaderExited() returned null for
+     * Closed — so the child and its FDs leaked while `process` stayed non-null, leaving send()
+     * able to write to an orphaned process on a permanently Closed transport.
+     *
+     * Driven deterministically by closing from inside the process factory: at that moment start()
+     * has passed begin() but has not yet assigned `process`, which is exactly the losing window.
+     */
+    @Test
+    fun `close winning during spawn does not strand the new process`() = runTest {
+        var spawnedClosed = false
+        val spawned = object : MCPStdioProcess {
+            override suspend fun readLine(): String? = null
+            override suspend fun writeLine(line: String) = Unit
+            override suspend fun close() {
+                spawnedClosed = true
+            }
+        }
+
+        lateinit var transport: Experimental_StdioMCPTransport
+        transport = Experimental_StdioMCPTransport(
+            StdioConfig { command("unused-with-injected-factory") },
+        )
+        transport.prepareProcessForTest(
+            factory = {
+                // close() wins the lifecycle here — after begin(), before `process = started`.
+                @Suppress("DEPRECATION")
+                kotlinx.coroutines.runBlocking { transport.close() }
+                spawned
+            },
+        )
+
+        assertFails { transport.start() }
+
+        assertTrue(spawnedClosed, "the child spawned during a losing start must still be destroyed")
+        assertFalse(
+            transport.hasProcessForTest,
+            "the process field must not retain a handle on a Closed transport",
+        )
+    }
 }

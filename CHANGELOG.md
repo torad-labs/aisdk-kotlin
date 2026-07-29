@@ -184,9 +184,19 @@ This project follows Semantic Versioning once the first stable release is cut.
   - **Invoke-style factories** become a PascalCase function of the same name:
     `DataUrl.parse(s)` → `DataUrl(s)`, `ProviderOptions.ofPairs(...)` →
     `ProviderOptions(...)`, `ProviderMetadata.ofPairs(...)` → `ProviderMetadata(...)`,
-    `ProviderRegistry.createProviderRegistry(...)` → `ProviderRegistry(...)`,
+    `ProviderRegistry.createProviderRegistry(vararg Pair, ...)` → `ProviderRegistry(...)`,
     `Usage.of(...)` → `Usage(...)`, and each `LiteRTContent.<Kind>.invoke(...)` →
     `LiteRTContent<Kind>(...)`.
+    - **One member has no same-signature replacement.** The companion also carried a
+      `Map`-taking overload, `createProviderRegistry(Map<String, Provider>, ...)`, present
+      in the `v0.2.0` and `v0.3.0-alpha01` ABI dumps. Its capability now lives on
+      `ProviderRegistry`'s public primary constructor, so Kotlin callers write
+      `ProviderRegistry(map, ...)` — but a JVM caller compiled against the companion
+      static gets a `NoSuchMethodError` and must move to the constructor. A top-level
+      `Map` factory of the same name is not available as a migration shim: it collides
+      with that constructor (`Conflicting overloads`), which is why the constructor is
+      the replacement rather than a matching function. So the migration is 39 members
+      relocated to a same-signature replacement plus this one relocated to a constructor.
   - **Named factories** become `<Type><Member>`: `Output.obj/array/choice/json` →
     `OutputObj` / `OutputArray` / `OutputChoice` / `OutputJson`;
     `RetryDelayGenerator.Companion.fullJitter` / `.deterministic` →
