@@ -12,18 +12,32 @@ note: |
 
   The reviewer offered this rule for the CLASS and it was not taken at the time; it is here now
   because the shape recurs anywhere a CLI flag defaults to "" and is split into a list.
+
+  Scoped to LIST separators (`,` `;` `|` `:`), not to every `.split()`. Splitting on a newline is
+  the opposite case — blank lines are content there, not absent items, and filtering them changes
+  the meaning. The unscoped version's only live hit was exactly that: a line-by-line comparison in
+  validate_rules.py where dropping blank lines would have made two files that differ only in
+  blank lines compare equal. A rule whose whole live output is a correct site trains dismissal,
+  which is the failure this package has already been burned by three times.
 rule:
   kind: list_comprehension
   all:
     - has:
         stopBy: end
         kind: call
-        has:
-          stopBy: end
-          kind: attribute
-          has:
-            kind: identifier
-            regex: '^split$'
+        all:
+          - has:
+              stopBy: end
+              kind: attribute
+              has:
+                kind: identifier
+                regex: '^split$'
+          - has:
+              kind: argument_list
+              has:
+                stopBy: end
+                kind: string_content
+                regex: '^[,;|:]$'
     - not:
         has:
           stopBy: end
