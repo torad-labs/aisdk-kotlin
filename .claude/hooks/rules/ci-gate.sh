@@ -82,24 +82,18 @@ done
 echo "== cancellation correctness warning report =="
 warning_dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin"
 # A warning-severity rule that nothing prints is inert: it parses, validates against its
-# fixture, and reports nothing about the real tree — coverage in name only. Every adopted
-# warning rule is listed here so its live count is visible on every run, which is the point
-# of adopting it before the violations are fixed.
-for warning_rule in no-throwable-catch-without-rethrow no-runcatching-in-suspend \
-                    no-raw-thread no-reflection-in-production \
-                    coroutine-scope-must-be-cancelled; do
-  # Check both rules/ (LAW) and rules-style/ (opt-in)
-  for rule_subdir in "$RULES_DIR" "$STYLE_DIR"; do
-    warning_file="$rule_subdir/$warning_rule.yaml"
-    [ -f "$warning_file" ] || continue
-    n=$(count "$warning_file" "$warning_dirs")
-    echo "  $warning_rule: $n warning(s)"
-    if [ "$n" -gt 0 ] 2>/dev/null; then
-      "$AG" scan --rule "$warning_file" $warning_dirs 2>/dev/null | head -12
-    fi
-    break  # found, don't check the other dir
-  done
-done
+# fixture, and reports nothing about the real tree — coverage in name only.
+#
+# This loop used to hardcode FIVE rule names, so 5 of 77 style rules were ever scanned and the
+# other 72 were exactly the "coverage in name only" the paragraph above forbids — three rules
+# added the same day this was found were inert on arrival, and one of them had a live hit
+# (MCP.kt's second setReader) that ci-gate reported as PASS. Iterate the directory instead: a
+# rule cannot now be added to this lane and stay invisible.
+#
+# Counts are ratcheted by style-rule-count-budget.json so a warning rule BLOCKS on regression
+# without red-gating pre-existing debt. A rule with no budget entry fails closed.
+style_budget=".claude/hooks/rules/style-rule-count-budget.json"
+python3 .claude/hooks/rules/check-style-rule-counts.py "$warning_dirs" || fail=1
 
 echo "== non-integrated (internal, cross-file) gate =="
 python3 .claude/hooks/rules/detect-nonintegrated-kotlin.py src --check || fail=1
