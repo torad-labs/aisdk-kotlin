@@ -1,0 +1,20 @@
+# Repo-local gitleaks config (auto-loaded from the scan root). Extends the default
+# ruleset — this file only narrows false-positive classes, never disables a rule.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "high-entropy strings in this repo that are provably not credentials"
+regexes = [
+  # Ed25519 PUBLIC key pinned for campaign-transition verification. A public key
+  # is published by design; the private half has never been in this repo.
+  '''-----BEGIN PUBLIC KEY-----''',
+  # Campaign baselines record sha256 digests of tracked files so a wave can prove
+  # what it started from. 64 hex chars reads as an API key to the generic rule.
+  '''"[0-9a-f]{64}"''',
+]
+paths = [
+  # Captured diffs of the working tree at a point in a campaign. They are
+  # evidence, not source, and they re-contain whatever the files above hold.
+  '''dev/campaigns/stringly-domain-types/.*\.patch$''',
+]
