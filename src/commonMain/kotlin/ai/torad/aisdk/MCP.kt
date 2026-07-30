@@ -1322,6 +1322,21 @@ internal class McpConnectionLifecycle {
         }
     }
 
+    /**
+     * Attach the reader, or undo a start that a concurrent [close] won.
+     *
+     * The safe reading of [setReader]'s `false`: it means "not Active", which is Closed OR back to
+     * Idle because the reader already exited and ran its own teardown. Only Closed means this start
+     * lost and the caller still owns what it created — treating Idle the same way turns a start that
+     * SUCCEEDED into a failure. Lives here rather than at the call sites so the distinction is made
+     * once, next to the state machine that defines it.
+     */
+    suspend fun adoptReaderOrThrowIfClosed(job: Job, closedMessage: String) {
+        if (setReader(job) || !isClosed) return
+        job.cancelAndJoin()
+        throw MCPClientError(closedMessage)
+    }
+
     /** The live scope while Active, else null. */
     fun scopeOrNull(): CoroutineScope? = (state.load() as? State.Active)?.scope
 
@@ -1889,7 +1904,7 @@ public class SseMCPTransport(
                 }
             }
         }
-        lifecycle.setReader(reader)
+        lifecycle.adoptReaderOrThrowIfClosed(reader, "MCP SSE Transport Error: closed during start")
         try {
             // Bound the handshake (wait for the SSE `endpoint` event) in real time
             // so an unresponsive server can't hang start() forever; runTest-safe.

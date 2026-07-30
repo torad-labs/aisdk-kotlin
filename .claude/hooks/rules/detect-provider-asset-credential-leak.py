@@ -53,6 +53,19 @@ HEADER_ARG = re.compile(r"\bheaders\b|\brequestHeaders\b|\bcallHeaders\b")
 BYTE_HELPERS = ("DownloadImage", "GetBinary", "getFacadeBinary", "downloadImage", "downloadBinary")
 
 
+def site_key(rel_path: str, call_text: str) -> str:
+    """
+    Identity of a forwarding SITE, not of the file it lives in.
+
+    Keying the allowlist on the path alone meant registering one reviewed call blessed the whole
+    file — so a NEW credential-forwarding download added anywhere in the 600-line FireworksFacade
+    would have passed silently. That is the same "the check does not see what it claims to cover"
+    shape this detector exists to stop, reproduced in the detector.
+    """
+    normalized = " ".join(call_text.split())
+    return f"{rel_path}::{normalized}"
+
+
 def offending_sites() -> list[tuple[str, int, str]]:
     found: list[tuple[str, int, str]] = []
     for path in sorted(SOURCE_ROOT.rglob("*.kt")):
@@ -63,8 +76,9 @@ def offending_sites() -> list[tuple[str, int, str]]:
             if "fun " in line:  # the declaration, not a call
                 continue
             # Calls can wrap; join a small window so multi-line argument lists are seen whole.
+            # Do NOT truncate at the first ')' — a parenthesised URL argument would cut the window
+            # before the header argument is ever tested, a silent false negative.
             call = " ".join(lines[index : index + 4])
-            call = call.split(")")[0] if call.count(")") else call
             if RESPONSE_DERIVED.search(call) and HEADER_ARG.search(call):
                 found.append((str(path.relative_to(ROOT)), index + 1, line.strip()[:100]))
     return found
@@ -82,14 +96,16 @@ def main() -> int:
 
     if update:
         data["reviewedCredentialForwardingSites"] = {
-            rel: reviewed.get(rel, "UNREVIEWED — say why credentials may reach this provider URL")
-            for rel, _line, _src in current
+            site_key(rel, src): reviewed.get(
+                site_key(rel, src), "UNREVIEWED — say why credentials may reach this provider URL"
+            )
+            for rel, _line, src in current
         }
         ALLOWLIST.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
         print(f"credential-forwarding allowlist re-seeded with {len(current)} site(s)")
         return 0
 
-    unregistered = [s for s in current if s[0] not in reviewed]
+    unregistered = [s for s in current if site_key(s[0], s[2]) not in reviewed]
     if unregistered:
         print("provider asset-download credential gate FAILED:")
         for rel, line, src in unregistered:

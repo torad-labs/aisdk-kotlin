@@ -46,3 +46,15 @@ rule:
           stopBy: end
           kind: simple_identifier
           regex: '^(require|check|coerceIn|coerceAtMost|error)$'
+    # The sanctioned form is exempt STRUCTURALLY, not by prose in the note: a named provider-specific
+    # correction (`fixDeepInfraUsage`) for a provider that really does report a text-only total. With
+    # all four shared-parser instances fixed, leaving it unexempt made the rule's entire live output
+    # the one site its own note calls correct — a 0:1 signal ratio, which is the "fires on the
+    # sanctioned pattern" failure this pack has already been burned by three times.
+    - not:
+        inside:
+          stopBy: end
+          kind: function_declaration
+          has:
+            kind: simple_identifier
+            regex: '^fix[A-Z]'

@@ -143,15 +143,27 @@ internal object RedactionPredicates {
             .lowercase()
             .replace("_", "-")
             .replace(" ", "-")
+        // INCLUSIVE by shape, not a list of names. The previous version enumerated five exact
+        // header names, and this SDK writes credential headers it did not list: BlackForestLabs
+        // sends `x-key` (BlackForestLabsProvider.kt:309) and Gladia sends `x-gladia-key`
+        // (GladiaProvider.kt:781), so both API keys were emitted VERBATIM into telemetry — the
+        // same `x-key` that was separately leaking to a third-party CDN. A caller's `Cookie` or
+        // `Proxy-Authorization` escaped too. Redacting one value too many costs a debugging hint;
+        // redacting one too few discloses a credential, so this errs wide deliberately.
         return normalized == "authorization" ||
-            normalized == "api-key" ||
-            normalized == "x-api-key" ||
-            normalized == "x-goog-api-key" ||
-            normalized == "xi-api-key" ||
             normalized == "token" ||
+            normalized == "cookie" ||
+            normalized.endsWith("-key") ||
             normalized.endsWith("-token") ||
             normalized.endsWith("-secret") ||
-            normalized.endsWith("-api-key")
+            normalized.endsWith("-password") ||
+            normalized.endsWith("-credential") ||
+            normalized.endsWith("-credentials") ||
+            normalized.contains("auth") ||
+            normalized.contains("cookie") ||
+            normalized.contains("secret") ||
+            normalized.contains("password") ||
+            normalized.contains("apikey")
     }
 
     fun String.isPayloadKey(): Boolean {
