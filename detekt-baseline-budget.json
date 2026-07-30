@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "source": "detekt-baseline.xml",
-  "total": 1814,
+  "total": 1813,
   "byRule": {
     "ArgumentListWrapping": 10,
     "ClassNaming": 1,
     "ComplexCondition": 9,
     "ConstructorParameterNaming": 46,
-    "CyclomaticComplexMethod": 71,
+    "CyclomaticComplexMethod": 70,
     "EmptyFunctionBlock": 1,
     "Filename": 16,
     "FunctionNaming": 42,
@@ -41,5 +41,20 @@
     "VariableNaming": 42,
     "WildcardImport": 70,
     "Wrapping": 47
+  },
+  "raiseRationale": {
+    "_law": "Budget gates are one-way ratchets. Every ceiling that ROSE relative to main is listed here with its reason, because the PR text's blanket claim that no budget was raised to land a change was false as written: 11 rule ceilings rose (+52) and one rule key was newly seeded (+13). Cite [meas: detekt_baseline_entries] for the total, never a copy.",
+    "SpacingBetweenDeclarationsWithAnnotations": "0 -> 13: new rule key, seeded at its first measurement. Standard.",
+    "CyclomaticComplexMethod": "56 -> 70 (+14): NEW DEBT in this PR's own reworked code, tracked for burn-down, not accepted. One entry already burned down rather than baselined (VoyageProvider voyageEmbeddingRepresentation: three duplicate `when (outputDtype)` blocks collapsed onto the single effective-dtype resolution), which is why this is 70 and not 71.",
+    "LongMethod": "157 -> 167 (+10): NEW DEBT in this PR's own reworked code. Tracked for burn-down, not accepted.",
+    "ReturnCount": "47 -> 54 (+7): defensive early-returns added by the provider wire fixes.",
+    "ComplexCondition": "4 -> 9 (+5): terminal-status and dtype predicates added by the media/embedding fixes.",
+    "MagicNumber": "295 -> 300 (+5): provider wire constants; the named-constant pass covered the new code, not the baselined pre-existing sites.",
+    "Wrapping": "43 -> 47 (+4): formatter-owned, mechanical.",
+    "TooManyFunctions": "69 -> 71 (+2): two provider facades crossed the object/class ceiling.",
+    "LargeClass": "5 -> 6 (+1): one provider file crossed the ceiling.",
+    "LoopWithTooManyJumpStatements": "10 -> 11 (+1): one poll loop.",
+    "NestedBlockDepth": "13 -> 14 (+1): one stream-decode branch.",
+    "ThrowsCount": "18 -> 19 (+1): one defensive-parsing path."
   }
 }
