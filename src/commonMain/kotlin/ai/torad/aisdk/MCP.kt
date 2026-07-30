@@ -1281,6 +1281,14 @@ internal class McpConnectionLifecycle {
     val isActive: Boolean get() = state.load() is State.Active
 
     /**
+     * True once [close] has won — permanently. Distinguishes a CLOSED lifecycle from one that
+     * merely returned to Idle because the reader exited on its own, which [setReader] cannot tell
+     * apart on its own: both are "not Active", but only the former means the caller still owns the
+     * process it just spawned.
+     */
+    val isClosed: Boolean get() = state.load() is State.Closed
+
+    /**
      * Attempt Idle → Active. The single caller that wins gets the freshly built
      * [CoroutineScope]; any caller that finds the lifecycle already Active or
      * Closed gets null. This is the concurrent-start / already-started guard.
@@ -1306,6 +1314,8 @@ internal class McpConnectionLifecycle {
      * whatever it created for this reader, because close() cannot see it.
      */
     fun setReader(job: Job?): Boolean {
+        // NOTE: false means "not Active" — which is Closed OR back to Idle after the reader exited.
+        // Callers that clean up on false MUST check [isClosed] to tell those apart.
         while (true) {
             val current = state.load() as? State.Active ?: return false
             if (state.compareAndSet(current, State.Active(current.scope, job))) return true
@@ -2223,6 +2233,12 @@ public class Experimental_StdioMCPTransport(
      */
     private suspend fun adoptReaderOrUndoLostStart(readerJob: Job) {
         if (lifecycle.setReader(readerJob)) return
+        // setReader also returns false when the reader ALREADY EXITED (immediate EOF), which puts
+        // the lifecycle back to Idle and means its own `finally` has already destroyed the process
+        // and cleared the field. That is a start that SUCCEEDED, so it must not be undone or
+        // reported as a failure — only a genuinely Closed lifecycle means close() won and left the
+        // new child orphaned.
+        if (!lifecycle.isClosed) return
         readerJob.cancel()
         withContext(NonCancellable) {
             val orphan = process

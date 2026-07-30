@@ -32,13 +32,20 @@ internal fun UsageFromOpenAI(value: JsonElement?): Usage {
     val completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
     val cachedTokens = (((JsonAccess.obj(obj, "prompt_tokens_details"))?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
         .coerceIn(0, promptTokens)
+    // `reasoning_tokens` is a SUBSET of `completion_tokens` in the OpenAI contract this parses, so
+    // it is clamped into that range — symmetric with `cached_tokens` being clamped into
+    // `prompt_tokens` above. `completion_tokens` is the provider's authoritative output total and
+    // is reported as-is.
+    //
+    // This replaces a `if (reasoningTokens > completionTokens) completion + reasoning` branch whose
+    // stated purpose could not be pinned down: as a guard it only kept `text` below from going
+    // negative on a response that violates the subset contract, but read as support for a provider
+    // reporting TEXT-ONLY completion_tokens it silently under-counted whenever such a provider's
+    // reasoning was shorter than its completion — the magnitude test cannot tell the two shapes
+    // apart. No supported provider reports text-only completion_tokens, so the contract is enforced
+    // instead of guessed at.
     val reasoningTokens = (((JsonAccess.obj(obj, "completion_tokens_details"))?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
-        .coerceAtLeast(0)
-    val outputTotal = if (reasoningTokens > completionTokens) {
-        completionTokens + reasoningTokens
-    } else {
-        completionTokens
-    }
+        .coerceIn(0, completionTokens)
     return Usage(
         inputTokens = Usage.InputTokenBreakdown(
             total = promptTokens,
@@ -46,8 +53,8 @@ internal fun UsageFromOpenAI(value: JsonElement?): Usage {
             cacheRead = cachedTokens,
         ),
         outputTokens = Usage.OutputTokenBreakdown(
-            total = outputTotal,
-            text = outputTotal - reasoningTokens,
+            total = completionTokens,
+            text = completionTokens - reasoningTokens,
             reasoning = reasoningTokens,
         ),
         raw = value,
