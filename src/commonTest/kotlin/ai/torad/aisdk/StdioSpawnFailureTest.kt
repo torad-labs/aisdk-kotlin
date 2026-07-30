@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -99,6 +100,39 @@ class StdioSpawnFailureTest {
         assertEquals(1, spawnCount, "retry start reaches the process factory")
         transport.close()
         assertFalse(transport.hasProcessForTest, "close releases the process handle")
+    }
+
+    /**
+     * Regression for the fix below it: a reader that hits EOF immediately drives the lifecycle
+     * Active -> Idle from inside its own `finally`, so `setReader` finds a non-Active state and
+     * returns false — exactly as it does when close() wins. Treating both the same made a start
+     * that SUCCEEDED throw "closed during start" whenever the reader coroutine happened to run
+     * first, which is scheduling-dependent and surfaced as an intermittent failure in the
+     * stale-close test below. Only a genuinely Closed lifecycle means the child was orphaned.
+     */
+    @Test
+    fun `start whose reader EOFs immediately still completes`() = runTest {
+        val live = object : MCPStdioProcess {
+            override suspend fun readLine(): String? = null // EOF before setReader can run
+            override suspend fun writeLine(line: String) = Unit
+            override suspend fun close() = Unit
+        }
+        // An UNCONFINED engine context runs the reader eagerly at `launch`, so it reaches EOF and
+        // drives Active -> Idle from its own `finally` BEFORE setReader is reached. That makes the
+        // losing-scheduling case deterministic instead of waiting for it to show up intermittently.
+        val transport = Experimental_StdioMCPTransport(
+            StdioConfig { command("unused-with-injected-factory") },
+            engineContext = Dispatchers.Unconfined,
+        )
+        transport.prepareProcessForTest(factory = { live })
+
+        // Must not throw: the reader's own teardown already ran, which is a start that SUCCEEDED.
+        transport.start()
+
+        assertFalse(
+            transport.hasProcessForTest,
+            "the reader's own teardown cleared the handle",
+        )
     }
 
     /**

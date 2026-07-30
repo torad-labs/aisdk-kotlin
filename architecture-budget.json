@@ -4,7 +4,7 @@
     "src/commonMain/kotlin/ai/torad/aisdk/AgentSession.kt": 544,
     "src/commonMain/kotlin/ai/torad/aisdk/Context.kt": 660,
     "src/commonMain/kotlin/ai/torad/aisdk/KtorGatewayTransport.kt": 613,
-    "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt": 2305,
+    "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt": 2322,
     "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt": 908,
     "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt": 1870,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt": 993,
@@ -59,7 +59,7 @@
     "src/commonMain/kotlin/ai/torad/aisdk/providers/MistralProvider.kt": 505,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/QuiverAIProvider.kt": 540,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/FireworksFacade.kt": 598,
-    "src/commonMain/kotlin/ai/torad/aisdk/providers/VoyageProvider.kt": 618,
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/VoyageProvider.kt": 612,
     "src/commonTest/kotlin/ai/torad/aisdk/VoyageProviderTest.kt": 516
   }
 }
