@@ -132,6 +132,30 @@ python3 .claude/hooks/rules/validate_migration_rules.py docs/migrations || fail=
 echo "== python guard-rule gate =="
 python3 .claude/hooks/rules/validate_python_guard_rules.py || fail=1
 
+echo "== hook policy regression suite =="
+# The PreToolUse policies ARE the edit-time enforcement layer, and nothing ran their tests at
+# commit time. A manifest-drift check added to validate_rules broke test_rule_selfcheck_policy
+# the moment it landed — it short-circuited the synthetic manifests those tests build — and the
+# suite stayed red across three commits because only a human running it by hand would have seen
+# it. Same-checker-twice: the gate now re-runs what the write-time layer relies on.
+hook_suite_fail=0
+hook_suite_count=0
+for hook_test in .claude/hooks/tests/test_*.py; do
+  [ -f "$hook_test" ] || continue
+  hook_suite_count=$((hook_suite_count + 1))
+  if ! output=$(python3 "$hook_test" 2>&1); then
+    echo "  FAIL $(basename "$hook_test")"
+    echo "$output" | tail -5
+    hook_suite_fail=1
+    fail=1
+  fi
+done
+# Own status variable, not the shared `fail`: gating the OK line on `fail` meant an unrelated
+# earlier failure silenced this section entirely, so a passing suite looked like a skipped one.
+if [ "$hook_suite_fail" = 0 ]; then
+  echo "hook policy suite OK: $hook_suite_count suite(s)"
+fi
+
 echo "== restated measurement detector =="
 python3 .claude/hooks/rules/detect-restated-measurements.py --check || fail=1
 

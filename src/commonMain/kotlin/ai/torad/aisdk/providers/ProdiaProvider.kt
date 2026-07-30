@@ -477,23 +477,10 @@ public fun Prodia(
 
 internal suspend fun FromGeneratedFile(client: HttpClient, file: GeneratedFile): ProdiaInputFile {
     val bytes = file.url?.takeIf { it.isNotBlank() }
-        ?.let { url ->
-            // Ktor isn't configured with expectSuccess, so check the status manually (every
-            // sibling download helper does) — otherwise a 404/500 error page is uploaded as
-            // the input image, surfacing as a confusing downstream Prodia rejection.
-            val response = client.request(url)
-            val body = with(HttpTransport) { response.bodyAsBytesCapped(url) }
-            if (response.status.value !in 200..299) {
-                throw ApiCallError(
-                    url = url,
-                    statusCode = response.status.value,
-                    rawBody = body.decodeToString(),
-                    headers = with(HttpTransport) { response.flattenedHeaders() },
-                    message = "Prodia input file download failed with status ${response.status.value}",
-                )
-            }
-            body
-        }
+        // AssetDownload.capped checks the status (Ktor isn't configured with expectSuccess, so a
+        // 404/500 error page would otherwise be uploaded as the input image and surface as a
+        // confusing downstream Prodia rejection) and keeps the error body in the raised error.
+        ?.let { url -> AssetDownload.capped(client, url).bytes }
         ?: Base64Codec.decode(file.base64)
     return ProdiaInputFile(file.mediaType, bytes, file.filename)
 }

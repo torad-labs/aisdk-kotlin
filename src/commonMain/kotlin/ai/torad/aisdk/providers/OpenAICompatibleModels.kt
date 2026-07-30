@@ -9,7 +9,6 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.request.request
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
-import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -468,19 +467,8 @@ internal class OpenAICompatibleImageModel(
      * a status check (without one, a 404 error page is uploaded as the image or mask and surfaces
      * as a baffling provider-side rejection — the exact failure `FromGeneratedFile` documents).
      */
-    private suspend fun downloadImageFile(url: String): ByteArray {
-        val response = client.request(url)
-        if (!response.status.isSuccess()) {
-            throw ApiCallError(
-                url = url,
-                statusCode = response.status.value,
-                rawBody = "",
-                headers = with(HttpTransport) { response.flattenedHeaders() },
-                message = "Failed to download image file: HTTP ${response.status.value}",
-            )
-        }
-        return with(HttpTransport) { response.bodyAsBytesCapped(url) }
-    }
+    private suspend fun downloadImageFile(url: String): ByteArray =
+        AssetDownload.capped(client, url).bytes
 
     private fun openAICompatibleImageFileHeaders(file: ImageGenerationFile, index: Int): Headers =
         Headers.build {

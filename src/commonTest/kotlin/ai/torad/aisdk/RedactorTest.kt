@@ -70,10 +70,24 @@ class RedactorTest {
         val json = buildJsonObject {
             put("b64_json", "A".repeat(512))
             put("audioContent", "data:audio/mp3;base64," + "B".repeat(256))
+            // Both of the above are over maxStringLength (256), so they only ever exercise the
+            // LENGTH branch — the first version of this test would have stayed green with the
+            // base64 detection deleted entirely, which is not what its comment claimed to pin.
+            // These two sit in the (minBase64Length, maxStringLength] window where only the
+            // CONTENT test can catch them: one padded, one unpadded base64url (length 101, not a
+            // multiple of 4 — the shape the old `% 4 == 0` requirement let through verbatim).
+            put("inlineBlob", "Q".repeat(128))
+            put(
+                "signedRef",
+                "eyJhbGciOiJIUzI1NiJ9-abcdefghijklmnopqrstuvwxyz_" +
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghij",
+            )
         }
         val redacted = redactor.redactJson(json).toString()
         assertTrue("AAAA" !in redacted, redacted)
         assertTrue("BBBB" !in redacted, redacted)
+        assertTrue("QQQQ" !in redacted, redacted)
+        assertTrue("eyJhbGciOiJIUzI1NiJ9" !in redacted, redacted)
         assertTrue("[REDACTED]" in redacted, redacted)
     }
 

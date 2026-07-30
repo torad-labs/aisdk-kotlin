@@ -22,7 +22,7 @@ import tempfile
 from pathlib import Path
 
 from orchestrator.result import HookResult
-from rules.validate_rules import _parses, _scan, _write_kt, ast_grep_binary
+from rules.validate_rules import _parses, _scan, _write_kt, ast_grep_binary, rule_yaml_matches
 
 MODULE_ORDER = 30
 MODULE_NAME = "rule_selfcheck_policy"
@@ -189,7 +189,9 @@ def _check_rule_file(path: Path, post: str) -> HookResult | None:
                 )
 
         manifest_yaml = entry.get("yaml")
-        if isinstance(manifest_yaml, str) and manifest_yaml.strip() != post.strip():
+        # Shared with validate_rules' drift gate — see rule_yaml_matches. These two used different
+        # normalizations, so trailing whitespace warned here and passed there.
+        if isinstance(manifest_yaml, str) and not rule_yaml_matches(manifest_yaml, post):
             return _warn(
                 f"RULE SELF-CHECK: manifest.json carries a stale copy of "
                 f"`{rule_id}` — re-sync the manifest `yaml` field with the "

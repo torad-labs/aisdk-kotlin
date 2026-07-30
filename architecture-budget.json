@@ -3,6 +3,7 @@
   "maxLinesByFile": {
     "src/commonMain/kotlin/ai/torad/aisdk/AgentSession.kt": 544,
     "src/commonMain/kotlin/ai/torad/aisdk/Context.kt": 660,
+    "src/commonMain/kotlin/ai/torad/aisdk/HttpTransport.kt": 517,
     "src/commonMain/kotlin/ai/torad/aisdk/KtorGatewayTransport.kt": 613,
     "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt": 2337,
     "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt": 908,

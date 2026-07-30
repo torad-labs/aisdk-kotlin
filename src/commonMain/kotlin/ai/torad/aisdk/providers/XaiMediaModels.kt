@@ -5,9 +5,6 @@ package ai.torad.aisdk.providers
 import ai.torad.aisdk.*
 import ai.torad.aisdk.ProviderMetadata
 import io.ktor.client.HttpClient
-import io.ktor.client.request.request
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonArray
@@ -146,27 +143,12 @@ internal class XaiImageModel(
         abortSignal: AbortSignal,
     ): GeneratedFile {
         abortSignal.throwIfAborted()
-        val response = client.request(url) { method = HttpMethod.Get }
-        val bytes = with(HttpTransport) { response.bodyAsBytesCapped(url) }
-        val headers = with(HttpTransport) { response.flattenedHeaders() }
-        if (response.status.value !in 200..299) {
-            val raw = bytes.decodeToString()
-            throw ApiCallError(
-                url = url,
-                statusCode = response.status.value,
-                rawBody = raw,
-                headers = headers,
-                message = "xAI image download failed (${response.status.value}): ${raw.ifBlank { "request failed" }}",
-            )
-        }
+        val downloaded = AssetDownload.capped(client, url)
         return GeneratedFile(
-            mediaType = xaiHeaderValue(headers, HttpHeaders.ContentType) ?: "image/png",
-            base64 = Base64Codec.encode(bytes),
+            mediaType = downloaded.contentType ?: "image/png",
+            base64 = Base64Codec.encode(downloaded.bytes),
         )
     }
-
-    private fun xaiHeaderValue(map: Map<String, String>, name: String): String? =
-        map.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
 
 internal class XaiVideoModel(

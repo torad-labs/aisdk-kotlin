@@ -48,13 +48,31 @@ def ast_grep() -> str:
 
 
 def count(binary: str, rule: Path, dirs: list[str]) -> int:
+    """
+    Returns the violation count, or raises if the rule did not RUN.
+
+    Discarding the exit code here reproduced the exact bug this file exists to kill. `ast-grep scan`
+    exits 8 with empty stdout when a rule has a malformed `kind:` or unparseable YAML — so a broken
+    rule counted 0, and 60 of the 77 rules are budgeted at 0, so `0 == 0` printed
+    "no rule regressed". A rule that stopped parsing would have been reported as clean by the very
+    gate written because inert rules report as coverage.
+
+    Exit 1 is ast-grep's grep-style "found matches" and is NOT an error — the same distinction
+    ci-gate.sh documents at the top for why it does not set `pipefail`.
+    """
     result = subprocess.run(
         [binary, "scan", "--rule", str(rule), *dirs],
         capture_output=True,
         text=True,
         cwd=ROOT,
     )
+    if result.returncode not in (0, 1):
+        raise RuleDidNotRun(f"{rule.name}: ast-grep exited {result.returncode}: {result.stderr.strip()[:400]}")
     return sum(1 for line in result.stdout.splitlines() if line.startswith(("warning[", "error[")))
+
+
+class RuleDidNotRun(RuntimeError):
+    """A rule failed to parse or execute — never silently a count of zero."""
 
 
 def main() -> int:
@@ -64,8 +82,14 @@ def main() -> int:
     update = "--update" in sys.argv
     binary = ast_grep()
 
-    rules = sorted(STYLE_DIR.glob("*.yaml"))
-    current = {rule.stem: count(binary, rule, dirs) for rule in rules}
+    # Honor the `disabled_` convention, matching ci-gate.sh's LAW loop. Without this, disabling a
+    # style rule the sanctioned way fails the gate on an unbudgeted `disabled_x` entry.
+    rules = [r for r in sorted(STYLE_DIR.glob("*.yaml")) if not r.stem.startswith("disabled_")]
+    try:
+        current = {rule.stem: count(binary, rule, dirs) for rule in rules}
+    except RuleDidNotRun as exc:
+        print(f"style-rule count gate FAILED — a rule did not run (a broken rule is not a clean rule):\n  {exc}")
+        return 1
 
     if update:
         BUDGET.write_text(
@@ -102,10 +126,21 @@ def main() -> int:
             print(f"  {name}")
         return 1
     if slack:
-        print("\nstyle-rule count gate FAILED — counts fell; re-seed DOWN in the same commit (--update):")
+        # Auto-tighten rather than fail. Failing on slack forced a human to run `--update`, which
+        # rewrites ALL 77 entries from current counts — so a commit that legitimately removed 2 hits
+        # from rule A while accidentally adding 3 to rule B would fail on A, get "fixed" with a
+        # wholesale re-seed, and bless B's regression in the same write. The ratchet only has to be
+        # monotone downward; making that automatic removes the reason to reach for the blunt tool.
+        # Regressions are checked FIRST and return above, so this never tightens past one.
         for name, was, now in slack:
-            print(f"  {name}: {was} -> {now}")
-        return 1
+            budget[name] = now
+            print(f"  ratchet tightened: {name}: {was} -> {now}")
+        BUDGET.write_text(
+            json.dumps({"schemaVersion": 1, "maxViolationsByRule": budget}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(f"style-rule count gate OK: {len(slack)} rule(s) tightened, none regressed")
+        return 0
 
     print("style-rule count gate OK: no rule regressed")
     return 0
