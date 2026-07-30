@@ -1,0 +1,43 @@
+version: 2
+# Patch+minor arrive as ONE grouped PR per ecosystem per week; majors stay individual
+# and are excluded from auto-merge. cooldown applies to VERSION updates only —
+# security updates still open immediately. 7 days clears zizmor's dependabot-cooldown
+# floor and covers the window in which a compromised package is usually yanked.
+# github-actions takes default-days only: Dependabot's validator rejects
+# semver-*-days for that ecosystem.
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    groups:
+      gradle-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
