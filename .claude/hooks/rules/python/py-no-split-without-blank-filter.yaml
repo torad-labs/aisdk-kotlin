@@ -1,0 +1,30 @@
+id: py-no-split-without-blank-filter
+language: python
+severity: warning
+message: "Splitting an OPTIONAL comma-separated argument without dropping blanks: `\"\".split(\",\")` is `[\"\"]`, not `[]`, so an omitted flag persists a list holding one empty string. Add `if <var>.strip()` to the comprehension."
+note: |
+  Historical bug (review 4813532855): `manifest.py cmd_add` did
+  `[f.strip() for f in files.split(",")]` while the dispatcher passed "" for an omitted --files.
+  The item persisted as `files = [""]`, which `_packet_eligible` then rejected with "item missing
+  files" — permanently undispatchable although the usage text advertises --files as optional — and
+  the empty string polluted the fence database. The same list fed the bare-directory fence check,
+  so both call sites were wrong.
+
+  The reviewer offered this rule for the CLASS and it was not taken at the time; it is here now
+  because the shape recurs anywhere a CLI flag defaults to "" and is split into a list.
+rule:
+  kind: list_comprehension
+  all:
+    - has:
+        stopBy: end
+        kind: call
+        has:
+          stopBy: end
+          kind: attribute
+          has:
+            kind: identifier
+            regex: '^split$'
+    - not:
+        has:
+          stopBy: end
+          kind: if_clause

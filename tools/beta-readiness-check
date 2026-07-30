@@ -110,10 +110,34 @@ def workflow_jobs(text: str) -> dict[str, str]:
     return jobs
 
 
+def checkout_steps(text: str) -> list[tuple[int, str]]:
+    """Each `uses: actions/checkout@...` step paired with the indented block that configures it."""
+    lines = text.splitlines()
+    steps: list[tuple[int, str]] = []
+    for index, line in enumerate(lines):
+        if not re.search(r"uses:\s*actions/checkout@", line):
+            continue
+        indent = len(line) - len(line.lstrip())
+        block: list[str] = []
+        for following in lines[index + 1 :]:
+            if not following.strip():
+                block.append(following)
+                continue
+            # The step ends at the next line indented no deeper than the `uses:` line itself.
+            if len(following) - len(following.lstrip()) <= indent and following.lstrip().startswith("-"):
+                break
+            if len(following) - len(following.lstrip()) <= indent - 2:
+                break
+            block.append(following)
+        steps.append((index + 1, "\n".join(block)))
+    return steps
+
+
 def check_workflows(reporter: Reporter) -> None:
     unpinned: list[str] = []
     missing_timeouts: list[str] = []
     global_npm_installs: list[str] = []
+    credential_persisting_checkouts: list[str] = []
 
     for workflow in WORKFLOWS:
         if not workflow.exists():
@@ -133,6 +157,15 @@ def check_workflows(reporter: Reporter) -> None:
                     unpinned.append(f"{workflow.relative_to(ROOT)}:{line_no}: {stripped}")
             if "npm install -g" in stripped:
                 global_npm_installs.append(f"{workflow.relative_to(ROOT)}:{line_no}: {stripped}")
+        # actions/checkout leaves the job token in .git/config unless told not to, where every
+        # later step can read it — `npm ci` lifecycle scripts, a downloaded binary, the build.
+        # Review 4813532855 found the one checkout of eleven that had been missed, so the
+        # convention was already unanimous; make it mechanical instead of remembered.
+        credential_persisting_checkouts.extend(
+            f"{workflow.relative_to(ROOT)}:{line_no}"
+            for line_no, block in checkout_steps(text)
+            if not re.search(r"(?m)^\s*persist-credentials:\s*false\s*$", block)
+        )
 
     if missing_timeouts:
         reporter.fail("workflow jobs missing timeout-minutes: " + ", ".join(missing_timeouts))
@@ -148,6 +181,15 @@ def check_workflows(reporter: Reporter) -> None:
         reporter.fail("global npm installs are present in workflows:\n  " + "\n  ".join(global_npm_installs))
     else:
         reporter.ok("workflows avoid global npm installs")
+
+    if credential_persisting_checkouts:
+        reporter.fail(
+            "actions/checkout without `persist-credentials: false` (the job token stays in "
+            ".git/config for every later step to read):\n  "
+            + "\n  ".join(credential_persisting_checkouts)
+        )
+    else:
+        reporter.ok("checkouts do not persist the job token")
 
 
 def check_no_generated_outputs_tracked(reporter: Reporter) -> None:
