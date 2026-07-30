@@ -167,6 +167,14 @@ def semantic_mode(binary: str, manifest_path: Path, registry_path: Path | None =
         for rid in missing:
             print(f"  - {rid}: missing manifest entry")
         return 1
+    drift = _manifest_yaml_drift(rules)
+    if drift:
+        print(f"SEMANTIC FAIL: {len(drift)} rule(s) drifted between manifest.json and the .yaml file")
+        for rid, why in drift:
+            print(f"  - {rid}: {why}")
+        print("  Copy the .yaml file into the manifest entry (the file is the source of truth for")
+        print("  what ci-gate enforces); a fixture that validates the other copy proves nothing.")
+        return 1
     failures: list[tuple[str, str]] = []
     passed = 0
     for r in rules:
@@ -346,6 +354,40 @@ def _missing_manifest_entries(manifest_path: Path, rules: list[dict[str, object]
     manifest_ids = {str(r.get("id")) for r in rules}
     rule_ids = {p.stem for p in law_rules_dir.glob("*.yaml")}
     return sorted(rule_ids - manifest_ids)
+
+
+def _manifest_yaml_drift(rules: list[dict[str, object]]) -> list[tuple[str, str]]:
+    """
+    Every rule exists TWICE: as a .yaml file (what ci-gate scans the tree with) and as an embedded
+    `yaml` string in manifest.json (what the fixture check below validates, and what the PreToolUse
+    policy ships). Two copies that must agree with nothing linking them is a drift generator, and it
+    had already drifted three ways: `no-any-typed-public-property` carried
+    `ignores: **/Lifecycle.kt` on disk and NOT in the manifest, so the fixture proved a rule that
+    is not the rule being enforced — the "validates a different artifact" shape.
+
+    This makes the two provably identical at every commit, which is what deriving one from the other
+    would buy. Comparison is whitespace-normalised per line so trailing-space noise is not a gate
+    failure, but any comment or field difference is.
+    """
+    repo_root = Path(__file__).resolve().parents[3]
+    lanes = (
+        repo_root / ".rules" / "kotlin" / "ast-grep" / "rules",
+        repo_root / ".rules" / "kotlin" / "ast-grep" / "rules-style",
+        Path(__file__).resolve().parent / "kotlin",
+    )
+    drift: list[tuple[str, str]] = []
+    for rule in rules:
+        rid = str(rule.get("id", "?"))
+        yaml_text = rule.get("yaml")
+        if not isinstance(yaml_text, str):
+            continue
+        on_disk = next((lane / f"{rid}.yaml" for lane in lanes if (lane / f"{rid}.yaml").is_file()), None)
+        if on_disk is None:
+            continue  # manifest-only rules (e.g. other languages) have no file to agree with
+        normalize = lambda text: [line.rstrip() for line in text.strip().split("\n")]  # noqa: E731
+        if normalize(on_disk.read_text(encoding="utf-8")) != normalize(yaml_text):
+            drift.append((rid, f"manifest yaml differs from {on_disk.relative_to(repo_root)}"))
+    return drift
 
 
 def _needs_examples(bad_ex: object, good_ex: object) -> bool:

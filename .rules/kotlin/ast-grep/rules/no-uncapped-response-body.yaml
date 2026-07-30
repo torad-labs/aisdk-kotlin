@@ -1,0 +1,37 @@
+id: no-uncapped-response-body
+language: kotlin
+severity: error
+message: "Raw `bodyAsBytes()`/`bodyAsText()` buffers whatever the remote host sends, with no limit. Use the capped siblings — `with(HttpTransport) { response.bodyAsBytesCapped(url) }` or `bodyAsTextCapped(url)` — which read in 8 KiB chunks and throw an APICallError past MAX_RESPONSE_BODY_BYTES instead of allocating a hostile body."
+note: |
+  This is the hardened-helper-beside-unhardened-primitive shape. HttpTransport.bodyAsTextCapped /
+  bodyAsBytesCapped were written precisely because an unbounded body read is a memory-exhaustion
+  vector on a KMP client with no server-side sandbox — and then 14 call sites went on calling the
+  raw Ktor primitive anyway, including a download of a CALLER-supplied URL
+  (OpenAICompatibleModels.openAICompatibleImageFileBytes) and every audio/image byte path. Writing
+  the safe helper does not remove the unsafe one from scope, so nothing made the unmigrated sites
+  visible: MCP, McpOAuth, Fal, Luma and Replicate used the capped form while Deepgram, Hume,
+  ElevenLabs, LMNT, Prodia, Bedrock, xAI, HuggingFace, OpenResponses and the OpenAI-compatible
+  transports did not, and the split was invisible in review.
+
+  Deliberately targets the CALL, not the import, so `with(HttpTransport) { bodyAsBytesCapped(url) }`
+  and the extension-receiver form (`bodyAsBytes()` with no explicit receiver, inside an
+  `HttpResponse.` extension) are both covered — the receiver-less form is how four of the sites
+  were written, so an import- or navigation-shaped rule would have missed them.
+
+  Streaming paths are unaffected: they use `bodyAsChannel()`, which never buffers, and this rule
+  does not mention it. If a genuinely unbounded read is ever needed, pass an explicit large
+  `maxBytes` to the capped helper — the cap becomes a reviewed number rather than an absence.
+rule:
+  kind: call_expression
+  all:
+    - has:
+        stopBy: end
+        kind: simple_identifier
+        regex: '^(bodyAsBytes|bodyAsText)$'
+    - has:
+        kind: call_suffix
+        has:
+          kind: value_arguments
+          not:
+            has:
+              kind: value_argument

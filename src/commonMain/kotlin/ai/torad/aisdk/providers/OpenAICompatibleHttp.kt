@@ -6,7 +6,6 @@ import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -136,7 +135,7 @@ internal abstract class OpenAICompatibleHttpModel(
                 setBody(json.encodeToString(JsonElement.serializer(), body))
             }
             val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
-            val bytes = response.bodyAsBytes()
+            val bytes = with(HttpTransport) { response.bodyAsBytesCapped(url(path)) }
             if (response.status.value !in 200..299) {
                 val raw = bytes.decodeToString()
                 val parsed = TypedJsonOps.parseJsonElementOrNull(json, raw)

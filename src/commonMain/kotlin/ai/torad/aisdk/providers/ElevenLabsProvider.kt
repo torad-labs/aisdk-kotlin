@@ -9,7 +9,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentDisposition
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
@@ -402,7 +401,7 @@ private class ElevenLabsSpeechModel(
     }
 
     private suspend fun HttpResponse.parseElevenLabsBinary(url: String, outputFormat: String): ElevenLabsBinaryResponse {
-        val bytes = bodyAsBytes()
+        val bytes = with(HttpTransport) { bodyAsBytesCapped(url) }
         val headers = with(HttpTransport) { flattenedHeaders() }
         if (status.value !in 200..299) {
             val raw = bytes.decodeToString()
