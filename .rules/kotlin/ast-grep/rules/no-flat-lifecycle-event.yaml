@@ -17,10 +17,33 @@ severity: error
 # hierarchy (have a `: AgentEvent()` supertype), never a free-floating flat struct.
 # Tested: matches a flat `OnFooEvent(...)`; skips `… : AgentEvent()` subtypes and
 # non-event data classes.
+#
+# Two holes closed after review, both of which made the wall narrower than this header claims:
+#
+#  1. It required `class_modifier: data`. This repo's CLAUDE.md mandates `@Poko class` over
+#     `data class` for public value types, and Lifecycle.kt:29 is written exactly that way
+#     (`@Poko public class Started<TContext> ... : AgentEvent()`). So the rule was blind to the
+#     ONLY shape a new event would be written in under current policy — its zero was guaranteed
+#     regardless of what anyone added. Now matches either idiom.
+#  2. It was `not: has: delegation_specifier` — "must have SOME supertype". A flat
+#     `data class OnBarEvent(...) : Serializable` satisfied that and passed, while the header
+#     claimed subtyping of the sealed hierarchy. Now the supertype must actually name
+#     AgentEvent/StreamEvent.
 rule:
   all:
     - kind: class_declaration
     - inside: { kind: source_file }
     - has: { kind: type_identifier, regex: 'Event$', stopBy: neighbor }
-    - has: { kind: modifiers, has: { kind: class_modifier, regex: 'data' } }
-    - not: { has: { kind: delegation_specifier, stopBy: neighbor } }
+    - has:
+        kind: modifiers
+        any:
+          - has: { kind: class_modifier, regex: 'data' }
+          - has: { kind: annotation, has: { kind: type_identifier, regex: '^Poko$', stopBy: end } }
+    - not:
+        has:
+          kind: delegation_specifier
+          stopBy: neighbor
+          has:
+            stopBy: end
+            kind: type_identifier
+            regex: '(AgentEvent|StreamEvent)$'

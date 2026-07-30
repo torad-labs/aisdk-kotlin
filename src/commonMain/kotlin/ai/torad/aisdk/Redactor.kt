@@ -181,7 +181,15 @@ internal object RedactionPredicates {
         if (length < minLength) return false
         val trimmed = trim()
         if (trimmed.startsWith("data:", ignoreCase = true) && ";base64," in trimmed) return true
-        if (trimmed.length < minLength || trimmed.length % 4 != 0) return false
+        // No `% 4 == 0` requirement. Base64URL is routinely emitted UNPADDED (JWT segments, signed
+        // asset URLs, many provider tokens), so demanding a multiple of four silently exempted a
+        // whole family of real credentials: a 101-char unpadded token is under maxStringLength, so
+        // the length branch does not catch it either, and it was emitted verbatim. The charset test
+        // below is what actually distinguishes a blob from prose — prose contains spaces and
+        // punctuation and fails it — so the modulus was buying almost no false-positive protection
+        // in exchange for a live hole. Same trade as isSensitiveKey: redacting one string too many
+        // costs a debugging hint, one too few discloses a credential.
+        if (trimmed.length < minLength) return false
         return trimmed.all {
             it.isLetterOrDigit() || it == '+' || it == '/' || it == '=' || it == '-' || it == '_'
         }

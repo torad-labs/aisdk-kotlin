@@ -167,7 +167,7 @@ def semantic_mode(binary: str, manifest_path: Path, registry_path: Path | None =
         for rid in missing:
             print(f"  - {rid}: missing manifest entry")
         return 1
-    drift = _manifest_yaml_drift(rules)
+    drift = _manifest_yaml_drift(manifest_path, rules)
     if drift:
         print(f"SEMANTIC FAIL: {len(drift)} rule(s) drifted between manifest.json and the .yaml file")
         for rid, why in drift:
@@ -356,7 +356,21 @@ def _missing_manifest_entries(manifest_path: Path, rules: list[dict[str, object]
     return sorted(rule_ids - manifest_ids)
 
 
-def _manifest_yaml_drift(rules: list[dict[str, object]]) -> list[tuple[str, str]]:
+def rule_yaml_matches(a: str, b: str) -> bool:
+    """
+    The ONE definition of "these two copies of a rule agree".
+
+    Two checkers compare the manifest copy against the file copy — this module's drift gate and
+    the PreToolUse `rule_selfcheck_policy` — and they were written with different normalizations
+    (whole-string `.strip()` vs per-line `rstrip()`). Trailing whitespace on a line therefore made
+    the hook warn and the gate pass: two detectors of one invariant that can silently disagree,
+    which is exactly what the project's dedupe law forbids. Both now call this.
+    """
+    normalize = lambda text: [line.rstrip() for line in text.strip().split("\n")]  # noqa: E731
+    return normalize(a) == normalize(b)
+
+
+def _manifest_yaml_drift(manifest_path: Path, rules: list[dict[str, object]]) -> list[tuple[str, str]]:
     """
     Every rule exists TWICE: as a .yaml file (what ci-gate scans the tree with) and as an embedded
     `yaml` string in manifest.json (what the fixture check below validates, and what the PreToolUse
@@ -370,12 +384,20 @@ def _manifest_yaml_drift(rules: list[dict[str, object]]) -> list[tuple[str, str]
     failure, but any comment or field difference is.
     """
     repo_root = Path(__file__).resolve().parents[3]
+    drift: list[tuple[str, str]] = []
+    # Only the REPO's manifest can drift from the repo's rule files. Callers legitimately pass a
+    # synthetic manifest describing a hypothetical entry — `--new --fix` scaffolding, the hook
+    # suite's stub-state fixtures — and comparing those to disk made this gate fire first and
+    # short-circuit the registry validation they were actually exercising. It broke
+    # test_rule_selfcheck_policy the moment it landed, and the suite is not in ci-gate, so nothing
+    # said so.
+    if manifest_path.resolve() != (repo_root / ".claude" / "hooks" / "rules" / "manifest.json").resolve():
+        return drift
     lanes = (
         repo_root / ".rules" / "kotlin" / "ast-grep" / "rules",
         repo_root / ".rules" / "kotlin" / "ast-grep" / "rules-style",
         Path(__file__).resolve().parent / "kotlin",
     )
-    drift: list[tuple[str, str]] = []
     for rule in rules:
         rid = str(rule.get("id", "?"))
         yaml_text = rule.get("yaml")
@@ -384,8 +406,7 @@ def _manifest_yaml_drift(rules: list[dict[str, object]]) -> list[tuple[str, str]
         on_disk = next((lane / f"{rid}.yaml" for lane in lanes if (lane / f"{rid}.yaml").is_file()), None)
         if on_disk is None:
             continue  # manifest-only rules (e.g. other languages) have no file to agree with
-        normalize = lambda text: [line.rstrip() for line in text.strip().split("\n")]  # noqa: E731
-        if normalize(on_disk.read_text(encoding="utf-8")) != normalize(yaml_text):
+        if not rule_yaml_matches(on_disk.read_text(encoding="utf-8"), yaml_text):
             drift.append((rid, f"manifest yaml differs from {on_disk.relative_to(repo_root)}"))
     return drift
 

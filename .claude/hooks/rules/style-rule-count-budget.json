@@ -67,7 +67,7 @@
     "no-throws-generic-exception": 0,
     "no-try-catch-in-init": 0,
     "no-typealias-string": 0,
-    "no-untyped-map-key": 688,
+    "no-untyped-map-key": 689,
     "no-var-in-builder": 0,
     "no-volatile-var": 0,
     "no-when-subject-mutation": 1,

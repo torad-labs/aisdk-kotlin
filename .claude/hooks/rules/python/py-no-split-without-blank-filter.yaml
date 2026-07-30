@@ -36,8 +36,12 @@ rule:
               kind: argument_list
               has:
                 stopBy: end
+                # Trailing whitespace included: `split(", ")` is a very common real shape that a
+                # single-character anchor silently exempted. Still excludes "\n" — a newline is an
+                # escape_sequence node, not string_content, so line splitting (where blank lines
+                # are content, not absent items) stays out by construction.
                 kind: string_content
-                regex: '^[,;|:]$'
+                regex: '^[,;|:]\s*$'
     - not:
         has:
           stopBy: end
