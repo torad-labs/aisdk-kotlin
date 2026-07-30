@@ -116,7 +116,17 @@ class BlackForestLabsProviderTest {
 
         assertEquals("GET", fixture.calls[1].requestMethod)
         assertEquals("https://api.bfl.ai/v1/get_result?id=req1", fixture.calls[1].requestUrl)
-        assertEquals("bfl-key", fixture.calls[2].requestHeaders.headerValue("x-key"))
+        // The API key belongs on api.bfl.ai only. calls[2] is the signed delivery URL from the poll
+        // response, on a DIFFERENT origin — this previously asserted `x-key` was sent there, pinning
+        // an API-key leak to a third-party host as expected behaviour.
+        assertEquals("bfl-key", fixture.calls[1].requestHeaders.headerValue("x-key"))
+        val assetFetch = fixture.calls[2]
+        assertEquals("https://cdn.example/out.png", assetFetch.requestUrl)
+        assertEquals(
+            null,
+            assetFetch.requestHeaders.headerValue("x-key"),
+            "the BFL API key must not reach the provider-supplied delivery host",
+        )
 
         val providerMetadata = result.providerMetadata.toMap()["blackForestLabs"]?.jsonObject
         val imageMetadata = providerMetadata?.get("images")?.jsonArray?.single()?.jsonObject
