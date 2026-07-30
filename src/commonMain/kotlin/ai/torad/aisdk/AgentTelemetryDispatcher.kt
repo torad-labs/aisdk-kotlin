@@ -34,7 +34,10 @@ internal class AgentTelemetryDispatcher<TContext>(
         } catch (ce: CancellationException) {
             throw ce
         } catch (t: Throwable) {
-            CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
+            // No asCancellationExceptionOrNull() call here: the clause above already caught every
+            // CancellationException, and that helper is a plain `as?` (see its KDoc), so the call
+            // was unreachable. Keeping it suggested the two forms differed and invited two review
+            // passes to report a non-defect against the sites that use only one of them.
             logger.warn("telemetry integration '${feed.tele.name}' threw — event dropped", t)
         }
     }
