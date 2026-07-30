@@ -461,7 +461,12 @@ private class BlackForestLabsImageModel(
                 ?: settings.pollTimeoutMillis
                 ?: DEFAULT_BFL_POLL_TIMEOUT_MILLIS,
         )
-        val downloaded = bflDownloadImage(client, pollResult.imageUrl, headers, params.abortSignal)
+        // NO caller headers on the asset fetch. `pollResult.imageUrl` comes from the provider's poll
+        // response and BFL serves it from a signed delivery origin, not `api.bfl.ai` — forwarding
+        // `headers` sent the `x-key` API key (plus anything the host configured) to a third-party
+        // host on every generation. The signed URL is the credential; the request needs none.
+        // Matches Fal/Luma/Replicate/xAI, which all download with no headers.
+        val downloaded = bflDownloadImage(client, pollResult.imageUrl, emptyMap(), params.abortSignal)
         return ImageModelResult(
             images = listOf(downloaded.file),
             warnings = args.warnings,

@@ -144,6 +144,9 @@ python3 .claude/hooks/rules/detect-restated-measurements.py --check || fail=1
 echo "== orphan gate detector =="
 python3 .claude/hooks/rules/detect-orphan-gates.py || fail=1
 
+echo "== provider asset-download credential gate =="
+python3 .claude/hooks/rules/detect-provider-asset-credential-leak.py || fail=1
+
 echo "== tool occurrence identity gate =="
 python3 .claude/hooks/rules/detect-tool-identity-regressions.py src/commonMain/kotlin --check || fail=1
 
