@@ -7,9 +7,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.request
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -456,8 +456,30 @@ internal class OpenAICompatibleImageModel(
 
     private suspend fun openAICompatibleImageFileBytes(file: ImageGenerationFile): ByteArray = when {
         file.base64 != null -> Base64Codec.decode(file.base64)
-        file.url != null -> client.request(file.url).bodyAsBytes()
+        file.url != null -> downloadImageFile(file.url)
         else -> throw InvalidArgumentError("files", "OpenAI-compatible image edits require file data or URL.")
+    }
+
+    /**
+     * The URL here is CALLER-supplied, not response-derived — which is why every sweep for
+     * "provider hands us a URL" missed it. It is still a fetch of an arbitrary remote host whose
+     * bytes get uploaded to the provider, so it needs the same two guards every sibling download
+     * helper has: a size cap (an unbounded [bodyAsBytes] here buffers whatever the host sends) and
+     * a status check (without one, a 404 error page is uploaded as the image or mask and surfaces
+     * as a baffling provider-side rejection — the exact failure `FromGeneratedFile` documents).
+     */
+    private suspend fun downloadImageFile(url: String): ByteArray {
+        val response = client.request(url)
+        if (!response.status.isSuccess()) {
+            throw ApiCallError(
+                url = url,
+                statusCode = response.status.value,
+                rawBody = "",
+                headers = with(HttpTransport) { response.flattenedHeaders() },
+                message = "Failed to download image file: HTTP ${response.status.value}",
+            )
+        }
+        return with(HttpTransport) { response.bodyAsBytesCapped(url) }
     }
 
     private fun openAICompatibleImageFileHeaders(file: ImageGenerationFile, index: Int): Headers =

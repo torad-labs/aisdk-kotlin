@@ -10,7 +10,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -354,7 +353,7 @@ private class HuggingFaceResponsesLanguageModel(
         response: HttpResponse,
         parseJson: Boolean,
     ): HuggingFaceHttpResponse {
-        val raw = response.bodyAsText()
+        val raw = with(HttpTransport) { response.bodyAsTextCapped(response.call.request.url.toString()) }
         val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
         if (response.status.value !in 200..299) {
             val parsed = TypedJsonOps.parseJsonElementOrNull(aiSdkJson, raw)

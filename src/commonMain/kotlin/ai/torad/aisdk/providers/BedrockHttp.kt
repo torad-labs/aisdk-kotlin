@@ -6,7 +6,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.prepareRequest
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -51,7 +50,7 @@ internal object BedrockHttp {
             headers.forEach { (name, value) -> header(name, value) }
             setBody(encodedBody)
         }
-        val raw = response.bodyAsBytes().decodeToString()
+        val raw = with(HttpTransport) { response.bodyAsTextCapped(url) }
         val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
         if (response.status.value !in 200..299) {
             val parsed = TypedJsonOps.parseJsonElementOrNull(aiSdkJson, raw)
@@ -101,7 +100,7 @@ internal object BedrockHttp {
         statement.execute { response ->
             val flattened = with(HttpTransport) { response.flattenedHeaders() }
             if (response.status.value !in 200..299) {
-                val raw = response.bodyAsBytes().decodeToString()
+                val raw = with(HttpTransport) { response.bodyAsTextCapped(url) }
                 val parsed = TypedJsonOps.parseJsonElementOrNull(aiSdkJson, raw)
                 throw ApiCallError(
                     url = url,

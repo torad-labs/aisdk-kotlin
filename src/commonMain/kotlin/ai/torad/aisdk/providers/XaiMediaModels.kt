@@ -6,7 +6,6 @@ import ai.torad.aisdk.*
 import ai.torad.aisdk.ProviderMetadata
 import io.ktor.client.HttpClient
 import io.ktor.client.request.request
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
@@ -148,7 +147,7 @@ internal class XaiImageModel(
     ): GeneratedFile {
         abortSignal.throwIfAborted()
         val response = client.request(url) { method = HttpMethod.Get }
-        val bytes = response.bodyAsBytes()
+        val bytes = with(HttpTransport) { response.bodyAsBytesCapped(url) }
         val headers = with(HttpTransport) { response.flattenedHeaders() }
         if (response.status.value !in 200..299) {
             val raw = bytes.decodeToString()

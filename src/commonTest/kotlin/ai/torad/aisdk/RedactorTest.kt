@@ -60,6 +60,24 @@ class RedactorTest {
     }
 
     @Test
+    fun `an unlisted payload key still gets its blob summarized by the generic string path`() {
+        // isPayloadKey() is a short denylist ("base64"/"file"/"payload"/"data"/*bytes), the same
+        // shape that made isSensitiveKey() leak two live API keys. It is NOT load-bearing here:
+        // an unlisted key falls through to redactJson's JsonPrimitive branch, which applies the
+        // same length + base64 tests by CONTENT rather than by name. That fallback is what makes
+        // the short list safe, so it is pinned — narrowing the generic path would silently turn
+        // this predicate back into the leak shape.
+        val json = buildJsonObject {
+            put("b64_json", "A".repeat(512))
+            put("audioContent", "data:audio/mp3;base64," + "B".repeat(256))
+        }
+        val redacted = redactor.redactJson(json).toString()
+        assertTrue("AAAA" !in redacted, redacted)
+        assertTrue("BBBB" !in redacted, redacted)
+        assertTrue("[REDACTED]" in redacted, redacted)
+    }
+
+    @Test
     fun `non-sensitive primitives pass through`() {
         assertEquals(JsonPrimitive("hello"), redactor.redactJson(JsonPrimitive("hello")))
         assertEquals(JsonPrimitive(42), redactor.redactJson(JsonPrimitive(42)))

@@ -7,7 +7,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -280,7 +279,7 @@ private class LMNTSpeechModel(
     }
 
     private suspend fun HttpResponse.parseLMNTBinary(url: String, responseFormat: String): LMNTBinaryResponse {
-        val bytes = bodyAsBytes()
+        val bytes = with(HttpTransport) { bodyAsBytesCapped(url) }
         val headers = with(HttpTransport) { flattenedHeaders() }
         if (status.value !in 200..299) {
             val raw = bytes.decodeToString()
