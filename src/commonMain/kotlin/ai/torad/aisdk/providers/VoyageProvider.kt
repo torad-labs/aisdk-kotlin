@@ -431,22 +431,15 @@ private class VoyageEmbeddingModel(
             is VoyageOutputDtype.PresentString -> JsonPrimitive(outputDtype.value)
             is VoyageOutputDtype.PresentInvalid -> outputDtype.raw
         }
-        val effectiveOutputDtype: String? = when (outputDtype) {
-            VoyageOutputDtype.Missing -> VOYAGE_OUTPUT_DTYPE_FLOAT
-            is VoyageOutputDtype.PresentString -> outputDtype.value
-            is VoyageOutputDtype.PresentInvalid -> null
-        }
-        val packing = when (outputDtype) {
-            VoyageOutputDtype.Missing -> voyageEmbeddingPacking(VOYAGE_OUTPUT_DTYPE_FLOAT)
-            is VoyageOutputDtype.PresentString -> voyageEmbeddingPacking(outputDtype.value)
-            is VoyageOutputDtype.PresentInvalid -> "unknown"
-        }
-        val logicalDimension = when (outputDtype) {
-            VoyageOutputDtype.Missing ->
-                voyageLogicalDimension(requestedOutputDimension, VOYAGE_OUTPUT_DTYPE_FLOAT, embeddings)
-            is VoyageOutputDtype.PresentString ->
-                voyageLogicalDimension(requestedOutputDimension, outputDtype.value, embeddings)
-            is VoyageOutputDtype.PresentInvalid -> requestedOutputDimension
+        // One resolution of the effective dtype, reused. Three separate `when (outputDtype)` blocks
+        // repeated the same Missing/PresentString/PresentInvalid split here and were most of this
+        // function's cyclomatic complexity; `null` already means PresentInvalid downstream.
+        val effectiveOutputDtype: String? = voyageEffectiveDtypeOrNull(outputDtype)
+        val packing = effectiveOutputDtype?.let { voyageEmbeddingPacking(it) } ?: "unknown"
+        val logicalDimension = if (effectiveOutputDtype == null) {
+            requestedOutputDimension
+        } else {
+            voyageLogicalDimension(requestedOutputDimension, effectiveOutputDtype, embeddings)
         }
         return ProviderMetadata(
             "voyage" to buildJsonObject {
