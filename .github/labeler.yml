@@ -1,0 +1,17 @@
+# Path -> label map for pr-labeler.yml.
+api:
+  - changed-files: [{ any-glob-to-any-file: 'api/**' }]
+core:
+  - changed-files: [{ any-glob-to-any-file: 'src/**' }]
+samples:
+  - changed-files: [{ any-glob-to-any-file: 'samples/**' }]
+docs:
+  - changed-files: [{ any-glob-to-any-file: ['**/*.md', 'docs/**', 'llms.txt'] }]
+ci:
+  - changed-files: [{ any-glob-to-any-file: '.github/**' }]
+build:
+  - changed-files: [{ any-glob-to-any-file: ['*.gradle.kts', 'gradle/**', 'gradle.properties'] }]
+tests:
+  - changed-files: [{ any-glob-to-any-file: ['smoke-tests/**', '**/src/test/**'] }]
+detekt:
+  - changed-files: [{ any-glob-to-any-file: ['detekt*', 'detekt-rules/**'] }]
