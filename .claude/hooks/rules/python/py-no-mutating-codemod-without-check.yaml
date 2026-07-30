@@ -1,0 +1,38 @@
+id: py-no-mutating-codemod-without-check
+language: python
+severity: warning
+message: "A codemod's main() writes files but never reads a `--check` flag. The gate then MUTATES the working tree before reporting, and its recovery instruction becomes \"stage whatever I just wrote\" — which is only safe if every rewrite is always correct. Add a `--check` mode that reports and restores, and call that from ci-gate."
+note: |
+  Historical bug (review 4813532855, blocker): ci-gate ran `fix_sealed_when.py` in APPLYING mode,
+  so any violation wrote rewrites into the tree and exited 1 telling the operator to stage them.
+  Two sibling findings on the same file then showed the rewrites could be invalid Kotlin — a
+  block-bodied `else` lost its body, and a mixed sealed hierarchy lost a case, producing a
+  non-exhaustive `when` with no else. Reproduced against the pre-fix version.
+
+  `fix_jvmsynthetic_import_order.py` and `fix_ktlint_formatting.py` already had `--check`; only the
+  newest codemod did not, which is exactly the drift an unbounded generator produces: the newest
+  file is the one that misses the convention nobody wrote down.
+rule:
+  kind: function_definition
+  all:
+    - has:
+        kind: identifier
+        regex: '^main$'
+    - has:
+        stopBy: end
+        kind: call
+        has:
+          stopBy: end
+          kind: attribute
+          has:
+            kind: identifier
+            regex: '^(write_text|write_bytes)$'
+    # `--update` is the sanctioned RE-SEEDER shape (budget/allowlist files): its default path is
+    # read-only and the write happens only when a human passes the flag, so the gate never mutates.
+    # A codemod that rewrites SOURCE gets `--check` instead. Either explicit mode satisfies the
+    # invariant: the gate's default invocation must not write.
+    - not:
+        has:
+          stopBy: end
+          kind: string
+          regex: '--(check|update)'
