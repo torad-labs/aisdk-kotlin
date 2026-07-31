@@ -56,10 +56,12 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    # Read-only. Issue creation lives in report-scheduled-failure, which runs no
+    # repository-controlled code — this job runs `npm ci`, a downloaded ast-grep binary
+    # and the full Gradle build, and a job's `permissions:` cannot be narrowed per step,
+    # so granting `issues: write` here scoped a writable token to the whole build.
     permissions:
       contents: read
-      # scheduled-failure issue creation only (open-ci-failure-issue.sh)
-      issues: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -190,11 +192,29 @@ jobs:
             **/build/reports/**
           if-no-files-found: ignore
           retention-days: 7
+  # Isolated so the writable token never coexists with the build. Checks out `tools/`
+  # only (sparse, blobless) and runs one first-party script — no Gradle, no npm, no
+  # downloaded binaries — so nothing here can execute repository-controlled code.
+  report-scheduled-failure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: verify
+    if: failure() && github.event_name == 'schedule'
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+          sparse-checkout: tools/open-ci-failure-issue.sh
+          sparse-checkout-cone-mode: false
+          filter: blob:none
       - name: Open issue on scheduled failure
-        if: failure() && github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: tools/open-ci-failure-issue.sh "ci/verify"
+
   # Apple targets cannot build on Linux; without this leg the published iOS
   # frameworks were compiled/tested nowhere (kotlin.native.ignoreDisabledTargets
   # silenced the gap on the ubuntu job).
