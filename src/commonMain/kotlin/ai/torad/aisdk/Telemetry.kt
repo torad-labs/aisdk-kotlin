@@ -9,7 +9,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.update
-import kotlin.jvm.JvmSynthetic
 
 /**
  * Telemetry settings for an agent or call (upstream v7 `telemetry`, the
@@ -206,7 +205,6 @@ public interface Telemetry {
      * Receives one lifecycle [event] for this [call]. Dispatch with `when (event)`.
      * @since 0.3.0-beta01
      */
-    @JvmSynthetic
     public suspend fun onEvent(call: TelemetryCall, event: AgentEvent)
 }
 
@@ -258,7 +256,6 @@ public val globalTelemetry: TelemetryRegistry = TelemetryRegistry()
 
 /** One telemetry notification, delivered to each integration of a [CompositeTelemetry]. */
 private fun interface TelemetryNotify {
-    @JvmSynthetic
     public suspend fun notify(integration: Telemetry)
 }
 

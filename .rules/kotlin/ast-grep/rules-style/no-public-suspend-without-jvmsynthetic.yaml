@@ -1,20 +1,36 @@
-# expect suspend functions are exempt: @JvmSynthetic has no bytecode to attach to on a
-# body-less expect declaration (same reasoning as no-jvmoverloads-on-expect /
-# no-jvmstatic-on-expect) — the actual implementation is where it would matter.
+# BODY-LESS DECLARATIONS ARE EXEMPT — this is a correctness requirement, not a style choice.
+#
+# @JvmSynthetic on an ABSTRACT member (interface member, `abstract fun`, or `expect`) emits
+# ACC_ABSTRACT|ACC_SYNTHETIC. javac skips synthetic members when it checks that a class
+# implements everything abstract, so a Java class implementing the interface COMPILES CLEAN and
+# then throws AbstractMethodError the first time the SDK calls the member. Verified against the
+# built jar: `javap -v` shows `flags: (0x1401) ACC_PUBLIC, ACC_ABSTRACT, ACC_SYNTHETIC` on
+# StopCondition.shouldStop; a Java class implementing StopCondition with an empty body compiled
+# with exit 0 and failed at runtime with java.lang.AbstractMethodError.
+#
+# An earlier codemod applied this rule to 52 body-less declarations across 25 files and shipped
+# that trap into the ABI dump. The exclusion below is keyed on ABSENCE OF A BODY, not on the
+# `abstract` keyword: most of these are interface members declared without it, and per
+# `dump_syntax_tree` `abstract` only surfaces as inheritance_modifier when written explicitly, so
+# a keyword-keyed rule would miss them. Body-absence also subsumes the previous `expect` carve-out
+# (expect declarations never have bodies).
+#
+# For a body-less member the correct fix is a Java-friendly wrapper, NOT this annotation.
 id: no-public-suspend-without-jvmsynthetic
 language: kotlin
 severity: warning
-message: "Public suspend fun without @JvmSynthetic — Java callers see the raw Continuation<T> parameter, which is an ugly, unusable signature from Java. Add @JvmSynthetic to hide it from Java entirely, or provide a Java-friendly overload."
+message: "Public suspend fun with a body and no @JvmSynthetic — Java callers see the raw Continuation<T> parameter, which is an unusable signature from Java. Add @JvmSynthetic to hide it, or provide a Java-friendly overload. Do NOT add it to an abstract/interface member: that hides the member from Java IMPLEMENTORS too, which compiles clean and then throws AbstractMethodError — give those a wrapper instead."
 rule:
   kind: function_declaration
-  has:
-    kind: modifiers
-    all:
-      - has: { kind: visibility_modifier, regex: '^public$' }
-      - has: { kind: function_modifier, regex: '^suspend$' }
-      - not:
-          has:
-            kind: annotation
-            has: { kind: type_identifier, regex: '^JvmSynthetic$', stopBy: end }
-      - not:
-          has: { kind: platform_modifier, regex: '^expect$' }
+  all:
+    # Concrete declarations only — see the header. A body-less member gets a wrapper, not this.
+    - has: { kind: function_body }
+    - has:
+        kind: modifiers
+        all:
+          - has: { kind: visibility_modifier, regex: '^public$' }
+          - has: { kind: function_modifier, regex: '^suspend$' }
+          - not:
+              has:
+                kind: annotation
+                has: { kind: type_identifier, regex: '^JvmSynthetic$', stopBy: end }

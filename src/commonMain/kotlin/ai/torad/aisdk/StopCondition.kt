@@ -1,7 +1,6 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
-import kotlin.jvm.JvmSynthetic
 
 /**
  * First-class loop stop conditions (invariant I-7). The SDK manages the
@@ -24,7 +23,6 @@ public fun interface StopCondition {
      * True if the loop should stop after the just-completed step.
      * @since 0.3.0-beta01
      */
-    @JvmSynthetic
     public suspend fun shouldStop(state: LoopState): Boolean
 }
 

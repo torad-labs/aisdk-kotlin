@@ -1,3 +1,10 @@
+# BODY-LESS DECLARATIONS ARE EXEMPT — see the long-form reasoning in the sibling rule
+# no-public-suspend-without-jvmsynthetic. Short version: satisfying this rule with @JvmSynthetic
+# on an abstract/interface member emits ACC_ABSTRACT|ACC_SYNTHETIC, javac then ignores the member
+# when checking that an implementor is complete, and a Java class implementing the interface
+# compiles clean and throws AbstractMethodError at the first call. Proven against the built jar.
+# A body-less member that returns Flow needs a Java-friendly WRAPPER, which is what this rule's
+# own message asks for — the @JvmSynthetic escape hatch below is only valid for concrete members.
 id: no-flow-return-without-wrapper
 language: kotlin
 severity: warning
@@ -5,6 +12,9 @@ message: "Public function returns Flow<...> directly. kotlinx.coroutines.Flow ha
 rule:
   kind: function_declaration
   all:
+    # Concrete declarations only — an abstract/interface member must not be silenced with
+    # @JvmSynthetic (AbstractMethodError trap), so this rule does not ask it to be.
+    - has: { kind: function_body }
     - has:
         kind: modifiers
         all:

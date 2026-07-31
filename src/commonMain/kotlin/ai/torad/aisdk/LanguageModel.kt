@@ -4,7 +4,6 @@ import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
-import kotlin.jvm.JvmSynthetic
 
 /**
  * Provider-neutral model surface. Per invariant I-4 / I-9, application code
@@ -59,7 +58,6 @@ public interface LanguageModel {
 
     /** One-shot completion. Requires explicit low-level opt-in at direct call sites. */
     @LowLevelLanguageModelApi
-    @JvmSynthetic
     public suspend fun generate(params: LanguageModelCallParams): LanguageModelResult
 
     /**
@@ -70,7 +68,7 @@ public interface LanguageModel {
      * @since 0.3.0-beta01
      */
     @LowLevelLanguageModelApi
-    @JvmSynthetic public fun stream(params: LanguageModelCallParams): Flow<StreamEvent>
+    public fun stream(params: LanguageModelCallParams): Flow<StreamEvent>
 
     /**
      * Streaming completion plus metadata available before stream

@@ -298,7 +298,9 @@ internal object GoogleInteractions {
                                 put("type", JsonPrimitive("function_result"))
                                 put("call_id", JsonPrimitive(part.toolCallId))
                                 put("name", JsonPrimitive(part.toolName))
-                                put("result", part.modelVisible)
+                                // Decode the envelope — modelVisible is toJsonElement()'s output, so
+                                // writing it verbatim sent {"type":"json","value":{...}} as the result.
+                                put("result", ToolResultOutputs.toolResultPayloadJson(part.modelVisible))
                                 put("is_error", JsonPrimitive(part.isError))
                             }
                         }

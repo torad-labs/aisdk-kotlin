@@ -107,7 +107,7 @@ public fun <INPUT> StructuredObjectRequest(
 /** @since 0.3.0-beta01 */
 public interface StructuredObjectTransport<INPUT> {
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic public fun submit(request: StructuredObjectRequest<INPUT>): Flow<String>
+    public fun submit(request: StructuredObjectRequest<INPUT>): Flow<String>
 }
 
 internal class DirectStructuredObjectTransport<INPUT>(

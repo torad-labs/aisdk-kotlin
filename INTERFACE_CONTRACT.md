@@ -21,6 +21,19 @@
   `AgentEvent`, and SDK error classes should keep an `else` branch unless the
   application intentionally recompiles and audits exhaustiveness on every SDK
   release.
+- **`@JvmSynthetic` is never applied to an abstract or interface member.** It is
+  used to hide Kotlin-shaped *concrete* signatures (a `suspend` function's
+  `Continuation` parameter, a raw `Flow` return) from Java callers. On a body-less
+  declaration it emits `ACC_ABSTRACT | ACC_SYNTHETIC`, and `javac` omits synthetic
+  members when it verifies that a class implements everything abstract — a Java
+  class implementing the interface then compiles clean and throws
+  `java.lang.AbstractMethodError` at the first call. Every public SPI a consumer is
+  expected to implement — `StopCondition`, `Tool` / `StreamingTool`, `LanguageModel`,
+  `Agent`, `ChatTransport`, `CompletionTransport`, `StructuredObjectTransport`,
+  `MCPTransport`, the telemetry and DevTools hooks — is therefore fully visible to
+  Java implementors. Where such a member exposes a `Flow`, the Java-facing answer is
+  a wrapper, not an annotation. `AbstractSpiJavaInteropTest` (`src/jvmTest/java/`)
+  enforces this at compile time.
 
 ### Publishing and Artifact Verification
 

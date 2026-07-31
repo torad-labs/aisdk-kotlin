@@ -18,6 +18,7 @@ import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.ProviderOptions
 import ai.torad.aisdk.ResponseFormat
 import ai.torad.aisdk.ToolChoice
+import ai.torad.aisdk.ToolResultOutputs
 import ai.torad.aisdk.UnsupportedFunctionalityError
 import ai.torad.aisdk.Usage
 import kotlinx.serialization.json.JsonElement
@@ -202,7 +203,12 @@ internal class LiteRTRequestMessageMapper(
                 is ContentPart.File -> file(part)
                 is ContentPart.ToolResult ->
                     if (role == MessageRole.Tool) {
-                        LiteRTContentToolResponse(part.toolName, part.modelVisible)
+                        // Decode the envelope — modelVisible is toJsonElement()'s output, so passing
+                        // it verbatim handed the engine {"type":"json","value":{...}} as the response.
+                        LiteRTContentToolResponse(
+                            part.toolName,
+                            ToolResultOutputs.toolResultPayloadJson(part.modelVisible),
+                        )
                     } else {
                         null
                     }

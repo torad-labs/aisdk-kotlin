@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlin.jvm.JvmSynthetic
 
 /**
  * Provider-options payload consumed by [LiteRTLanguageModel].
@@ -890,7 +889,6 @@ public fun LiteRTConversationRequest(
  */
 public fun interface LiteRTConversationFactory {
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun create(request: LiteRTConversationRequest): LiteRTConversation
 }
 
@@ -904,11 +902,9 @@ public fun interface LiteRTConversationFactory {
  */
 public interface LiteRTConversation {
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun send(message: LiteRTMessage, extraContext: Map<String, JsonElement> = emptyMap()): LiteRTMessage
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public fun stream(
         message: LiteRTMessage,
         extraContext: Map<String, JsonElement> = emptyMap(),

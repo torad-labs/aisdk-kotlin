@@ -23,7 +23,6 @@ public interface VideoModel {
         get() = null
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun generate(params: VideoGenerationParams): VideoModelResult
 }
 

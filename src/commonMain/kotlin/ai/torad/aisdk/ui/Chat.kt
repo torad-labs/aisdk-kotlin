@@ -72,7 +72,7 @@ public fun ChatRequest(
 /** @since 0.3.0-beta01 */
 public interface ChatTransport {
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic public fun sendMessages(request: ChatRequest): Flow<UIMessage>
+    public fun sendMessages(request: ChatRequest): Flow<UIMessage>
 
     /** @since 0.3.0-beta01 */
     public fun reconnectToStream(chatId: String, headers: Map<String, String> = emptyMap()): Flow<UIMessage>? = null

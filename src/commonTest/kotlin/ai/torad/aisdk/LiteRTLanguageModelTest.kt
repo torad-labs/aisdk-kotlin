@@ -677,4 +677,48 @@ class LiteRTLanguageModelTest {
         assertEquals("lookup", toolCall.toolName)
         assertEquals(FinishReason.ToolCalls, events.filterIsInstance<StreamEvent.Finish>().single().finishReason)
     }
+
+    /**
+     * Companion to `ToolResultEnvelopeWireTest` (see its KDoc for the whole story): `modelVisible`
+     * is the envelope `ToolResultOutput.toJsonElement()` emits, so passing it straight to
+     * [LiteRTContent.ToolResponse] handed the engine `{"type":"json","value":{...}}` as the tool's
+     * response. Lives here rather than there because it needs this file's conversation fakes.
+     */
+    @Test
+    fun `tool response carries the tool payload not the SDK envelope`() = runTest {
+        val toolPayload = buildJsonObject { put("temperature", JsonPrimitive(72)) }
+        val factory = FakeLiteRTFactory(
+            sendResponse = LiteRTMessage {
+                role(LiteRTMessageRole.Model)
+                content(listOf(LiteRTContentText("ok")))
+            },
+        )
+        val model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = factory)
+
+        model.generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.Tool,
+                            listOf(
+                                ContentPart.ToolResult(
+                                    toolCallId = "call-1",
+                                    toolName = "get_weather",
+                                    output = toolPayload,
+                                    modelVisible = ToolResultOutput.Json(toolPayload).toJsonElement(),
+                                ),
+                            ),
+                        ),
+                    )
+                )
+            },
+        )
+
+        val toolResponse = assertIs<LiteRTContent.ToolResponse>(
+            factory.requests.single().message.content.single(),
+        )
+        assertEquals("get_weather", toolResponse.name)
+        assertEquals(toolPayload, toolResponse.response, "LiteRT must receive the payload, not the envelope")
+    }
 }

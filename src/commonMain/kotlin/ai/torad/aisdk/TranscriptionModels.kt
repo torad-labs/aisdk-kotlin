@@ -16,7 +16,6 @@ public interface TranscriptionModel {
         get() = "unknown"
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult
 }
 

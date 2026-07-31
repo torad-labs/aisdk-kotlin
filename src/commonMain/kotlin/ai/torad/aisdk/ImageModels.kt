@@ -30,7 +30,6 @@ public interface ImageModel {
         get() = null
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun generate(params: ImageGenerationParams): ImageModelResult
 }
 
