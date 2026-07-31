@@ -97,9 +97,10 @@ updates:
     # week, so a compromised publish is likely withdrawn or flagged before it reaches a
     # PR here. Majors get longer because they are the ones a human reviews slowest.
     # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
+    # No semver-major-days here: Dependabot rejects that property for the
+    # github-actions ecosystem ("is not supported for the package ecosystem").
     cooldown:
       default-days: 7
-      semver-major-days: 30
     groups:
       actions-minor-patch:
         applies-to: version-updates

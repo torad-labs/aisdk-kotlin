@@ -410,6 +410,11 @@ jobs:
       # the bundle so the release coordinate set is durable beyond artifact retention.
       - name: Create GitHub Release (bundle.zip + SBOM)
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        # zizmor: ignore[superfluous-actions] informational: `gh release create` is the
+        # equivalent, and dropping a third-party action from the credential-bearing publish
+        # job would be a real gain — but this step only ever executes on a genuine tag push,
+        # so a rewrite cannot be exercised before the release it would break. The action is
+        # SHA-pinned and Dependabot-tracked. Revisit deliberately, not to satisfy a lint.
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           files: |
