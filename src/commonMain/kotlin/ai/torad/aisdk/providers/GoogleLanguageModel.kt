@@ -439,7 +439,9 @@ internal class GoogleGenerativeAILanguageModel(
             // bare output (esp. a primitive) is rejected.
             val response = buildJsonObject {
                 put("name", JsonPrimitive(part.toolName))
-                put("content", part.modelVisible)
+                // Decode the envelope: modelVisible is toJsonElement()'s output, so writing it
+                // verbatim sent Gemini {"type":"json","value":{...}} instead of the tool's payload.
+                put("content", ToolResultOutputs.toolResultPayloadJson(part.modelVisible))
             }
             put(
                 "functionResponse",

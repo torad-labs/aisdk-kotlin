@@ -629,8 +629,19 @@ public class AnthropicMessagesLanguageModel(
                             "missing non-blank required field: tool_use_id or id",
                             obj,
                         )
+                    // Correlate with the originating call rather than deriving from the block type.
+                    // `type.removeSuffix("_result")` turned web_search_tool_result into
+                    // "web_search_tool" — the real name is "web_search" (AnthropicTools.kt:261) —
+                    // so one response emitted a ToolCall and a ToolResult carrying DIFFERENT names
+                    // for the same toolCallId. Suffix arithmetic cannot be repaired either:
+                    // "_tool_result" yields "mcp" for mcp_tool_result, and "tool_search" for
+                    // tool_search_tool_result whose real names are tool_search_tool_regex/_bm25.
+                    // Anthropic always emits the server_tool_use/mcp_tool_use block before its
+                    // result block, and toolCalls is accumulated in this same loop, so the paired
+                    // call is already present and is authoritative.
                     val toolName = WireDecoder.optionalString(obj, "name", "anthropic", "response content", path)
                         ?.takeIf { it.isNotBlank() }
+                        ?: toolCalls.firstOrNull { it.toolCallId == toolCallId }?.toolName
                         ?: type.removeSuffix("_result")
                     content += ContentPart.ToolResult(
                         toolCallId = toolCallId,
@@ -751,7 +762,11 @@ private class AnthropicStreamState(
                 val toolName = when {
                     isToolCallBlock -> (block["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
                         ?: return listOf(missingToolIdentityError(type, "name"))
+                    // Same correlation as the buffered path above: the result block's tool_use_id
+                    // equals the earlier server_tool_use block's id, and that block is still in
+                    // `blocks`, so prefer its decoded name over suffix arithmetic on the type.
                     isToolResultBlock -> (block["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+                        ?: blocks.values.firstOrNull { it.id == id }?.toolName
                         ?: blockType.removeSuffix("_result")
                     else -> (block["name"] as? JsonPrimitive)?.contentOrNull
                 }

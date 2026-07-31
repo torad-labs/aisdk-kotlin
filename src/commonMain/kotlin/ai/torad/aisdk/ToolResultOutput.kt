@@ -146,6 +146,31 @@ internal object ToolResultOutputs {
             )
         }
 
+    /**
+     * The payload a JSON-shaped provider should put on the wire for a tool result, decoded out of
+     * [ContentPart.ToolResult.modelVisible].
+     *
+     * `modelVisible` carries the ENVELOPE produced by [toJsonElement] (see `ToolLoopAgent`), so a
+     * provider that writes it verbatim sends `{"type":"json","value":{...}}` where the model expects
+     * `{...}`. Providers whose tool_result slot is a string (Anthropic, Cohere, ...) already decode
+     * and flatten it themselves; this is the shared inverse for the ones whose slot is structured
+     * JSON (Google functionResponse.content, Google Interactions function_result.result, LiteRT
+     * ToolResponse.response) — three sites that previously passed the envelope straight through.
+     *
+     * Error/denial variants collapse to their message rather than re-emitting a tagged object: these
+     * providers signal failure with a sibling flag (`is_error`) or have no error slot at all, so the
+     * tag would reach the model as data. Use [ToolResultOutput.isToolResultError] for the flag.
+     */
+    internal fun toolResultPayloadJson(modelVisible: JsonElement): JsonElement =
+        when (val output = toolResultOutputFromWire(modelVisible)) {
+            is ToolResultOutput.Json -> output.json
+            is ToolResultOutput.ErrorJson -> output.json
+            is ToolResultOutput.Text -> JsonPrimitive(output.text)
+            is ToolResultOutput.Error -> JsonPrimitive(output.message)
+            is ToolResultOutput.ExecutionDenied -> JsonPrimitive(output.reason ?: "Tool execution denied.")
+            is ToolResultOutput.Content -> JsonArray(output.value)
+        }
+
     private fun stringFieldOrNull(obj: JsonObject, key: String): String? =
         (obj[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 

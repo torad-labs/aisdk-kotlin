@@ -190,15 +190,12 @@ public interface MCPTransport {
     public fun setProtocolVersion(version: String?)
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun start()
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun send(message: JSONRPCMessage)
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun close()
 }
 
@@ -299,11 +296,9 @@ public sealed class MCPClient {
     public abstract val instructions: String?
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public abstract suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public abstract suspend fun listTools(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
@@ -316,27 +311,23 @@ public sealed class MCPClient {
     ): ToolSet<TContext>
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public abstract suspend fun listResources(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListResourcesResult
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public abstract suspend fun readResource(
         uri: String,
         options: MCPRequestOptions? = null,
     ): ReadResourceResult
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public abstract suspend fun listResourceTemplates(
         options: MCPRequestOptions? = null,
     ): ListResourceTemplatesResult
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     @ExperimentalAiSdkApi
     public abstract suspend fun experimental_listPrompts(
         params: JsonObject? = null,
@@ -344,7 +335,6 @@ public sealed class MCPClient {
     ): ListPromptsResult
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     @ExperimentalAiSdkApi
     public abstract suspend fun experimental_getPrompt(
         name: String,
@@ -359,7 +349,6 @@ public sealed class MCPClient {
     )
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public abstract suspend fun close()
 }
 
@@ -889,27 +878,21 @@ public interface OAuthClientProvider {
     public val clientMetadata: OAuthClientMetadata
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun tokens(): OAuthTokens?
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun saveTokens(tokens: OAuthTokens)
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun redirectToAuthorization(authorizationUrl: String)
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun saveCodeVerifier(codeVerifier: String)
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun codeVerifier(): String
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun clientInformation(): OAuthClientInformation?
 
     /** @since 0.3.0-beta01 */

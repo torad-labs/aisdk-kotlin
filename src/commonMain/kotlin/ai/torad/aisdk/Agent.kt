@@ -3,7 +3,6 @@ package ai.torad.aisdk
 import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlin.jvm.JvmSynthetic
 
 /**
  * The agent contract — what application code depends on (best practice #7).
@@ -87,7 +86,7 @@ public interface Agent<TContext, TOutput> {
      * should collect exactly one value, usually with `.first()`.
      * @since 0.3.0-beta01
      */
-    @JvmSynthetic public fun generate(
+    public fun generate(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,
@@ -98,7 +97,7 @@ public interface Agent<TContext, TOutput> {
      * Streaming generation. Cold flow — starts when collected.
      * @since 0.3.0-beta01
      */
-    @JvmSynthetic public fun stream(
+    public fun stream(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,

@@ -32,7 +32,6 @@ public interface EmbeddingModel {
         get() = false
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult
 }
 

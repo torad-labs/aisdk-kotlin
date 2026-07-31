@@ -11,7 +11,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.jvm.JvmOverloads
-import kotlin.jvm.JvmSynthetic
 import kotlin.time.TimeSource
 
 @Poko
@@ -60,15 +59,12 @@ public class DevToolsStepResult(
 /** @since 0.3.0-beta01 */
 public interface DevToolsRecorder {
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun createRun(runId: String)
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun createStep(step: DevToolsStep)
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun updateStepResult(stepId: String, result: DevToolsStepResult)
 }
 

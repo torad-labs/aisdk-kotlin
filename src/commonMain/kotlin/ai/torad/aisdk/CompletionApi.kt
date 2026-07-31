@@ -149,7 +149,7 @@ public fun CompletionRequest(
 /** @since 0.3.0-beta01 */
 public interface CompletionTransport {
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic public fun complete(request: CompletionRequest): Flow<String>
+    public fun complete(request: CompletionRequest): Flow<String>
 }
 
 internal class DirectCompletionTransport(

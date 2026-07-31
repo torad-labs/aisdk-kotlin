@@ -6,6 +6,39 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+- **Java interop: `@JvmSynthetic` removed from 52 public abstract members (ABI change).**
+  A codemod had applied it to body-less declarations across 25 files. On an abstract
+  member that emits `ACC_ABSTRACT | ACC_SYNTHETIC`, and `javac` skips synthetic members
+  when checking that a class implements everything abstract — so a Java class
+  implementing `StopCondition`, `ChatTransport`, `Tool`, `LanguageModel`, `Agent`,
+  `StreamingTool`, `CompletionTransport` and friends **compiled clean and then threw
+  `java.lang.AbstractMethodError`** on the first call. Verified against the built jar
+  (`javap -v` showed `flags: (0x1401) ACC_PUBLIC, ACC_ABSTRACT, ACC_SYNTHETIC`) and
+  reproduced end-to-end. The JVM ABI dump loses `synthetic` on 51 members; **no
+  signature changed and nothing was added or removed**, so this is compatible for
+  callers and *restores* the ability to implement these interfaces from Java.
+  `no-public-suspend-without-jvmsynthetic` and `no-flow-return-without-wrapper` now
+  exempt body-less declarations (keyed on absence of a function body, not the
+  `abstract` keyword — most are interface members that never write it), and
+  `AbstractSpiJavaInteropTest` is a Java-source wall that fails to compile if the
+  annotation is ever reapplied there.
+- **Tool results reached Google, Google Interactions and LiteRT wrapped in the SDK's
+  internal envelope.** `ContentPart.ToolResult.modelVisible` carries what
+  `ToolResultOutput.toJsonElement()` emits; once its `Json` arm began tagging values as
+  `{"type":"json","value":…}`, those three providers wrote the wrapper straight to the
+  wire, so a tool returning `{"temperature":72}` reached Gemini as
+  `{"type":"json","value":{"temperature":72}}`. Five other providers already decoded it.
+  Added `ToolResultOutputs.toolResultPayloadJson` (internal) as the shared inverse and
+  applied it at the three sites; error/denial variants flatten to their message rather
+  than landing in the model's context as a tagged object.
+- **Anthropic server-tool results carried a malformed `toolName`.**
+  `"web_search_tool_result".removeSuffix("_result")` produced `"web_search_tool"`; the
+  real tool is `"web_search"`, so one response emitted a `ToolCall` and a `ToolResult`
+  with different names for the same `toolCallId`. Both the buffered and streaming paths
+  now take the name from the paired originating call. Suffix arithmetic could not be
+  repaired in place — `"_tool_result"` yields `"mcp"` for `mcp_tool_result` and
+  `"tool_search"` for `tool_search_tool_result`, whose real names are
+  `tool_search_tool_regex` / `tool_search_tool_bm25`.
 - **Provider wire fixes (Tier 1 — live-API breakages against current docs):**
   - **Anthropic:** server-tool result blocks no longer require `name` (API omits it);
     5-series flagships default `max_tokens` to 128k; `redacted_thinking` is resent

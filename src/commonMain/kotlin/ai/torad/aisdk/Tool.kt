@@ -133,7 +133,6 @@ public abstract class Tool<TInput, TOutput, TContext> {
      * Extend [StreamingTool] and override [StreamingTool.executeStream] for the streaming case.
      * @since 0.3.0-beta01
      */
-    @JvmSynthetic
     public abstract fun execute(
         input: TInput,
         ctx: ToolExecutionContext<TContext>,
@@ -217,7 +216,7 @@ public abstract class Tool<TInput, TOutput, TContext> {
 /** @since 0.3.0-beta01 */
 public abstract class StreamingTool<TInput, TOutput, TContext> : Tool<TInput, TOutput, TContext>() {
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic public abstract fun ToolExecutionContext<TContext>.executeStream(input: TInput): Flow<TOutput>
+    public abstract fun ToolExecutionContext<TContext>.executeStream(input: TInput): Flow<TOutput>
 
     final override fun execute(input: TInput, ctx: ToolExecutionContext<TContext>): Flow<ToolResult<TOutput>> {
         val self = this
@@ -806,11 +805,9 @@ public sealed class ToolChoice {
  */
 public interface ToolStreamWriter {
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun write(event: StreamEvent)
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic
     public suspend fun writeData(value: JsonElement)
 }
 
