@@ -25,6 +25,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          # MUST stay a subset of the org-level `org-pr-title` required check, which allows
+          # exactly: build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test.
+          #
+          # This list previously also carried `release`, `harden` and `campaign`. That made the
+          # local gate MORE permissive than the binding one: a `harden:` title passed here and
+          # was then rejected at merge by the org check, which is what happened to this very PR
+          # (title had to be renamed `harden:` -> `fix:` to land). A local gate that green-lights
+          # a title the required check refuses is worse than no local gate — it moves the failure
+          # to the point where it is most expensive.
+          #
+          # To reinstate any of the three, get them added to the ORG workflow first, then widen
+          # here; never the other way round.
           types: |
             feat
             fix
@@ -37,7 +49,4 @@ jobs:
             refactor
             revert
             style
-            release
-            harden
-            campaign
           requireScope: false
