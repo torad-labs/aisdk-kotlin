@@ -1,0 +1,40 @@
+# gitleaks config for torad-aisdk.
+#
+# The org-level `org-workflow-lint` workflow runs `gitleaks git /repo --redact
+# --no-banner --exit-code 1` with no `--config`, so gitleaks auto-discovers this file at
+# the scan root. It first ran on this repo on 2026-07-31 and reported 12 findings, all
+# false positives: `generic-api-key` firing on 64-char hex IDENTIFIERS.
+#
+# Scoped by CONTENT ONLY — deliberately no `paths` key. Two traps in gitleaks v8.21.2 (the
+# version the org workflow pins) forced this shape, both found by testing rather than
+# reading docs, and both silent:
+#
+#   - the plural `[[allowlists]]` array is IGNORED. It parses, logs nothing, and applies no
+#     allowlist at all. The singular `[allowlist]` table below is the supported form.
+#   - `condition = "AND"` is IGNORED. Combining `paths` with `regexes` therefore exempts
+#     every file matching `paths`, whatever its content. A synthetic AWS key planted under
+#     dev/campaigns/ went undetected under that shape.
+#
+# So the allowlist carries no path scope: every rule still applies to every file, and only
+# lines matching one of the two literal patterns below are exempt. Re-prove both directions
+# against the pinned version before changing any of this — see the commit message for the
+# exact red/green commands.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = """
+dev/campaigns 64-hex identifiers that are not credentials:
+ 1. CAMPAIGN_PROOF_DEFAULT_KEY_ID — the SHA-256 FINGERPRINT of a public key whose ed25519
+    body is printed in plaintext directly below it in CAMPAIGN_PROOF_PUBLIC_KEYS. A
+    public-key id is an identifier; the signing private key is not in this repo. The
+    .patch hits are the same constant captured inside committed campaign diff artifacts.
+ 2. wave-baseline manifests mapping a repo-relative FILE PATH to that file's SHA-256
+    content hash — the mechanism that detects an unreviewed edit between campaign waves.
+"""
+regexTarget = "line"
+regexes = [
+  '''CAMPAIGN_PROOF_DEFAULT_KEY_ID\s*=\s*"[0-9a-f]{64}"''',
+  '''"[^"]+\.(kt|kts|md|api|json|py|yaml|yml|toml)"\s*:\s*"[0-9a-f]{64}"''',
+]

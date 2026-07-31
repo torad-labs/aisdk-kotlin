@@ -25,8 +25,12 @@ concurrency:
 
 jobs:
   verification-metadata:
+    # `github.event.pull_request.user.login`, not `github.actor`: actor is whoever triggered
+    # the run and is spoofable (a re-run or a synchronize by someone else carries their name,
+    # and zizmor's bot-conditions audit flags it), whereas the PR author is fixed at open
+    # time. `automerge` below already used this form.
     if: >-
-      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.repository == 'torad-labs/aisdk-kotlin'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -72,8 +76,12 @@ jobs:
   # it pushes was produced by PR-controlled code, but it lands as a reviewable commit on
   # the PR branch and still has to clear the required checks before automerge can merge.
   publish-verification-metadata:
+    # `github.event.pull_request.user.login`, not `github.actor`: actor is whoever triggered
+    # the run and is spoofable (a re-run or a synchronize by someone else carries their name,
+    # and zizmor's bot-conditions audit flags it), whereas the PR author is fixed at open
+    # time. `automerge` below already used this form.
     if: >-
-      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.repository == 'torad-labs/aisdk-kotlin'
     needs: verification-metadata
     runs-on: ubuntu-latest
