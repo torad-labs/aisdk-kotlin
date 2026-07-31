@@ -106,9 +106,12 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         with:
-          # Release produces signed artifacts; never write caches from this path
-          # (zizmor cache-poisoning: PR-poisoned cache must not enter a publish).
-          cache-read-only: true
+          # Release produces signed artifacts, so no mutable cache may feed a publish —
+          # read OR write. cache-read-only stopped this path WRITING a cache but it still
+          # restored one, which is the half zizmor's cache-poisoning audit flags. A release
+          # runs once per version, so the lost cache warm costs little next to a build that
+          # cannot be influenced by any earlier run's artifacts.
+          cache-disabled: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -149,9 +152,12 @@ jobs:
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         with:
-          # Release produces signed artifacts; never write caches from this path
-          # (zizmor cache-poisoning: PR-poisoned cache must not enter a publish).
-          cache-read-only: true
+          # Release produces signed artifacts, so no mutable cache may feed a publish —
+          # read OR write. cache-read-only stopped this path WRITING a cache but it still
+          # restored one, which is the half zizmor's cache-poisoning audit flags. A release
+          # runs once per version, so the lost cache warm costs little next to a build that
+          # cannot be influenced by any earlier run's artifacts.
+          cache-disabled: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -248,9 +254,12 @@ jobs:
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         with:
-          # Release produces signed artifacts; never write caches from this path
-          # (zizmor cache-poisoning: PR-poisoned cache must not enter a publish).
-          cache-read-only: true
+          # Release produces signed artifacts, so no mutable cache may feed a publish —
+          # read OR write. cache-read-only stopped this path WRITING a cache but it still
+          # restored one, which is the half zizmor's cache-poisoning audit flags. A release
+          # runs once per version, so the lost cache warm costs little next to a build that
+          # cannot be influenced by any earlier run's artifacts.
+          cache-disabled: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:

@@ -19,6 +19,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Supply-chain dwell time: do not adopt a release until it has been public for a
+    # week, so a compromised publish is likely withdrawn or flagged before it reaches a
+    # PR here. Majors get longer because they are the ones a human reviews slowest.
+    # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
     groups:
       gradle-minor-patch:
         applies-to: version-updates
@@ -32,6 +39,13 @@ updates:
     directory: "/smoke-tests/local-staging"
     schedule:
       interval: "weekly"
+    # Supply-chain dwell time: do not adopt a release until it has been public for a
+    # week, so a compromised publish is likely withdrawn or flagged before it reaches a
+    # PR here. Majors get longer because they are the ones a human reviews slowest.
+    # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
     groups:
       smoke-gradle-minor-patch:
         applies-to: version-updates
@@ -42,6 +56,13 @@ updates:
     directory: "/samples/jvm-chat-cli"
     schedule:
       interval: "weekly"
+    # Supply-chain dwell time: do not adopt a release until it has been public for a
+    # week, so a compromised publish is likely withdrawn or flagged before it reaches a
+    # PR here. Majors get longer because they are the ones a human reviews slowest.
+    # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
     groups:
       sample-gradle-minor-patch:
         applies-to: version-updates
@@ -55,6 +76,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Supply-chain dwell time: do not adopt a release until it has been public for a
+    # week, so a compromised publish is likely withdrawn or flagged before it reaches a
+    # PR here. Majors get longer because they are the ones a human reviews slowest.
+    # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
     groups:
       npm-minor-patch:
         applies-to: version-updates
@@ -65,6 +93,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Supply-chain dwell time: do not adopt a release until it has been public for a
+    # week, so a compromised publish is likely withdrawn or flagged before it reaches a
+    # PR here. Majors get longer because they are the ones a human reviews slowest.
+    # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
     groups:
       actions-minor-patch:
         applies-to: version-updates
