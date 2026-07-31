@@ -648,6 +648,12 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient() {
             val resultElement = result ?: throw MCPClientError("Server response returned null result for $method")
             return try {
                 mcpJson.decodeFromJsonElement(serializer, resultElement)
+            } catch (ce: CancellationException) {
+                // Defensive: decodeFromJsonElement does not suspend, so cancellation cannot
+                // reach here today. Guarded anyway because this is the one catch in the request
+                // path that REWRITES the exception type — a cancelled call would surface to the
+                // caller as a protocol error rather than a cancellation.
+                throw ce
             } catch (error: Throwable) {
                 throw MCPClientError("Failed to parse server response", cause = error)
             }
@@ -1385,11 +1391,21 @@ internal class McpConnectionLifecycle {
     }
 }
 
-private fun BearerAccessToken(headers: Map<String, String>): String? =
-    headers.entries.firstOrNull { it.key.equals(HttpHeaders.Authorization, ignoreCase = true) }
+/**
+ * The bearer credential from `Authorization`, or null when absent or another scheme. RFC 7235
+ * makes the scheme case-insensitive: `removePrefix("Bearer ")` no-ops on `bearer <t>` (or a
+ * `Basic` credential) and returned the WHOLE header value as the token. The reauthorize path
+ * compares that against the freshly-issued token to detect a concurrent refresh, so a
+ * scheme-prefixed value never matches and drives a redundant reauth on every overlapping 401.
+ */
+private fun BearerAccessToken(headers: Map<String, String>): String? {
+    val scheme = "Bearer "
+    return headers.entries.firstOrNull { it.key.equals(HttpHeaders.Authorization, ignoreCase = true) }
         ?.value
-        ?.removePrefix("Bearer ")
+        ?.takeIf { it.regionMatches(0, scheme, 0, scheme.length, ignoreCase = true) }
+        ?.substring(scheme.length)
         ?.takeIf { it.isNotBlank() }
+}
 
 private class McpOAuthReauthorizer(
     private val authProvider: OAuthClientProvider?,

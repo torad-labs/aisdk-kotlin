@@ -18,7 +18,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOWS = [ROOT / ".github/workflows/ci.yml", ROOT / ".github/workflows/release.yml"]
+# EVERY workflow, not a hand-listed two. This was `[ci.yml, release.yml]`, so the four
+# checks below (SHA pinning, timeouts, global npm, persisted job token) were blind to the
+# eight other workflows — including dependabot.yml, which holds `contents: write`. A gate
+# that names its inputs by hand goes stale the moment a workflow is added; glob instead.
+WORKFLOWS = sorted(
+    p for p in (ROOT / ".github/workflows").glob("*.y*ml") if p.suffix in {".yml", ".yaml"}
+)
 GENERATED_TRACKED_COMPONENTS = {"build", ".gradle", "out", "target", "node_modules", ".kotlin"}
 README_MARKERS = (
     "<!-- beta-readiness:readme-sample:start -->",

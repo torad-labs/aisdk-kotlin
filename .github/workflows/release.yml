@@ -54,14 +54,30 @@ jobs:
           # Maven Central coordinates are immutable. Fail closed if this VERSION_NAME
           # is already on repo1 so we never plan a retag/republish of a shipped line
           # (the 0.3.0-beta01 trap). Dry-run still checks so local smoke cannot lie.
+          # Fail closed on every outcome except a definite "not published". `|| true` plus a
+          # 200-only rejection made this gate open on the failures it exists to survive: a
+          # timeout, DNS error, proxy interception or repo1 5xx all left central_code empty
+          # or non-200 and were reported as "not yet listed", clearing the way to republish
+          # over a shipped coordinate. Only 404 (and 410, tombstoned) prove absence.
           group_path="${group//.//}"
           central_pom="https://repo1.maven.org/maven2/${group_path}/${artifact}/${project_version}/${artifact}-${project_version}.pom"
-          central_code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "${central_pom}" || true)"
-          if [ "${central_code}" = "200" ]; then
-            echo "::error::VERSION_NAME ${project_version} is already on Maven Central (${central_pom}). Bump VERSION_NAME (e.g. beta02) before releasing." >&2
+          if ! central_code="$(curl -sS -o /dev/null -w '%{http_code}' --retry 3 --retry-connrefused --max-time 30 "${central_pom}")"; then
+            echo "::error::Maven Central preflight could not reach ${central_pom}. Refusing to release without proof the coordinate is free." >&2
             exit 1
           fi
-          echo "Maven Central does not yet list ${project_version} (HTTP ${central_code:-unknown})."
+          case "${central_code}" in
+            404|410)
+              echo "Maven Central does not list ${project_version} (HTTP ${central_code})."
+              ;;
+            200)
+              echo "::error::VERSION_NAME ${project_version} is already on Maven Central (${central_pom}). Bump VERSION_NAME (e.g. beta02) before releasing." >&2
+              exit 1
+              ;;
+            *)
+              echo "::error::Unexpected Maven Central status ${central_code} for ${central_pom}. Refusing to release without proof the coordinate is free." >&2
+              exit 1
+              ;;
+          esac
 
           if [ "${DRY_RUN}" = "true" ]; then
             echo "Dry-run release preflight for ${project_version} on ${GITHUB_REF_NAME}; tag and main-ancestry checks are publish-only."
