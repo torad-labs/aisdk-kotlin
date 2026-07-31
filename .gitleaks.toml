@@ -1,0 +1,24 @@
+# Repo-local gitleaks config, auto-loaded from the scan root.
+#
+# Generated 2026-07-31 from a full-history scan of every torad-labs repo.
+# It NARROWS false-positive classes only — it never disables a rule and never
+# turns off the default ruleset. Every entry below records why it is safe.
+#
+# Enforced by the `torad-standards` org ruleset via
+# torad-labs/.github .github/workflows/org-secret-scan.yml.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Kotlin API-dump checksums and campaign fixtures"
+paths = [
+  # campaign baseline diffs — generated artefacts recording other files' contents.
+  '''^dev/campaigns/.*\.(patch|json)$''',
+]
+regexTarget = "line"
+regexes = [
+  # binary-compatibility API dump checksums (…​.api / .klib.api), hex digests of the public API surface.
+  '''\.api"\s*:\s*"[0-9a-f]{32,64}"''',
+  # SHA-256 fingerprint of the campaign-proof PUBLIC key (the PEM below it is a public key). A key IDENTIFIER, not a secret.
+  '''CAMPAIGN_PROOF_DEFAULT_KEY_ID\s*=\s*"[0-9a-f]{64}"''',
+]
