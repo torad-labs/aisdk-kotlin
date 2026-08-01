@@ -132,15 +132,12 @@ parents and serialization wire names remain unchanged, while public `copy()` /
 ### Output
 
 - `sealed class Output<T>`
-  - `Output.obj<T>(serializer, name?, description?): Output<T>`
-  - `Output.array<T>(elementSerializer, name?, description?): Output<List<T>>`
-  - `Output.choice(values: Iterable<String> | vararg String, name?, description?): Output<String>`
-  - `Output.json(name?, description?): Output<JsonElement>`
-- Top-level mirrors:
-  - `OutputObj(serializer, name?, description?)`
-  - `OutputArray(elementSerializer, name?, description?)`
-  - `OutputChoice(values | vararg values, name?, description?)`
-  - `OutputJson(name?, description?)`
+- Top-level factories (the former `Output.obj/.array/.choice/.json` companion members
+  were removed by the `no-companion-objects` migration; these are the only entry points):
+  - `OutputObj<T>(serializer, name?, description?): Output<T>`
+  - `OutputArray<T>(elementSerializer, name?, description?): Output<List<T>>`
+  - `OutputChoice(values: Iterable<String> | vararg String, name?, description?): Output<String>`
+  - `OutputJson(name?, description?): Output<JsonElement>`
 
 ### Structured-output utilities
 
@@ -327,7 +324,7 @@ of producing a normal abort completion for the step.
   - Rerank result holders are `@Poko class` value-semantics types; field
     access remains, but public `copy()` / `componentN()` ABI is intentionally
     absent. `RerankingParams` stays on the builder/data-class track.
-- Shared file payload: `GeneratedFile(mediaType, base64, filename?, providerMetadata)`, `FileData.Base64`, `FileData.Bytes.toByteArray()` (copy-returning), `FileData.Url`, `DefaultGeneratedFile.fromBase64/fromBytes` (`byteArray` is copy-returning).
+- Shared file payload: `GeneratedFile(mediaType, base64, filename?, providerMetadata)`, `FileData.Base64`, `FileData.Bytes.toByteArray()` (copy-returning), `FileData.Url`, and the overloaded `DefaultGeneratedFile(data, mediaType)` factory (`data: String` base64 / `data: ByteArray`; `byteArray` is copy-returning).
 - Media result/metadata holders are `@Poko class` value-semantics types;
   field access remains, but public `copy()` / `componentN()` ABI is
   intentionally absent. Construct params remain builder-track data classes.
@@ -534,7 +531,7 @@ of producing a normal abort completion for the step.
 ### General Utilities
 
 - `cosineSimilarity`, `splitArray`, `asArray`, `mergeJsonObjects`, `isDeepEqualData`.
-- `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`. `DataUrl` remains public because data URL parsing is documented general utility surface and `DataUrl.parse(...)` returns the consumer-facing value.
+- `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`. `DataUrl` remains public because data URL parsing is documented general utility surface and the top-level `DataUrl(...)` factory (the former `DataUrl.parse`) returns the consumer-facing value.
 - `RetryPolicy { maxRetries(2); baseDelayMs(100); maxDelayMs(2000); clock(Clock.System); delayGenerator(...); totalTimeoutMs(null); perAttemptTimeoutMs(null) }`, `RetryDelayGenerator` (built by the top-level `RetryDelayGeneratorFullJitter(random)` /
 `RetryDelayGeneratorDeterministic(vararg delaysMs)` factories — the former companion
 object was removed under `no-companion-objects`), `RetryAttemptDetail`,
