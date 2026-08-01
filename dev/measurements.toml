@@ -286,5 +286,16 @@ date = "2026-08-01"
 head = "a25e30c"
 command = "node tools/run-gate-fixtures.mjs; read output line"
 tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7"
-status = "current"
+status = "superseded"
 note = "harness printed 'gate fixture harness OK: 48 fixture checks across 24 gate(s)' after adding 9 beta-readiness-* sub-check fixtures (18 new checks; several violation cases are multi-scenario self-judging scripts, so planted-violation coverage exceeds the check count)."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 50
+unit = "fixture checks across 25 gates"
+date = "2026-08-01"
+head = "0213eef"
+command = "node tools/run-gate-fixtures.mjs; read output line"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7; actionlint 1.7.12; zizmor 1.28.0"
+status = "current"
+note = "added workflow-lint-flags gate (analyzer-flag reachability: pwn-request + shell syntax error)."

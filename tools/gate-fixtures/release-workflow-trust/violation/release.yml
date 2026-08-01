@@ -53,3 +53,13 @@ jobs:
         run: bash .claude/hooks/rules/ci-gate.sh
       - name: Verify checks
         run: ./gradlew check
+      # Violation: signing secrets exported into the SAME STEP that launches a second
+      # Gradle build (the local-staging smoke) — the step-scoped leak shape the
+      # adversarial review found live in PR #14.
+      - name: Stage sign and smoke in one step
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          ./gradlew publishAllPublicationsToLocalStagingRepository
+          tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy

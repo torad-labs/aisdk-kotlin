@@ -35,12 +35,12 @@ jobs:
         id: fetch_reference
         run: |
           mkdir -p .reference
-          if ! git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}; then
+          if ! git clone --depth 1 --branch "ai@${AI_SDK_REFERENCE_VERSION}" https://github.com/vercel/ai ".reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}"; then
             echo "::warning::Unable to fetch Vercel AI SDK reference; skipping freshness/parity checks so internal gates still run."
             echo "available=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          actual_commit="$(git -C .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION} rev-parse HEAD)"
+          actual_commit="$(git -C ".reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}" rev-parse HEAD)"
           if [ "${actual_commit}" != "${AI_SDK_REFERENCE_COMMIT}" ]; then
             echo "Reference checkout commit is ${actual_commit}, expected ${AI_SDK_REFERENCE_COMMIT}" >&2
             exit 1

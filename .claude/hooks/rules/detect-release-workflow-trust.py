@@ -112,6 +112,42 @@ def third_party_execution_hits(block: str) -> list[str]:
     return [label for pattern, label in _THIRD_PARTY_EXECUTION if re.search(pattern, block)]
 
 
+# --- step-scoped credential exposure ---------------------------------------------
+#
+# The job-scoped check above deliberately tolerates Gradle in the publish job (the
+# signed bundle cannot be produced anywhere else). What it was structurally blind to:
+# a STEP whose `env:` exports the signing secrets ALSO launching a SECOND Gradle build
+# — `tools/run-local-staging-smoke` (whose consumer builds resolve AGP/KMP plugin
+# markers with no verification-metadata.xml of their own) or an explicit `-p`/`-b`
+# build-root switch. That second build's plugins execute with SIGNING_* sitting in
+# their process env. The pre-merge adversarial review of PR #14 found exactly this
+# shape live in the bundle step. `env:` on a step is step-scoped in Actions, so the
+# fix is a step split — and the wall must be STEP-scoped too: at job scope this
+# pattern would misfire on the compliant split (the smoke stays in the publish job,
+# in a later step that carries no secrets, because it consumes build/staging-deploy
+# from the credentialed step).
+_STEP_START_RE = re.compile(r"(?m)^      - ")
+_SECOND_BUILD = (
+    (r"tools/run-local-staging-smoke", "tools/run-local-staging-smoke (second, unverified Gradle build)"),
+    (r"\./gradlew\s[^\n]*(?:\s-p\s|--project-dir\b)", "./gradlew -p/--project-dir (second build root)"),
+    (r"\./gradlew\s[^\n]*(?:\s-b\s|--build-file\b)", "./gradlew -b/--build-file (second build script)"),
+)
+
+
+def job_steps(job_block: str) -> list[str]:
+    starts = [m.start() for m in _STEP_START_RE.finditer(job_block)]
+    return [job_block[s:e] for s, e in zip(starts, starts[1:] + [len(job_block)])]
+
+
+def credentialed_step_second_build_hits(job_block: str) -> list[str]:
+    hits: list[str] = []
+    for step in job_steps(job_block):
+        if not any(secret in step for secret in _PUBLISH_CREDENTIAL_SECRETS):
+            continue
+        hits.extend(label for pattern, label in _SECOND_BUILD if re.search(pattern, step))
+    return hits
+
+
 def npmrc_disables_scripts(workflow_path: Path) -> bool:
     """True when a tracked root .npmrc sets ignore-scripts=true (repo-wide opt-out)."""
     # .github/workflows/release.yml -> repo root is three parents up.
@@ -171,6 +207,13 @@ def validate(path: Path) -> list[str]:
             issues.append(f"job {job.name} runs repo code before depending on preflight")
         if job.name != "publish" and has_packages_write(job.block):
             issues.append(f"job {job.name} must not have packages: write")
+        step_hits = credentialed_step_second_build_hits(job.block)
+        if step_hits:
+            issues.append(
+                f"job {job.name} exports publish credentials into a step that also launches a "
+                f"second Gradle build ({', '.join(sorted(set(step_hits)))}); split the step so "
+                "the secrets' env ends before the second build starts"
+            )
         if job_holds_publish_credentials(job.block):
             hits = third_party_execution_hits(job.block)
             if hits:
