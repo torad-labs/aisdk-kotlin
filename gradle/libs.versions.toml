@@ -12,7 +12,7 @@ detekt = "1.23.8"
 konsist = "0.17.3"
 kover = "0.9.8"
 dokka = "2.2.0"
-junit = "5.11.4"
+junit = "6.1.1"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
