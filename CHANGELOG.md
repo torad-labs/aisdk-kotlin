@@ -237,10 +237,12 @@ This project follows Semantic Versioning once the first stable release is cut.
     `ModelRef.parse` → `ParseModelRef`; `TypeValidationError.wrap` →
     `WrapTypeValidationError`; `Telemetry.registerTelemetry` / `.clearGlobalTelemetry`
     → `RegisterTelemetry` / `ClearGlobalTelemetry`;
-    `GenerationInput.from` → `GenerationInputFrom`; `TextGenerationRequest.Input.messages`
-    / `.messagesWithPrompt` / `.prompt` → `InputMessages` / `InputMessagesWithPrompt` /
-    `InputPrompt`; `DefaultGeneratedFile.fromBase64` / `.fromBytes` →
-    `DefaultGeneratedFileFromBase64` / `DefaultGeneratedFileFromBytes`;
+    `GenerationInput.from` → the top-level `GenerationInput(prompt, messages)` factory;
+    `TextGenerationRequest.Input.messages` / `.messagesWithPrompt` / `.prompt` →
+    `TextGenerationRequestInputMessages` / `TextGenerationRequestInputMessagesWithPrompt`
+    / `TextGenerationRequestInputPrompt`; `DefaultGeneratedFile.fromBase64` /
+    `.fromBytes` → the overloaded `DefaultGeneratedFile(data, mediaType)` factory
+    (`data: String` base64 / `data: ByteArray`);
     `AnthropicMessagesLanguageModel.forwardAnthropicContainerIdFromLastStep` →
     `ForwardAnthropicContainerIdFromLastStep`.
   - `ToolExecutionPolicy`'s `DEFAULT_MAX_PARALLEL_TOOL_CALLS`,
