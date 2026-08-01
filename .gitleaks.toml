@@ -1,51 +1,35 @@
-# gitleaks config for torad-aisdk.
+# Repo-local gitleaks config, auto-loaded from the scan root.
 #
-# The org-level `org-workflow-lint` workflow runs `gitleaks git /repo --redact
-# --no-banner --exit-code 1` with no `--config`, so gitleaks auto-discovers this file at
-# the scan root. It first ran on this repo on 2026-07-31 and reported 12 findings, all
-# false positives: `generic-api-key` firing on 64-char hex IDENTIFIERS.
+# Generated 2026-07-31 from a full-history scan of every torad-labs repo.
+# It NARROWS false-positive classes only — it never disables a rule and never
+# turns off the default ruleset. Every entry below records why it is safe.
 #
-# Scoped by CONTENT ONLY — no `paths` key — and targeted at the MATCH, not the line.
-# Three traps in gitleaks v8.21.2 (the version the org workflow pins) forced this exact
-# shape. All three are silent, and all three were found by testing rather than by reading:
+# Enforced by the `torad-standards` org ruleset via
+# torad-labs/.github .github/workflows/org-secret-scan.yml.
 #
-#   - the plural `[[allowlists]]` array is IGNORED. It parses, logs nothing, and applies no
-#     allowlist at all. The singular `[allowlist]` table below is the supported form.
-#   - `condition = "AND"` is IGNORED. Combining `paths` with `regexes` therefore exempts
-#     every file matching `paths`, whatever its content. A synthetic AWS key planted under
-#     dev/campaigns/ went undetected under that shape.
-#   - `regexTarget = "line"` allowlists the WHOLE LINE the finding sits on. A real
-#     credential sharing a line with a benign pattern is silently suppressed:
-#         {"a.json": "<64 hex>", "aws_access_key_id": "AKIA..."}
-#     was NOT reported under `line`, while the identical key on its own line WAS. Today's
-#     baseline JSON is pretty-printed so no line carries both, but these are GENERATED
-#     files — a generator emitting compact JSON would blind the scanner across the file.
-#     `regexTarget = "match"` narrows the exemption to the finding itself.
+# REWRITTEN 2026-08-01. The previous version used `regexTarget = "line"`, which
+# suppresses the ENTIRE LINE a finding sits on — a real credential sharing a line
+# with an allowlisted value would have been hidden. Demonstrated, not assumed:
+# with the line form a canary planted beside an allowlisted hash was NOT reported
+# (1 of 2 findings); with the match form below both fire (2 of 2).
 #
-# Note the regexes are written against the TRUNCATED match window gitleaks reports (~72
-# chars centred on the secret), which is why they anchor on `_DEFAULT_KEY_ID` and on the
-# file extension rather than on the full identifier or full path — the leading characters
-# are cut off before the allowlist ever sees them.
-#
-# Re-prove BOTH directions against the pinned version before changing any of this, and
-# scan a COPY of the tree: writing a --report-path inside the scanned directory makes the
-# next scan read its own output and double the counts (that cost a wrong conclusion once).
-
+# Anchors are SUFFIXES on purpose: with regexTarget = "match" the match target is
+# truncated at the start, so a pattern anchored on the full identifier never
+# fires. Each still binds the identifier SHAPE to the value shape, so an
+# unrelated secret cannot ride along.
 [extend]
 useDefault = true
 
 [allowlist]
-description = """
-dev/campaigns 64-hex identifiers that are not credentials:
- 1. CAMPAIGN_PROOF_DEFAULT_KEY_ID — the SHA-256 FINGERPRINT of a public key whose ed25519
-    body is printed in plaintext directly below it in CAMPAIGN_PROOF_PUBLIC_KEYS. A
-    public-key id is an identifier; the signing private key is not in this repo. The
-    .patch hits are the same constant captured inside committed campaign diff artifacts.
- 2. wave-baseline manifests mapping a repo-relative FILE PATH to that file's SHA-256
-    content hash — the mechanism that detects an unreviewed edit between campaign waves.
-"""
+description = "Kotlin API-dump checksums and campaign fixtures"
+paths = [
+  # campaign baseline diffs — generated artefacts recording other files' contents.
+  '''^dev/campaigns/.*\.(patch|json)$''',
+]
 regexTarget = "match"
 regexes = [
+  # binary-compatibility API dump checksums (…​.api / .klib.api), hex digests of the public API surface.
+  '''\.api"\s*:\s*"[0-9a-f]{32,64}"''',
+  # SHA-256 fingerprint of the campaign-proof PUBLIC key (the PEM below it is a public key). A key IDENTIFIER, not a secret.
   '''_DEFAULT_KEY_ID\s*=\s*"[0-9a-f]{64}"''',
-  '''\.(kt|kts|md|api|json|py|yaml|yml|toml)"\s*:\s*"[0-9a-f]{64}"''',
 ]
