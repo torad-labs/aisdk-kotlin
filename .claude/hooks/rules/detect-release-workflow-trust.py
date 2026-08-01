@@ -20,6 +20,35 @@ class Job:
     block: str
 
 
+# Guards preflight must actually CONTAIN (checked against comment-stripped code).
+#
+# These track the PROMOTION model — `beta`/`prod` are the release lines and are promoted
+# from main — not the tag model that preceded it. The tag-era entry was
+# `test "${tag_version}" = "${project_version}"`, tying the ref to the version; a promoted
+# ref carries no version, so the equivalent invariants are the branch<->version-shape case
+# and the main-ancestry proof.
+REQUIRED_PREFLIGHT_GUARDS = (
+    "fetch-depth: 0",
+    # the release line must agree with the kind of version being shipped
+    'case "${RELEASE_LINE}" in',
+    "SNAPSHOT",
+    # release lines only ever carry commits promoted from main
+    'git merge-base --is-ancestor "${GITHUB_SHA}" origin/main',
+)
+
+_YAML_COMMENT_RE = re.compile(r"(?m)^\s*#.*$")
+
+
+def strip_yaml_comments(block: str) -> str:
+    """Whole-line YAML/shell comments removed, so prose cannot satisfy a code check.
+
+    Deliberately only WHOLE-line comments: a trailing `# ...` on a real line belongs to a
+    line that is code, and stripping mid-line would need shell-quoting awareness (`#`
+    inside a string) to avoid corrupting the very guards being matched.
+    """
+    return _YAML_COMMENT_RE.sub("", block)
+
+
 def top_level_permissions_block(text: str) -> str:
     match = re.search(r"(?m)^permissions:\n(?P<body>(?:^  .+\n)+)", text)
     return match.group("body") if match else ""
@@ -210,13 +239,14 @@ def validate(path: Path) -> list[str]:
     if preflight is None:
         issues.append("release workflow must define a preflight job")
     else:
-        for required in (
-            "fetch-depth: 0",
-            'test "${tag_version}" = "${project_version}"',
-            "SNAPSHOT",
-            'git merge-base --is-ancestor "${GITHUB_SHA}" origin/main',
-        ):
-            if required not in preflight.block:
+        # Match against CODE, not comments. These are substring checks over the job block,
+        # and a comment that merely QUOTES a guard satisfied them — which is how the
+        # tag-era `test "${tag_version}"...` requirement stayed green while the check
+        # itself was gone, replaced by a comment explaining its removal. A guard described
+        # in prose is not a guard.
+        preflight_code = strip_yaml_comments(preflight.block)
+        for required in REQUIRED_PREFLIGHT_GUARDS:
+            if required not in preflight_code:
                 issues.append(f"preflight job is missing required guard: {required}")
         if has_packages_write(preflight.block):
             issues.append("preflight job must not have packages: write")
