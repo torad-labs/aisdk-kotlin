@@ -71,7 +71,11 @@ jobs:
           build-mode: ${{ matrix.build-mode }}
       - name: build Kotlin (JVM source sets)
         if: matrix.language == 'java-kotlin'
-        run: ./gradlew compileKotlinJvm --no-daemon --stacktrace
+        # --no-build-cache is REQUIRED, not tuning. With build-mode: manual the
+        # CodeQL extractor only sees code that is actually compiled during this
+        # step; a cache hit prints ":compileKotlinJvm FROM-CACHE", nothing is
+        # extracted, and "database finalize" then fails as a configuration error.
+        run: ./gradlew compileKotlinJvm --no-daemon --no-build-cache --stacktrace
       - name: analyze
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
       - name: Open issue on scheduled failure
