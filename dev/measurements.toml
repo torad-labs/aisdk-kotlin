@@ -319,7 +319,7 @@ date = "2026-08-01"
 head = "17fe4ff"
 command = "SIGNING_KEY=<throwaway> ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache; tools/check-release-bundle"
 tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; gpg 2.4.8; Ubuntu/Linux host"
-status = "current"
+status = "superseded"
 note = "measured on a Linux host with a throwaway PGP key: 7 modules (root metadata, android, jvm, linuxx64, iosarm64, iossimulatorarm64, iosx64), 38 primary artifacts, all signed. Confirms Apple klibs cross-compile and publish from ubuntu-latest."
 
 [[measurement]]
@@ -330,5 +330,27 @@ date = "2026-08-01"
 head = "a91e5a7"
 command = "node tools/run-gate-fixtures.mjs; read output line"
 tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7"
-status = "current"
+status = "superseded"
 note = "workflow-lint-flags moved out of the harness into tools/verify-workflow-lint-flags (runs in workflow-lint.yml, the only job with the pinned analyzers); release-bundle gate remains. Net 52 -> 50."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 50
+unit = "fixture checks across 25 gates"
+date = "2026-08-01"
+head = "61d411e"
+command = "git checkout 61d411e && node tools/run-gate-fixtures.mjs"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "head corrected per PR #26 review: the prior entry recorded a91e5a7, whose tree produces 52 (verified by checkout) — the 50 came from the tree that became 61d411e. Root cause: heads were stamped with rev-parse HEAD BEFORE committing the change that produced the value, leaving every head one commit stale. Verified by checking out 61d411e and re-running."
+
+[[measurement]]
+key = "release_publication_modules"
+value = 7
+unit = "Maven modules per release"
+date = "2026-08-01"
+head = "a91e5a7"
+command = "SIGNING_KEY=<throwaway PGP key> SIGNING_PASSWORD=<...> ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache && tools/check-release-bundle build/staging-deploy"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; gpg 2.4.8; Linux x86_64 host"
+status = "current"
+note = "measured on a Linux host with a throwaway PGP key: 7 modules (root metadata, android, jvm, linuxx64, iosarm64, iossimulatorarm64, iosx64), 38 primary artifacts, all signed — confirms Apple klibs cross-compile and publish from an ubuntu-class host. Head corrected per PR #26 review: the prior entry recorded 17fe4ff, whose tree does not contain tools/check-release-bundle, so the command was not reproducible there; a91e5a7 is the commit that introduced it. Same stale-head root cause as gate_fixture_harness_checks."

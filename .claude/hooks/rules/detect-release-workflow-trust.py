@@ -139,10 +139,30 @@ def job_steps(job_block: str) -> list[str]:
     return [job_block[s:e] for s, e in zip(starts, starts[1:] + [len(job_block)])]
 
 
+# A JOB-level `env:` is inherited by every step, so secrets declared there make the whole
+# job credentialed even when no step mentions them. Without this, moving SIGNING_KEY up to
+# `jobs.publish.env` would leave every step looking secret-free and silently defeat the
+# step-scoped check below.
+#
+# Matched narrowly (the job block's own 4-space `env:` mapping, ending at the next 4-space
+# key such as `steps:`) rather than by scanning the whole job text: a job block CONTAINS
+# its steps, so "any secret anywhere in the job" would classify every step as credentialed
+# and re-create the job-scoped false positive this check exists to avoid — the compliant
+# split keeps the secret-free smoke step in the same job as the credentialed one.
+_JOB_ENV_RE = re.compile(r"(?m)^    env:\s*\n(?P<body>(?:^      .*\n|^\s*\n)*)")
+
+
+def job_level_env(job_block: str) -> str:
+    match = _JOB_ENV_RE.search(job_block)
+    return match.group("body") if match else ""
+
+
 def credentialed_step_second_build_hits(job_block: str) -> list[str]:
+    inherited = any(secret in job_level_env(job_block) for secret in _PUBLISH_CREDENTIAL_SECRETS)
     hits: list[str] = []
     for step in job_steps(job_block):
-        if not any(secret in step for secret in _PUBLISH_CREDENTIAL_SECRETS):
+        credentialed = inherited or any(secret in step for secret in _PUBLISH_CREDENTIAL_SECRETS)
+        if not credentialed:
             continue
         hits.extend(label for pattern, label in _SECOND_BUILD if re.search(pattern, step))
     return hits

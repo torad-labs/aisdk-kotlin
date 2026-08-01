@@ -53,8 +53,8 @@ jobs:
         run: bash .claude/hooks/rules/ci-gate.sh
       - name: Verify checks
         run: ./gradlew check
-      # Violation: signing secrets exported into the SAME STEP that launches a second
-      # Gradle build (the local-staging smoke) — the step-scoped leak shape the
+      # Violation A (step-scoped): signing secrets exported into the SAME STEP that
+      # launches a second Gradle build (the local-staging smoke) — the leak shape the
       # adversarial review found live in PR #14.
       - name: Stage sign and smoke in one step
         env:
@@ -63,3 +63,24 @@ jobs:
         run: |
           ./gradlew publishAllPublicationsToLocalStagingRepository
           tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
+
+  # Violation B (JOB-scoped inheritance): the smoke step below carries no secrets of its
+  # own, but `jobs.<id>.env` is inherited by every step, so it runs the second Gradle
+  # build with SIGNING_* in its process env anyway. A purely step-text scan reports no
+  # hit here — this job is what pins that hole closed. Kept as a SEPARATE job from
+  # violation A so a regression in either code path fails on its own rather than being
+  # masked by the other.
+  stage-inherited-env:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: preflight
+    permissions:
+      contents: read
+    env:
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+    steps:
+      - name: Stage
+        run: ./gradlew publishAllPublicationsToLocalStagingRepository
+      - name: Smoke looks secret-free but inherits the job env
+        run: tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
