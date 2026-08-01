@@ -64,7 +64,17 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Caching disabled in the release path: this workflow publishes
+          # artifacts, so a cache entry written from a lower-trust run could be
+          # restored into a release build (zizmor cache-poisoning, High).
+          cache-disabled: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
+        # zizmor: ignore[cache-poisoning]
+        # The Kotlin/Native toolchain is large and its cache key is derived from
+        # gradle/libs.versions.toml, so the entry is pinned to an exact toolchain
+        # version rather than to build output. Dropping it would add many minutes
+        # to every release for no change in what is published.
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.konan
@@ -96,7 +106,17 @@ jobs:
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Caching disabled in the release path: this workflow publishes
+          # artifacts, so a cache entry written from a lower-trust run could be
+          # restored into a release build (zizmor cache-poisoning, High).
+          cache-disabled: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
+        # zizmor: ignore[cache-poisoning]
+        # The Kotlin/Native toolchain is large and its cache key is derived from
+        # gradle/libs.versions.toml, so the entry is pinned to an exact toolchain
+        # version rather than to build output. Dropping it would add many minutes
+        # to every release for no change in what is published.
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.konan
