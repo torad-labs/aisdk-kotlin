@@ -4,6 +4,7 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public interface VideoModel {
@@ -21,6 +22,7 @@ public interface VideoModel {
     public val maxVideosPerCall: Int?
         get() = null
 
+    /** @since 0.3.0-beta01 */
     public suspend fun generate(params: VideoGenerationParams): VideoModelResult
 }
 
@@ -200,6 +202,7 @@ public class GenerateVideoResult(
 /** @since 0.3.0-beta01 */
 public object VideoGeneration {
     @Suppress("LongParameterList")
+    @JvmSynthetic
     public suspend fun generateVideo(
         model: VideoModel,
         prompt: String,
@@ -263,6 +266,7 @@ public object VideoGeneration {
 
     @ExperimentalAiSdkApi
     @Suppress("FunctionNaming", "LongParameterList")
+    @JvmSynthetic
     public suspend fun experimental_generateVideo(
         model: VideoModel,
         prompt: String,

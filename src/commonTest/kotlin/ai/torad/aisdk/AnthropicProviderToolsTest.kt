@@ -2,8 +2,8 @@
 
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.Anthropic
-import ai.torad.aisdk.providers.AnthropicMessagesLanguageModel.Companion.forwardAnthropicContainerIdFromLastStep
 import ai.torad.aisdk.providers.AnthropicProviderSettings
+import ai.torad.aisdk.providers.ForwardAnthropicContainerIdFromLastStep
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -49,7 +49,7 @@ class AnthropicProviderToolsTest {
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
 
-        val forwarded = forwardAnthropicContainerIdFromLastStep(
+        val forwarded = ForwardAnthropicContainerIdFromLastStep(
             listOf(
                 mapOf("anthropic" to buildJsonObject {}),
                 mapOf(

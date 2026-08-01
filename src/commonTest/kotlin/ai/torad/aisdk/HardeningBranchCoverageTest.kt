@@ -486,13 +486,13 @@ class HardeningBranchCoverageTest {
         )
 
     private fun JsonObject.stringField(name: String): String? =
-        get(name)?.jsonPrimitive?.contentOrNull
+        this[name]?.jsonPrimitive?.contentOrNull
 
     private fun JsonObject.booleanField(name: String): Boolean? =
-        get(name)?.jsonPrimitive?.boolean
+        this[name]?.jsonPrimitive?.boolean
 
     private fun JsonObject.metadataField(name: String): String? =
-        get("providerMetadata")
+        this["providerMetadata"]
             ?.jsonObject
             ?.get("gateway")
             ?.jsonObject

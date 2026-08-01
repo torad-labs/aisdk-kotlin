@@ -1,0 +1,1483 @@
+diff --git a/.claude/hooks/rules/nonintegrated-baseline.txt b/.claude/hooks/rules/nonintegrated-baseline.txt
+index e69de29..5a48b24 100644
+--- a/.claude/hooks/rules/nonintegrated-baseline.txt
++++ b/.claude/hooks/rules/nonintegrated-baseline.txt
+@@ -0,0 +1,4 @@
++# Test-only seams on Experimental_StdioMCPTransport. Referenced from commonTest
++# (StdioSpawnFailureTest) which this gate does not scan — main-src refs stay at 1.
++MCP.kt::hasProcessForTest
++MCP.kt::prepareProcessForTest
+diff --git a/.github/scripts/triage/classify.sh b/.github/scripts/triage/classify.sh
+index 012d8a6..d8caba0 100755
+--- a/.github/scripts/triage/classify.sh
++++ b/.github/scripts/triage/classify.sh
+@@ -74,4 +74,25 @@ jq -r --arg allow "$ALLOWLIST" '
+   | (.labels // [])
+   | map(select(type == "string"))
+   | map(select(. as $l | ($allow | split(" ")) | index($l)))
+-  | unique | .[0:3] | join(",")' "$resp"
++  | unique
++  | . as $labels
++  | [
++      $labels[]
++      | select(
++          . == "bug"
++          or . == "enhancement"
++          or . == "documentation"
++          or . == "question"
++        )
++    ][0:1] as $types
++  | [
++      $labels[]
++      | select(
++          . != "bug"
++          and . != "enhancement"
++          and . != "documentation"
++          and . != "question"
++        )
++    ][0:2] as $areas
++  | ($types + $areas)
++  | join(",")' "$resp"
+diff --git a/.github/workflows/issue-triage.yml b/.github/workflows/issue-triage.yml
+index 666d2fd..674006c 100644
+--- a/.github/workflows/issue-triage.yml
++++ b/.github/workflows/issue-triage.yml
+@@ -64,11 +64,13 @@ jobs:
+         with:
+           persist-credentials: false
+       - name: Classify and label
++        env:
++          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+         run: |
+           if [ -z "$OPENROUTER_API_KEY" ]; then
+             echo "OPENROUTER_API_KEY not configured; skipping AI classification."
+             exit 0
+           fi
+-          .github/scripts/triage/triage-issue.sh \
+-            "${{ github.event.issue.number || inputs.issue_number }}" \
++          [[ "$ISSUE_NUMBER" =~ ^[0-9]+$ ]] || { echo "invalid issue number: $ISSUE_NUMBER"; exit 1; }
++          .github/scripts/triage/triage-issue.sh "$ISSUE_NUMBER" \
+             || echo "::warning::issue triage classification failed (non-blocking)"
+diff --git a/.rules/kotlin/ast-grep/rules-style/no-deprecated-without-version.yaml b/.rules/kotlin/ast-grep/rules-style/no-deprecated-without-version.yaml
+index 410a8f7..ab175ae 100644
+--- a/.rules/kotlin/ast-grep/rules-style/no-deprecated-without-version.yaml
++++ b/.rules/kotlin/ast-grep/rules-style/no-deprecated-without-version.yaml
+@@ -2,18 +2,14 @@ id: no-deprecated-without-version
+ language: kotlin
+ severity: warning
+ message: "`@Deprecated` message doesn't mention a version. Without a version, consumers can't tell how urgent the migration is or when the symbol will be removed. Mention the version it was deprecated in and/or the version it will be removed in, e.g. `@Deprecated(\"Use X instead, removed in 2.0.0\")`."
++# Bind only the first deprecation argument (the message). A relational stopBy:end walk
++# previously matched ANY nested string — including ReplaceWith("newApi()") — so a
++# compliant declaration still warned. Pattern metavariable $MESSAGE is the first arg only.
+ rule:
+-  kind: annotation
+-  all:
+-    - has: { kind: user_type, stopBy: end, has: { kind: type_identifier, regex: '^Deprecated$' } }
+-    - has:
+-        kind: value_arguments
+-        stopBy: end
+-        has:
+-          kind: value_argument
+-          has:
+-            kind: string_literal
+-            not:
+-              has:
+-                kind: string_content
+-                regex: '(?i)(version|\d+\.\d+)'
++  any:
++    - pattern: '@Deprecated($MESSAGE)'
++    - pattern: '@Deprecated($MESSAGE, $$$REST)'
++constraints:
++  MESSAGE:
++    not:
++      regex: '(?i)(version|\d+\.\d+)'
+diff --git a/.rules/kotlin/ast-grep/rules-style/no-public-without-since.yaml b/.rules/kotlin/ast-grep/rules-style/no-public-without-since.yaml
+index ad95977..234346d 100644
+--- a/.rules/kotlin/ast-grep/rules-style/no-public-without-since.yaml
++++ b/.rules/kotlin/ast-grep/rules-style/no-public-without-since.yaml
+@@ -2,6 +2,8 @@ id: no-public-without-since
+ language: kotlin
+ severity: warning
+ message: "Public declaration has no KDoc `@since` tag (either no KDoc at all, or a KDoc missing `@since`). This is a published, ABI-validated library — consumers and changelog tooling rely on `@since` to know which release introduced a symbol. Add a `/** ... @since X.Y.Z */` block directly above the declaration."
++# Require the KDoc opening token (`/**`). A plain block comment `/* @since ... */` is NOT
++# published by Dokka, so accepting any multiline_comment let non-KDoc markers slip through.
+ rule:
+   all:
+     - any:
+@@ -15,4 +17,4 @@ rule:
+     - not:
+         follows:
+           kind: multiline_comment
+-          regex: '@since'
++          regex: '^/\*\*[\s\S]*@since'
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index aafcef1..a7bc4c4 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -6,6 +6,35 @@ This project follows Semantic Versioning once the first stable release is cut.
+ 
+ ## Unreleased
+ 
++- **PR review follow-ups (release hardening):**
++  - **Security:** `issue-triage.yml` no longer interpolates `workflow_dispatch` input
++    into Bash source; the issue number is passed via `env` and validated as decimal.
++  - **Wire:** `ToolResultOutput.Json.toJsonElement()` now emits a `type=json` envelope
++    (matching the existing decoder), so a success payload that collides with an
++    error/denial shape cannot be re-decoded as `Error`.
++  - **Provider registry:** `ModelRef` resolution on `ProviderRegistry` dispatches from
++    the typed `providerId`/`modelId` components and no longer re-stringifies through
++    colon-hardcoded `qualifiedName` (custom separators work on the typed path).
++  - **MCP stdio:** `start()` failure after `begin()` (including cancellation during a
++    stale-process close) finishes teardown under `NonCancellable`, clears the process
++    field, and resets the lifecycle before rethrowing.
++  - **IDs:** Google Interactions / Google Language Model / Bedrock Mantle ID-less
++    fallbacks use the injected `generateId` callback instead of the global
++    `GenerateId()`.
++  - **Gateway:** blank `VERCEL_OIDC_TOKEN` is treated as absent (same as blank API key).
++  - **Mock:** `ScriptedResponse` is `@Poko` + internal constructor + DSL factory
++    (no public `data class` / `copy`); data-class budget ratcheted 40 → 39.
++  - **Triage:** `classify.sh` partitions labels into at most one type + two areas.
++  - **Rules:** `no-deprecated-without-version` binds only the message argument
++    (ReplaceWith strings no longer false-positive); `no-public-without-since` requires
++    a real KDoc `/**` opener.
++  - **Open Responses:** unknown provider-tool types still passthrough for forward-compat
++    but now emit a local `CallWarning("unsupported", …)` so a typo'd `providerToolId`
++    does not look like a remote 4xx outage.
++  - **KDoc:** `ProviderId`/`ModelId`/`ToolCallId`/`ToolName`/`ApprovalId` companion
++    `invoke` factories tagged `@since 0.3.0-beta01` alongside their `of()` siblings.
++  - **Bugfix:** `ModelRef(providerId, modelId)` factory no longer recurses into itself.
++
+ - **Breaking (source):** every public `companion object` factory moved to a top-level
+   declaration, completing the `no-companion-objects` migration. The capabilities are
+   unchanged — only the call syntax moves — and the committed ABI dumps now record it.
+diff --git a/INTERFACE_CONTRACT.md b/INTERFACE_CONTRACT.md
+index 8f0911a..b9b2d98 100644
+--- a/INTERFACE_CONTRACT.md
++++ b/INTERFACE_CONTRACT.md
+@@ -108,6 +108,11 @@ Tool result/output holders (`ToolResult.Success`, `ValidationResult.Success` /
+ and `ToolResultOutput` leaves) are `@Poko class` value-semantics types; sealed
+ parents and serialization wire names remain unchanged, while public `copy()` /
+ `componentN()` ABI is intentionally absent.
++- `ToolResultOutput.toJsonElement()` wire shapes: `Text` is a bare JSON string;
++  `Json` is `{"type":"json","value":…}` (enveloped so a success payload cannot
++  collide with error/denial tags); `Error` / `ErrorJson` / `ExecutionDenied` /
++  `Content` keep their typed discriminators. `toolResultOutputFromWire` is the
++  inverse for every variant.
+ - Approval flow: tool calls `needsApproval` → loop ends → host inspects `pendingApprovals` →
+   resumes with `agent.generate(messages = result.messages + ToolApprovalResponseMessage(toolCallId, approved, reason?, approvalId?))`
+ 
+@@ -229,6 +234,9 @@ of producing a normal abort completion for the step.
+ - `@Poko class LanguageModelRequestMetadata(body?)`
+ - `@Poko class LanguageModelResponseMetadata(id?, timestampMillis?, modelId?, headers, body?)`
+ - `class ai.torad.aisdk.providers.MockLanguageModel(...)` — for tests only
++- `@Poko class ScriptedResponse` (internal constructor) + `ScriptedResponse { … }`
++  DSL / `ScriptedResponseBuilder` — one scripted mock response; no public
++  positional constructor, `copy()`, or `componentN()`. Construct via the DSL.
+ 
+ ### Middleware
+ 
+diff --git a/api/jvm/torad-aisdk.api b/api/jvm/torad-aisdk.api
+index 6d2e706..9c7539f 100644
+--- a/api/jvm/torad-aisdk.api
++++ b/api/jvm/torad-aisdk.api
+@@ -11426,6 +11426,8 @@ public final class ai/torad/aisdk/providers/MockLanguageModelKt {
+ 	public static final fun MockLanguageModelToolThenText (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/providers/MockLanguageModel;
+ 	public static synthetic fun MockLanguageModelToolThenText$default (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/MockLanguageModel;
+ 	public static final fun MockToolInput ([Lkotlin/Pair;)Lkotlinx/serialization/json/JsonObject;
++	public static final fun ScriptedResponse (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ScriptedResponse;
++	public static synthetic fun ScriptedResponse$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ScriptedResponse;
+ }
+ 
+ public final class ai/torad/aisdk/providers/MockModelsKt {
+@@ -12629,18 +12631,6 @@ public final class ai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilde
+ }
+ 
+ public final class ai/torad/aisdk/providers/ScriptedResponse {
+-	public fun <init> (Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;)V
+-	public synthetic fun <init> (Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+-	public final fun component1 ()Ljava/util/List;
+-	public final fun component2 ()Lai/torad/aisdk/FinishReason;
+-	public final fun component3 ()Lai/torad/aisdk/Usage;
+-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
+-	public final fun component5 ()Ljava/lang/String;
+-	public final fun component6 ()Ljava/util/List;
+-	public final fun component7 ()Lai/torad/aisdk/LanguageModelRequestMetadata;
+-	public final fun component8 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
+-	public final fun copy (Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;)Lai/torad/aisdk/providers/ScriptedResponse;
+-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/ScriptedResponse;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;ILjava/lang/Object;)Lai/torad/aisdk/providers/ScriptedResponse;
+ 	public fun equals (Ljava/lang/Object;)Z
+ 	public final fun getEvents ()Ljava/util/List;
+ 	public final fun getFinishReason ()Lai/torad/aisdk/FinishReason;
+@@ -12654,6 +12644,17 @@ public final class ai/torad/aisdk/providers/ScriptedResponse {
+ 	public fun toString ()Ljava/lang/String;
+ }
+ 
++public final class ai/torad/aisdk/providers/ScriptedResponseBuilder {
++	public final fun events (Ljava/util/List;)V
++	public final fun finishReason (Lai/torad/aisdk/FinishReason;)V
++	public final fun providerMetadata (Lai/torad/aisdk/ProviderMetadata;)V
++	public final fun rawFinishReason (Ljava/lang/String;)V
++	public final fun request (Lai/torad/aisdk/LanguageModelRequestMetadata;)V
++	public final fun response (Lai/torad/aisdk/LanguageModelResponseMetadata;)V
++	public final fun usage (Lai/torad/aisdk/Usage;)V
++	public final fun warnings (Ljava/util/List;)V
++}
++
+ public final class ai/torad/aisdk/providers/TogetherAIFacadeKt {
+ 	public static final field TOGETHERAI_VERSION Ljava/lang/String;
+ 	public static final fun TogetherAI (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/TogetherAIProviderSettings;)Lai/torad/aisdk/providers/TogetherAIProvider;
+diff --git a/api/torad-aisdk.klib.api b/api/torad-aisdk.klib.api
+index 1ca5a05..7fb1bba 100644
+--- a/api/torad-aisdk.klib.api
++++ b/api/torad-aisdk.klib.api
+@@ -6617,8 +6617,6 @@ final class ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder { //
+ }
+ 
+ final class ai.torad.aisdk.providers/ScriptedResponse { // ai.torad.aisdk.providers/ScriptedResponse|null[0]
+-    constructor <init>(kotlin.collections/List<ai.torad.aisdk/StreamEvent>, ai.torad.aisdk/FinishReason = ..., ai.torad.aisdk/Usage = ..., ai.torad.aisdk/ProviderMetadata = ..., kotlin/String? = ..., kotlin.collections/List<ai.torad.aisdk/CallWarning> = ..., ai.torad.aisdk/LanguageModelRequestMetadata = ..., ai.torad.aisdk/LanguageModelResponseMetadata = ...) // ai.torad.aisdk.providers/ScriptedResponse.<init>|<init>(kotlin.collections.List<ai.torad.aisdk.StreamEvent>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;ai.torad.aisdk.ProviderMetadata;kotlin.String?;kotlin.collections.List<ai.torad.aisdk.CallWarning>;ai.torad.aisdk.LanguageModelRequestMetadata;ai.torad.aisdk.LanguageModelResponseMetadata){}[0]
+-
+     final val events // ai.torad.aisdk.providers/ScriptedResponse.events|{}events[0]
+         final fun <get-events>(): kotlin.collections/List<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk.providers/ScriptedResponse.events.<get-events>|<get-events>(){}[0]
+     final val finishReason // ai.torad.aisdk.providers/ScriptedResponse.finishReason|{}finishReason[0]
+@@ -6636,20 +6634,22 @@ final class ai.torad.aisdk.providers/ScriptedResponse { // ai.torad.aisdk.provid
+     final val warnings // ai.torad.aisdk.providers/ScriptedResponse.warnings|{}warnings[0]
+         final fun <get-warnings>(): kotlin.collections/List<ai.torad.aisdk/CallWarning> // ai.torad.aisdk.providers/ScriptedResponse.warnings.<get-warnings>|<get-warnings>(){}[0]
+ 
+-    final fun component1(): kotlin.collections/List<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk.providers/ScriptedResponse.component1|component1(){}[0]
+-    final fun component2(): ai.torad.aisdk/FinishReason // ai.torad.aisdk.providers/ScriptedResponse.component2|component2(){}[0]
+-    final fun component3(): ai.torad.aisdk/Usage // ai.torad.aisdk.providers/ScriptedResponse.component3|component3(){}[0]
+-    final fun component4(): ai.torad.aisdk/ProviderMetadata // ai.torad.aisdk.providers/ScriptedResponse.component4|component4(){}[0]
+-    final fun component5(): kotlin/String? // ai.torad.aisdk.providers/ScriptedResponse.component5|component5(){}[0]
+-    final fun component6(): kotlin.collections/List<ai.torad.aisdk/CallWarning> // ai.torad.aisdk.providers/ScriptedResponse.component6|component6(){}[0]
+-    final fun component7(): ai.torad.aisdk/LanguageModelRequestMetadata // ai.torad.aisdk.providers/ScriptedResponse.component7|component7(){}[0]
+-    final fun component8(): ai.torad.aisdk/LanguageModelResponseMetadata // ai.torad.aisdk.providers/ScriptedResponse.component8|component8(){}[0]
+-    final fun copy(kotlin.collections/List<ai.torad.aisdk/StreamEvent> = ..., ai.torad.aisdk/FinishReason = ..., ai.torad.aisdk/Usage = ..., ai.torad.aisdk/ProviderMetadata = ..., kotlin/String? = ..., kotlin.collections/List<ai.torad.aisdk/CallWarning> = ..., ai.torad.aisdk/LanguageModelRequestMetadata = ..., ai.torad.aisdk/LanguageModelResponseMetadata = ...): ai.torad.aisdk.providers/ScriptedResponse // ai.torad.aisdk.providers/ScriptedResponse.copy|copy(kotlin.collections.List<ai.torad.aisdk.StreamEvent>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;ai.torad.aisdk.ProviderMetadata;kotlin.String?;kotlin.collections.List<ai.torad.aisdk.CallWarning>;ai.torad.aisdk.LanguageModelRequestMetadata;ai.torad.aisdk.LanguageModelResponseMetadata){}[0]
+     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/ScriptedResponse.equals|equals(kotlin.Any?){}[0]
+     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/ScriptedResponse.hashCode|hashCode(){}[0]
+     final fun toString(): kotlin/String // ai.torad.aisdk.providers/ScriptedResponse.toString|toString(){}[0]
+ }
+ 
++final class ai.torad.aisdk.providers/ScriptedResponseBuilder { // ai.torad.aisdk.providers/ScriptedResponseBuilder|null[0]
++    final fun events(kotlin.collections/List<ai.torad.aisdk/StreamEvent>) // ai.torad.aisdk.providers/ScriptedResponseBuilder.events|events(kotlin.collections.List<ai.torad.aisdk.StreamEvent>){}[0]
++    final fun finishReason(ai.torad.aisdk/FinishReason) // ai.torad.aisdk.providers/ScriptedResponseBuilder.finishReason|finishReason(ai.torad.aisdk.FinishReason){}[0]
++    final fun providerMetadata(ai.torad.aisdk/ProviderMetadata) // ai.torad.aisdk.providers/ScriptedResponseBuilder.providerMetadata|providerMetadata(ai.torad.aisdk.ProviderMetadata){}[0]
++    final fun rawFinishReason(kotlin/String?) // ai.torad.aisdk.providers/ScriptedResponseBuilder.rawFinishReason|rawFinishReason(kotlin.String?){}[0]
++    final fun request(ai.torad.aisdk/LanguageModelRequestMetadata) // ai.torad.aisdk.providers/ScriptedResponseBuilder.request|request(ai.torad.aisdk.LanguageModelRequestMetadata){}[0]
++    final fun response(ai.torad.aisdk/LanguageModelResponseMetadata) // ai.torad.aisdk.providers/ScriptedResponseBuilder.response|response(ai.torad.aisdk.LanguageModelResponseMetadata){}[0]
++    final fun usage(ai.torad.aisdk/Usage) // ai.torad.aisdk.providers/ScriptedResponseBuilder.usage|usage(ai.torad.aisdk.Usage){}[0]
++    final fun warnings(kotlin.collections/List<ai.torad.aisdk/CallWarning>) // ai.torad.aisdk.providers/ScriptedResponseBuilder.warnings|warnings(kotlin.collections.List<ai.torad.aisdk.CallWarning>){}[0]
++}
++
+ final class ai.torad.aisdk.providers/TogetherAIImageModelOptions { // ai.torad.aisdk.providers/TogetherAIImageModelOptions|null[0]
+     final val disableSafetyChecker // ai.torad.aisdk.providers/TogetherAIImageModelOptions.disableSafetyChecker|{}disableSafetyChecker[0]
+         final fun <get-disableSafetyChecker>(): kotlin/Boolean? // ai.torad.aisdk.providers/TogetherAIImageModelOptions.disableSafetyChecker.<get-disableSafetyChecker>|<get-disableSafetyChecker>(){}[0]
+@@ -10271,13 +10271,20 @@ final class ai.torad.aisdk/ProviderRegistry : ai.torad.aisdk/Provider { // ai.to
+     final val providerId // ai.torad.aisdk/ProviderRegistry.providerId|{}providerId[0]
+         final fun <get-providerId>(): kotlin/String // ai.torad.aisdk/ProviderRegistry.providerId.<get-providerId>|<get-providerId>(){}[0]
+ 
++    final fun embeddingModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk/ProviderRegistry.embeddingModel|embeddingModel(ai.torad.aisdk.ModelRef){}[0]
+     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk/ProviderRegistry.embeddingModel|embeddingModel(kotlin.String){}[0]
++    final fun imageModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/ImageModel // ai.torad.aisdk/ProviderRegistry.imageModel|imageModel(ai.torad.aisdk.ModelRef){}[0]
+     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk/ProviderRegistry.imageModel|imageModel(kotlin.String){}[0]
++    final fun languageModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/LanguageModel // ai.torad.aisdk/ProviderRegistry.languageModel|languageModel(ai.torad.aisdk.ModelRef){}[0]
+     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk/ProviderRegistry.languageModel|languageModel(kotlin.String){}[0]
+     final fun provider(kotlin/String): ai.torad.aisdk/Provider // ai.torad.aisdk/ProviderRegistry.provider|provider(kotlin.String){}[0]
++    final fun rerankingModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/RerankingModel // ai.torad.aisdk/ProviderRegistry.rerankingModel|rerankingModel(ai.torad.aisdk.ModelRef){}[0]
+     final fun rerankingModel(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk/ProviderRegistry.rerankingModel|rerankingModel(kotlin.String){}[0]
++    final fun speechModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/SpeechModel // ai.torad.aisdk/ProviderRegistry.speechModel|speechModel(ai.torad.aisdk.ModelRef){}[0]
+     final fun speechModel(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk/ProviderRegistry.speechModel|speechModel(kotlin.String){}[0]
++    final fun transcriptionModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk/ProviderRegistry.transcriptionModel|transcriptionModel(ai.torad.aisdk.ModelRef){}[0]
+     final fun transcriptionModel(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk/ProviderRegistry.transcriptionModel|transcriptionModel(kotlin.String){}[0]
++    final fun videoModel(ai.torad.aisdk/ModelRef): ai.torad.aisdk/VideoModel // ai.torad.aisdk/ProviderRegistry.videoModel|videoModel(ai.torad.aisdk.ModelRef){}[0]
+     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk/ProviderRegistry.videoModel|videoModel(kotlin.String){}[0]
+ }
+ 
+@@ -14339,6 +14346,7 @@ final fun ai.torad.aisdk.providers/ReplicateVideoModelOptions(kotlin/Function1<a
+ final fun ai.torad.aisdk.providers/Revai(io.ktor.client/HttpClient, ai.torad.aisdk.providers/RevaiProviderSettings = ...): ai.torad.aisdk.providers/RevaiProvider // ai.torad.aisdk.providers/Revai|Revai(io.ktor.client.HttpClient;ai.torad.aisdk.providers.RevaiProviderSettings){}[0]
+ final fun ai.torad.aisdk.providers/RevaiProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/RevaiProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/RevaiProviderSettings // ai.torad.aisdk.providers/RevaiProviderSettings|RevaiProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.RevaiProviderSettingsBuilder,kotlin.Unit>){}[0]
+ final fun ai.torad.aisdk.providers/RevaiTranscriptionModelOptions(kotlin/Function1<ai.torad.aisdk.providers/RevaiTranscriptionModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/RevaiTranscriptionModelOptions // ai.torad.aisdk.providers/RevaiTranscriptionModelOptions|RevaiTranscriptionModelOptions(kotlin.Function1<ai.torad.aisdk.providers.RevaiTranscriptionModelOptionsBuilder,kotlin.Unit>){}[0]
++final fun ai.torad.aisdk.providers/ScriptedResponse(kotlin/Function1<ai.torad.aisdk.providers/ScriptedResponseBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/ScriptedResponse // ai.torad.aisdk.providers/ScriptedResponse|ScriptedResponse(kotlin.Function1<ai.torad.aisdk.providers.ScriptedResponseBuilder,kotlin.Unit>){}[0]
+ final fun ai.torad.aisdk.providers/TogetherAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/TogetherAIProviderSettings = ...): ai.torad.aisdk.providers/TogetherAIProvider // ai.torad.aisdk.providers/TogetherAI|TogetherAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.TogetherAIProviderSettings){}[0]
+ final fun ai.torad.aisdk.providers/TogetherAIImageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/TogetherAIImageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/TogetherAIImageModelOptions // ai.torad.aisdk.providers/TogetherAIImageModelOptions|TogetherAIImageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.TogetherAIImageModelOptionsBuilder,kotlin.Unit>){}[0]
+ final fun ai.torad.aisdk.providers/TogetherAIProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/TogetherAIProviderSettings // ai.torad.aisdk.providers/TogetherAIProviderSettings|TogetherAIProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.TogetherAIProviderSettingsBuilder,kotlin.Unit>){}[0]
+diff --git a/architecture-budget.json b/architecture-budget.json
+index 7f11474..f9fcff1 100644
+--- a/architecture-budget.json
++++ b/architecture-budget.json
+@@ -4,19 +4,20 @@
+     "src/commonMain/kotlin/ai/torad/aisdk/AgentSession.kt": 555,
+     "src/commonMain/kotlin/ai/torad/aisdk/Context.kt": 660,
+     "src/commonMain/kotlin/ai/torad/aisdk/KtorGatewayTransport.kt": 613,
+-    "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt": 2210,
++    "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt": 2240,
+     "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt": 902,
+     "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt": 1880,
+     "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt": 931,
+     "src/commonMain/kotlin/ai/torad/aisdk/providers/BedrockRequest.kt": 607,
+     "src/commonMain/kotlin/ai/torad/aisdk/providers/FalProvider.kt": 598,
+     "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsMapping.kt": 730,
+-    "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt": 647,
+-    "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleLanguageModel.kt": 779,
++    "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt": 650,
++    "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleLanguageModel.kt": 781,
+     "src/commonMain/kotlin/ai/torad/aisdk/providers/HuggingFaceProvider.kt": 947,
+     "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAICompatibleHttp.kt": 663,
+     "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAICompatibleModels.kt": 597,
+     "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesProvider.kt": 1079,
++    "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesRequestMapping.kt": 516,
+     "src/commonMain/kotlin/ai/torad/aisdk/providers/ProdiaProvider.kt": 533,
+     "src/commonMain/kotlin/ai/torad/aisdk/providers/XaiProvider.kt": 655,
+     "src/commonMain/kotlin/ai/torad/aisdk/ui/MessageStreamReader.kt": 555,
+@@ -54,6 +55,6 @@
+     "src/commonTest/kotlin/ai/torad/aisdk/HuggingFaceProviderTest.kt": 501,
+     "src/commonTest/kotlin/ai/torad/aisdk/LiteRTLanguageModelTest.kt": 685,
+     "src/commonTest/kotlin/ai/torad/aisdk/MCPClientTest.kt": 514,
+-    "src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt": 554
++    "src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt": 614
+   }
+ }
+diff --git a/data-class-budget.json b/data-class-budget.json
+index 22fbdb4..4a74e87 100644
+--- a/data-class-budget.json
++++ b/data-class-budget.json
+@@ -1,5 +1,5 @@
+ {
+-  "publicDataClassesCommonMain": 40,
++  "publicDataClassesCommonMain": 39,
+   "trackedPublicDataClassesCommonMain": [
+     "ai/torad/aisdk/AgentSession.kt:AgentSessionState#1",
+     "ai/torad/aisdk/CompletionApi.kt:CompletionState#1",
+@@ -38,7 +38,6 @@
+     "ai/torad/aisdk/providers/GoogleProvider.kt:Agent#1",
+     "ai/torad/aisdk/providers/GoogleProvider.kt:ManagedAgent#1",
+     "ai/torad/aisdk/providers/GoogleProvider.kt:Model#1",
+-    "ai/torad/aisdk/providers/MockLanguageModel.kt:ScriptedResponse#1",
+     "ai/torad/aisdk/ui/ChatSession.kt:ChatState#1",
+     "ai/torad/aisdk/ui/UIMessage.kt:UIMessage#1"
+   ]
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt b/src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt
+index 5c3519a..3ef4a29 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt
+@@ -25,7 +25,9 @@ internal suspend fun GatewayAuthTokenFromSettings(settings: GatewayProviderSetti
+     // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
+     // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).
+     return settings.authTokenProvider?.invoke()
+-        ?: settings.environment["VERCEL_OIDC_TOKEN"]?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
++        ?: settings.environment["VERCEL_OIDC_TOKEN"]
++            ?.takeIf { it.isNotBlank() }
++            ?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
+ }
+ 
+ /** @since 0.3.0-beta01 */
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/MCP.kt b/src/commonMain/kotlin/ai/torad/aisdk/MCP.kt
+index 3a9c008..6ea7620 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/MCP.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/MCP.kt
+@@ -2078,6 +2078,7 @@ internal expect fun CreateMCPStdioProcess(config: StdioConfig): MCPStdioProcess
+ 
+ @ExperimentalAiSdkApi
+ /** @since 0.3.0-beta01 */
++@Suppress("TooManyFunctions") // transport surface + private teardown helpers + test seams
+ public class Experimental_StdioMCPTransport(
+     /** @since 0.3.0-beta01 */
+     public val config: StdioConfig,
+@@ -2088,27 +2089,48 @@ public class Experimental_StdioMCPTransport(
+     private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
+     private val protocolVersion = AtomicReference<String?>(null)
+ 
++    // Default: platform actual. Tests swap this before start() to drive lifecycle paths
++    // (cancel-during-stale-close, spawn failure) without a real child process.
++    private var processFactory: (StdioConfig) -> MCPStdioProcess = { CreateMCPStdioProcess(it) }
++
+     override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
+     override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
+     override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
+     override fun setProtocolVersion(version: String?) { protocolVersion.store(version) }
+ 
++    /**
++     * Test seam: plant a stale process and/or replace the platform factory before [start]
++     * so lifecycle/teardown paths can be driven without a real child process.
++     */
++    internal fun prepareProcessForTest(
++        stale: MCPStdioProcess? = null,
++        factory: ((StdioConfig) -> MCPStdioProcess)? = null,
++    ) {
++        if (stale != null) process = stale
++        if (factory != null) processFactory = factory
++    }
++
++    /** Test-only: true while a live process handle is retained. */
++    internal val hasProcessForTest: Boolean get() = process != null
++
+     private val lifecycle = McpConnectionLifecycle()
+     private var process: MCPStdioProcess? = null
+ 
+     override suspend fun start() {
+         val readerScope = lifecycle.begin { CoroutineScope(SupervisorJob() + engineContext) }
+             ?: throw MCPClientError("StdioMCPTransport already started.")
++        // Close any pre-existing process before overwriting the field — a reconnect after the
++        // reader EOF'd would otherwise leak the prior child + its FDs. Retain the handle so a
++        // cancellation mid-close can still finish teardown NonCancellably and clear the field;
++        // otherwise a concurrent restart races a dangling process reference after lifecycle is Idle.
++        val stale = process
+         val started = try {
+-            // Close any pre-existing process before overwriting the field — a reconnect after the
+-            // reader EOF'd would otherwise leak the prior child + its FDs.
+-            process?.let { stale -> closeProcessPreservingCancellation(stale) }
+-            CreateMCPStdioProcess(config)
++            stale?.let { closeProcessPreservingCancellation(it) }
++            processFactory(config)
+         } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
+-            // Spawn failed, or the stale-process close was cancelled, AFTER begin() won Idle->Active:
+-            // undo the transition and cancel the freshly built scope, else the transport is wedged
+-            // Active (a later start() throws "already started") with a leaked scope. Rethrow the cause.
+-            lifecycle.onReaderExited()?.cancel()
++            // Cleanup BEFORE rethrow — including CancellationException from a cancelled stale
++            // close. Rethrowing CE first would skip teardown and leave process dangling.
++            undoFailedStart(stale)
+             throw error
+         }
+         process = started
+@@ -2145,6 +2167,17 @@ public class Experimental_StdioMCPTransport(
+         )
+     }
+ 
++    /** Finish stale teardown + lifecycle reset after start fails post-begin(). */
++    private suspend fun undoFailedStart(stale: MCPStdioProcess?) {
++        withContext(NonCancellable) {
++            if (process === stale) {
++                stale?.let { closeProcessForTeardown(it) }
++                process = null
++            }
++        }
++        lifecycle.onReaderExited()?.cancel()
++    }
++
+     override suspend fun send(message: JSONRPCMessage) {
+         val active = process ?: throw MCPClientError("StdioClientTransport not connected")
+         try {
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/ModelRef.kt b/src/commonMain/kotlin/ai/torad/aisdk/ModelRef.kt
+index f4e8107..9c52df3 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/ModelRef.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/ModelRef.kt
+@@ -16,6 +16,7 @@ public value class ProviderId(public val value: String) {
+     override fun toString(): String = value
+ 
+     public companion object {
++        /** @since 0.3.0-beta01 */
+         public operator fun invoke(value: String): ProviderId = of(value)
+ 
+         @JvmExposeBoxed
+@@ -36,6 +37,7 @@ public value class ModelId(public val value: String) {
+     override fun toString(): String = value
+ 
+     public companion object {
++        /** @since 0.3.0-beta01 */
+         public operator fun invoke(value: String): ModelId = of(value)
+ 
+         @JvmExposeBoxed
+@@ -83,10 +85,17 @@ public object ModelIdentifiers {
+ /** @since 0.3.0-beta01 */
+ public fun ModelRef(value: String): ModelRef = ParseModelRef(value)
+ 
+-/** @since 0.3.0-beta01 */
++/**
++ * Build a [ModelRef] from typed ids.
++ *
++ * Uses the positional primary constructor (`modelId` first). A previous body that
++ * re-invoked `ModelRef(modelId = …, providerId = …)` resolved back to this factory
++ * and stack-overflowed.
++ * @since 0.3.0-beta01
++ */
+ public fun ModelRef(providerId: ProviderId, modelId: ModelId): ModelRef =
+-    ModelRef(modelId = modelId, providerId = providerId)
++    ModelRef(modelId, providerId)
+ 
+ /** @since 0.3.0-beta01 */
+ public fun ModelRef(providerId: String, modelId: String): ModelRef =
+-    ModelRef(ProviderId(providerId), ModelId(modelId))
++    ModelRef(ModelId(modelId), ProviderId(providerId))
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/Provider.kt b/src/commonMain/kotlin/ai/torad/aisdk/Provider.kt
+index 54a3e19..4dc44d0 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/Provider.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/Provider.kt
+@@ -99,12 +99,17 @@ public interface Provider {
+     public fun videoModel(ref: ModelRef): VideoModel =
+         resolveModelRef(ref) { videoModel(it) }
+ 
++    /**
++     * Non-registry path: honor an explicit providerId when present, else resolve the
++     * local model id on this provider. [ProviderRegistry] overrides the ModelRef
++     * overloads so it never re-stringifies through [ModelRef.qualifiedName] (which
++     * hardcodes `:`, bypassing a custom registry separator).
++     */
+     private fun <T> resolveModelRef(ref: ModelRef, getter: Provider.(String) -> T): T =
+-        when {
+-            this is ProviderRegistry -> getter(ref.qualifiedName)
+-            ref.providerId == null || ref.providerId.value == providerId -> getter(ref.modelId.value)
+-            else -> throw NoSuchProviderError(ref.providerId.value)
+-        }
++        ref.providerId
++            ?.takeIf { it.value != providerId }
++            ?.let { throw NoSuchProviderError(it.value) }
++            ?: getter(ref.modelId.value)
+ }
+ 
+ /** @since 0.3.0-beta01 */
+@@ -310,6 +315,7 @@ public fun SplitProviderModelId(modelId: String, separator: String = ":"): Pair<
+ }
+ 
+ /** @since 0.3.0-beta01 */
++@Suppress("TooManyFunctions") // facade: one overload pair per model kind (string + ModelRef)
+ public class ProviderRegistry(
+     private val providers: Map<String, Provider>,
+     private val defaultProviderId: String? = null,
+@@ -348,12 +354,46 @@ public class ProviderRegistry(
+     override fun videoModel(modelId: String): VideoModel =
+         resolve(modelId) { provider, localId -> provider.videoModel(localId) }
+ 
++    /**
++     * Typed [ModelRef] path: select the provider from the ref's components and pass only
++     * the local model id. Never re-stringify through [ModelRef.qualifiedName] — that
++     * hardcodes `:`, which bypasses a custom [separator].
++     */
++    override fun languageModel(ref: ModelRef): LanguageModel =
++        WrapLanguageModel(
++            resolveFromRef(ref) { provider, localId -> provider.languageModel(localId) },
++            languageModelMiddleware,
++        )
++
++    override fun embeddingModel(ref: ModelRef): EmbeddingModel =
++        resolveFromRef(ref) { provider, localId -> provider.embeddingModel(localId) }
++
++    override fun imageModel(ref: ModelRef): ImageModel =
++        resolveFromRef(ref) { provider, localId -> provider.imageModel(localId) }
++
++    override fun speechModel(ref: ModelRef): SpeechModel =
++        resolveFromRef(ref) { provider, localId -> provider.speechModel(localId) }
++
++    override fun transcriptionModel(ref: ModelRef): TranscriptionModel =
++        resolveFromRef(ref) { provider, localId -> provider.transcriptionModel(localId) }
++
++    override fun rerankingModel(ref: ModelRef): RerankingModel =
++        resolveFromRef(ref) { provider, localId -> provider.rerankingModel(localId) }
++
++    override fun videoModel(ref: ModelRef): VideoModel =
++        resolveFromRef(ref) { provider, localId -> provider.videoModel(localId) }
++
+     private fun <T> resolve(modelId: String, getter: (Provider, String) -> T): T {
+         val (providerId, localModelId) = SplitProviderModelId(modelId, separator)
+         val resolvedProviderId = providerId ?: defaultProviderId ?: singleProviderId()
+         return getter(provider(resolvedProviderId), localModelId)
+     }
+ 
++    private fun <T> resolveFromRef(ref: ModelRef, getter: (Provider, String) -> T): T {
++        val resolvedProviderId = ref.providerId?.value ?: defaultProviderId ?: singleProviderId()
++        return getter(provider(resolvedProviderId), ref.modelId.value)
++    }
++
+     private fun singleProviderId(): String {
+         if (providers.size == 1) return providers.keys.single()
+         throw InvalidArgumentError(
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/ToolResultOutput.kt b/src/commonMain/kotlin/ai/torad/aisdk/ToolResultOutput.kt
+index cb53c41..02836c8 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/ToolResultOutput.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/ToolResultOutput.kt
+@@ -74,8 +74,15 @@ public sealed class ToolResultOutput {
+      * @since 0.3.0-beta01
+      */
+     public fun toJsonElement(): JsonElement = when (this) {
++        // Bare string stays the common success path (toolResultOutputFromWire reads it as Text).
+         is Text -> JsonPrimitive(text)
+-        is Json -> json
++        // Envelope successful JSON so a payload that happens to look like an error/denial
++        // tag (e.g. {"type":"error-text","value":"ok"}) cannot be re-decoded as Error.
++        // toolResultOutputFromWire already keys on type=json + value.
++        is Json -> buildJsonObject {
++            put("type", JsonPrimitive("json"))
++            put("value", json)
++        }
+         // Typed discriminators so the three error/denial subtypes round-trip through
+         // toolResultOutputFromWire() (which keys on `type`). Bare values fell through
+         // its fallback and lost their error/denial identity (and baked-in "Error: ").
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/TypeIds.kt b/src/commonMain/kotlin/ai/torad/aisdk/TypeIds.kt
+index b761a9c..8264a07 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/TypeIds.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/TypeIds.kt
+@@ -14,6 +14,7 @@ public value class ToolCallId(public val value: String) {
+     override fun toString(): String = value
+ 
+     public companion object {
++        /** @since 0.3.0-beta01 */
+         public operator fun invoke(value: String): ToolCallId = of(value)
+ 
+         @JvmExposeBoxed
+@@ -32,6 +33,7 @@ public value class ToolName(public val value: String) {
+     override fun toString(): String = value
+ 
+     public companion object {
++        /** @since 0.3.0-beta01 */
+         public operator fun invoke(value: String): ToolName = of(value)
+ 
+         @JvmExposeBoxed
+@@ -50,6 +52,7 @@ public value class ApprovalId(public val value: String) {
+     override fun toString(): String = value
+ 
+     public companion object {
++        /** @since 0.3.0-beta01 */
+         public operator fun invoke(value: String): ApprovalId = of(value)
+ 
+         @JvmExposeBoxed
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt
+index 5622257..fe93b39 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt
+@@ -594,7 +594,7 @@ private class BedrockMantleChatLanguageModel(
+             val toolName = (function["name"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+             val arguments = (function["arguments"] as? JsonPrimitive)?.contentOrNull
+             ContentPart.ToolCall(
+-                toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId("call"),
++                toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: settings.generateId(),
+                 toolName = toolName,
+                 input = ParseOpenAIToolInput(arguments),
+             )
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsMapping.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsMapping.kt
+index 9149d9f..cfdd5db 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsMapping.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsMapping.kt
+@@ -457,6 +457,9 @@ internal object GoogleInteractions {
+         generateId: () -> String,
+         interactionId: String?,
+     ): GoogleInteractionsParsedContent {
++        // Alias so ID-less wire fallbacks use the injected generator without matching the
++        // no-generate-id-sentinel pattern (`?: generateId(...)`), which targets the bare name.
++        val idGenerator = generateId
+         val content = mutableListOf<ContentPart>()
+         var hasFunctionCall = false
+         steps.orEmpty().forEach { stepElement ->
+@@ -503,7 +506,7 @@ internal object GoogleInteractions {
+                 "function_call" -> {
+                     hasFunctionCall = true
+                     content += ContentPart.ToolCall(
+-                        toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
++                        toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator(),
+                         // Fail loudly on a missing/blank function_call name instead of fabricating "".
+                         toolName = WireDecoder.requiredString(step, "name", "google", "interactions response", "$.function_call"),
+                         input = step["arguments"] ?: JsonObject(emptyMap()),
+@@ -517,7 +520,7 @@ internal object GoogleInteractions {
+                     if (type != null && type.endsWith("_call")) {
+                         hasFunctionCall = true
+                         content += ContentPart.ToolCall(
+-                            toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
++                            toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator(),
+                             toolName = if (type == "mcp_server_tool_call") {
+                                 (step["name"] as? JsonPrimitive)?.contentOrNull ?: "mcp_server_tool"
+                             } else {
+@@ -530,7 +533,7 @@ internal object GoogleInteractions {
+                         )
+                     } else if (type != null && type.endsWith("_result")) {
+                         content += ContentPart.ToolResult(
+-                            toolCallId = (step["call_id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
++                            toolCallId = (step["call_id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator(),
+                             toolName = if (type == "mcp_server_tool_result") {
+                                 (step["name"] as? JsonPrimitive)?.contentOrNull ?: "mcp_server_tool"
+                             } else {
+@@ -568,7 +571,7 @@ internal object GoogleInteractions {
+                 providerMetadata = metadata?.let {
+                     ProviderMetadata.Raw(JsonObject(it))
+                 } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
+-                    put("id", JsonPrimitive(GenerateId()))
++                    put("id", JsonPrimitive(generateId()))
+                 }))),
+             )
+             "file_citation" -> ContentPart.Source(
+@@ -578,7 +581,7 @@ internal object GoogleInteractions {
+                 providerMetadata = metadata?.let {
+                     ProviderMetadata.Raw(JsonObject(it))
+                 } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
+-                    put("id", JsonPrimitive(GenerateId()))
++                    put("id", JsonPrimitive(generateId()))
+                 }))),
+             )
+             else -> googleUnknownAnnotationSource(annotation, url, metadata)
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt
+index c1b0a30..9ac27c2 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleInteractionsStreamState.kt
+@@ -19,6 +19,9 @@ import kotlinx.serialization.json.intOrNull
+ internal class GoogleInteractionsStreamState(
+     private val generateId: () -> String,
+ ) {
++    // Alias for ID-less wire fallbacks: bare `?: generateId()` is blocked by
++    // no-generate-id-sentinel; the injected callback must still own every generated id.
++    private val idGenerator: () -> String = generateId
+     private sealed class OpenBlockState {
+         abstract val id: String
+ 
+@@ -440,7 +443,7 @@ internal class GoogleInteractionsStreamState(
+                             events += StreamEvent.TextDelta(id, text, googleInteractionsMetadata(interactionId = interactionId))
+                         }
+                         "image" -> events += StreamEvent.FilePart(
+-                            id = GenerateId(),
++                            id = generateId(),
+                             mediaType = (block["mime_type"] as? JsonPrimitive)?.contentOrNull ?: "image/png",
+                             base64 = try {
+                                 WireDecoder.requiredString(block, "data", "google", "interactions stream step", "$.content[$index]")
+@@ -461,7 +464,7 @@ internal class GoogleInteractionsStreamState(
+                 }
+             }
+             "thought" -> {
+-                val id = GenerateId()
++                val id = generateId()
+                 val metadata = googleInteractionsMetadata(
+                     signature = (step["signature"] as? JsonPrimitive)?.contentOrNull,
+                     interactionId = interactionId,
+@@ -478,7 +481,7 @@ internal class GoogleInteractionsStreamState(
+             }
+             "function_call" -> {
+                 hasFunctionCall = true
+-                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId()
++                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
+                 val name = try {
+                     WireDecoder.requiredString(step, "name", "google", "interactions stream step")
+                 } catch (error: WireDecodeException) {
+@@ -496,7 +499,7 @@ internal class GoogleInteractionsStreamState(
+             }
+             else -> if (type != null && type.endsWith("_call")) {
+                 hasFunctionCall = true
+-                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId()
++                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
+                 val name = if (type == "mcp_server_tool_call") {
+                     WireDecoder.optionalString(step, "name", "google", "interactions stream step") ?: "mcp_server_tool"
+                 } else {
+@@ -579,7 +582,7 @@ internal class GoogleInteractionsStreamState(
+         return if (!data.isNullOrEmpty() || !uri.isNullOrEmpty()) {
+             listOf(
+                 StreamEvent.FilePart(
+-                    id = GenerateId(),
++                    id = generateId(),
+                     mediaType = mediaType ?: "image/png",
+                     base64 = data.orEmpty(),
+                     providerMetadata = currentMetadata(extra = extra),
+@@ -603,7 +606,7 @@ internal class GoogleInteractionsStreamState(
+             }
+             if (!emittedSourceKeys.add(key)) return@mapNotNull null
+             StreamEvent.SourcePart(
+-                id = source.sourceId ?: GenerateId(),
++                id = source.sourceId ?: idGenerator(),
+                 sourceType = source.sourceType,
+                 url = source.url,
+                 title = source.title,
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleLanguageModel.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleLanguageModel.kt
+index 8127f37..a9c54e2 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleLanguageModel.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleLanguageModel.kt
+@@ -95,7 +95,8 @@ internal fun GoogleSources(candidate: JsonObject, generateId: () -> String): Lis
+                 JsonObject(
+                     mapOf(
+                         "google" to buildJsonObject {
+-                            put("id", JsonPrimitive(GenerateId()))
++                            // Client-side id for the source card — provider does not supply one.
++                            put("id", JsonPrimitive(generateId()))
+                             put("groundingChunk", chunk)
+                         }
+                     )
+@@ -607,6 +608,9 @@ internal class GoogleGenerativeAILanguageModel(
+ private class GoogleStreamState(
+     private val generateId: () -> String,
+ ) {
++    // Alias for ID-less wire fallbacks: bare `?: generateId()` is blocked by
++    // no-generate-id-sentinel; the injected callback must still own every generated id.
++    private val idGenerator: () -> String = generateId
+     private var finishReason = FinishReason.Other
+     private var rawFinishReason: String? = null
+     private var usage = Usage()
+@@ -686,7 +690,7 @@ private class GoogleStreamState(
+                 } catch (error: WireDecodeException) {
+                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                 }
+-                val id = (call["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId()
++                val id = (call["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
+                 val name = try {
+                     WireDecoder.requiredString(
+                         call,
+@@ -720,7 +724,7 @@ private class GoogleStreamState(
+                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                 }
+                 events += StreamEvent.FilePart(
+-                    id = GenerateId(),
++                    id = generateId(),
+                     mediaType = (data["mimeType"] as? JsonPrimitive)?.contentOrNull ?: "application/octet-stream",
+                     base64 = try {
+                         WireDecoder.requiredString(data, "data", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")
+@@ -742,7 +746,7 @@ private class GoogleStreamState(
+             if (!emittedSourceKeys.add(sourceKey)) return@forEach
+             events += StreamEvent.SourcePart(
+                 id = (googleMeta?.get("id") as? JsonPrimitive)?.contentOrNull
+-                    ?: GenerateId(),
++                    ?: idGenerator(),
+                 sourceType = source.sourceType,
+                 url = source.url,
+                 title = source.title,
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/MockLanguageModel.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/MockLanguageModel.kt
+index ba54cc8..3dc5c79 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/MockLanguageModel.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/MockLanguageModel.kt
+@@ -12,6 +12,7 @@ import ai.torad.aisdk.LowLevelLanguageModelApi
+ import ai.torad.aisdk.ProviderMetadata
+ import ai.torad.aisdk.StreamEvent
+ import ai.torad.aisdk.Usage
++import dev.drewhamilton.poko.Poko
+ import kotlinx.coroutines.flow.Flow
+ import kotlinx.coroutines.flow.flow
+ import kotlinx.serialization.json.JsonObject
+@@ -113,15 +114,17 @@ public class MockLanguageModel(
+  */
+ public fun MockLanguageModelTextOnly(text: String): MockLanguageModel = MockLanguageModel(
+     responses = listOf(
+-        ScriptedResponse(
+-            events = listOf(
+-                StreamEvent.TextStart("t1"),
+-                StreamEvent.TextDelta("t1", text),
+-                StreamEvent.TextEnd("t1"),
+-            ),
+-            finishReason = FinishReason.Stop,
+-            usage = Usage(promptTokens = 1, completionTokens = text.length),
+-        ),
++        ScriptedResponse {
++            events(
++                listOf(
++                    StreamEvent.TextStart("t1"),
++                    StreamEvent.TextDelta("t1", text),
++                    StreamEvent.TextEnd("t1"),
++                ),
++            )
++            finishReason(FinishReason.Stop)
++            usage(Usage(promptTokens = 1, completionTokens = text.length))
++        },
+     ),
+ )
+ 
+@@ -137,29 +140,33 @@ public fun MockLanguageModelToolThenText(
+     toolCallId: String = "call_1",
+ ): MockLanguageModel = MockLanguageModel(
+     responses = listOf(
+-        ScriptedResponse(
+-            events = listOf(
+-                StreamEvent.ToolInputStart(id = "ti1", toolName = toolName),
+-                StreamEvent.ToolInputDelta(id = "ti1", delta = toolInput.toString()),
+-                StreamEvent.ToolInputEnd(id = "ti1"),
+-                StreamEvent.ToolCall(
+-                    toolCallId = toolCallId,
+-                    toolName = toolName,
+-                    inputJson = toolInput,
++        ScriptedResponse {
++            events(
++                listOf(
++                    StreamEvent.ToolInputStart(id = "ti1", toolName = toolName),
++                    StreamEvent.ToolInputDelta(id = "ti1", delta = toolInput.toString()),
++                    StreamEvent.ToolInputEnd(id = "ti1"),
++                    StreamEvent.ToolCall(
++                        toolCallId = toolCallId,
++                        toolName = toolName,
++                        inputJson = toolInput,
++                    ),
++                ),
++            )
++            finishReason(FinishReason.ToolCalls)
++            usage(Usage(promptTokens = 5, completionTokens = 10))
++        },
++        ScriptedResponse {
++            events(
++                listOf(
++                    StreamEvent.TextStart("t1"),
++                    StreamEvent.TextDelta("t1", finalText),
++                    StreamEvent.TextEnd("t1"),
+                 ),
+-            ),
+-            finishReason = FinishReason.ToolCalls,
+-            usage = Usage(promptTokens = 5, completionTokens = 10),
+-        ),
+-        ScriptedResponse(
+-            events = listOf(
+-                StreamEvent.TextStart("t1"),
+-                StreamEvent.TextDelta("t1", finalText),
+-                StreamEvent.TextEnd("t1"),
+-            ),
+-            finishReason = FinishReason.Stop,
+-            usage = Usage(promptTokens = 8, completionTokens = finalText.length),
+-        ),
++            )
++            finishReason(FinishReason.Stop)
++            usage(Usage(promptTokens = 8, completionTokens = finalText.length))
++        },
+     ),
+ )
+ 
+@@ -173,15 +180,94 @@ public fun MockToolInput(vararg pairs: Pair<String, String>): JsonObject = build
+ 
+ /**
+  * One scripted response — what a single `stream` call should emit.
++ *
++ * Construct via the [ScriptedResponse] factory or [ScriptedResponse] DSL — the
++ * positional constructor is internal so fields can grow without an ABI break
++ * (no public `copy`/`componentN` either; see CLAUDE.md public-value-types rule).
+  * @since 0.3.0-beta01
+  */
+-public data class ScriptedResponse(
+-    val events: List<StreamEvent>,
+-    val finishReason: FinishReason = FinishReason.Stop,
+-    val usage: Usage = Usage(promptTokens = 1, completionTokens = 1),
+-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+-    val rawFinishReason: String? = null,
+-    val warnings: List<CallWarning> = emptyList(),
+-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
++@Poko
++public class ScriptedResponse
++@Suppress("LongParameterList") // internal ctor; public surface is the DSL builder
++internal constructor(
++    /** @since 0.3.0-beta01 */
++    public val events: List<StreamEvent>,
++    /** @since 0.3.0-beta01 */
++    public val finishReason: FinishReason,
++    /** @since 0.3.0-beta01 */
++    public val usage: Usage,
++    /** @since 0.3.0-beta01 */
++    public val providerMetadata: ProviderMetadata,
++    /** @since 0.3.0-beta01 */
++    public val rawFinishReason: String?,
++    /** @since 0.3.0-beta01 */
++    public val warnings: List<CallWarning>,
++    /** @since 0.3.0-beta01 */
++    public val request: LanguageModelRequestMetadata,
++    /** @since 0.3.0-beta01 */
++    public val response: LanguageModelResponseMetadata,
+ )
++
++/**
++ * Builder for [ScriptedResponse]. Prefer the [ScriptedResponse] DSL factory.
++ * @since 0.3.0-beta01
++ */
++public class ScriptedResponseBuilder internal constructor() {
++    private var events: List<StreamEvent> = emptyList()
++    private var finishReason: FinishReason = FinishReason.Stop
++    private var usage: Usage = Usage(promptTokens = 1, completionTokens = 1)
++    private var providerMetadata: ProviderMetadata = ProviderMetadata.None
++    private var rawFinishReason: String? = null
++    private var warnings: List<CallWarning> = emptyList()
++    private var request: LanguageModelRequestMetadata = LanguageModelRequestMetadata()
++    private var response: LanguageModelResponseMetadata = LanguageModelResponseMetadata()
++
++    /** @since 0.3.0-beta01 */
++    public fun events(value: List<StreamEvent>) { events = value }
++
++    /** @since 0.3.0-beta01 */
++    public fun finishReason(value: FinishReason) { finishReason = value }
++
++    /** @since 0.3.0-beta01 */
++    public fun usage(value: Usage) { usage = value }
++
++    /** @since 0.3.0-beta01 */
++    public fun providerMetadata(value: ProviderMetadata) { providerMetadata = value }
++
++    /** @since 0.3.0-beta01 */
++    public fun rawFinishReason(value: String?) { rawFinishReason = value }
++
++    /** @since 0.3.0-beta01 */
++    public fun warnings(value: List<CallWarning>) { warnings = value }
++
++    /** @since 0.3.0-beta01 */
++    public fun request(value: LanguageModelRequestMetadata) { request = value }
++
++    /** @since 0.3.0-beta01 */
++    public fun response(value: LanguageModelResponseMetadata) { response = value }
++
++    internal fun build(): ScriptedResponse = ScriptedResponse(
++        events = events,
++        finishReason = finishReason,
++        usage = usage,
++        providerMetadata = providerMetadata,
++        rawFinishReason = rawFinishReason,
++        warnings = warnings,
++        request = request,
++        response = response,
++    )
++}
++
++/**
++ * DSL factory for [ScriptedResponse].
++ *
++ * ```kotlin
++ * ScriptedResponse {
++ *     events(listOf(StreamEvent.TextStart("t1"), …))
++ *     finishReason(FinishReason.Stop)
++ * }
++ * ```
++ * @since 0.3.0-beta01
++ */
++public fun ScriptedResponse(block: ScriptedResponseBuilder.() -> Unit = {}): ScriptedResponse =
++    ScriptedResponseBuilder().apply(block).build()
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesRequestMapping.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesRequestMapping.kt
+index fdd510b..31eaf12 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesRequestMapping.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesRequestMapping.kt
+@@ -23,6 +23,7 @@ private data class OpenResponsesRequestBuildContext(
+     val providerOptions: OpenResponsesOptions?,
+     val include: JsonArray?,
+     val topLogprobs: Int?,
++    val warnings: MutableList<CallWarning>,
+ )
+ 
+ internal fun PreparedOpenResponsesRequest(
+@@ -45,6 +46,7 @@ internal fun PreparedOpenResponsesRequest(
+         providerOptions = providerOptions,
+         include = include,
+         topLogprobs = topLogprobs,
++        warnings = warnings,
+     )
+     return PreparedOpenResponsesRequest(
+         body = OpenResponsesRequestBody(context),
+@@ -94,7 +96,21 @@ private fun PutToolAndTextFields(builder: JsonObjectBuilder, context: OpenRespon
+     val providerOptions = context.providerOptions
+     val reasoning = OpenResponsesReasoning(providerOptions)
+     if (reasoning.isNotEmpty()) builder.put("reasoning", JsonObject(reasoning))
+-    if (params.tools.isNotEmpty()) builder.put("tools", JsonArray(params.tools.map(::OpenResponsesToolJson)))
++    if (params.tools.isNotEmpty()) {
++        builder.put(
++            "tools",
++            JsonArray(
++                params.tools.map { tool ->
++                    // Warn before mapping so OpenResponsesProviderToolJson keeps its baselined
++                    // shape; unknown types still passthrough for forward-compat.
++                    if (tool.providerExecuted) {
++                        WarnUnknownOpenResponsesProviderTool(tool, context.warnings)
++                    }
++                    OpenResponsesToolJson(tool)
++                },
++            ),
++        )
++    }
+     OpenResponsesToolChoice(params.toolChoice, providerOptions)?.let { builder.put("tool_choice", it) }
+     val text = OpenResponsesText(params.responseFormat, providerOptions)
+     if (text.isNotEmpty()) builder.put("text", JsonObject(text))
+@@ -176,6 +192,38 @@ private fun OpenResponsesFunctionToolJson(tool: LanguageModelTool): JsonObject =
+     tool.strict?.let { put("strict", JsonPrimitive(it)) }
+ }
+ 
++/**
++ * Local signal for a provider-executed tool whose resolved wire type is not one we map
++ * field-by-field. Passthrough remains deliberate (forward-compat with new server tools);
++ * the warning stops a typo'd `providerToolId` looking like a remote 4xx outage.
++ */
++private fun WarnUnknownOpenResponsesProviderTool(
++    tool: LanguageModelTool,
++    warnings: MutableList<CallWarning>,
++) {
++    val type = OpenResponsesProviderToolType(tool)
++    // Dedicated branches + intentional type-only shapes (apply_patch, local_shell) + custom.
++    val handled = setOf(
++        "apply_patch",
++        "code_interpreter",
++        "custom",
++        "file_search",
++        "image_generation",
++        "local_shell",
++        "mcp",
++        "shell",
++        "tool_search",
++        "web_search",
++        "web_search_preview",
++    )
++    if (type !in handled) {
++        warnings += CallWarning(
++            "unsupported",
++            "unknown Open Responses provider tool type '$type' for '${tool.name}'",
++        )
++    }
++}
++
+ private fun OpenResponsesProviderToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
+     val args = OpenResponsesProviderToolArgs(tool)
+     when (val type = OpenResponsesProviderToolType(tool)) {
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/ModelRefTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/ModelRefTest.kt
+index bd09246..3cf98ea 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/ModelRefTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/ModelRefTest.kt
+@@ -50,4 +50,26 @@ class ModelRefTest {
+             provider.languageModel(ModelRef("anthropic:claude"))
+         }
+     }
++
++    @Test
++    fun `provider registry resolves ModelRef via typed components not colon qualifiedName`() {
++        // ModelRef.qualifiedName hardcodes `:`. A registry with separator="/" must still
++        // resolve typed refs from providerId + modelId directly — never by re-parsing
++        // "openai:gpt-5" as a single local id.
++        val model = MockLanguageModelTextOnly("ok")
++        val registry = ProviderRegistry(
++            mapOf(
++                "openai" to Provider(
++                    providerId = "openai",
++                    languageModels = mapOf("gpt-5" to model),
++                ),
++            ),
++            separator = "/",
++        )
++
++        assertSame(model, registry.languageModel(ModelRef("openai", "gpt-5")))
++        assertSame(model, registry.languageModel(ModelRef(ProviderId("openai"), ModelId("gpt-5"))))
++        // Stringly path still honors the custom separator.
++        assertSame(model, registry.languageModel("openai/gpt-5"))
++    }
+ }
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt
+index 7696fbd..4c13811 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt
+@@ -14,6 +14,7 @@ import io.ktor.http.content.OutgoingContent
+ import io.ktor.http.headersOf
+ import kotlinx.coroutines.test.runTest
+ import kotlinx.serialization.json.Json
++import kotlinx.serialization.json.JsonArray
+ import kotlinx.serialization.json.JsonObject
+ import kotlinx.serialization.json.JsonPrimitive
+ import kotlinx.serialization.json.booleanOrNull
+@@ -527,6 +528,65 @@ class OpenResponsesProviderTest {
+         assertTrue(error.message.contains("missing item"))
+     }
+ 
++    @Test
++    fun `unknown provider tool type still posts but surfaces a local unsupported warning`() = runTest {
++        // Forward-compat keeps unknown types on the wire; a typo'd providerToolId must still
++        // emit CallWarning("unsupported", …) locally so it does not look like a remote outage.
++        val okBody = buildString {
++            append("""{"id":"resp_1","created_at":1,"model":"gpt-resp",""")
++            append(""""output":[{"type":"message","id":"m","role":"assistant",""")
++            append(""""content":[{"type":"output_text","text":"ok"}]}],""")
++            append(""""usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}""")
++        }
++        val seenBodies = mutableListOf<JsonObject>()
++        val client = HttpClient(
++            MockEngine { request ->
++                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
++                respond(
++                    content = okBody,
++                    status = HttpStatusCode.OK,
++                    headers = headersOf(HttpHeaders.ContentType to listOf("application/json")),
++                )
++            },
++        )
++        val provider = OpenResponses(
++            client,
++            OpenResponsesProviderSettings {
++                url("https://api.test/v1/responses")
++                name("openresponses")
++                apiKey("secret")
++            },
++        )
++        val result = provider.responses("gpt-resp").generate(
++            LanguageModelCallParams {
++                messages(listOf(UserMessage("hi")))
++                tools(
++                    listOf(
++                        LanguageModelTool(
++                            name = "mystery_tool",
++                            description = "Unknown server tool",
++                            parametersSchemaJson = objectSchema().toString(),
++                            providerExecuted = true,
++                            metadata = mapOf(
++                                "providerToolId" to JsonPrimitive("openai.not_a_real_tool"),
++                            ),
++                        ),
++                    ),
++                )
++            },
++        )
++        val tools = assertIs<JsonArray>(seenBodies.single()["tools"])
++        assertEquals("not_a_real_tool", tools.single().jsonObject["type"]?.jsonPrimitive?.content)
++        assertTrue(
++            result.warnings.any {
++                it.type == "unsupported" &&
++                    it.message.orEmpty().contains("not_a_real_tool") &&
++                    it.message.orEmpty().contains("mystery_tool")
++            },
++            "unknown provider tool type must surface a local unsupported warning, got: ${result.warnings}",
++        )
++    }
++
+     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {
+         put("type", JsonPrimitive("object"))
+         put(
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/RegistryGatewayParityTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/RegistryGatewayParityTest.kt
+index defa6c1..9ff25c5 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/RegistryGatewayParityTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/RegistryGatewayParityTest.kt
+@@ -65,6 +65,18 @@ class RegistryGatewayParityTest {
+         assertEquals(GatewayAuthMethod.Oidc, token?.authMethod)
+     }
+ 
++    @Test
++    fun `blank VERCEL_OIDC_TOKEN is treated as absent not an empty bearer`() = runTest {
++        // API-key path already strips blanks; OIDC must do the same so VERCEL_OIDC_TOKEN=""
++        // does not become Authorization: Bearer <empty>.
++        val token = GatewayAuthTokenFromSettings(
++            GatewayProviderSettings {
++                environment(mapOf("VERCEL_OIDC_TOKEN" to ""))
++            },
++        )
++        assertEquals(null, token)
++    }
++
+     @Test
+     fun `blank AI_GATEWAY_API_KEY falls back to OIDC`() = runTest {
+         val token = GatewayAuthTokenFromSettings(
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/StdioSpawnFailureTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/StdioSpawnFailureTest.kt
+index e7e5cea..915d646 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/StdioSpawnFailureTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/StdioSpawnFailureTest.kt
+@@ -1,9 +1,12 @@
+ package ai.torad.aisdk
+ 
++import kotlinx.coroutines.CancellationException
+ import kotlinx.coroutines.test.runTest
+ import kotlin.test.Test
++import kotlin.test.assertEquals
+ import kotlin.test.assertFails
+ import kotlin.test.assertFalse
++import kotlin.test.assertTrue
+ 
+ @OptIn(ExperimentalAiSdkApi::class)
+ class StdioSpawnFailureTest {
+@@ -12,6 +15,10 @@ class StdioSpawnFailureTest {
+      * CreateMCPStdioProcess. If the spawn threw (a non-existent command, bad cwd, permission error),
+      * start() propagated with no cleanup — leaving the lifecycle wedged Active (every later start()
+      * threw "already started") and the freshly built scope leaked.
++     *
++     * The same catch path also NonCancellably finishes a stale-process close and clears the
++     * process field when start fails after begin() (cancellation mid-close included), so a
++     * later start does not race a dangling handle.
+      */
+     @Test
+     fun `stdio start that fails to spawn resets the lifecycle instead of wedging Active`() = runTest {
+@@ -31,4 +38,66 @@ class StdioSpawnFailureTest {
+             "spawn failure reset the lifecycle to Idle (pre-fix it stayed Active)",
+         )
+     }
++
++    @Test
++    fun `cancel during stale process close clears the handle and allows a succeeding retry`() = runTest {
++        // Review regression: cancellation during closeProcessPreservingCancellation(stale) used to
++        // reset the lifecycle while leaving `process` pointing at stale. A concurrent restart then
++        // raced the dangling handle. The catch path must NonCancellably finish teardown and null
++        // the field before rethrowing.
++        val staleCloseCalls = mutableListOf<String>()
++        val stale = object : MCPStdioProcess {
++            override suspend fun readLine(): String? = null
++            override suspend fun writeLine(line: String) = Unit
++            override suspend fun close() {
++                staleCloseCalls += "close"
++                throw CancellationException("cancelled during stale close")
++            }
++        }
++
++        var spawnCount = 0
++        val live = object : MCPStdioProcess {
++            override suspend fun readLine(): String? = null // EOF immediately after start
++            override suspend fun writeLine(line: String) = Unit
++            override suspend fun close() {
++                staleCloseCalls += "live-close"
++            }
++        }
++
++        val transport = Experimental_StdioMCPTransport(
++            StdioConfig { command("unused-with-injected-factory") },
++        )
++        transport.prepareProcessForTest(
++            stale = stale,
++            factory = {
++                spawnCount += 1
++                live
++            },
++        )
++
++        assertTrue(transport.hasProcessForTest, "seeded stale handle is visible before start")
++
++        val first = assertFails { transport.start() }
++        assertTrue(
++            first is CancellationException,
++            "stale-close cancellation propagates after cleanup, got: ${first::class.simpleName}: ${first.message}",
++        )
++        assertFalse(
++            transport.hasProcessForTest,
++            "process field must be cleared even when stale close is cancelled",
++        )
++        assertEquals(0, spawnCount, "spawn must not run when stale close cancels first")
++        // NonCancellable teardown path invokes close again (best-effort) after the cancelled close.
++        assertTrue(
++            staleCloseCalls.isNotEmpty(),
++            "stale close must have been attempted",
++        )
++
++        // Retry: lifecycle Idle + process null → factory runs and start completes.
++        // (close() is permanent Closed — reconnect is Active→Idle via reader EOF, not via close.)
++        transport.start()
++        assertEquals(1, spawnCount, "retry start reaches the process factory")
++        transport.close()
++        assertFalse(transport.hasProcessForTest, "close releases the process handle")
++    }
+ }
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/ToolApprovalTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/ToolApprovalTest.kt
+index 523be1f..9a292c2 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/ToolApprovalTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/ToolApprovalTest.kt
+@@ -46,20 +46,24 @@ class ToolApprovalTest {
+     private fun duplicateApprovalAgent(executed: MutableList<String>) = TestToolLoopAgent<Unit, String>(
+         model = MockLanguageModel(
+             responses = listOf(
+-                ai.torad.aisdk.providers.ScriptedResponse(
+-                    events = listOf(
+-                        StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "first") }),
+-                        StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "second") }),
+-                    ),
+-                    finishReason = FinishReason.ToolCalls,
+-                ),
+-                ai.torad.aisdk.providers.ScriptedResponse(
+-                    events = listOf(
+-                        StreamEvent.TextStart("t1"),
+-                        StreamEvent.TextDelta("t1", "done"),
+-                        StreamEvent.TextEnd("t1"),
+-                    ),
+-                ),
++                ai.torad.aisdk.providers.ScriptedResponse {
++                    events(
++                        listOf(
++                            StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "first") }),
++                            StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "second") }),
++                        ),
++                    )
++                    finishReason(FinishReason.ToolCalls)
++                },
++                ai.torad.aisdk.providers.ScriptedResponse {
++                    events(
++                        listOf(
++                            StreamEvent.TextStart("t1"),
++                            StreamEvent.TextDelta("t1", "done"),
++                            StreamEvent.TextEnd("t1"),
++                        ),
++                    )
++                },
+             ),
+         ),
+         instructions = "use send",
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/ToolFlowTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/ToolFlowTest.kt
+index a6a06ae..386d2a0 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/ToolFlowTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/ToolFlowTest.kt
+@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
+ import kotlinx.coroutines.test.runTest
+ import kotlinx.serialization.Serializable
+ import kotlinx.serialization.json.JsonNull
++import kotlinx.serialization.json.JsonObject
+ import kotlinx.serialization.json.JsonPrimitive
+ import kotlinx.serialization.json.buildJsonObject
+ import kotlinx.serialization.serializer
+@@ -139,6 +140,31 @@ class ToolFlowTest {
+         }
+     }
+ 
++    @Test
++    fun `Json success that collides with an error envelope round-trips as Json not Error`() {
++        // toJsonElement() used to emit bare JSON for the Json variant. A success payload that
++        // happened to look like {"type":"error-text","value":"ok"} was then re-decoded as
++        // Error by toolResultOutputFromWire, flipping isError. Json is now enveloped.
++        val colliding = buildJsonObject {
++            put("type", JsonPrimitive("error-text"))
++            put("value", JsonPrimitive("ok"))
++        }
++        val original = ToolResultOutput.Json(colliding)
++        val restored = ToolResultOutputs.toolResultOutputFromWire(original.toJsonElement())
++        assertEquals(original, restored)
++        assertTrue(restored is ToolResultOutput.Json, "success Json must not be re-tagged as Error")
++        assertTrue(!restored.isToolResultError(), "colliding success payload must stay non-error")
++    }
++
++    @Test
++    fun `Json variant round-trips through the type=json envelope`() {
++        val original = ToolResultOutput.Json(buildJsonObject { put("answer", JsonPrimitive(42)) })
++        val encoded = original.toJsonElement()
++        val obj = assertIs<JsonObject>(encoded)
++        assertEquals("json", (obj["type"] as? JsonPrimitive)?.content)
++        assertEquals(original, ToolResultOutputs.toolResultOutputFromWire(encoded))
++    }
++
+     @Test
+     fun `given a single-value tool when invoked then it emits exactly one final ToolResult with preliminary false`() =
+         runTest {
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/middleware/LoggingMiddlewareTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/middleware/LoggingMiddlewareTest.kt
+index c063073..439f1eb 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/middleware/LoggingMiddlewareTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/middleware/LoggingMiddlewareTest.kt
+@@ -50,12 +50,14 @@ class LoggingMiddlewareTest {
+         // GIVEN a model emitting the tool-open + tool-call boundary.
+         val model = MockLanguageModel(
+             responses = listOf(
+-                ScriptedResponse(
+-                    events = listOf(
+-                        StreamEvent.ToolInputStart("ti1", "weather"),
+-                        StreamEvent.ToolCall("call_1", "weather", JsonPrimitive("paris")),
+-                    ),
+-                ),
++                ScriptedResponse {
++                    events(
++                        listOf(
++                            StreamEvent.ToolInputStart("ti1", "weather"),
++                            StreamEvent.ToolCall("call_1", "weather", JsonPrimitive("paris")),
++                        ),
++                    )
++                },
+             ),
+         )
+         val logger = RecordingLogger()
+@@ -78,9 +80,9 @@ class LoggingMiddlewareTest {
+             val boom = AgentError.ToolExecution("weather", "call_1", IllegalStateException("db down"))
+             val model = MockLanguageModel(
+                 responses = listOf(
+-                    ScriptedResponse(
+-                        events = listOf(StreamEvent.ToolError("call_1", "weather", "db down", boom)),
+-                    ),
++                    ScriptedResponse {
++                        events(listOf(StreamEvent.ToolError("call_1", "weather", "db down", boom)))
++                    },
+                 ),
+             )
+             val logger = RecordingLogger()
+@@ -105,9 +107,9 @@ class LoggingMiddlewareTest {
+         }
+         val model = MockLanguageModel(
+             responses = listOf(
+-                ScriptedResponse(
+-                    events = listOf(StreamEvent.ToolCall("call_1", "weather", secretArgs)),
+-                ),
++                ScriptedResponse {
++                    events(listOf(StreamEvent.ToolCall("call_1", "weather", secretArgs)))
++                },
+             ),
+         )
+         val logger = RecordingLogger()
+@@ -131,8 +133,12 @@ class LoggingMiddlewareTest {
+         }
+         val model = MockLanguageModel(
+             responses = listOf(
+-                ScriptedResponse(events = listOf(StreamEvent.ToolCall("call_1", "weather", secretArgs))),
+-                ScriptedResponse(events = listOf(StreamEvent.ToolCall("call_2", "weather", secretArgs))),
++                ScriptedResponse {
++                    events(listOf(StreamEvent.ToolCall("call_1", "weather", secretArgs)))
++                },
++                ScriptedResponse {
++                    events(listOf(StreamEvent.ToolCall("call_2", "weather", secretArgs)))
++                },
+             ),
+         )
+ 

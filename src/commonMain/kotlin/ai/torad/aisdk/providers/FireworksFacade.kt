@@ -10,6 +10,11 @@ import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.utils.HttpRequestIsReadyForSending
+import io.ktor.http.HttpHeaders
+import io.ktor.http.Url
+import io.ktor.http.isSecure
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -171,7 +176,7 @@ public class FireworksProviderSettings internal constructor(
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
+        ForFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
 /** @since 0.3.0-beta01 */
@@ -361,8 +366,11 @@ public class FireworksImageModel(
                 "Fireworks image generation response is missing request_id",
             )
         val imageUrl = pollForImageUrl(requestId, requestHeaders, abortSignal)
+        // Only forward caller headers when the host matches the API origin — never leak
+        // credentials to a CDN/third-party host returned in result.sample. The decision is
+        // re-made per physical send, so a redirect cannot carry them off-origin.
         val imageResponse = AbortSignalRuntime.withAbortCancellation(abortSignal) {
-            getFacadeBinary(client, imageUrl, requestHeaders, abortSignal = abortSignal)
+            downloadImage(imageUrl, requestHeaders, abortSignal)
         }
         return ImageModelResult(
             images = listOf(imageResponse.toGeneratedFile(modelId)),
@@ -389,11 +397,25 @@ public class FireworksImageModel(
                     abortSignal = abortSignal,
                 )
             }
-            val status = (response.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull
+            val responseObject = response.value as? JsonObject
+                ?: throw InvalidResponseDataError(
+                    response.value,
+                    "Fireworks poll response is missing a string status",
+                )
+            val status = (responseObject["status"] as? JsonPrimitive)
+                ?.takeIf { it.isString }
+                ?.contentOrNull
+                ?: throw InvalidResponseDataError(
+                    response.value,
+                    "Fireworks poll response is missing a string status",
+                )
             when (status) {
+                "Pending" -> Unit
                 "Ready" -> {
-                    val sample = (JsonAccess.obj(response.value.jsonObject, "result"))?.get("sample")
-                    return (sample as? JsonPrimitive)?.contentOrNull
+                    val sample = (JsonAccess.obj(responseObject, "result"))?.get("sample")
+                    return (sample as? JsonPrimitive)
+                        ?.takeIf { it.isString }
+                        ?.contentOrNull
                         ?: throw InvalidResponseDataError(
                             response.value,
                             "Fireworks poll response is Ready but missing result.sample",
@@ -402,6 +424,10 @@ public class FireworksImageModel(
                 "Error", "Failed" -> throw APICallError(
                     message = "Fireworks image generation failed with status: $status",
                     url = pollUrl,
+                )
+                else -> throw InvalidResponseDataError(
+                    response.value,
+                    "Fireworks poll response has unknown status: '$status'",
                 )
             }
             if (attempt < FIREWORKS_MAX_POLL_ATTEMPTS - 1) {
@@ -447,6 +473,112 @@ public class FireworksImageModel(
                 add(CallWarning("unsupported", "This Fireworks model does not support aspectRatio."))
             }
         }
+
+    /**
+     * GET the generated image through the CALLER's client, with a header policy applied to
+     * every physical send.
+     *
+     * Ktor's `HttpRedirect` keeps ownership of redirect mechanics — status selection, `Location`
+     * resolution, query replacement, response disposal, the send ceiling. What it does NOT do is
+     * re-decide which headers a hop may carry: it drops `Authorization` on an authority change
+     * and forwards everything else, so a caller-configured `Cookie` or bespoke `x-org-token`
+     * would ride to whatever host the provider's `result.sample` pointed at. A same-origin URL
+     * that redirects to a third-party CDN is the ordinary shape of a signed download, so the
+     * hop — not the first request — is where credentials escape.
+     *
+     * The policy below is installed LAST, so it runs per physical send and after every inherited
+     * plugin; that ordering is what lets it strip credentials a caller's `Auth`, `HttpCookies`,
+     * or `DefaultRequest` would otherwise re-add downstream of the origin check.
+     *
+     * Deriving with `config { }` (rather than a fresh client over the engine) deliberately keeps
+     * the caller's non-header transport policy — `HttpTimeout`, `ContentEncoding`, tracing,
+     * response validators — applied to the download, as it was before this seam existed.
+     */
+    private suspend fun downloadImage(
+        imageUrl: String,
+        requestHeaders: Map<String, String>,
+        abortSignal: AbortSignal,
+    ): FacadeHttp.ProviderFacadeBinaryResponse =
+        client.config { }.use { policed ->
+            // Subscribed on the BUILT client, not installed as a plugin inside `config { }`.
+            // Ktor applies a config in two categories — every ClientPlugin first, then every
+            // string-keyed `install(name) { }` interceptor — so a plugin-based policy is still
+            // followed by a caller's string-keyed subscriber to this same event. Subscribing
+            // here, after `config { }` has finished both categories, makes this genuinely the
+            // last handler. Below it only the consumer-supplied engine remains, which no
+            // client-side policy can police.
+            policed.monitor.subscribe(HttpRequestIsReadyForSending) { request ->
+                applyImageDownloadHeaderPolicy(request, imageUrl, requestHeaders)
+            }
+            // Headers are supplied by the policy, per hop — including for this first send.
+            getFacadeBinary(policed, imageUrl, emptyMap(), abortSignal = abortSignal)
+        }
+
+    /**
+     * The download's header contract, applied to one physical request immediately before Ktor
+     * snapshots it for the engine. `HttpRequestIsReadyForSending` is raised after every
+     * send-pipeline interceptor, so this runs last among client-side header mutation.
+     */
+    private fun applyImageDownloadHeaderPolicy(
+        request: HttpRequestBuilder,
+        imageUrl: String,
+        requestHeaders: Map<String, String>,
+    ) {
+        // Anchored to the CONFIGURED origin as well as the returned URL: an HTTPS API must not be
+        // talked out of TLS by the `result.sample` it handed back, whether by a redirect or by
+        // naming an `http://` asset outright. A deliberately-HTTP dev gateway still works, since
+        // neither anchor is secure there.
+        val requiresSecureTransport =
+            runCatching { Url(settings.baseURL).protocol.isSecure() }.getOrElse { true } ||
+                runCatching { Url(imageUrl).protocol.isSecure() }.getOrElse { true }
+        val hopUrl = request.url.build()
+        // Independent of HttpRedirect's `allowHttpsDowngrade`: a caller that enabled it must not
+        // thereby put this download's bytes on the wire in clear text.
+        if (requiresSecureTransport && !hopUrl.protocol.isSecure()) {
+            throw DownloadError(
+                url = imageUrl,
+                message = "Fireworks image download refused an insecure hop to " +
+                    "${hopUrl.protocol.name}://${hopUrl.host}",
+            )
+        }
+        if (!sameOrigin(settings.baseURL, hopUrl.toString())) {
+            // A real ALLOWLIST, not a list of credential names to drop. Anything a caller plugin
+            // added — under any name we have never heard of — goes with it. Naming the headers to
+            // remove is precisely how the original leak happened.
+            request.headers.clear()
+        }
+        headersForImageDownload(hopUrl.toString(), requestHeaders).forEach { (name, value) ->
+            request.headers.remove(name)
+            request.headers.append(name, value)
+        }
+    }
+
+    private fun headersForImageDownload(
+        imageUrl: String,
+        requestHeaders: Map<String, String>,
+    ): Map<String, String> {
+        if (sameOrigin(settings.baseURL, imageUrl)) return requestHeaders
+        // Cross-origin: allowlist, never denylist. `imageUrl` comes from the provider's
+        // `result.sample`, so the destination host is not ours to trust, and `requestHeaders`
+        // carries whatever the host configured via settings.headers / params.headers —
+        // a Cookie, a Proxy-Authorization, a bespoke `x-org-token`. Naming the two headers
+        // we happen to set ourselves would leak every credential we did not think of.
+        return requestHeaders.filterKeys { it.equals(HttpHeaders.UserAgent, ignoreCase = true) }
+    }
+
+    /**
+     * Compare PARSED origins, not authority text. `https://host:443` and `https://host` are the
+     * same origin, but differ as strings — and Ktor normalises the default port away on the hop,
+     * so a string compare would call a consumer's explicit-port `baseURL` cross-origin and strip
+     * the headers its own asset needs. Fails closed (cross-origin) on an unparseable URL.
+     */
+    private fun sameOrigin(apiBaseUrl: String, targetUrl: String): Boolean {
+        val api = runCatching { Url(apiBaseUrl) }.getOrNull() ?: return false
+        val target = runCatching { Url(targetUrl) }.getOrNull() ?: return false
+        return api.protocol == target.protocol &&
+            api.host.equals(target.host, ignoreCase = true) &&
+            api.port == target.port
+    }
 }
 
 internal enum class FireworksImageUrlFormat {

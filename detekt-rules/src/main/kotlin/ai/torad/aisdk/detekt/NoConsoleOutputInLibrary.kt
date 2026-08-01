@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 
 /**
- * Mirror of `.claude/hooks/rules/kotlin/no-console-output-in-library.yaml`.
+ * Mirror of `.rules/kotlin/ast-grep/rules/no-console-output-in-library.yaml`.
  * A library must not write to stdout/stderr — diagnostics belong on the injected `Logger`
  * so the host application controls sinks and levels. Configure `excludes` in detekt.yml to
  * scope this to non-test sources.

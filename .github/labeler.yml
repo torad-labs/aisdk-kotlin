@@ -1,0 +1,60 @@
+# Path → label map for actions/labeler (pr-labeler.yml).
+# Labels must already exist in the repo; the action does not create them.
+public-api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'api/**'
+          - 'INTERFACE_CONTRACT.md'
+          - 'api-since-budget.json'
+
+providers:
+  - changed-files:
+      - any-glob-to-any-file: 'src/commonMain/kotlin/ai/torad/aisdk/providers/**'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - '.claude/hooks/**'
+          - '.rules/**'
+          - 'tools/**'
+
+build:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.gradle.kts'
+          - 'gradle/**'
+          - 'gradle.properties'
+          - 'detekt.yml'
+          - 'detekt-rules/**'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'gradle/libs.versions.toml'
+          - 'gradle/verification-metadata.xml'
+          - 'package.json'
+          - 'package-lock.json'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file: 'src/*Test/**'
+
+samples:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'samples/**'
+          - 'smoke-tests/**'
+
+release:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'CHANGELOG.md'
+          - '.github/workflows/release.yml'
+          - '.github/workflows/snapshots.yml'

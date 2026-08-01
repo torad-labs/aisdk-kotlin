@@ -1,0 +1,33 @@
+id: no-channel-in-public-api
+language: kotlin
+severity: warning
+message: "Public function takes or returns a kotlinx.coroutines.Channel. Channel is a low-level primitive with close/cancel/backpressure semantics that leak implementation details once they're in a public signature, and (like Flow) it has no natural Java/Swift interop shape. Expose a Flow (for a read-only stream consumers collect) or a suspend function instead, and keep the Channel itself private to the implementation."
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: visibility_modifier
+          regex: '^public$'
+    - any:
+        - has:
+            kind: user_type
+            all:
+              - has:
+                  kind: type_identifier
+                  regex: '^Channel$'
+                  stopBy: end
+              - not:
+                  precedes:
+                    regex: '^\.$'
+        - has:
+            kind: function_value_parameters
+            has:
+              kind: parameter
+              has:
+                kind: user_type
+                has:
+                  kind: type_identifier
+                  regex: '^Channel$'
+                  stopBy: end

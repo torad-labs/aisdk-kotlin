@@ -9,13 +9,13 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentDisposition
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -113,17 +113,8 @@ public class ProdiaProviderSettings internal constructor(
     private suspend fun prodiaParseMultipartResponse(response: HttpResponse, url: String): ProdiaMultipartResult {
         val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
         val rawContentType = response.headers[HttpHeaders.ContentType].orEmpty()
-        val bytes = response.bodyAsBytes()
-        if (response.status.value !in 200..299) {
-            val raw = bytes.decodeToString()
-            throw ApiCallError(
-                url = url,
-                statusCode = response.status.value,
-                rawBody = raw,
-                headers = responseHeaders,
-                message = "Prodia request failed (${response.status.value}): ${prodiaErrorMessage(raw)}",
-            )
-        }
+        val bytes = with(HttpTransport) { response.bodyAsBytesCapped(url) }
+        prodiaThrowIfNotSuccess(response, url, bytes, responseHeaders)
         val boundary = Regex("""boundary=([^;\s]+)""").find(rawContentType)?.groupValues?.get(1)
             ?: throw InvalidResponseDataError(null, "Prodia response missing multipart boundary in content-type: $rawContentType")
         val parts = prodiaSplitMultipart(bytes, boundary)
@@ -152,6 +143,23 @@ public class ProdiaProviderSettings internal constructor(
             text = text,
             files = files,
             headers = responseHeaders,
+        )
+    }
+
+    private fun prodiaThrowIfNotSuccess(
+        response: HttpResponse,
+        url: String,
+        bytes: ByteArray,
+        responseHeaders: Map<String, String>,
+    ) {
+        if (response.status.isSuccess()) return
+        val raw = bytes.decodeToString()
+        throw ApiCallError(
+            url = url,
+            statusCode = response.status.value,
+            rawBody = raw,
+            headers = responseHeaders,
+            message = "Prodia request failed (${response.status.value}): ${prodiaErrorMessage(raw)}",
         )
     }
 
@@ -467,36 +475,21 @@ public fun Prodia(
     settings: ProdiaProviderSettings = ProdiaProviderSettings(),
 ): ProdiaProvider = ProdiaProvider(client, settings)
 
+internal suspend fun FromGeneratedFile(client: HttpClient, file: GeneratedFile): ProdiaInputFile {
+    val bytes = file.url?.takeIf { it.isNotBlank() }
+        // AssetDownload.capped checks the status (Ktor isn't configured with expectSuccess, so a
+        // 404/500 error page would otherwise be uploaded as the input image and surface as a
+        // confusing downstream Prodia rejection) and keeps the error body in the raised error.
+        ?.let { url -> AssetDownload.capped(client, url).bytes }
+        ?: Base64Codec.decode(file.base64)
+    return ProdiaInputFile(file.mediaType, bytes, file.filename)
+}
+
 internal class ProdiaInputFile(
     val mediaType: String,
     val bytes: ByteArray,
     val filename: String? = null,
-) {
-    companion object {
-        internal suspend fun fromGeneratedFile(client: HttpClient, file: GeneratedFile): ProdiaInputFile {
-            val bytes = file.url?.takeIf { it.isNotBlank() }
-                ?.let { url ->
-                    // Ktor isn't configured with expectSuccess, so check the status manually (every
-                    // sibling download helper does) — otherwise a 404/500 error page is uploaded as
-                    // the input image, surfacing as a confusing downstream Prodia rejection.
-                    val response = client.request(url)
-                    val body = response.bodyAsBytes()
-                    if (response.status.value !in 200..299) {
-                        throw ApiCallError(
-                            url = url,
-                            statusCode = response.status.value,
-                            rawBody = body.decodeToString(),
-                            headers = with(HttpTransport) { response.flattenedHeaders() },
-                            message = "Prodia input file download failed with status ${response.status.value}",
-                        )
-                    }
-                    body
-                }
-                ?: Base64Codec.decode(file.base64)
-            return ProdiaInputFile(file.mediaType, bytes, file.filename)
-        }
-    }
-}
+)
 
 private class ProdiaMultipartPart(
     val headers: Map<String, String>,

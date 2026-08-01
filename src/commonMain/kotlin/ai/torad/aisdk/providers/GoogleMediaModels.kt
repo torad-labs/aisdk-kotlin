@@ -187,7 +187,7 @@ internal class GoogleGenerativeAIImageModel(
                 messages(listOf(message))
                 seed(params.seed)
                 providerOptions(
-                    ProviderOptions.ofPairs(
+                    ProviderOptions(
                         "google" to buildJsonObject {
                             put("responseModalities", JsonArray(listOf(JsonPrimitive("IMAGE"))))
                             params.aspectRatio?.let {

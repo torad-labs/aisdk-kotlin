@@ -109,8 +109,8 @@ class McpSseTransportTest : MCPClientTestBase() {
 
     @Test
     fun `SSE reader survives a malformed message and still processes the next one`() = runTest {
-        // Regression: a per-message JSONRPCMessage.fromJson throw used to propagate out of
-        // parseStream into the reader's OUTER catch -> onError + the reader EXITS (and for SSE,
+        // Regression: a per-message ParseJSONRPCMessage throw used to propagate out of
+        // ParseSseStream into the reader's OUTER catch -> onError + the reader EXITS (and for SSE,
         // onClose tears down the whole connection). One bad inbound frame killed the reader.
         val good = """{"jsonrpc":"2.0","method":"notifications/server"}"""
         val fixture = TestServer.createTestServer(
@@ -119,7 +119,7 @@ class McpSseTransportTest : MCPClientTestBase() {
                     UrlResponse.StreamChunks(
                         listOf(
                             "event: endpoint\ndata: /messages\n\n",
-                            "event: message\ndata: {not valid json\n\n", // fromJson throws here
+                            "event: message\ndata: {not valid json\n\n", // ParseJSONRPCMessage throws here
                             "event: message\ndata: $good\n\n", // must STILL be delivered
                         ),
                     ),

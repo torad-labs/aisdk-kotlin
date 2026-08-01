@@ -132,7 +132,7 @@ Video support depends heavily on the provider. Keep provider-specific knobs in
 ## Files
 
 Generated media uses `GeneratedFile`. Inputs can be built from `FileData`:
-import `ai.torad.aisdk.GeneratedFiles.fileData` when calling `fileData()`.
+call `generatedFile.fileData()` directly.
 
 ```kotlin
 val generated = GeneratedFile(

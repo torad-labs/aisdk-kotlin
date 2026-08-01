@@ -5,6 +5,7 @@ package ai.torad.aisdk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlin.jvm.JvmOverloads
+import kotlin.jvm.JvmSynthetic
 
 /**
  * High-level text generation facade for a single [LanguageModel].
@@ -30,7 +31,7 @@ public class TextGenerator @JvmOverloads constructor(
      * usually with `.first()`.
      * @since 0.3.0-beta01
      */
-    public fun generate(input: GenerationInput): Flow<GenerateTextResult<String>> = flow {
+    @JvmSynthetic public fun generate(input: GenerationInput): Flow<GenerateTextResult<String>> = flow {
         emit(doGenerate(input, null) { it })
     }
 
@@ -41,7 +42,11 @@ public class TextGenerator @JvmOverloads constructor(
      * should collect exactly one value, usually with `.first()`.
      * @since 0.3.0-beta01
      */
-    public fun <T> generate(input: GenerationInput, output: Output<T>): Flow<GenerateTextResult<T>> = flow {
+    @JvmSynthetic
+    public fun <T> generate(
+        input: GenerationInput,
+        output: Output<T>,
+    ): Flow<GenerateTextResult<T>> = flow {
         emit(doGenerate(input, output, output::decode))
     }
 
@@ -54,7 +59,7 @@ public class TextGenerator @JvmOverloads constructor(
      * socket/read timeout.
      * @since 0.3.0-beta01
      */
-    public fun stream(input: GenerationInput): Flow<StreamEvent> =
+    @JvmSynthetic public fun stream(input: GenerationInput): Flow<StreamEvent> =
         buildParams(input, null).let { params ->
             StreamOpenRetry.wrap(config.maxRetries) {
                 model.stream(params)

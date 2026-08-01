@@ -1,0 +1,52 @@
+# Conventional-commit lint on PR titles (squash-merge titles become main's history).
+# The type list is derived from this repo's actual history, not from the generic
+# conventional-commits set — `style`, `harden`, and `campaign` are all in use here
+# (see git log; `campaign(RR-06): main CI green` is the shape). Adding a type is
+# cheaper than rejecting a legitimate PR, but every type here has precedent.
+name: pr-title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: read
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # MUST stay a subset of the org-level `org-pr-title` required check, which allows
+          # exactly: build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test.
+          #
+          # This list previously also carried `release`, `harden` and `campaign`. That made the
+          # local gate MORE permissive than the binding one: a `harden:` title passed here and
+          # was then rejected at merge by the org check, which is what happened to this very PR
+          # (title had to be renamed `harden:` -> `fix:` to land). A local gate that green-lights
+          # a title the required check refuses is worse than no local gate — it moves the failure
+          # to the point where it is most expensive.
+          #
+          # To reinstate any of the three, get them added to the ORG workflow first, then widen
+          # here; never the other way round.
+          types: |
+            feat
+            fix
+            docs
+            test
+            build
+            ci
+            chore
+            perf
+            refactor
+            revert
+            style
+          requireScope: false

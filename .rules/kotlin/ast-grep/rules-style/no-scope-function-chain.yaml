@@ -1,0 +1,41 @@
+id: no-scope-function-chain
+language: kotlin
+severity: warning
+message: "Three or more chained scope functions (.let/.also/.apply/.run) are hard to read and debug; extract intermediate steps into named locals or a small function."
+note: |
+  Matches a call chain of 3+ scope functions (`.let { }.also { }.apply { }`
+  and similar), detected as a `call_expression` whose receiver is itself a
+  scope-function `call_expression` two levels deep. A 2-link chain
+  (`.let { }.also { }`) is common and intentionally not flagged; the third
+  link is where readability drops off and step-through debugging gets hard
+  (a breakpoint inside the chain can't easily tell you which link's
+  intermediate value you're looking at). On a 4+ link chain this rule
+  reports at more than one nesting depth (once for the outermost 3-link
+  window, once for the inner 3-link sub-chain it contains); that is
+  expected duplicate signal for a warning-tier heuristic, not a bug.
+rule:
+  kind: call_expression
+  all:
+    - has:
+        kind: call_suffix
+    - has:
+        kind: navigation_expression
+        all:
+          - has:
+              kind: navigation_suffix
+              has: { kind: simple_identifier, regex: '^(let|also|apply|run)$' }
+          - has:
+              kind: call_expression
+              has:
+                kind: navigation_expression
+                all:
+                  - has:
+                      kind: navigation_suffix
+                      has: { kind: simple_identifier, regex: '^(let|also|apply|run)$' }
+                  - has:
+                      kind: call_expression
+                      has:
+                        kind: navigation_expression
+                        has:
+                          kind: navigation_suffix
+                          has: { kind: simple_identifier, regex: '^(let|also|apply|run)$' }

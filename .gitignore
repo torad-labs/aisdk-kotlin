@@ -34,3 +34,11 @@ local.properties
 !.claude/skills/
 !.claude/skills/**
 node_modules/
+
+# Campaign scratch space. Campaign ARTIFACTS (*.patch, *-artifact.json,
+# *-review-results.json) are deliberately tracked as the campaign's record — see the
+# 33 files already under dev/campaigns/. Its sandboxes/ are not: they are per-agent git
+# worktrees, measured at 8.6 GB for the stringly-domain-types campaign alone, and they
+# were sitting untracked and un-ignored where a single `git add .` would have tried to
+# commit the lot. Regenerable by definition, so they must never enter history.
+dev/campaigns/*/sandboxes/

@@ -1,0 +1,11 @@
+id: no-string-typed-id
+language: kotlin
+severity: warning
+message: "Parameter named like an id (`id`, `...Id`) is typed as raw `String`. A bare String accepts any string, so callers can pass the wrong id (or a display name) and the compiler won't catch it. Wrap it in a value class (e.g. `@JvmInline value class UserId(val value: String)`) so mismatched ids become a compile error."
+rule:
+  kind: parameter
+  all:
+    - has: { kind: simple_identifier, regex: '(^id$|Id$)' }
+    - has:
+        kind: user_type
+        has: { kind: type_identifier, regex: '^String$' }

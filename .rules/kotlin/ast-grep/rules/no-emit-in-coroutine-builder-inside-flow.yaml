@@ -1,0 +1,60 @@
+# TENET: every emission from a `flow { }` builder must happen in the collector's own context.
+#
+# `flow { }` hands the block a SafeCollector that records the CoroutineContext it was collected
+# in and re-checks it on every emit. Starting a coroutine inside the block — withContext,
+# launch, async — installs a different context, so the emission fails that check with
+# `IllegalStateException: Flow invariant is violated: emission from another coroutine`. The
+# compiler cannot see it; it is a runtime crash on the streaming path.
+#
+# Fixes: hoist the switch off the emission (`val v = withContext(io) { read() }; emit(v)`),
+# move the whole upstream with `.flowOn(dispatcher)`, or use `channelFlow { send(v) }`, whose
+# send is designed for concurrent emission.
+#
+# Scope law (toolkit doctrine): exclusion only — new files are inside this law by default.
+#
+# THE NEAREST-BOUNDARY WALK IS THE RULE. Two prior attempts were refuted as WOULD_MISFIRE
+# because they searched for an ancestor rather than the NEAREST one, and so flagged five
+# legitimate shapes. `stopBy:` takes a RULE here, not `end`: walk up from the emission and
+# halt at the first coroutine builder OR flow builder, then require that boundary to be a
+# coroutine builder. flow/channelFlow/callbackFlow appear in the stopBy set purely as
+# TERMINATORS — they are deliberately absent from the sibling `any:` — so hitting one first
+# means "the nearest collector is a legal one" and the rule correctly declines.
+#
+# That single mechanism is what makes all five previously-misfiring shapes pass:
+#   hoisted    `val v = withContext(io) { read() }; emit(v)`  -> emit's nearest is flow
+#   flowOn     `flow { emit(x) }.flowOn(io)`                  -> emit's nearest is flow
+#   channelFlow`channelFlow { launch { send(x) } }`           -> send, and channelFlow terminates
+#   collect    `up.collect { emit(it) }`                      -> collect is not a boundary
+#   cleanup    `try { emit(x) } finally { withContext(NonCancellable) { close() } }`
+#                                                             -> the cleanup block has no emit
+# The last is live at Generate.kt:202 and is correct code; flagging it was the sharpest of
+# the earlier false positives.
+#
+# The inner `inside:` uses stopBy: end because THAT relation is genuinely transitive: the
+# context switch sits arbitrarily deep inside the builder (in a try, a while, a forEach).
+# Over-reach there is already neutralised by the nearest-boundary walk above it.
+#
+# Verified: both violating shapes match (withContext-wrapped emit, launch-wrapped emit); all
+# five compliant shapes above do not; 0 hits across 264 emit/flow references in the repo.
+id: no-emit-in-coroutine-builder-inside-flow
+language: kotlin
+severity: error
+message: "emit/emitAll runs inside a coroutine builder (withContext/launch/async) while its FlowCollector belongs to an enclosing flow { }. The SafeCollector rejects emission from another coroutine: IllegalStateException: Flow invariant is violated. Hoist the context switch off the emission, use .flowOn(...), or switch to channelFlow { send(...) }."
+ignores:
+  - "**/build/**"
+  - "**/test/**"
+  - "**/*Test/**"
+rule:
+  kind: call_expression
+  has: { kind: simple_identifier, regex: '^(emit|emitAll)$' }
+  inside:
+    stopBy:
+      any:
+        - kind: call_expression
+          has: { kind: simple_identifier, regex: '^(withContext|launch|async|flow|channelFlow|callbackFlow)$' }
+    kind: call_expression
+    has: { kind: simple_identifier, regex: '^(withContext|launch|async)$' }
+    inside:
+      stopBy: end
+      kind: call_expression
+      has: { kind: simple_identifier, regex: '^flow$' }

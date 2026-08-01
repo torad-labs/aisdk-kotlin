@@ -27,17 +27,20 @@ public data class UIMessage(
     val parts: List<UIMessagePart>,
     val createdAtMs: Long = 0L,
     val metadata: Map<String, JsonElement>? = null,
-)
-
-@Serializable
-/** @since 0.3.0-beta01 */
-public enum class UIMessageRole { System, User, Assistant }
-
-/** @since 0.3.0-beta01 */
-public object UIMessageMetadata {
-    public fun <TMetadata> UIMessage.metadataAs(name: String, serializer: KSerializer<TMetadata>): TMetadata? =
+) {
+    /** @since 0.3.0-beta01 */
+    public fun <TMetadata> metadataAs(name: String, serializer: KSerializer<TMetadata>): TMetadata? =
         metadata?.decodeValue(name, serializer)
 
-    public inline fun <reified TMetadata> UIMessage.metadataAs(name: String): TMetadata? =
-        metadataAs(name, serializer())
+    /** @since 0.3.0-beta01 */
+    public inline fun <reified TMetadata> metadataAs(name: String): TMetadata? =
+        metadataAs(name, serializer<TMetadata>())
 }
+
+@Serializable
+/**
+ * This enum may gain variants in future releases. Consumers must not rely on
+ * exhaustiveness — include an `else` branch when matching.
+ * @since 0.3.0-beta01
+ */
+public enum class UIMessageRole { System, User, Assistant }

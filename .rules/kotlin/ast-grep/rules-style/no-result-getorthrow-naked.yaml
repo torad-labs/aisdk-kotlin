@@ -1,0 +1,10 @@
+id: no-result-getorthrow-naked
+language: kotlin
+severity: warning
+message: "Result.getOrThrow() rethrows the original exception with no added context and isn't wrapped in a try/catch at this call site. A naked getOrThrow() gives the caller a stack trace with no clue which operation failed. Wrap the call in a try/catch that adds context (what was being done, with which inputs) before rethrowing, or use fold { onSuccess, onFailure } / getOrElse { } to handle both branches explicitly instead."
+rule:
+  pattern: $OBJ.getOrThrow()
+  not:
+    inside:
+      kind: try_expression
+      stopBy: end

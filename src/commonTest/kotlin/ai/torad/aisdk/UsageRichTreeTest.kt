@@ -9,6 +9,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+private val usageCodec: Json = Json { encodeDefaults = true }
+
 /**
  * Validates Phase 4C #19 — `Usage` rich tree with input/output token
  * breakdowns. Mirrors v6's `LanguageModelV3Usage` shape
@@ -31,7 +33,7 @@ class UsageRichTreeTest {
     @Test
     fun `given legacy flat constructor Usage promptTokens completionTokens when read via legacy accessors then values match`() {
         // GIVEN — old-style construction used in tests + ToolLoopAgent.
-        val u = Usage.of(promptTokens = 12, completionTokens = 34)
+        val u = Usage(promptTokens = 12, completionTokens = 34)
 
         // WHEN/THEN
         assertEquals(12, u.promptTokens, "legacy accessor reads inputTokens.total")
@@ -94,11 +96,10 @@ class UsageRichTreeTest {
             inputTokens = Usage.InputTokenBreakdown(total = 50, cacheRead = 50),
             raw = rawPayload,
         )
-        val codec = Json { encodeDefaults = true }
 
         // WHEN
-        val encoded = codec.encodeToString(Usage.serializer(), original)
-        val decoded = codec.decodeFromString(Usage.serializer(), encoded)
+        val encoded = usageCodec.encodeToString(Usage.serializer(), original)
+        val decoded = usageCodec.decodeFromString(Usage.serializer(), encoded)
 
         // THEN
         assertEquals(50, decoded.inputTokens.cacheRead)
@@ -126,5 +127,56 @@ class UsageRichTreeTest {
                 reasoning = 6,
             )
         }
+    }
+
+    @Test
+    fun `given OpenAI usage with reasoning inside completion when parsed then completion is the output total`() {
+        // The documented contract: reasoning_tokens is a SUBSET of completion_tokens.
+        val usage = UsageFromOpenAI(
+            buildJsonObject {
+                put("prompt_tokens", JsonPrimitive(100))
+                put("completion_tokens", JsonPrimitive(60))
+                put("completion_tokens_details", buildJsonObject { put("reasoning_tokens", JsonPrimitive(25)) })
+            },
+        )
+
+        assertEquals(60, usage.outputTokens.total, "the provider's completion_tokens is authoritative")
+        assertEquals(25, usage.outputTokens.reasoning)
+        assertEquals(35, usage.outputTokens.text, "text is the non-reasoning remainder")
+    }
+
+    @Test
+    fun `given OpenAI usage whose reasoning exceeds completion when parsed then reasoning is clamped`() {
+        // A response that violates the subset contract. Previously this took an undocumented branch
+        // that SUMMED the two into the total; the magnitude test could not distinguish that case
+        // from a provider reporting text-only completion_tokens, and for such a provider with SHORT
+        // reasoning it silently under-counted instead. reasoning is now clamped into its documented
+        // range, symmetric with cached_tokens being clamped into prompt_tokens.
+        val usage = UsageFromOpenAI(
+            buildJsonObject {
+                put("prompt_tokens", JsonPrimitive(10))
+                put("completion_tokens", JsonPrimitive(5))
+                put("completion_tokens_details", buildJsonObject { put("reasoning_tokens", JsonPrimitive(9)) })
+            },
+        )
+
+        assertEquals(5, usage.outputTokens.total, "the total never exceeds the reported completion_tokens")
+        assertEquals(5, usage.outputTokens.reasoning, "reasoning is clamped to the completion total")
+        assertEquals(0, usage.outputTokens.text, "text stays non-negative")
+    }
+
+    @Test
+    fun `given OpenAI usage with a negative reasoning count when parsed then it clamps to zero`() {
+        val usage = UsageFromOpenAI(
+            buildJsonObject {
+                put("prompt_tokens", JsonPrimitive(10))
+                put("completion_tokens", JsonPrimitive(8))
+                put("completion_tokens_details", buildJsonObject { put("reasoning_tokens", JsonPrimitive(-3)) })
+            },
+        )
+
+        assertEquals(8, usage.outputTokens.total)
+        assertEquals(0, usage.outputTokens.reasoning)
+        assertEquals(8, usage.outputTokens.text)
     }
 }

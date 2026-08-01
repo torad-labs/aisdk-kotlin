@@ -73,6 +73,73 @@ def runs_repo_code(block: str) -> bool:
     )
 
 
+# --- credential isolation -------------------------------------------------------
+#
+# A job that can sign or publish must not also execute third-party code. The failure
+# this prevents is not hypothetical: a dependency lifecycle script (npm postinstall),
+# a cloned upstream repo, or a test-suite plugin running in the same job as
+# SIGNING_KEY + id-token:write yields SIGNED malicious artifacts on Maven Central,
+# which is unrecoverable for a published library.
+#
+# Deliberately NOT matched: ./gradlew publishAllPublicationsToLocalStagingRepository
+# and the signing/attest/upload steps. Those MUST run in the credentialed job — the
+# signed bundle cannot be produced anywhere else — so Gradle plugins do execute there
+# by necessity. The win is removing the test suite, npm, and the upstream clone from
+# the key's blast radius, not pretending a full SLSA build/publish split is reachable.
+_PUBLISH_CREDENTIAL_PERMISSIONS = re.compile(
+    r"(?m)^      (?:id-token|attestations|packages):\s*write\s*$"
+)
+_PUBLISH_CREDENTIAL_SECRETS = ("secrets.SIGNING_", "secrets.SONATYPE_")
+
+_THIRD_PARTY_EXECUTION = (
+    (r"\bnpm\s+(?:ci|install|i)\b", "npm install"),
+    (r"\bpnpm\s+(?:install|i)\b", "pnpm install"),
+    (r"\byarn\s+install\b", "yarn install"),
+    (r"\bpip\s+install\b", "pip install"),
+    (r"\bgit\s+clone\b", "git clone"),
+    (r"\./gradlew\s+check\b", "./gradlew check"),
+    (r"\bnode\s+tools/", "node tools/"),
+)
+
+
+def job_holds_publish_credentials(block: str) -> bool:
+    if _PUBLISH_CREDENTIAL_PERMISSIONS.search(block):
+        return True
+    return any(secret in block for secret in _PUBLISH_CREDENTIAL_SECRETS)
+
+
+def third_party_execution_hits(block: str) -> list[str]:
+    return [label for pattern, label in _THIRD_PARTY_EXECUTION if re.search(pattern, block)]
+
+
+def npmrc_disables_scripts(workflow_path: Path) -> bool:
+    """True when a tracked root .npmrc sets ignore-scripts=true (repo-wide opt-out)."""
+    # .github/workflows/release.yml -> repo root is three parents up.
+    npmrc = workflow_path.resolve().parent.parent.parent / ".npmrc"
+    try:
+        return re.search(r"(?m)^\s*ignore-scripts\s*=\s*true\s*$", npmrc.read_text(encoding="utf-8")) is not None
+    except OSError:
+        return False
+
+
+def npm_without_ignore_scripts(block: str) -> bool:
+    npm_calls = re.findall(r"\bnpm\s+(?:ci|install|i)\b[^\n]*", block)
+    return any("--ignore-scripts" not in call for call in npm_calls)
+
+
+def transitive_needs(jobs: dict[str, Job], start: str) -> set[str]:
+    """Every job reachable from `start` through needs: edges."""
+    seen: set[str] = set()
+    frontier = [start]
+    while frontier:
+        current = frontier.pop()
+        for dependency in extract_needs(jobs[current].block) if current in jobs else set():
+            if dependency not in seen:
+                seen.add(dependency)
+                frontier.append(dependency)
+    return seen
+
+
 def validate(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     issues: list[str] = []
@@ -104,6 +171,17 @@ def validate(path: Path) -> list[str]:
             issues.append(f"job {job.name} runs repo code before depending on preflight")
         if job.name != "publish" and has_packages_write(job.block):
             issues.append(f"job {job.name} must not have packages: write")
+        if job_holds_publish_credentials(job.block):
+            hits = third_party_execution_hits(job.block)
+            if hits:
+                issues.append(
+                    f"job {job.name} executes third-party code ({', '.join(hits)}) while holding "
+                    "publish credentials; move verification into a contents: read job consumed via needs:"
+                )
+            if npm_without_ignore_scripts(job.block) and not npmrc_disables_scripts(path):
+                issues.append(
+                    f"job {job.name} runs npm without --ignore-scripts while holding publish credentials"
+                )
 
     publish = jobs.get("publish")
     if publish is None:
@@ -115,12 +193,27 @@ def validate(path: Path) -> list[str]:
                 issues.append(f"publish job must need {required_need}")
         if not has_packages_write(publish.block):
             issues.append("publish job must explicitly scope packages: write")
-        gate_position = publish.block.find("bash .claude/hooks/rules/ci-gate.sh")
-        check_position = publish.block.find("./gradlew check")
-        if gate_position == -1:
-            issues.append("publish job must run the architecture gate")
-        elif check_position != -1 and gate_position > check_position:
-            issues.append("publish job must run the architecture gate before ./gradlew check")
+
+        # The architecture gate must still guard every release, but it no longer has to
+        # live INSIDE publish -- requiring that is what forced the gate and the signing
+        # key into one job. Follow it to whichever job runs it, and require publish to
+        # depend on that job so the ordering guarantee is preserved across the split.
+        gate_jobs = [j for j in jobs.values() if "bash .claude/hooks/rules/ci-gate.sh" in j.block]
+        if not gate_jobs:
+            issues.append("release workflow must run the architecture gate before publishing")
+        else:
+            reachable = transitive_needs(jobs, "publish") | {"publish"}
+            if not any(j.name in reachable for j in gate_jobs):
+                issues.append(
+                    "publish job must depend (directly or transitively) on the job running the architecture gate"
+                )
+            for gate_job in gate_jobs:
+                gate_position = gate_job.block.find("bash .claude/hooks/rules/ci-gate.sh")
+                check_position = gate_job.block.find("./gradlew check")
+                if check_position != -1 and gate_position > check_position:
+                    issues.append(
+                        f"job {gate_job.name} must run the architecture gate before ./gradlew check"
+                    )
 
     return issues
 

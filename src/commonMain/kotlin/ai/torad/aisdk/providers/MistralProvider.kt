@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
@@ -20,6 +21,183 @@ public const val MISTRAL_VERSION: String = "3.0.37"
 private const val MISTRAL_MAX_EMBEDDINGS_PER_CALL: Int = 32
 
 public typealias MistralProviderOptions = MistralLanguageModelOptions
+
+// Wire-shape helpers translating between the OpenAI-compatible body and Mistral's API.
+
+/**
+ * Rewrites the OpenAI-compatible chat body into Mistral's wire shape:
+ * - tool_choice "required" → "any"; specific `{type:function,function:{name}}` is preserved
+ *   (and `tools` is still filtered to that name as a belt-and-suspenders),
+ * - tool messages gain `name` (from the assistant tool_calls' id→name map),
+ * - user `file` content parts (PDFs) become `document_url` parts,
+ * - `prefix: true` is opt-in via providerOptions.mistral.prefix (or a top-level body
+ *   `prefix` flag). When enabled, it is applied only if the conversation ends on an
+ *   assistant message (true prefix-continuation). Never rewrite assistant messages by default.
+ */
+private fun MistralTransformChatBody(body: JsonObject): JsonObject {
+    val messages = JsonAccess.arr(body, "messages")
+    val toolCallNames = MistralToolCallNameMap(messages)
+    val lastIndex = messages?.lastIndex ?: -1
+    val lastIsAssistant = lastIndex >= 0 &&
+        (((messages?.getOrNull(lastIndex) as? JsonObject)?.get("role") as? JsonPrimitive)?.content == "assistant")
+    // Opt-in only. A bare boolean body key is stripped below so it is not sent top-level.
+    val prefixEnabled = (body["prefix"] as? JsonPrimitive)?.booleanOrNull == true
+    val prefixAssistantIndex = if (prefixEnabled && lastIsAssistant) lastIndex else -1
+
+    return buildJsonObject {
+        for ((key, value) in body) {
+            when (key) {
+                "tool_choice" -> put("tool_choice", MistralToolChoice(value))
+                "tools" -> put("tools", MistralFilterTools(value, body["tool_choice"]))
+                "messages" -> put(
+                    "messages",
+                    MistralRewriteMessages(messages, toolCallNames, prefixAssistantIndex)
+                )
+                // Message-level flag only — never a top-level chat field.
+                "prefix" -> Unit
+                else -> put(key, value)
+            }
+        }
+    }
+}
+
+/** id → toolName from assistant tool_calls, so tool-result messages can carry the name. */
+private fun MistralToolCallNameMap(messages: JsonArray?): Map<String, String> = buildMap {
+    messages.orEmpty().forEach { msg ->
+        ((msg as? JsonObject)?.get("tool_calls") as? JsonArray)?.forEach { call ->
+            val obj = call as? JsonObject ?: return@forEach
+            val id = (obj["id"] as? JsonPrimitive)?.content
+            val name = ((JsonAccess.obj(obj, "function"))?.get("name") as? JsonPrimitive)?.content
+            if (id != null && name != null) put(id, name)
+        }
+    }
+}
+
+/**
+ * Mistral accepts "auto"/"none"/"any" and the OpenAI-shaped specific-tool object
+ * `{"type":"function","function":{"name":...}}`. Only map the OpenAI "required" alias
+ * to Mistral's "any"; do not collapse specific-tool objects.
+ */
+private fun MistralToolChoice(value: JsonElement?): JsonElement = when {
+    value is JsonPrimitive && value.content == "required" -> JsonPrimitive("any")
+    value is JsonObject -> value
+    else -> value ?: JsonPrimitive("auto")
+}
+
+/** When tool_choice names a specific tool, Mistral filters `tools` to just that one. */
+private fun MistralFilterTools(tools: JsonElement?, toolChoice: JsonElement?): JsonElement {
+    val arr = tools as? JsonArray ?: return tools ?: JsonArray(emptyList())
+    val name = ((toolChoice as? JsonObject)?.get("function") as? JsonObject)?.get("name")
+        ?.let { (it as? JsonPrimitive)?.content }
+    return if (name == null) {
+        arr
+    } else {
+        JsonArray(
+            arr.filter {
+                (((it as? JsonObject)?.get("function") as? JsonObject)?.get("name") as? JsonPrimitive)?.content == name
+            },
+        )
+    }
+}
+
+private fun MistralRewriteMessages(
+    messages: JsonArray?,
+    toolCallNames: Map<String, String>,
+    lastAssistantIndex: Int,
+): JsonArray = JsonArray(
+    messages.orEmpty().mapIndexed { index, msg ->
+        val obj = msg as? JsonObject ?: return@mapIndexed msg
+        when ((obj["role"] as? JsonPrimitive)?.content) {
+            "tool" -> {
+                val name = (obj["tool_call_id"] as? JsonPrimitive)?.content?.let { toolCallNames[it] }
+                if (name == null) obj else JsonObject(obj + ("name" to JsonPrimitive(name)))
+            }
+            "user" -> MistralRewriteUserContent(obj)
+            "assistant" ->
+                if (index == lastAssistantIndex) JsonObject(obj + ("prefix" to JsonPrimitive(true))) else obj
+            else -> obj
+        }
+    },
+)
+
+/** Rewrite user `file` content parts to Mistral's `document_url` shape. */
+private fun MistralRewriteUserContent(message: JsonObject): JsonObject {
+    val content = JsonAccess.arr(message, "content") ?: return message
+    val rewritten = content.map { part ->
+        val obj = part as? JsonObject ?: return@map part
+        if ((obj["type"] as? JsonPrimitive)?.content != "file") return@map part
+        val fileData = (JsonAccess.obj(obj, "file"))?.get("file_data") ?: return@map part
+        buildJsonObject {
+            put("type", JsonPrimitive("document_url"))
+            put("document_url", fileData)
+        }
+    }
+    return JsonObject(message + ("content" to JsonArray(rewritten)))
+}
+
+private fun MistralTransformChatResponse(body: JsonObject): JsonObject {
+    val choices = JsonAccess.arr(body, "choices")
+    return if (choices == null) {
+        body
+    } else {
+        JsonObject(body + ("choices" to JsonArray(choices.map(::MistralTransformResponseChoice))))
+    }
+}
+
+private fun MistralTransformResponseChoice(choice: JsonElement): JsonElement {
+    val obj = choice as? JsonObject
+    val updates = obj?.let {
+        buildMap<String, JsonElement> {
+            (JsonAccess.obj(it, "message"))?.let(::MistralTransformResponseContent)?.let { message ->
+                put("message", message)
+            }
+            (JsonAccess.obj(it, "delta"))?.let(::MistralTransformResponseContent)?.let { delta ->
+                put("delta", delta)
+            }
+        }
+    }.orEmpty()
+    return if (obj == null || updates.isEmpty()) choice else JsonObject(obj + updates)
+}
+
+private fun MistralTransformResponseContent(value: JsonObject): JsonObject {
+    val content = JsonAccess.arr(value, "content")
+    return if (content == null) {
+        value
+    } else {
+        val text = MistralTextContent(content)
+        val reasoning = MistralReasoningContent(content)
+        val transformed = value.toMutableMap()
+        if (text.isEmpty()) transformed.remove("content") else transformed["content"] = JsonPrimitive(text)
+        if (reasoning.isNotEmpty()) transformed["reasoning_content"] = JsonPrimitive(reasoning)
+        JsonObject(transformed)
+    }
+}
+
+private fun MistralTextContent(content: JsonArray): String =
+    content.mapNotNull { part ->
+        val obj = part as? JsonObject ?: return@mapNotNull null
+        obj.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+            ?.get("text")?.let { it as? JsonPrimitive }?.contentOrNull
+    }.joinToString("")
+
+private fun MistralReasoningContent(content: JsonArray): String =
+    content.joinToString("") { part ->
+        val obj = part as? JsonObject
+        if ((obj?.get("type") as? JsonPrimitive)?.contentOrNull == "thinking") {
+            MistralThinkingText(
+                obj["thinking"]
+            )
+        } else {
+            ""
+        }
+    }
+
+private fun MistralThinkingText(value: JsonElement?): String =
+    (value as? JsonArray).orEmpty().mapNotNull { chunk ->
+        val obj = chunk as? JsonObject ?: return@mapNotNull null
+        obj.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+            ?.get("text")?.let { it as? JsonPrimitive }?.contentOrNull
+    }.joinToString("")
 
 @Serializable
 @Poko
@@ -46,175 +224,9 @@ public class MistralProviderSettings internal constructor(
             supportedUrls(mapOf("application/pdf" to listOf("^https://.*$")))
             // Mistral's chat wire shape differs from OpenAI's; rewrite the OpenAI-shaped body
             // into Mistral's shape post-build (the message converter is otherwise shared).
-            transformChatRequestBody { mistralTransformChatBody(it) }
-            transformChatResponse { transformChatResponse(it) }
+            transformChatRequestBody { MistralTransformChatBody(it) }
+            transformChatResponse { MistralTransformChatResponse(it) }
         }
-
-    /** Wire-shape helpers translating between the OpenAI-compatible body and Mistral's API. */
-    public companion object {
-        /**
-         * Rewrites the OpenAI-compatible chat body into Mistral's wire shape:
-         * - tool_choice "required" / {function:{name}} → "any" (specific also filters `tools`),
-         * - tool messages gain `name` (from the assistant tool_calls' id→name map),
-         * - user `file` content parts (PDFs) become `document_url` parts,
-         * - the final assistant message gets `prefix: true`.
-         */
-        private fun mistralTransformChatBody(body: JsonObject): JsonObject {
-            val messages = JsonAccess.arr(body, "messages")
-            val toolCallNames = mistralToolCallNameMap(messages)
-            val lastAssistantIndex = messages?.indexOfLast {
-                ((it as? JsonObject)?.get("role") as? JsonPrimitive)?.content == "assistant"
-            } ?: -1
-
-            return buildJsonObject {
-                for ((key, value) in body) {
-                    when (key) {
-                        "tool_choice" -> put("tool_choice", mistralToolChoice(value))
-                        "tools" -> put("tools", mistralFilterTools(value, body["tool_choice"]))
-                        "messages" -> put(
-                            "messages",
-                            mistralRewriteMessages(messages, toolCallNames, lastAssistantIndex)
-                        )
-                        else -> put(key, value)
-                    }
-                }
-            }
-        }
-
-        /** id → toolName from assistant tool_calls, so tool-result messages can carry the name. */
-        private fun mistralToolCallNameMap(messages: JsonArray?): Map<String, String> = buildMap {
-            messages.orEmpty().forEach { msg ->
-                ((msg as? JsonObject)?.get("tool_calls") as? JsonArray)?.forEach { call ->
-                    val obj = call as? JsonObject ?: return@forEach
-                    val id = (obj["id"] as? JsonPrimitive)?.content
-                    val name = ((JsonAccess.obj(obj, "function"))?.get("name") as? JsonPrimitive)?.content
-                    if (id != null && name != null) put(id, name)
-                }
-            }
-        }
-
-        /** "required"/{function:{name}} → "any"; otherwise pass through ("auto"/"none"). */
-        private fun mistralToolChoice(value: JsonElement?): JsonElement = when {
-            value is JsonPrimitive && value.content == "required" -> JsonPrimitive("any")
-            value is JsonObject -> JsonPrimitive("any")
-            else -> value ?: JsonPrimitive("auto")
-        }
-
-        /** When tool_choice names a specific tool, Mistral filters `tools` to just that one. */
-        private fun mistralFilterTools(tools: JsonElement?, toolChoice: JsonElement?): JsonElement {
-            val arr = tools as? JsonArray ?: return tools ?: JsonArray(emptyList())
-            val name = ((toolChoice as? JsonObject)?.get("function") as? JsonObject)?.get("name")
-                ?.let { (it as? JsonPrimitive)?.content }
-            return if (name == null) {
-                arr
-            } else {
-                JsonArray(
-                    arr.filter {
-                        (((it as? JsonObject)?.get("function") as? JsonObject)?.get("name") as? JsonPrimitive)?.content == name
-                    },
-                )
-            }
-        }
-
-        private fun mistralRewriteMessages(
-            messages: JsonArray?,
-            toolCallNames: Map<String, String>,
-            lastAssistantIndex: Int,
-        ): JsonArray = JsonArray(
-            messages.orEmpty().mapIndexed { index, msg ->
-                val obj = msg as? JsonObject ?: return@mapIndexed msg
-                when ((obj["role"] as? JsonPrimitive)?.content) {
-                    "tool" -> {
-                        val name = (obj["tool_call_id"] as? JsonPrimitive)?.content?.let { toolCallNames[it] }
-                        if (name == null) obj else JsonObject(obj + ("name" to JsonPrimitive(name)))
-                    }
-                    "user" -> mistralRewriteUserContent(obj)
-                    "assistant" ->
-                        if (index == lastAssistantIndex) JsonObject(obj + ("prefix" to JsonPrimitive(true))) else obj
-                    else -> obj
-                }
-            },
-        )
-
-        /** Rewrite user `file` content parts to Mistral's `document_url` shape. */
-        private fun mistralRewriteUserContent(message: JsonObject): JsonObject {
-            val content = JsonAccess.arr(message, "content") ?: return message
-            val rewritten = content.map { part ->
-                val obj = part as? JsonObject ?: return@map part
-                if ((obj["type"] as? JsonPrimitive)?.content != "file") return@map part
-                val fileData = (JsonAccess.obj(obj, "file"))?.get("file_data") ?: return@map part
-                buildJsonObject {
-                    put("type", JsonPrimitive("document_url"))
-                    put("document_url", fileData)
-                }
-            }
-            return JsonObject(message + ("content" to JsonArray(rewritten)))
-        }
-
-        private fun transformChatResponse(body: JsonObject): JsonObject {
-            val choices = JsonAccess.arr(body, "choices")
-            return if (choices == null) {
-                body
-            } else {
-                JsonObject(body + ("choices" to JsonArray(choices.map(::transformResponseChoice))))
-            }
-        }
-
-        private fun transformResponseChoice(choice: JsonElement): JsonElement {
-            val obj = choice as? JsonObject
-            val updates = obj?.let {
-                buildMap<String, JsonElement> {
-                    (JsonAccess.obj(it, "message"))?.let(::transformResponseContent)?.let { message ->
-                        put("message", message)
-                    }
-                    (JsonAccess.obj(it, "delta"))?.let(::transformResponseContent)?.let { delta ->
-                        put("delta", delta)
-                    }
-                }
-            }.orEmpty()
-            return if (obj == null || updates.isEmpty()) choice else JsonObject(obj + updates)
-        }
-
-        private fun transformResponseContent(value: JsonObject): JsonObject {
-            val content = JsonAccess.arr(value, "content")
-            return if (content == null) {
-                value
-            } else {
-                val text = textContent(content)
-                val reasoning = reasoningContent(content)
-                val transformed = value.toMutableMap()
-                if (text.isEmpty()) transformed.remove("content") else transformed["content"] = JsonPrimitive(text)
-                if (reasoning.isNotEmpty()) transformed["reasoning_content"] = JsonPrimitive(reasoning)
-                JsonObject(transformed)
-            }
-        }
-
-        private fun textContent(content: JsonArray): String =
-            content.mapNotNull { part ->
-                val obj = part as? JsonObject ?: return@mapNotNull null
-                obj.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
-                    ?.get("text")?.let { it as? JsonPrimitive }?.contentOrNull
-            }.joinToString("")
-
-        private fun reasoningContent(content: JsonArray): String =
-            content.joinToString("") { part ->
-                val obj = part as? JsonObject
-                if ((obj?.get("type") as? JsonPrimitive)?.contentOrNull == "thinking") {
-                    thinkingText(
-                        obj["thinking"]
-                    )
-                } else {
-                    ""
-                }
-            }
-
-        private fun thinkingText(value: JsonElement?): String =
-            (value as? JsonArray).orEmpty().mapNotNull { chunk ->
-                val obj = chunk as? JsonObject ?: return@mapNotNull null
-                obj.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
-                    ?.get("text")?.let { it as? JsonPrimitive }?.contentOrNull
-            }.joinToString("")
-    }
 }
 
 /** @since 0.3.0-beta01 */
@@ -274,6 +286,12 @@ public class MistralLanguageModelOptions internal constructor(
     public val parallelToolCalls: Boolean? = null,
     /** @since 0.3.0-beta01 */
     public val reasoningEffort: String? = null,
+    /**
+     * When true and the final message is an assistant turn, set `prefix: true` on that
+     * message so Mistral continues it. Off by default — automatic rewrite changes semantics.
+     * @since 0.3.0-beta01
+     */
+    public val prefix: Boolean? = null,
 )
 
 /** @since 0.3.0-beta01 */
@@ -285,6 +303,7 @@ public class MistralLanguageModelOptionsBuilder {
     private var strictJsonSchema: Boolean? = null
     private var parallelToolCalls: Boolean? = null
     private var reasoningEffort: String? = null
+    private var prefix: Boolean? = null
 
     /** @since 0.3.0-beta01 */
     public fun safePrompt(value: Boolean?): MistralLanguageModelOptionsBuilder {
@@ -329,6 +348,12 @@ public class MistralLanguageModelOptionsBuilder {
     }
 
     /** @since 0.3.0-beta01 */
+    public fun prefix(value: Boolean?): MistralLanguageModelOptionsBuilder {
+        prefix = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
     public fun build(): MistralLanguageModelOptions =
         MistralLanguageModelOptions(
             safePrompt = safePrompt,
@@ -338,6 +363,7 @@ public class MistralLanguageModelOptionsBuilder {
             strictJsonSchema = strictJsonSchema,
             parallelToolCalls = parallelToolCalls,
             reasoningEffort = reasoningEffort,
+            prefix = prefix,
         )
 }
 

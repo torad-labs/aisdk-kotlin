@@ -115,6 +115,7 @@ class AgentErrorTest {
             assertEquals(20, e.stepCount)
             return
         }
+
         @Suppress("UnreachableCode")
         fail("should have caught the AgentError as a RuntimeException")
     }

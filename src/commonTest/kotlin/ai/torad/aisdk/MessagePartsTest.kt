@@ -122,7 +122,7 @@ class MessagePartsTest {
         val firstInput = JsonObject(mapOf("message" to JsonPrimitive("first")))
         val secondInput = JsonObject(mapOf("message" to JsonPrimitive("second")))
         val denied = ToolResultOutput.ExecutionDenied("no")
-        val deniedJson = with(ToolResultOutputs) { denied.toJsonElement() }
+        val deniedJson = denied.toJsonElement()
         val events = flow {
             emit(StreamEvent.ToolCall("dup", "send", firstInput))
             emit(StreamEvent.ToolCall("dup", "send", secondInput))

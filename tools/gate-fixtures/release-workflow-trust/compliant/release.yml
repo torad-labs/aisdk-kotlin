@@ -1,3 +1,7 @@
+# Compliant shape: verification runs in a contents: read job that publish depends on,
+# so the architecture gate still guards every release while the signing key never
+# shares a job with third-party code. The credentialed job runs only the staging
+# publish, which cannot be moved anywhere else.
 name: Release
 
 on:
@@ -38,17 +42,42 @@ jobs:
       - name: Verify Apple targets
         run: ./gradlew iosSimulatorArm64Test compileKotlinIosArm64 compileKotlinIosX64
 
+  verify-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    needs: preflight
+    permissions:
+      contents: read
+    steps:
+      - name: Fetch upstream reference
+        run: git clone --depth 1 https://github.com/vercel/ai .ai-sdk-reference
+      - name: Install locked Node tooling
+        run: npm ci
+      - name: Architecture gate
+        run: bash .claude/hooks/rules/ci-gate.sh
+      - name: Verify checks
+        run: ./gradlew check
+
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     needs:
       - preflight
       - verify-apple
+      - verify-release
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     steps:
-      - name: Architecture gate
-        run: bash .claude/hooks/rules/ci-gate.sh
-      - name: Verify checks
-        run: ./gradlew check
+      - name: Build Maven Central release bundle
+        run: ./gradlew publishAllPublicationsToLocalStagingRepository
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+      - name: Publish to Maven Central
+        run: ./tools/upload-central-bundle
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}

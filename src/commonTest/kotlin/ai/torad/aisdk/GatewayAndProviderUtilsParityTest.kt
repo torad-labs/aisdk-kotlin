@@ -259,7 +259,7 @@ class GatewayAndProviderUtilsParityTest {
             return LanguageModelResult(
                 text = "gateway:$modelId",
                 finishReason = FinishReason.Stop,
-                usage = Usage.of(promptTokens = params.messages.size, completionTokens = 1),
+                usage = Usage(promptTokens = params.messages.size, completionTokens = 1),
             )
         }
 

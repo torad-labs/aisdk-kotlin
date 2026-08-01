@@ -33,6 +33,19 @@ private class JvmMCPStdioProcess(config: StdioConfig) : MCPStdioProcess {
     // ProcessBuilder.Redirect.DISCARD needs Android API 28 but minSdk is 26 — and avoids
     // redirectErrorStream(true), which would corrupt the line-delimited JSON-RPC stdout. Reads in
     // fixed chunks (constant memory) and exits on EOF (process exit) or when close() shuts the stream.
+    // Covered by McpStdioTransportTest's "survives a child that floods stderr" case (256KB, well
+    // past the ~64KB pipe buffer).
+    //
+    // WHY A RAW Thread AND NOT A COROUTINE (no-raw-thread is a deliberate, adjudicated exception
+    // here — do not "fix" it). This read is BOTH permanent (it lives for the whole child lifetime)
+    // and uninterruptible (InputStream.read does not respond to Thread.interrupt or to coroutine
+    // cancellation; only closing the stream unblocks it, which close() below does). Running it as
+    // scope.launch(Dispatchers.IO) would therefore park one slot of a BOUNDED shared pool —
+    // max(64, ncores) — forever, per MCP server. A consumer running many stdio servers would
+    // exhaust Dispatchers.IO and deadlock every other IO user in their application, and the
+    // coroutine would only LOOK cancellable while being exactly as unstoppable as this thread. A
+    // dedicated daemon thread is the honest primitive for an uninterruptible, long-lived drain: it
+    // never blocks JVM exit and competes with nothing.
     private val stderrDrain = Thread {
         runCatching {
             val buffer = ByteArray(STDERR_DRAIN_BUFFER)

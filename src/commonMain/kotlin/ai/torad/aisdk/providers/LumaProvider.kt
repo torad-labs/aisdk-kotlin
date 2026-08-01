@@ -248,13 +248,14 @@ private class LumaImageModel(
                 )
             }
         }
+        // Dream Machine wire keys are *_ref (image_ref / style_ref / character_ref / modify_image_ref).
         when (referenceType) {
             "image" -> {
                 if (params.files.size > 4) {
                     throw InvalidArgumentError("files", "Luma AI image supports up to 4 reference images.")
                 }
                 put(
-                    "image",
+                    "image_ref",
                     JsonArray(
                         params.files.mapIndexed { index, file ->
                             buildJsonObject {
@@ -266,7 +267,7 @@ private class LumaImageModel(
                 )
             }
             "style" -> put(
-                "style",
+                "style_ref",
                 JsonArray(
                     params.files.mapIndexed { index, file ->
                         buildJsonObject {
@@ -291,7 +292,7 @@ private class LumaImageModel(
                     }
                 }
                 put(
-                    "character",
+                    "character_ref",
                     buildJsonObject {
                         identities.forEach { (id, images) ->
                             put(
@@ -309,7 +310,7 @@ private class LumaImageModel(
                     throw InvalidArgumentError("files", "Luma AI modify_image only supports a single input image.")
                 }
                 put(
-                    "modify_image",
+                    "modify_image_ref",
                     buildJsonObject {
                         put("url", JsonPrimitive(params.files.single().url.orEmpty()))
                         put("weight", imageConfigs.firstOrNull()?.get("weight") ?: JsonPrimitive(1.0f))

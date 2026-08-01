@@ -47,6 +47,41 @@ class AnthropicProviderLimitsTest {
     }
 
     @Test
+    fun `max_tokens defaults to 128k for 5-series flagships`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"id":"m","model":"claude-opus-5","stop_reason":"end_turn",
+                               "content":[{"type":"text","text":"hi"}],
+                               "usage":{"input_tokens":1,"output_tokens":1}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider =
+            Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
+        for (model in listOf("claude-opus-5", "claude-sonnet-5", "claude-fable-5", "claude-mythos-preview")) {
+            provider.messages(ModelId(model)).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
+            )
+        }
+        assertTrue(fixture.calls.size >= 4)
+        fixture.calls.forEach { call ->
+            assertEquals(
+                128_000,
+                call.requestBodyJson.jsonObject["max_tokens"]?.jsonPrimitive?.intOrNull,
+                "5-series must not fall through to the 4096 default",
+            )
+        }
+    }
+
+    @Test
     fun `thinking max_tokens clamps to model ceiling and warns only for explicit maxOutputTokens`() = runTest {
         val response = Json.parseToJsonElement(
             """{"id":"m","model":"claude-sonnet-4-5","stop_reason":"end_turn",
@@ -130,7 +165,14 @@ class AnthropicProviderLimitsTest {
         fixture.server.start()
         val provider =
             Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
-        val rejectedModels = listOf("claude-opus-4-8", "claude-opus-4-7", "claude-fable-5")
+        val rejectedModels = listOf(
+            "claude-opus-4-8",
+            "claude-opus-4-7",
+            "claude-fable-5",
+            "claude-opus-5",
+            "claude-sonnet-5",
+            "claude-mythos-preview",
+        )
         val samplingFeatures = setOf("temperature", "topK", "topP")
 
         val rejectedResults = rejectedModels.map { model ->

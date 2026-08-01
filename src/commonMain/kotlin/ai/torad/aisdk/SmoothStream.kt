@@ -5,6 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.flow
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Smooths text/reasoning streaming output by buffering until a chunk
@@ -62,6 +63,7 @@ private val LINE_REGEX = Regex("""[^\n]*\n""", RegexOption.MULTILINE)
 // rethrown first, above), so dropping to a narrower type would lose data.
 @Suppress("TooGenericExceptionCaught", "CyclomaticComplexMethod")
 /** @since 0.3.0-beta01 */
+@JvmSynthetic
 public fun SmoothStream(
     upstream: Flow<StreamEvent>,
     delayMs: Long = 10L,

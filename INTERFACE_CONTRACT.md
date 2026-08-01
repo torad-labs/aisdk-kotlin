@@ -21,6 +21,19 @@
   `AgentEvent`, and SDK error classes should keep an `else` branch unless the
   application intentionally recompiles and audits exhaustiveness on every SDK
   release.
+- **`@JvmSynthetic` is never applied to an abstract or interface member.** It is
+  used to hide Kotlin-shaped *concrete* signatures (a `suspend` function's
+  `Continuation` parameter, a raw `Flow` return) from Java callers. On a body-less
+  declaration it emits `ACC_ABSTRACT | ACC_SYNTHETIC`, and `javac` omits synthetic
+  members when it verifies that a class implements everything abstract — a Java
+  class implementing the interface then compiles clean and throws
+  `java.lang.AbstractMethodError` at the first call. Every public SPI a consumer is
+  expected to implement — `StopCondition`, `Tool` / `StreamingTool`, `LanguageModel`,
+  `Agent`, `ChatTransport`, `CompletionTransport`, `StructuredObjectTransport`,
+  `MCPTransport`, the telemetry and DevTools hooks — is therefore fully visible to
+  Java implementors. Where such a member exposes a `Flow`, the Java-facing answer is
+  a wrapper, not an annotation. `AbstractSpiJavaInteropTest` (`src/jvmTest/java/`)
+  enforces this at compile time.
 
 ### Publishing and Artifact Verification
 
@@ -52,13 +65,17 @@
   (`-Xjvm-expose-boxed` errors on them by design). `GatewayProvider` and
   `AnthropicAwsProvider`'s `ModelId`-typed shorthand (`chat(ModelId)`,
   `image(ModelId)`, `video(ModelId)`, etc.) stay mangled when called through
-  the interface type. This is not a functional gap: each has a
-  never-mangled `String`-typed sibling on the same interface
-  (`languageModel(String)`, `imageModel(String)`, `videoModel(String)`,
-  etc.) that Java callers should use instead when holding an
-  interface-typed reference. Concrete provider classes (e.g.
-  `BlackForestLabsProvider`) still expose their own boxed `ModelId`
-  overloads directly.
+  the (now `sealed class`, formerly interface) facade type. This is not a
+  functional gap: each has a never-mangled `String`-typed sibling on the same
+  type (`languageModel(String)`, `imageModel(String)`, `videoModel(String)`,
+  etc.) that Java callers should use instead when holding a facade-typed
+  reference. Concrete provider classes (e.g. `BlackForestLabsProvider`) still
+  expose their own boxed `ModelId` overloads directly.
+- **Sealed facades:** `MCPClient`, `AnthropicAwsProvider`,
+  `BlackForestLabsProvider`, `ByteDanceProvider`, `OpenAICompatibleProvider`,
+  `OpenResponsesProvider`, and `GatewayProvider` are `sealed class` (not
+  `interface`) — each has exactly one in-module implementation and is not
+  designed for external implementation.
 
 ### Agent
 
@@ -104,21 +121,23 @@ Tool result/output holders (`ToolResult.Success`, `ValidationResult.Success` /
 and `ToolResultOutput` leaves) are `@Poko class` value-semantics types; sealed
 parents and serialization wire names remain unchanged, while public `copy()` /
 `componentN()` ABI is intentionally absent.
+- `ToolResultOutput.toJsonElement()` wire shapes: `Text` is a bare JSON string;
+  `Json` is `{"type":"json","value":…}` (enveloped so a success payload cannot
+  collide with error/denial tags); `Error` / `ErrorJson` / `ExecutionDenied` /
+  `Content` keep their typed discriminators. `toolResultOutputFromWire` is the
+  inverse for every variant.
 - Approval flow: tool calls `needsApproval` → loop ends → host inspects `pendingApprovals` →
   resumes with `agent.generate(messages = result.messages + ToolApprovalResponseMessage(toolCallId, approved, reason?, approvalId?))`
 
 ### Output
 
 - `sealed class Output<T>`
-  - `Output.obj<T>(serializer, name?, description?): Output<T>`
-  - `Output.array<T>(elementSerializer, name?, description?): Output<List<T>>`
-  - `Output.choice(values: Iterable<String> | vararg String, name?, description?): Output<String>`
-  - `Output.json(name?, description?): Output<JsonElement>`
-- Top-level mirrors:
-  - `OutputObj(serializer, name?, description?)`
-  - `OutputArray(elementSerializer, name?, description?)`
-  - `OutputChoice(values | vararg values, name?, description?)`
-  - `OutputJson(name?, description?)`
+- Top-level factories (the former `Output.obj/.array/.choice/.json` companion members
+  were removed by the `no-companion-objects` migration; these are the only entry points):
+  - `OutputObj<T>(serializer, name?, description?): Output<T>`
+  - `OutputArray<T>(elementSerializer, name?, description?): Output<List<T>>`
+  - `OutputChoice(values: Iterable<String> | vararg String, name?, description?): Output<String>`
+  - `OutputJson(name?, description?): Output<JsonElement>`
 
 ### Structured-output utilities
 
@@ -173,6 +192,8 @@ and repaired values are byte-identical to the JS SDK.
   `StepResult` are `@Poko class` value-semantics types; field access remains,
   but public positional constructors and `copy()` / `componentN()` ABI are
   intentionally absent.
+- `AgentEvent.Finished.output` requires `@ExperimentalAiSdkApi`; it is always
+  `null` today (the typed output flows through `generate(): TOutput` instead).
 
 ### Prepare scopes
 
@@ -186,14 +207,14 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 ### Cancellation
 
-- `interface AbortSignal { val isAborted; fun throwIfAborted(); fun register(onAbort): Registration }`
+- `interface AbortSignal { val isAborted; fun throwIfAborted(); fun register(onAbort): Registration }` — intentionally not sealed; consumer implementations (e.g. bridging a platform cancellation source) are supported.
 - `val AbortSignalNever: AbortSignal`
 - `class AbortController(logger: Logger = NoopLogger) { val signal; fun abort() }`
   - Abort callback failures are recoverable: the controller emits one `Logger.warn` with
     the thrown callback exception and continues delivering abort to remaining callbacks.
     Logger failures are swallowed so observability cannot block abort delivery.
 - `class AbortError`
-- `fun abortSignalFromJob(job: Job): AbortSignal`
+- `object AbortSignals { fun from(job: Job): AbortSignal; fun from(scope: CoroutineScope): AbortSignal }`
 
 Cancellation is structural. SDK recovery paths that catch broad failures
 rethrow `CancellationException` rather than converting it into retry decisions,
@@ -223,6 +244,9 @@ of producing a normal abort completion for the step.
 - `@Poko class LanguageModelRequestMetadata(body?)`
 - `@Poko class LanguageModelResponseMetadata(id?, timestampMillis?, modelId?, headers, body?)`
 - `class ai.torad.aisdk.providers.MockLanguageModel(...)` — for tests only
+- `@Poko class ScriptedResponse` (internal constructor) + `ScriptedResponse { … }`
+  DSL / `ScriptedResponseBuilder` — one scripted mock response; no public
+  positional constructor, `copy()`, or `componentN()`. Construct via the DSL.
 
 ### Middleware
 
@@ -247,6 +271,25 @@ of producing a normal abort completion for the step.
 - `interface EmbeddingModel { val modelId; val provider; suspend fun embed(params): EmbeddingModelResult }`
 - `@Poko class EmbeddingModelCallParams(values, maxEmbeddingsPerCall?, truncate?, providerOptions, abortSignal, headers)` — field access and value equality remain; construct with `EmbeddingModelCallParams { values(...); ... }`. Public `copy()` / `componentN()` ABI is intentionally absent; embedding middleware uses `params.toBuilder().providerOptions(...).build()` for one-field overrides.
 - `@Poko class EmbeddingModelResult(embeddings, usage, warnings, request, response, providerMetadata)`
+  - Voyage keeps this public ABI unchanged: numeric-array and base64 responses both
+    normalize into `List<List<Float>>`, while `response.body` retains the raw provider
+    JSON. Base64 `float` is little-endian float32; `int8`/`binary` use signed-byte
+    storage; `uint8`/`ubinary` use unsigned-byte storage; binary forms remain bit-packed.
+  - Voyage results set `providerMetadata.voyage.embeddingRepresentation` to an object
+    with exactly `rawOutputDtype`, `effectiveOutputDtype`, `packing`,
+    `logicalDimension`, and `storedElementCounts`. Request `output_dtype` has three
+    states: omission emits raw null and effective `float`; a present JSON string is
+    preserved and interpreted with the existing known/custom behavior; a present
+    non-string (including explicit JSON null, which is distinct from omission) retains
+    its original `JsonElement` as raw, emits effective null, reports unknown packing,
+    and records the requested dimension or null. Numeric-array rows remain permissive
+    in all three states; base64 rejects a present non-string before decoding. For the
+    missing and string states, requested dimension wins; otherwise inference requires
+    nonempty uniform rows of a known dtype (packed lengths multiply by 8). Counts
+    preserve every returned row, including zero-length rows. Row-count, empty-row,
+    unequal-row, and requested-dimension mismatches remain permissive. Custom string
+    dtypes accept numeric arrays with unknown packing but reject base64 because their
+    storage interpretation is unavailable.
 - `@Poko class EmbeddingUsage(tokens, raw?)`
 - `suspend fun Embedding.embed(model, value, providerOptions?, abortSignal?, headers?): EmbedResult<String>`
 - `suspend fun Embedding.embedMany(model, values, maxEmbeddingsPerCall?, maxParallelCalls = 8, providerOptions?, abortSignal?, headers?): EmbedManyResult<String>`
@@ -260,15 +303,28 @@ of producing a normal abort completion for the step.
 - Image: `ImageModel`, `ImageGenerationParams`, `ImageModelResult`, `GenerateImageResult`, `ImageGeneration.generateImage(..., maxParallelCalls = 8)`
 - Speech: `SpeechModel`, `SpeechGenerationParams`, `SpeechModelResult`, `GenerateSpeechResult`, `SpeechGeneration.generateSpeech(...)`
 - Transcription: `TranscriptionModel`, `AudioSource`, `TranscriptionParams`, `TranscriptSegment`, `TranscribeResult`, `Transcription.transcribe(...)`
+  - `TranscriptSegment` carries an appended, defaulted `speakerId: String?`
+    (populated when a provider diarizes, e.g. ElevenLabs `diarize=true`) — the
+    produced read-only `@Poko` field-append is ABI-dump-recorded and safe for
+    every read site.
   - Audio input is currently base64-backed in memory; providers decode the
     base64 payload before upload, so large inputs can briefly require roughly
     twice the audio size in memory. Streaming upload input is future work.
+  - Groq transcription always sends the canonical multipart field
+    `response_format=json` and decodes a JSON object response. The published
+    `GroqTranscriptionModelOptions.responseFormat` getter and builder method
+    remain for source/binary compatibility but are warning-deprecated after
+    0.3.0-beta01 because they have no effect; no replacement is offered until
+    non-JSON transport/decoding exists. Provider-option passthrough excludes
+    both `responseFormat` and `response_format` so neither can create a second
+    multipart format field, and omits `JsonNull` values so nullable typed
+    defaults do not become literal `null` form fields.
 - Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `VideoGeneration.generateVideo(..., maxParallelCalls = 8)`
 - Rerank: `RerankingModel`, `RerankingParams`, `RerankedItem<T>`, `RerankResult<T>`, `Reranking.rerank(...)`
   - Rerank result holders are `@Poko class` value-semantics types; field
     access remains, but public `copy()` / `componentN()` ABI is intentionally
     absent. `RerankingParams` stays on the builder/data-class track.
-- Shared file payload: `GeneratedFile(mediaType, base64, filename?, providerMetadata)`, `FileData.Base64`, `FileData.Bytes.toByteArray()` (copy-returning), `FileData.Url`, `DefaultGeneratedFile.fromBase64/fromBytes` (`byteArray` is copy-returning).
+- Shared file payload: `GeneratedFile(mediaType, base64, filename?, providerMetadata)`, `FileData.Base64`, `FileData.Bytes.toByteArray()` (copy-returning), `FileData.Url`, and the overloaded `DefaultGeneratedFile(data, mediaType)` factory (`data: String` base64 / `data: ByteArray`; `byteArray` is copy-returning).
 - Media result/metadata holders are `@Poko class` value-semantics types;
   field access remains, but public `copy()` / `componentN()` ABI is
   intentionally absent. Construct params remain builder-track data classes.
@@ -277,7 +333,7 @@ of producing a normal abort completion for the step.
 
 ### MCP
 
-- `MCPTransport`, `MCPClientConfig`, `MCPClient`, `CreateMCPClient(config)`.
+- `MCPTransport`, `MCPClientConfig`, `MCPClient`, `CreateMCPClient(config)`. `MCPClient` is a `sealed class` (its sole implementation is in-module), not an interface — see the "Sealed facades" note below.
 - `MCPReconnectionOptions { initialReconnectionDelayMillis(1000); reconnectionDelayGrowFactor(1.5); maxReconnectionDelayMillis(30000); maxRetries(2) }` — `@Poko` HTTP inbound SSE reconnect policy; `maxRetries = 0` disables automatic error reconnects. The positional constructor, `copy()`, and `componentN()` are not public.
 - `MCPTransportConfig { reconnectionOptions(MCPReconnectionOptions { ... }) }`, `@InternalAiSdkApi HttpMCPTransport(..., reconnectionOptions = MCPReconnectionOptions { ... })`, `@InternalAiSdkApi SseMCPTransport(...)`, and `StdioConfig { command("..."); args([...]) }`. The concrete HTTP/SSE transports stay public for advanced custom transport work but are internal, unstable SDK surface that requires explicit opt-in. `StdioConfig` remains `@Serializable` and is an `@Poko` value-semantics class with no public positional constructor, `copy()`, or `componentN()`.
 - `MCPClient` resource/tool APIs: `tools`, `toolsFromDefinitions`, `listTools`, `listResources`, `readResource`, `listResourceTemplates`, `onElicitationRequest`, `close`.
@@ -298,7 +354,7 @@ of producing a normal abort completion for the step.
 ### Provider Registry
 
 - `interface Provider` with `languageModel`, `embeddingModel`, `imageModel`, `speechModel`, `transcriptionModel`, `rerankingModel`, and `videoModel`.
-- `Provider(providerId, languageModels, embeddingModels, imageModels, speechModels, transcriptionModels, rerankingModels, videoModels, fallbackProvider)`, `CustomProvider { providerId(...); languageModel(id, model); embeddingModel(id, model); imageModel(id, model); speechModel(id, model); transcriptionModel(id, model); rerankingModel(id, model); videoModel(id, model); fallbackProvider(...) }`, `ProviderRegistry`, `ProviderRegistry.createProviderRegistry(...)`, `WrapProvider(...)`, `ProviderMiddleware { languageModelMiddlewares(...); embeddingModelMiddlewares(...); imageModelMiddlewares(...) }`.
+- `Provider(providerId, languageModels, embeddingModels, imageModels, speechModels, transcriptionModels, rerankingModels, videoModels, fallbackProvider)`, `CustomProvider { providerId(...); languageModel(id, model); embeddingModel(id, model); imageModel(id, model); speechModel(id, model); transcriptionModel(id, model); rerankingModel(id, model); videoModel(id, model); fallbackProvider(...) }`, `ProviderRegistry`, `ProviderRegistry(vararg Pair<String, Provider>, ...)`, `WrapProvider(...)`, `ProviderMiddleware { languageModelMiddlewares(...); embeddingModelMiddlewares(...); imageModelMiddlewares(...) }`.
 - `CustomProvider` is a regular builder-backed class with identity equality
   because it holds model objects; the positional constructor, `copy()`, and
   `componentN()` are not public.
@@ -306,6 +362,7 @@ of producing a normal abort completion for the step.
   types; field access remains, but public `copy()` / `componentN()` ABI is
   intentionally absent. Gateway settings and call params stay on the
   builder/data-class track.
+- `enum GatewayModelType { Embedding, Image, Language, Reranking, Speech, Transcription, Video }` — covers all 7 first-class model kinds (`Speech`/`Transcription` added alongside `SpeechModel`/`TranscriptionModel`).
 - Provider tool-namespace holders such as `OpenAITools`, `AnthropicTools`,
   `GoogleTools`, `XaiTools`, `AzureOpenAITools`, and `GroqTools` are
   `@Poko class` value-semantics types; field access remains, but public
@@ -416,6 +473,16 @@ of producing a normal abort completion for the step.
   definitions, middleware instances, retry delay generators, arbitrary context
   values, model input objects, language models, or tool sets. The positional
   constructors, `copy()`, and `componentN()` are not public.
+- Provider-surface constants and factories: `VERCEL_V0_BASE_URL` (the default
+  base URL of the v0 product API targeted by `Vercel(...)`),
+  `AI_GATEWAY_OPENAI_COMPAT_BASE_URL`, and the
+  `VercelAIGateway(client, VercelProviderSettings)` factory for the Vercel AI
+  Gateway's OpenAI-compatible endpoint — the two are distinct Vercel surfaces
+  and the names say which is which. Option-type field additions on the builder
+  track: `MistralLanguageModelOptions.prefix` (opt-in assistant prefix
+  continuation) and `QuiverAIImageModelOptions.attributes` / `.viewBox`
+  (plus the `viewBox(minX, minY, width, height)` builder convenience), each
+  exposed through its existing DSL builder.
 - LiteRT on-device bridge types use typed JSON context at the public boundary:
   `LiteRTConversationRequest.extraContext`, `LiteRTLanguageModelSettings.extraContext`,
   and `LiteRTConversation.send/stream(..., extraContext = ...)` are
@@ -423,10 +490,17 @@ of producing a normal abort completion for the step.
   `LiteRTSamplerConfig.Default`; `LiteRTConversation.cancel()` and `close()` are
   documented no-op defaults that abortable/resource-owning engines must
   override. `LiteRTContent.ToolResponse` correlates by tool name only and does
-  not carry a tool-call id. `LiteRTLanguageModel` applies
+  not carry a tool-call id. `LiteRTSamplerConfig` additionally carries optional
+  `maxOutputTokens` / `presencePenalty` / `frequencyPenalty` slots that hosts
+  forward to engines exposing those per-call knobs, and
+  `LiteRTConversationRequest.responseFormat` surfaces the structured-output
+  request so engines with native constrained decoding (LiteRT-LM
+  `enableResponseFormat` + `ResponseFormat.json/regex`) can use it;
+  `LiteRTLanguageModel` still applies
   `JsonInstruction.injectJsonInstructionIntoMessages` for
-  `ResponseFormat.Json`, so on-device engines receive the same schema prompt
-  guidance as the shared structured-output utilities. `LiteRTMessage.usage`
+  `ResponseFormat.Json` as a portable fallback, so on-device engines receive
+  the same schema prompt guidance as the shared structured-output utilities.
+  `LiteRTMessage.usage`
   and `LiteRTMessage.finishReason` are optional host-engine terminal metadata;
   when present they are propagated to `LanguageModelResult` /
   `StreamEvent.Finish`, and when absent the adapter preserves the existing
@@ -457,12 +531,19 @@ of producing a normal abort completion for the step.
 ### General Utilities
 
 - `cosineSimilarity`, `splitArray`, `asArray`, `mergeJsonObjects`, `isDeepEqualData`.
-- `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`. `DataUrl` remains public because data URL parsing is documented general utility surface and `DataUrl.parse(...)` returns the consumer-facing value.
-- `RetryPolicy { maxRetries(2); baseDelayMs(100); maxDelayMs(2000); clock(Clock.System); delayGenerator(...); totalTimeoutMs(null); perAttemptTimeoutMs(null) }`, `RetryDelayGenerator`, `RetryAttemptDetail`, `retryWithExponentialBackoff`, `SerialJobExecutor`. Defaults retry only typed retryable `APICallError` / `GatewayError`, honor `Retry-After`, use full jitter, and preserve attempt history in `RetryError.attempts`. `RetryPolicy` is a regular builder-backed class because delay generators may be stateful; the positional constructor, `copy()`, and `componentN()` are not public.
-- `mergeAbortSignals`, `abortSignalFromJobs`.
+- `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`. `DataUrl` remains public because data URL parsing is documented general utility surface and the top-level `DataUrl(...)` factory (the former `DataUrl.parse`) returns the consumer-facing value.
+- `RetryPolicy { maxRetries(2); baseDelayMs(100); maxDelayMs(2000); clock(Clock.System); delayGenerator(...); totalTimeoutMs(null); perAttemptTimeoutMs(null) }`, `RetryDelayGenerator` (built by the top-level `RetryDelayGeneratorFullJitter(random)` /
+`RetryDelayGeneratorDeterministic(vararg delaysMs)` factories — the former companion
+object was removed under `no-companion-objects`), `RetryAttemptDetail`,
+`retryWithExponentialBackoff`, `SerialJobExecutor`. Defaults retry only typed retryable `APICallError` / `GatewayError`, honor `Retry-After`, use full jitter, and preserve attempt history in `RetryError.attempts`. `RetryPolicy` is a regular builder-backed class because delay generators may be stateful; the positional constructor, `copy()`, and `componentN()` are not public.
+- `CombineAbortSignals`, `AbortSignals.from`.
 
 ### DevTools
 
+- The DevTools public surface (`DevToolsStep`, `DevToolsStepResult`,
+  `DevToolsRecorder`, `InMemoryDevToolsRecorder`, `DevToolsMiddleware`)
+  requires `@ExperimentalAiSdkApi` — it is a newer subsystem still being
+  shaped.
 - `DevToolsStep` and `DevToolsStepResult` are `@Poko class`
   value-semantics types; field access remains, but public `copy()` /
   `componentN()` ABI is intentionally absent.
@@ -494,8 +575,8 @@ of producing a normal abort completion for the step.
 
 - `@Serializable @Poko class ModelMessage(role, content: List<ContentPart>)`
 - Top-level factories: `SystemMessage(text)`, `UserMessage(text)`, `AssistantMessage(text)`, `ToolMessage(callId, name, output)`, `ToolApprovalResponseMessage(callId, approved, reason?, approvalId?)`
-- `enum MessageRole { System, User, Assistant, Tool }`
-- `sealed class ContentPart`
+- `enum MessageRole { System, User, Assistant, Tool }` — may gain variants in future releases; consumers must not rely on exhaustive `when`.
+- `sealed class ContentPart` — `val metadata: ProviderMetadata` is a member (derived from `providerMetadata` per leaf, `ProviderMetadata.None` where absent); no longer a top-level extension.
   - `@Serializable @Poko class Text(text)`
   - `@Serializable @Poko class Reasoning(text)`
   - `@Serializable @Poko class ToolCall(callId, name, input)`
@@ -513,7 +594,7 @@ of producing a normal abort completion for the step.
   - JSON field names and `ContentPart` discriminators remain unchanged, while
     public `copy()` / `componentN()` ABI is intentionally absent for these
     message/content/usage value types.
-- `enum FinishReason { Stop, Length, ToolCalls, ContentFilter, Error, ToolApprovalRequested, Other }`
+- `enum FinishReason { Stop, Length, ToolCalls, ContentFilter, Error, ToolApprovalRequested, Other }` — new provider-agnostic outcomes may be added as named variants; provider-specific ones route through `Other`.
 - `enum ToolChoice { Auto, None, Required, Specific(toolName) }` (sealed)
 
 ### Streaming events — v6 block-aware
@@ -522,6 +603,8 @@ of producing a normal abort completion for the step.
   - Public leaves are `@Poko class` value-semantics types; serialization and
     field access remain, but public `copy()` / `componentN()` ABI is
     intentionally absent.
+  - `val metadata: ProviderMetadata` is a member (derived per leaf); no
+    longer a top-level extension.
   - `StreamStart`
   - `StepStart(stepNumber)`
   - `TextStart(id) / TextDelta(id, text) / TextEnd(id)`
@@ -556,7 +639,7 @@ of producing a normal abort completion for the step.
   messages and lets other failures, including cancellation, propagate.
 
 - `data class UIMessage(id, role, parts: List<UIMessagePart>, createdAtMs?, metadata: Map<String, JsonElement>? = null)` — `metadata` is the monomorphic substitute for v6's `<METADATA, DATA_PARTS, TOOLS>` generics; apps can attach source-agent identity or routing metadata under their own namespaced keys.
-- `enum UIMessageRole { System, User, Assistant }`
+- `enum UIMessageRole { System, User, Assistant }` — may gain variants in future releases; consumers must not rely on exhaustive `when`.
 - `sealed interface UIMessagePart { Text; ToolUI; DynamicToolUI; Reasoning; SourceUrl; SourceDocument; File; Error; Data; StepStart }`
   - Public leaves are `@Poko class` value-semantics types; serialization and
     field access remain, but public `copy()` / `componentN()` ABI is
@@ -568,7 +651,7 @@ of producing a normal abort completion for the step.
   - `File(mediaType, base64)`
   - `Data(type, data, id?, transient = false)` — typed custom `data-*` UI part; `StreamEvent.Data(name, ...)` is the encoder-side source for these chunks.
   - **+ `providerMetadata: Map<String, JsonElement>? = null`** on `Text`, `ToolUI`, `DynamicToolUI`, `Reasoning`, `SourceUrl`, `SourceDocument`, `File` (not `Error` / `StepStart` — terminal / boundary). gap #11.
-- `enum ToolCallState { InputStreaming, InputAvailable, ApprovalRequested, ApprovalResponded, OutputAvailable, OutputError, OutputDenied }` — v6's full 7-state taxonomy. Renames: `ApprovalRequired → ApprovalRequested`, `Error → OutputError`. New states: `ApprovalResponded` (user answered, tool not yet run), `OutputDenied` (approval was denied).
+- `enum ToolCallState { InputStreaming, InputAvailable, ApprovalRequested, ApprovalResponded, OutputAvailable, OutputError, OutputDenied }` — v6's full 7-state taxonomy. Renames: `ApprovalRequired → ApprovalRequested`, `Error → OutputError`. New states: `ApprovalResponded` (user answered, tool not yet run), `OutputDenied` (approval was denied). May gain variants in future releases; consumers must not rely on exhaustive `when`.
 - `UIMessagePart.ToolUI.outputAs(serializer)` / `inputAs(serializer)` plus reified overloads
 - `UIMessagePart.DynamicToolUI.outputAs(serializer)` / `inputAs(serializer)` plus reified overloads
 - `fun StreamToUiMessages(events: Flow<StreamEvent>, assistantMessageId): Flow<UIMessage>`

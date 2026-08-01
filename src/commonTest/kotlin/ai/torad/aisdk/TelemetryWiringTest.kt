@@ -27,6 +27,7 @@ import kotlin.test.assertTrue
  * invocation. Integrations observe; they never alter loop behavior.
  */
 class TelemetryWiringTest {
+    private class TelemetryTestFailure(message: String) : IllegalStateException(message)
 
     @Serializable
     private data class EchoInput(val q: String)
@@ -82,7 +83,7 @@ class TelemetryWiringTest {
     private class ExplodingTelemetry : Telemetry {
         override val name: String = "exploding"
         override suspend fun onEvent(call: TelemetryCall, event: AgentEvent): Unit = boom()
-        private fun boom(): Nothing = error("telemetry exploded")
+        private fun boom(): Nothing = throw TelemetryTestFailure("telemetry exploded")
     }
 
     private fun toolThenTextAgent(rec: Telemetry?) = TestToolLoopAgent<Unit, String>(
@@ -179,7 +180,7 @@ class TelemetryWiringTest {
     @Test
     fun `a globally registered integration observes with no constructor wiring`() = runTest {
         val rec = RecordingTelemetry()
-        Telemetry.registerTelemetry(rec)
+        RegisterTelemetry(rec)
         try {
             val agent = TestToolLoopAgent<Unit, String>(
                 model = MockLanguageModelTextOnly("hi"),
@@ -188,7 +189,7 @@ class TelemetryWiringTest {
             )
             agent.generate(prompt = "go").first()
         } finally {
-            Telemetry.clearGlobalTelemetry()
+            ClearGlobalTelemetry()
         }
         assertTrue(rec.events.isNotEmpty(), "global registration alone makes calls emit")
         assertEquals("agentStart", rec.events.first())
@@ -199,7 +200,7 @@ class TelemetryWiringTest {
     fun `per-call integrations replace the global registration`() = runTest {
         val global = RecordingTelemetry("global")
         val local = RecordingTelemetry("local")
-        Telemetry.registerTelemetry(global)
+        RegisterTelemetry(global)
         try {
             val agent = TestToolLoopAgent<Unit, String>(
                 model = MockLanguageModelTextOnly("hi"),
@@ -211,7 +212,7 @@ class TelemetryWiringTest {
             )
             agent.generate(prompt = "go").first()
         } finally {
-            Telemetry.clearGlobalTelemetry()
+            ClearGlobalTelemetry()
         }
         assertTrue(global.events.isEmpty(), "per-call integrations REPLACE the global set")
         assertTrue(local.events.isNotEmpty())
@@ -223,9 +224,9 @@ class TelemetryWiringTest {
         val brokenModel = object : LanguageModel {
             override val modelId = "broken"
             override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-                error("no service")
+                throw TelemetryTestFailure("no service")
             override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-                error("no service")
+                throw TelemetryTestFailure("no service")
             }
         }
         val agent = TestToolLoopAgent<Unit, String>(
@@ -262,7 +263,7 @@ class TelemetryWiringTest {
     @Test
     fun `an explicit isEnabled false opts the call out even with a global registration`() = runTest {
         val global = RecordingTelemetry("global")
-        Telemetry.registerTelemetry(global)
+        RegisterTelemetry(global)
         try {
             val agent = TestToolLoopAgent<Unit, String>(
                 model = MockLanguageModelTextOnly("hi"),
@@ -274,7 +275,7 @@ class TelemetryWiringTest {
             )
             agent.generate(prompt = "go").first()
         } finally {
-            Telemetry.clearGlobalTelemetry()
+            ClearGlobalTelemetry()
         }
         assertTrue(global.events.isEmpty(), "isEnabled=false is the per-call opt-out")
     }
@@ -327,7 +328,7 @@ class TelemetryWiringTest {
         val erroringStreamModel = object : LanguageModel {
             override val modelId = "erroring"
             override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-                error("unused — stream path only")
+                throw TelemetryTestFailure("unused — stream path only")
             override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
                 emit(StreamEvent.TextStart("t"))
                 emit(StreamEvent.TextDelta("t", "partial"))
@@ -357,7 +358,7 @@ class TelemetryWiringTest {
             description = "always fails",
             inputSerializer = serializer(),
             outputSerializer = serializer(),
-        ) { _ -> error("tool blew up") }
+        ) { _ -> throw TelemetryTestFailure("tool blew up") }
         val agent = TestToolLoopAgent<Unit, String>(
             model = MockLanguageModelToolThenText(
                 toolName = "echo",

@@ -4,6 +4,7 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public interface TranscriptionModel {
@@ -14,6 +15,7 @@ public interface TranscriptionModel {
     public val provider: String
         get() = "unknown"
 
+    /** @since 0.3.0-beta01 */
     public suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult
 }
 
@@ -112,6 +114,11 @@ public class TranscriptSegment(
     public val startSeconds: Float? = null,
     /** @since 0.3.0-beta01 */
     public val endSeconds: Float? = null,
+    /**
+     * Speaker label when the provider returned diarization (e.g. ElevenLabs `speaker_id`).
+     * @since 0.3.0-beta01
+     */
+    public val speakerId: String? = null,
 )
 
 @Poko
@@ -168,6 +175,8 @@ public class TranscribeResult(
 
 /** @since 0.3.0-beta01 */
 public object Transcription {
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun transcribe(
         model: TranscriptionModel,
         audio: AudioSource,
@@ -204,6 +213,7 @@ public object Transcription {
 
     @ExperimentalAiSdkApi
     @Suppress("FunctionNaming")
+    @JvmSynthetic
     public suspend fun experimental_transcribe(
         model: TranscriptionModel,
         audio: AudioSource,

@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public interface RerankingModel {
@@ -11,6 +12,7 @@ public interface RerankingModel {
     public val provider: String
         get() = "unknown"
 
+    /** @since 0.3.0-beta01 */
     public suspend fun rerank(params: RerankingParams): RerankingModelResult
 }
 
@@ -150,6 +152,8 @@ public class RerankResult<T>(
 /** @since 0.3.0-beta01 */
 public object Reranking {
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun rerank(
         model: RerankingModel,
         query: String,

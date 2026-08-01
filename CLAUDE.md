@@ -43,6 +43,17 @@ Kotlin/JVM SDKs do, including the two most directly comparable to this one:
   `equals`/`hashCode`/`toString` but deliberately omits `copy()`/`componentN()`,
   so fields can be appended forever without an ABI break. Consumers almost never
   `copy()` a result, so the cost is near zero.
+  **Constructor visibility (decided 2026-07-03, see
+  `docs/reports/pre-beta-abi-audit.md` F1):** produced read-only `@Poko` types
+  intentionally keep a **public** positional constructor. Appending a field to
+  one of these types is an accepted, ABI-dump-recorded change — it is
+  compatible for every existing READ site (the only thing a consumer does with
+  a produced type) and it preserves consumer testability (building fakes and
+  fixtures for `AgentEvent`, `StreamEvent`, `MCPToolDefinition`, and friends).
+  This is deliberately distinct from construct-types below, which use an
+  `internal constructor` + builder precisely because consumers *build* those —
+  a public constructor there would freeze the parameter list, which matters
+  for a type consumers construct but not for one they only read.
 - **Construct-types** that consumers build (settings/params/options/config):
   front them with a **builder/DSL** so a positional constructor is never frozen
   into the ABI. The complete ABI-evolvable pattern (note: a public `data class`
@@ -137,7 +148,8 @@ ledger.
 
 ## Ast-grep rule authoring — discovery, dedupe, and codemod discipline
 
-The Kotlin rule package (`.claude/hooks/rules/kotlin/*.yaml` + `manifest.json`)
+The Kotlin rule package (`.rules/kotlin/ast-grep/rules/*.yaml` LAW +
+`rules-style/*.yaml` opt-in, fixtures in `.claude/hooks/rules/manifest.json`)
 buys project-specific structural invariants, multi-file codemods, and
 structural search — NOT generic linting. detekt/ktlint/Android-Lint-shaped
 concerns are out of scope for a new rule here; see the dedupe law below.
@@ -222,4 +234,4 @@ wire interop is explicitly out of scope.
 - Public API changes regenerate the ABI dumps (`./gradlew updateKotlinAbi`) and
   update `CHANGELOG.md` + `INTERFACE_CONTRACT.md` (the API-review gate expects it).
 - Match the surrounding code's idioms; the architecture gate (ast-grep rules in
-  `.claude/hooks/rules/kotlin/`) encodes many of them.
+  `.rules/kotlin/ast-grep/`) encodes many of them.

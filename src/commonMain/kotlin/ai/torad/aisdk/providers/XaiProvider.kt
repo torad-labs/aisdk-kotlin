@@ -27,6 +27,40 @@ public typealias XaiImageProviderOptions = XaiImageModelOptions
 public typealias XaiVideoProviderOptions = XaiVideoModelOptions
 public typealias XaiErrorData = JsonElement
 
+/**
+ * Recursively snake-cases xAI `searchParameters` keys (xAI's wire convention).
+ * Shared by the xAI chat path and the Google Vertex xAI-compatible path.
+ */
+internal fun XaiSnakeCaseJson(value: JsonElement): JsonElement =
+    when (value) {
+        is JsonObject -> buildJsonObject {
+            for ((key, nested) in value) put(XaiSnakeCaseKey(key), XaiSnakeCaseJson(nested))
+        }
+        is JsonArray -> JsonArray(value.map(::XaiSnakeCaseJson))
+        else -> value
+    }
+
+private fun XaiSnakeCaseKey(value: String): String =
+    // The deprecated `xHandles` alias maps to `included_x_handles`, not the naive
+    // snake-case `x_handles` (an unknown key xAI ignores).
+    if (value == "xHandles") {
+        "included_x_handles"
+    } else {
+        XaiNaiveSnakeCaseKey(value)
+    }
+
+private fun XaiNaiveSnakeCaseKey(value: String): String =
+    buildString {
+        value.forEachIndexed { index, char ->
+            if (char.isUpperCase()) {
+                if (index > 0) append('_')
+                append(char.lowercaseChar())
+            } else {
+                append(char)
+            }
+        }
+    }
+
 @Serializable
 @Poko
 /** @since 0.3.0-beta01 */
@@ -50,14 +84,13 @@ public class XaiProviderSettings internal constructor(
         JsonAccess.obj(providerOptions.toMap(), "xai") ?: JsonObject(emptyMap())
 
     /**
-     * Rewrites the OpenAI-shaped chat body into xAI's shape: drops `stop` (xAI does not
-     * support stop sequences and rejects the key) and strips `additionalProperties: false`
+     * Rewrites the OpenAI-shaped chat body into xAI's shape: strips `additionalProperties: false`
      * from every tool's parameters schema (xAI structured-output requires it removed).
+     * `stop` is documented as supported on non-reasoning models and is forwarded as-is.
      */
     internal fun xaiTransformChatBody(body: JsonObject): JsonObject = buildJsonObject {
         for ((key, value) in body) {
             when (key) {
-                "stop" -> Unit // dropped — unsupported by xAI
                 "tools" -> put("tools", xaiStripToolSchemas(value))
                 else -> put(key, value)
             }
@@ -71,7 +104,10 @@ public class XaiProviderSettings internal constructor(
                 val obj = tool as? JsonObject ?: return@map tool
                 val function = JsonAccess.obj(obj, "function") ?: return@map tool
                 val params = JsonAccess.obj(function, "parameters") ?: return@map tool
-                val cleanedParams = SchemaSanitizer.stripUnsupportedSchemaKeys(params, dropAdditionalProperties = true)
+                val cleanedParams = SchemaSanitizer.stripUnsupportedSchemaKeys(
+                    params,
+                    dropAdditionalProperties = true,
+                )
                 JsonObject(obj + ("function" to JsonObject(function + ("parameters" to cleanedParams))))
             },
         )
@@ -121,42 +157,6 @@ public class XaiProviderSettings internal constructor(
             ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "xAI request failed ($statusCode): $detail"
-    }
-
-    internal companion object {
-        /**
-         * Recursively snake-cases xAI `searchParameters` keys (xAI's wire convention).
-         * Shared by the xAI chat path and the Google Vertex xAI-compatible path.
-         */
-        fun xaiSnakeCaseJson(value: JsonElement): JsonElement =
-            when (value) {
-                is JsonObject -> buildJsonObject {
-                    for ((key, nested) in value) put(xaiSnakeCaseKey(key), xaiSnakeCaseJson(nested))
-                }
-                is JsonArray -> JsonArray(value.map(::xaiSnakeCaseJson))
-                else -> value
-            }
-
-        private fun xaiSnakeCaseKey(value: String): String =
-            // The deprecated `xHandles` alias maps to `included_x_handles`, not the naive
-            // snake-case `x_handles` (an unknown key xAI ignores).
-            if (value == "xHandles") {
-                "included_x_handles"
-            } else {
-                xaiNaiveSnakeCaseKey(value)
-            }
-
-        private fun xaiNaiveSnakeCaseKey(value: String): String =
-            buildString {
-                value.forEachIndexed { index, char ->
-                    if (char.isUpperCase()) {
-                        if (index > 0) append('_')
-                        append(char.lowercaseChar())
-                    } else {
-                        append(char)
-                    }
-                }
-            }
     }
 }
 
@@ -564,6 +564,22 @@ public class XaiProvider(
         }
 }
 
+internal fun XaiProviderTool(
+    name: String,
+    description: String,
+    args: JsonElement,
+): Tool<JsonElement, JsonElement, Any?> =
+    ProviderExecutedTool(
+        name = name,
+        description = description,
+        inputSerializer = JsonElement.serializer(),
+        outputSerializer = JsonElement.serializer(),
+        metadata = mapOf(
+            "providerToolId" to JsonPrimitive("xai.$name"),
+            "providerOptions" to args,
+        ),
+    )
+
 @Poko
 /** @since 0.3.0-beta01 */
 public class XaiTools(
@@ -581,56 +597,39 @@ public class XaiTools(
     public val webSearch: Tool<JsonElement, JsonElement, Any?> = WebSearch(),
     /** @since 0.3.0-beta01 */
     public val xSearch: Tool<JsonElement, JsonElement, Any?> = XSearch(),
-) {
-    internal companion object {
-        fun xaiProviderTool(
-            name: String,
-            description: String,
-            args: JsonElement,
-        ): Tool<JsonElement, JsonElement, Any?> =
-            ProviderExecutedTool(
-                name = name,
-                description = description,
-                inputSerializer = JsonElement.serializer(),
-                outputSerializer = JsonElement.serializer(),
-                metadata = mapOf(
-                    "providerToolId" to JsonPrimitive("xai.$name"),
-                    "providerOptions" to args,
-                ),
-            )
-    }
-}
+)
 
 /** @since 0.3.0-beta01 */
 public val xaiTools: XaiTools = XaiTools()
 
 /** @since 0.3.0-beta01 */
 public fun CodeExecution(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    XaiTools.xaiProviderTool("code_execution", "Execute code in xAI's hosted code execution environment.", args)
+    // Responses API wire type is `code_interpreter` (OpenAI-shaped); `code_execution` 400s.
+    XaiProviderTool("code_interpreter", "Execute code in xAI's hosted code execution environment.", args)
 
 /** @since 0.3.0-beta01 */
 public fun FileSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    XaiTools.xaiProviderTool("file_search", "Search xAI collections and vector stores.", args)
+    XaiProviderTool("file_search", "Search xAI collections and vector stores.", args)
 
 /** @since 0.3.0-beta01 */
 public fun McpServer(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    XaiTools.xaiProviderTool("mcp", "Call tools from a remote MCP server through xAI.", args)
+    XaiProviderTool("mcp", "Call tools from a remote MCP server through xAI.", args)
 
 /** @since 0.3.0-beta01 */
 public fun ViewImage(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    XaiTools.xaiProviderTool("view_image", "Inspect an image through xAI's hosted vision tool.", args)
+    XaiProviderTool("view_image", "Inspect an image through xAI's hosted vision tool.", args)
 
 /** @since 0.3.0-beta01 */
 public fun ViewXVideo(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    XaiTools.xaiProviderTool("view_x_video", "Inspect an X video through xAI's hosted video tool.", args)
+    XaiProviderTool("view_x_video", "Inspect an X video through xAI's hosted video tool.", args)
 
 /** @since 0.3.0-beta01 */
 public fun WebSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    XaiTools.xaiProviderTool("web_search", "Search the web through xAI.", args)
+    XaiProviderTool("web_search", "Search the web through xAI.", args)
 
 /** @since 0.3.0-beta01 */
 public fun XSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
-    XaiTools.xaiProviderTool("x_search", "Search X posts through xAI.", args)
+    XaiProviderTool("x_search", "Search X posts through xAI.", args)
 
 /**
  * PascalCase factory — mirrors `OpenAI(...)`.

@@ -1,0 +1,35 @@
+# TENET: A companion object in the @JvmStatic carve-out files must stay ANONYMOUS.
+# Rationale: kotlinx.serialization ships R8/ProGuard rules that keep the generated
+# serializer for @Serializable classes automatically — EXCEPT when the class declares a
+# NAMED companion object. A named companion changes the shape the bundled keep-rules
+# match, so the serializer can be stripped in a minified consumer build and the class
+# fails to deserialize at runtime, only in release builds.
+#
+# DEDUPE: the two rules COMPOSE rather than duplicate. `no-companion-objects` bans the
+# CONSTRUCT (any companion at all) everywhere except **/ModelRef.kt and **/TypeIds.kt,
+# which need @JvmStatic companions for Java interop. This rule constrains the FORM of a
+# companion permitted to exist — it must be anonymous. Different predicate, not a second
+# detector for the same shape: in the only two files where a companion is legal this rule
+# is the sole owner, and everywhere else the construct is already illegal. TypeIds.kt
+# holds three @Serializable value classes, which is what makes the carve-out load-bearing.
+#
+# Scoping is deliberately NOT done with `files:`. A narrow glob cannot match the random
+# tmpXXXX.kt path validate_rules.py writes fixtures to, so the rule would ship unable to
+# match its own badExample — the validator rejects exactly that ("badExample NOT matched"),
+# which is how the first draft of this rule was caught.
+#
+# stopBy is deliberately OMITTED. `type_identifier` is a DIRECT child of
+# `companion_object` (verified by CST dump), and the companion's own `class_body` also
+# contains `type_identifier` nodes for any typed member — so `stopBy: end` would match
+# an ANONYMOUS companion that merely declares `val x: String`. The invariant is about
+# direct nesting, not reachability.
+id: no-named-companion-object
+language: kotlin
+severity: error
+message: "Companion object must be anonymous: a NAMED companion on a @Serializable class defeats kotlinx.serialization's bundled R8 keep-rules and the serializer can be stripped in minified consumer builds."
+ignores:
+  - "**/test/**"
+rule:
+  kind: companion_object
+  has:
+    kind: type_identifier

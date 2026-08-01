@@ -9,7 +9,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -437,8 +436,14 @@ public fun OpenResponsesAllowedTools(
 ): OpenResponsesAllowedTools =
     OpenResponsesAllowedToolsBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
-public interface OpenResponsesProvider : Provider {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class OpenResponsesProvider : Provider {
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
 
     /** @since 0.3.0-beta01 */
@@ -456,7 +461,7 @@ private class KtorOpenResponsesProvider(
     private val client: HttpClient,
     private val settings: OpenResponsesProviderSettings,
     private val json: Json,
-) : OpenResponsesProvider {
+) : OpenResponsesProvider() {
     override val providerId: String = settings.name
 
     override fun languageModel(modelId: String): LanguageModel =
@@ -473,7 +478,7 @@ private class OpenResponsesLanguageModel(
     override val supportedUrls: Map<String, List<String>> = settings.supportedUrls
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val prepared = PreparedOpenResponsesRequest.from(
+        val prepared = PreparedOpenResponsesRequest(
             params,
             stream = false,
             providerOptionsName = settings.providerOptionsName ?: settings.name,
@@ -493,7 +498,7 @@ private class OpenResponsesLanguageModel(
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        val prepared = PreparedOpenResponsesRequest.from(
+        val prepared = PreparedOpenResponsesRequest(
             params,
             stream = true,
             providerOptionsName = settings.providerOptionsName ?: settings.name,
@@ -520,7 +525,7 @@ private class OpenResponsesLanguageModel(
     }
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult {
-        val prepared = PreparedOpenResponsesRequest.from(
+        val prepared = PreparedOpenResponsesRequest(
             params,
             stream = true,
             providerOptionsName = settings.providerOptionsName ?: settings.name,
@@ -591,7 +596,7 @@ private class OpenResponsesLanguageModel(
         response: HttpResponse,
         parseJson: Boolean,
     ): OpenResponsesHttpResponse {
-        val raw = response.bodyAsText()
+        val raw = with(HttpTransport) { response.bodyAsTextCapped(response.call.request.url.toString()) }
         val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
         if (response.status.value !in 200..299) {
             throw openResponsesErrorFromResponse(response, raw, headers)
@@ -728,7 +733,7 @@ private class OpenResponsesLanguageModel(
                             obj["id"],
                         )
                     }
-                    val action = obj["action"] as? JsonObject
+                    val action = JsonAccess.obj(obj, "action")
                     val output = when ((action?.get("type") as? JsonPrimitive)?.contentOrNull) {
                         "search" -> buildJsonObject {
                             put(
@@ -815,9 +820,13 @@ private class OpenResponsesLanguageModel(
         val cachedInputTokens = (((JsonAccess.obj(obj, "input_tokens_details"))?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceIn(0, inputTokens)
         val outputTokens = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+        // reasoning_tokens is a SUBSET of output_tokens, so clamp into that range — symmetric with
+        // cached_tokens above. Replaces a `if (reasoning > output) output + reasoning` branch that
+        // could not distinguish a contract-violating response from a provider reporting text-only
+        // output_tokens, and silently under-counted the latter whenever its reasoning was shorter.
         val reasoningTokens = (((JsonAccess.obj(obj, "output_tokens_details"))?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
-            .coerceAtLeast(0)
-        val outputTotal = if (reasoningTokens > outputTokens) outputTokens + reasoningTokens else outputTokens
+            .coerceIn(0, outputTokens)
+        val outputTotal = outputTokens
         return Usage(
             inputTokens = Usage.InputTokenBreakdown(
                 total = inputTokens,
@@ -945,7 +954,7 @@ private class OpenResponsesLanguageModel(
                         }
                         "web_search_call" -> {
                             val itemId = itemIdFromItem(item, obj) ?: return listOf(missingIdentityError(type, "item_id"))
-                            val action = item["action"] as? JsonObject
+                            val action = JsonAccess.obj(item, "action")
                             val output = when ((action?.get("type") as? JsonPrimitive)?.contentOrNull) {
                                 "search" -> buildJsonObject {
                                     put(
@@ -1024,6 +1033,16 @@ private class OpenResponsesLanguageModel(
                         ?: (response["status"] as? JsonPrimitive)?.contentOrNull
                     usage = openResponsesUsage(response["usage"])
                     events += StreamEvent.Error(OpenResponsesStreamFailure.message(response))
+                }
+                // Standalone SSE error event (not nested under response.failed).
+                "error" -> {
+                    finishReason = FinishReason.Error
+                    val message = (obj["message"] as? JsonPrimitive)?.contentOrNull
+                        ?: ((JsonAccess.obj(obj, "error"))?.get("message") as? JsonPrimitive)?.contentOrNull
+                        ?: obj.toString()
+                    rawFinishReason = (obj["code"] as? JsonPrimitive)?.contentOrNull
+                        ?: ((JsonAccess.obj(obj, "error"))?.get("code") as? JsonPrimitive)?.contentOrNull
+                    events += StreamEvent.Error(message)
                 }
             }
             return events

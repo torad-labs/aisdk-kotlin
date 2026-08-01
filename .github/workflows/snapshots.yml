@@ -6,6 +6,12 @@ name: Snapshot
 #   push:
 #     branches:
 #       - main
+#
+# AFTER a release tag ships, bump VERSION_NAME on main (e.g. 0.3.0-beta01 →
+# 0.3.0-beta02 or 0.3.1-SNAPSHOT intent) BEFORE re-arming. Snapshot version is
+# derived from VERSION_NAME (build.gradle.kts): leaving it at a just-published
+# release coordinate republishes that line as `-SNAPSHOT`, which confuses
+# consumers and fights the immutable Central release.
 on:
   workflow_dispatch:
 
@@ -24,18 +30,24 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+      # Publish path: read cache only so a poisoned PR cache cannot enter the
+      # snapshot artifacts (zizmor cache-poisoning).
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          cache-read-only: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
+          lookup-only: true
       - name: Publish Maven Central snapshot
         env:
           SNAPSHOT_PUBLISH: "1"

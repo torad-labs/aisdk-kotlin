@@ -4,5 +4,6 @@ verify hook-self-tests
 verify beta-readiness
 verify gradle-check
 verify publish-to-maven-local
+verify dokka-generate
 verify-apple apple-targets
 verify-apple swift-import-smoke

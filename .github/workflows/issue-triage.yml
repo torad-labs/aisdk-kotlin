@@ -1,0 +1,85 @@
+# Issue lifecycle + AI classification.
+#
+# lifecycle: every new issue gets `needs-triage`; it drops off when a maintainer
+# acts (assign or close). Deterministic, no AI.
+#
+# classify: .github/scripts/triage/triage-issue.sh asks an OpenRouter open-weights
+# model (default google/gemma-4-31b-it — the default lives in classify.sh; override
+# via the TRIAGE_MODEL repo variable) to propose labels. Hardening lives in the
+# scripts: allowlist intersection, numeric issue pin, add-label as the only verb.
+# A missing OPENROUTER_API_KEY or a provider failure is a logged skip, never a red
+# check. Manual backfill/testing: Actions → issue-triage → Run workflow → issue number.
+#
+# Ported from torad-labs/splice. Deviation: both jobs carry timeout-minutes, which
+# this repo's beta-readiness gate requires on every job (splice's copy has none).
+# Permissions are job-scoped (not workflow-level) so classify does not inherit
+# issues: write when it only needs contents:read + the default GITHUB_TOKEN for gh.
+name: issue-triage
+
+on:
+  issues:
+    types: [opened, closed, assigned]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to (re)classify'
+        required: true
+
+# Least privilege at workflow level; each job opts into what it needs.
+permissions: {}
+
+jobs:
+  lifecycle:
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # add/remove the needs-triage label only
+      issues: write
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { action, issue } = context.payload;
+            const has = issue.labels.some(l => l.name === 'needs-triage');
+            if (action === 'opened' && !has) {
+              await github.rest.issues.addLabels({
+                ...context.repo, issue_number: issue.number, labels: ['needs-triage'],
+              });
+            } else if (action !== 'opened' && has) {
+              await github.rest.issues.removeLabel({
+                ...context.repo, issue_number: issue.number, name: 'needs-triage',
+              }).catch(e => { if (e.status !== 404) throw e; });
+            }
+
+  classify:
+    if: github.event_name == 'workflow_dispatch' || github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # gh issue edit --add-label
+      issues: write
+    concurrency:
+      group: issue-classify-${{ github.event.issue.number || inputs.issue_number }}
+      cancel-in-progress: true
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      TRIAGE_MODEL: ${{ vars.TRIAGE_MODEL }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Classify and label
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+        run: |
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "OPENROUTER_API_KEY not configured; skipping AI classification."
+            exit 0
+          fi
+          [[ "$ISSUE_NUMBER" =~ ^[0-9]+$ ]] || { echo "invalid issue number: $ISSUE_NUMBER"; exit 1; }
+          .github/scripts/triage/triage-issue.sh "$ISSUE_NUMBER" \
+            || echo "::warning::issue triage classification failed (non-blocking)"

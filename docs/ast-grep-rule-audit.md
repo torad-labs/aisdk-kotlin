@@ -7,7 +7,7 @@ model) and [data-class-audit.md](data-class-audit.md) (the public data-class
 migration, a dedupe example this audit reuses rather than duplicates). This
 document is the standing dedupe table CLAUDE.md's "Ast-grep rule authoring"
 section points to: consult and extend it before adding a new rule to
-`.claude/hooks/rules/kotlin/`.
+`.rules/kotlin/ast-grep/`.
 
 ## Method
 
@@ -45,6 +45,7 @@ model treats as closing a gap, not duplicating.
 | 15 | provider request bodies use typed mapping, not raw JSON string assembly | *(hypothesis explored, found no violations)* | — | **Explored, no evidence of the anti-pattern.** Zero `"""{ ... }` raw-JSON-template hits anywhere under `providers/`. Some providers factor mapping into dedicated `*Mapping.kt`/`*RequestMapping.kt` files and others don't, but that split is organizational, not a violable invariant. No rule — nothing to protect against today. |
 | 16 | JsonElement/JsonObject/JsonArray force-casts and unsafe container access | ast-grep `no-json-container-force-cast`, `no-keyed-json-container-cast`, `no-provideroptions-jsonobject-cast` (layer 1) + detekt `NoJsonContainerForceCast`, `NoInlineJsonInstance` (layer 2) | 1 and 2 | **Collision avoided.** Already thoroughly covered at two layers; no rule. |
 | 17 | new/experimental public API should be marked `@ExperimentalAiSdkApi` | *(hypothesis explored, rejected)* | — | **Not ast-grep-enforceable at useful precision.** Whether a given new public declaration is "risky enough" to need the annotation is a design judgment ast-grep cannot infer from syntax; a rule here would be pure noise. No rule. |
+| 18 | public member-extension function declared inside a public `object` (forces call sites into a member-import or `with(Object) { ... }`) | nobody (`KonsistArchitectureTest.kt` has no assertion on this shape; no detekt rule targets extension-in-object placement) | none | **Real gap, no existing owner.** Tier-1 rule added: `no-public-member-extension-in-object`. Eliminated repo-wide in 0.3.0-beta01 (`ProviderModels`, `GeneratedFiles`, `AgentSessions`, `ChatSessionFactory`, `ToolResultOutputs`, `UsageArithmetic`, `UIMessageMetadata` all moved to members of the type they extended); this rule is the antibody so the pattern cannot re-enter. Plain (non-extension) functions in a public object (`AbortSignals.from(...)`) and member-extensions in internal objects or private-in-class are explicitly out of scope. |
 
 **Collision count: 5** (rows 5, 6, 9, 10, 16) — invariants with a confirmed
 existing owner where a duplicate rule was deliberately not added. Two further
@@ -121,3 +122,27 @@ exactly the kind of edit that could silently drift an existing rule's
 behavior, which is a bigger risk than the DRY win is worth inside a session
 already delivering 6 new rules and a doctrine merge. Reported per the
 premise-check duty for operator judgment; not implemented.
+
+## Rules added from PR #14's review rounds (2026-07-30)
+
+Each derived from a defect that actually shipped in this PR, not from a category someone thought
+of. Dedupe check recorded per the one-owner-per-invariant law.
+
+| Rule / gate | Layer | Derived from | Dedupe |
+|---|---|---|---|
+| `no-part-exceeds-total-heuristic` (style, warning) | edit-time | A token PART compared against its TOTAL to decide the total. Found 3 live instances (`Usage.kt`, `HuggingFaceProvider.kt`, `OpenResponsesProvider.kt`) and then a 4th unaided — `DeepInfraFacade.fixDeepInfraUsage`, the one LEGITIMATE shape, which is why this is a warning and its note states "shared parsers CLAMP; a provider quirk gets a named function". | No existing owner. detekt has no semantic part/total rule; Konsist is structural. |
+| `no-credential-denylist-filter` (style, warning) | edit-time | Header maps filtered by exclusion. The Fireworks download used a 2-name denylist, then a 3-name one; both leaked. Fires once now, on `GoogleVertexProvider` — the weaker same-shape case. | Complements rather than duplicates `detect-provider-asset-credential-leak.py`: the detector owns the BLOCKING check for a provider-supplied destination, this is the edit-time nudge on the construction itself — the four-layer model's sanctioned "same invariant, earlier layer". |
+| `no-ignored-claim-result` (style, warning) | edit-time | `lifecycle.setReader(job)` as a bare statement: the dropped Boolean made a lost race take the success path, leaking a child process and its FDs. The rule then found the SIBLING transport doing the same at `MCP.kt:1892`. | No existing owner — nothing in either directory checks discarded return values. Scoped to a curated claim vocabulary, not "any ignored Boolean", so it stays about state transitions. |
+| `py-no-split-without-blank-filter` (python guard, warning) | guard-layer | `"".split(",")` is `[""]`, so an omitted `--files` persisted `files = [""]` and made the item permanently packet-ineligible. The reviewer offered this rule for the class; it was not taken at the time. | New; the python guard set had no argument-parsing rule. |
+| `py-no-mutating-codemod-without-check` (python guard, warning) | guard-layer | ci-gate ran `fix_sealed_when.py` in APPLYING mode, so a violation wrote rewrites into the tree and told the operator to stage them — while two sibling findings showed those rewrites could be invalid Kotlin. | New. Exempts the `--update` re-seeder shape, whose default path is read-only. |
+| `persist-credentials: false` on every `actions/checkout` | gate | The review found ONE unguarded checkout of eleven; the mechanical check found **two more** (`ci.yml:31`, `ci.yml:203`). | Extended `tools/beta-readiness-check`, which already owns SHA-pinning, `timeout-minutes` and global-npm workflow checks, rather than adding a rival owner. |
+
+Two shapes were deliberately NOT made into rules, because the checkable predicate would not match
+the real invariant: the Voyage bit-packing defect (decoder-vs-metadata consistency spans functions)
+and ATTEST-outside-the-lock (needs dataflow). They live in the commit history instead.
+
+One method note worth keeping: three of these rules were TOO BROAD on first draft — the credential
+filter hit 19 sites, the asset-download detector hit 40+. A rule that fires on the sanctioned
+pattern trains dismissal of the whole pack, which is exactly how the three over-firing rules
+corrected earlier in this same PR came to be ignored. Measure the hit count on the real tree before
+committing a rule, and narrow until every hit is one you would act on.

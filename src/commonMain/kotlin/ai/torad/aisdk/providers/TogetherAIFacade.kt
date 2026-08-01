@@ -29,7 +29,8 @@ public typealias TogetherAIErrorData = JsonElement
 public class TogetherAIImageModelOptions internal constructor(
     /** @since 0.3.0-beta01 */
     public val steps: Int? = null,
-    /** @since 0.3.0-beta01 */
+    /** Wire key is `guidance_scale` (Together image API). @since 0.3.0-beta01 */
+    @SerialName("guidance_scale")
     public val guidance: Float? = null,
     @SerialName("negative_prompt") public val negativePrompt: String? = null,
     @SerialName("disable_safety_checker") public val disableSafetyChecker: Boolean? = null,
@@ -141,7 +142,7 @@ public class TogetherAIProviderSettings internal constructor(
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
+        ForFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
 /** @since 0.3.0-beta01 */
@@ -336,7 +337,7 @@ public class TogetherAIRerankingModel(
 
     private fun togetherAIUsage(value: JsonElement?): Usage {
         val obj = value as? JsonObject ?: return Usage()
-        return Usage.of(
+        return Usage(
             promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
             completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
         )

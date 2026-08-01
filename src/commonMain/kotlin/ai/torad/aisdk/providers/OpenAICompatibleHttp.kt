@@ -6,7 +6,6 @@ import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -136,7 +135,7 @@ internal abstract class OpenAICompatibleHttpModel(
                 setBody(json.encodeToString(JsonElement.serializer(), body))
             }
             val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
-            val bytes = response.bodyAsBytes()
+            val bytes = with(HttpTransport) { response.bodyAsBytesCapped(url(path)) }
             if (response.status.value !in 200..299) {
                 val raw = bytes.decodeToString()
                 val parsed = TypedJsonOps.parseJsonElementOrNull(json, raw)
@@ -154,8 +153,8 @@ internal abstract class OpenAICompatibleHttpModel(
     // ---- Wire conversion + result decoding (model-internal). ----
     // Request message/tool/response-format assembly, chat/completion result
     // decoding, provider-option pruning, and error-message extraction. Shared
-    // wire→core-type factories live on the core types' companions
-    // (Usage.fromOpenAI, FinishReason.fromOpenAI, …).
+    // wire→core-type factories are top-level in the core types' own files
+    // (UsageFromOpenAI, FinishReasonFromOpenAI, …).
 
     protected fun applyChatResponseTransform(settings: OpenAICompatibleProviderSettings, value: JsonElement): JsonElement =
         (value as? JsonObject)?.let { settings.transformChatResponse?.invoke(it) ?: it } ?: value
@@ -255,7 +254,7 @@ internal abstract class OpenAICompatibleHttpModel(
                     "$.choices[0].message.tool_calls[$index].function",
                 )
                 ContentPart.ToolCall(
-                    toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
+                    toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId("call"),
                     toolName = WireDecoder.requiredString(
                         function,
                         "name",
@@ -263,7 +262,7 @@ internal abstract class OpenAICompatibleHttpModel(
                         "chat completion response",
                         "$.choices[0].message.tool_calls[$index].function"
                     ),
-                    input = ContentPart.ToolCall.parseOpenAIToolInput(
+                    input = ParseOpenAIToolInput(
                         WireDecoder.requiredString(
                             function,
                             "arguments",
@@ -272,13 +271,13 @@ internal abstract class OpenAICompatibleHttpModel(
                             "$.choices[0].message.tool_calls[$index].function"
                         )
                     ),
-                    providerMetadata = ContentPart.ToolCall.thoughtSignatureMetadata(callObj)?.let {
+                    providerMetadata = ThoughtSignatureMetadata(callObj)?.let {
                         ProviderMetadata.Raw(JsonObject(it))
                     } ?: ProviderMetadata.None,
                 )
             }
         content += toolCalls
-        val finishReason = FinishReason.fromOpenAI((choice["finish_reason"] as? JsonPrimitive)?.contentOrNull)
+        val finishReason = FinishReasonFromOpenAI((choice["finish_reason"] as? JsonPrimitive)?.contentOrNull)
         val providerMetadata = JsonObject(openAIProviderMetadata(obj["providerMetadata"], "openaiCompatible"))
             .let { metadata ->
                 val details = JsonAccess.obj(obj, "usage")?.let { JsonAccess.obj(it, "completion_tokens_details") }
@@ -300,7 +299,7 @@ internal abstract class OpenAICompatibleHttpModel(
             text = text,
             toolCalls = toolCalls,
             finishReason = finishReason,
-            usage = (convertUsage ?: Usage.Companion::fromOpenAI).invoke(obj["usage"]),
+            usage = (convertUsage ?: ::UsageFromOpenAI).invoke(obj["usage"]),
             providerMetadata = if (providerMetadata.isEmpty()) {
                 ProviderMetadata.None
             } else {
@@ -338,8 +337,8 @@ internal abstract class OpenAICompatibleHttpModel(
         val text = WireDecoder.requiredString(choice, "text", provider, "completion response", "$.choices[0]")
         return LanguageModelResult(
             text = text,
-            finishReason = FinishReason.fromOpenAI((choice["finish_reason"] as? JsonPrimitive)?.contentOrNull),
-            usage = Usage.fromOpenAI(obj["usage"]),
+            finishReason = FinishReasonFromOpenAI((choice["finish_reason"] as? JsonPrimitive)?.contentOrNull),
+            usage = UsageFromOpenAI(obj["usage"]),
             rawFinishReason = (choice["finish_reason"] as? JsonPrimitive)?.contentOrNull,
             warnings = warnings,
             request = LanguageModelRequestMetadata(requestBody),

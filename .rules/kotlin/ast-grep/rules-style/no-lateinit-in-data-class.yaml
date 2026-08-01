@@ -1,0 +1,34 @@
+id: no-lateinit-in-data-class
+language: kotlin
+severity: warning
+message: "lateinit var inside a data class breaks the generated equals/hashCode/toString/copy before the property is initialized; prefer a constructor parameter or a non-data holder."
+note: |
+  `lateinit var` is already banned everywhere by the blocking LAW rule
+  `no-lateinit-var` (severity error). This style rule is a narrower,
+  data-class-specific companion that exists purely for its message: it
+  names the extra hazard a `data class` adds on top of the general
+  lateinit risk — the compiler-generated `equals`/`hashCode`/`toString`/
+  `copy` all read the property, so any call into them before the lateinit
+  var is set throws `UninitializedPropertyAccessException` from generated
+  code the author never wrote. In this repo the LAW rule already makes
+  this specific shape unreachable in committed code; keep this rule for
+  the more precise diagnostic message if `no-lateinit-var` is ever loosened
+  to allow lateinit in ordinary classes.
+rule:
+  kind: property_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: member_modifier
+          regex: '^lateinit$'
+    - inside:
+        kind: class_body
+        inside:
+          kind: class_declaration
+          stopBy: neighbor
+          has:
+            kind: modifiers
+            has:
+              kind: class_modifier
+              regex: '^data$'

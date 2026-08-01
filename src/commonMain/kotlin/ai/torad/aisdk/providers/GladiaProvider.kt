@@ -14,6 +14,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -459,11 +460,9 @@ public fun Gladia(
 private const val GLADIA_BASE_URL: String = "https://api.gladia.io"
 
 private val gladiaDirectOptionMap: Map<String, String> = linkedMapOf(
-    "contextPrompt" to "context_prompt",
+    // language_config owns languages[] + code_switching (see putLanguageConfig). Do not emit
+    // top-level detect_language / enable_code_switching — they are not on the current schema.
     "customVocabulary" to "custom_vocabulary",
-    "detectLanguage" to "detect_language",
-    "enableCodeSwitching" to "enable_code_switching",
-    "language" to "language",
     "callback" to "callback",
     "subtitles" to "subtitles",
     "diarization" to "diarization",
@@ -478,10 +477,9 @@ private val gladiaDirectOptionMap: Map<String, String> = linkedMapOf(
     "structuredDataExtractionConfig" to "structured_data_extraction_config",
     "sentimentAnalysis" to "sentiment_analysis",
     "audioToLlm" to "audio_to_llm",
-    "audioToLlmConfig" to "audio_to_llm_config",
+    // audioToLlmConfig is nested via putNestedOptions (not a flat dump of the camelCase object).
     "customMetadata" to "custom_metadata",
     "sentences" to "sentences",
-    "displayMode" to "display_mode",
     "punctuationEnhanced" to "punctuation_enhanced",
 )
 
@@ -649,11 +647,32 @@ private class GladiaTranscriptionModel(
         return buildJsonObject {
             putDirectOptions(options)
             putNestedOptions(options)
-            if (!options.containsKey("language")) {
-                params.language?.let { put("language", JsonPrimitive(it)) }
-            }
+            putLanguageConfig(options, params.language)
             put("audio_url", JsonPrimitive(audioUrl))
         }
+    }
+
+    private fun JsonObjectBuilder.putLanguageConfig(options: JsonObject, fallbackLanguage: String?) {
+        // Docs LanguageConfig: { languages[], code_switching } only.
+        val language = options["language"] ?: fallbackLanguage?.let(::JsonPrimitive)
+        val codeSwitching = options["enableCodeSwitching"]
+            ?: options["enable_code_switching"]
+            ?: options["codeSwitching"]
+            ?: options["code_switching"]
+        val explicit = options["languageConfig"]?.jsonObjectOrNull()
+            ?: options["language_config"]?.jsonObjectOrNull()
+        if (language == null && codeSwitching == null && explicit == null) return
+        val languages = explicit?.get("languages")?.takeUnless { it is JsonNull }
+            ?: language?.takeUnless { it is JsonNull }?.let { JsonArray(listOf(it)) }
+        val switching = explicit?.get("code_switching")?.takeUnless { it is JsonNull }
+            ?: codeSwitching?.takeUnless { it is JsonNull }
+        put(
+            "language_config",
+            buildJsonObject {
+                languages?.let { put("languages", it) }
+                switching?.let { put("code_switching", it) }
+            },
+        )
     }
 
     private fun JsonObjectBuilder.putDirectOptions(options: JsonObject) {
@@ -673,14 +692,8 @@ private class GladiaTranscriptionModel(
                 }
             )
         }
-        options["codeSwitchingConfig"]?.jsonObjectOrNull()?.let { config ->
-            put(
-                "code_switching_config",
-                buildJsonObject {
-                    config["languages"]?.let { put("languages", it) }
-                }
-            )
-        }
+        // code_switching lives under language_config (see putLanguageConfig). The old
+        // top-level code_switching_config object is not on the current schema.
         options["callbackConfig"]?.jsonObjectOrNull()?.let { config ->
             put(
                 "callback_config",
@@ -739,6 +752,27 @@ private class GladiaTranscriptionModel(
                     config["spellingDictionary"]?.let { put("spelling_dictionary", it) }
                 }
             )
+        }
+        // Docs: audio_to_llm_config requires `prompts` (array of strings). Enable the
+        // feature flag when a config is supplied unless the caller already set audioToLlm.
+        options["audioToLlmConfig"]?.jsonObjectOrNull()?.let { config ->
+            val prompts = config["prompts"]
+                ?: config["messages"] // legacy alias
+            put(
+                "audio_to_llm_config",
+                buildJsonObject {
+                    prompts?.let { put("prompts", it) }
+                    config["model"]?.let { put("model", it) }
+                    for ((key, value) in config) {
+                        if (key !in setOf("messages", "prompts", "model", "temperature") && value !is JsonNull) {
+                            put(key, value)
+                        }
+                    }
+                },
+            )
+            if (options["audioToLlm"] == null) {
+                put("audio_to_llm", JsonPrimitive(true))
+            }
         }
     }
 

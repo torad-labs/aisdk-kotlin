@@ -6,7 +6,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -63,12 +62,8 @@ public class DeepgramSpeechModel(
                 message = "Deepgram TTS models embed the voice in the model ID. The voice parameter \"${params.voice}\" was ignored.",
             )
         }
-        if (params.speed != null) {
-            warnings += CallWarning(
-                type = "unsupported",
-                message = "Deepgram TTS REST API does not support speed adjustment. Speed parameter was ignored.",
-            )
-        }
+        // Deepgram TTS documents `speed` as a supported query param.
+        params.speed?.let { queryParams["speed"] = it.toString() }
         if (params.instructions != null) {
             warnings += CallWarning(
                 type = "unsupported",
@@ -269,7 +264,7 @@ public class DeepgramSpeechModel(
     }
 
     private suspend fun parseDeepgramBinary(response: HttpResponse, url: String): DeepgramBinaryResponse {
-        val bytes = response.bodyAsBytes()
+        val bytes = with(HttpTransport) { response.bodyAsBytesCapped(url) }
         val headers = with(HttpTransport) { response.flattenedHeaders() }
         if (response.status.value !in 200..299) {
             val raw = bytes.decodeToString()

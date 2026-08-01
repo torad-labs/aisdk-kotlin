@@ -18,7 +18,7 @@ class RegistryGatewayParityTest {
 
     @Test
     fun `createProviderRegistry honors a custom separator`() {
-        val registry = ProviderRegistry.createProviderRegistry(
+        val registry = ProviderRegistry(
             mapOf("openai" to StubProvider("openai", "oa")),
             separator = "/",
         )
@@ -28,13 +28,13 @@ class RegistryGatewayParityTest {
 
     @Test
     fun `splitProviderModelId supports a multi-char separator`() {
-        assertEquals("openai" to "gpt-4o", ProviderRegistry.splitProviderModelId("openai::gpt-4o", separator = "::"))
-        assertEquals(null to "bare", ProviderRegistry.splitProviderModelId("bare", separator = "::"))
+        assertEquals("openai" to "gpt-4o", SplitProviderModelId("openai::gpt-4o", separator = "::"))
+        assertEquals(null to "bare", SplitProviderModelId("bare", separator = "::"))
     }
 
     @Test
     fun `gateway falls back to AI_GATEWAY_API_KEY from the environment when apiKey is null`() = runTest {
-        val token = GatewayAuthToken.fromSettings(
+        val token = GatewayAuthTokenFromSettings(
             GatewayProviderSettings {
                 environment(mapOf("AI_GATEWAY_API_KEY" to "env-key"))
             }
@@ -45,7 +45,7 @@ class RegistryGatewayParityTest {
 
     @Test
     fun `explicit gateway apiKey takes precedence over the environment`() = runTest {
-        val token = GatewayAuthToken.fromSettings(
+        val token = GatewayAuthTokenFromSettings(
             GatewayProviderSettings {
                 apiKey("explicit")
                 environment(mapOf("AI_GATEWAY_API_KEY" to "env-key"))
@@ -56,7 +56,7 @@ class RegistryGatewayParityTest {
 
     @Test
     fun `gateway falls back to VERCEL_OIDC_TOKEN as the oidc auth method`() = runTest {
-        val token = GatewayAuthToken.fromSettings(
+        val token = GatewayAuthTokenFromSettings(
             GatewayProviderSettings {
                 environment(mapOf("VERCEL_OIDC_TOKEN" to "oidc-tok"))
             }
@@ -66,8 +66,20 @@ class RegistryGatewayParityTest {
     }
 
     @Test
+    fun `blank VERCEL_OIDC_TOKEN is treated as absent not an empty bearer`() = runTest {
+        // API-key path already strips blanks; OIDC must do the same so VERCEL_OIDC_TOKEN=""
+        // does not become Authorization: Bearer <empty>.
+        val token = GatewayAuthTokenFromSettings(
+            GatewayProviderSettings {
+                environment(mapOf("VERCEL_OIDC_TOKEN" to ""))
+            },
+        )
+        assertEquals(null, token)
+    }
+
+    @Test
     fun `blank AI_GATEWAY_API_KEY falls back to OIDC`() = runTest {
-        val token = GatewayAuthToken.fromSettings(
+        val token = GatewayAuthTokenFromSettings(
             GatewayProviderSettings {
                 environment(mapOf("AI_GATEWAY_API_KEY" to "", "VERCEL_OIDC_TOKEN" to "oidc-tok"))
             },
@@ -78,7 +90,7 @@ class RegistryGatewayParityTest {
 
     @Test
     fun `api key wins over the OIDC token when both are present`() = runTest {
-        val token = GatewayAuthToken.fromSettings(
+        val token = GatewayAuthTokenFromSettings(
             GatewayProviderSettings {
                 environment(mapOf("AI_GATEWAY_API_KEY" to "k", "VERCEL_OIDC_TOKEN" to "oidc-tok"))
             }

@@ -12,6 +12,41 @@ import kotlin.time.TimeSource
 @OptIn(ExperimentalAiSdkApi::class, ExperimentalCoroutinesApi::class, InternalAiSdkApi::class)
 class McpStdioTransportTest : MCPClientTestBase() {
 
+    /**
+     * True when this host cannot run the POSIX `/bin/sh` fixtures:
+     * - Native/iOS: ProcessBuilder actual throws [UnsupportedOperationException]
+     * - Windows JVM: CreateProcess fails looking up `/bin/sh` (IOException)
+     *
+     * Matched by type/name so commonTest stays multiplatform (no `java.io` import).
+     */
+    private fun Throwable.isStdioShellUnavailable(): Boolean {
+        if (this is UnsupportedOperationException) return true
+        var cur: Throwable? = this
+        while (cur != null) {
+            val name = cur::class.simpleName.orEmpty()
+            val msg = cur.message.orEmpty()
+            if (name == "IOException" &&
+                (msg.contains("/bin/sh") ||
+                    msg.contains("CreateProcess") ||
+                    msg.contains("Cannot run program") ||
+                    msg.contains("The system cannot find the file"))
+            ) {
+                return true
+            }
+            cur = cur.cause
+        }
+        return false
+    }
+
+    private suspend fun startOrSkip(transport: Experimental_StdioMCPTransport): Boolean =
+        try {
+            transport.start()
+            true
+        } catch (error: Throwable) {
+            if (error.isStdioShellUnavailable()) return false
+            throw error
+        }
+
     @Test
     fun `stdio transport exchanges newline-delimited JSON-RPC with process`() = runTest {
         val transport = Experimental_StdioMCPTransport(
@@ -23,15 +58,7 @@ class McpStdioTransportTest : MCPClientTestBase() {
         var received: JSONRPCMessage? = null
         transport.setOnMessage { received = it }
 
-        try {
-            transport.start()
-        } catch (ignoredOnUnsupportedPlatform: UnsupportedOperationException) {
-            // Stdio MCP spawns a child process (ProcessBuilder); that actual is
-            // unsupported on Native/iOS and throws here. The transport is
-            // exercised end-to-end on JVM + Android — skip on platforms without
-            // subprocess support rather than fail the shared test.
-            return@runTest
-        }
+        if (!startOrSkip(transport)) return@runTest
         transport.send(JSONRPCNotification(method = "notifications/test"))
         waitForRealTime { received != null }
 
@@ -61,11 +88,7 @@ class McpStdioTransportTest : MCPClientTestBase() {
         var received: JSONRPCMessage? = null
         transport.setOnMessage { received = it }
 
-        try {
-            transport.start()
-        } catch (ignoredOnUnsupportedPlatform: UnsupportedOperationException) {
-            return@runTest // Native/iOS: no subprocess support (same skip as the stdio round-trip test)
-        }
+        if (!startOrSkip(transport)) return@runTest
         waitForRealTime { received != null } // pre-fix: child blocks on stderr -> stdout never comes -> timeout
 
         assertEquals("notifications/ready", assertIs<JSONRPCNotification>(received).method)
@@ -90,11 +113,7 @@ class McpStdioTransportTest : MCPClientTestBase() {
         var received: JSONRPCMessage? = null
         var closed = false
         transport.setOnMessage { received = it }
-        try {
-            transport.start()
-        } catch (ignoredOnUnsupportedPlatform: UnsupportedOperationException) {
-            return@runTest
-        }
+        if (!startOrSkip(transport)) return@runTest
         try {
             waitForRealTime { received != null }
             val mark = TimeSource.Monotonic.markNow()
@@ -120,11 +139,7 @@ class McpStdioTransportTest : MCPClientTestBase() {
         )
         var errored: Throwable? = null
         transport.setOnError { errored = it }
-        try {
-            transport.start()
-        } catch (ignoredOnUnsupportedPlatform: UnsupportedOperationException) {
-            return@runTest
-        }
+        if (!startOrSkip(transport)) return@runTest
         try {
             waitForRealTime { errored != null }
             val error = assertIs<MCPClientError>(errored)
@@ -151,11 +166,7 @@ class McpStdioTransportTest : MCPClientTestBase() {
         )
         var closed = false
         transport.setOnClose { closed = true }
-        try {
-            transport.start()
-        } catch (ignoredOnUnsupportedPlatform: UnsupportedOperationException) {
-            return@runTest // Native/iOS: no subprocess support
-        }
+        if (!startOrSkip(transport)) return@runTest
         waitForRealTime { closed } // reader hit EOF and ran its teardown
 
         val error = assertFailsWith<MCPClientError> { transport.send(JSONRPCNotification(method = "x")) }

@@ -595,29 +595,77 @@ private class AlibabaVideoModel(
         "pollTimeoutMs",
     )
 
+    private fun alibabaUsesMediaArrayProtocol(modelId: String): Boolean =
+        // wan2.7+ (and similarly-named successors) use input.media[] instead of img_url/size.
+        modelId.contains("wan2.7") || modelId.contains("wan2_7") || modelId.contains("wan2-7")
+
     private fun alibabaVideoMode(modelId: String): AlibabaVideoMode = when {
+        // Prefer explicit mode tokens, but do not let a bare "-i2v"/"-r2v" substring on a
+        // media-array model force the legacy img_url path.
+        alibabaUsesMediaArrayProtocol(modelId) -> when {
+            paramsImageToVideoHint(modelId) -> AlibabaVideoMode.ImageToVideo
+            modelId.contains("-r2v") || modelId.contains("r2v") -> AlibabaVideoMode.ReferenceToVideo
+            else -> AlibabaVideoMode.TextToVideo
+        }
         modelId.contains("-i2v") -> AlibabaVideoMode.ImageToVideo
         modelId.contains("-r2v") -> AlibabaVideoMode.ReferenceToVideo
         else -> AlibabaVideoMode.TextToVideo
     }
 
+    private fun paramsImageToVideoHint(modelId: String): Boolean =
+        modelId.contains("-i2v") || modelId.contains("i2v")
+
     private fun alibabaVideoInput(mode: AlibabaVideoMode, params: VideoGenerationParams, options: JsonObject): JsonObject = buildJsonObject {
         params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
         options["negativePrompt"]?.let { put("negative_prompt", it) }
         options["audioUrl"]?.let { put("audio_url", it) }
-        if (mode == AlibabaVideoMode.ImageToVideo) {
-            params.image?.let {
-                // img_url expects an HTTP URL; emitting raw base64 here (the old `?: it.base64`)
-                // sends binary into a URL field and the i2v API rejects it. Fail explicitly.
-                val url = it.url ?: throw UnsupportedFunctionalityError(
-                    "imageToVideo-base64",
-                    "Alibaba i2v requires an image URL; inline base64 is not supported.",
-                )
-                put("img_url", JsonPrimitive(url))
+        if (alibabaUsesMediaArrayProtocol(modelId)) {
+            val media = mutableListOf<JsonObject>()
+            if (mode == AlibabaVideoMode.ImageToVideo) {
+                params.image?.let {
+                    val url = it.url ?: throw UnsupportedFunctionalityError(
+                        "imageToVideo-base64",
+                        "Alibaba wan2.7 i2v requires an image URL; inline base64 is not supported.",
+                    )
+                    media += buildJsonObject {
+                        // Docs media entry types: first_frame / last_frame / reference_image / ...
+                        put("type", JsonPrimitive("first_frame"))
+                        put("url", JsonPrimitive(url))
+                    }
+                }
             }
-        }
-        if (mode == AlibabaVideoMode.ReferenceToVideo) {
-            options["referenceUrls"]?.let { put("reference_urls", it) }
+            if (mode == AlibabaVideoMode.ReferenceToVideo) {
+                val refs = (options["referenceUrls"] as? JsonArray).orEmpty()
+                refs.forEach { ref ->
+                    val url = (ref as? JsonPrimitive)?.contentOrNull
+                        ?: (ref as? JsonObject)?.get("url")?.let { (it as? JsonPrimitive)?.contentOrNull }
+                    if (url != null) {
+                        media += buildJsonObject {
+                            put("type", JsonPrimitive("reference_image"))
+                            put("url", JsonPrimitive(url))
+                        }
+                    }
+                }
+            }
+            options["media"]?.let { put("media", it) }
+            if (media.isNotEmpty() && options["media"] == null) {
+                put("media", JsonArray(media))
+            }
+        } else {
+            if (mode == AlibabaVideoMode.ImageToVideo) {
+                params.image?.let {
+                    // img_url expects an HTTP URL; emitting raw base64 here (the old `?: it.base64`)
+                    // sends binary into a URL field and the i2v API rejects it. Fail explicitly.
+                    val url = it.url ?: throw UnsupportedFunctionalityError(
+                        "imageToVideo-base64",
+                        "Alibaba i2v requires an image URL; inline base64 is not supported.",
+                    )
+                    put("img_url", JsonPrimitive(url))
+                }
+            }
+            if (mode == AlibabaVideoMode.ReferenceToVideo) {
+                options["referenceUrls"]?.let { put("reference_urls", it) }
+            }
         }
     }
 
@@ -630,7 +678,10 @@ private class AlibabaVideoModel(
         params.durationSeconds?.let { put("duration", JsonPrimitive(it)) }
         params.seed?.let { put("seed", JsonPrimitive(it)) }
         params.resolution?.let { resolution ->
-            if (mode == AlibabaVideoMode.ImageToVideo) {
+            if (alibabaUsesMediaArrayProtocol(modelId)) {
+                // wan2.7 takes resolution as a label on parameters, not size WxH.
+                put("resolution", JsonPrimitive(alibabaI2VResolution(resolution)))
+            } else if (mode == AlibabaVideoMode.ImageToVideo) {
                 put("resolution", JsonPrimitive(alibabaI2VResolution(resolution)))
             } else {
                 put("size", JsonPrimitive(resolution.replace('x', '*')))
@@ -640,7 +691,17 @@ private class AlibabaVideoModel(
         options["shotType"]?.let { put("shot_type", it) }
         options["watermark"]?.let { put("watermark", it) }
         options["audio"]?.let { put("audio", it) }
-        if (params.aspectRatio != null) warnings += CallWarning("unsupported", "Alibaba video models use explicit size/resolution dimensions. Use the resolution option or providerOptions.alibaba for size control.")
+        if (alibabaUsesMediaArrayProtocol(modelId)) {
+            // wan2.7 t2v documents parameters.ratio (e.g. "16:9"), not only size/resolution.
+            (params.aspectRatio ?: (options["ratio"] as? JsonPrimitive)?.contentOrNull)?.let {
+                put("ratio", JsonPrimitive(it))
+            }
+        } else if (params.aspectRatio != null) {
+            warnings += CallWarning(
+                "unsupported",
+                "Alibaba video models use explicit size/resolution dimensions. Use the resolution option or providerOptions.alibaba for size control.",
+            )
+        }
         if (params.fps != null) warnings += CallWarning("unsupported", "Alibaba video models do not support custom FPS.")
         if (params.n > 1) warnings += CallWarning("unsupported", "Alibaba video models only support generating 1 video per call.")
         alibabaVideoPassthroughOptions(this, options)
