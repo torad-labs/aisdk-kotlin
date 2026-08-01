@@ -298,6 +298,15 @@ jobs:
           # execute with the signing key in their process env. Enforced step-scoped
           # by detect-release-workflow-trust.py.
           ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache
+      # Fail closed BEFORE the smoke and the bundle: assert the staged tree contains
+      # every publication the release is supposed to ship, each complete and signed.
+      # kotlin.native.ignoreDisabledTargets=true makes a target that cannot build on
+      # this ubuntu host vanish silently (task and artifacts together), and the old
+      # artifact_count was echoed but never compared — so a beta could ship without
+      # iOS with every gate green. Maven Central coordinates are immutable, so this
+      # has to be caught here, not from the Portal.
+      - name: Verify the staged publication set
+        run: tools/check-release-bundle build/staging-deploy
       # No credentials: this drives a separate Gradle build rooted at
       # smoke-tests/local-staging, which resolves com.android.library / kotlin
       # plugin markers unverified. It only READS build/staging-deploy.

@@ -297,5 +297,27 @@ date = "2026-08-01"
 head = "0213eef"
 command = "node tools/run-gate-fixtures.mjs; read output line"
 tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7; actionlint 1.7.12; zizmor 1.28.0"
-status = "current"
+status = "superseded"
 note = "added workflow-lint-flags gate (analyzer-flag reachability: pwn-request + shell syntax error)."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 52
+unit = "fixture checks across 26 gates"
+date = "2026-08-01"
+head = "17fe4ff"
+command = "node tools/run-gate-fixtures.mjs; read output line"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7; actionlint 1.7.12; zizmor 1.28.0"
+status = "current"
+note = "added release-bundle gate (publication-set completeness + signatures)."
+
+[[measurement]]
+key = "release_publication_modules"
+value = 7
+unit = "Maven modules per release"
+date = "2026-08-01"
+head = "17fe4ff"
+command = "SIGNING_KEY=<throwaway> ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache; tools/check-release-bundle"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; gpg 2.4.8; Ubuntu/Linux host"
+status = "current"
+note = "measured on a Linux host with a throwaway PGP key: 7 modules (root metadata, android, jvm, linuxx64, iosarm64, iossimulatorarm64, iosx64), 38 primary artifacts, all signed. Confirms Apple klibs cross-compile and publish from ubuntu-latest."
