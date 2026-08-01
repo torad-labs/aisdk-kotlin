@@ -1,5 +1,18 @@
 name: Release
 
+# PROMOTION, NOT TAGS. `beta` and `prod` are the release lines, matching torad-fleet:
+#
+#   beta release:  git push origin main:beta      (or merge main -> beta)
+#   prod release:  merge main -> prod
+#
+# The version shipped is gradle.properties VERSION_NAME; the branch says WHICH LINE it
+# goes out on, and preflight refuses a version whose shape disagrees with the branch
+# (a -beta/-rc version on prod, or a final version on beta).
+#
+# This replaced `push: tags: ['v*']`. That trigger was never how this org releases, and
+# leaving it in place meant a promotion did nothing while a stray tag published — two
+# contradictory paths to the same irreversible action. The tag is now an OUTPUT of the
+# release (created from VERSION_NAME on the promoted commit), not its trigger.
 on:
   workflow_dispatch:
     inputs:
@@ -9,13 +22,14 @@ on:
         default: false
         type: boolean
   push:
-    tags:
-      - "v*"
+    branches:
+      - beta
+      - prod
 
 permissions:
   contents: read
 
-# One release at a time per ref. cancel-in-progress: false so a tag push is never
+# One release at a time per line. cancel-in-progress: false so a promotion is never
 # cancelled mid-Central-upload by a concurrent dry-run dispatch.
 concurrency:
   group: release-${{ github.ref }}
@@ -32,14 +46,19 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+    outputs:
+      version: ${{ steps.verify.outputs.version }}
+      tag: ${{ steps.verify.outputs.tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Verify release tag
+      - name: Verify promoted version
+        id: verify
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+          RELEASE_LINE: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
@@ -47,9 +66,41 @@ jobs:
           artifact="$(awk -F= '$1 == "POM_ARTIFACT_ID" { print $2 }' gradle.properties)"
 
           if [[ "${project_version}" == *-SNAPSHOT ]]; then
-            echo "Release tags must not publish SNAPSHOT versions: ${project_version}" >&2
+            echo "::error::A release must not publish a SNAPSHOT version: ${project_version}" >&2
             exit 1
           fi
+
+          # Branch <-> version-shape agreement. Under tag-triggered releases this slot held
+          # `test "${tag_version}" = "${project_version}"`, which tied the ref to the version.
+          # Promotion has no version in the ref, so the invariant becomes: the LINE you
+          # promoted to must match the KIND of version in gradle.properties. Without it,
+          # promoting to prod with 0.3.0-beta01 still in VERSION_NAME would publish a
+          # prerelease as the stable line, and Central coordinates are immutable.
+          prerelease_re='-(alpha|beta|rc)([.-]?[0-9]+)?$'
+          case "${RELEASE_LINE}" in
+            beta)
+              if [[ ! "${project_version}" =~ ${prerelease_re} ]]; then
+                echo "::error::branch 'beta' expects a prerelease VERSION_NAME (-alpha/-beta/-rc), got ${project_version}. Promote to prod for a final version." >&2
+                exit 1
+              fi
+              ;;
+            prod)
+              if [[ "${project_version}" =~ ${prerelease_re} ]]; then
+                echo "::error::branch 'prod' expects a final VERSION_NAME, got prerelease ${project_version}. Promote to beta instead, or bump VERSION_NAME on main first." >&2
+                exit 1
+              fi
+              ;;
+            *)
+              # workflow_dispatch from any ref reaches here; only dry-run is meaningful.
+              if [ "${DRY_RUN}" != "true" ]; then
+                echo "::error::a real release must be promoted to 'beta' or 'prod' (ref was ${RELEASE_LINE}). Use workflow_dispatch only with dry_run: true." >&2
+                exit 1
+              fi
+              ;;
+          esac
+
+          echo "version=${project_version}" >> "${GITHUB_OUTPUT}"
+          echo "tag=v${project_version}" >> "${GITHUB_OUTPUT}"
 
           # Maven Central coordinates are immutable. Fail closed if this VERSION_NAME
           # is already on repo1 so we never plan a retag/republish of a shipped line
@@ -80,13 +131,17 @@ jobs:
           esac
 
           if [ "${DRY_RUN}" = "true" ]; then
-            echo "Dry-run release preflight for ${project_version} on ${GITHUB_REF_NAME}; tag and main-ancestry checks are publish-only."
+            echo "Dry-run release preflight for ${project_version} on ${RELEASE_LINE}; the main-ancestry check is promotion-only."
             exit 0
           fi
-          tag_version="${GITHUB_REF_NAME#v}"
-          test "${tag_version}" = "${project_version}"
+          # THE promotion invariant: a release line only ever carries commits that came
+          # from main. This is what makes "promote main -> beta/prod" the single path in —
+          # a commit pushed straight to beta, or a beta branch that has drifted, fails here.
           git fetch origin main
-          git merge-base --is-ancestor "${GITHUB_SHA}" origin/main
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" origin/main; then
+            echo "::error::${GITHUB_SHA} on '${RELEASE_LINE}' is not an ancestor of origin/main. Release lines are promoted from main, never committed to directly." >&2
+            exit 1
+          fi
       - name: Beta readiness gate
         run: tools/beta-readiness-check
 
@@ -436,15 +491,29 @@ jobs:
       # `gh attestation verify` on it. Without this step that canary is permanently
       # stuck on "waiting on first release". Also attaches the SPDX SBOM next to
       # the bundle so the release coordinate set is durable beyond artifact retention.
+      # The tag is an OUTPUT of the release, not its trigger: preflight derives it from
+      # VERSION_NAME and this step creates it on the promoted commit.
+      #
+      # tag_name/target_commitish are load-bearing under promotion. This action defaults
+      # tag_name to `github.ref`, which under the old tag trigger was the version tag and
+      # under promotion is the literal branch — so without these it would cut a GitHub
+      # Release named "beta" pointing at a moving branch, once, and then collide on the
+      # next beta. Explicit values make the release name the version and pin it to the SHA.
       - name: Create GitHub Release (bundle.zip + SBOM)
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
         # zizmor: ignore[superfluous-actions] informational: `gh release create` is the
         # equivalent, and dropping a third-party action from the credential-bearing publish
-        # job would be a real gain — but this step only ever executes on a genuine tag push,
+        # job would be a real gain — but this step only ever executes on a genuine promotion,
         # so a rewrite cannot be exercised before the release it would break. The action is
         # SHA-pinned and Dependabot-tracked. Revisit deliberately, not to satisfy a lint.
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
+          tag_name: ${{ needs.preflight.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ needs.preflight.outputs.tag }}
+          # A promotion to `beta` carries a prerelease VERSION_NAME (preflight enforces it),
+          # so mark the GitHub Release accordingly instead of advertising it as latest.
+          prerelease: ${{ github.ref_name == 'beta' }}
           files: |
             bundle.zip
             torad-aisdk-sbom.spdx.json

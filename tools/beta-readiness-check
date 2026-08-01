@@ -255,17 +255,25 @@ def check_release_version_and_changelog(reporter: Reporter) -> None:
         else:
             reporter.fail(f"CHANGELOG.md is missing a '## {version}' entry")
 
+    # Releases are PROMOTIONS, not tags: `beta` and `prod` are the release lines
+    # (git push origin main:beta / merge main -> prod), and the version ships from
+    # VERSION_NAME. So the ref carries no version to compare against; what it carries is
+    # WHICH LINE, and the invariant is that the line agrees with the kind of version.
+    # This previously keyed on a `v*` tag ref and reported "not applicable" everywhere
+    # else — which, after the model changed, meant it never applied at all.
     ref_name = os.environ.get("GITHUB_REF_NAME", "")
-    if ref_name.startswith("v"):
-        tag_version = ref_name[1:]
-        if tag_version != version:
-            reporter.fail(f"release tag/version mismatch: tag {tag_version} != VERSION_NAME {version}")
-        elif version.endswith("-SNAPSHOT"):
-            reporter.fail(f"release tag must not publish SNAPSHOT version {version}")
+    prerelease = re.search(r"-(alpha|beta|rc)([.-]?\d+)?$", version) is not None
+    if ref_name in {"beta", "prod"}:
+        if version.endswith("-SNAPSHOT"):
+            reporter.fail(f"a release must not publish SNAPSHOT version {version}")
+        elif ref_name == "beta" and not prerelease:
+            reporter.fail(f"branch 'beta' expects a prerelease VERSION_NAME, got {version}")
+        elif ref_name == "prod" and prerelease:
+            reporter.fail(f"branch 'prod' expects a final VERSION_NAME, got prerelease {version}")
         else:
-            reporter.ok("release tag matches VERSION_NAME and is not SNAPSHOT")
+            reporter.ok(f"VERSION_NAME {version} matches the '{ref_name}' release line")
     else:
-        reporter.ok("release tag/version check not applicable outside v* tag builds")
+        reporter.ok(f"release-line/version check not applicable off beta|prod (ref: {ref_name or 'local'})")
 
 
 def check_local_staging_smoke_fixture(reporter: Reporter) -> None:
