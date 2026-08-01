@@ -1,6 +1,9 @@
 name: Docs
 
 on:
+  # zizmor: ignore[dangerous-triggers]
+  # Chained off 'Release', which is itself only triggered by a tag push, so this
+  # is reachable only by someone who can already push tags — never by a fork PR.
   workflow_run:
     workflows:
       - Release
