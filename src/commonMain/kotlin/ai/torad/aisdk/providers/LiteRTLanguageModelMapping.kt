@@ -18,6 +18,7 @@ import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.ProviderOptions
 import ai.torad.aisdk.ResponseFormat
 import ai.torad.aisdk.ToolChoice
+import ai.torad.aisdk.ToolResultOutputs
 import ai.torad.aisdk.UnsupportedFunctionalityError
 import ai.torad.aisdk.Usage
 import kotlinx.serialization.json.JsonElement
@@ -37,6 +38,9 @@ internal class LiteRTCallPreparer(
 
     fun prepare(params: LanguageModelCallParams): PreparedLiteRTCall {
         val warnings = warnings(params).toMutableList()
+        // Keep prompt-side schema injection as a portable fallback for hosts without
+        // native constrained decoding, AND surface responseFormat on the request so
+        // engines that do support it can use guaranteed-schema decoding.
         val messages = when (val format = params.responseFormat) {
             is ResponseFormat.Json -> JsonInstruction.injectJsonInstructionIntoMessages(
                 messages = params.messages,
@@ -61,27 +65,16 @@ internal class LiteRTCallPreparer(
             extraContext(extraContext(params.providerOptions))
             warnings(warnings)
             callParams(params)
+            responseFormat(params.responseFormat)
         }
         return PreparedLiteRTCall(request, warnings)
     }
 
     fun warnings(params: LanguageModelCallParams): List<CallWarning> = buildList {
-        if (params.maxOutputTokens != null) {
-            add(
-                CallWarning(
-                    "unsupported",
-                    "LiteRT-LM does not expose per-call maxOutputTokens; configure EngineConfig.maxNumTokens instead.",
-                ),
-            )
-        }
+        // maxOutputTokens / presencePenalty / frequencyPenalty are first-class sampler
+        // slots now — do not warn them away. stopSequences still has no LiteRT-LM hook.
         if (params.stopSequences.isNotEmpty()) {
             add(CallWarning("unsupported", "LiteRT-LM does not expose per-call stopSequences."))
-        }
-        if (params.presencePenalty != null) {
-            add(CallWarning("unsupported", "LiteRT-LM does not expose presencePenalty."))
-        }
-        if (params.frequencyPenalty != null) {
-            add(CallWarning("unsupported", "LiteRT-LM does not expose frequencyPenalty."))
         }
     }
 
@@ -126,12 +119,15 @@ internal class LiteRTCallPreparer(
         if (!hasSamplerOverride(params) && settings.defaultSamplerConfig == null) {
             return null
         }
-        val base = settings.defaultSamplerConfig ?: LiteRTSamplerConfig.Default
+        val base = settings.defaultSamplerConfig ?: LiteRTSamplerConfigDefault
         return LiteRTSamplerConfig {
             topK(params.topK ?: base.topK)
             topP(params.topP?.toDouble() ?: base.topP)
             temperature(params.temperature?.toDouble() ?: base.temperature)
             seed(params.seed ?: base.seed)
+            maxOutputTokens(params.maxOutputTokens ?: base.maxOutputTokens)
+            presencePenalty(params.presencePenalty?.toDouble() ?: base.presencePenalty)
+            frequencyPenalty(params.frequencyPenalty?.toDouble() ?: base.frequencyPenalty)
         }
     }
 
@@ -139,7 +135,10 @@ internal class LiteRTCallPreparer(
         params.topK != null ||
             params.topP != null ||
             params.temperature != null ||
-            params.seed != null
+            params.seed != null ||
+            params.maxOutputTokens != null ||
+            params.presencePenalty != null ||
+            params.frequencyPenalty != null
 
     fun extraContext(providerOptions: ProviderOptions): Map<String, JsonElement> {
         val options = options(providerOptions) ?: return settings.extraContext
@@ -149,6 +148,10 @@ internal class LiteRTCallPreparer(
         }
         options["enableThinking"]?.let { extra["enable_thinking"] = it }
         options["enable_thinking"]?.let { extra["enable_thinking"] = it }
+        // Host engines that expose a thinking-token budget read this extra_context key.
+        (options["thinkingTokenBudget"] ?: options["thinking_token_budget"])?.let {
+            extra["thinking_token_budget"] = it
+        }
         return extra
     }
 
@@ -195,12 +198,17 @@ internal class LiteRTRequestMessageMapper(
     fun contents(message: ModelMessage, role: MessageRole): List<LiteRTContent> =
         message.content.mapNotNull { part ->
             when (part) {
-                is ContentPart.Text -> LiteRTContent.Text(part.text)
+                is ContentPart.Text -> LiteRTContentText(part.text)
                 is ContentPart.Image -> media(part.mediaType, part.base64, part.url, image = true)
                 is ContentPart.File -> file(part)
                 is ContentPart.ToolResult ->
                     if (role == MessageRole.Tool) {
-                        LiteRTContent.ToolResponse(part.toolName, part.modelVisible)
+                        // Decode the envelope — modelVisible is toJsonElement()'s output, so passing
+                        // it verbatim handed the engine {"type":"json","value":{...}} as the response.
+                        LiteRTContentToolResponse(
+                            part.toolName,
+                            ToolResultOutputs.toolResultPayloadJson(part.modelVisible),
+                        )
                     } else {
                         null
                     }
@@ -231,7 +239,7 @@ internal class LiteRTRequestMessageMapper(
             part.mediaType.startsWith("image/") -> media(part.mediaType, part.base64, part.url, image = true)
             part.mediaType.startsWith("audio/") -> media(part.mediaType, part.base64, part.url, image = false)
             part.mediaType == "text/plain" && part.base64.isNotEmpty() ->
-                LiteRTContent.Text(Base64Codec.decode(part.base64).decodeToString())
+                LiteRTContentText(Base64Codec.decode(part.base64).decodeToString())
             else -> throw UnsupportedFunctionalityError(
                 "LiteRT file media",
                 "LiteRTLanguageModel only supports image/*, audio/*, and base64 text/plain file parts.",
@@ -246,14 +254,14 @@ internal class LiteRTRequestMessageMapper(
     ): LiteRTContent {
         val bytes = when {
             base64.isNotEmpty() -> LiteRTBytes(Base64Codec.decode(base64))
-            url?.startsWith("data:") == true -> LiteRTBytes(Base64Codec.decode(DataUrl.parse(url).base64))
+            url?.startsWith("data:") == true -> LiteRTBytes(Base64Codec.decode(DataUrl(url).base64))
             else -> null
         }
         if (bytes != null) {
             return if (image) {
-                LiteRTContent.ImageBytes(bytes, mediaType)
+                LiteRTContentImageBytes(bytes, mediaType)
             } else {
-                LiteRTContent.AudioBytes(bytes, mediaType)
+                LiteRTContentAudioBytes(bytes, mediaType)
             }
         }
         val path = url?.takeIf { !it.contains("://") && !it.startsWith("data:") }
@@ -262,9 +270,9 @@ internal class LiteRTRequestMessageMapper(
                 "LiteRTLanguageModel requires inline base64 data or an absolute local file path for media.",
             )
         return if (image) {
-            LiteRTContent.ImageFile(path, mediaType)
+            LiteRTContentImageFile(path, mediaType)
         } else {
-            LiteRTContent.AudioFile(path, mediaType)
+            LiteRTContentAudioFile(path, mediaType)
         }
     }
 }

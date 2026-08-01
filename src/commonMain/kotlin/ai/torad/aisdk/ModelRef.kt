@@ -16,6 +16,9 @@ public value class ProviderId(public val value: String) {
     override fun toString(): String = value
 
     public companion object {
+        /** @since 0.3.0-beta01 */
+        public operator fun invoke(value: String): ProviderId = of(value)
+
         @JvmExposeBoxed
         @AiSdkJvmStatic
         /** @since 0.3.0-beta01 */
@@ -34,11 +37,23 @@ public value class ModelId(public val value: String) {
     override fun toString(): String = value
 
     public companion object {
+        /** @since 0.3.0-beta01 */
+        public operator fun invoke(value: String): ModelId = of(value)
+
         @JvmExposeBoxed
         @AiSdkJvmStatic
         /** @since 0.3.0-beta01 */
         public fun of(value: String): ModelId = ModelId(value)
     }
+}
+
+/** @since 0.3.0-beta01 */
+public fun ParseModelRef(value: String): ModelRef {
+    val (providerId, modelId) = SplitProviderModelId(value)
+    return ModelRef(
+        modelId = ModelId(modelId),
+        providerId = providerId?.let(::ProviderId),
+    )
 }
 
 /** @since 0.3.0-beta01 */
@@ -50,17 +65,6 @@ public data class ModelRef(
         get() = providerId?.let { "${it.value}:${modelId.value}" } ?: modelId.value
 
     override fun toString(): String = qualifiedName
-
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun parse(value: String): ModelRef {
-            val (providerId, modelId) = ProviderRegistry.splitProviderModelId(value)
-            return ModelRef(
-                modelId = ModelId(modelId),
-                providerId = providerId?.let(::ProviderId),
-            )
-        }
-    }
 }
 
 /**
@@ -79,89 +83,19 @@ public object ModelIdentifiers {
 }
 
 /** @since 0.3.0-beta01 */
-public fun ModelRef(value: String): ModelRef = ModelRef.parse(value)
+public fun ModelRef(value: String): ModelRef = ParseModelRef(value)
 
-/** @since 0.3.0-beta01 */
+/**
+ * Build a [ModelRef] from typed ids.
+ *
+ * Uses the positional primary constructor (`modelId` first). A previous body that
+ * re-invoked `ModelRef(modelId = …, providerId = …)` resolved back to this factory
+ * and stack-overflowed.
+ * @since 0.3.0-beta01
+ */
 public fun ModelRef(providerId: ProviderId, modelId: ModelId): ModelRef =
-    ModelRef(modelId = modelId, providerId = providerId)
+    ModelRef(modelId, providerId)
 
 /** @since 0.3.0-beta01 */
 public fun ModelRef(providerId: String, modelId: String): ModelRef =
-    ModelRef(ProviderId(providerId), ModelId(modelId))
-
-/**
- * Typed, value-class- and [ModelRef]-aware accessors over [Provider]. These are
- * member-extensions: callers reach them via member import or `with(ProviderModels) { ... }`.
- * @since 0.3.0-beta01
- */
-public object ProviderModels {
-    /** @since 0.3.0-beta01 */
-    public fun Provider.provider(providerId: ProviderId): Provider =
-        when (this) {
-            is ProviderRegistry -> provider(providerId.value)
-            else -> if (this.providerId == providerId.value) this else throw NoSuchProviderError(providerId.value)
-        }
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.languageModel(modelId: ModelId): LanguageModel =
-        languageModel(modelId.value)
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.embeddingModel(modelId: ModelId): EmbeddingModel =
-        embeddingModel(modelId.value)
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.imageModel(modelId: ModelId): ImageModel =
-        imageModel(modelId.value)
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.speechModel(modelId: ModelId): SpeechModel =
-        speechModel(modelId.value)
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.transcriptionModel(modelId: ModelId): TranscriptionModel =
-        transcriptionModel(modelId.value)
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.rerankingModel(modelId: ModelId): RerankingModel =
-        rerankingModel(modelId.value)
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.videoModel(modelId: ModelId): VideoModel =
-        videoModel(modelId.value)
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.languageModel(ref: ModelRef): LanguageModel =
-        resolve(ref) { languageModel(it) }
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.embeddingModel(ref: ModelRef): EmbeddingModel =
-        resolve(ref) { embeddingModel(it) }
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.imageModel(ref: ModelRef): ImageModel =
-        resolve(ref) { imageModel(it) }
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.speechModel(ref: ModelRef): SpeechModel =
-        resolve(ref) { speechModel(it) }
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.transcriptionModel(ref: ModelRef): TranscriptionModel =
-        resolve(ref) { transcriptionModel(it) }
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.rerankingModel(ref: ModelRef): RerankingModel =
-        resolve(ref) { rerankingModel(it) }
-
-    /** @since 0.3.0-beta01 */
-    public fun Provider.videoModel(ref: ModelRef): VideoModel =
-        resolve(ref) { videoModel(it) }
-
-    private inline fun <T> Provider.resolve(ref: ModelRef, getter: Provider.(String) -> T): T =
-        when {
-            this is ProviderRegistry -> getter(ref.qualifiedName)
-            ref.providerId == null || ref.providerId.value == providerId -> getter(ref.modelId.value)
-            else -> throw NoSuchProviderError(ref.providerId.value)
-        }
-}
+    ModelRef(ModelId(modelId), ProviderId(providerId))

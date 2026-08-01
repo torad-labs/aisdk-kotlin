@@ -82,7 +82,7 @@ class AmazonBedrockProviderTest {
                                 }
                               },
                               "stopReason":"tool_use",
-                              "additionalModelResponseFields":{"delta":{"stop_sequence":"</done>"}},
+                              "additionalModelResponseFields":{"stop_sequence":"</done>"},
                               "usage":{
                                 "inputTokens":12,
                                 "outputTokens":5,
@@ -243,6 +243,21 @@ class AmazonBedrockProviderTest {
                 "toolChoice"
             )?.jsonObject?.get("tool")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull
         )
+        assertEquals(
+            "/stop_sequence",
+            body["additionalModelResponseFieldPaths"]?.jsonArray?.single()?.jsonPrimitive?.contentOrNull,
+        )
+        val textFormat = body["outputConfig"]?.jsonObject?.get("textFormat")?.jsonObject
+        assertEquals("json_schema", textFormat?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertTrue(
+            textFormat?.get("structure")?.jsonObject?.containsKey("jsonSchema") == true,
+            "structure must wrap schema under jsonSchema",
+        )
+        val toolNames = body["toolConfig"]?.jsonObject?.get("tools")?.jsonArray.orEmpty()
+            .mapNotNull {
+                it.jsonObject["toolSpec"]?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull
+            }
+        assertTrue("json" !in toolNames, "legacy json pseudo-tool must not be dual-injected")
     }
 
     @Test
@@ -317,7 +332,7 @@ class AmazonBedrockProviderTest {
                             {"contentBlockStart":{"contentBlockIndex":2,"start":{"toolUse":{"toolUseId":"tool-1","name":"lookup"}}}}
                             {"contentBlockDelta":{"contentBlockIndex":2,"delta":{"toolUse":{"input":"{\"city\":\"Paris\"}"}}}}
                             {"contentBlockStop":{"contentBlockIndex":2}}
-                            {"messageStop":{"stopReason":"tool_use","additionalModelResponseFields":{"delta":{"stop_sequence":null}}}}
+                            {"messageStop":{"stopReason":"tool_use","additionalModelResponseFields":{"stop_sequence":null}}}
                             {"metadata":{"usage":{"inputTokens":3,"outputTokens":4},"performanceConfig":{"latency":"optimized"}}}
                             """.trimIndent(),
                         ),
@@ -770,6 +785,60 @@ class AmazonBedrockProviderTest {
                 HttpHeaders.Authorization
             ).orEmpty().contains("/bedrock/aws4_request")
         )
+    }
+
+    @Test
+    fun `mantle responses uses input tools stop and input_tokens usage`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mantle.test/v1/responses" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"resp_1",
+                              "model":"openai.gpt-oss-20b-1:0",
+                              "status":"completed",
+                              "output":[
+                                {"type":"message","content":[{"type":"output_text","text":"done"}]},
+                                {"type":"function_call","call_id":"c1","name":"lookup","arguments":"{\"q\":\"x\"}"}
+                              ],
+                              "usage":{"input_tokens":7,"output_tokens":3}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = BedrockMantle(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://mantle.test/v1")
+            }),
+        )
+        val result = provider.responses(ModelId("openai.gpt-oss-20b-1:0")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                stopSequences(listOf("END"))
+                tools(listOf(LanguageModelTool("lookup", "d", """{"type":"object"}""")))
+            },
+        )
+        assertEquals("done", result.text)
+        assertEquals(FinishReason.ToolCalls, result.finishReason)
+        assertEquals(7, result.usage.promptTokens)
+        assertEquals(3, result.usage.completionTokens)
+        assertEquals("lookup", result.toolCalls.single().toolName)
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertTrue(body.containsKey("input"), "Responses contract uses input")
+        assertEquals(null, body["messages"], "must not send Chat Completions messages on /responses")
+        assertEquals("END", body["stop"]?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
+        val tool = body["tools"]?.jsonArray?.single()?.jsonObject
+        assertEquals("function", tool?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals("lookup", tool?.get("name")?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, tool?.get("function"), "Responses tools are flat, not nested under function")
     }
 
     @Test

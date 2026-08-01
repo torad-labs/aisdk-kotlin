@@ -167,6 +167,14 @@ def semantic_mode(binary: str, manifest_path: Path, registry_path: Path | None =
         for rid in missing:
             print(f"  - {rid}: missing manifest entry")
         return 1
+    drift = _manifest_yaml_drift(manifest_path, rules)
+    if drift:
+        print(f"SEMANTIC FAIL: {len(drift)} rule(s) drifted between manifest.json and the .yaml file")
+        for rid, why in drift:
+            print(f"  - {rid}: {why}")
+        print("  Copy the .yaml file into the manifest entry (the file is the source of truth for")
+        print("  what ci-gate enforces); a fixture that validates the other copy proves nothing.")
+        return 1
     failures: list[tuple[str, str]] = []
     passed = 0
     for r in rules:
@@ -331,12 +339,76 @@ def _has_declared_hunk_handling(rule: dict[str, object], member_examples: list[s
 
 
 def _missing_manifest_entries(manifest_path: Path, rules: list[dict[str, object]]) -> list[str]:
-    rules_dir = Path(__file__).resolve().parent / "kotlin"
-    if not rules_dir.is_dir():
-        raise RuntimeError(f"canonical rules dir not found: {rules_dir}")
+    # torad-toolkit layout: rules are in .rules/kotlin/ast-grep/{rules,rules-style}/
+    # Only LAW rules (rules/) require manifest entries; rules-style/ is opt-in
+    repo_root = Path(__file__).resolve().parents[3]
+    rules_root = repo_root / ".rules" / "kotlin" / "ast-grep"
+    law_rules_dir = rules_root / "rules"
+    if not law_rules_dir.is_dir():
+        # fallback to legacy location
+        legacy = Path(__file__).resolve().parent / "kotlin"
+        if legacy.is_dir():
+            law_rules_dir = legacy
+        else:
+            raise RuntimeError(f"canonical rules dir not found: {law_rules_dir}")
     manifest_ids = {str(r.get("id")) for r in rules}
-    rule_ids = {p.stem for p in rules_dir.glob("*.yaml")}
+    rule_ids = {p.stem for p in law_rules_dir.glob("*.yaml")}
     return sorted(rule_ids - manifest_ids)
+
+
+def rule_yaml_matches(a: str, b: str) -> bool:
+    """
+    The ONE definition of "these two copies of a rule agree".
+
+    Two checkers compare the manifest copy against the file copy — this module's drift gate and
+    the PreToolUse `rule_selfcheck_policy` — and they were written with different normalizations
+    (whole-string `.strip()` vs per-line `rstrip()`). Trailing whitespace on a line therefore made
+    the hook warn and the gate pass: two detectors of one invariant that can silently disagree,
+    which is exactly what the project's dedupe law forbids. Both now call this.
+    """
+    normalize = lambda text: [line.rstrip() for line in text.strip().split("\n")]  # noqa: E731
+    return normalize(a) == normalize(b)
+
+
+def _manifest_yaml_drift(manifest_path: Path, rules: list[dict[str, object]]) -> list[tuple[str, str]]:
+    """
+    Every rule exists TWICE: as a .yaml file (what ci-gate scans the tree with) and as an embedded
+    `yaml` string in manifest.json (what the fixture check below validates, and what the PreToolUse
+    policy ships). Two copies that must agree with nothing linking them is a drift generator, and it
+    had already drifted three ways: `no-any-typed-public-property` carried
+    `ignores: **/Lifecycle.kt` on disk and NOT in the manifest, so the fixture proved a rule that
+    is not the rule being enforced — the "validates a different artifact" shape.
+
+    This makes the two provably identical at every commit, which is what deriving one from the other
+    would buy. Comparison is whitespace-normalised per line so trailing-space noise is not a gate
+    failure, but any comment or field difference is.
+    """
+    repo_root = Path(__file__).resolve().parents[3]
+    drift: list[tuple[str, str]] = []
+    # Only the REPO's manifest can drift from the repo's rule files. Callers legitimately pass a
+    # synthetic manifest describing a hypothetical entry — `--new --fix` scaffolding, the hook
+    # suite's stub-state fixtures — and comparing those to disk made this gate fire first and
+    # short-circuit the registry validation they were actually exercising. It broke
+    # test_rule_selfcheck_policy the moment it landed, and the suite is not in ci-gate, so nothing
+    # said so.
+    if manifest_path.resolve() != (repo_root / ".claude" / "hooks" / "rules" / "manifest.json").resolve():
+        return drift
+    lanes = (
+        repo_root / ".rules" / "kotlin" / "ast-grep" / "rules",
+        repo_root / ".rules" / "kotlin" / "ast-grep" / "rules-style",
+        Path(__file__).resolve().parent / "kotlin",
+    )
+    for rule in rules:
+        rid = str(rule.get("id", "?"))
+        yaml_text = rule.get("yaml")
+        if not isinstance(yaml_text, str):
+            continue
+        on_disk = next((lane / f"{rid}.yaml" for lane in lanes if (lane / f"{rid}.yaml").is_file()), None)
+        if on_disk is None:
+            continue  # manifest-only rules (e.g. other languages) have no file to agree with
+        if not rule_yaml_matches(on_disk.read_text(encoding="utf-8"), yaml_text):
+            drift.append((rid, f"manifest yaml differs from {on_disk.relative_to(repo_root)}"))
+    return drift
 
 
 def _needs_examples(bad_ex: object, good_ex: object) -> bool:
@@ -359,10 +431,17 @@ def _read_registry(registry_path: Path) -> tuple[list[str] | None, str | None]:
         return [], None
     except (OSError, json.JSONDecodeError) as exc:
         return None, f"cannot read autofix registry: {exc}"
-    if not isinstance(payload, list):
-        return None, "autofix registry must be a JSON list"
+    # torad-toolkit format: {"version": 1, "autofix": [...]}
+    if isinstance(payload, dict) and "autofix" in payload:
+        entries = payload.get("autofix", [])
+    elif isinstance(payload, list):
+        entries = payload  # legacy format
+    else:
+        return None, "autofix registry must be a JSON list or {autofix: [...]}"
+    if not isinstance(entries, list):
+        return None, "autofix 'autofix' field must be a list"
     ids: list[str] = []
-    for index, entry in enumerate(payload, start=1):
+    for index, entry in enumerate(entries, start=1):
         if isinstance(entry, str):
             rid = entry
         elif isinstance(entry, dict) and isinstance(entry.get("id"), str):
@@ -486,13 +565,25 @@ def apply_autofix_mode(binary: str, registry_path: Path, targets: list[str]) -> 
         print("ERROR: --apply-autofix requires at least one target path")
         return 2
 
-    rules_dir = registry_path.resolve().parent / "kotlin"
+    # torad-toolkit layout: registry.json is at .rules/kotlin/ast-grep/registry.json
+    # and rules are in rules/ and rules-style/ subdirectories
+    registry_parent = registry_path.resolve().parent
+    rule_search_dirs = [
+        registry_parent / "rules",
+        registry_parent / "rules-style",
+        registry_parent / "kotlin",  # legacy fallback
+    ]
     applied: list[tuple[str, int]] = []
     failures: list[tuple[str, str]] = []
     for rid in ids:
-        rule_path = rules_dir / f"{rid}.yaml"
-        if not rule_path.is_file():
-            failures.append((rid, f"rule file not found: {rule_path}"))
+        rule_path: Path | None = None
+        for rule_dir in rule_search_dirs:
+            candidate = rule_dir / f"{rid}.yaml"
+            if candidate.is_file():
+                rule_path = candidate
+                break
+        if rule_path is None:
+            failures.append((rid, f"rule file not found in {[str(d) for d in rule_search_dirs]}"))
             continue
         before = _count_tree_hits(binary, rule_path, targets)
         if before < 1:
@@ -551,8 +642,27 @@ def _needs_fix_examples(before: object, after: object) -> bool:
     )
 
 
-def new_entry_mode(rule_id: str, rules_dir: Path, include_fix: bool = False) -> int:
-    rule_path = rules_dir / f"{rule_id}.yaml"
+def resolve_rule_path(rule_id: str) -> Path | None:
+    """Find a rule by id across both lanes.
+
+    e674eb5 split the package into .rules/kotlin/ast-grep/rules (LAW) and rules-style
+    (opt-in), so no single directory holds every rule any more. The legacy flat directory
+    is still searched last for a checkout mid-migration.
+    """
+    repo_root = Path(__file__).resolve().parents[3]
+    rules_root = repo_root / ".rules" / "kotlin" / "ast-grep"
+    for lane in (rules_root / "rules", rules_root / "rules-style", Path(__file__).resolve().parent / "kotlin"):
+        candidate = lane / f"{rule_id}.yaml"
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def new_entry_mode(rule_id: str, include_fix: bool = False) -> int:
+    rule_path = resolve_rule_path(rule_id)
+    if rule_path is None:
+        print(f"ERROR: rule {rule_id!r} not found in the LAW or style lane", file=sys.stderr)
+        return 2
     try:
         yaml_text = rule_path.read_text(encoding="utf-8")
     except OSError as exc:
@@ -597,7 +707,7 @@ def main() -> int:
         if len(args) < 2:
             print("ERROR: --new requires a rule id")
             return 2
-        return new_entry_mode(args[1], Path(__file__).resolve().parent / "kotlin", "--fix" in args[2:])
+        return new_entry_mode(args[1], "--fix" in args[2:])
 
     binary = ast_grep_binary()
     if binary is None:
@@ -619,7 +729,21 @@ def main() -> int:
             print("ERROR: --apply-autofix requires a registry path")
             return 2
         return apply_autofix_mode(binary, Path(args[1]), args[2:])
-    rules_dir = Path(args[0]) if args else Path(__file__).resolve().parent / "kotlin"
+    # Default to the canonical LAW lane. e674eb5 moved the package to
+    # .rules/kotlin/ast-grep/{rules,rules-style}/ but left this default pointing at the old
+    # flat .claude/hooks/rules/kotlin/, so every argument-less invocation errored with
+    # "rules dir not found" — which is how the hook self-test's parse gate had been failing
+    # silently. ci-gate.sh always passes an explicit directory, so it never noticed.
+    # The legacy path is still honoured if it exists, for a checkout mid-migration.
+    if args:
+        rules_dir = Path(args[0])
+    else:
+        repo_root = Path(__file__).resolve().parents[3]
+        rules_dir = repo_root / ".rules" / "kotlin" / "ast-grep" / "rules"
+        if not rules_dir.is_dir():
+            legacy = Path(__file__).resolve().parent / "kotlin"
+            if legacy.is_dir():
+                rules_dir = legacy
     if not rules_dir.is_dir():
         print(f"ERROR: rules dir not found: {rules_dir}")
         return 2

@@ -34,7 +34,7 @@ public class AnthropicAwsProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null,
     /** @since 0.3.0-beta01 */
-    public val generateId: () -> String = { IdGenerator.generate() },
+    public val generateId: () -> String = { GenerateId() },
 ) {
     internal fun anthropicAwsBaseURL(): String =
         baseURL?.trimEnd('/')
@@ -66,11 +66,17 @@ public class AnthropicAwsProviderSettings internal constructor(
         if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
             throw LoadAPIKeyError("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
         }
+        // Derive signing region from the endpoint host when possible (docs: host/region
+        // mismatch → signature rejection). Falls back to configured credentials/settings.
+        val signingRegion = AnthropicAwsRegionFromHost(url)
+            ?: credentials.region
+            ?: region
+            ?: "us-east-1"
         return AwsSigV4.awsSigV4SignedHeaders(
             method = "POST",
             url = url,
             service = "aws-external-anthropic",
-            region = credentials.region ?: region ?: "us-east-1",
+            region = signingRegion,
             headers = headers + (HttpHeaders.ContentType to "application/json"),
             body = body,
             credentials = AwsSigV4Credentials(
@@ -81,6 +87,26 @@ public class AnthropicAwsProviderSettings internal constructor(
             amzDate = amzDate,
         )
     }
+}
+
+/**
+ * Extracts the AWS region from hosts like
+ * `aws-external-anthropic.us-east-1.api.aws` or `service.region.amazonaws.com`.
+ */
+internal fun AnthropicAwsRegionFromHost(url: String): String? {
+    val host = url.substringAfter("://").substringBefore('/').substringBefore(':')
+    val labels = host.split('.')
+    // service.region.api.aws
+    if (labels.size >= 4 && labels[labels.lastIndex - 1] == "api" && labels.last() == "aws") {
+        val candidate = labels[1]
+        if (candidate.matches(Regex("[a-z]{2}(-[a-z]+)+-\\d+"))) return candidate
+    }
+    // service.region.amazonaws.com
+    if (labels.size >= 4 && labels[labels.lastIndex - 1] == "amazonaws" && labels.last() == "com") {
+        val candidate = labels[1]
+        if (candidate.matches(Regex("[a-z]{2}(-[a-z]+)+-\\d+"))) return candidate
+    }
+    return null
 }
 
 /** @since 0.3.0-beta01 */
@@ -94,7 +120,7 @@ public class AnthropicAwsProviderSettingsBuilder {
     private var baseURL: String? = null
     private var headers: Map<String, String> = emptyMap()
     private var credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null
-    private var generateId: () -> String = { IdGenerator.generate() }
+    private var generateId: () -> String = { GenerateId() }
 
     /** @since 0.3.0-beta01 */
     public fun region(value: String?): AnthropicAwsProviderSettingsBuilder {
@@ -180,13 +206,19 @@ public fun AnthropicAwsProviderSettings(
 ): AnthropicAwsProviderSettings =
     AnthropicAwsProviderSettingsBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
-public interface AnthropicAwsProvider : Provider {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class AnthropicAwsProvider : Provider {
     /** @since 0.3.0-beta01 */
-    public val settings: AnthropicAwsProviderSettings
+    public abstract val settings: AnthropicAwsProviderSettings
 
     /** @since 0.3.0-beta01 */
-    public val tools: AnthropicTools
+    public abstract val tools: AnthropicTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
@@ -210,8 +242,8 @@ public fun AnthropicAws(
     settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings(),
 ): AnthropicAwsProvider = DefaultAnthropicAwsProvider(client, settings)
 
-/** @since 0.3.0-beta01 */
-public val anthropicAws: AnthropicAwsProvider = object : AnthropicAwsProvider {
+// Named (not anonymous) because a sealed class's direct subtypes must be named declarations.
+private object UnconfiguredAnthropicAwsProvider : AnthropicAwsProvider() {
     override val providerId: String = "anthropic-aws"
     override val settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings()
     override val tools: AnthropicTools = anthropicTools
@@ -228,10 +260,13 @@ public val anthropicAws: AnthropicAwsProvider = object : AnthropicAwsProvider {
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
+/** @since 0.3.0-beta01 */
+public val anthropicAws: AnthropicAwsProvider = UnconfiguredAnthropicAwsProvider
+
 private class DefaultAnthropicAwsProvider(
     private val client: HttpClient,
     override val settings: AnthropicAwsProviderSettings,
-) : AnthropicAwsProvider {
+) : AnthropicAwsProvider() {
     override val providerId: String = "anthropic-aws"
     override val tools: AnthropicTools = anthropicTools
 

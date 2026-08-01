@@ -15,6 +15,9 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.jvm.JvmSynthetic
+
+private const val ADD_TOOL_RESULT_REPLACEMENT = "addToolOutput(toolCallId, output, toolName)"
 
 @Poko
 /** @since 0.3.0-beta01 */
@@ -104,13 +107,26 @@ public class TextStreamChatTransport(
         TransformTextToUiMessageStream(handler(request), assistantMessageId(request))
 }
 
-/** @since 0.3.0-beta01 */
+/**
+ * This enum may gain variants in future releases. Consumers must not rely on
+ * exhaustiveness — include an `else` branch when matching.
+ * @since 0.3.0-beta01
+ */
 public enum class ChatStatus {
     Ready,
     Submitted,
     Streaming,
     Error,
 }
+
+private const val TOOL_APPROVAL_RESPONSE_ID_PREFIX = "tool_approval_"
+
+private fun NextApprovalIndexAfter(messages: List<UIMessage>): Int =
+    messages.mapNotNull { message ->
+        message.id.removePrefix(TOOL_APPROVAL_RESPONSE_ID_PREFIX)
+            .takeIf { it != message.id }
+            ?.toIntOrNull()
+    }.maxOrNull()?.plus(1) ?: 1
 
 @OptIn(ExperimentalAtomicApi::class)
 /** @since 0.3.0-beta01 */
@@ -127,7 +143,7 @@ public class Chat(
     private val internalState = MutableStateFlow(
         InternalState(
             messages = initialMessages.toList(),
-            nextApprovalIndex = nextApprovalIndexAfter(initialMessages),
+            nextApprovalIndex = NextApprovalIndexAfter(initialMessages),
         ),
     )
 
@@ -179,7 +195,7 @@ public class Chat(
         applyState {
             copy(
                 messages = messages.toList(),
-                nextApprovalIndex = nextApprovalIndexAfter(messages),
+                nextApprovalIndex = NextApprovalIndexAfter(messages),
             )
         }
     }
@@ -228,7 +244,10 @@ public class Chat(
         )
     }
 
-    @Deprecated("Use addToolOutput instead.")
+    @Deprecated(
+        "Deprecated in 0.3.0-beta01. Use addToolOutput instead.",
+        ReplaceWith(ADD_TOOL_RESULT_REPLACEMENT),
+    )
     /** @since 0.3.0-beta01 */
     public fun addToolResult(
         toolCallId: String,
@@ -237,11 +256,14 @@ public class Chat(
     ): Unit = addToolOutput(toolCallId, output, toolName)
 
     /** @since 0.3.0-beta01 */
-    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
-        sendInternal(body) { it + message }
+    @JvmSynthetic
+    public fun sendMessage(
+        message: UIMessage,
+        body: Map<String, JsonElement> = emptyMap(),
+    ): Flow<UIMessage> = sendInternal(body) { it + message }
 
     /** @since 0.3.0-beta01 */
-    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
+    @JvmSynthetic public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
         // Re-run from the existing history with the trailing assistant turn(s) dropped. Do NOT
         // re-append the last user message — it is already present, and appending it (as the old
         // code did via sendMessage) duplicated its id and sent a doubled user turn to the model.
@@ -305,8 +327,11 @@ public class Chat(
         transport.reconnectToStream(id, headers)
 
     /** @since 0.3.0-beta01 */
-    public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
+    @JvmSynthetic public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         reconnectToStream(headers) ?: emptyFlow()
+
+    /** @since 0.3.0-beta01 */
+    public fun asSession(): ChatSession = ChatSession(this)
 
     private fun appendToolMessage(part: UIMessagePart.ToolUI) {
         applyState {
@@ -346,16 +371,5 @@ public class Chat(
                 if (candidate !in existingIds) return candidate to index
             }
         }
-    }
-
-    private companion object {
-        const val TOOL_APPROVAL_RESPONSE_ID_PREFIX = "tool_approval_"
-
-        fun nextApprovalIndexAfter(messages: List<UIMessage>): Int =
-            messages.mapNotNull { message ->
-                message.id.removePrefix(TOOL_APPROVAL_RESPONSE_ID_PREFIX)
-                    .takeIf { it != message.id }
-                    ?.toIntOrNull()
-            }.maxOrNull()?.plus(1) ?: 1
     }
 }

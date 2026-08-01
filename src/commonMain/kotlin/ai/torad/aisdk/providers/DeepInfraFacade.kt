@@ -81,7 +81,7 @@ public class DeepInfraProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(
         client,
-        OpenAICompatibleProviderSettings.forFacade(
+        ForFacade(
             name = "deepinfra",
             version = DEEPINFRA_VERSION,
             baseURL = "${settings.baseURL.trimEnd('/')}/openai",

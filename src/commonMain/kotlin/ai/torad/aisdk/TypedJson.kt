@@ -34,51 +34,6 @@ internal val aiSdkOutputJson = Json {
     encodeDefaults = true
 }
 
-/** @since 0.3.0-beta01 */
-public val ContentPart.metadata: ProviderMetadata
-    get() = when (this) {
-        is ContentPart.Text -> providerMetadata
-        is ContentPart.Reasoning -> providerMetadata
-        is ContentPart.ToolCall -> providerMetadata
-        is ContentPart.ToolResult -> providerMetadata
-        is ContentPart.ToolApprovalRequest -> providerMetadata
-        is ContentPart.ToolApprovalResponse -> ProviderMetadata.None
-        is ContentPart.Source -> providerMetadata
-        is ContentPart.File -> providerMetadata
-        is ContentPart.Image -> providerMetadata
-        is ContentPart.Raw -> ProviderMetadata.None
-    }
-
-/** @since 0.3.0-beta01 */
-public val StreamEvent.metadata: ProviderMetadata
-    get() = when (this) {
-        is StreamEvent.StreamStart -> ProviderMetadata.None
-        is StreamEvent.ResponseMetadata -> ProviderMetadata.None
-        is StreamEvent.StepStart -> providerMetadata
-        is StreamEvent.TextStart -> providerMetadata
-        is StreamEvent.TextDelta -> providerMetadata
-        is StreamEvent.TextEnd -> providerMetadata
-        is StreamEvent.ReasoningStart -> providerMetadata
-        is StreamEvent.ReasoningDelta -> providerMetadata
-        is StreamEvent.ReasoningEnd -> providerMetadata
-        is StreamEvent.SourcePart -> providerMetadata
-        is StreamEvent.FilePart -> providerMetadata
-        is StreamEvent.Data -> ProviderMetadata.None
-        is StreamEvent.ToolInputStart -> providerMetadata
-        is StreamEvent.ToolInputDelta -> providerMetadata
-        is StreamEvent.ToolInputEnd -> providerMetadata
-        is StreamEvent.ToolCall -> providerMetadata
-        is StreamEvent.ToolResult -> providerMetadata
-        is StreamEvent.ToolError -> providerMetadata
-        is StreamEvent.ToolApprovalRequest -> providerMetadata
-        is StreamEvent.ToolOutputDenied -> providerMetadata
-        is StreamEvent.StepFinish -> providerMetadata
-        is StreamEvent.Finish -> providerMetadata
-        StreamEvent.Abort -> ProviderMetadata.None
-        is StreamEvent.Error -> ProviderMetadata.None
-        is StreamEvent.Raw -> ProviderMetadata.None
-    }
-
 // Typed JSON operations. Previously loose top-level funs (decision-C cleanup):
 // member functions and member-extension functions now live on this object so
 // none remain camelCase top-level `fun`s. Callers use a member-import or

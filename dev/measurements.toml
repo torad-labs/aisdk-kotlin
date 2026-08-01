@@ -77,7 +77,7 @@ date = "2026-07-03"
 head = "7d92f99"
 command = ".claude/hooks/rules/ci-gate.sh; read validate_rules.py output"
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
-status = "current"
+status = "superseded"
 note = "ci-gate printed ok: all 71 rule files parse/match/satisfy hunk-mode expectations; raw yaml count includes non-manifest public-ABI helper rule."
 
 [[measurement]]
@@ -88,7 +88,7 @@ date = "2026-07-03"
 head = "7d92f99"
 command = ".claude/hooks/rules/ci-gate.sh; read tools/run-gate-fixtures.mjs output"
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
-status = "current"
+status = "superseded"
 note = "ci-gate printed gate fixture harness OK: 26 fixture checks across 13 gates."
 
 [[measurement]]
@@ -233,3 +233,124 @@ command = "node_modules/.bin/ast-grep run -l kotlin -p 'minBound(50|52, Coverage
 tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
 status = "current"
 note = "HD-14 raised the Kover branch ratchet to 50 after branch actual 51.47; fail probe at 52 failed and restored floor 50 passed."
+
+[[measurement]]
+key = "ast_grep_rule_count"
+value = 112
+unit = "active ast-grep rule files validated by ci-gate"
+date = "2026-07-25"
+head = "b216ef8"
+command = "bash .claude/hooks/rules/ci-gate.sh; read validate_rules.py output"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "Rules moved to .rules/kotlin/ast-grep/ in e674eb5; ci-gate now validates two lanes and printed 'ok: all 41 rule files parse' (rules/, LAW) + 'ok: all 71 rule files parse' (rules-style/, opt-in) = 112, plus 'ok: all 73 rules satisfy hunk-mode expectations' against manifest.json. Prior entry (71, head 7d92f99) predated the split. Working tree carried doc/KDoc path fixes and a beta-readiness-check crash fix at measure time; none touch rule files or counts."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 30
+unit = "fixture checks across 15 gates"
+date = "2026-07-25"
+head = "b216ef8"
+command = "bash .claude/hooks/rules/ci-gate.sh; read tools/run-gate-fixtures.mjs output"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "superseded"
+note = "ci-gate printed 'gate fixture harness OK: 30 fixture checks across 15 gate(s)'. Prior entry (26 across 13, head 7d92f99) predated the rule migration. Working tree carried doc/KDoc path fixes and a beta-readiness-check crash fix at measure time; neither adds gates or fixtures."
+
+[[measurement]]
+key = "detekt_baseline_entries"
+value = 1814
+unit = "entries"
+date = "2026-07-29"
+head = "7b043e79d2f976b93c583b6ded2ceba2990ad1dd"
+command = "grep -c '<ID>' detekt-baseline.xml"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "superseded"
+note = "Baseline ratcheted down from 1947 on main. Net -133 decomposes as: -196 across 12 rules that fell, +52 across 11 that rose, +13 for a newly-seeded SpacingBetweenDeclarationsWithAnnotations, -2 for two removed keys. The single largest mover is FunctionNaming -120, a rule-SCOPE change (detekt.yml functionPattern widened so it stops contradicting the PascalCase ast-grep rule at severity error), not 120 fixed violations. Code-level burn-down is the remaining -76."
+
+[[measurement]]
+key = "detekt_baseline_entries"
+value = 1813
+unit = "entries"
+date = "2026-07-29"
+head = "7b043e79d2f976b93c583b6ded2ceba2990ad1dd"
+command = "grep -c '<ID>' detekt-baseline.xml"
+tool_versions = "Gradle 9.5.1; project Kotlin 2.4.0; stdlib 2.3.21; Kover 0.9.8; detekt 1.23.8; ast-grep 0.42.1; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "Baseline ratcheted down from 1947 on main. Net -134 decomposes as: -196 across 12 rules that fell, +52 across 11 that rose, +13 for a newly-seeded SpacingBetweenDeclarationsWithAnnotations, -2 for two removed keys, -1 for one CyclomaticComplexMethod entry burned down rather than baselined (VoyageProvider voyageEmbeddingRepresentation). The single largest mover is FunctionNaming -120, a rule-SCOPE change (detekt.yml functionPattern widened so it stops contradicting the PascalCase ast-grep rule at severity error), not 120 fixed violations. Every raised ceiling is itemised in detekt-baseline-budget.json under raiseRationale; the remaining complexity raises are tracked debt, not accepted."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 48
+unit = "fixture checks across 24 gates"
+date = "2026-08-01"
+head = "a25e30c"
+command = "node tools/run-gate-fixtures.mjs; read output line"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "superseded"
+note = "harness printed 'gate fixture harness OK: 48 fixture checks across 24 gate(s)' after adding 9 beta-readiness-* sub-check fixtures (18 new checks; several violation cases are multi-scenario self-judging scripts, so planted-violation coverage exceeds the check count)."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 50
+unit = "fixture checks across 25 gates"
+date = "2026-08-01"
+head = "0213eef"
+command = "node tools/run-gate-fixtures.mjs; read output line"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7; actionlint 1.7.12; zizmor 1.28.0"
+status = "superseded"
+note = "added workflow-lint-flags gate (analyzer-flag reachability: pwn-request + shell syntax error)."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 52
+unit = "fixture checks across 26 gates"
+date = "2026-08-01"
+head = "17fe4ff"
+command = "node tools/run-gate-fixtures.mjs; read output line"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7; actionlint 1.7.12; zizmor 1.28.0"
+status = "superseded"
+note = "added release-bundle gate (publication-set completeness + signatures)."
+
+[[measurement]]
+key = "release_publication_modules"
+value = 7
+unit = "Maven modules per release"
+date = "2026-08-01"
+head = "17fe4ff"
+command = "SIGNING_KEY=<throwaway> ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache; tools/check-release-bundle"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; gpg 2.4.8; Ubuntu/Linux host"
+status = "superseded"
+note = "measured on a Linux host with a throwaway PGP key: 7 modules (root metadata, android, jvm, linuxx64, iosarm64, iossimulatorarm64, iosx64), 38 primary artifacts, all signed. Confirms Apple klibs cross-compile and publish from ubuntu-latest."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 50
+unit = "fixture checks across 25 gates"
+date = "2026-08-01"
+head = "a91e5a7"
+command = "node tools/run-gate-fixtures.mjs; read output line"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "superseded"
+note = "workflow-lint-flags moved out of the harness into tools/verify-workflow-lint-flags (runs in workflow-lint.yml, the only job with the pinned analyzers); release-bundle gate remains. Net 52 -> 50."
+
+[[measurement]]
+key = "gate_fixture_harness_checks"
+value = 50
+unit = "fixture checks across 25 gates"
+date = "2026-08-01"
+head = "61d411e"
+command = "git checkout 61d411e && node tools/run-gate-fixtures.mjs"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; Kover 0.9.8; detekt 1.23.8; ast-grep 0.44.0; Node 24.16.0; npm 11.13.0; Python 3.13.7"
+status = "current"
+note = "head corrected per PR #26 review: the prior entry recorded a91e5a7, whose tree produces 52 (verified by checkout) — the 50 came from the tree that became 61d411e. Root cause: heads were stamped with rev-parse HEAD BEFORE committing the change that produced the value, leaving every head one commit stale. Verified by checking out 61d411e and re-running."
+
+[[measurement]]
+key = "release_publication_modules"
+value = 7
+unit = "Maven modules per release"
+date = "2026-08-01"
+head = "a91e5a7"
+command = "SIGNING_KEY=<throwaway PGP key> SIGNING_PASSWORD=<...> ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache && tools/check-release-bundle build/staging-deploy"
+tool_versions = "Gradle 9.5.1; Kotlin 2.4.0; gpg 2.4.8; Linux x86_64 host"
+status = "current"
+note = "measured on a Linux host with a throwaway PGP key: 7 modules (root metadata, android, jvm, linuxx64, iosarm64, iossimulatorarm64, iosx64), 38 primary artifacts, all signed — confirms Apple klibs cross-compile and publish from an ubuntu-class host. Head corrected per PR #26 review: the prior entry recorded 17fe4ff, whose tree does not contain tools/check-release-bundle, so the command was not reproducible there; a91e5a7 is the commit that introduced it. Same stale-head root cause as gate_fixture_harness_checks."

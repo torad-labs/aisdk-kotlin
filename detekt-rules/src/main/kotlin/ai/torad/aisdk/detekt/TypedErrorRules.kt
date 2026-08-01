@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtThrowExpression
 
 /**
- * Mirror of `.claude/hooks/rules/kotlin/prefer-typed-error-over-error-call.yaml`.
+ * Mirror of `.rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-error-call.yaml`.
  * `error(...)` throws a raw `IllegalStateException`; this SDK models failures with the
  * sealed `AiSdkException` hierarchy so callers can handle them exhaustively.
  */
@@ -33,7 +33,7 @@ class PreferTypedErrorOverErrorCall(config: Config) : Rule(config) {
 }
 
 /**
- * Mirror of `.claude/hooks/rules/kotlin/prefer-typed-error-over-checknotnull.yaml`.
+ * Mirror of `.rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-checknotnull.yaml`.
  * `checkNotNull(...)` throws a raw `IllegalStateException`; prefer a typed failure.
  */
 class PreferTypedErrorOverCheckNotNull(config: Config) : Rule(config) {
@@ -54,7 +54,7 @@ class PreferTypedErrorOverCheckNotNull(config: Config) : Rule(config) {
 }
 
 /**
- * Mirror of `.claude/hooks/rules/kotlin/prefer-typed-error-over-generic-throw.yaml`.
+ * Mirror of `.rules/kotlin/ast-grep/rules-style/prefer-typed-error-over-generic-throw.yaml`.
  * Throwing a generic JDK exception bypasses the sealed `AiSdkException` contract.
  */
 class PreferTypedErrorOverGenericThrow(config: Config) : Rule(config) {

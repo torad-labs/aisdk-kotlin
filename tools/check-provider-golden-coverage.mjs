@@ -10,7 +10,7 @@ function providerClasses() {
   for (const entry of readdirSync(providersDir, { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith('.kt')) continue;
     const text = readFileSync(join(providersDir, entry.name), 'utf8');
-    for (const match of text.matchAll(/^public\s+(?:class|interface)\s+(\w+Provider)\b/gm)) {
+    for (const match of text.matchAll(/^public\s+(?:sealed\s+)?(?:class|interface)\s+(\w+Provider)\b/gm)) {
       if (!match[1].startsWith('Mock')) out.add(match[1]);
     }
   }

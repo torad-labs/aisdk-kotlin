@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "_comment": [
+    "The publication set a release MUST contain, recorded the way api/*.api records the",
+    "ABI: a committed expectation that drift is checked against in BOTH directions.",
+    "",
+    "Why a recorded list and not a derived one: gradle.properties sets",
+    "kotlin.native.ignoreDisabledTargets=true, so a target that cannot be built on the",
+    "publishing host is SKIPPED SILENTLY -- its publish task and its artifacts both",
+    "disappear together. Anything derived from the Gradle model at release time would",
+    "shrink with the loss and still pass. Only an independent record catches it.",
+    "",
+    "The publish job runs on ubuntu-latest and the Apple klibs cross-compile there; that",
+    "is exactly the property most likely to regress on a Kotlin upgrade, and the failure",
+    "mode is a beta that ships without iOS while every gate stays green.",
+    "",
+    "Changing this list is a deliberate release-shape decision: update it in the same",
+    "commit as the target change, and say so in CHANGELOG.md."
+  ],
+  "group": "ai.torad",
+  "modules": [
+    "torad-aisdk",
+    "torad-aisdk-android",
+    "torad-aisdk-iosarm64",
+    "torad-aisdk-iossimulatorarm64",
+    "torad-aisdk-iosx64",
+    "torad-aisdk-jvm",
+    "torad-aisdk-linuxx64"
+  ]
+}

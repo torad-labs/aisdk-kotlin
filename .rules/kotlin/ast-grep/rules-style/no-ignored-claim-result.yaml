@@ -1,0 +1,29 @@
+id: no-ignored-claim-result
+language: kotlin
+severity: warning
+message: "The Boolean result of a CLAIM-style call is discarded. These functions return false to say the state changed under you — a concurrent close won, the CAS lost, the buffer refused the value — so dropping the result silently takes the success path on the losing branch. Bind it and handle false."
+note: |
+  Historical bug (review 4813532855 + the audit that followed): `Experimental_StdioMCPTransport.start`
+  called `lifecycle.setReader(readerJob)` as a bare statement. setReader no-ops when the lifecycle is
+  no longer Active, so a `close()` that won the transition left the freshly spawned child process and
+  its FDs leaked, `process` non-null, and the transport permanently Closed while `send()` could still
+  write to the orphan. The fix made setReader return Boolean — and then the FIRST version of that fix
+  had its own defect, because "not Active" is Closed OR Idle-after-reader-exit and only Closed means
+  the caller still owns the child.
+
+  Both halves of that came from the same root: a state transition that can LOSE, reported through a
+  value nobody had to read. `compareAndSet` and `tryEmit` are the same shape from the stdlib —
+  a dropped `tryEmit` silently discards an event on a full buffer.
+
+  Scoped to a curated vocabulary rather than "any Boolean-returning call", because the useful
+  invariant is about claim/transition APIs, not about every ignored return.
+rule:
+  kind: call_expression
+  all:
+    # A bare statement: the parent is the statement list, so nothing consumes the value.
+    - inside:
+        kind: statements
+    - has:
+        stopBy: end
+        kind: simple_identifier
+        regex: '^(compareAndSet|weakCompareAndSet|setReader|tryEmit|tryLock|tryAcquire|tryClaim|claim|offer)$'

@@ -1,6 +1,6 @@
 # Auto-label PRs from changed paths (.github/labeler.yml is the map).
-# pull_request_target runs the BASE branch's workflow with a write token — safe here
-# because the job never checks out or executes PR code; it only reads the file list.
+# pull_request_target: runs the BASE branch's workflow with a write token — safe here
+# because the job never checks out or executes PR code; it only reads the diff file list.
 name: pr-labeler
 
 on: pull_request_target
@@ -16,6 +16,6 @@ concurrency:
 jobs:
   label:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0

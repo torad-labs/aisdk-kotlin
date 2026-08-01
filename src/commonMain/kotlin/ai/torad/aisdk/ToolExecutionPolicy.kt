@@ -4,6 +4,24 @@ import dev.drewhamilton.poko.Poko
 import kotlin.time.Duration
 
 /**
+ * Default cap for concurrently executing tool calls in a single step.
+ * @since 0.3.0-beta01
+ */
+public const val DEFAULT_MAX_PARALLEL_TOOL_CALLS: Int = 8
+
+/**
+ * Default cap for total tool calls accepted from a single model step.
+ * @since 0.3.0-beta01
+ */
+public const val DEFAULT_MAX_TOOL_CALLS_PER_STEP: Int = 128
+
+/**
+ * Default buffer capacity for streaming/preliminary tool progress events.
+ * @since 0.3.0-beta01
+ */
+public const val DEFAULT_PROGRESS_BUFFER_CAPACITY: Int = 64
+
+/**
  * Resource limits for executing tool calls emitted by one agent step.
  *
  * Defaults are deliberately bounded: a model cannot fan out into unbounded
@@ -48,24 +66,13 @@ public class ToolExecutionPolicy internal constructor(
     }
 
     internal fun workerCountFor(callCount: Int): Int = minOf(callCount, maxParallelToolCalls)
-
-    public companion object {
-        /** Default cap for concurrently executing tool calls in a single step. */
-        public const val DEFAULT_MAX_PARALLEL_TOOL_CALLS: Int = 8
-
-        /** Default cap for total tool calls accepted from a single model step. */
-        public const val DEFAULT_MAX_TOOL_CALLS_PER_STEP: Int = 128
-
-        /** Default buffer capacity for streaming/preliminary tool progress events. */
-        public const val DEFAULT_PROGRESS_BUFFER_CAPACITY: Int = 64
-    }
 }
 
 /** @since 0.3.0-beta01 */
 public class ToolExecutionPolicyBuilder {
-    private var maxParallelToolCalls: Int = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS
-    private var maxToolCallsPerStep: Int = ToolExecutionPolicy.DEFAULT_MAX_TOOL_CALLS_PER_STEP
-    private var progressBufferCapacity: Int = ToolExecutionPolicy.DEFAULT_PROGRESS_BUFFER_CAPACITY
+    private var maxParallelToolCalls: Int = DEFAULT_MAX_PARALLEL_TOOL_CALLS
+    private var maxToolCallsPerStep: Int = DEFAULT_MAX_TOOL_CALLS_PER_STEP
+    private var progressBufferCapacity: Int = DEFAULT_PROGRESS_BUFFER_CAPACITY
     private var toolExecutionTimeout: Duration? = null
 
     /** @since 0.3.0-beta01 */

@@ -66,7 +66,7 @@ function discoverPublicProviderClasses() {
   for (const entry of readdirSync(providersDir, { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith('.kt')) continue;
     const text = readFileSync(join(providersDir, entry.name), 'utf8');
-    const pattern = /^public\s+(?:class|interface)\s+(\w+Provider)\b/gm;
+    const pattern = /^public\s+(?:sealed\s+)?(?:class|interface)\s+(\w+Provider)\b/gm;
     let match;
     while ((match = pattern.exec(text)) !== null) {
       if (match[1].startsWith('Mock')) continue;

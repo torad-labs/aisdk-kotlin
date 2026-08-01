@@ -11,6 +11,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Convert a raw agent [StreamEvent] flow into a flow of growing
@@ -37,7 +38,7 @@ import kotlinx.serialization.json.jsonObject
  * ```
  */
 /** @since 0.3.0-beta01 */
-public fun StreamToUiMessages(
+@JvmSynthetic public fun StreamToUiMessages(
     events: Flow<StreamEvent>,
     assistantMessageId: String,
 ): Flow<UIMessage> = flow {

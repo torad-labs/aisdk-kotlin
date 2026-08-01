@@ -1,0 +1,22 @@
+id: no-mutable-collection-return
+language: kotlin
+severity: warning
+message: "Public function returns MutableList/MutableMap/MutableSet directly. Callers can mutate what you handed them behind your back, breaking any invariant the producer relied on. Return the read-only interface (List/Map/Set) and keep the mutable backing collection private to the function or class."
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: visibility_modifier
+          regex: '^public$'
+    - has:
+        kind: user_type
+        all:
+          - has:
+              kind: type_identifier
+              regex: '^Mutable(List|Map|Set)$'
+              stopBy: end
+          - follows:
+              kind: function_value_parameters
+              stopBy: end

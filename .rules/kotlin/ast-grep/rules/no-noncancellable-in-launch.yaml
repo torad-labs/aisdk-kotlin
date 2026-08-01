@@ -1,0 +1,60 @@
+# TENET: NonCancellable is a withContext-only context element.
+#
+# NonCancellable is an already-completed Job. Passing it to launch/async makes it the new
+# coroutine's PARENT job, which severs the child from its scope: the coroutine becomes both
+# un-cancellable and orphaned, so nothing can ever stop it — not close(), not the scope, not
+# the caller. It exists for one shape only: a bounded `withContext(NonCancellable) { ... }`
+# cleanup block that must survive cancellation of the surrounding work.
+#
+# Scope law (toolkit doctrine): exclusion only, so new files are inside this law by default.
+#
+# THE CALLEE MUST BE A DIRECT CHILD — this is the whole rule. `stopBy: end` on the callee
+# was measured to produce a false positive on real code: MCP.kt:2115
+# `lifecycle.setReader(readerScope.launch { ... })` matched, because the OUTER setReader call
+# contains a `launch` somewhere below it and, separately, a `NonCancellable` deeper inside the
+# lambda body. Any enclosing call would match that way. A call's own callee is a direct child —
+# `simple_identifier` for bare `launch(...)`, `navigation_expression > navigation_suffix >
+# simple_identifier` for `scope.launch(...)` — so the direct-child form is both correct and
+# what distinguishes "this call is a launch" from "this call contains a launch".
+#
+# The argument side keeps `stopBy: end`, deliberately and safely: it is scoped INSIDE
+# `call_suffix > value_arguments`, and Kotlin's trailing lambda is an `annotated_lambda`, a
+# SIBLING of value_arguments rather than a child. So a body-level
+# `launch(Dispatchers.IO) { withContext(NonCancellable) { ... } }` — the legitimate shape,
+# live at Generate.kt:202 — is structurally excluded, while `stopBy: end` still reaches
+# NonCancellable through a compound `NonCancellable + handler` (additive_expression) and a
+# named `context = NonCancellable` (value_argument with an identifier label).
+#
+# That compound form is why an earlier attempt at this rule failed review: it carried a
+# `not: has: {kind: lambda_literal, stopBy: end}` guard meant to exclude the trailing lambda,
+# which also suppressed every argument that merely CONTAINED a lambda — so
+# `launch(NonCancellable + CoroutineExceptionHandler { ... })` went undetected while the
+# simple form matched, and the rule looked like it worked. Scoping to value_arguments removes
+# the need for that guard entirely.
+#
+# Verified: all four violating forms match (bare, compound, async, named-argument); the two
+# legitimate forms and a wrapped `wrap(s.launch { withContext(NonCancellable) { } })` do not;
+# 0 hits across every scanned source set.
+id: no-noncancellable-in-launch
+language: kotlin
+severity: error
+message: "NonCancellable passed to launch/async makes the coroutine its own un-cancellable root — it is orphaned from its scope and nothing can stop it. Use it only as `withContext(NonCancellable) { }` around a bounded cleanup block; to start work, pass a real context (dispatcher/CoroutineName) and let the scope own cancellation."
+ignores:
+  - "**/build/**"
+  - "**/test/**"
+  - "**/*Test/**"
+rule:
+  kind: call_expression
+  all:
+    - has:
+        any:
+          - { kind: simple_identifier, regex: '^(launch|async)$' }
+          - kind: navigation_expression
+            has:
+              kind: navigation_suffix
+              has: { kind: simple_identifier, regex: '^(launch|async)$' }
+    - has:
+        kind: call_suffix
+        has:
+          kind: value_arguments
+          has: { stopBy: end, kind: simple_identifier, regex: '^NonCancellable$' }

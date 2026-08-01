@@ -7,7 +7,7 @@ const sourceRoot = join(root, 'src/commonMain/kotlin');
 const budgetPath = join(root, 'api-since-budget.json');
 const printCurrent = process.argv.includes('--print-current');
 
-const declaration = /^\s*public\s+(?:(?:data|sealed|abstract|open|final)\s+)*(?:class|interface|object|enum\s+class|fun|val|var)\s+([A-Za-z_][A-Za-z0-9_]*)/;
+import { declaration } from './lib/public-api-declaration.mjs';
 
 function files(dir) {
   const out = [];

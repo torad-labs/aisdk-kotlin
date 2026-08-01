@@ -1,15 +1,28 @@
 version: 2
-# Patch+minor arrive as ONE grouped PR per ecosystem per week; majors stay individual
-# and are excluded from auto-merge. cooldown applies to VERSION updates only —
-# security updates still open immediately. 7 days clears zizmor's dependabot-cooldown
-# floor and covers the window in which a compromised package is usually yanked.
-# github-actions takes default-days only: Dependabot's validator rejects
-# semver-*-days for that ecosystem.
+# Cadence mirrored from torad-labs/splice: patch+minor updates arrive as ONE grouped PR
+# per ecosystem per week; majors stay individual PRs and are excluded from auto-merge by
+# .github/workflows/dependabot.yml (automerge job).
+#
+# GRADLE BUMPS AND DEPENDENCY VERIFICATION — Dependabot edits the version but cannot
+# regenerate gradle/verification-metadata.xml checksums. The same Actions workflow
+# (.github/workflows/dependabot.yml, verification-metadata job) regenerates and pushes
+# on Dependabot PRs, then arms auto-merge for patch/minor. Merge still waits for
+# required checks; dependency-submission keeps the Gradle graph visible to review.
+#
+# Unlike splice, org.jetbrains.kotlin* is NOT ignored here. Splice pinned it because
+# CodeQL's Kotlin extractor rejected 2.4.x (KotlinVersionTooRecentError, splice #18/#37);
+# that limit was lifted in CodeQL 2.26.0 and the extractor now supports Kotlin 1.8.0
+# through 2.4.1x. A Kotlin bump still needs the ABI dumps regenerated
+# (./gradlew updateKotlinAbi) when it changes the public surface.
 updates:
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
+    # Supply-chain dwell time: do not adopt a release until it has been public for a
+    # week, so a compromised publish is likely withdrawn or flagged before it reaches a
+    # PR here. Majors get longer because they are the ones a human reviews slowest.
+    # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
     cooldown:
       default-days: 7
       semver-major-days: 30
@@ -19,10 +32,54 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
+  # Consumer-shaped builds with their own settings.gradle.kts. They are compiled by the
+  # release smoke gate (tools/run-local-staging-smoke, beta-readiness-check), so a stale
+  # dependency here breaks release verification rather than the library itself.
+  - package-ecosystem: "gradle"
+    directory: "/smoke-tests/local-staging"
+    schedule:
+      interval: "weekly"
+    # Supply-chain dwell time: do not adopt a release until it has been public for a
+    # week, so a compromised publish is likely withdrawn or flagged before it reaches a
+    # PR here. Majors get longer because they are the ones a human reviews slowest.
+    # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    groups:
+      smoke-gradle-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "gradle"
+    directory: "/samples/jvm-chat-cli"
+    schedule:
+      interval: "weekly"
+    # Supply-chain dwell time: do not adopt a release until it has been public for a
+    # week, so a compromised publish is likely withdrawn or flagged before it reaches a
+    # PR here. Majors get longer because they are the ones a human reviews slowest.
+    # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    groups:
+      sample-gradle-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # Node tooling only (ast-grep CLI). ci-gate.sh hard-fails on an ast-grep version that
+  # disagrees with the package.json pin, so an @ast-grep/cli bump must be matched by the
+  # AST_GREP_VERSION/AST_GREP_SHA256 pin in ci.yml in the same PR.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+    # Supply-chain dwell time: do not adopt a release until it has been public for a
+    # week, so a compromised publish is likely withdrawn or flagged before it reaches a
+    # PR here. Majors get longer because they are the ones a human reviews slowest.
+    # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
     cooldown:
       default-days: 7
       semver-major-days: 30
@@ -36,8 +93,16 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Supply-chain dwell time: do not adopt a release until it has been public for a
+    # week, so a compromised publish is likely withdrawn or flagged before it reaches a
+    # PR here. Majors get longer because they are the ones a human reviews slowest.
+    # (zizmor dependabot-cooldown: an implicit default under 7 days is a finding.)
+    # No semver-major-days here: Dependabot rejects that property for the
+    # github-actions ecosystem ("is not supported for the package ecosystem").
     cooldown:
       default-days: 7
     groups:
-      actions:
+      actions-minor-patch:
+        applies-to: version-updates
         patterns: ["*"]
+        update-types: ["minor", "patch"]

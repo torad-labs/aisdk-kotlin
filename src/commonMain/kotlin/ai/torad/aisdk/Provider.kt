@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlin.jvm.JvmOverloads
 
+@Suppress("TooManyFunctions")
 /** @since 0.3.0-beta01 */
 public interface Provider {
     /** @since 0.3.0-beta01 */
@@ -34,6 +35,81 @@ public interface Provider {
     /** @since 0.3.0-beta01 */
     public fun videoModel(modelId: String): VideoModel =
         throw NoSuchModelError(providerId, "video", modelId)
+
+    /** @since 0.3.0-beta01 */
+    public fun provider(providerId: ProviderId): Provider =
+        when (this) {
+            is ProviderRegistry -> provider(providerId.value)
+            else -> if (this.providerId == providerId.value) this else throw NoSuchProviderError(providerId.value)
+        }
+
+    /** @since 0.3.0-beta01 */
+    public fun languageModel(modelId: ModelId): LanguageModel =
+        languageModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun embeddingModel(modelId: ModelId): EmbeddingModel =
+        embeddingModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun imageModel(modelId: ModelId): ImageModel =
+        imageModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun speechModel(modelId: ModelId): SpeechModel =
+        speechModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun transcriptionModel(modelId: ModelId): TranscriptionModel =
+        transcriptionModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun rerankingModel(modelId: ModelId): RerankingModel =
+        rerankingModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun videoModel(modelId: ModelId): VideoModel =
+        videoModel(modelId.value)
+
+    /** @since 0.3.0-beta01 */
+    public fun languageModel(ref: ModelRef): LanguageModel =
+        resolveModelRef(ref) { languageModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun embeddingModel(ref: ModelRef): EmbeddingModel =
+        resolveModelRef(ref) { embeddingModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun imageModel(ref: ModelRef): ImageModel =
+        resolveModelRef(ref) { imageModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun speechModel(ref: ModelRef): SpeechModel =
+        resolveModelRef(ref) { speechModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun transcriptionModel(ref: ModelRef): TranscriptionModel =
+        resolveModelRef(ref) { transcriptionModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun rerankingModel(ref: ModelRef): RerankingModel =
+        resolveModelRef(ref) { rerankingModel(it) }
+
+    /** @since 0.3.0-beta01 */
+    public fun videoModel(ref: ModelRef): VideoModel =
+        resolveModelRef(ref) { videoModel(it) }
+
+    /**
+     * Non-registry path: honor an explicit providerId when present, else resolve the
+     * local model id on this provider. [ProviderRegistry] overrides the ModelRef
+     * overloads so it never re-stringifies through [ModelRef.qualifiedName] (which
+     * hardcodes `:`, bypassing a custom registry separator).
+     */
+    private fun <T> resolveModelRef(ref: ModelRef, getter: Provider.(String) -> T): T =
+        ref.providerId
+            ?.takeIf { it.value != providerId }
+            ?.let { throw NoSuchProviderError(it.value) }
+            ?: getter(ref.modelId.value)
 }
 
 /** @since 0.3.0-beta01 */
@@ -224,6 +300,22 @@ public fun Provider(
 }
 
 /** @since 0.3.0-beta01 */
+public fun ProviderRegistry(
+    vararg providers: Pair<String, Provider>,
+    defaultProviderId: String? = null,
+    separator: String = ":",
+    languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
+): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId, separator, languageModelMiddleware)
+
+/** @since 0.3.0-beta01 */
+public fun SplitProviderModelId(modelId: String, separator: String = ":"): Pair<String?, String> {
+    val colon = modelId.indexOf(separator)
+    if (colon <= 0) return null to modelId
+    return modelId.substring(0, colon) to modelId.substring(colon + separator.length)
+}
+
+/** @since 0.3.0-beta01 */
+@Suppress("TooManyFunctions") // facade: one overload pair per model kind (string + ModelRef)
 public class ProviderRegistry(
     private val providers: Map<String, Provider>,
     private val defaultProviderId: String? = null,
@@ -262,10 +354,44 @@ public class ProviderRegistry(
     override fun videoModel(modelId: String): VideoModel =
         resolve(modelId) { provider, localId -> provider.videoModel(localId) }
 
+    /**
+     * Typed [ModelRef] path: select the provider from the ref's components and pass only
+     * the local model id. Never re-stringify through [ModelRef.qualifiedName] — that
+     * hardcodes `:`, which bypasses a custom [separator].
+     */
+    override fun languageModel(ref: ModelRef): LanguageModel =
+        WrapLanguageModel(
+            resolveFromRef(ref) { provider, localId -> provider.languageModel(localId) },
+            languageModelMiddleware,
+        )
+
+    override fun embeddingModel(ref: ModelRef): EmbeddingModel =
+        resolveFromRef(ref) { provider, localId -> provider.embeddingModel(localId) }
+
+    override fun imageModel(ref: ModelRef): ImageModel =
+        resolveFromRef(ref) { provider, localId -> provider.imageModel(localId) }
+
+    override fun speechModel(ref: ModelRef): SpeechModel =
+        resolveFromRef(ref) { provider, localId -> provider.speechModel(localId) }
+
+    override fun transcriptionModel(ref: ModelRef): TranscriptionModel =
+        resolveFromRef(ref) { provider, localId -> provider.transcriptionModel(localId) }
+
+    override fun rerankingModel(ref: ModelRef): RerankingModel =
+        resolveFromRef(ref) { provider, localId -> provider.rerankingModel(localId) }
+
+    override fun videoModel(ref: ModelRef): VideoModel =
+        resolveFromRef(ref) { provider, localId -> provider.videoModel(localId) }
+
     private fun <T> resolve(modelId: String, getter: (Provider, String) -> T): T {
-        val (providerId, localModelId) = splitProviderModelId(modelId, separator)
+        val (providerId, localModelId) = SplitProviderModelId(modelId, separator)
         val resolvedProviderId = providerId ?: defaultProviderId ?: singleProviderId()
         return getter(provider(resolvedProviderId), localModelId)
+    }
+
+    private fun <T> resolveFromRef(ref: ModelRef, getter: (Provider, String) -> T): T {
+        val resolvedProviderId = ref.providerId?.value ?: defaultProviderId ?: singleProviderId()
+        return getter(provider(resolvedProviderId), ref.modelId.value)
     }
 
     private fun singleProviderId(): String {
@@ -274,31 +400,6 @@ public class ProviderRegistry(
             "modelId",
             "must include a provider prefix when more than one provider is registered"
         )
-    }
-
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun createProviderRegistry(
-            providers: Map<String, Provider>,
-            defaultProviderId: String? = null,
-            separator: String = ":",
-            languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
-        ): ProviderRegistry = ProviderRegistry(providers, defaultProviderId, separator, languageModelMiddleware)
-
-        /** @since 0.3.0-beta01 */
-        public fun createProviderRegistry(
-            vararg providers: Pair<String, Provider>,
-            defaultProviderId: String? = null,
-            separator: String = ":",
-            languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
-        ): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId, separator, languageModelMiddleware)
-
-        /** @since 0.3.0-beta01 */
-        public fun splitProviderModelId(modelId: String, separator: String = ":"): Pair<String?, String> {
-            val colon = modelId.indexOf(separator)
-            if (colon <= 0) return null to modelId
-            return modelId.substring(0, colon) to modelId.substring(colon + separator.length)
-        }
     }
 }
 

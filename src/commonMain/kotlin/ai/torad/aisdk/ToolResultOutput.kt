@@ -57,10 +57,58 @@ public sealed class ToolResultOutput {
         /** @since 0.3.0-beta01 */
         public val isError: Boolean = false,
     ) : ToolResultOutput()
+
+    /** @since 0.3.0-beta01 */
+    public fun isToolResultError(): Boolean = when (this) {
+        is Error,
+        is ErrorJson,
+        is ExecutionDenied -> true
+        is Content -> isError
+        is Text,
+        is Json -> false
+    }
+
+    /**
+     * Inverse of [ToolResultOutputs.toolResultOutputFromWire] — that internal
+     * decoder recognizes exactly the wire shapes this emits for each variant.
+     * @since 0.3.0-beta01
+     */
+    public fun toJsonElement(): JsonElement = when (this) {
+        // Bare string stays the common success path (toolResultOutputFromWire reads it as Text).
+        is Text -> JsonPrimitive(text)
+        // Envelope successful JSON so a payload that happens to look like an error/denial
+        // tag (e.g. {"type":"error-text","value":"ok"}) cannot be re-decoded as Error.
+        // toolResultOutputFromWire already keys on type=json + value.
+        is Json -> buildJsonObject {
+            put("type", JsonPrimitive("json"))
+            put("value", json)
+        }
+        // Typed discriminators so the three error/denial subtypes round-trip through
+        // toolResultOutputFromWire() (which keys on `type`). Bare values fell through
+        // its fallback and lost their error/denial identity (and baked-in "Error: ").
+        is Error -> buildJsonObject {
+            put("type", JsonPrimitive("error-text"))
+            put("value", JsonPrimitive(message))
+        }
+        is ErrorJson -> buildJsonObject {
+            put("type", JsonPrimitive("error-json"))
+            put("value", json)
+        }
+        is ExecutionDenied -> buildJsonObject {
+            put("type", JsonPrimitive("execution-denied"))
+            reason?.let { put("reason", JsonPrimitive(it)) }
+        }
+        is Content -> buildJsonObject {
+            put("type", JsonPrimitive("content"))
+            put("value", JsonArray(value))
+            if (isError) {
+                put("isError", JsonPrimitive(true))
+            }
+        }
+    }
 }
 
-/** @since 0.3.0-beta01 */
-public object ToolResultOutputs {
+internal object ToolResultOutputs {
     internal fun toolResultOutputFromJson(json: JsonElement): ToolResultOutput =
         if (json is JsonPrimitive && json.isString) {
             ToolResultOutput.Text(json.content)
@@ -98,6 +146,31 @@ public object ToolResultOutputs {
             )
         }
 
+    /**
+     * The payload a JSON-shaped provider should put on the wire for a tool result, decoded out of
+     * [ContentPart.ToolResult.modelVisible].
+     *
+     * `modelVisible` carries the ENVELOPE produced by [toJsonElement] (see `ToolLoopAgent`), so a
+     * provider that writes it verbatim sends `{"type":"json","value":{...}}` where the model expects
+     * `{...}`. Providers whose tool_result slot is a string (Anthropic, Cohere, ...) already decode
+     * and flatten it themselves; this is the shared inverse for the ones whose slot is structured
+     * JSON (Google functionResponse.content, Google Interactions function_result.result, LiteRT
+     * ToolResponse.response) — three sites that previously passed the envelope straight through.
+     *
+     * Error/denial variants collapse to their message rather than re-emitting a tagged object: these
+     * providers signal failure with a sibling flag (`is_error`) or have no error slot at all, so the
+     * tag would reach the model as data. Use [ToolResultOutput.isToolResultError] for the flag.
+     */
+    internal fun toolResultPayloadJson(modelVisible: JsonElement): JsonElement =
+        when (val output = toolResultOutputFromWire(modelVisible)) {
+            is ToolResultOutput.Json -> output.json
+            is ToolResultOutput.ErrorJson -> output.json
+            is ToolResultOutput.Text -> JsonPrimitive(output.text)
+            is ToolResultOutput.Error -> JsonPrimitive(output.message)
+            is ToolResultOutput.ExecutionDenied -> JsonPrimitive(output.reason ?: "Tool execution denied.")
+            is ToolResultOutput.Content -> JsonArray(output.value)
+        }
+
     private fun stringFieldOrNull(obj: JsonObject, key: String): String? =
         (obj[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 
@@ -109,43 +182,5 @@ public object ToolResultOutputs {
         val malformedReason = obj.containsKey("reason") && stringFieldOrNull(obj, "reason") == null
         if (foreignKey || malformedReason) return null
         return ToolResultOutput.ExecutionDenied(stringFieldOrNull(obj, "reason"))
-    }
-
-    /** @since 0.3.0-beta01 */
-    public fun ToolResultOutput.isToolResultError(): Boolean = when (this) {
-        is ToolResultOutput.Error,
-        is ToolResultOutput.ErrorJson,
-        is ToolResultOutput.ExecutionDenied -> true
-        is ToolResultOutput.Content -> isError
-        is ToolResultOutput.Text,
-        is ToolResultOutput.Json -> false
-    }
-
-    /** @since 0.3.0-beta01 */
-    public fun ToolResultOutput.toJsonElement(): JsonElement = when (this) {
-        is ToolResultOutput.Text -> JsonPrimitive(text)
-        is ToolResultOutput.Json -> json
-        // Typed discriminators so the three error/denial subtypes round-trip through
-        // toolResultOutputFromWire() (which keys on `type`). Bare values fell through
-        // its fallback and lost their error/denial identity (and baked-in "Error: ").
-        is ToolResultOutput.Error -> buildJsonObject {
-            put("type", JsonPrimitive("error-text"))
-            put("value", JsonPrimitive(message))
-        }
-        is ToolResultOutput.ErrorJson -> buildJsonObject {
-            put("type", JsonPrimitive("error-json"))
-            put("value", json)
-        }
-        is ToolResultOutput.ExecutionDenied -> buildJsonObject {
-            put("type", JsonPrimitive("execution-denied"))
-            reason?.let { put("reason", JsonPrimitive(it)) }
-        }
-        is ToolResultOutput.Content -> buildJsonObject {
-            put("type", JsonPrimitive("content"))
-            put("value", JsonArray(value))
-            if (isError) {
-                put("isError", JsonPrimitive(true))
-            }
-        }
     }
 }

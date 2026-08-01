@@ -14,21 +14,21 @@ class D11PokoResultLeafTest {
                 text = "done",
                 steps = emptyList(),
                 finishReason = FinishReason.Stop,
-                usage = Usage.of(promptTokens = 1, completionTokens = 2),
+                usage = Usage(promptTokens = 1, completionTokens = 2),
             ),
             ResultConstruction.generateResult(
                 rawOutput = "output",
                 text = "done",
                 steps = emptyList(),
                 finishReason = FinishReason.Stop,
-                usage = Usage.of(promptTokens = 1, completionTokens = 2),
+                usage = Usage(promptTokens = 1, completionTokens = 2),
             ),
             ResultConstruction.generateResult(
                 rawOutput = "different",
                 text = "done",
                 steps = emptyList(),
                 finishReason = FinishReason.Stop,
-                usage = Usage.of(promptTokens = 1, completionTokens = 2),
+                usage = Usage(promptTokens = 1, completionTokens = 2),
             ),
         )
 
@@ -43,21 +43,21 @@ class D11PokoResultLeafTest {
                 text = "answer",
                 toolCalls = listOf(toolCall),
                 finishReason = FinishReason.ToolCalls,
-                usage = Usage.of(promptTokens = 3, completionTokens = 4),
+                usage = Usage(promptTokens = 3, completionTokens = 4),
             ),
             ResultConstruction.generateTextResult(
                 output = "answer",
                 text = "answer",
                 toolCalls = listOf(toolCall),
                 finishReason = FinishReason.ToolCalls,
-                usage = Usage.of(promptTokens = 3, completionTokens = 4),
+                usage = Usage(promptTokens = 3, completionTokens = 4),
             ),
             ResultConstruction.generateTextResult(
                 output = "answer",
                 text = "different",
                 toolCalls = listOf(toolCall),
                 finishReason = FinishReason.ToolCalls,
-                usage = Usage.of(promptTokens = 3, completionTokens = 4),
+                usage = Usage(promptTokens = 3, completionTokens = 4),
             ),
         )
 
@@ -66,19 +66,19 @@ class D11PokoResultLeafTest {
                 value = mapOf("answer" to "yes"),
                 text = """{"answer":"yes"}""",
                 finishReason = FinishReason.Stop,
-                usage = Usage.of(promptTokens = 5, completionTokens = 6),
+                usage = Usage(promptTokens = 5, completionTokens = 6),
             ),
             GenerateObjectResult(
                 value = mapOf("answer" to "yes"),
                 text = """{"answer":"yes"}""",
                 finishReason = FinishReason.Stop,
-                usage = Usage.of(promptTokens = 5, completionTokens = 6),
+                usage = Usage(promptTokens = 5, completionTokens = 6),
             ),
             GenerateObjectResult(
                 value = mapOf("answer" to "no"),
                 text = """{"answer":"no"}""",
                 finishReason = FinishReason.Stop,
-                usage = Usage.of(promptTokens = 5, completionTokens = 6),
+                usage = Usage(promptTokens = 5, completionTokens = 6),
             ),
         )
     }

@@ -568,6 +568,22 @@ internal data class FalSpeechRequest(
 )
 
 /**
+ * Queue endpoints live on `queue.fal.run` by default. When a caller overrides
+ * [FalProviderSettings.baseURL] (test proxy / self-hosted), derive the queue
+ * host from that base so transcription/video don't hardcode production.
+ */
+internal fun FalQueueBaseUrl(baseURL: String): String {
+    val trimmed = baseURL.trimEnd('/')
+    return when {
+        trimmed.contains("queue.") -> trimmed
+        trimmed.endsWith("fal.run") -> trimmed
+            .replace("://fal.run", "://queue.fal.run")
+            .replace("://www.fal.run", "://queue.fal.run")
+        else -> trimmed
+    }
+}
+
+/**
  * fal returns 4xx with `detail == "Request is still in progress"` while a job
  * is queued; the poll loop treats that exception's message as a retry signal,
  * so it must stay a plain [AiSdkException] (not an [APICallError]). Any other

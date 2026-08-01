@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonElement
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,12 +38,12 @@ class McpHttpTransportTest : MCPClientTestBase() {
                         when {
                             request.method == "GET" -> UrlResponse.Error(status = 405, body = "GET not supported")
                             "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
-                                JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult()).toJsonElement(),
+                                ToJsonElement(JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult())),
                                 headers = mapOf("mcp-session-id" to "session-1"),
                             )
                             "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
                             "\"method\":\"tools/list\"" in request.body ->
-                                UrlResponse.JsonValue(JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()).toJsonElement())
+                                UrlResponse.JsonValue(ToJsonElement(JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult())))
                             else -> UrlResponse.Error(status = 500, body = "unexpected request: ${request.body}")
                         }
                     },
@@ -93,10 +92,12 @@ class McpHttpTransportTest : MCPClientTestBase() {
                         when {
                             request.method == "GET" -> UrlResponse.Error(status = 405, body = "GET not supported")
                             "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
-                                JSONRPCResponse(
-                                    id = Json.parseToJsonElement(request.body).jsonObject["id"] ?: JsonPrimitive(0),
-                                    result = initializeResult(),
-                                ).toJsonElement(),
+                                ToJsonElement(
+                                    JSONRPCResponse(
+                                        id = Json.parseToJsonElement(request.body).jsonObject["id"] ?: JsonPrimitive(0),
+                                        result = initializeResult(),
+                                    ),
+                                ),
                             )
                             "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
                             "\"method\":\"tools/list\"" in request.body &&
@@ -109,10 +110,12 @@ class McpHttpTransportTest : MCPClientTestBase() {
                             "\"method\":\"tools/list\"" in request.body &&
                                 request.headers.headerValue(HttpHeaders.Authorization) == "Bearer refreshed-token" ->
                                 UrlResponse.JsonValue(
-                                    JSONRPCResponse(
-                                        id = Json.parseToJsonElement(request.body).jsonObject["id"] ?: JsonPrimitive(0),
-                                        result = listToolsResult(),
-                                    ).toJsonElement(),
+                                    ToJsonElement(
+                                        JSONRPCResponse(
+                                            id = Json.parseToJsonElement(request.body).jsonObject["id"] ?: JsonPrimitive(0),
+                                            result = listToolsResult(),
+                                        ),
+                                    ),
                                 )
                             else -> UrlResponse.Error(status = 500, body = "unexpected request: ${request.body}")
                         }
@@ -198,7 +201,7 @@ class McpHttpTransportTest : MCPClientTestBase() {
 
     @Test
     fun `HTTP inbound SSE retries once after authorized auth on 401`() = runTest {
-        val notification = JSONRPCNotification(method = "notifications/server").toJsonElement()
+        val notification = ToJsonElement(JSONRPCNotification(method = "notifications/server"))
         val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://mcp.test/mcp" to UrlHandler(
@@ -419,7 +422,7 @@ class McpHttpTransportTest : MCPClientTestBase() {
             repeat(1_001) { append("data: x\n") }
             append('\n')
         }
-        val notification = JSONRPCNotification(method = "notifications/progress").toJsonElement()
+        val notification = ToJsonElement(JSONRPCNotification(method = "notifications/progress"))
         val received = intArrayOf(0)
         val messageReceived = CompletableDeferred<Unit>()
         val secondGetSeen = CompletableDeferred<Unit>()
@@ -482,7 +485,7 @@ class McpHttpTransportTest : MCPClientTestBase() {
             repeat(1_001) { append("data: x\n") }
             append('\n')
         }
-        val notification = JSONRPCNotification(method = "notifications/progress").toJsonElement()
+        val notification = ToJsonElement(JSONRPCNotification(method = "notifications/progress"))
         val errors = mutableListOf<Throwable>()
         val getAttempts = intArrayOf(0)
         val received = intArrayOf(0)
@@ -557,12 +560,12 @@ class McpHttpTransportTest : MCPClientTestBase() {
                             request.method == "GET" -> UrlResponse.StreamChunks(
                                 listOf(
                                     "event: message\ndata: ${
-                                        JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()).toJsonElement()
+                                        ToJsonElement(JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()))
                                     }\n\n",
                                 ),
                             )
                             "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
-                                JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult()).toJsonElement(),
+                                ToJsonElement(JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult())),
                             )
                             "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
                             "\"method\":\"tools/list\"" in request.body -> {
@@ -644,7 +647,7 @@ class McpHttpTransportTest : MCPClientTestBase() {
         // closes, so it cannot model a server that holds the stream open), so this guards the
         // refactored delivery path with a finite stream that closes.
         val listToolsFrame =
-            JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()).toJsonElement()
+            ToJsonElement(JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()))
         val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://mcp.test/mcp" to UrlHandler(
@@ -652,7 +655,7 @@ class McpHttpTransportTest : MCPClientTestBase() {
                         when {
                             request.method == "GET" -> UrlResponse.Error(status = 405, body = "GET not supported")
                             "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
-                                JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult()).toJsonElement(),
+                                ToJsonElement(JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult())),
                             )
                             "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
                             // tools/list response is streamed back as an SSE frame, not application/json.

@@ -22,6 +22,7 @@ import kotlin.test.assertTrue
  * existed but nothing in the loop ever threw it.
  */
 class ToolErrorWiringTest {
+    private class ToolExecutionFailure(message: String) : IllegalStateException(message)
 
     @Serializable
     data class WeatherIn(val city: String)
@@ -66,7 +67,7 @@ class ToolErrorWiringTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = MockLanguageModelToolThenText(toolName = "weather", toolInput = validInput, finalText = "done"),
             instructions = "",
-            tools = ToolSet(weatherTool { error("db down") }),
+            tools = ToolSet(weatherTool { throw ToolExecutionFailure("db down") }),
         )
 
         // WHEN
@@ -150,7 +151,7 @@ class ToolErrorWiringTest {
                 ),
                 instructions = "",
                 tools = ToolSet(weatherTool { "sunny in ${it.city}" }),
-                experimental_repairToolCall = { _, _, _, _ -> error("repair model unreachable") },
+                experimental_repairToolCall = { _, _, _, _ -> throw ToolExecutionFailure("repair model unreachable") },
             )
 
             // WHEN

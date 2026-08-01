@@ -43,11 +43,12 @@ internal object BedrockResponse {
                         }))),
                     )
                 }
-                (JsonAccess.obj(reasoning, "redactedReasoning"))?.let {
+                // Converse wire key is `redactedContent` (blob), not `redactedReasoning`/`data`.
+                reasoning["redactedContent"]?.let { redacted ->
                     content += ContentPart.Reasoning(
                         text = "",
                         providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject {
-                            it["data"]?.let { data -> put("redactedData", data) }
+                            put("redactedData", redacted)
                         }))),
                     )
                 }
@@ -59,7 +60,7 @@ internal object BedrockResponse {
                     content += ContentPart.Text((tool["input"] ?: JsonObject(emptyMap())).toString())
                 } else {
                     val call = ContentPart.ToolCall(
-                        toolCallId = (tool["toolUseId"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
+                        toolCallId = (tool["toolUseId"] as? JsonPrimitive)?.contentOrNull ?: GenerateId(),
                         toolName = name,
                         input = tool["input"] ?: JsonObject(emptyMap()),
                     )
@@ -76,9 +77,13 @@ internal object BedrockResponse {
             response["serviceTier"]?.let { put("serviceTier", it) }
             response["usage"]?.let { put("usage", it) }
             if (isJsonResponseFromTool) put("isJsonResponseFromTool", JsonPrimitive(true))
+            // Docs sample: additionalModelResponseFields: { "stop_sequence": "SUCCESS" }
             val responseFields = JsonAccess.obj(response, "additionalModelResponseFields")
-            val responseDelta = responseFields?.get("delta") as? JsonObject
-            responseDelta?.get("stop_sequence")?.let { put("stopSequence", it) }
+            responseFields?.get("stop_sequence")?.let { put("stopSequence", it) }
+                ?: (responseFields?.get("delta") as? JsonObject)?.get("stop_sequence")?.let {
+                    // Tolerate legacy delta-wrapped fixtures if any still appear.
+                    put("stopSequence", it)
+                }
         }
         return LanguageModelResult(
             text = text,
@@ -179,7 +184,11 @@ internal class BedrockStreamState(
 
     fun accept(value: JsonObject): List<StreamEvent> {
         val events = mutableListOf<StreamEvent>()
-        val error = value["internalServerException"] ?: value["modelStreamErrorException"] ?: value["throttlingException"] ?: value["validationException"]
+        val error = value["internalServerException"]
+            ?: value["modelStreamErrorException"]
+            ?: value["throttlingException"]
+            ?: value["validationException"]
+            ?: value["serviceUnavailableException"]
         if (error != null) {
             finishReason = FinishReason.Error
             events += StreamEvent.Error(error.toString())
@@ -189,8 +198,8 @@ internal class BedrockStreamState(
             rawStopReason = (stop["stopReason"] as? JsonPrimitive)?.contentOrNull
             finishReason = BedrockResponse.mapBedrockFinishReason(rawStopReason, isJsonResponseFromTool)
             val stopResponseFields = JsonAccess.obj(stop, "additionalModelResponseFields")
-            val stopDelta = stopResponseFields?.get("delta") as? JsonObject
-            stopSequence = stopDelta?.get("stop_sequence")
+            stopSequence = stopResponseFields?.get("stop_sequence")
+                ?: (stopResponseFields?.get("delta") as? JsonObject)?.get("stop_sequence")
         }
         (JsonAccess.obj(value, "metadata"))?.let { metadata ->
             metadata["usage"]?.let { usage = BedrockResponse.bedrockUsage(it) }
@@ -200,7 +209,7 @@ internal class BedrockStreamState(
             val index = (start["contentBlockIndex"] as? JsonPrimitive)?.intOrNull ?: return@let
             val toolUse = (JsonAccess.obj(start, "start"))?.get("toolUse") as? JsonObject
             if (toolUse != null) {
-                val id = (toolUse["toolUseId"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate()
+                val id = (toolUse["toolUseId"] as? JsonPrimitive)?.contentOrNull ?: GenerateId()
                 val name = (toolUse["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 val isJsonTool = usesJsonResponseTool && name == "json"
                 blocks[index] = BedrockStreamBlock.Tool(id, name, "", isJsonTool)
@@ -227,7 +236,8 @@ internal class BedrockStreamState(
                 }
                 val metadata = buildJsonObject {
                     reasoning["signature"]?.let { put("signature", it) }
-                    reasoning["data"]?.let { put("redactedData", it) }
+                    // Stream delta uses the same `redactedContent` key as the buffered path.
+                    reasoning["redactedContent"]?.let { put("redactedData", it) }
                 }.takeIf { it.isNotEmpty() }?.let { ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to it))) } ?: ProviderMetadata.None
                 val reasoningText = (reasoning["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 events += StreamEvent.ReasoningDelta(index.toString(), reasoningText, metadata)

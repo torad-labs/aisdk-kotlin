@@ -18,7 +18,7 @@ internal object MediaTypes {
 
     fun detect(filename: String? = null, dataUrl: String? = null, explicit: String? = null): String? {
         explicit?.let { return it }
-        dataUrl?.takeIf { it.startsWith("data:") }?.let { return DataUrl.parse(it).mediaType }
+        dataUrl?.takeIf { it.startsWith("data:") }?.let { return DataUrl(it).mediaType }
         val ext = filename?.substringAfterLast('.', missingDelimiterValue = "")?.lowercase()
         return when (ext) {
             "txt" -> "text/plain"

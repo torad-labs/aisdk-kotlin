@@ -564,6 +564,15 @@ class GoogleInteractionsProviderTest {
         assertEquals("server_tool_updated", toolCall.toolName)
         assertEquals("new", toolCall.inputJson.jsonObject["query"]?.jsonPrimitive?.contentOrNull)
         assertProviderExecuted(toolCall.providerMetadata)
+        assertEquals(
+            "mcp_server_tool_call",
+            toolCall.providerMetadata.toMap()["google"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull,
+        )
+        assertEquals(
+            "new",
+            toolCall.providerMetadata.toMap()["google"]?.jsonObject?.get("arguments")
+                ?.jsonObject?.get("query")?.jsonPrimitive?.contentOrNull,
+        )
 
         val toolResult = events.filterIsInstance<StreamEvent.ToolResult>().single()
         assertEquals("builtin-final-2", toolResult.toolCallId)
@@ -571,6 +580,10 @@ class GoogleInteractionsProviderTest {
         assertEquals(true, toolResult.outputJson.jsonObject["ok"]?.jsonPrimitive?.booleanOrNull)
         assertEquals(true, toolResult.isError)
         assertProviderExecuted(toolResult.providerMetadata)
+        assertEquals(
+            "mcp_server_tool_result",
+            toolResult.providerMetadata.toMap()["google"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull,
+        )
     }
 
     private fun assertLiveBlockFinish(events: List<StreamEvent>) {
@@ -613,9 +626,17 @@ class GoogleInteractionsProviderTest {
     }
 
     private fun assertProviderExecuted(metadata: ProviderMetadata) {
-        assertEquals(
-            true,
-            metadata.toMap()["google"]?.jsonObject?.get("providerExecuted")?.jsonPrimitive?.booleanOrNull,
+        // Buffered + stream paths store the full wire step under google (type ends in
+        // _call/_result). That is what multi-turn exact-echo keys off — not an SDK-only flag.
+        val google = metadata.toMap()["google"]?.jsonObject
+        val type = google?.get("type")?.jsonPrimitive?.contentOrNull
+        assertTrue(
+            type != null && (type.endsWith("_call") || type.endsWith("_result")),
+            "expected full provider-executed wire step under google, got: $google",
+        )
+        assertTrue(
+            google.get("id") != null || google.get("call_id") != null,
+            "wire step must carry id or call_id for exact echo",
         )
     }
 

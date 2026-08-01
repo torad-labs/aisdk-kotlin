@@ -7,7 +7,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -144,6 +143,12 @@ public class LMNTProviderSettings internal constructor(
     internal fun lmntHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String>()
         apiKey?.takeIf { it.isNotBlank() }?.let { base["x-api-key"] = it }
+        // Required by current LMNT API; without it newer endpoints reject the request.
+        if (headers.keys.none { it.equals("lmnt-version", ignoreCase = true) } &&
+            callHeaders.keys.none { it.equals("lmnt-version", ignoreCase = true) }
+        ) {
+            base["lmnt-version"] = LMNT_API_VERSION
+        }
         base.putAll(headers)
         base.putAll(callHeaders)
         return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/lmnt/$LMNT_VERSION")
@@ -189,7 +194,8 @@ public class LMNTProvider(
 ) : Provider {
     override val providerId: String = "lmnt"
 
-    public operator fun invoke(modelId: ModelId = ModelId("aurora")): SpeechModel = speech(modelId)
+    /** @since 0.3.0-beta01 */
+    public operator fun invoke(modelId: ModelId = ModelId("blizzard")): SpeechModel = speech(modelId)
 
     /** @since 0.3.0-beta01 */
     public fun speech(modelId: ModelId): SpeechModel = LMNTSpeechModel(client, settings, modelId.value)
@@ -222,19 +228,35 @@ private class LMNTSpeechModel(
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
         val warnings = mutableListOf<CallWarning>()
-        val responseFormat = lmntResponseFormat(params.responseFormat, warnings)
+        val format = lmntResponseFormat(params.responseFormat, warnings)
+        if (params.speed != null) {
+            warnings += CallWarning(
+                type = "unsupported",
+                message = "LMNT speech API does not accept a speed body field; speed was ignored.",
+            )
+        }
+        val options = lmntOptions(params.providerOptions)
+        if (options["conversational"] != null) {
+            warnings += CallWarning(
+                type = "unsupported",
+                message = "LMNT speech API does not accept conversational; option was ignored.",
+            )
+        }
+        if (options["length"] != null) {
+            warnings += CallWarning(
+                type = "unsupported",
+                message = "LMNT speech API does not accept length; option was ignored.",
+            )
+        }
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("text", JsonPrimitive(params.text))
-            put("voice", JsonPrimitive(params.voice ?: "ava"))
-            put("response_format", JsonPrimitive(responseFormat))
+            // Docs examples use `leah` as the canonical system voice id.
+            put("voice", JsonPrimitive(params.voice ?: "leah"))
+            // Wire key is `format` (not OpenAI-shaped `response_format`).
+            put("format", JsonPrimitive(format))
             params.language?.let { put("language", JsonPrimitive(it)) }
-            params.speed?.let { put("speed", JsonPrimitive(it)) }
-            val options = lmntOptions(params.providerOptions)
-            options["conversational"]?.let { put("conversational", it) }
-            options["length"]?.let { put("length", it) }
             options["seed"]?.let { put("seed", it) }
-            options["speed"]?.let { put("speed", it) }
             options["temperature"]?.let { put("temperature", it) }
             options["topP"]?.let { put("top_p", it) }
             options["sampleRate"]?.let { put("sample_rate", it) }
@@ -245,7 +267,7 @@ private class LMNTSpeechModel(
             contentType(ContentType.Application.Json)
             settings.lmntHeaders(params.headers).forEach { (name, value) -> header(name, value) }
             setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
-        }.parseLMNTBinary(url, responseFormat)
+        }.parseLMNTBinary(url, format)
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
@@ -257,7 +279,7 @@ private class LMNTSpeechModel(
     }
 
     private suspend fun HttpResponse.parseLMNTBinary(url: String, responseFormat: String): LMNTBinaryResponse {
-        val bytes = bodyAsBytes()
+        val bytes = with(HttpTransport) { bodyAsBytesCapped(url) }
         val headers = with(HttpTransport) { flattenedHeaders() }
         if (status.value !in 200..299) {
             val raw = bytes.decodeToString()
@@ -292,8 +314,9 @@ private class LMNTSpeechModel(
     private fun lmntMediaType(format: String): String =
         when (format) {
             "aac" -> "audio/aac"
-            "mulaw", "raw" -> "application/octet-stream"
+            "ulaw", "mulaw", "pcm_s16le", "pcm_f32le" -> "application/octet-stream"
             "wav" -> "audio/wav"
+            "webm" -> "audio/webm"
             else -> "audio/mpeg"
         }
 
@@ -307,4 +330,17 @@ internal class LMNTBinaryResponse(
     val headers: Map<String, String>,
 )
 
-private val lmntSupportedFormats: Set<String> = setOf("aac", "mp3", "mulaw", "raw", "wav")
+// Documented LMNT formats. `mulaw` is accepted as an alias of `ulaw` for older callers.
+private val lmntSupportedFormats: Set<String> = setOf(
+    "aac",
+    "mp3",
+    "ulaw",
+    "mulaw",
+    "wav",
+    "webm",
+    "pcm_s16le",
+    "pcm_f32le",
+)
+
+/** Pinned LMNT API version header value. */
+internal const val LMNT_API_VERSION: String = "2024-10-01"

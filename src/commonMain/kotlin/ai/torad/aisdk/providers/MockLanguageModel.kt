@@ -12,6 +12,7 @@ import ai.torad.aisdk.LowLevelLanguageModelApi
 import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.Usage
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonObject
@@ -113,15 +114,17 @@ public class MockLanguageModel(
  */
 public fun MockLanguageModelTextOnly(text: String): MockLanguageModel = MockLanguageModel(
     responses = listOf(
-        ScriptedResponse(
-            events = listOf(
-                StreamEvent.TextStart("t1"),
-                StreamEvent.TextDelta("t1", text),
-                StreamEvent.TextEnd("t1"),
-            ),
-            finishReason = FinishReason.Stop,
-            usage = Usage.of(promptTokens = 1, completionTokens = text.length),
-        ),
+        ScriptedResponse {
+            events(
+                listOf(
+                    StreamEvent.TextStart("t1"),
+                    StreamEvent.TextDelta("t1", text),
+                    StreamEvent.TextEnd("t1"),
+                ),
+            )
+            finishReason(FinishReason.Stop)
+            usage(Usage(promptTokens = 1, completionTokens = text.length))
+        },
     ),
 )
 
@@ -137,29 +140,33 @@ public fun MockLanguageModelToolThenText(
     toolCallId: String = "call_1",
 ): MockLanguageModel = MockLanguageModel(
     responses = listOf(
-        ScriptedResponse(
-            events = listOf(
-                StreamEvent.ToolInputStart(id = "ti1", toolName = toolName),
-                StreamEvent.ToolInputDelta(id = "ti1", delta = toolInput.toString()),
-                StreamEvent.ToolInputEnd(id = "ti1"),
-                StreamEvent.ToolCall(
-                    toolCallId = toolCallId,
-                    toolName = toolName,
-                    inputJson = toolInput,
+        ScriptedResponse {
+            events(
+                listOf(
+                    StreamEvent.ToolInputStart(id = "ti1", toolName = toolName),
+                    StreamEvent.ToolInputDelta(id = "ti1", delta = toolInput.toString()),
+                    StreamEvent.ToolInputEnd(id = "ti1"),
+                    StreamEvent.ToolCall(
+                        toolCallId = toolCallId,
+                        toolName = toolName,
+                        inputJson = toolInput,
+                    ),
                 ),
-            ),
-            finishReason = FinishReason.ToolCalls,
-            usage = Usage.of(promptTokens = 5, completionTokens = 10),
-        ),
-        ScriptedResponse(
-            events = listOf(
-                StreamEvent.TextStart("t1"),
-                StreamEvent.TextDelta("t1", finalText),
-                StreamEvent.TextEnd("t1"),
-            ),
-            finishReason = FinishReason.Stop,
-            usage = Usage.of(promptTokens = 8, completionTokens = finalText.length),
-        ),
+            )
+            finishReason(FinishReason.ToolCalls)
+            usage(Usage(promptTokens = 5, completionTokens = 10))
+        },
+        ScriptedResponse {
+            events(
+                listOf(
+                    StreamEvent.TextStart("t1"),
+                    StreamEvent.TextDelta("t1", finalText),
+                    StreamEvent.TextEnd("t1"),
+                ),
+            )
+            finishReason(FinishReason.Stop)
+            usage(Usage(promptTokens = 8, completionTokens = finalText.length))
+        },
     ),
 )
 
@@ -173,15 +180,94 @@ public fun MockToolInput(vararg pairs: Pair<String, String>): JsonObject = build
 
 /**
  * One scripted response — what a single `stream` call should emit.
+ *
+ * Construct via the [ScriptedResponse] factory or [ScriptedResponse] DSL — the
+ * positional constructor is internal so fields can grow without an ABI break
+ * (no public `copy`/`componentN` either; see CLAUDE.md public-value-types rule).
  * @since 0.3.0-beta01
  */
-public data class ScriptedResponse(
-    val events: List<StreamEvent>,
-    val finishReason: FinishReason = FinishReason.Stop,
-    val usage: Usage = Usage.of(promptTokens = 1, completionTokens = 1),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    val rawFinishReason: String? = null,
-    val warnings: List<CallWarning> = emptyList(),
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+@Poko
+public class ScriptedResponse
+@Suppress("LongParameterList") // internal ctor; public surface is the DSL builder
+internal constructor(
+    /** @since 0.3.0-beta01 */
+    public val events: List<StreamEvent>,
+    /** @since 0.3.0-beta01 */
+    public val finishReason: FinishReason,
+    /** @since 0.3.0-beta01 */
+    public val usage: Usage,
+    /** @since 0.3.0-beta01 */
+    public val providerMetadata: ProviderMetadata,
+    /** @since 0.3.0-beta01 */
+    public val rawFinishReason: String?,
+    /** @since 0.3.0-beta01 */
+    public val warnings: List<CallWarning>,
+    /** @since 0.3.0-beta01 */
+    public val request: LanguageModelRequestMetadata,
+    /** @since 0.3.0-beta01 */
+    public val response: LanguageModelResponseMetadata,
 )
+
+/**
+ * Builder for [ScriptedResponse]. Prefer the [ScriptedResponse] DSL factory.
+ * @since 0.3.0-beta01
+ */
+public class ScriptedResponseBuilder internal constructor() {
+    private var events: List<StreamEvent> = emptyList()
+    private var finishReason: FinishReason = FinishReason.Stop
+    private var usage: Usage = Usage(promptTokens = 1, completionTokens = 1)
+    private var providerMetadata: ProviderMetadata = ProviderMetadata.None
+    private var rawFinishReason: String? = null
+    private var warnings: List<CallWarning> = emptyList()
+    private var request: LanguageModelRequestMetadata = LanguageModelRequestMetadata()
+    private var response: LanguageModelResponseMetadata = LanguageModelResponseMetadata()
+
+    /** @since 0.3.0-beta01 */
+    public fun events(value: List<StreamEvent>) { events = value }
+
+    /** @since 0.3.0-beta01 */
+    public fun finishReason(value: FinishReason) { finishReason = value }
+
+    /** @since 0.3.0-beta01 */
+    public fun usage(value: Usage) { usage = value }
+
+    /** @since 0.3.0-beta01 */
+    public fun providerMetadata(value: ProviderMetadata) { providerMetadata = value }
+
+    /** @since 0.3.0-beta01 */
+    public fun rawFinishReason(value: String?) { rawFinishReason = value }
+
+    /** @since 0.3.0-beta01 */
+    public fun warnings(value: List<CallWarning>) { warnings = value }
+
+    /** @since 0.3.0-beta01 */
+    public fun request(value: LanguageModelRequestMetadata) { request = value }
+
+    /** @since 0.3.0-beta01 */
+    public fun response(value: LanguageModelResponseMetadata) { response = value }
+
+    internal fun build(): ScriptedResponse = ScriptedResponse(
+        events = events,
+        finishReason = finishReason,
+        usage = usage,
+        providerMetadata = providerMetadata,
+        rawFinishReason = rawFinishReason,
+        warnings = warnings,
+        request = request,
+        response = response,
+    )
+}
+
+/**
+ * DSL factory for [ScriptedResponse].
+ *
+ * ```kotlin
+ * ScriptedResponse {
+ *     events(listOf(StreamEvent.TextStart("t1"), …))
+ *     finishReason(FinishReason.Stop)
+ * }
+ * ```
+ * @since 0.3.0-beta01
+ */
+public fun ScriptedResponse(block: ScriptedResponseBuilder.() -> Unit = {}): ScriptedResponse =
+    ScriptedResponseBuilder().apply(block).build()

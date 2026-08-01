@@ -1,0 +1,54 @@
+id: no-public-without-since
+language: kotlin
+severity: warning
+message: "Public declaration has no KDoc `@since` tag (either no KDoc at all, or a KDoc missing `@since`). This is a published, ABI-validated library — consumers and changelog tooling rely on `@since` to know which release introduced a symbol. Add a `/** ... @since X.Y.Z */` block directly above the declaration."
+note: |
+  Require the KDoc opening token (`/**`). A plain block comment `/* @since ... */` is NOT
+  published by Dokka, so accepting any multiline_comment let non-KDoc markers slip through.
+
+  Two exemption shapes, both measured against this tree:
+
+  1. A KDoc written AFTER an annotation is not a preceding sibling — tree-sitter places it inside
+     the declaration's own `modifiers` node, between the annotation and the visibility modifier.
+     The repo's dominant public-API style is annotation-first (`@Poko`, `@Serializable`,
+     `@JvmSynthetic`, `@OptIn`), so without the `has: modifiers` clause this rule fired on exactly
+     the documented style CLAUDE.md requires.
+  2. A `public` member of a private/internal class or object is not public API and needs no marker.
+
+  KNOWN RESIDUAL: when a long `/** ... */` doc block is stacked directly above the
+  `/** @since */` line, ast-grep's `follows` does not see the marker and this still warns (26 sites
+  on this tree). Every formulation that closes it (`stopBy: end`, a `stopBy` rule, nested `follows`)
+  over-matches instead and exempts the ENTIRE tree — 0 hits — which would be silent false negatives
+  rather than noise. The blocking owner of this invariant is
+  `tools/check-public-api-since-budget.mjs`, which uses a 12-line lookback and therefore handles
+  both shapes correctly; it reports 0 missing. This rule is the edit-time mirror, so it is left
+  noisy-but-safe rather than made quiet-and-wrong.
+rule:
+  all:
+    - any:
+        - kind: function_declaration
+        - kind: class_declaration
+        - kind: property_declaration
+        - kind: object_declaration
+    - has:
+        kind: modifiers
+        has: { kind: visibility_modifier, regex: '^public$' }
+    - not:
+        any:
+          - follows:
+              kind: multiline_comment
+              regex: '^/\*\*[\s\S]*@since'
+          - has:
+              kind: modifiers
+              has:
+                kind: multiline_comment
+                regex: '^/\*\*[\s\S]*@since'
+    - not:
+        inside:
+          stopBy: end
+          any:
+            - kind: class_declaration
+            - kind: object_declaration
+          has:
+            kind: modifiers
+            has: { kind: visibility_modifier, regex: '^(private|internal)$' }

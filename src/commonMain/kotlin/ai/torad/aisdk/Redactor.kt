@@ -70,6 +70,11 @@ public fun RedactionOptions(
 ): RedactionOptions =
     RedactionOptionsBuilder().apply(block).build()
 
+private val TOKEN_PATTERNS: List<Regex> = listOf(
+    Regex("\\b(Bearer|Basic)\\s+[-._~+/=A-Za-z0-9]+", RegexOption.IGNORE_CASE),
+    Regex("\\b(api[-_ ]?key|token|secret)\\s*[:=]\\s*[-._~+/=A-Za-z0-9]+", RegexOption.IGNORE_CASE),
+)
+
 /** @since 0.3.0-beta01 */
 public class DefaultRedactor(
     private val options: RedactionOptions = RedactionOptions {},
@@ -127,13 +132,6 @@ public class DefaultRedactor(
             redactJson(value)
         }
     }
-
-    private companion object {
-        private val TOKEN_PATTERNS: List<Regex> = listOf(
-            Regex("\\b(Bearer|Basic)\\s+[-._~+/=A-Za-z0-9]+", RegexOption.IGNORE_CASE),
-            Regex("\\b(api[-_ ]?key|token|secret)\\s*[:=]\\s*[-._~+/=A-Za-z0-9]+", RegexOption.IGNORE_CASE),
-        )
-    }
 }
 
 /** @since 0.3.0-beta01 */
@@ -145,15 +143,27 @@ internal object RedactionPredicates {
             .lowercase()
             .replace("_", "-")
             .replace(" ", "-")
+        // INCLUSIVE by shape, not a list of names. The previous version enumerated five exact
+        // header names, and this SDK writes credential headers it did not list: BlackForestLabs
+        // sends `x-key` (BlackForestLabsProvider.kt:309) and Gladia sends `x-gladia-key`
+        // (GladiaProvider.kt:781), so both API keys were emitted VERBATIM into telemetry — the
+        // same `x-key` that was separately leaking to a third-party CDN. A caller's `Cookie` or
+        // `Proxy-Authorization` escaped too. Redacting one value too many costs a debugging hint;
+        // redacting one too few discloses a credential, so this errs wide deliberately.
         return normalized == "authorization" ||
-            normalized == "api-key" ||
-            normalized == "x-api-key" ||
-            normalized == "x-goog-api-key" ||
-            normalized == "xi-api-key" ||
             normalized == "token" ||
+            normalized == "cookie" ||
+            normalized.endsWith("-key") ||
             normalized.endsWith("-token") ||
             normalized.endsWith("-secret") ||
-            normalized.endsWith("-api-key")
+            normalized.endsWith("-password") ||
+            normalized.endsWith("-credential") ||
+            normalized.endsWith("-credentials") ||
+            normalized.contains("auth") ||
+            normalized.contains("cookie") ||
+            normalized.contains("secret") ||
+            normalized.contains("password") ||
+            normalized.contains("apikey")
     }
 
     fun String.isPayloadKey(): Boolean {
@@ -171,7 +181,15 @@ internal object RedactionPredicates {
         if (length < minLength) return false
         val trimmed = trim()
         if (trimmed.startsWith("data:", ignoreCase = true) && ";base64," in trimmed) return true
-        if (trimmed.length < minLength || trimmed.length % 4 != 0) return false
+        // No `% 4 == 0` requirement. Base64URL is routinely emitted UNPADDED (JWT segments, signed
+        // asset URLs, many provider tokens), so demanding a multiple of four silently exempted a
+        // whole family of real credentials: a 101-char unpadded token is under maxStringLength, so
+        // the length branch does not catch it either, and it was emitted verbatim. The charset test
+        // below is what actually distinguishes a blob from prose — prose contains spaces and
+        // punctuation and fails it — so the modulus was buying almost no false-positive protection
+        // in exchange for a live hole. Same trade as isSensitiveKey: redacting one string too many
+        // costs a debugging hint, one too few discloses a credential.
+        if (trimmed.length < minLength) return false
         return trimmed.all {
             it.isLetterOrDigit() || it == '+' || it == '/' || it == '=' || it == '-' || it == '_'
         }

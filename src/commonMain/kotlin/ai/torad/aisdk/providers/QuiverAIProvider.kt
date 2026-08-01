@@ -43,6 +43,18 @@ public class QuiverAIImageModelOptions internal constructor(
     public val autoCrop: Boolean? = null,
     /** @since 0.3.0-beta01 */
     public val targetSize: Int? = null,
+    /**
+     * Optional SVG root attributes object (docs: `attributes`). May include nested
+     * `viewBox` or free-form root attrs. Prefer [viewBox] for the common case.
+     * @since 0.3.0-beta01
+     */
+    public val attributes: JsonObject? = null,
+    /**
+     * Convenience for `attributes.viewBox` (`minX`/`minY`/`width`/`height`).
+     * Merged into [attributes] on the wire when both are set (this wins on key clash).
+     * @since 0.3.0-beta01
+     */
+    public val viewBox: JsonObject? = null,
 )
 
 /** @since 0.3.0-beta01 */
@@ -55,6 +67,8 @@ public class QuiverAIImageModelOptionsBuilder {
     private var maxOutputTokens: Int? = null
     private var autoCrop: Boolean? = null
     private var targetSize: Int? = null
+    private var attributes: JsonObject? = null
+    private var viewBox: JsonObject? = null
 
     /** @since 0.3.0-beta01 */
     public fun operation(value: String?): QuiverAIImageModelOptionsBuilder {
@@ -105,6 +119,37 @@ public class QuiverAIImageModelOptionsBuilder {
     }
 
     /** @since 0.3.0-beta01 */
+    public fun attributes(value: JsonObject?): QuiverAIImageModelOptionsBuilder {
+        attributes = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun viewBox(value: JsonObject?): QuiverAIImageModelOptionsBuilder {
+        viewBox = value
+        return this
+    }
+
+    /**
+     * Convenience for the documented viewBox shape.
+     * @since 0.3.0-beta01
+     */
+    public fun viewBox(
+        minX: Double,
+        minY: Double,
+        width: Double,
+        height: Double,
+    ): QuiverAIImageModelOptionsBuilder {
+        viewBox = buildJsonObject {
+            put("minX", JsonPrimitive(minX))
+            put("minY", JsonPrimitive(minY))
+            put("width", JsonPrimitive(width))
+            put("height", JsonPrimitive(height))
+        }
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
     public fun build(): QuiverAIImageModelOptions =
         QuiverAIImageModelOptions(
             operation = operation,
@@ -115,6 +160,8 @@ public class QuiverAIImageModelOptionsBuilder {
             maxOutputTokens = maxOutputTokens,
             autoCrop = autoCrop,
             targetSize = targetSize,
+            attributes = attributes,
+            viewBox = viewBox,
         )
 }
 
@@ -282,7 +329,8 @@ private class QuiverAIImageModel(
                 body = response.value,
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("quiverai" to quiverAIProviderMetadata(root)))),
-            usage = quiverAIUsage(root["usage"]),
+            // Docs: billing is under `credits` (usage is deprecated / often absent).
+            usage = quiverAIUsage(root["credits"] ?: root["usage"]),
         )
     }
 
@@ -334,6 +382,7 @@ private class QuiverAIImageModel(
             put("prompt", JsonPrimitive(params.prompt))
             putAll(shared)
             putStringIfNotNull("instructions", (options["instructions"] as? JsonPrimitive)?.contentOrNull)
+            quiverAIAttributes(options)?.let { put("attributes", it) }
             if (params.files.isNotEmpty()) {
                 put("references", JsonArray(params.files.map { it.toQuiverAIImageReference() }))
             }
@@ -365,6 +414,24 @@ private class QuiverAIImageModel(
             putAll(shared)
             putBooleanIfNotNull("auto_crop", (options["autoCrop"] as? JsonPrimitive)?.booleanOrNull)
             putIntIfNotNull("target_size", (options["targetSize"] as? JsonPrimitive)?.intOrNull)
+            quiverAIAttributes(options)?.let { put("attributes", it) }
+        }
+    }
+
+    /**
+     * Docs: top-level `attributes` may hold free-form SVG root attrs and/or nested `viewBox`.
+     * Accept either a full `attributes` object or a convenience top-level `viewBox` option.
+     */
+    private fun quiverAIAttributes(options: JsonObject): JsonObject? {
+        val base = options["attributes"] as? JsonObject
+        val viewBox = options["viewBox"] as? JsonObject
+            ?: (base?.get("viewBox") as? JsonObject)
+        if (base == null && viewBox == null) return null
+        return buildJsonObject {
+            base?.forEach { (key, value) ->
+                if (key != "viewBox" || viewBox == null) put(key, value)
+            }
+            viewBox?.let { put("viewBox", it) }
         }
     }
 
@@ -418,20 +485,32 @@ private class QuiverAIImageModel(
                 val mimeType = ((item as? JsonObject)?.get("mime_type") as? JsonPrimitive)?.contentOrNull
                     ?: "image/svg+xml"
                 put("mimeType", JsonPrimitive(mimeType))
+                // Docs surface per-image attributes (style tags, etc.) when present.
+                (item as? JsonObject)?.get("attributes")?.takeUnless { it is JsonNull }?.let {
+                    put("attributes", it)
+                }
             }
         }
         put("images", JsonArray(imageEntries))
-        root["usage"]?.takeIf { it !is JsonNull }?.let { usage ->
-            put("usage", usage)
+        (root["credits"] ?: root["usage"])?.takeIf { it !is JsonNull }?.let { credits ->
+            put("credits", credits)
+            // Keep legacy key for older consumers reading providerMetadata.usage.
+            put("usage", credits)
         }
+        // Top-level response attributes (job/model metadata) when the API returns them.
+        root["attributes"]?.takeUnless { it is JsonNull }?.let { put("attributes", it) }
     }
 
     private fun quiverAIUsage(value: JsonElement?): ImageModelUsage {
         val usage = value as? JsonObject ?: return ImageModelUsage()
         return ImageModelUsage(
-            inputTokens = (usage["input_tokens"] as? JsonPrimitive)?.intOrNull,
-            outputTokens = (usage["output_tokens"] as? JsonPrimitive)?.intOrNull,
-            totalTokens = (usage["total_tokens"] as? JsonPrimitive)?.intOrNull,
+            inputTokens = (usage["input_tokens"] as? JsonPrimitive)?.intOrNull
+                ?: (usage["input"] as? JsonPrimitive)?.intOrNull,
+            outputTokens = (usage["output_tokens"] as? JsonPrimitive)?.intOrNull
+                ?: (usage["output"] as? JsonPrimitive)?.intOrNull,
+            totalTokens = (usage["total_tokens"] as? JsonPrimitive)?.intOrNull
+                ?: (usage["total"] as? JsonPrimitive)?.intOrNull
+                ?: (usage["credits"] as? JsonPrimitive)?.intOrNull,
         )
     }
 

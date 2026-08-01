@@ -54,7 +54,7 @@ class ToolCallRepairTest {
                 tools = ToolSet(weatherTool),
                 experimental_repairToolCall = { failedCall, _, _, _ ->
                     // Rewrite `location` → `city`.
-                    val original = failedCall.input.jsonObject["location"]?.jsonPrimitive?.content ?: ""
+                    val original = failedCall.input.jsonObject["location"]?.jsonPrimitive?.content.orEmpty()
                     ContentPart.ToolCall(
                         toolCallId = failedCall.toolCallId,
                         toolName = failedCall.toolName,

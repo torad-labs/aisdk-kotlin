@@ -222,10 +222,16 @@ public fun ByteDanceProviderSettings(
 ): ByteDanceProviderSettings =
     ByteDanceProviderSettingsBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
-public interface ByteDanceProvider : Provider {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class ByteDanceProvider : Provider {
     /** @since 0.3.0-beta01 */
-    public fun video(modelId: ModelId): VideoModel
+    public abstract fun video(modelId: ModelId): VideoModel
     override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
 }
 
@@ -235,8 +241,8 @@ public fun ByteDance(
     settings: ByteDanceProviderSettings = ByteDanceProviderSettings(),
 ): ByteDanceProvider = DefaultByteDanceProvider(client, settings)
 
-/** @since 0.3.0-beta01 */
-public val byteDance: ByteDanceProvider = object : ByteDanceProvider {
+// Named (not anonymous) because a sealed class's direct subtypes must be named declarations.
+private object UnconfiguredByteDanceProvider : ByteDanceProvider() {
     override val providerId: String = "bytedance"
     override fun video(modelId: ModelId): VideoModel =
         throw UnsupportedFunctionalityError(
@@ -245,10 +251,13 @@ public val byteDance: ByteDanceProvider = object : ByteDanceProvider {
         )
 }
 
+/** @since 0.3.0-beta01 */
+public val byteDance: ByteDanceProvider = UnconfiguredByteDanceProvider
+
 private class DefaultByteDanceProvider(
     private val client: HttpClient,
     private val settings: ByteDanceProviderSettings,
-) : ByteDanceProvider {
+) : ByteDanceProvider() {
     override val providerId: String = "bytedance"
     override fun video(modelId: ModelId): VideoModel = ByteDanceVideoModel(client, settings, modelId.value)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
@@ -336,7 +345,8 @@ private class ByteDanceVideoModel(
         put("model", JsonPrimitive(modelId))
         put("content", byteDanceContent(params, options))
         params.aspectRatio?.let { put("ratio", JsonPrimitive(it)) }
-        params.durationSeconds?.let { put("duration", JsonPrimitive(it.toDouble())) }
+        // Docs: duration is integer seconds (JSON number without a fractional part).
+        params.durationSeconds?.let { put("duration", JsonPrimitive(it.toInt())) }
         params.seed?.let { put("seed", JsonPrimitive(it)) }
         (params.resolution ?: params.size)?.let { put("resolution", JsonPrimitive(byteDanceResolutionMap[it] ?: it)) }
         putBooleanIfPresent("watermark", options["watermark"])
@@ -468,8 +478,17 @@ private class ByteDanceVideoModel(
 
     private fun byteDanceErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
-            ?: raw.ifBlank { "request failed" }
+        // Docs: top-level error_code + message (not nested error.message).
+        val topMessage = (obj?.get("message") as? JsonPrimitive)?.contentOrNull
+        val topCode = (obj?.get("error_code") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error_code") as? JsonPrimitive)?.content
+        val nested = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
+        val detail = when {
+            topMessage != null && topCode != null -> "$topCode: $topMessage"
+            topMessage != null -> topMessage
+            nested != null -> nested
+            else -> raw.ifBlank { "request failed" }
+        }
         return "ByteDance request failed ($statusCode): $detail"
     }
 

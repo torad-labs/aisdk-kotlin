@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.psi.KtBinaryExpressionWithTypeRHS
 import org.jetbrains.kotlin.psi.KtCallExpression
 
 /**
- * Mirror of `.claude/hooks/rules/kotlin/no-json-container-force-cast.yaml`.
+ * Mirror of `.rules/kotlin/ast-grep/rules/no-json-container-force-cast.yaml`.
  * Force-casting to a kotlinx.serialization container (`as JsonObject`) throws at runtime
  * on a shape mismatch — decode into a typed model, or use the safe `?.jsonObject` accessors.
  */
@@ -43,7 +43,7 @@ class NoJsonContainerForceCast(config: Config) : Rule(config) {
 }
 
 /**
- * Mirror of `.claude/hooks/rules/kotlin/no-inline-json-instance.yaml`.
+ * Mirror of `.rules/kotlin/ast-grep/rules-style/no-inline-json-instance.yaml`.
  * `Json { }` built inline allocates a fresh serializers module per call site; hoist a
  * single shared `Json` instance (the SDK's `aiSdkJson`) and reuse it.
  */

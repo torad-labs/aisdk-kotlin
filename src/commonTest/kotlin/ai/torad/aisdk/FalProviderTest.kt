@@ -390,7 +390,7 @@ class FalProviderTest {
         assertEquals("A futuristic city", body["prompt"]?.jsonPrimitive?.contentOrNull)
         assertEquals("data:image/png;base64,aW1hZ2U=", body["image_url"]?.jsonPrimitive?.contentOrNull)
         assertEquals("16:9", body["aspect_ratio"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("5s", body["duration"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("5", body["duration"]?.jsonPrimitive?.contentOrNull)
         assertEquals(42, body["seed"]?.jsonPrimitive?.intOrNull)
         assertEquals(0.7f, body["motion_strength"]?.jsonPrimitive?.floatOrNull)
         assertEquals("blur", body["negative_prompt"]?.jsonPrimitive?.contentOrNull)

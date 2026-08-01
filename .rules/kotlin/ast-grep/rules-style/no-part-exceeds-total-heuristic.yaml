@@ -1,0 +1,60 @@
+id: no-part-exceeds-total-heuristic
+language: kotlin
+severity: warning
+message: "A token/count PART is being compared against its TOTAL to decide the total (`if (reasoningTokens > outputTokens) ...`). A part that exceeds its total is a response violating the wire contract, not a second provider shape to infer: clamp the part into its range (`.coerceIn(0, total)`) and report the provider's total unchanged. The magnitude test cannot distinguish a malformed response from a provider reporting a text-only total, so it silently under-counts one of them."
+note: |
+  Found three times in this repo, all the same shape, all reporting usage that feeds cost:
+  Usage.kt (UsageFromOpenAI), HuggingFaceProvider.kt (huggingFaceUsage), OpenResponsesProvider.kt
+  (openResponsesUsage). Each sat two lines below a CORRECT clamp of the same kind
+  (`cachedTokens.coerceIn(0, promptTokens)`), so the asymmetry was visible in-function and still
+  copied forward twice.
+
+  `OutputTokenBreakdown` rejects parts exceeding total at construction, so in a SHARED parser the
+  branch exists to dodge a constructor guard that is telling the truth. The right response there is
+  to clamp, not to widen the total until it fits.
+
+  ONE legitimate shape, which is why this is a warning and not a law: a provider that genuinely
+  reports a text-only total gets a NAMED, provider-specific correction — `fixDeepInfraUsage` in
+  DeepInfraFacade.kt is the repo's example, and DeepInfra is exactly the "second provider shape" a
+  magnitude test in a shared parser cannot identify. The invariant is therefore: shared parsers
+  CLAMP; a provider quirk gets a named function in that provider's facade. If this fires on a
+  shared parser, clamp it. If it fires on a named provider correction, that is the sanctioned form.
+
+  Note that even the sanctioned form inherits the magnitude test's blind spot — a text-only provider
+  whose reasoning is SHORTER than its completion still passes through uncorrected. Detecting the
+  provider by identity rather than by magnitude would close that; it needs provider knowledge to
+  confirm, so it is a question for a maintainer, not a mechanical fix.
+rule:
+  kind: if_expression
+  all:
+    - has:
+        stopBy: end
+        kind: comparison_expression
+        all:
+          - has:
+              stopBy: end
+              kind: simple_identifier
+              regex: '(?i)(reasoning|cached|cache|text)\w*[Tt]okens?$'
+          - has:
+              stopBy: end
+              kind: simple_identifier
+              regex: '(?i)^(output|completion|prompt|input|total)\w*[Tt]okens?$'
+    # Only the shape that DECIDES a total from the comparison — an assert/require/clamp using the
+    # same two identifiers is the correct handling and must not be flagged.
+    - not:
+        has:
+          stopBy: end
+          kind: simple_identifier
+          regex: '^(require|check|coerceIn|coerceAtMost|error)$'
+    # The sanctioned form is exempt STRUCTURALLY, not by prose in the note: a named provider-specific
+    # correction (`fixDeepInfraUsage`) for a provider that really does report a text-only total. With
+    # all four shared-parser instances fixed, leaving it unexempt made the rule's entire live output
+    # the one site its own note calls correct — a 0:1 signal ratio, which is the "fires on the
+    # sanctioned pattern" failure this pack has already been burned by three times.
+    - not:
+        inside:
+          stopBy: end
+          kind: function_declaration
+          has:
+            kind: simple_identifier
+            regex: '^fix[A-Z]'

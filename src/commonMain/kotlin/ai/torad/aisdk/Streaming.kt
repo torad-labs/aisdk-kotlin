@@ -15,6 +15,29 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 
 /**
+ * Response metadata from an OpenAI-compatible stream chunk — `null`
+ * when the chunk carries no id / model / timestamp.
+ */
+internal fun StreamEventResponseMetadataFromOpenAI(obj: JsonObject): StreamEvent.ResponseMetadata? {
+    // `as?` (not `?.jsonPrimitive`, which throws on a non-primitive value): a quirky
+    // object/array id/model/created must degrade to null, not abort the whole stream.
+    val id = (obj["id"] as? JsonPrimitive)?.contentOrNull
+    val modelId = (obj["model"] as? JsonPrimitive)?.contentOrNull
+    val timestampMillis = (obj["created"] as? JsonPrimitive)?.doubleOrNull?.let { (it * 1000).toLong() }
+    if (id == null && modelId == null && timestampMillis == null) return null
+    return StreamEvent.ResponseMetadata(
+        id = id,
+        modelId = modelId,
+        timestampMillis = timestampMillis,
+    )
+}
+
+/** Wire-protocol mapping helper for [ai.torad.aisdk.ui.ToUIMessageStream]: converts a
+ *  [StreamEvent] to its v6 UI-message chunk JSON, or null when the event has no wire
+ *  counterpart. */
+internal fun StreamEvent.ToUIMessageChunk(): JsonObject? = ProtocolAdapters.uiMessageChunk(this)
+
+/**
  * Sealed event stream emitted by [LanguageModel.stream] and surfaced to
  * application code via [Agent.stream]. Mirrors the v6 stream-part taxonomy
  * (per `packages/ai/src/generate-text/stream-text-result.ts` in vercel/ai)
@@ -60,6 +83,36 @@ import kotlinx.serialization.json.doubleOrNull
 /** @since 0.3.0-beta01 */
 public sealed class StreamEvent {
 
+    /** @since 0.3.0-beta01 */
+    public val metadata: ProviderMetadata
+        get() = when (this) {
+            is StreamStart -> ProviderMetadata.None
+            is ResponseMetadata -> ProviderMetadata.None
+            is StepStart -> providerMetadata
+            is TextStart -> providerMetadata
+            is TextDelta -> providerMetadata
+            is TextEnd -> providerMetadata
+            is ReasoningStart -> providerMetadata
+            is ReasoningDelta -> providerMetadata
+            is ReasoningEnd -> providerMetadata
+            is SourcePart -> providerMetadata
+            is FilePart -> providerMetadata
+            is Data -> ProviderMetadata.None
+            is ToolInputStart -> providerMetadata
+            is ToolInputDelta -> providerMetadata
+            is ToolInputEnd -> providerMetadata
+            is ToolCall -> providerMetadata
+            is ToolResult -> providerMetadata
+            is ToolError -> providerMetadata
+            is ToolApprovalRequest -> providerMetadata
+            is ToolOutputDenied -> providerMetadata
+            is StepFinish -> providerMetadata
+            is Finish -> providerMetadata
+            Abort -> ProviderMetadata.None
+            is Error -> ProviderMetadata.None
+            is Raw -> ProviderMetadata.None
+        }
+
     /**
      * Stream began. Emitted exactly once at the very top.
      * @since 0.3.0-beta01
@@ -102,26 +155,6 @@ public sealed class StreamEvent {
                 headers = headers,
                 body = body,
             )
-
-        public companion object {
-            /**
-             * Response metadata from an OpenAI-compatible stream chunk — `null`
-             * when the chunk carries no id / model / timestamp.
-             */
-            internal fun fromOpenAI(obj: JsonObject): ResponseMetadata? {
-                // `as?` (not `?.jsonPrimitive`, which throws on a non-primitive value): a quirky
-                // object/array id/model/created must degrade to null, not abort the whole stream.
-                val id = (obj["id"] as? JsonPrimitive)?.contentOrNull
-                val modelId = (obj["model"] as? JsonPrimitive)?.contentOrNull
-                val timestampMillis = (obj["created"] as? JsonPrimitive)?.doubleOrNull?.let { (it * 1000).toLong() }
-                if (id == null && modelId == null && timestampMillis == null) return null
-                return ResponseMetadata(
-                    id = id,
-                    modelId = modelId,
-                    timestampMillis = timestampMillis,
-                )
-            }
-        }
     }
 
     /**
@@ -385,7 +418,7 @@ public sealed class StreamEvent {
         // Canonical error check — also true for Content(isError = true) (the MCP shape),
         // which the old inline expression missed, diverging from isToolResultError().
         /** @since 0.3.0-beta01 */
-        public val isError: Boolean = with(ToolResultOutputs) { modelOutput.isToolResultError() },
+        public val isError: Boolean = modelOutput.isToolResultError(),
         /** @since 0.3.0-beta01 */
         public val preliminary: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
@@ -570,14 +603,4 @@ public sealed class StreamEvent {
     @SerialName("raw")
     @Poko
     public class Raw(public val rawValue: JsonElement) : StreamEvent()
-
-    /**
-     * Wire-protocol mapping helpers for [ai.torad.aisdk.ui.ToUIMessageStream]: the
-     * StreamEvent→chunk dispatch table plus the JSON-chunk builder and finish-reason
-     * mapping. Member-extensions so callers use a member-import, not a loose top-level fn.
-     */
-    public companion object {
-        internal fun StreamEvent.toUIMessageChunk(): JsonObject? =
-            ProtocolAdapters.uiMessageChunk(this)
-    }
 }

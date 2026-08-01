@@ -208,10 +208,118 @@ class ReplicateProviderTest {
             metadata?.get("videos")?.jsonArray?.single()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull,
         )
         assertEquals(1.25, metadata?.get("metrics")?.jsonObject?.get("predict_time")?.jsonPrimitive?.doubleOrNull)
+        assertEquals(2, fixture.calls.size)
     }
 
     @Test
-    fun `video model extracts url from array-shaped output`() = runTest {
+    fun `video model polls starting and processing exactly once per transition`() = runTest {
+        val createUrl = "https://api.replicate.com/v1/models/minimax/video-01/predictions"
+        val firstPollUrl = "https://api.replicate.com/v1/predictions/pred1"
+        val secondPollUrl = "https://api.replicate.com/v1/predictions/pred2"
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                createUrl to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"id":"pred1","status":"starting","urls":{"get":"$firstPollUrl"}}""",
+                        ),
+                    ),
+                ),
+                firstPollUrl to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"id":"pred1","status":"processing","urls":{"get":"$secondPollUrl"}}""",
+                        ),
+                    ),
+                ),
+                secondPollUrl to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"id":"pred1","status":"succeeded","output":"https://cdn.example/video.mp4"}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Replicate(fixture.httpClient()).video(ModelId("minimax/video-01"))
+
+        val result = model.generate(
+            VideoGenerationParams {
+                prompt("camera push in")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "replicate" to buildJsonObject {
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(2))
+                                },
+                            ),
+                        ),
+                    ),
+                )
+            },
+        )
+
+        assertEquals("https://cdn.example/video.mp4", result.videos.single().url)
+        assertEquals(listOf(createUrl, firstPollUrl, secondPollUrl), fixture.calls.map { it.requestUrl })
+    }
+
+    @Test
+    fun `video model rejects unknown status returned by poll without exposing output`() = runTest {
+        val createUrl = "https://api.replicate.com/v1/models/minimax/video-01/predictions"
+        val pollUrl = "https://api.replicate.com/v1/predictions/pred1"
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                createUrl to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"id":"pred1","status":"processing",""" +
+                                """"output":"https://cdn.example/premature.mp4",""" +
+                                """"urls":{"get":"$pollUrl"}}""",
+                        ),
+                    ),
+                ),
+                pollUrl to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"id":"pred1","status":"queued",""" +
+                                """"output":"https://cdn.example/unknown.mp4"}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Replicate(fixture.httpClient()).video(ModelId("minimax/video-01"))
+
+        val error = assertFailsWith<InvalidResponseDataError> {
+            model.generate(
+                VideoGenerationParams {
+                    prompt("x")
+                    providerOptions(
+                        ProviderOptions.Raw(
+                            JsonObject(
+                                mapOf(
+                                    "replicate" to buildJsonObject {
+                                        put("pollIntervalMs", JsonPrimitive(0))
+                                        put("pollTimeoutMs", JsonPrimitive(1))
+                                    },
+                                ),
+                            ),
+                        ),
+                    )
+                },
+            )
+        }
+
+        assertEquals("Replicate prediction response has unknown status: queued", error.message)
+        assertEquals(listOf(createUrl, pollUrl), fixture.calls.map { it.requestUrl })
+    }
+
+    @Test
+    fun `video model extracts url from array-shaped output without polling`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.replicate.com/v1/models/minimax/video-01/predictions" to UrlHandler(
@@ -236,10 +344,40 @@ class ReplicateProviderTest {
         )
 
         assertEquals("https://cdn.example/array.mp4", result.videos.single().url)
+        assertEquals(1, fixture.calls.size)
     }
 
     @Test
-    fun `video model reports failed predictions and unsupported families`() = runTest {
+    fun `video model reports canceled predictions without polling`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.replicate.com/v1/models/minimax/video-01/predictions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"id":"pred1","status":"canceled","output":null,""" +
+                                """"urls":{"get":"https://api.replicate.com/v1/predictions/pred1"}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Replicate(fixture.httpClient()).video(ModelId("minimax/video-01"))
+
+        val error = assertFailsWith<NoVideoGeneratedError> {
+            model.generate(
+                VideoGenerationParams {
+                    prompt("x")
+                },
+            )
+        }
+
+        assertEquals("Video generation was canceled", error.message)
+        assertEquals(1, fixture.calls.size)
+    }
+
+    @Test
+    fun `video model reports failed predictions without polling and rejects unsupported families`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.replicate.com/v1/models/minimax/video-01/predictions" to UrlHandler(
@@ -254,13 +392,15 @@ class ReplicateProviderTest {
         fixture.server.start()
         val provider = Replicate(fixture.httpClient(), ReplicateProviderSettings { apiToken("token") })
 
-        assertFailsWith<AiSdkException> {
+        val error = assertFailsWith<NoVideoGeneratedError> {
             provider.video(ModelId("minimax/video-01")).generate(
                 VideoGenerationParams {
                     prompt("x")
                 }
             )
         }
+        assertEquals("Video generation failed: bad prompt", error.message)
+        assertEquals(1, fixture.calls.size)
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
     }

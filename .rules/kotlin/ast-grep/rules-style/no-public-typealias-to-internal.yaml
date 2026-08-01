@@ -1,0 +1,30 @@
+id: no-public-typealias-to-internal
+language: kotlin
+severity: warning
+message: "A public typealias resolves to an `internal` type. This leaks an internal type into the public ABI under a public name — consumers can construct/reference it, and it can't be changed or removed the way other internal types can. Either make the target type `public` (if it's meant to be public API) or make the typealias `internal` too."
+rule:
+  kind: type_alias
+  all:
+    - has: { kind: modifiers, has: { kind: visibility_modifier, regex: '^public$' } }
+    - has: { kind: user_type, has: { kind: type_identifier, pattern: $TARGET } }
+    - any:
+        - follows: { stopBy: end, pattern: 'internal class $TARGET' }
+        - follows: { stopBy: end, pattern: 'internal object $TARGET' }
+        - follows: { stopBy: end, pattern: 'internal interface $TARGET' }
+        - follows: { stopBy: end, pattern: 'internal data class $TARGET' }
+        - follows: { stopBy: end, pattern: 'internal sealed class $TARGET' }
+        - follows: { stopBy: end, pattern: 'internal sealed interface $TARGET' }
+        - follows: { stopBy: end, pattern: 'internal value class $TARGET' }
+        - precedes: { stopBy: end, pattern: 'internal class $TARGET' }
+        - precedes: { stopBy: end, pattern: 'internal object $TARGET' }
+        - precedes: { stopBy: end, pattern: 'internal interface $TARGET' }
+        - precedes: { stopBy: end, pattern: 'internal data class $TARGET' }
+        - precedes: { stopBy: end, pattern: 'internal sealed class $TARGET' }
+        - precedes: { stopBy: end, pattern: 'internal sealed interface $TARGET' }
+        - precedes: { stopBy: end, pattern: 'internal value class $TARGET' }
+note: >-
+  Correlates the typealias's target name against a sibling top-level declaration
+  of the same name via a shared $TARGET metavariable (ast-grep unifies metavariables
+  across relational fields within one rule). Only catches the target when it's
+  declared in the same file; a target declared elsewhere in the module is out of
+  reach for a single-file structural rule.

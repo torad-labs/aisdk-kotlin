@@ -1,0 +1,7 @@
+id: no-throws-generic-exception
+language: kotlin
+severity: warning
+message: "@Throws(Exception::class) / @Throws(Throwable::class) is too broad to be useful to JVM/Swift callers that rely on it for checked-exception or NSError bridging — it documents nothing about what actually goes wrong. List the specific typed exception(s) the function can actually throw instead."
+rule:
+  kind: annotation
+  regex: '^@Throws\(.*\b(Exception|Throwable)::class.*\)$'

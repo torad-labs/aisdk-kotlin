@@ -1,0 +1,54 @@
+id: no-uncapped-response-body
+language: kotlin
+severity: error
+message: "Raw `bodyAsBytes()`/`bodyAsText()`/`body<ByteArray>()`/`readBytes()` reads a response with no size limit. Use `with(HttpTransport) { response.bodyAsBytesCapped(url) }` / `bodyAsTextCapped(url)` for a content cap, or `HttpTransport.downloadCapped(client, url)` when the bytes come from a host you do not control — only that one bounds MEMORY, because Ktor pre-buffers every `client.request(...)` body."
+note: |
+  This is the hardened-helper-beside-unhardened-primitive shape. HttpTransport.bodyAsTextCapped /
+  bodyAsBytesCapped were written precisely because an unbounded body read is a memory-exhaustion
+  vector on a KMP client with no server-side sandbox — and then 14 call sites went on calling the
+  raw Ktor primitive anyway, including a download of a CALLER-supplied URL
+  (OpenAICompatibleModels.openAICompatibleImageFileBytes) and every audio/image byte path. Writing
+  the safe helper does not remove the unsafe one from scope, so nothing made the unmigrated sites
+  visible: MCP, McpOAuth, Fal, Luma and Replicate used the capped form while Deepgram, Hume,
+  ElevenLabs, LMNT, Prodia, Bedrock, xAI, HuggingFace, OpenResponses and the OpenAI-compatible
+  transports did not, and the split was invisible in review.
+
+  Deliberately targets the CALL, not the import, so `with(HttpTransport) { bodyAsBytesCapped(url) }`
+  and the extension-receiver form (`bodyAsBytes()` with no explicit receiver, inside an
+  `HttpResponse.` extension) are both covered — the receiver-less form is how four of the sites
+  were written, so an import- or navigation-shaped rule would have missed them.
+
+  Streaming paths are unaffected: they use `bodyAsChannel()`, which never buffers, and this rule
+  does not mention it. If a genuinely unbounded read is ever needed, pass an explicit large
+  `maxBytes` to the capped helper — the cap becomes a reviewed number rather than an absence.
+
+  The first version required an EMPTY argument list (`not: has: value_argument`), on the reasoning
+  that `bodyAsBytes()` never takes one. That clause bought nothing and cost the whole wall:
+  `bodyAsText` DOES take an optional `fallbackCharset`, so `response.bodyAsText(Charsets.UTF_8)` —
+  a natural thing to write on a charset-sensitive provider — walked straight through a green gate.
+  Arity is not the invariant; the function being called is. The alias forms go in for the same
+  reason: `bodyAsBytes()` IS `body<ByteArray>()`, so anyone writing the underlying form bypassed a
+  rule that named only the sugar.
+rule:
+  kind: call_expression
+  any:
+    - has:
+        stopBy: end
+        kind: simple_identifier
+        regex: '^(bodyAsBytes|bodyAsText|readBytes)$'
+    # `body<ByteArray>()` / `body<String>()` — the underlying form the two above are sugar for.
+    # Scoped by TYPE ARGUMENT so the many legitimate `body<SomeWireDto>()` deserializations, whose
+    # size is bounded by the parse, are not swept in.
+    - all:
+        - has:
+            stopBy: end
+            kind: simple_identifier
+            regex: '^body$'
+        - has:
+            kind: call_suffix
+            has:
+              kind: type_arguments
+              has:
+                stopBy: end
+                kind: type_identifier
+                regex: '^(ByteArray|String)$'

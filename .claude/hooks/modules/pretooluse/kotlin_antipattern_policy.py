@@ -1,9 +1,11 @@
 """Kotlin anti-pattern policy backed by ast-grep (catalog-derived rules).
 
-Rules live as standalone ast-grep YAML files under .claude/hooks/rules/kotlin/.
-Each rule declares `severity: error` (block the edit) or `severity: warning`
-(surface a non-blocking nudge). Detection is purely structural via ast-grep —
-NO regex is used to make any AST claim.
+Rules live under .rules/kotlin/ast-grep/ following the torad-toolkit standard:
+  rules/        - LAW rules (severity: error, blocking)
+  rules-style/  - opt-in tenets (severity: warning, non-blocking)
+
+Detection is purely structural via ast-grep — NO regex is used to make any AST
+claim.
 
 The policy is incremental: it compares the full file BEFORE and AFTER the planned
 edit and only acts on anti-patterns the edit *introduces*. Pre-existing instances
@@ -29,8 +31,9 @@ MODULE_ORDER = 10
 WATCHED = {"Write", "Edit", "MultiEdit"}
 
 HOOKS_ROOT = Path(__file__).resolve().parents[2]
-RULES_DIR = HOOKS_ROOT / "rules" / "kotlin"
-AUTOFIX_REGISTRY = HOOKS_ROOT / "rules" / "autofix-registry.json"
+_REPO_ROOT_FOR_RULES = Path(__file__).resolve().parents[4]
+RULES_ROOT = _REPO_ROOT_FOR_RULES / ".rules" / "kotlin" / "ast-grep"
+AUTOFIX_REGISTRY = RULES_ROOT / "registry.json"
 SCAN_TIMEOUT = 5
 
 
@@ -75,6 +78,21 @@ _JVM_SOURCE_SET_MARKERS = (
     "/androidInstrumentedTest/",
 )
 
+# ci-gate.sh (the non-bypassable pre-commit/CI gate this policy mirrors) scans only
+# src/{commonMain,jvmMain,jvmAndAndroidMain,nativeMain}/kotlin by default — no Test
+# directory is ever in its default `dirs` list, and src/jvmTest/kotlin is not in ANY
+# of its dirs lists, opted-in or not. The sole test-source opt-in across the whole
+# gate is no-camelcase-top-level-function, which explicitly adds
+# src/commonTest/kotlin (not jvmTest) to its dirs. Mirroring that here keeps this
+# edit-time hook from blocking edits (e.g. a provider-under-test import) that the
+# actual gate would accept. Misfire found 2026-07-03: this policy had no test-source
+# scoping at all, so any new ai.torad.aisdk.providers import added to an existing
+# commonTest file (which legitimately imports the provider it tests) tripped
+# no-core-import-providers even though ci-gate.sh never scans commonTest for it.
+_COMMON_TEST_SOURCE_SET_MARKERS = ("/commonTest/",)
+_RULES_APPLIED_TO_COMMON_TEST_SOURCE = frozenset({"no-camelcase-top-level-function"})
+_UNSCANNED_TEST_SOURCE_SET_MARKERS = ("/jvmTest/", "/androidUnitTest/", "/androidInstrumentedTest/")
+
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _CONSUMER_TREE_PREFIXES = ("samples/", "smoke-tests/")
@@ -98,15 +116,25 @@ def _is_library_source(file_path: str) -> bool:
 
 
 def _rules_for_path(rule_files: list[Path], file_path: str) -> list[Path]:
-    """Scope JVM-platform-legitimate rules out of JVM-backed source sets.
+    """Scope rules to the same directories ci-gate.sh would actually feed them.
 
-    `java.*` imports, Thread.sleep, String.format, printStackTrace are illegal in
-    commonMain / Native / wasm / js (they break those targets) but perfectly valid
-    Kotlin/JVM. The rules banning them exist for multiplatform safety, so they apply
-    everywhere EXCEPT the JVM/Android source sets where the APIs genuinely exist.
+    Three independent narrowings:
+    - JVM-platform-legitimate rules (`java.*` imports, Thread.sleep, String.format,
+      printStackTrace) are illegal in commonMain / Native / wasm / js (they break
+      those targets) but perfectly valid Kotlin/JVM, so they apply everywhere EXCEPT
+      the JVM/Android source sets where the APIs genuinely exist.
+    - src/jvmTest (and the Android test source sets) are not in any ci-gate.sh dirs
+      list, opted-in or not, so no architecture rule applies there.
+    - src/commonTest only gets the one rule that explicitly opts it in
+      (no-camelcase-top-level-function); every other architecture rule is scoped
+      out, matching ci-gate.sh's default `dirs` list.
     """
     if any(marker in file_path for marker in _JVM_SOURCE_SET_MARKERS):
-        return [r for r in rule_files if r.stem not in _JVM_PLATFORM_OK_RULES]
+        rule_files = [r for r in rule_files if r.stem not in _JVM_PLATFORM_OK_RULES]
+    if any(marker in file_path for marker in _UNSCANNED_TEST_SOURCE_SET_MARKERS):
+        return []
+    if any(marker in file_path for marker in _COMMON_TEST_SOURCE_SET_MARKERS):
+        rule_files = [r for r in rule_files if r.stem in _RULES_APPLIED_TO_COMMON_TEST_SOURCE]
     return rule_files
 
 
@@ -121,7 +149,7 @@ def run(data: dict) -> Optional[HookResult]:
 
     rule_files = _rule_files()
     if not rule_files:
-        return _incomplete("No ast-grep rule files found under .claude/hooks/rules/kotlin.")
+        return _incomplete("No ast-grep rule files found under .rules/kotlin/ast-grep/.")
 
     tool_input = data.get("tool_input") or {}
     if not isinstance(tool_input, dict):
@@ -322,9 +350,16 @@ def _scan(binary: str, rule_files: list[Path], severities: dict[str, str], conte
 # --- rule discovery --------------------------------------------------------------
 
 def _rule_files() -> list[Path]:
-    if not RULES_DIR.is_dir():
+    """Discover rules from both lanes: rules/ (LAW) and rules-style/ (opt-in)."""
+    if not RULES_ROOT.is_dir():
         return []
-    return sorted(p for p in RULES_DIR.glob("*.yaml") if not p.name.startswith("disabled_"))
+    law_dir = RULES_ROOT / "rules"
+    style_dir = RULES_ROOT / "rules-style"
+    files: list[Path] = []
+    for rule_dir in (law_dir, style_dir):
+        if rule_dir.is_dir():
+            files.extend(p for p in rule_dir.glob("*.yaml") if not p.name.startswith("disabled_"))
+    return sorted(files)
 
 
 def _rule_severities(rule_files: list[Path]) -> dict[str, str]:
@@ -362,10 +397,17 @@ def _autofix_rule_ids(registry_path: Path | None = None) -> tuple[set[str], str 
         return set(), None
     except (OSError, json.JSONDecodeError) as exc:
         return set(), f"Malformed Kotlin autofix registry: {exc}"
-    if not isinstance(payload, list):
-        return set(), "Malformed Kotlin autofix registry: expected a JSON list."
+    # torad-toolkit format: {"version": 1, "autofix": [...]}
+    if isinstance(payload, dict) and "autofix" in payload:
+        entries = payload.get("autofix", [])
+    elif isinstance(payload, list):
+        entries = payload  # legacy format
+    else:
+        return set(), "Malformed Kotlin autofix registry: expected {autofix: [...]} or a JSON list."
+    if not isinstance(entries, list):
+        return set(), "Malformed Kotlin autofix registry: 'autofix' must be a list."
     ids: set[str] = set()
-    for index, entry in enumerate(payload, start=1):
+    for index, entry in enumerate(entries, start=1):
         if isinstance(entry, str):
             rule_id = entry
         elif isinstance(entry, dict) and isinstance(entry.get("id"), str):

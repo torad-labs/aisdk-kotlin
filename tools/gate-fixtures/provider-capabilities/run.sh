@@ -5,7 +5,7 @@ trap 'rm -rf "$tmp"' EXIT
 
 mkdir -p "$tmp/tools" "$tmp/src/commonMain/kotlin/ai/torad/aisdk/providers" "$tmp/docs"
 cp "$REPO_ROOT/tools/check-provider-capabilities.mjs" "$tmp/tools/check-provider-capabilities.mjs"
-printf 'public class FixtureProvider\n' > "$tmp/src/commonMain/kotlin/ai/torad/aisdk/providers/FixtureProvider.kt"
+printf 'public sealed class FixtureProvider\n' > "$tmp/src/commonMain/kotlin/ai/torad/aisdk/providers/FixtureProvider.kt"
 tools_value=no
 if [ "$CASE_KIND" = "violation" ]; then
   tools_value=maybe

@@ -303,7 +303,7 @@ internal class ToolApprovalCoordinator<TContext>(
         messages: MutableList<ModelMessage>,
     ) {
         val output = ToolResultOutput.ExecutionDenied(reason)
-        val outputJson = with(ToolResultOutputs) { output.toJsonElement() }
+        val outputJson = output.toJsonElement()
         out.emit(StreamEvent.ToolOutputDenied(call.toolCallId, call.toolName, approvalId, reason))
         out.emit(
             StreamEvent.ToolResult(

@@ -22,6 +22,7 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.serializer
 import kotlin.jvm.JvmOverloads
+import kotlin.jvm.JvmSynthetic
 
 /**
  * LLM-visible metadata for a [Tool]. Separates schema from executor.
@@ -132,7 +133,10 @@ public abstract class Tool<TInput, TOutput, TContext> {
      * Extend [StreamingTool] and override [StreamingTool.executeStream] for the streaming case.
      * @since 0.3.0-beta01
      */
-    public abstract fun execute(input: TInput, ctx: ToolExecutionContext<TContext>): Flow<ToolResult<TOutput>>
+    public abstract fun execute(
+        input: TInput,
+        ctx: ToolExecutionContext<TContext>,
+    ): Flow<ToolResult<TOutput>>
 
     // Backward-compat properties so ToolLoopAgent compiles unchanged.
     /** @since 0.3.0-beta01 */
@@ -156,7 +160,11 @@ public abstract class Tool<TInput, TOutput, TContext> {
     /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions get() = schema.providerOptions
 
-    /** Approval gate — return true to pause the loop for host approval. Default: never gates. */
+    /**
+     * Approval gate — return true to pause the loop for host approval. Default: never gates.
+     * @since 0.3.0-beta01
+     */
+    @JvmSynthetic
     public open suspend fun needsApproval(input: TInput, options: ToolPredicateOptions<TContext>): Boolean = false
 
     /**
@@ -165,8 +173,16 @@ public abstract class Tool<TInput, TOutput, TContext> {
      */
     public open fun toModelOutput(output: TOutput, options: ToolPredicateOptions<TContext>): ToolResultOutput? = null
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public open suspend fun onInputStart(streamingId: String): Unit = Unit
+
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public open suspend fun onInputDelta(streamingId: String, delta: String): Unit = Unit
+
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public open suspend fun onInputAvailable(toolCallId: String, input: TInput): Unit = Unit
 
     /** Internal bridge for ToolLoopAgent — returns raw Flow<TOutput> via execute() unwrap. */
@@ -265,6 +281,17 @@ internal class LambdaStreamingTool<TInput, TOutput, TContext>(
     ) { inputAvailableFn?.invoke(toolCallId, input) }
 }
 
+internal fun <TContext> RequireUniqueToolNames(
+    tools: List<Tool<*, *, TContext>>,
+): Map<String, Tool<*, *, TContext>> {
+    val byName = linkedMapOf<String, Tool<*, *, TContext>>()
+    for (tool in tools) {
+        require(tool.name !in byName) { "Duplicate tool name `${tool.name}`." }
+        byName[tool.name] = tool
+    }
+    return byName
+}
+
 /**
  * Erased map of tools indexed by name. Application code constructs via the [ToolSet] factory.
  * @since 0.3.0-beta01
@@ -301,24 +328,11 @@ public class ToolSet<TContext>(
         }
         return ToolSet(byName + other.byName)
     }
-
-    public companion object {
-        internal fun <TContext> requireUniqueToolNames(
-            tools: List<Tool<*, *, TContext>>,
-        ): Map<String, Tool<*, *, TContext>> {
-            val byName = linkedMapOf<String, Tool<*, *, TContext>>()
-            for (tool in tools) {
-                require(tool.name !in byName) { "Duplicate tool name `${tool.name}`." }
-                byName[tool.name] = tool
-            }
-            return byName
-        }
-    }
 }
 
 /** Construct a [ToolSet] from individual tools. Throws on duplicate names. */
 public fun <TContext> ToolSet(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
-    ToolSet(ToolSet.requireUniqueToolNames(tools.toList()))
+    ToolSet(RequireUniqueToolNames(tools.toList()))
 
 @AiSdkDsl
 /** @since 0.3.0-beta01 */
@@ -534,8 +548,11 @@ public fun <TInput, TOutput, TContext> ProviderExecutedTool(
     }
 }
 
-/** Execute a tool outside the agent loop with one-step lookahead semantics. */
-public fun <TInput, TOutput, TContext> ExecuteTool(
+/**
+ * Execute a tool outside the agent loop with one-step lookahead semantics.
+ * @since 0.3.0-beta01
+ */
+@JvmSynthetic public fun <TInput, TOutput, TContext> ExecuteTool(
     tool: Tool<TInput, TOutput, TContext>,
     input: TInput,
     options: ToolExecutionContext<TContext>,
@@ -553,7 +570,6 @@ public fun <TInput, TOutput, TContext> ExecuteTool(
     emit(final)
 }
 
-@Poko
 /** @since 0.3.0-beta01 */
 public class Schema<T>(
     /** @since 0.3.0-beta01 */
@@ -620,11 +636,12 @@ public object Schemas {
     ): ValidationResult<T> =
         try {
             val validated = schema.validate?.invoke(value) ?: schemaFallbackValue(value, schema.jsonSchema)
+
             @Suppress("UNCHECKED_CAST")
             ValidationResult.Success(validated as T, value)
         } catch (error: Throwable) {
             CancellationExceptions.asCancellationExceptionOrNull(error)?.let { throw it }
-            ValidationResult.Failure(TypeValidationError.wrap(value, error, context), value)
+            ValidationResult.Failure(WrapTypeValidationError(value, error, context), value)
         }
 
     private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any? {
@@ -787,7 +804,10 @@ public sealed class ToolChoice {
  * Distinct from the streaming-tool mechanism — pushes arbitrary [StreamEvent]s.
  */
 public interface ToolStreamWriter {
+    /** @since 0.3.0-beta01 */
     public suspend fun write(event: StreamEvent)
+
+    /** @since 0.3.0-beta01 */
     public suspend fun writeData(value: JsonElement)
 }
 

@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.AnthropicMessagesLanguageModel
+import ai.torad.aisdk.providers.AnthropicErrorMessage
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -27,7 +27,7 @@ class AnthropicDefensiveParsingTest {
             )
         }
 
-        val message = AnthropicMessagesLanguageModel.anthropicErrorMessage(parsed, raw = "raw error body")
+        val message = AnthropicErrorMessage(parsed, raw = "raw error body")
 
         assertEquals("raw error body", message, "a non-primitive message degrades to the raw fallback, no crash")
     }

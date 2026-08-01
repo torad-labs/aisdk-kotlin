@@ -7,7 +7,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.request
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.Flow
@@ -242,12 +241,12 @@ internal class OpenAICompatibleCompletionLanguageModel(
                 is ParseResult.Success -> {
                     val value = event.value.jsonObject
                     if (!emittedResponseMetadata) {
-                        StreamEvent.ResponseMetadata.fromOpenAI(value)?.let {
+                        StreamEventResponseMetadataFromOpenAI(value)?.let {
                             emit(it)
                             emittedResponseMetadata = true
                         }
                     }
-                    value["usage"]?.let { usage = Usage.fromOpenAI(it) }
+                    value["usage"]?.let { usage = UsageFromOpenAI(it) }
                     val choice = ((JsonAccess.arr(value, "choices"))?.firstOrNull() as? JsonObject)
                     val text = (choice?.get("text") as? JsonPrimitive)?.contentOrNull
                     if (!text.isNullOrEmpty()) {
@@ -258,7 +257,7 @@ internal class OpenAICompatibleCompletionLanguageModel(
                         emit(StreamEvent.TextDelta("txt-0", text))
                     }
                     (choice?.get("finish_reason") as? JsonPrimitive)?.contentOrNull?.let {
-                        finish = FinishReason.fromOpenAI(it)
+                        finish = FinishReasonFromOpenAI(it)
                         rawFinish = it
                     }
                 }
@@ -407,7 +406,7 @@ internal class OpenAICompatibleImageModel(
                 responseObject["providerMetadata"],
                 settings.name
             ).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
-            usage = ImageModelUsage.fromOpenAI(responseObject["usage"]),
+            usage = ImageModelUsageFromOpenAI(responseObject["usage"]),
         )
     }
 
@@ -456,9 +455,20 @@ internal class OpenAICompatibleImageModel(
 
     private suspend fun openAICompatibleImageFileBytes(file: ImageGenerationFile): ByteArray = when {
         file.base64 != null -> Base64Codec.decode(file.base64)
-        file.url != null -> client.request(file.url).bodyAsBytes()
+        file.url != null -> downloadImageFile(file.url)
         else -> throw InvalidArgumentError("files", "OpenAI-compatible image edits require file data or URL.")
     }
+
+    /**
+     * The URL here is CALLER-supplied, not response-derived — which is why every sweep for
+     * "provider hands us a URL" missed it. It is still a fetch of an arbitrary remote host whose
+     * bytes get uploaded to the provider, so it needs the same two guards every sibling download
+     * helper has: a size cap (an unbounded [bodyAsBytes] here buffers whatever the host sends) and
+     * a status check (without one, a 404 error page is uploaded as the image or mask and surfaces
+     * as a baffling provider-side rejection — the exact failure `FromGeneratedFile` documents).
+     */
+    private suspend fun downloadImageFile(url: String): ByteArray =
+        AssetDownload.capped(client, url).bytes
 
     private fun openAICompatibleImageFileHeaders(file: ImageGenerationFile, index: Int): Headers =
         Headers.build {
@@ -529,7 +539,9 @@ internal class OpenAICompatibleTranscriptionModel(
                 params.language?.let { append("language", it) }
                 params.prompt?.let { append("prompt", it) }
                 for ((key, value) in options) {
-                    if (key !in setOf("response_format", "file")) append(key, openAIFormValue(value))
+                    if (key !in setOf("responseFormat", "response_format", "file") && value !is JsonNull) {
+                        append(key, openAIFormValue(value))
+                    }
                 }
                 append(
                     "file",

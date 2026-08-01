@@ -18,6 +18,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @Suppress("LargeClass")
@@ -123,7 +124,10 @@ class GoogleMediaProviderTest {
         assertEquals("image", Base64Codec.decode(image.images.single().base64).decodeToString())
         val generatedVideo = video.videos.single()
         assertEquals("https://videos.example/video.mp4", generatedVideo.url)
-        val googleMetadata = generatedVideo.providerMetadata.toMap()["google"]?.jsonObject ?: error("missing google metadata")
+        val googleMetadata = assertNotNull(
+            generatedVideo.providerMetadata.toMap()["google"]?.jsonObject,
+            "missing google metadata",
+        )
         assertEquals("https://videos.example/video.mp4", googleMetadata["uri"]!!.jsonPrimitive.content)
         assertEquals(true, googleMetadata["requiresApiKey"]!!.jsonPrimitive.booleanOrNull)
 

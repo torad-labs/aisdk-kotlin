@@ -1,7 +1,6 @@
 package ai.torad.aisdk.protocol
 
 import ai.torad.aisdk.ContentPart
-import ai.torad.aisdk.metadata
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject

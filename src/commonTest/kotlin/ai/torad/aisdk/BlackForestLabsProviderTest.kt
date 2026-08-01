@@ -91,8 +91,6 @@ class BlackForestLabsProviderTest {
         assertEquals(1, model.maxImagesPerCall)
         assertEquals("image/jpeg", result.images.single().mediaType)
         assertEquals(Base64Codec.encode(byteArrayOf(4, 5, 6)), result.images.single().base64)
-        assertEquals(1, result.warnings.size)
-        assertTrue(result.warnings.single().message.orEmpty().contains("Deriving aspect_ratio"))
 
         val create = fixture.calls[0]
         assertEquals("POST", create.requestMethod)
@@ -100,7 +98,8 @@ class BlackForestLabsProviderTest {
         assertTrue(create.requestUserAgent.orEmpty().contains("ai-sdk/black-forest-labs/$BLACK_FOREST_LABS_VERSION"))
         val body = create.requestBodyJson.jsonObject
         assertEquals("a detailed city model", body["prompt"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("2:1", body["aspect_ratio"]?.jsonPrimitive?.contentOrNull)
+        // flux-pro-1.1 takes width/height only — aspect_ratio must not be sent.
+        assertEquals(null, body["aspect_ratio"])
         assertEquals(7, body["seed"]?.jsonPrimitive?.intOrNull)
         assertEquals(1024, body["width"]?.jsonPrimitive?.intOrNull)
         assertEquals(512, body["height"]?.jsonPrimitive?.intOrNull)
@@ -117,7 +116,17 @@ class BlackForestLabsProviderTest {
 
         assertEquals("GET", fixture.calls[1].requestMethod)
         assertEquals("https://api.bfl.ai/v1/get_result?id=req1", fixture.calls[1].requestUrl)
-        assertEquals("bfl-key", fixture.calls[2].requestHeaders.headerValue("x-key"))
+        // The API key belongs on api.bfl.ai only. calls[2] is the signed delivery URL from the poll
+        // response, on a DIFFERENT origin — this previously asserted `x-key` was sent there, pinning
+        // an API-key leak to a third-party host as expected behaviour.
+        assertEquals("bfl-key", fixture.calls[1].requestHeaders.headerValue("x-key"))
+        val assetFetch = fixture.calls[2]
+        assertEquals("https://cdn.example/out.png", assetFetch.requestUrl)
+        assertEquals(
+            null,
+            assetFetch.requestHeaders.headerValue("x-key"),
+            "the BFL API key must not reach the provider-supplied delivery host",
+        )
 
         val providerMetadata = result.providerMetadata.toMap()["blackForestLabs"]?.jsonObject
         val imageMetadata = providerMetadata?.get("images")?.jsonArray?.single()?.jsonObject
@@ -173,12 +182,12 @@ class BlackForestLabsProviderTest {
         )
 
         val body = fixture.calls.first().requestBodyJson.jsonObject
-        assertEquals("16:9", body["aspect_ratio"]?.jsonPrimitive?.contentOrNull)
+        // fill model is width/height only — aspect_ratio is dropped.
+        assertEquals(null, body["aspect_ratio"])
         assertEquals(1280, body["width"]?.jsonPrimitive?.intOrNull)
         assertEquals(720, body["height"]?.jsonPrimitive?.intOrNull)
         assertEquals("https://example.com/input.png", body["image"]?.jsonPrimitive?.contentOrNull)
         assertEquals("https://example.com/second.png", body["image_2"]?.jsonPrimitive?.contentOrNull)
-        assertTrue(result.warnings.single().message.orEmpty().contains("ignores size"))
     }
 
     @Test
@@ -223,7 +232,7 @@ class BlackForestLabsProviderTest {
             model.generate(
                 ImageGenerationParams {
                     prompt("x")
-                    files(List(11) { ImageGenerationFile(url = "https://example.com/$it.png") })
+                    files(List(9) { ImageGenerationFile(url = "https://example.com/$it.png") })
                 },
             )
         }

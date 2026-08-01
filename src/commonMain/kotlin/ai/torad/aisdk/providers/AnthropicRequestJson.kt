@@ -15,7 +15,7 @@ internal object AnthropicRequestJson {
         } else {
             buildJsonObject {
                 container["id"]?.let { put("id", it) }
-                put("skills", JsonArray(skills.map { skill -> PreparedAnthropicRequest.camelToSnakeJson(skill) }))
+                put("skills", JsonArray(skills.map { skill -> CamelToSnakeJson(skill) }))
             }
         }
     }

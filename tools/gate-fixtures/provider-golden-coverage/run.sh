@@ -5,7 +5,7 @@ trap 'rm -rf "$tmp"' EXIT
 
 mkdir -p "$tmp/tools" "$tmp/src/commonMain/kotlin/ai/torad/aisdk/providers" "$tmp/src/commonTest/kotlin/ai/torad/aisdk" "$tmp/docs"
 cp "$REPO_ROOT/tools/check-provider-golden-coverage.mjs" "$tmp/tools/check-provider-golden-coverage.mjs"
-printf 'public class FixtureProvider\n' > "$tmp/src/commonMain/kotlin/ai/torad/aisdk/providers/FixtureProvider.kt"
+printf 'public sealed class FixtureProvider\n' > "$tmp/src/commonMain/kotlin/ai/torad/aisdk/providers/FixtureProvider.kt"
 printf 'class FixtureProviderTest\n' > "$tmp/src/commonTest/kotlin/ai/torad/aisdk/FixtureProviderTest.kt"
 stream_reference=FixtureProviderTest.kt
 if [ "$CASE_KIND" = "violation" ]; then

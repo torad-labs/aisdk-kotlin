@@ -136,7 +136,7 @@ public class MockRerankingModel(
         }
         return RerankingModelResult(
             results = results,
-            usage = Usage.of(promptTokens = params.query.length, completionTokens = 0)
+            usage = Usage(promptTokens = params.query.length, completionTokens = 0)
         )
     }
 }

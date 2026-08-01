@@ -24,7 +24,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.jsonObject
 
 public const val REVAI_VERSION: String = "2.0.33"
 
@@ -410,37 +409,21 @@ private class RevaiTranscriptionModel(
             params = params,
             headers = settings.revaiHeaders(params.headers),
         )
-        var job = submit.value.jsonObject
-        if ((job["status"] as? JsonPrimitive)?.contentOrNull == "failed") {
+        val submitted = RevaiJobSnapshotDecoder.decode(submit.value)
+        if (submitted.state is RevaiJobState.Failed) {
             throw NoTranscriptGeneratedError("Failed to submit transcription job to Rev.ai")
         }
-        val jobId = (job["id"] as? JsonPrimitive)?.contentOrNull
+        val jobId = submitted.id
             ?: throw InvalidResponseDataError(submit.value, "Rev.ai transcription job response is missing id")
+        if (submitted.state is RevaiJobState.Unknown) submitted.throwInvalidStatus()
 
-        repeat(settings.maxPollAttempts.coerceAtLeast(1)) { attempt ->
-            params.abortSignal.throwIfAborted()
-            val status = (job["status"] as? JsonPrimitive)?.contentOrNull
-            if (status == "transcribed") return@repeat
-            if (attempt > 0 || status != "transcribed") {
-                val poll = revaiGetJson(
-                    url = "$REVAI_BASE_URL/speechtotext/v1/jobs/$jobId",
-                    headers = settings.revaiHeaders(params.headers),
-                    abortSignal = params.abortSignal,
-                )
-                job = poll.value.jsonObject
-                when ((job["status"] as? JsonPrimitive)?.contentOrNull) {
-                    "transcribed" -> return@repeat
-                    "failed" -> throw NoTranscriptGeneratedError("Rev.ai transcription job failed")
-                }
-            }
-            if ((job["status"] as? JsonPrimitive)?.contentOrNull != "transcribed" && settings.pollingIntervalMillis > 0 && attempt < settings.maxPollAttempts - 1) {
-                delay(settings.pollingIntervalMillis)
-            }
-        }
-        if ((job["status"] as? JsonPrimitive)?.contentOrNull != "transcribed") {
-            throw NoTranscriptGeneratedError("Rev.ai transcription job polling timed out")
+        val terminal = if (submitted.state is RevaiJobState.InProgress) {
+            pollRevaiJob(jobId, params)
+        } else {
+            submitted
         }
 
+        params.abortSignal.throwIfAborted()
         val transcript = revaiGetJson(
             url = "$REVAI_BASE_URL/speechtotext/v1/jobs/$jobId/transcript",
             headers = settings.revaiHeaders(params.headers),
@@ -456,9 +439,35 @@ private class RevaiTranscriptionModel(
                 body = transcript.value,
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("revai" to transcript.value))),
-            language = (job["language"] as? JsonPrimitive)?.contentOrNull,
+            language = terminal.language,
             durationInSeconds = mapped.durationInSeconds,
         )
+    }
+
+    private suspend fun pollRevaiJob(
+        jobId: String,
+        params: TranscriptionParams,
+    ): RevaiJobSnapshot {
+        val attempts = settings.maxPollAttempts.coerceAtLeast(1)
+        for (attempt in 0 until attempts) {
+            params.abortSignal.throwIfAborted()
+            val poll = revaiGetJson(
+                url = "$REVAI_BASE_URL/speechtotext/v1/jobs/$jobId",
+                headers = settings.revaiHeaders(params.headers),
+                abortSignal = params.abortSignal,
+            )
+            val snapshot = RevaiJobSnapshotDecoder.decode(poll.value)
+            when (snapshot.state) {
+                RevaiJobState.Transcribed -> return snapshot
+                RevaiJobState.Failed -> throw NoTranscriptGeneratedError("Rev.ai transcription job failed")
+                RevaiJobState.InProgress -> Unit
+                is RevaiJobState.Unknown -> snapshot.throwInvalidStatus()
+            }
+            if (settings.pollingIntervalMillis > 0 && attempt < attempts - 1) {
+                delay(settings.pollingIntervalMillis)
+            }
+        }
+        throw NoTranscriptGeneratedError("Rev.ai transcription job polling timed out")
     }
 
     private suspend fun revaiPostMultipart(
@@ -510,7 +519,7 @@ private class RevaiTranscriptionModel(
         }
 
     private fun revaiConfigBody(params: TranscriptionParams): JsonObject {
-        val options = revaiOptions(params.providerOptions)
+        val options = JsonAccess.obj(params.providerOptions.toMap(), "revai") ?: JsonObject(emptyMap())
         return buildJsonObject {
             put("transcriber", JsonPrimitive(modelId))
             putRevaiOptions(options)
@@ -588,15 +597,59 @@ private class RevaiTranscriptionModel(
         return RevaiTranscriptMapping(text = text, segments = segments, durationInSeconds = durationInSeconds)
     }
 
-    private fun revaiOptions(providerOptions: ProviderOptions): JsonObject =
-        JsonAccess.obj(providerOptions.toMap(), "revai") ?: JsonObject(emptyMap())
-
     private fun revaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
+        // Rev.ai errors are RFC 7807 problem-details: type / title / detail / status.
+        val detail = (obj?.get("detail") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("title") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("type") as? JsonPrimitive)?.contentOrNull
+            ?: ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Rev.ai request failed ($statusCode): $detail"
+    }
+}
+
+private data class RevaiJobSnapshot(
+    val value: JsonElement,
+    val state: RevaiJobState,
+    val id: String?,
+    val language: String?,
+) {
+    fun throwInvalidStatus(): Nothing =
+        throw InvalidResponseDataError(
+            value,
+            "Rev.ai transcription job response has missing, non-string, or unsupported status",
+        )
+}
+
+private sealed interface RevaiJobState {
+    data object Transcribed : RevaiJobState
+    data object Failed : RevaiJobState
+    data object InProgress : RevaiJobState
+    data class Unknown(val raw: JsonElement?) : RevaiJobState
+}
+
+private object RevaiJobSnapshotDecoder {
+    fun decode(value: JsonElement): RevaiJobSnapshot {
+        val job = value as? JsonObject ?: JsonObject(emptyMap())
+        val rawStatus = job["status"]
+        val state = if (rawStatus is JsonPrimitive && rawStatus.isString) {
+            when (rawStatus.content) {
+                "transcribed" -> RevaiJobState.Transcribed
+                "failed" -> RevaiJobState.Failed
+                "in_progress" -> RevaiJobState.InProgress
+                else -> RevaiJobState.Unknown(rawStatus)
+            }
+        } else {
+            RevaiJobState.Unknown(rawStatus)
+        }
+        return RevaiJobSnapshot(
+            value = value,
+            state = state,
+            id = (job["id"] as? JsonPrimitive)?.contentOrNull,
+            language = (job["language"] as? JsonPrimitive)?.contentOrNull,
+        )
     }
 }
 

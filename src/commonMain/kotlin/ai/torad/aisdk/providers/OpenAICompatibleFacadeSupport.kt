@@ -6,7 +6,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -28,7 +27,7 @@ internal data class ProviderCapabilities(
 // Shared JSON field readers for the OpenAI-compatible provider facades
 // (FacadeSupport) plus the raw HTTP transport used by the image/reranking models
 // (FacadeHttp). The settings builder and usage construction now live on their
-// owning types (OpenAICompatibleProviderSettings.forFacade, Usage.fromParts);
+// owning types (ForFacade, UsageFromParts);
 // these readers stay here because they are generic JsonObject/JsonArray accessors
 // with several unrelated facade consumers and no single owning type.
 internal object FacadeSupport {
@@ -118,7 +117,7 @@ internal object FacadeHttp {
     }
 
     suspend fun HttpResponse.parseFacadeBinary(url: String): ProviderFacadeBinaryResponse {
-        val bytes = bodyAsBytes()
+        val bytes = with(HttpTransport) { bodyAsBytesCapped(url) }
         val flattened = with(HttpTransport) { flattenedHeaders() }
         if (status.value !in 200..299) {
             val raw = bytes.decodeToString()
