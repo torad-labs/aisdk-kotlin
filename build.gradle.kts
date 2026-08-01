@@ -11,6 +11,31 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
+// Plugin-classpath security pins.
+//
+// Six advisories (1 critical, 5 high) sat open with NO Dependabot PR, because
+// each is a transitive of the plugin classpath: Dependabot could detect them but
+// had no version declaration to edit, so automated security fixes — which are
+// enabled here — could never act. Declaring them in the catalog gives it
+// something to bump; forcing them here makes the bump take effect.
+//
+// These harden the BUILD, not the published artifact. A compromised build is a
+// supply-chain compromise, which is why they are worth pinning even though
+// nothing here ships to consumers.
+buildscript {
+    configurations.classpath {
+        resolutionStrategy {
+            force(
+                libs.bouncycastle.prov,
+                libs.jackson.core,
+                libs.jackson.databind,
+                libs.jose4j,
+                libs.jdom2,
+            )
+        }
+    }
+}
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)

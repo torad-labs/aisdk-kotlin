@@ -9,12 +9,28 @@ serialization = "1.11.0"
 turbine = "1.2.1"
 ktor = "3.5.1"
 detekt = "1.23.8"
+# Patched versions of PLUGIN-CLASSPATH transitives carrying advisories. Declared
+# here so Dependabot has something to bump: it detected all six and opened no PR
+# for any of them, because a transitive with no version declaration gives it
+# nothing to edit. Forced onto the buildscript classpath in build.gradle.kts.
+bouncycastle = "1.80.2"   # GHSA: GOST 28147 CTR keystream reuse (critical)
+jackson = "2.18.8"        # PolymorphicTypeValidator + allowlist bypasses, async parser
+jose4j = "0.9.6"          # DoS via compressed JWE content
+jdom2 = "2.0.6.1"         # XXE injection
 konsist = "0.17.3"
 kover = "0.9.9"
 dokka = "2.2.0"
 junit = "6.1.1"
 
 [libraries]
+# Build-classpath security pins — see the version comments above. Not shipped in
+# the published artifact; these harden the BUILD, where a compromise is a
+# supply-chain compromise.
+bouncycastle-prov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "jose4j" }
+jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
