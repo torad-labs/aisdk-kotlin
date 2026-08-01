@@ -20,8 +20,8 @@ env:
   AI_SDK_REFERENCE_VERSION: 6.0.208
   AI_SDK_REFERENCE_COMMIT: 3270146267b1d82f07972bc40f09e9b4ee8bb9d3
   # Update AST_GREP_SHA256 together with AST_GREP_VERSION; the package.json drift-check below enforces version consistency.
-  AST_GREP_VERSION: 0.44.0
-  AST_GREP_SHA256: a074982c59a749371d225e6129faf5815f731f460aa080c004af9b7e79c55632
+  AST_GREP_VERSION: '0.45.0'
+  AST_GREP_SHA256: '78931ae35ebac33d9a72b3aecea3e3d62d6e5b0b718ac8bbedfbe69d68421e41'
 
 jobs:
   reference-freshness:
