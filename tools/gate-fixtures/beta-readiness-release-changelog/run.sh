@@ -36,8 +36,11 @@ if brc release-changelog; then
   exit 0
 fi
 
-# 3. Tag-context checks: a v* tag disagreeing with VERSION_NAME must fail even when the
-#    changelog entry exists (the branch GITHUB_REF_NAME selects, invisible outside CI).
+# 3. Release-LINE checks: the promoted branch must agree with the kind of version, even
+#    when the changelog entry exists (the GITHUB_REF_NAME branch, invisible outside CI).
+#    Replaced the old v*-tag/version-mismatch scenario when releases moved from tags to
+#    promotion (git push origin main:beta / merge main -> prod) — that scenario tested a
+#    check that no longer exists, so it would have passed vacuously forever.
 cat > "$tmp/CHANGELOG.md" <<'MD'
 # Changelog
 
@@ -45,8 +48,23 @@ cat > "$tmp/CHANGELOG.md" <<'MD'
 
 - fixture entry
 MD
-if GITHUB_REF_NAME=v1.2.3 brc release-changelog; then
-  echo "FAIL-OPEN: tag/version mismatch passed" >&2
+# VERSION_NAME here is 9.9.9-fixture: not a prerelease, so promoting it to `beta` is wrong.
+if GITHUB_REF_NAME=beta brc release-changelog; then
+  echo "FAIL-OPEN: a final version promoted to the beta line passed" >&2
+  exit 0
+fi
+
+# ...and the mirror: a prerelease promoted to `prod`.
+printf 'VERSION_NAME=9.9.9-rc1\n' > "$tmp/gradle.properties"
+cat > "$tmp/CHANGELOG.md" <<'MD'
+# Changelog
+
+## 9.9.9-rc1
+
+- fixture entry
+MD
+if GITHUB_REF_NAME=prod brc release-changelog; then
+  echo "FAIL-OPEN: a prerelease promoted to the prod line passed" >&2
   exit 0
 fi
 
