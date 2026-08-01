@@ -6,9 +6,13 @@ import { spawnSync } from "node:child_process";
 const repoRoot = process.cwd();
 const fixturesRoot = resolve(repoRoot, process.argv[2] ?? "tools/gate-fixtures");
 
+// Zero-scan guard, applied to the enforcer itself: this harness is the thing that proves
+// gates can fail, so "found no fixtures" must never print OK — a renamed directory or a
+// wrong argv[2] would silently disable every red/green proof at once while ci-gate stays
+// green. If a repo genuinely has no fixtures yet, it should not wire this into its gate.
 if (!existsSync(fixturesRoot)) {
-  console.log("gate fixture harness OK: no fixtures configured");
-  process.exit(0);
+  console.error(`GATE FIXTURE FAIL: fixtures root does not exist: ${fixturesRoot}`);
+  process.exit(1);
 }
 
 const gateDirs = readdirSync(fixturesRoot)
@@ -17,8 +21,8 @@ const gateDirs = readdirSync(fixturesRoot)
   .sort((a, b) => a.name.localeCompare(b.name));
 
 if (gateDirs.length === 0) {
-  console.log("gate fixture harness OK: no fixtures configured");
-  process.exit(0);
+  console.error(`GATE FIXTURE FAIL: zero gate directories under ${fixturesRoot}`);
+  process.exit(1);
 }
 
 const failures = [];
