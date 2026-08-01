@@ -76,6 +76,11 @@ jobs:
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+      # Compliant on purpose: the second Gradle build (smoke) lives in the SAME JOB as
+      # the credentialed steps but in its own step with NO secret env — the exact split
+      # shape the step-scoped check must accept. A job-scoped pattern would misfire here.
+      - name: Smoke-test the staged artifacts
+        run: tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
       - name: Publish to Maven Central
         run: ./tools/upload-central-bundle
         env:

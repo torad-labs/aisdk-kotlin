@@ -168,8 +168,8 @@ jobs:
       - name: Fetch Vercel AI SDK v6 reference
         run: |
           mkdir -p .reference
-          git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}
-          actual_commit="$(git -C .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION} rev-parse HEAD)"
+          git clone --depth 1 --branch "ai@${AI_SDK_REFERENCE_VERSION}" https://github.com/vercel/ai ".reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}"
+          actual_commit="$(git -C ".reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}" rev-parse HEAD)"
           test "${actual_commit}" = "${AI_SDK_REFERENCE_COMMIT}"
       - name: Verify AI SDK reference version
         id: ai_sdk_reference
@@ -222,12 +222,17 @@ jobs:
 
           exit "$failed"
 
-  # Credentialed job. It holds SIGNING_KEY / SONATYPE_* and id-token: write, so it runs
-  # ONLY the staging publish, signing, attestation and upload. Those cannot move -- the
-  # signed bundle has to be produced here -- so Gradle plugins still execute in this job
-  # by necessity; that residual exposure is the honest limit of this split. What it does
-  # remove from the key's blast radius is the whole test suite, npm, and the upstream
-  # clone. Enforced by detect-release-workflow-trust.py.
+  # Credentialed job. It holds SIGNING_KEY / SONATYPE_* and id-token: write. The
+  # staging publish, signing, attestation and upload cannot move — the signed bundle
+  # has to be produced here — so this repo's OWN Gradle build still executes beside
+  # the key by necessity; that residual exposure is the honest limit of the job split.
+  # What the split removes from the key's blast radius is the test suite, npm, and the
+  # upstream clone. WITHIN the job, credentials are STEP-scoped: only "Stage and sign
+  # publications" carries SIGNING_* in env; the local-staging smoke (a second Gradle
+  # build with no dependency verification of its own) and everything after run without
+  # them. An earlier revision exported the key into the smoke's process env and this
+  # very comment claimed otherwise — both are now enforced step-scoped by
+  # detect-release-workflow-trust.py.
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -274,9 +279,8 @@ jobs:
       # fail-fast after the pre-publish gate aggregator above. Dry-run proves
       # local staging/signing/smoke only; it cannot prove Central auth or the
       # Central Portal state machine.
-      - name: Build Maven Central release bundle
+      - name: Stage and sign publications
         env:
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
         run: |
@@ -287,8 +291,32 @@ jobs:
           # globally, but the signing plugin's tasks aren't config-cache compatible
           # and PublishToMavenRepository captures Project references — both only
           # surface during real (remote) publishing, which is CI-only anyway.
+          #
+          # ONLY this step carries SIGNING_* (env: is step-scoped in Actions). The
+          # smoke below launches a SECOND Gradle build whose consumer projects have
+          # no verification-metadata.xml of their own — its plugins must never
+          # execute with the signing key in their process env. Enforced step-scoped
+          # by detect-release-workflow-trust.py.
           ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache
-          tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
+      # Fail closed BEFORE the smoke and the bundle: assert the staged tree contains
+      # every publication the release is supposed to ship, each complete and signed.
+      # kotlin.native.ignoreDisabledTargets=true makes a target that cannot build on
+      # this ubuntu host vanish silently (task and artifacts together), and the old
+      # artifact_count was echoed but never compared — so a beta could ship without
+      # iOS with every gate green. Maven Central coordinates are immutable, so this
+      # has to be caught here, not from the Portal.
+      - name: Verify the staged publication set
+        run: tools/check-release-bundle build/staging-deploy
+      # No credentials: this drives a separate Gradle build rooted at
+      # smoke-tests/local-staging, which resolves com.android.library / kotlin
+      # plugin markers unverified. It only READS build/staging-deploy.
+      - name: Smoke-test the staged artifacts
+        run: tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
+      - name: Bundle the staged artifacts
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+        run: |
+          set -euo pipefail
           # A release bundle must contain only the versioned artifacts. The Portal
           # generates its own group-level metadata, and leaving version-listing
           # maven-metadata.xml in the zip can trip bundle validation.
