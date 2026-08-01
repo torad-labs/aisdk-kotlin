@@ -1,3 +1,17 @@
+# Static security analysis. Weekly cron catches advisories published after a commit
+# lands, which push/PR triggers alone never re-examine.
+#
+# java-kotlin uses build-mode: manual because CodeQL's Kotlin extractor builds the
+# project to construct its database. The build is scoped to compileKotlinJvm — that
+# traverses commonMain -> jvmAndAndroidMain -> jvmMain, which is the whole shared
+# surface, WITHOUT needing the Android SDK or the Kotlin/Native toolchain that a full
+# `check` would pull in. Apple/Linux targets carry no CodeQL-supported language.
+#
+# Kotlin 2.4.0 is analysable as of CodeQL 2.26.0 (supported range is now 1.8.0-2.4.1x).
+# If a future Kotlin bump outruns the extractor again the symptom is
+# KotlinVersionTooRecentError and the job fails repo-wide on every PR regardless of the
+# diff — in that case pin `tools:` on init to a newer bundle rather than deleting the
+# job, so the signal is not silently lost.
 name: codeql
 
 on:
@@ -10,9 +24,13 @@ on:
 permissions:
   contents: read
   security-events: write
+  # Documented by GitHub's starter workflow as required for the init action to fetch
+  # CodeQL query packs. `actions: read` is deliberately NOT granted — it is only needed
+  # for workflows in PRIVATE repositories, and this one is public.
+  packages: read
 
 concurrency:
-  group: codeql-${{ github.ref }}
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -20,12 +38,19 @@ jobs:
     name: codeql-${{ matrix.language }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+      packages: read
+      issues: write # scheduled-failure issue creation
     strategy:
       fail-fast: false
       matrix:
         include:
           - language: java-kotlin
             build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
           - language: actions
             build-mode: none
     steps:
@@ -37,14 +62,24 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: gradle
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        if: matrix.language == 'java-kotlin'
       - name: initialize CodeQL
         uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-      - name: build Kotlin
+      - name: build Kotlin (JVM source sets)
         if: matrix.language == 'java-kotlin'
-        run: ./gradlew classes --no-daemon --stacktrace
+        # --no-build-cache is REQUIRED, not tuning. With build-mode: manual the
+        # CodeQL extractor only sees code that is actually compiled during this
+        # step; a cache hit prints ":compileKotlinJvm FROM-CACHE", nothing is
+        # extracted, and "database finalize" then fails as a configuration error.
+        run: ./gradlew compileKotlinJvm --no-daemon --no-build-cache --stacktrace
       - name: analyze
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+      - name: Open issue on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: tools/open-ci-failure-issue.sh "codeql/${{ matrix.language }}"

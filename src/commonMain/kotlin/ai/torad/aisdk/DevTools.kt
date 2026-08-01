@@ -14,6 +14,7 @@ import kotlin.jvm.JvmOverloads
 import kotlin.time.TimeSource
 
 @Poko
+@ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public class DevToolsStep(
     /** @since 0.3.0-beta01 */
@@ -35,6 +36,7 @@ public class DevToolsStep(
 )
 
 @Poko
+@ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public class DevToolsStepResult(
     /** @since 0.3.0-beta01 */
@@ -53,13 +55,20 @@ public class DevToolsStepResult(
     public val rawChunks: List<JsonElement> = emptyList(),
 )
 
+@ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public interface DevToolsRecorder {
+    /** @since 0.3.0-beta01 */
     public suspend fun createRun(runId: String)
+
+    /** @since 0.3.0-beta01 */
     public suspend fun createStep(step: DevToolsStep)
+
+    /** @since 0.3.0-beta01 */
     public suspend fun updateStepResult(stepId: String, result: DevToolsStepResult)
 }
 
+@ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public class InMemoryDevToolsRecorder : DevToolsRecorder {
     private val _runs: MutableList<String> = mutableListOf()
@@ -89,12 +98,13 @@ public class InMemoryDevToolsRecorder : DevToolsRecorder {
 }
 
 @JvmOverloads
+@ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public fun DevToolsMiddleware(
     recorder: DevToolsRecorder = InMemoryDevToolsRecorder(),
     environment: String = "development",
-    runId: String = IdGenerator.generate(prefix = "run"),
-    idGenerator: () -> String = { IdGenerator.generate(prefix = "step") },
+    runId: String = GenerateId(prefix = "run"),
+    idGenerator: () -> String = { GenerateId(prefix = "step") },
 ): LanguageModelMiddleware {
     if (environment == "production") {
         throw UnsupportedFunctionalityError(

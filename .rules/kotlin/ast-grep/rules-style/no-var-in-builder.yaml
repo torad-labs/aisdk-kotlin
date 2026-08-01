@@ -1,0 +1,20 @@
+id: no-var-in-builder
+language: kotlin
+severity: warning
+message: "public var property in a *Builder class exposes a raw mutable field instead of a controlled setter API. Match the CallSettingsBuilder pattern this SDK already uses elsewhere: a private var backing field + a public fun name(value) setter method, so the builder can validate input or add fields later without it being a public-var ABI commitment (a public var also fails the no-public-mutable-var gate)."
+rule:
+  kind: property_declaration
+  all:
+    - has: { kind: binding_pattern_kind, regex: '^var$' }
+    - not:
+        has:
+          kind: visibility_modifier
+          regex: '^(private|internal|protected)$'
+          stopBy: end
+    - inside:
+        kind: class_body
+        inside:
+          kind: class_declaration
+          has:
+            kind: type_identifier
+            regex: 'Builder'

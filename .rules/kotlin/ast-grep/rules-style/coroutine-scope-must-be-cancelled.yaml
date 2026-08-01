@@ -1,0 +1,60 @@
+# TENET: a class that constructs its own CoroutineScope must cancel it.
+#
+# The upstream torad-toolkit rule for this invariant is `no-coroutine-scope-factory`,
+# which bans the `CoroutineScope(...)` factory outright and points at viewModelScope /
+# lifecycleScope / an injected scope. That is correct for an Android app and WRONG for
+# this repo: a published KMP SDK has no ambient host scope to borrow, so owning a scope
+# is legitimate — the obligation is to cancel it. Verified: the upstream rule reports 6
+# hits here (Generate.kt:214, ToolLoopAgent.kt:244, MCP.kt:381/1424/1774/2100), and five
+# of those explicitly cancel in close(). Banning the construct would be a false positive
+# five times over; requiring the cancel is the invariant that actually holds.
+#
+# Scope law (toolkit doctrine): exclusion only. New files are inside this law by default.
+#
+# Matcher: `pattern:` rather than a hand-built kind:/has: tree, per the same doctrine —
+# the elaborate CST-walking version of this rule false-positived on `@CoroutineScope()`
+# annotation sites, because tree-sitter parses an annotation application as
+# `annotation > constructor_invocation > user_type`, structurally identical to a supertype.
+# `pattern: CoroutineScope($$$ARGS)` cannot make that mistake.
+#
+# stopBy: end on both relations, deliberately. Both are transitive: the construction sits
+# inside a property initialiser or a method body, and the matching cancel() sits in a
+# different member entirely (typically close()/teardown), so neither is a direct child of
+# class_declaration. Omitting stopBy makes both relations structurally unsatisfiable and
+# the rule silently dead.
+#
+# Severity is `warning`, not error, on purpose. One site does not satisfy it today:
+# Generate.kt:169 MemoizedStreamReplay constructs a scope in registerCollector and cancels
+# only the Job it launched (`abandonedProducer?.cancel()`), never the scope. That is safe
+# in practice — the scope is a local, its sole child is cancelled, and it is then
+# collectible — but it is a real deviation. Promoting this rule to LAW (rules/) requires
+# fixing that site first: hold the scope and cancel the scope, which cancels the child as
+# a superset of today's behaviour.
+id: coroutine-scope-must-be-cancelled
+language: kotlin
+severity: warning
+message: "This class constructs a CoroutineScope but never cancels it. A self-constructed scope is owned: cancel it in close()/teardown, or take an injected scope whose lifetime the caller owns."
+ignores:
+  - "**/build/**"
+  - "**/test/**"
+  - "**/*Test/**"
+rule:
+  kind: class_declaration
+  all:
+    - has:
+        stopBy: end
+        pattern: CoroutineScope($$$ARGS)
+    # The cancel side is kind-based, NOT `pattern: $SCOPE.cancel()`. A safe call
+    # `scope?.cancel()` parses as navigation_expression > navigation_suffix with a `?.`
+    # token instead of `.`, so the pattern form missed it and kept flagging a class that
+    # does cancel correctly. Both spellings share this shape, so matching the suffix
+    # identifier covers them. Found by fixing Generate.kt and watching the rule stay red.
+    - not:
+        has:
+          stopBy: end
+          kind: call_expression
+          has:
+            kind: navigation_expression
+            has:
+              kind: navigation_suffix
+              has: { kind: simple_identifier, regex: '^cancel$' }

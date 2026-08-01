@@ -85,9 +85,9 @@ class ModelMessagePokoTest {
         val differentPart: ContentPart = ContentPart.Text("goodbye")
         assertValueSemantics(firstPart, equalPart, differentPart)
 
-        val firstUsage = Usage.of(promptTokens = 1, completionTokens = 2)
-        val equalUsage = Usage.of(promptTokens = 1, completionTokens = 2)
-        val differentUsage = Usage.of(promptTokens = 2, completionTokens = 1)
+        val firstUsage = Usage(promptTokens = 1, completionTokens = 2)
+        val equalUsage = Usage(promptTokens = 1, completionTokens = 2)
+        val differentUsage = Usage(promptTokens = 2, completionTokens = 1)
         assertValueSemantics(firstUsage, equalUsage, differentUsage)
     }
 

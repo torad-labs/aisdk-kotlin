@@ -1,0 +1,48 @@
+id: py-no-split-without-blank-filter
+language: python
+severity: warning
+message: "Splitting an OPTIONAL comma-separated argument without dropping blanks: `\"\".split(\",\")` is `[\"\"]`, not `[]`, so an omitted flag persists a list holding one empty string. Add `if <var>.strip()` to the comprehension."
+note: |
+  Historical bug (review 4813532855): `manifest.py cmd_add` did
+  `[f.strip() for f in files.split(",")]` while the dispatcher passed "" for an omitted --files.
+  The item persisted as `files = [""]`, which `_packet_eligible` then rejected with "item missing
+  files" — permanently undispatchable although the usage text advertises --files as optional — and
+  the empty string polluted the fence database. The same list fed the bare-directory fence check,
+  so both call sites were wrong.
+
+  The reviewer offered this rule for the CLASS and it was not taken at the time; it is here now
+  because the shape recurs anywhere a CLI flag defaults to "" and is split into a list.
+
+  Scoped to LIST separators (`,` `;` `|` `:`), not to every `.split()`. Splitting on a newline is
+  the opposite case — blank lines are content there, not absent items, and filtering them changes
+  the meaning. The unscoped version's only live hit was exactly that: a line-by-line comparison in
+  validate_rules.py where dropping blank lines would have made two files that differ only in
+  blank lines compare equal. A rule whose whole live output is a correct site trains dismissal,
+  which is the failure this package has already been burned by three times.
+rule:
+  kind: list_comprehension
+  all:
+    - has:
+        stopBy: end
+        kind: call
+        all:
+          - has:
+              stopBy: end
+              kind: attribute
+              has:
+                kind: identifier
+                regex: '^split$'
+          - has:
+              kind: argument_list
+              has:
+                stopBy: end
+                # Trailing whitespace included: `split(", ")` is a very common real shape that a
+                # single-character anchor silently exempted. Still excludes "\n" — a newline is an
+                # escape_sequence node, not string_content, so line splitting (where blank lines
+                # are content, not absent items) stays out by construction.
+                kind: string_content
+                regex: '^[,;|:]\s*$'
+    - not:
+        has:
+          stopBy: end
+          kind: if_clause

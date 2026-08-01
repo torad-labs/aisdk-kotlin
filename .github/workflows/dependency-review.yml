@@ -1,3 +1,13 @@
+# Block PRs that introduce vulnerable or licence-incompatible dependencies.
+# This library ships under Apache-2.0 to downstream Kotlin/KMP consumers, so a copyleft
+# transitive dependency is a licensing hazard for every consumer, not just for us.
+#
+# Requires Dependency graph (enabled for this repo). Reviews the PR's manifest diff via
+#   GET /repos/{owner}/{repo}/dependency-graph/compare/{base}...{head}
+# and fails on moderate+ advisories or denied licenses.
+#
+# Deliberately NOT given `continue-on-error: true`. A green-but-inert security check is
+# worse than an absent one. Required on main (branch protection) once the graph is on.
 name: dependency-review
 
 on:

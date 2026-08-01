@@ -1,12 +1,16 @@
-# Stale-issue lifecycle, label-only: 30 days inactive -> `stale` label + a comment
-# asking for a signal. Any activity removes the label. NOTHING auto-closes —
-# auto-close at pre-community volume punishes early reporters for maintainer
-# latency. Escape hatches: `keep-open` label and assignment both exempt.
+# Stale-issue lifecycle, label-only: 30 days inactive → `stale` label + a comment asking
+# for a signal. Any activity removes the label (actions/stale default).
+# NOTHING auto-closes — auto-close at pre-community volume punishes early reporters for
+# maintainer latency. To re-arm closing when a real backlog exists: set
+# days-before-issue-close to a positive number and add a close-issue-message.
+# Escape hatches: `keep-open` label and assignment both exempt.
+#
+# Cron is offset from consumer-canary (37 9 * * 1) so the two never contend on Mondays.
 name: stale
 
 on:
   schedule:
-    - cron: '37 9 * * *'
+    - cron: '23 9 * * *'
   workflow_dispatch:
 
 permissions:
@@ -18,7 +22,7 @@ concurrency:
 jobs:
   stale:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/stale@1e223db275d687790206a7acac4d1a11bd6fe629 # v10.4.0
         with:

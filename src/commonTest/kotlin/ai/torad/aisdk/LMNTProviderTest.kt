@@ -67,14 +67,35 @@ class LMNTProviderTest {
         val body = request.requestBodyJson.jsonObject
         assertEquals("aurora", body["model"]?.jsonPrimitive?.contentOrNull)
         assertEquals("hello", body["text"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("ava", body["voice"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("wav", body["response_format"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("ava", body["voice"]?.jsonPrimitive?.contentOrNull, "explicit voice is preserved")
+        assertEquals("wav", body["format"]?.jsonPrimitive?.contentOrNull)
         assertEquals("fr", body["language"]?.jsonPrimitive?.contentOrNull)
-        assertEquals(1.1f, body["speed"]?.jsonPrimitive?.floatOrNull)
+        assertEquals(null, body["speed"], "speed is not a LMNT body field")
+        assertEquals("2024-10-01", request.requestHeaders.headerValue("lmnt-version"))
+        assertTrue(result.warnings.any { it.message.orEmpty().contains("speed") })
         assertEquals(123, body["seed"]?.jsonPrimitive?.intOrNull)
         assertEquals(24000, body["sample_rate"]?.jsonPrimitive?.intOrNull)
         assertEquals(0.9f, body["top_p"]?.jsonPrimitive?.floatOrNull)
         assertEquals(0.5f, body["temperature"]?.jsonPrimitive?.floatOrNull)
+    }
+
+    @Test
+    fun `speech model defaults voice to leah when omitted`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.lmnt.com/v1/ai/speech/bytes" to UrlHandler(
+                    UrlResponse.Binary(byteArrayOf(1)),
+                ),
+            ),
+        )
+        fixture.server.start()
+        LMNT(fixture.httpClient(), LMNTProviderSettings { apiKey("key") })
+            .speech(ModelId("blizzard"))
+            .generate(SpeechGenerationParams { text("hi") })
+        assertEquals(
+            "leah",
+            fixture.calls.single().requestBodyJson.jsonObject["voice"]?.jsonPrimitive?.contentOrNull,
+        )
     }
 
     @Test
@@ -102,7 +123,7 @@ class LMNTProviderTest {
         assertEquals("unsupported", result.warnings.single().type)
         assertEquals(
             "mp3",
-            fixture.calls.single().requestBodyJson.jsonObject["response_format"]?.jsonPrimitive?.contentOrNull
+            fixture.calls.single().requestBodyJson.jsonObject["format"]?.jsonPrimitive?.contentOrNull
         )
         assertEquals("audio/mpeg", result.audio?.mediaType)
     }

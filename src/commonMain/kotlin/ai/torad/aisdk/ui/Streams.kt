@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonElement
+import kotlin.jvm.JvmSynthetic
 
 @Poko
 /** @since 0.3.0-beta01 */
@@ -42,11 +43,13 @@ public interface ServerResponseWriter {
 
     /** @since 0.3.0-beta01 */
     public fun setHeader(name: String, value: String)
+
+    /** @since 0.3.0-beta01 */
     public suspend fun write(chunk: String)
 }
 
 /** @since 0.3.0-beta01 */
-public fun TextStreamFromEvents(events: Flow<StreamEvent>): Flow<String> =
+@JvmSynthetic public fun TextStreamFromEvents(events: Flow<StreamEvent>): Flow<String> =
     events.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
 /** @since 0.3.0-beta01 */
@@ -65,13 +68,18 @@ public fun CreateUiMessageStreamResponse(
 
 /** @since 0.3.0-beta01 */
 public interface UIMessageStreamWriter {
+    /** @since 0.3.0-beta01 */
     public suspend fun write(message: UIMessage)
+
+    /** @since 0.3.0-beta01 */
     public suspend fun merge(stream: Flow<UIMessage>)
+
+    /** @since 0.3.0-beta01 */
     public suspend fun error(message: String)
 }
 
 /** @since 0.3.0-beta01 */
-public fun CreateUiMessageStream(
+@JvmSynthetic public fun CreateUiMessageStream(
     onError: (Throwable) -> UIMessage = { throwable ->
         UIMessage(
             id = "error",
@@ -111,7 +119,7 @@ public fun CreateUiMessageStream(
 }
 
 /** @since 0.3.0-beta01 */
-public fun ReadUiMessageStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
+@JvmSynthetic public fun ReadUiMessageStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
 
 /** @since 0.3.0-beta01 */
 public sealed class SafeValidateUIMessagesResult {
@@ -125,7 +133,7 @@ public sealed class SafeValidateUIMessagesResult {
 }
 
 /** @since 0.3.0-beta01 */
-public fun TransformTextToUiMessageStream(
+@JvmSynthetic public fun TransformTextToUiMessageStream(
     textStream: Flow<String>,
     assistantMessageId: String,
     metadata: Map<String, JsonElement>? = null,
@@ -166,6 +174,8 @@ public object UiMessageStreams {
     public fun uiMessageStreamHeaders(): Map<String, String> =
         mapOf("Content-Type" to "text/event-stream; charset=utf-8")
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun pipeTextStreamToResponse(
         textStream: Flow<String>,
         response: ServerResponseWriter,
@@ -177,6 +187,8 @@ public object UiMessageStreams {
         textStream.collect { response.write(it) }
     }
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun pipeUiMessageStreamToResponse(
         stream: Flow<UIMessage>,
         response: ServerResponseWriter,
@@ -204,9 +216,9 @@ public object UiMessageStreams {
     /** @since 0.3.0-beta01 */
     public fun handleUiMessageStreamFinish(
         messages: List<UIMessage>,
-        onFinish: (List<UIMessage>) -> Unit,
+        handler: (List<UIMessage>) -> Unit,
     ) {
-        onFinish(messages)
+        handler(messages)
     }
 
     /** @since 0.3.0-beta01 */

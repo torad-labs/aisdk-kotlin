@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Creates a cold [Flow] that emits [chunks] in order with [delayMillis]
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.flow
  *
  * @since 0.3.0-beta01
  */
-public fun <T> SimulateReadableStream(
+@JvmSynthetic public fun <T> SimulateReadableStream(
     chunks: Iterable<T>,
     delayMillis: Long = 0L,
 ): Flow<T> = flow {

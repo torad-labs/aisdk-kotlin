@@ -92,7 +92,7 @@ class AgentsDocSnippetTest {
                 AgentSettings {
                     instructions(instructions + "\nUse workspace ${options?.workspaceId}.")
                     providerOptions(
-                        ProviderOptions.ofPairs(
+                        ProviderOptions(
                             "openai" to buildJsonObject {
                                 put("reasoningEffort", JsonPrimitive("medium"))
                             },
@@ -112,7 +112,7 @@ class AgentsDocSnippetTest {
         val prepared = AgentSettings<AppContext> {
             instructions("Use workspace workspace-1.")
             providerOptions(
-                ProviderOptions.ofPairs(
+                ProviderOptions(
                     "openai" to buildJsonObject {
                         put("reasoningEffort", JsonPrimitive("medium"))
                     },

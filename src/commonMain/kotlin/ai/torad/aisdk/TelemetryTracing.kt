@@ -161,6 +161,7 @@ public interface TelemetryActiveSpan {
 
 /** @since 0.3.0-beta01 */
 public interface TelemetryTracer {
+    /** @since 0.3.0-beta01 */
     public suspend fun <T> startActiveSpan(
         name: String,
         attributes: Map<String, JsonElement> = emptyMap(),

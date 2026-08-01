@@ -28,7 +28,7 @@ class QuiverAIProviderTest {
                 "https://api.quiver.ai/v1/svgs/generations" to UrlHandler(
                     UrlResponse.JsonValue(
                         Json.parseToJsonElement(
-                            """{"id":"svg_1","created":1710000000,"data":[{"svg":"<svg><rect/></svg>","mime_type":"image/svg+xml"}],"usage":{"input_tokens":12,"output_tokens":9,"total_tokens":21}}""",
+                            """{"id":"svg_1","created":1710000000,"data":[{"svg":"<svg><rect/></svg>","mime_type":"image/svg+xml","attributes":{"style":"flat"}}],"credits":{"input_tokens":12,"output_tokens":9,"total_tokens":21},"attributes":{"job":"gen"}}""",
                         ),
                     ),
                 ),
@@ -62,6 +62,19 @@ class QuiverAIProviderTest {
                                     put("topP", JsonPrimitive(0.95))
                                     put("presencePenalty", JsonPrimitive(0.2))
                                     put("maxOutputTokens", JsonPrimitive(4096))
+                                    put(
+                                        "attributes",
+                                        buildJsonObject { put("fill", JsonPrimitive("currentColor")) },
+                                    )
+                                    put(
+                                        "viewBox",
+                                        buildJsonObject {
+                                            put("minX", JsonPrimitive(0))
+                                            put("minY", JsonPrimitive(0))
+                                            put("width", JsonPrimitive(512))
+                                            put("height", JsonPrimitive(512))
+                                        },
+                                    )
                                 },
                             )
                         )
@@ -98,12 +111,17 @@ class QuiverAIProviderTest {
             "BAUG",
             body["references"]?.jsonArray?.get(1)?.jsonObject?.get("base64")?.jsonPrimitive?.contentOrNull
         )
+        val attrs = body["attributes"]?.jsonObject
+        assertEquals("currentColor", attrs?.get("fill")?.jsonPrimitive?.contentOrNull)
+        assertEquals(512, attrs?.get("viewBox")?.jsonObject?.get("width")?.jsonPrimitive?.intOrNull)
+        assertEquals(0, attrs?.get("viewBox")?.jsonObject?.get("minX")?.jsonPrimitive?.intOrNull)
 
         val metadata = result.providerMetadata.toMap()["quiverai"]?.jsonObject
-        assertEquals(
-            "image/svg+xml",
-            metadata?.get("images")?.jsonArray?.single()?.jsonObject?.get("mimeType")?.jsonPrimitive?.contentOrNull
-        )
+        val imageMeta = metadata?.get("images")?.jsonArray?.single()?.jsonObject
+        assertEquals("image/svg+xml", imageMeta?.get("mimeType")?.jsonPrimitive?.contentOrNull)
+        assertEquals("flat", imageMeta?.get("attributes")?.jsonObject?.get("style")?.jsonPrimitive?.contentOrNull)
+        assertEquals("gen", metadata?.get("attributes")?.jsonObject?.get("job")?.jsonPrimitive?.contentOrNull)
+        assertEquals(21, metadata?.get("credits")?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull)
         assertEquals(21, metadata?.get("usage")?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull)
         assertEquals(ImageModelUsage(inputTokens = 12, outputTokens = 9, totalTokens = 21), result.usage)
     }

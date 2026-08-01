@@ -1,0 +1,44 @@
+# TENET: No raw Thread creation.
+# Rationale: Use coroutines for async work. Raw threads bypass structured concurrency,
+# can't be cancelled, and don't propagate context.
+# Vendored from torad-toolkit (2026-07-25); severity lowered to warning on adoption.
+#
+# ACTIVE INVENTORY — 1 site, ADJUDICATED AS CORRECT (2026-07-26):
+#   MCPStdioProcess.jvmAndAndroid.kt  stderr drain thread
+#
+# This one is NOT debt and should not be "burned down". The full reasoning lives at the site;
+# the decisive part is that the drain performs a read that is BOTH permanent (whole child
+# lifetime) and uninterruptible (InputStream.read ignores Thread.interrupt AND coroutine
+# cancellation — only closing the stream unblocks it). Running it on Dispatchers.IO would park
+# one slot of a BOUNDED pool, max(64, ncores), forever per MCP server, so a consumer with many
+# stdio servers would exhaust Dispatchers.IO and deadlock every other IO user in their app —
+# while the coroutine merely LOOKED cancellable. A dedicated daemon thread competes with
+# nothing and never blocks JVM exit. Behaviour is pinned by McpStdioTransportTest's
+# "survives a child that floods stderr" case.
+#
+# The rule stays ENABLED at warning severity on purpose: it must keep catching NEW raw threads,
+# which are almost always wrong. A path ignore is deliberately NOT used — that would exempt
+# future violations in the same file, which is exactly what the exclude-scope doctrine warns
+# against. One standing, explained warning is the honest cost of keeping the guard live.
+id: no-raw-thread
+language: kotlin
+severity: warning
+# Scope law: exclude-based only — new files/folders are inside this law by default.
+# Promoted from torad-fleet (2026-07-13, CR-TOOLKIT-PROMOTE); this pack is the clean
+# canonical form — see sgconfig.yml for the full exclude-scope doctrine banner.
+ignores:
+  - "**/build/**"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/*.gradle.kts"
+  - "**/test/**"
+  - "**/*Test/**"
+  - "**/testFixtures/**"
+  # grandfather entries are per-repo; installs append their own
+message: "Use coroutines instead of raw Thread. Threads bypass structured concurrency."
+rule:
+  any:
+    - pattern: Thread($$$ARGS)
+    - pattern: Thread { $$$BODY }
+    - pattern: thread($$$ARGS)
+    - pattern: thread { $$$BODY }

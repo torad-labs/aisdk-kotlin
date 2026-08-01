@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonElement
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public enum class CompletionStreamProtocol(public val wireValue: String) {
@@ -162,7 +163,7 @@ public class UseCompletionOptions internal constructor(
     /** @since 0.3.0-beta01 */
     public val api: String = "/api/completion",
     /** @since 0.3.0-beta01 */
-    public val id: String = IdGenerator.generate("completion"),
+    public val id: String = GenerateId("completion"),
     /** @since 0.3.0-beta01 */
     public val initialCompletion: String = "",
     /** @since 0.3.0-beta01 */
@@ -184,7 +185,7 @@ public class UseCompletionOptions internal constructor(
 /** @since 0.3.0-beta01 */
 public class UseCompletionOptionsBuilder {
     private var api: String = "/api/completion"
-    private var id: String = IdGenerator.generate("completion")
+    private var id: String = GenerateId("completion")
     private var initialCompletion: String = ""
     private var initialInput: String = ""
     private var headers: Map<String, String> = emptyMap()
@@ -281,7 +282,7 @@ public class CallCompletionApiOptions internal constructor(
     /** @since 0.3.0-beta01 */
     public val api: String = "/api/completion",
     /** @since 0.3.0-beta01 */
-    public val id: String = IdGenerator.generate("completion"),
+    public val id: String = GenerateId("completion"),
     /** @since 0.3.0-beta01 */
     public val prompt: String,
     /** @since 0.3.0-beta01 */
@@ -309,7 +310,7 @@ public class CallCompletionApiOptions internal constructor(
 /** @since 0.3.0-beta01 */
 public class CallCompletionApiOptionsBuilder {
     private var api: String = "/api/completion"
-    private var id: String = IdGenerator.generate("completion")
+    private var id: String = GenerateId("completion")
     private var prompt: String? = null
     private var headers: Map<String, String> = emptyMap()
     private var body: Map<String, JsonElement> = emptyMap()
@@ -427,6 +428,8 @@ public fun CallCompletionApiOptions(
 
 /** @since 0.3.0-beta01 */
 public object CompletionApi {
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun callCompletionApi(options: CallCompletionApiOptions): String? {
         val request = CompletionRequest {
             api(options.api)
@@ -556,6 +559,8 @@ public class Completion(
         mutableState.update { it.copy(phase = CompletionPhase.Done(completion)) }
     }
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun complete(
         prompt: String,
         requestOptions: CompletionRequestOptions = CompletionRequestOptions(),
@@ -609,6 +614,8 @@ public class Completion(
         }
     }
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun handleSubmit(): String? =
         input.takeIf { it.isNotEmpty() }?.let { complete(it) }
 

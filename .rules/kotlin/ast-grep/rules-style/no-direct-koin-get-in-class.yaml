@@ -1,0 +1,24 @@
+id: no-direct-koin-get-in-class
+language: kotlin
+severity: warning
+message: "Direct Koin `get()`/`inject()` call inside a class body (property initializer, delegate, or method). This is the service-locator anti-pattern — dependencies resolved this way are invisible to the constructor signature and untestable without a running Koin container. Declare the dependency as a constructor parameter and wire it in the `module { }` DSL instead."
+rule:
+  kind: call_expression
+  all:
+    - has: { kind: simple_identifier, regex: '^(get|inject)$' }
+    - has: { kind: call_suffix }
+    - inside: { kind: class_body, stopBy: end }
+    - not:
+        inside:
+          stopBy: end
+          kind: call_expression
+          has:
+            kind: simple_identifier
+            regex: '^(module|single|factory|scoped|viewModel|factoryOf|singleOf|worker)$'
+note: >-
+  Name-based (matches identifiers literally named `get`/`inject` called as a
+  function) since ast-grep does not resolve imports — a locally-declared function
+  also named `get()`/`inject()` would false-positive. The module-DSL exclusion
+  walks all enclosing call_expressions, not just the immediate one, so a `get()`
+  nested inside `single { OtherImpl(get()) }` is correctly excluded even though
+  it's several calls deep.

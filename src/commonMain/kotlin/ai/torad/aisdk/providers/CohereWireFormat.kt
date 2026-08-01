@@ -245,6 +245,15 @@ internal object CohereWireFormat {
             -> convertedTools
         }
 
+        // Cohere v2 tool_choice is only AUTO/NONE/REQUIRED — Specific is approximated by
+        // REQUIRED + filtering the tools list to the named tool (the only lossless option).
+        if (toolChoice is ToolChoice.Specific) {
+            warnings += CallWarning(
+                "other",
+                "Cohere tool_choice has no named-tool mode; Specific(\"${toolChoice.toolName}\") " +
+                    "is approximated as REQUIRED with tools filtered to that name.",
+            )
+        }
         return CoherePreparedTools(
             tools = selectedTools.map { it.second },
             toolChoice = when (toolChoice) {
@@ -292,7 +301,7 @@ internal object CohereWireFormat {
         val obj = call as? JsonObject ?: return null
         val function = (JsonAccess.obj(obj, "function")) ?: JsonObject(emptyMap())
         return ContentPart.ToolCall(
-            toolCallId = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
+            toolCallId = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: GenerateId("call"),
             toolName = (function["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             input = cohereToolInput((function["arguments"] as? JsonPrimitive)?.contentOrNull),
         )

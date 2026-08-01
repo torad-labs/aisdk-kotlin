@@ -32,7 +32,7 @@ public class DeepSeekProviderSettings internal constructor(
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(
+        ForFacade(
             name = name,
             version = version,
             baseURL = baseURL,
@@ -119,7 +119,7 @@ public class DeepSeekProviderSettings internal constructor(
             "completion_tokens_details",
             "reasoning_tokens"
         ).coerceAtMost(completionTokens)
-        return Usage.fromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
+        return UsageFromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
     }
 }
 

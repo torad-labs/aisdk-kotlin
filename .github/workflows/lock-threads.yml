@@ -1,5 +1,5 @@
-# Lock closed issues/PRs after 45 quiet days so resolved threads don't accumulate
-# drive-by necro-comments; new reports arrive as new issues instead.
+# Lock closed issues/PRs after 45 quiet days (vscode-style) so resolved threads don't
+# accumulate drive-by necro-comments; new reports arrive as new issues instead.
 name: lock-threads
 
 on:
@@ -17,7 +17,7 @@ concurrency:
 jobs:
   lock:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: dessant/lock-threads@89ae32b08ed1a541efecbab17912962a5e38981c # v6.0.2
         with:

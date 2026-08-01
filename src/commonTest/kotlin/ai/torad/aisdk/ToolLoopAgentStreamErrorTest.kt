@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 class ToolLoopAgentStreamErrorTest {
 
@@ -19,7 +20,7 @@ class ToolLoopAgentStreamErrorTest {
             override val provider: String = "test"
 
             override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-                error("stream only")
+                fail("stream only")
 
             override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
                 emit(StreamEvent.TextStart("t1"))

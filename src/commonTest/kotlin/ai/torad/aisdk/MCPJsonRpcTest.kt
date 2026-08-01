@@ -16,17 +16,17 @@ class MCPJsonRpcTest : MCPClientTestBase() {
 
     @Test
     fun `JSON-RPC parser maps requests notifications responses and errors`() {
-        assertIs<JSONRPCRequest>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}"""))
+        assertIs<JSONRPCRequest>(ParseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}"""))
         assertIs<JSONRPCNotification>(
-            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","method":"notifications/initialized"}""")
+            ParseJSONRPCMessage("""{"jsonrpc":"2.0","method":"notifications/initialized"}""")
         )
-        assertIs<JSONRPCResponse>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"result":{"ok":true}}"""))
+        assertIs<JSONRPCResponse>(ParseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"result":{"ok":true}}"""))
         val nullResult = assertIs<JSONRPCResponse>(
-            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":7,"result":null}"""),
+            ParseJSONRPCMessage("""{"jsonrpc":"2.0","id":7,"result":null}"""),
         )
         assertNull(nullResult.result)
         val error = assertIs<JSONRPCError>(
-            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"bad"}}"""),
+            ParseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"bad"}}"""),
         )
         assertEquals(-1, error.error.code)
     }
@@ -39,7 +39,7 @@ class MCPJsonRpcTest : MCPClientTestBase() {
                 message is JSONRPCRequest && message.method == "initialize" ->
                     respond(message.id, initializeResult())
                 message is JSONRPCRequest && message.method == "tools/list" ->
-                    emitFromServer(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":${message.id},"result":null}"""))
+                    emitFromServer(ParseJSONRPCMessage("""{"jsonrpc":"2.0","id":${message.id},"result":null}"""))
             }
         }
         val client = CreateMCPClient(
@@ -57,7 +57,11 @@ class MCPJsonRpcTest : MCPClientTestBase() {
             )
         }
 
-        assertEquals("Failed to parse server response", error.message)
+        // A null `result` is now diagnosed at its own guard (MCP.kt) and names the method,
+        // instead of falling through to the generic decode failure. The point of this test is
+        // that the pending request SETTLES rather than hanging; asserting the sharper message
+        // keeps that guard pinned to the branch it actually covers.
+        assertEquals("Server response returned null result for tools/list", error.message)
         assertTrue(uncaught.isEmpty(), "null result response should not be routed to uncaught parse errors")
         client.close()
     }
@@ -65,10 +69,10 @@ class MCPJsonRpcTest : MCPClientTestBase() {
     @Test
     fun `JSON-RPC parser rejects malformed envelopes through wire decoder`() {
         assertFailsWith<WireDecodeException> {
-            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"method":"tools/list","unexpected":true}""")
+            ParseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"method":"tools/list","unexpected":true}""")
         }
         assertFailsWith<WireDecodeException> {
-            JSONRPCMessage.fromJson("""{"jsonrpc":"1.0","id":1,"method":"tools/list"}""")
+            ParseJSONRPCMessage("""{"jsonrpc":"1.0","id":1,"method":"tools/list"}""")
         }
     }
 

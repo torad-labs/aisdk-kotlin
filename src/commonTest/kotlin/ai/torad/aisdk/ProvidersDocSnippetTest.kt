@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import ai.torad.aisdk.middleware.LoggingMiddleware
 import ai.torad.aisdk.providers.LiteRTChannel
 import ai.torad.aisdk.providers.LiteRTContent
+import ai.torad.aisdk.providers.LiteRTContentText
 import ai.torad.aisdk.providers.LiteRTConversation
 import ai.torad.aisdk.providers.LiteRTConversationFactory
 import ai.torad.aisdk.providers.LiteRTConversationRequest
@@ -27,6 +28,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.fail
 
 /** Compiles and executes the provider wiki snippets against the real provider APIs. */
 class ProvidersDocSnippetTest {
@@ -65,7 +67,7 @@ class ProvidersDocSnippetTest {
             check(extraContext.isEmpty())
             return LiteRTMessage {
                 role(LiteRTMessageRole.Model)
-                content(listOf(LiteRTContent.Text("local answer")))
+                content(listOf(LiteRTContentText("local answer")))
             }
         }
 
@@ -75,7 +77,7 @@ class ProvidersDocSnippetTest {
             return flowOf(
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("local answer")))
+                    content(listOf(LiteRTContentText("local answer")))
                 },
             )
         }
@@ -129,7 +131,7 @@ class ProvidersDocSnippetTest {
 
     private fun noNetworkClient(): HttpClient = HttpClient(
         MockEngine {
-            error("Provider documentation snippets should not make network requests.")
+            fail("Provider documentation snippets should not make network requests.")
         },
     )
 
@@ -171,7 +173,7 @@ class ProvidersDocSnippetTest {
         val params = LanguageModelCallParams {
             messages(listOf(UserMessage("Plan the next step.")))
             providerOptions(
-                ProviderOptions.ofPairs(
+                ProviderOptions(
                     "litert" to buildJsonObject {
                         put("enableThinking", JsonPrimitive(true))
                         put(

@@ -163,12 +163,12 @@ class StreamEventWireFormatTest {
         )
         assertRoundTrips(
             StreamEvent.StepFinish(1, FinishReason.Stop, Usage()),
-            StreamEvent.StepFinish(2, FinishReason.Length, Usage.of(promptTokens = 1, completionTokens = 2), metadata),
+            StreamEvent.StepFinish(2, FinishReason.Length, Usage(promptTokens = 1, completionTokens = 2), metadata),
             StreamEvent.Finish(1, FinishReason.Stop, Usage()),
             StreamEvent.Finish(
                 totalSteps = 2,
                 finishReason = FinishReason.Length,
-                usage = Usage.of(promptTokens = 3, completionTokens = 4),
+                usage = Usage(promptTokens = 3, completionTokens = 4),
                 providerMetadata = metadata,
                 rawFinishReason = "MAX_TOKENS",
             ),

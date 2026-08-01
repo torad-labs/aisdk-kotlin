@@ -368,10 +368,16 @@ public fun BlackForestLabsProviderSettings(
 ): BlackForestLabsProviderSettings =
     BlackForestLabsProviderSettingsBuilder().apply(block).build()
 
-/** @since 0.3.0-beta01 */
-public interface BlackForestLabsProvider : Provider {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class BlackForestLabsProvider : Provider {
     /** @since 0.3.0-beta01 */
-    public fun image(modelId: ModelId): ImageModel
+    public abstract fun image(modelId: ModelId): ImageModel
     override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
 
     /** @since 0.3.0-beta01 */
@@ -388,8 +394,8 @@ public fun BlackForestLabs(
     settings: BlackForestLabsProviderSettings = BlackForestLabsProviderSettings(),
 ): BlackForestLabsProvider = DefaultBlackForestLabsProvider(client, settings)
 
-/** @since 0.3.0-beta01 */
-public val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsProvider {
+// Named (not anonymous) because a sealed class's direct subtypes must be named declarations.
+private object UnconfiguredBlackForestLabsProvider : BlackForestLabsProvider() {
     override val providerId: String = "black-forest-labs"
     override fun image(modelId: ModelId): ImageModel =
         throw UnsupportedFunctionalityError(
@@ -398,10 +404,13 @@ public val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsPr
         )
 }
 
+/** @since 0.3.0-beta01 */
+public val blackForestLabs: BlackForestLabsProvider = UnconfiguredBlackForestLabsProvider
+
 private class DefaultBlackForestLabsProvider(
     private val client: HttpClient,
     private val settings: BlackForestLabsProviderSettings,
-) : BlackForestLabsProvider {
+) : BlackForestLabsProvider() {
     override val providerId: String = "black-forest-labs"
     override fun image(modelId: ModelId): ImageModel = BlackForestLabsImageModel(client, settings, modelId.value)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(
@@ -452,7 +461,12 @@ private class BlackForestLabsImageModel(
                 ?: settings.pollTimeoutMillis
                 ?: DEFAULT_BFL_POLL_TIMEOUT_MILLIS,
         )
-        val downloaded = bflDownloadImage(client, pollResult.imageUrl, headers, params.abortSignal)
+        // NO caller headers on the asset fetch. `pollResult.imageUrl` comes from the provider's poll
+        // response and BFL serves it from a signed delivery origin, not `api.bfl.ai` — forwarding
+        // `headers` sent the `x-key` API key (plus anything the host configured) to a third-party
+        // host on every generation. The signed URL is the credential; the request needs none.
+        // Matches Fal/Luma/Replicate/xAI, which all download with no headers.
+        val downloaded = bflDownloadImage(client, pollResult.imageUrl, emptyMap(), params.abortSignal)
         return ImageModelResult(
             images = listOf(downloaded.file),
             warnings = args.warnings,
@@ -473,25 +487,37 @@ private class BlackForestLabsImageModel(
         options: JsonObject,
     ): BflArgs {
         val warnings = mutableListOf<CallWarning>()
-        val finalAspectRatio = params.aspectRatio ?: params.size?.let(::bflSizeToAspectRatio)
-        if (params.size != null && params.aspectRatio == null) {
+        val acceptsAspectRatio = bflAcceptsAspectRatio(modelId)
+        val (sizeWidth, sizeHeight) = bflParseSize(params.size)
+        val width = (options["width"] as? JsonPrimitive)?.intOrNull ?: sizeWidth
+        val height = (options["height"] as? JsonPrimitive)?.intOrNull ?: sizeHeight
+        val finalAspectRatio = when {
+            !acceptsAspectRatio -> null
+            params.aspectRatio != null -> params.aspectRatio
+            else -> params.size?.let(::bflSizeToAspectRatio)
+        }
+        if (acceptsAspectRatio && params.size != null && params.aspectRatio == null) {
             warnings += CallWarning(
                 type = "unsupported",
                 message = "Deriving aspect_ratio from size. Use width and height provider options to specify dimensions for models that support them.",
             )
-        } else if (params.size != null && params.aspectRatio != null) {
+        } else if (acceptsAspectRatio && params.size != null && params.aspectRatio != null) {
             warnings += CallWarning(
                 type = "unsupported",
                 message = "Black Forest Labs ignores size when aspectRatio is provided. Use width and height provider options to specify dimensions for models that support them.",
             )
+        } else if (!acceptsAspectRatio && params.aspectRatio != null && width == null && height == null) {
+            warnings += CallWarning(
+                type = "unsupported",
+                message = "aspect_ratio is not accepted by $modelId; provide width/height instead.",
+            )
         }
-        val (sizeWidth, sizeHeight) = bflParseSize(params.size)
-        val width = (options["width"] as? JsonPrimitive)?.intOrNull ?: sizeWidth
-        val height = (options["height"] as? JsonPrimitive)?.intOrNull ?: sizeHeight
         return BflArgs(
             body = buildJsonObject {
                 put("prompt", JsonPrimitive(params.prompt))
-                putStringIfNotNull("aspect_ratio", finalAspectRatio)
+                if (acceptsAspectRatio) {
+                    putStringIfNotNull("aspect_ratio", finalAspectRatio)
+                }
                 putIntIfNotNull("seed", params.seed)
                 putIntIfNotNull("width", width)
                 putIntIfNotNull("height", height)
@@ -505,7 +531,15 @@ private class BlackForestLabsImageModel(
                 putBflInputImages(modelId, params.files)
                 putStringIfNotNull("mask", params.mask?.bflValue())
                 putStringIfNotNull("output_format", (options["outputFormat"] as? JsonPrimitive)?.contentOrNull)
-                putBooleanIfNotNull("prompt_upsampling", (options["promptUpsampling"] as? JsonPrimitive)?.booleanOrNull)
+                // FLUX.2 schema uses `disable_pup` (inverted); older FLUX.1 keeps prompt_upsampling.
+                val promptUpsampling = (options["promptUpsampling"] as? JsonPrimitive)?.booleanOrNull
+                if (promptUpsampling != null) {
+                    if (modelId.contains("flux-2") || modelId.contains("flux.2")) {
+                        put("disable_pup", JsonPrimitive(!promptUpsampling))
+                    } else {
+                        put("prompt_upsampling", JsonPrimitive(promptUpsampling))
+                    }
+                }
                 putBooleanIfNotNull("raw", (options["raw"] as? JsonPrimitive)?.booleanOrNull)
                 putIntIfNotNull("safety_tolerance", (options["safetyTolerance"] as? JsonPrimitive)?.intOrNull)
                 putStringIfNotNull("webhook_secret", (options["webhookSecret"] as? JsonPrimitive)?.contentOrNull)
@@ -515,8 +549,23 @@ private class BlackForestLabsImageModel(
         )
     }
 
+    private fun bflAcceptsAspectRatio(modelId: String): Boolean {
+        val id = modelId.lowercase()
+        // Docs: FLUX.2 t2i and classic FLUX.1 [pro] use width/height; schnell/dev/kontext accept ratio.
+        if (id.contains("flux-2") || id.contains("flux.2")) return false
+        if (id == "flux-pro" || id == "flux-pro-1.0" || id == "flux-pro-1.1" || id.startsWith("flux-pro-1.0")) {
+            // fill/canny/depth variants still use their own schemas; keep ratio off for plain pro.
+            if (id.contains("fill") || id.contains("canny") || id.contains("depth") || id.contains("redux")) {
+                return false
+            }
+            return false
+        }
+        return true
+    }
+
     private fun JsonObjectBuilder.putBflInputImages(modelId: String, files: List<ImageGenerationFile>) {
-        if (files.size > 10) throw InvalidArgumentError("files", "Black Forest Labs supports up to 10 input images.")
+        // Docs stop at input_image_8 (8 images total including the first).
+        if (files.size > 8) throw InvalidArgumentError("files", "Black Forest Labs supports up to 8 input images.")
         val inputImageField = if (modelId == "flux-pro-1.0-fill") "image" else "input_image"
         files.forEachIndexed { index, file ->
             val suffix = if (index == 0) "" else "_${index + 1}"
@@ -704,9 +753,16 @@ private class BlackForestLabsImageModel(
         val obj = parsed as? JsonObject
         val detail = obj?.get("detail")
         val detailContent = (detail as? JsonPrimitive)?.contentOrNull
+        // FastAPI-style validation errors: detail = [{loc, msg, type}, ...]
+        val detailFromArray = (detail as? JsonArray)?.mapNotNull { item ->
+            val entry = item as? JsonObject ?: return@mapNotNull null
+            (entry["msg"] as? JsonPrimitive)?.contentOrNull
+                ?: (entry["message"] as? JsonPrimitive)?.contentOrNull
+        }?.filter { it.isNotBlank() }?.joinToString("; ").orEmpty().ifBlank { null }
         val messageContent = (obj?.get("message") as? JsonPrimitive)?.contentOrNull
         val message = when {
             detailContent != null -> detailContent
+            detailFromArray != null -> detailFromArray
             detail != null && detail !is JsonNull -> detail.toString()
             messageContent != null -> messageContent
             else -> raw.ifBlank { "request failed" }

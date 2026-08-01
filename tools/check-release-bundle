@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Assert a staged release contains every publication it is supposed to, each one
+# complete and signed. Runs AFTER staging and BEFORE the bundle is zipped/uploaded.
+#
+# The hole this closes: release.yml computed `artifact_count` and only ECHOED it on
+# dry-run. Nothing compared it to anything, so a release that produced 5 of 7 modules
+# published happily. Not hypothetical bookkeeping — gradle.properties sets
+# kotlin.native.ignoreDisabledTargets=true, which makes a target that cannot build on
+# the publishing host vanish SILENTLY (publish task and artifacts together). The publish
+# job runs on ubuntu-latest and the Apple klibs cross-compile there; if a Kotlin upgrade
+# ever breaks that, the beta ships without iOS and every gate stays green.
+#
+# Maven Central coordinates are immutable, so an incomplete publish cannot be corrected
+# in place — only superseded. That is why this is fail-closed rather than a warning.
+#
+# DELIBERATELY BASH, not node/python: this runs inside the credentialed publish job, and
+# detect-release-workflow-trust.py forbids invoking an interpreter's tooling there
+# (`node tools/`). Rewriting the check in the shell the job already uses keeps that
+# boundary intact instead of widening the detector to admit this script.
+#
+# Usage: tools/check-release-bundle [staging-dir] [expectation-json]
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+staging="${1:-${root}/build/staging-deploy}"
+expected_file="${2:-${root}/release-modules.json}"
+
+if [ ! -f "${expected_file}" ]; then
+  echo "RELEASE BUNDLE CHECK FAILED: missing expectation file ${expected_file}" >&2
+  exit 1
+fi
+
+# Parse the expectation without a JSON dependency: group is a scalar, modules is a
+# string array. Both are written by hand in release-modules.json and stay simple.
+group="$(sed -n 's/.*"group"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "${expected_file}" | head -1)"
+if [ -z "${group}" ]; then
+  echo "RELEASE BUNDLE CHECK FAILED: no \"group\" in ${expected_file}" >&2
+  exit 1
+fi
+mapfile -t wanted < <(
+  sed -n '/"modules"[[:space:]]*:[[:space:]]*\[/,/]/p' "${expected_file}" \
+    | sed -n 's/.*"\(torad[^"]*\)".*/\1/p' | sort -u
+)
+if [ "${#wanted[@]}" -eq 0 ]; then
+  echo "RELEASE BUNDLE CHECK FAILED: no modules listed in ${expected_file}" >&2
+  exit 1
+fi
+
+modules_root="${staging}/${group//.//}"
+# Zero-scan guard: an empty or missing staging tree must FAIL. "No missing modules among
+# zero modules" is the wrong-directory failure, not a clean release.
+if [ ! -d "${modules_root}" ]; then
+  echo "RELEASE BUNDLE CHECK FAILED: no staged group dir at ${modules_root}" >&2
+  exit 1
+fi
+mapfile -t found < <(find "${modules_root}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+if [ "${#found[@]}" -eq 0 ]; then
+  echo "RELEASE BUNDLE CHECK FAILED: staged group dir ${modules_root} contains no modules" >&2
+  exit 1
+fi
+
+failures=()
+
+for m in "${wanted[@]}"; do
+  printf '%s\n' "${found[@]}" | grep -qx "$m" || failures+=("missing publication: $m")
+done
+# Drift is checked BOTH ways: an unexpected module is a release-shape change that must be
+# decided deliberately, not discovered by a consumer.
+for m in "${found[@]}"; do
+  printf '%s\n' "${wanted[@]}" | grep -qx "$m" \
+    || failures+=("unexpected publication: $m (update release-modules.json deliberately if intended)")
+done
+
+# The root metadata module legitimately ships no jar/aar/klib of its own.
+root_module="$(sed -n 's/.*"\(torad-aisdk\)".*/\1/p' "${expected_file}" | head -1)"
+
+for m in "${wanted[@]}"; do
+  mdir="${modules_root}/${m}"
+  [ -d "${mdir}" ] || continue   # already reported missing
+  mapfile -t versions < <(find "${mdir}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+  if [ "${#versions[@]}" -eq 0 ]; then failures+=("$m: no version directory"); continue; fi
+  for v in "${versions[@]}"; do
+    vdir="${mdir}/${v}"
+    mapfile -t files < <(find "${vdir}" -maxdepth 1 -type f -printf '%f\n' | sort)
+    printf '%s\n' "${files[@]}" | grep -q '\.pom$'    || failures+=("$m:$v: no .pom")
+    printf '%s\n' "${files[@]}" | grep -q '\.module$' || failures+=("$m:$v: no Gradle .module metadata")
+    if [ "$m" != "${root_module}" ]; then
+      printf '%s\n' "${files[@]}" | grep -qE '\.(jar|aar|klib)$' \
+        || failures+=("$m:$v: no primary artifact (.jar/.aar/.klib)")
+    fi
+    # Every publishable file must carry a detached signature — Central rejects unsigned
+    # artifacts, and learning that from the Portal is the expensive path.
+    for f in "${files[@]}"; do
+      case "$f" in
+        *.asc|*.md5|*.sha1|*.sha256|*.sha512) continue ;;
+      esac
+      [ -f "${vdir}/${f}.asc" ] || failures+=("$m:$v: unsigned artifact $f")
+    done
+  done
+done
+
+if [ "${#failures[@]}" -gt 0 ]; then
+  echo "RELEASE BUNDLE CHECK FAILED: ${#failures[@]} problem(s) in ${staging}" >&2
+  for f in "${failures[@]}"; do echo "  - $f" >&2; done
+  echo "Maven Central coordinates are immutable: an incomplete publish cannot be fixed in place." >&2
+  exit 1
+fi
+
+echo "release bundle OK: ${#wanted[@]} publications, all complete and signed"

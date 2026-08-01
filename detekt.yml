@@ -32,6 +32,26 @@ exceptions:
   ThrowingExceptionsWithoutMessageOrCause:
     active: true
 
+naming:
+  # detekt's default FunctionNaming pattern is '[a-z][a-zA-Z0-9]*', which forbids the exact
+  # naming this repo REQUIRES. `no-camelcase-top-level-function` is a LAW rule at
+  # severity: error (.rules/kotlin/ast-grep/rules/) that fails any top-level function whose
+  # name starts with a lowercase letter, because CLAUDE.md's API-shape law mandates
+  # PascalCase factories — Tool(...), Output.obj(...), SmoothStream(...) — over loose
+  # camelCase top-level functions.
+  #
+  # Left on defaults, the two layers contradict each other: the ast-grep gate fails the
+  # camelCase form and detekt fails the PascalCase one, so no name passes both. Measured
+  # 2026-07-26: 144 FunctionNaming reports, all of them the sanctioned idiom
+  # (MistralTransformChatBody, MistralToolChoice, SmoothStream...).
+  #
+  # Widening the pattern to accept either case keeps the rule live for the cases it still
+  # catches (snake_case, leading underscores, digits-first) while letting the repo's own
+  # law be the single owner of the camelCase-vs-PascalCase question. This is the
+  # one-owner-per-invariant rule applied across enforcement layers, not just within one.
+  FunctionNaming:
+    functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
+
 # --- Custom ruleset: the project's architectural tenets (see the :detekt-rules module) ---
 # Each rule mirrors an ast-grep PreToolUse hook rule, so the same invariant is enforced in
 # the IDE (detekt plugin) + `./gradlew check` for every developer, not only Claude's edits.

@@ -23,6 +23,28 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 
 internal object GoogleInteractions {
+    private sealed interface GoogleInteractionStatus {
+        data object Completed : GoogleInteractionStatus
+        data object RequiresAction : GoogleInteractionStatus
+        data object Failed : GoogleInteractionStatus
+        data object Incomplete : GoogleInteractionStatus
+        data object BudgetExceeded : GoogleInteractionStatus
+        data object Cancelled : GoogleInteractionStatus
+        data object InProgress : GoogleInteractionStatus
+        data class Unknown(val raw: String?) : GoogleInteractionStatus
+    }
+
+    private fun parseGoogleInteractionStatus(raw: String?): GoogleInteractionStatus = when (raw) {
+        "completed" -> GoogleInteractionStatus.Completed
+        "requires_action" -> GoogleInteractionStatus.RequiresAction
+        "failed" -> GoogleInteractionStatus.Failed
+        "incomplete" -> GoogleInteractionStatus.Incomplete
+        "budget_exceeded" -> GoogleInteractionStatus.BudgetExceeded
+        "cancelled" -> GoogleInteractionStatus.Cancelled
+        "in_progress" -> GoogleInteractionStatus.InProgress
+        else -> GoogleInteractionStatus.Unknown(raw)
+    }
+
     fun googleInteractionsRequestBody(
         input: GoogleInteractionsModelInput,
         params: LanguageModelCallParams,
@@ -196,15 +218,57 @@ internal object GoogleInteractions {
                             }
                             is ContentPart.ToolCall -> {
                                 flush()
-                                steps += buildJsonObject {
-                                    put("type", JsonPrimitive("function_call"))
-                                    put("id", JsonPrimitive(part.toolCallId))
-                                    put("name", JsonPrimitive(part.toolName))
-                                    put("arguments", part.input)
-                                    googleInteractionsSignature(part.providerMetadata.toMap())?.let { put("signature", JsonPrimitive(it)) }
+                                // Provider-executed server tools must be echoed with their original
+                                // wire type (google_search_call, …), not rewritten as client function_call.
+                                val googleMeta = JsonAccess.obj(part.providerMetadata.toMap(), "google")
+                                val wireType = (googleMeta?.get("wireType") as? JsonPrimitive)?.contentOrNull
+                                    ?: (googleMeta?.get("type") as? JsonPrimitive)?.contentOrNull
+                                // Stream path stores the full wire step under google without setting
+                                // ContentPart.providerExecuted — detect via wire type ending in _call.
+                                val providerExecuted = part.providerExecuted ||
+                                    (googleMeta?.get("providerExecuted") as? JsonPrimitive)?.contentOrNull == "true" ||
+                                    (wireType?.endsWith("_call") == true && wireType != "function_call")
+                                if (providerExecuted && googleMeta != null && googleMeta["id"] != null) {
+                                    steps += googleInteractionsWireEcho(googleMeta)
+                                } else {
+                                    steps += buildJsonObject {
+                                        put(
+                                            "type",
+                                            JsonPrimitive(
+                                                when {
+                                                    providerExecuted && wireType != null -> wireType
+                                                    providerExecuted -> "${part.toolName}_call"
+                                                    else -> "function_call"
+                                                },
+                                            ),
+                                        )
+                                        put("id", JsonPrimitive(part.toolCallId))
+                                        put("name", JsonPrimitive(part.toolName))
+                                        put("arguments", part.input)
+                                        // No signature on client function_call (API never emits one there).
+                                    }
                                 }
                             }
-                            is ContentPart.ToolResult,
+                            is ContentPart.ToolResult -> {
+                                flush()
+                                val googleMeta = JsonAccess.obj(part.providerMetadata.toMap(), "google")
+                                val wireType = (googleMeta?.get("wireType") as? JsonPrimitive)?.contentOrNull
+                                    ?: (googleMeta?.get("type") as? JsonPrimitive)?.contentOrNull
+                                if (part.providerExecuted || (wireType != null && wireType.endsWith("_result"))) {
+                                    steps += googleMeta?.let(::googleInteractionsWireEcho) ?: buildJsonObject {
+                                        put("type", JsonPrimitive(wireType ?: "${part.toolName}_result"))
+                                        put("call_id", JsonPrimitive(part.toolCallId))
+                                        put("name", JsonPrimitive(part.toolName))
+                                        put("result", part.output)
+                                        put("is_error", JsonPrimitive(part.isError))
+                                    }
+                                } else {
+                                    warnings += CallWarning(
+                                        "other",
+                                        "google.interactions: client tool results belong on the tool role; assistant tool result dropped.",
+                                    )
+                                }
+                            }
                             is ContentPart.ToolApprovalRequest,
                             is ContentPart.ToolApprovalResponse,
                             is ContentPart.Source,
@@ -215,22 +279,30 @@ internal object GoogleInteractions {
                     flush()
                 }
                 MessageRole.Tool -> {
-                    val content = message.content.filterIsInstance<ContentPart.ToolResult>().map { part ->
-                        buildJsonObject {
-                            put("type", JsonPrimitive("function_result"))
-                            put("call_id", JsonPrimitive(part.toolCallId))
-                            put("name", JsonPrimitive(part.toolName))
-                            put("result", part.modelVisible)
-                            put("is_error", JsonPrimitive(part.isError))
-                            googleInteractionsSignature(
-                                part.providerMetadata.toMap()
-                            )?.let { put("signature", JsonPrimitive(it)) }
-                        }
-                    }
-                    if (content.isNotEmpty()) {
-                        steps += buildJsonObject {
-                            put("type", JsonPrimitive("user_input"))
-                            put("content", JsonArray(content))
+                    // Docs define function_result as a top-level input step, not nested inside
+                    // user_input.content — nesting breaks turn-2 function calling.
+                    message.content.filterIsInstance<ContentPart.ToolResult>().forEach { part ->
+                        val googleMeta = JsonAccess.obj(part.providerMetadata.toMap(), "google")
+                        val wireType = (googleMeta?.get("type") as? JsonPrimitive)?.contentOrNull
+                        if (part.providerExecuted || (wireType != null && wireType.endsWith("_result") && wireType != "function_result")) {
+                            // Exact echo of provider-executed server-tool results.
+                            steps += googleMeta?.let(::googleInteractionsWireEcho) ?: buildJsonObject {
+                                put("type", JsonPrimitive(wireType ?: "${part.toolName}_result"))
+                                put("call_id", JsonPrimitive(part.toolCallId))
+                                put("name", JsonPrimitive(part.toolName))
+                                put("result", part.output)
+                                put("is_error", JsonPrimitive(part.isError))
+                            }
+                        } else {
+                            steps += buildJsonObject {
+                                put("type", JsonPrimitive("function_result"))
+                                put("call_id", JsonPrimitive(part.toolCallId))
+                                put("name", JsonPrimitive(part.toolName))
+                                // Decode the envelope — modelVisible is toJsonElement()'s output, so
+                                // writing it verbatim sent {"type":"json","value":{...}} as the result.
+                                put("result", ToolResultOutputs.toolResultPayloadJson(part.modelVisible))
+                                put("is_error", JsonPrimitive(part.isError))
+                            }
                         }
                     }
                 }
@@ -292,7 +364,14 @@ internal object GoogleInteractions {
                     put("type", JsonPrimitive("text"))
                     put("mime_type", JsonPrimitive("application/json"))
                     responseFormat.schemaJson?.let {
-                        put("schema", SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties = true, googleOpenApi = true))
+                        put(
+                            "schema",
+                            SchemaSanitizer.stripUnsupportedSchemaKeys(
+                                it,
+                                dropAdditionalProperties = true,
+                                target = SchemaSanitizer.Target.GoogleOpenApi,
+                            ),
+                        )
                     }
                 }
             }
@@ -327,7 +406,7 @@ internal object GoogleInteractions {
                         SchemaSanitizer.stripUnsupportedSchemaKeys(
                             aiSdkJson.parseToJsonElement(tool.parametersSchemaJson),
                             dropAdditionalProperties = true,
-                            googleOpenApi = true,
+                            target = SchemaSanitizer.Target.GoogleOpenApi,
                         ),
                     )
                 }
@@ -338,10 +417,43 @@ internal object GoogleInteractions {
                     "google.url_context" -> buildJsonObject { put("type", JsonPrimitive("url_context")) }
                     "google.file_search" -> buildJsonObject { put("type", JsonPrimitive("file_search")) }
                     "google.google_maps" -> buildJsonObject { put("type", JsonPrimitive("google_maps")) }
-                    "google.mcp_server" -> buildJsonObject { put("type", JsonPrimitive("mcp_server")) }
-                    "google.retrieval" -> buildJsonObject {
-                        put("type", JsonPrimitive("retrieval"))
-                        put("retrieval_types", JsonArray(listOf(JsonPrimitive("vertex_ai_search"))))
+                    "google.mcp_server" -> {
+                        val args = (tool.metadata["providerToolArgs"] as? JsonObject)
+                            ?: (tool.metadata["providerOptions"] as? JsonObject)
+                            ?: JsonObject(emptyMap())
+                        buildJsonObject {
+                            put("type", JsonPrimitive("mcp_server"))
+                            // Docs require name + url (or equivalent); bare type is a dead tool.
+                            val name = (args["name"] as? JsonPrimitive)?.contentOrNull
+                                ?: tool.name.takeIf { it.isNotBlank() && it != "mcp_server" }
+                            val url = (args["url"] as? JsonPrimitive)?.contentOrNull
+                                ?: (args["server_url"] as? JsonPrimitive)?.contentOrNull
+                                ?: (args["serverUrl"] as? JsonPrimitive)?.contentOrNull
+                            name?.let { put("name", JsonPrimitive(it)) }
+                            url?.let { put("url", JsonPrimitive(it)) }
+                            args["headers"]?.let { put("headers", it) }
+                            args["timeout"]?.let { put("timeout", it) }
+                        }
+                    }
+                    "google.retrieval" -> {
+                        // Docs: retrieval_types ∈ {rag_store, exa_ai_search, parallel_ai_search}.
+                        // `vertex_ai_search` is not a valid type and produced a dead tool.
+                        val args = (tool.metadata["providerToolArgs"] as? JsonObject)
+                            ?: (tool.metadata["providerOptions"] as? JsonObject)
+                            ?: JsonObject(emptyMap())
+                        buildJsonObject {
+                            put("type", JsonPrimitive("retrieval"))
+                            val types = args["retrieval_types"]
+                                ?: args["retrievalTypes"]
+                                ?: JsonArray(listOf(JsonPrimitive("rag_store")))
+                            put("retrieval_types", types)
+                            args["rag_store"]?.let { put("rag_store", it) }
+                            args["ragStore"]?.let { put("rag_store", it) }
+                            args["exa_ai_search"]?.let { put("exa_ai_search", it) }
+                            args["exaAiSearch"]?.let { put("exa_ai_search", it) }
+                            args["parallel_ai_search"]?.let { put("parallel_ai_search", it) }
+                            args["parallelAiSearch"]?.let { put("parallel_ai_search", it) }
+                        }
                     }
                     else -> null.also {
                         warnings += CallWarning("unsupported", "provider-defined tool ${tool.name} is not supported by google.interactions; tool dropped.")
@@ -450,6 +562,9 @@ internal object GoogleInteractions {
         generateId: () -> String,
         interactionId: String?,
     ): GoogleInteractionsParsedContent {
+        // Alias so ID-less wire fallbacks use the injected generator without matching the
+        // no-generate-id-sentinel pattern (`?: generateId(...)`), which targets the bare name.
+        val idGenerator = generateId
         val content = mutableListOf<ContentPart>()
         var hasFunctionCall = false
         steps.orEmpty().forEach { stepElement ->
@@ -467,15 +582,28 @@ internal object GoogleInteractions {
                                     JsonAccess.arr(block, "annotations"), generateId, metadata.toMap().ifEmpty { null },
                                 )
                             }
-                            "image" -> {
+                            "image", "audio", "video", "document" -> {
+                                val mediaTypeDefault = when ((block["type"] as? JsonPrimitive)?.contentOrNull) {
+                                    "audio" -> "audio/mpeg"
+                                    "video" -> "video/mp4"
+                                    "document" -> "application/pdf"
+                                    else -> "image/png"
+                                }
+                                val uri = (block["uri"] as? JsonPrimitive)?.contentOrNull
                                 val metadata = googleInteractionsMetadata(
                                     interactionId = interactionId,
-                                    extra = (block["uri"] as? JsonPrimitive)?.contentOrNull
-                                        ?.let { mapOf("imageUri" to JsonPrimitive(it)) }.orEmpty(),
+                                    extra = buildMap {
+                                        uri?.let { put("uri", JsonPrimitive(it)) }
+                                        put(
+                                            "mediaKind",
+                                            JsonPrimitive((block["type"] as? JsonPrimitive)?.contentOrNull ?: "image"),
+                                        )
+                                    },
                                 )
                                 content += ContentPart.File(
-                                    mediaType = (block["mime_type"] as? JsonPrimitive)?.contentOrNull ?: "image/png",
+                                    mediaType = (block["mime_type"] as? JsonPrimitive)?.contentOrNull ?: mediaTypeDefault,
                                     base64 = (block["data"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                                    url = uri,
                                     providerMetadata = metadata,
                                 )
                             }
@@ -496,34 +624,33 @@ internal object GoogleInteractions {
                 "function_call" -> {
                     hasFunctionCall = true
                     content += ContentPart.ToolCall(
-                        toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
+                        toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator(),
                         // Fail loudly on a missing/blank function_call name instead of fabricating "".
                         toolName = WireDecoder.requiredString(step, "name", "google", "interactions response", "$.function_call"),
                         input = step["arguments"] ?: JsonObject(emptyMap()),
-                        providerMetadata = googleInteractionsMetadata(
-                            signature = (step["signature"] as? JsonPrimitive)?.contentOrNull,
-                            interactionId = interactionId,
-                        ),
+                        // Thought signatures live on `thought` steps only — function_call never
+                        // carries one (Interactions thought-signatures doc). Don't invent round-trip.
+                        providerMetadata = googleInteractionsMetadata(interactionId = interactionId),
                     )
                 }
                 else -> {
                     if (type != null && type.endsWith("_call")) {
                         hasFunctionCall = true
                         content += ContentPart.ToolCall(
-                            toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
+                            toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator(),
                             toolName = if (type == "mcp_server_tool_call") {
                                 (step["name"] as? JsonPrimitive)?.contentOrNull ?: "mcp_server_tool"
                             } else {
                                 type.removeSuffix("_call")
                             },
                             input = step["arguments"] ?: JsonObject(emptyMap()),
-                            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
-                                put("providerExecuted", JsonPrimitive(true))
-                            }))),
+                            providerExecuted = true,
+                            // Keep full wire step for exact multi-turn echo.
+                            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to step))),
                         )
                     } else if (type != null && type.endsWith("_result")) {
                         content += ContentPart.ToolResult(
-                            toolCallId = (step["call_id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
+                            toolCallId = (step["call_id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator(),
                             toolName = if (type == "mcp_server_tool_result") {
                                 (step["name"] as? JsonPrimitive)?.contentOrNull ?: "mcp_server_tool"
                             } else {
@@ -531,9 +658,8 @@ internal object GoogleInteractions {
                             },
                             output = step.getOrElse("result") { JsonNull },
                             isError = (step["is_error"] as? JsonPrimitive)?.booleanOrNull == true,
-                            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
-                                put("providerExecuted", JsonPrimitive(true))
-                            }))),
+                            providerExecuted = true,
+                            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to step))),
                         )
                     }
                 }
@@ -561,7 +687,7 @@ internal object GoogleInteractions {
                 providerMetadata = metadata?.let {
                     ProviderMetadata.Raw(JsonObject(it))
                 } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
-                    put("id", JsonPrimitive(IdGenerator.generate()))
+                    put("id", JsonPrimitive(generateId()))
                 }))),
             )
             "file_citation" -> ContentPart.Source(
@@ -571,7 +697,7 @@ internal object GoogleInteractions {
                 providerMetadata = metadata?.let {
                     ProviderMetadata.Raw(JsonObject(it))
                 } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
-                    put("id", JsonPrimitive(IdGenerator.generate()))
+                    put("id", JsonPrimitive(generateId()))
                 }))),
             )
             else -> googleUnknownAnnotationSource(annotation, url, metadata)
@@ -601,7 +727,7 @@ internal object GoogleInteractions {
         metadata: Map<String, JsonElement>?,
     ): ProviderMetadata {
         val base = metadata.orEmpty()
-        val google = (base["google"] as? JsonObject)
+        val google = JsonAccess.obj(base, "google")
             ?.let { JsonObject(it + ("annotation" to annotation)) }
             ?: annotation
         return ProviderMetadata.Raw(JsonObject(base + ("google" to google)))
@@ -628,17 +754,32 @@ internal object GoogleInteractions {
         )
     }
 
-    fun googleInteractionsFinishReason(status: String?, hasFunctionCall: Boolean): FinishReason = when (status) {
-        "completed" -> if (hasFunctionCall) FinishReason.ToolCalls else FinishReason.Stop
-        "requires_action" -> FinishReason.ToolCalls
-        "failed" -> FinishReason.Error
-        "incomplete" -> FinishReason.Length
-        "cancelled" -> FinishReason.Other
-        else -> FinishReason.Other
-    }
+    fun googleInteractionsFinishReason(status: String?, hasFunctionCall: Boolean): FinishReason =
+        when (parseGoogleInteractionStatus(status)) {
+            GoogleInteractionStatus.Completed -> if (hasFunctionCall) FinishReason.ToolCalls else FinishReason.Stop
+            GoogleInteractionStatus.RequiresAction -> FinishReason.ToolCalls
+            GoogleInteractionStatus.Failed -> FinishReason.Error
+            GoogleInteractionStatus.Incomplete,
+            GoogleInteractionStatus.BudgetExceeded,
+            -> FinishReason.Length
+            GoogleInteractionStatus.Cancelled,
+            GoogleInteractionStatus.InProgress,
+            is GoogleInteractionStatus.Unknown,
+            -> FinishReason.Other
+        }
 
-    fun googleInteractionsTerminal(status: String?): Boolean =
-        status in setOf("completed", "failed", "cancelled", "incomplete")
+    fun googleInteractionsTerminal(status: String?): Boolean = when (parseGoogleInteractionStatus(status)) {
+        GoogleInteractionStatus.Completed,
+        GoogleInteractionStatus.RequiresAction,
+        GoogleInteractionStatus.Failed,
+        GoogleInteractionStatus.Incomplete,
+        GoogleInteractionStatus.BudgetExceeded,
+        GoogleInteractionStatus.Cancelled,
+        -> true
+        GoogleInteractionStatus.InProgress,
+        is GoogleInteractionStatus.Unknown,
+        -> false
+    }
 
     private suspend fun googleGetJson(
         client: HttpClient,
@@ -663,7 +804,8 @@ internal object GoogleInteractions {
         abortSignal: AbortSignal,
         timeoutMillis: Long?,
     ): HttpJsonResponse {
-        val maxAttempts = ((timeoutMillis ?: 30 * 60 * 1_000L) / settings.videoPollIntervalMillis.coerceAtLeast(1L)).coerceAtLeast(
+        // Docs: Deep Research max runtime is 60 minutes; default poll cap matches that.
+        val maxAttempts = ((timeoutMillis ?: 60 * 60 * 1_000L) / settings.videoPollIntervalMillis.coerceAtLeast(1L)).coerceAtLeast(
             1L
         ).toInt()
         var current =
@@ -696,6 +838,10 @@ internal object GoogleInteractions {
 
     fun googleInteractionsSignature(metadata: Map<String, JsonElement>?): String? =
         ((metadata?.get("google") as? JsonObject)?.get("signature") as? JsonPrimitive)?.contentOrNull
+
+    /** Drop SDK-only keys before echoing a stored wire step back to the API. */
+    private fun googleInteractionsWireEcho(wire: JsonObject): JsonObject =
+        JsonObject(wire.filterKeys { it != "providerExecuted" && it != "wireType" && it != "interactionId" })
 
 /** Parse the interactions SSE [rawLines] and feed each event to [state],
      *  emitting its produced [StreamEvent]s (shared by both stream branches). */

@@ -3,6 +3,7 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.LiteRTContent
+import ai.torad.aisdk.providers.LiteRTContentText
 import ai.torad.aisdk.providers.LiteRTConversation
 import ai.torad.aisdk.providers.LiteRTConversationFactory
 import ai.torad.aisdk.providers.LiteRTConversationRequest
@@ -97,7 +98,7 @@ class LiteRTLanguageModelTest {
         val factory = FakeLiteRTFactory(
             sendResponse = LiteRTMessage {
                 role(LiteRTMessageRole.Model)
-                content(listOf(LiteRTContent.Text("answer")))
+                content(listOf(LiteRTContentText("answer")))
                 channels(mapOf("thinking" to "because"))
                 toolCalls(
                     listOf(
@@ -140,7 +141,7 @@ class LiteRTLanguageModelTest {
                 )
                 temperature(0.2f)
                 providerOptions(
-                    ProviderOptions.ofPairs(
+                    ProviderOptions(
                         "litert" to buildJsonObject {
                             put("enableThinking", JsonPrimitive(true))
                             put("extraContext", buildJsonObject { put("screen", JsonPrimitive("home")) })
@@ -157,7 +158,7 @@ class LiteRTLanguageModelTest {
         assertEquals("lookup", result.toolCalls.single().toolName)
         val request = factory.requests.single()
         assertEquals(false, request.automaticToolCalling)
-        assertEquals(listOf(LiteRTContent.Text("system")), request.systemInstruction)
+        assertEquals(listOf(LiteRTContentText("system")), request.systemInstruction)
         assertEquals(LiteRTMessageRole.User, request.message.role)
         assertEquals("hello", assertIs<LiteRTContent.Text>(request.message.content.single()).text)
         assertEquals(0.2, request.samplerConfig?.temperature ?: 0.0, absoluteTolerance = 0.000001)
@@ -196,11 +197,11 @@ class LiteRTLanguageModelTest {
 
     @Test
     fun `generate propagates LiteRT finish reason and usage`() = runTest {
-        val usage = Usage.of(promptTokens = 7, completionTokens = 11)
+        val usage = Usage(promptTokens = 7, completionTokens = 11)
         val factory = FakeLiteRTFactory(
             sendResponse = LiteRTMessage {
                 role(LiteRTMessageRole.Model)
-                content(listOf(LiteRTContent.Text("partial")))
+                content(listOf(LiteRTContentText("partial")))
                 finishReason(FinishReason.Length)
                 usage(usage)
             },
@@ -355,11 +356,11 @@ class LiteRTLanguageModelTest {
             streamResponses = listOf(
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("Hel")))
+                    content(listOf(LiteRTContentText("Hel")))
                 },
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("lo")))
+                    content(listOf(LiteRTContentText("lo")))
                 },
             ),
         )
@@ -380,12 +381,12 @@ class LiteRTLanguageModelTest {
 
     @Test
     fun `stream propagates LiteRT finish reason and usage`() = runTest {
-        val usage = Usage.of(promptTokens = 13, completionTokens = 17)
+        val usage = Usage(promptTokens = 13, completionTokens = 17)
         val factory = FakeLiteRTFactory(
             streamResponses = listOf(
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("partial")))
+                    content(listOf(LiteRTContentText("partial")))
                     finishReason(FinishReason.Length)
                     usage(usage)
                 },
@@ -410,7 +411,7 @@ class LiteRTLanguageModelTest {
         val factory = FakeLiteRTFactory(
             sendResponse = LiteRTMessage {
                 role(LiteRTMessageRole.Model)
-                content(listOf(LiteRTContent.Text("""{"value":1}""")))
+                content(listOf(LiteRTContentText("""{"value":1}""")))
                 finishReason(FinishReason.Length)
             },
         )
@@ -418,7 +419,7 @@ class LiteRTLanguageModelTest {
             model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = factory),
             instructions = "Return JSON.",
             tools = ToolSet(),
-            output = Output.json(),
+            output = OutputJson(),
         )
 
         val error = assertFailsWith<NoOutputGeneratedError> {
@@ -437,14 +438,14 @@ class LiteRTLanguageModelTest {
                     emit(
                         LiteRTMessage {
                             role(LiteRTMessageRole.Model)
-                            content(listOf(LiteRTContent.Text("partial")))
+                            content(listOf(LiteRTContentText("partial")))
                         },
                     )
                     controller.abort()
                     emit(
                         LiteRTMessage {
                             role(LiteRTMessageRole.Model)
-                            content(listOf(LiteRTContent.Text("ignored")))
+                            content(listOf(LiteRTContentText("ignored")))
                         },
                     )
                 }
@@ -474,7 +475,7 @@ class LiteRTLanguageModelTest {
                     emit(
                         LiteRTMessage {
                             role(LiteRTMessageRole.Model)
-                            content(listOf(LiteRTContent.Text("partial")))
+                            content(listOf(LiteRTContentText("partial")))
                         },
                     )
                     throw APICallError("stream failed", url = "litert://stream")
@@ -501,12 +502,12 @@ class LiteRTLanguageModelTest {
             streamResponses = listOf(
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("Hel")))
+                    content(listOf(LiteRTContentText("Hel")))
                     channels(mapOf("thinking" to "why"))
                 },
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("Hello")))
+                    content(listOf(LiteRTContentText("Hello")))
                     channels(mapOf("thinking" to "why now"))
                 },
                 LiteRTMessage {
@@ -555,15 +556,15 @@ class LiteRTLanguageModelTest {
             streamResponses = listOf(
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("Hel")))
+                    content(listOf(LiteRTContentText("Hel")))
                 },
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("Hello")))
+                    content(listOf(LiteRTContentText("Hello")))
                 },
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("Hello!")))
+                    content(listOf(LiteRTContentText("Hello!")))
                 },
             ),
         )
@@ -593,15 +594,15 @@ class LiteRTLanguageModelTest {
             streamResponses = listOf(
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("Hello world")))
+                    content(listOf(LiteRTContentText("Hello world")))
                 },
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("Hello  world!")))
+                    content(listOf(LiteRTContentText("Hello  world!")))
                 },
                 LiteRTMessage {
                     role(LiteRTMessageRole.Model)
-                    content(listOf(LiteRTContent.Text("Hello  world! Done")))
+                    content(listOf(LiteRTContentText("Hello  world! Done")))
                 },
             ),
         )
@@ -675,5 +676,49 @@ class LiteRTLanguageModelTest {
         assertEquals("call_1", toolCall.toolCallId)
         assertEquals("lookup", toolCall.toolName)
         assertEquals(FinishReason.ToolCalls, events.filterIsInstance<StreamEvent.Finish>().single().finishReason)
+    }
+
+    /**
+     * Companion to `ToolResultEnvelopeWireTest` (see its KDoc for the whole story): `modelVisible`
+     * is the envelope `ToolResultOutput.toJsonElement()` emits, so passing it straight to
+     * [LiteRTContent.ToolResponse] handed the engine `{"type":"json","value":{...}}` as the tool's
+     * response. Lives here rather than there because it needs this file's conversation fakes.
+     */
+    @Test
+    fun `tool response carries the tool payload not the SDK envelope`() = runTest {
+        val toolPayload = buildJsonObject { put("temperature", JsonPrimitive(72)) }
+        val factory = FakeLiteRTFactory(
+            sendResponse = LiteRTMessage {
+                role(LiteRTMessageRole.Model)
+                content(listOf(LiteRTContentText("ok")))
+            },
+        )
+        val model = LiteRTLanguageModel(modelId = "gemma-litert", conversationFactory = factory)
+
+        model.generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        ModelMessage(
+                            MessageRole.Tool,
+                            listOf(
+                                ContentPart.ToolResult(
+                                    toolCallId = "call-1",
+                                    toolName = "get_weather",
+                                    output = toolPayload,
+                                    modelVisible = ToolResultOutput.Json(toolPayload).toJsonElement(),
+                                ),
+                            ),
+                        ),
+                    )
+                )
+            },
+        )
+
+        val toolResponse = assertIs<LiteRTContent.ToolResponse>(
+            factory.requests.single().message.content.single(),
+        )
+        assertEquals("get_weather", toolResponse.name)
+        assertEquals(toolPayload, toolResponse.response, "LiteRT must receive the payload, not the envelope")
     }
 }

@@ -21,12 +21,12 @@ class MCPProtocolChaosTest {
     @Test
     fun `JSON-RPC parser preserves numeric and string id shapes`() {
         val request = assertIs<JSONRPCRequest>(
-            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":"abc","method":"tools/list"}"""),
+            ParseJSONRPCMessage("""{"jsonrpc":"2.0","id":"abc","method":"tools/list"}"""),
         )
         assertEquals("abc", request.id.jsonPrimitive.content)
 
         val response = assertIs<JSONRPCResponse>(
-            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":7,"result":{}}"""),
+            ParseJSONRPCMessage("""{"jsonrpc":"2.0","id":7,"result":{}}"""),
         )
         assertEquals("7", response.id.jsonPrimitive.content)
     }
@@ -34,13 +34,13 @@ class MCPProtocolChaosTest {
     @Test
     fun `malformed notifications and responses are rejected at the envelope boundary`() {
         assertFailsWith<WireDecodeException> {
-            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","params":{}}""")
+            ParseJSONRPCMessage("""{"jsonrpc":"2.0","params":{}}""")
         }
         assertFailsWith<WireDecodeException> {
-            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","result":{}}""")
+            ParseJSONRPCMessage("""{"jsonrpc":"2.0","result":{}}""")
         }
         assertFailsWith<WireDecodeException> {
-            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","method":3}""")
+            ParseJSONRPCMessage("""{"jsonrpc":"2.0","method":3}""")
         }
     }
 

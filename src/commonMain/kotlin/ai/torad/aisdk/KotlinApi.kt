@@ -264,6 +264,80 @@ public object ProviderOptionsDsl {
         ProviderOptionsBuilder().apply(block).build()
 }
 
+/**
+ * Non-empty message history wrapper for [TextGenerationRequest.Input.MessageHistory] /
+ * [TextGenerationRequest.Input.MessageHistoryWithPrompt].
+ * @since 0.3.0-beta01
+ */
+public fun TextGenerationRequestNonEmptyMessages(
+    first: ModelMessage,
+    vararg rest: ModelMessage,
+): TextGenerationRequest.NonEmptyMessages = TextGenerationRequest.NonEmptyMessages(listOf(first) + rest)
+
+/** @since 0.3.0-beta01 */
+public fun TextGenerationRequestNonEmptyMessages(
+    messages: Iterable<ModelMessage>,
+): TextGenerationRequest.NonEmptyMessages {
+    val values = messages.toList()
+    require(values.isNotEmpty()) { "messages must contain at least one message" }
+    return TextGenerationRequest.NonEmptyMessages(values)
+}
+
+/** @since 0.3.0-beta01 */
+public fun TextGenerationRequestInputPrompt(text: String): TextGenerationRequest.Input =
+    TextGenerationRequest.Input.PromptText(text)
+
+/** @since 0.3.0-beta01 */
+public fun TextGenerationRequestInputMessages(
+    first: ModelMessage,
+    vararg rest: ModelMessage,
+): TextGenerationRequest.Input =
+    TextGenerationRequest.Input.MessageHistory(TextGenerationRequestNonEmptyMessages(first, *rest))
+
+/** @since 0.3.0-beta01 */
+public fun TextGenerationRequestInputMessages(
+    history: TextGenerationRequest.NonEmptyMessages,
+): TextGenerationRequest.Input = TextGenerationRequest.Input.MessageHistory(history)
+
+/** @since 0.3.0-beta01 */
+public fun TextGenerationRequestInputMessagesWithPrompt(
+    history: TextGenerationRequest.NonEmptyMessages,
+    prompt: String,
+): TextGenerationRequest.Input = TextGenerationRequest.Input.MessageHistoryWithPrompt(
+    history = history,
+    prompt = prompt,
+)
+
+internal fun TextGenerationRequestInputFrom(
+    prompt: String?,
+    messages: List<ModelMessage>,
+): TextGenerationRequest.Input =
+    when {
+        prompt != null && messages.isNotEmpty() ->
+            TextGenerationRequest.Input.MessageHistoryWithPrompt(
+                TextGenerationRequestNonEmptyMessages(messages),
+                prompt,
+            )
+        prompt != null -> TextGenerationRequest.Input.PromptText(prompt)
+        messages.isNotEmpty() ->
+            TextGenerationRequest.Input.MessageHistory(TextGenerationRequestNonEmptyMessages(messages))
+        else -> throw IllegalArgumentException(
+            "TextGenerationRequest requires prompt text or non-empty messages"
+        )
+    }
+
+/** @since 0.3.0-beta01 */
+public fun TextGenerationRequest(
+    input: TextGenerationRequest.Input,
+    system: String? = null,
+    settings: CallSettings = CallSettings(),
+): TextGenerationRequest = TextGenerationRequest(
+    prompt = input.prompt,
+    messages = input.messages,
+    system = system,
+    settings = settings,
+)
+
 @Poko
 /** @since 0.3.0-beta01 */
 public class TextGenerationRequest internal constructor(
@@ -276,42 +350,15 @@ public class TextGenerationRequest internal constructor(
     /** @since 0.3.0-beta01 */
     public val settings: CallSettings = CallSettings(),
 ) {
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun of(
-            input: Input,
-            system: String? = null,
-            settings: CallSettings = CallSettings(),
-        ): TextGenerationRequest = TextGenerationRequest(
-            prompt = input.prompt,
-            messages = input.messages,
-            system = system,
-            settings = settings,
-        )
-    }
-
     /** @since 0.3.0-beta01 */
     public val input: Input
-        get() = Input.from(prompt = prompt, messages = messages)
+        get() = TextGenerationRequestInputFrom(prompt = prompt, messages = messages)
 
     /** @since 0.3.0-beta01 */
-    public class NonEmptyMessages private constructor(
+    public class NonEmptyMessages internal constructor(
         /** @since 0.3.0-beta01 */
         public val values: List<ModelMessage>,
-    ) {
-        public companion object {
-            /** @since 0.3.0-beta01 */
-            public fun of(first: ModelMessage, vararg rest: ModelMessage): NonEmptyMessages =
-                NonEmptyMessages(listOf(first) + rest)
-
-            /** @since 0.3.0-beta01 */
-            public fun from(messages: Iterable<ModelMessage>): NonEmptyMessages {
-                val values = messages.toList()
-                require(values.isNotEmpty()) { "messages must contain at least one message" }
-                return NonEmptyMessages(values)
-            }
-        }
-    }
+    )
 
     /** @since 0.3.0-beta01 */
     public sealed class Input {
@@ -346,38 +393,6 @@ public class TextGenerationRequest internal constructor(
             override val prompt: String,
         ) : Input() {
             override val messages: List<ModelMessage> get() = history.values
-        }
-
-        public companion object {
-            /** @since 0.3.0-beta01 */
-            public fun prompt(text: String): Input = PromptText(text)
-
-            /** @since 0.3.0-beta01 */
-            public fun messages(first: ModelMessage, vararg rest: ModelMessage): Input =
-                MessageHistory(NonEmptyMessages.of(first, *rest))
-
-            /** @since 0.3.0-beta01 */
-            public fun messages(history: NonEmptyMessages): Input = MessageHistory(history)
-
-            /** @since 0.3.0-beta01 */
-            public fun messagesWithPrompt(
-                history: NonEmptyMessages,
-                prompt: String,
-            ): Input = MessageHistoryWithPrompt(history = history, prompt = prompt)
-
-            internal fun from(
-                prompt: String?,
-                messages: List<ModelMessage>,
-            ): Input =
-                when {
-                    prompt != null && messages.isNotEmpty() ->
-                        MessageHistoryWithPrompt(NonEmptyMessages.from(messages), prompt)
-                    prompt != null -> PromptText(prompt)
-                    messages.isNotEmpty() -> MessageHistory(NonEmptyMessages.from(messages))
-                    else -> throw IllegalArgumentException(
-                        "TextGenerationRequest requires prompt text or non-empty messages"
-                    )
-                }
         }
     }
 }

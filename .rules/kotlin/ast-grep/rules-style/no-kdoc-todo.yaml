@@ -1,0 +1,16 @@
+id: no-kdoc-todo
+language: kotlin
+severity: warning
+message: "KDoc contains a TODO/FIXME marker; user-facing docs must not carry unresolved work items."
+note: |
+  Matches a `/** ... */` (KDoc) comment whose text contains TODO or FIXME.
+  Kotlin's grammar has one comment kind for both KDoc and plain block
+  comments (`multiline_comment`), so the rule anchors on the leading `/**`
+  to distinguish KDoc from a plain `/* ... */` block comment; `//` line
+  comments never match either way. A TODO/FIXME in KDoc ships to consumers
+  via generated docs (Dokka); track the work item in an issue tracker and
+  either remove the marker or state the constraint as a fact ("Currently
+  limited to X") instead of a to-do.
+rule:
+  kind: multiline_comment
+  regex: '^/\*\*[\s\S]*(TODO|FIXME)'

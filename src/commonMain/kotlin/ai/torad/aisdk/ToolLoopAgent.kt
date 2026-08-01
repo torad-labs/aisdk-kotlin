@@ -26,6 +26,7 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Abstract base [Agent] implementation — the canonical v6 ToolLoopAgent. **Extend it; do not instantiate it.**
@@ -150,7 +151,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     public val maxRetries: Int = settings.maxRetries ?: 2
 
     private val requestedMaxParallelToolCalls =
-        settings.maxParallelToolCalls ?: ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS
+        settings.maxParallelToolCalls ?: DEFAULT_MAX_PARALLEL_TOOL_CALLS
 
     /**
      * Explicit bounded policy for per-step tool execution. Defaults cap both concurrent
@@ -174,7 +175,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
 
     /**
      * Telemetry for this agent's invocations (upstream v7 `telemetry`).
-     * [Telemetry] integrations registered globally via `registerTelemetry`
+     * [Telemetry] integrations registered globally via [RegisterTelemetry]
      * observe every generate/stream call automatically; this setting adds
      * call metadata ([TelemetrySettings.functionId]) or per-agent
      * [TelemetrySettings.integrations] — which, when non-empty, REPLACE the
@@ -406,7 +407,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // clobber a newer submit's state (the stale-write race AgentSession's active()
         // guard prevents). currentEngineJobRef was stored before start() (see callers).
         val ownJob = coroutineContext[Job]
-        val engineAbortSignal = CombineAbortSignals(abortSignal, ownJob?.let(::AbortSignalFromJob) ?: AbortSignalNever)
+        val engineAbortSignal = CombineAbortSignals(abortSignal, ownJob?.let(AbortSignals::from) ?: AbortSignalNever)
         // TOOL-004: seed the active context so approval-resume starts from the caller-supplied
         // context even before prepareStep overrides the running value inside streamInternal.
         currentActiveContextRef.store(context)
@@ -547,7 +548,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 is StreamEvent.TextDelta -> accumulator.append(event.text)
                 is StreamEvent.StepFinish -> {
                     finishReason = event.finishReason
-                    totalUsage = with(UsageArithmetic) { totalUsage + event.usage }
+                    totalUsage += event.usage
                 }
                 is StreamEvent.Finish -> {
                     finishReason = event.finishReason
@@ -614,7 +615,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         val usage = steps.lastOrNull()?.usage ?: totalUsage
         if (output != null && pausedForApproval) {
             emit(
-                GenerateResult.unavailable(
+                GenerateResultUnavailable(
                     outputUnavailableReason = "No object generated: the run is paused for tool approval.",
                     text = text,
                     steps = steps,
@@ -684,7 +685,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * superset that also surfaces the loop's own lifecycle boundaries.
      * @since 0.3.0-beta01
      */
-    public fun events(
+    @JvmSynthetic public fun events(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,
@@ -711,7 +712,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     /**
      * Convenience over [events]: collect the lifecycle stream with one suspend handler —
      * `agent.collectAgentEvents { when (it) { is AgentEvent.Chunk -> … } }`.
+     * @since 0.3.0-beta01
      */
+    @JvmSynthetic
     public suspend fun collectAgentEvents(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
@@ -738,11 +741,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         onActiveContextChanged?.invoke(validatedOptions)
         // v7 telemetry: resolve the effective integration once per invocation and
         // stamp every event of this call with one TelemetryCall envelope.
-        val feed = Telemetry.resolveTelemetry(telemetry, logger)?.let { tele ->
+        val feed = ResolveTelemetry(telemetry, logger)?.let { tele ->
             TelemetryFeed(
                 tele = tele,
                 call = TelemetryCall(
-                    callId = IdGenerator.generate("call"),
+                    callId = GenerateId("call"),
                     agentId = id,
                     agentVersion = version,
                     modelId = model.modelId,
@@ -1421,7 +1424,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             )
             completedSteps.add(step)
             stepsCapture?.steps?.add(step)
-            totalUsage = with(UsageArithmetic) { totalUsage + stepUsage }
+            totalUsage += stepUsage
             lastFinishReason = effectiveFinishReason
 
             val stepFinishEvent = AgentEvent.StepFinished(stepNumber, step)
@@ -1584,6 +1587,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     ),
                 )
             }
+
             @Suppress("UNCHECKED_CAST")
             val typedTool = resolvedTool as Tool<Any?, Any?, TContext>
             val input = resolvedInput
@@ -1617,7 +1621,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     outputJson = outputJson,
                     output = output,
                     modelOutput = modelOutput,
-                    modelVisible = with(ToolResultOutputs) { modelOutput.toJsonElement() },
+                    modelVisible = modelOutput.toJsonElement(),
                 )
             }
         } catch (ce: CancellationException) {
@@ -1692,7 +1696,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         outputJson = outputJson,
                         output = output,
                         modelOutput = modelOutput,
-                        isError = with(ToolResultOutputs) { modelOutput.isToolResultError() },
+                        isError = modelOutput.isToolResultError(),
                         preliminary = true,
                     ),
                 )

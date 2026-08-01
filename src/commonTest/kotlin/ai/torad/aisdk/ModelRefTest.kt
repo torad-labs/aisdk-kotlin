@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.ProviderModels.languageModel
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,7 +20,7 @@ class ModelRefTest {
     @Test
     fun `provider registry resolves typed model references`() {
         val model = MockLanguageModelTextOnly("ok")
-        val registry = ProviderRegistry.createProviderRegistry(
+        val registry = ProviderRegistry(
             "openai" to Provider(
                 providerId = "openai",
                 languageModels = mapOf("gpt-5" to model),
@@ -50,5 +49,27 @@ class ModelRefTest {
         assertFailsWith<NoSuchProviderError> {
             provider.languageModel(ModelRef("anthropic:claude"))
         }
+    }
+
+    @Test
+    fun `provider registry resolves ModelRef via typed components not colon qualifiedName`() {
+        // ModelRef.qualifiedName hardcodes `:`. A registry with separator="/" must still
+        // resolve typed refs from providerId + modelId directly — never by re-parsing
+        // "openai:gpt-5" as a single local id.
+        val model = MockLanguageModelTextOnly("ok")
+        val registry = ProviderRegistry(
+            mapOf(
+                "openai" to Provider(
+                    providerId = "openai",
+                    languageModels = mapOf("gpt-5" to model),
+                ),
+            ),
+            separator = "/",
+        )
+
+        assertSame(model, registry.languageModel(ModelRef("openai", "gpt-5")))
+        assertSame(model, registry.languageModel(ModelRef(ProviderId("openai"), ModelId("gpt-5"))))
+        // Stringly path still honors the custom separator.
+        assertSame(model, registry.languageModel("openai/gpt-5"))
     }
 }

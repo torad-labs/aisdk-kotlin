@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    kotlin("jvm") version "2.4.0"
+    kotlin("jvm") version "2.4.10"
     application
 }
 
@@ -9,7 +9,7 @@ val aisdkVersion = providers.gradleProperty("aisdkVersion").orElse("0.3.0-beta01
 
 dependencies {
     implementation("ai.torad:torad-aisdk:${aisdkVersion.get()}")
-    implementation("io.ktor:ktor-client-cio:3.5.0")
+    implementation("io.ktor:ktor-client-cio:3.5.1")
 }
 
 java {

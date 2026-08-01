@@ -18,7 +18,7 @@ class FromOpenAIMetadataTest {
      */
     @Test
     fun `fromOpenAI tolerates non-primitive id and created without throwing`() {
-        val meta = StreamEvent.ResponseMetadata.fromOpenAI(
+        val meta = StreamEventResponseMetadataFromOpenAI(
             buildJsonObject {
                 put("id", buildJsonObject { put("x", JsonPrimitive(1)) }) // object, not primitive
                 put("created", JsonArray(listOf(JsonPrimitive(1)))) // array, not primitive

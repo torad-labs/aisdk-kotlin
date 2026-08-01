@@ -2,7 +2,6 @@
 
 package ai.torad.aisdk
 
-import ai.torad.aisdk.AgentSessions.session
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.providers.MockToolInput
 import kotlinx.coroutines.CancellationException
@@ -196,7 +195,7 @@ class AgentSessionTest {
                 abortSignal: AbortSignal,
             ): Flow<StreamEvent> = flow {
                 val denied = ToolResultOutput.ExecutionDenied("no")
-                val deniedJson = with(ToolResultOutputs) { denied.toJsonElement() }
+                val deniedJson = denied.toJsonElement()
                 emit(StreamEvent.ReasoningStart("r1"))
                 emit(StreamEvent.ReasoningDelta("r1", "thinking"))
                 emit(StreamEvent.ReasoningEnd("r1"))
@@ -282,7 +281,7 @@ class AgentSessionTest {
                     LanguageModelResult(
                         text = "call$n",
                         finishReason = FinishReason.Stop,
-                        usage = Usage.of(promptTokens = 1, completionTokens = 1),
+                        usage = Usage(promptTokens = 1, completionTokens = 1),
                     )
                 }
 
@@ -292,7 +291,7 @@ class AgentSessionTest {
                 emit(StreamEvent.TextStart("t1"))
                 emit(StreamEvent.TextDelta("t1", "call$n"))
                 emit(StreamEvent.TextEnd("t1"))
-                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage.of(promptTokens = 1, completionTokens = 1)))
+                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)))
             }
         }
         val agent = TestToolLoopAgent<Unit, String>(
@@ -342,7 +341,7 @@ class AgentSessionTest {
                         text = "done",
                         steps = emptyList(),
                         finishReason = FinishReason.Stop,
-                        usage = Usage.of(promptTokens = 1, completionTokens = 1),
+                        usage = Usage(promptTokens = 1, completionTokens = 1),
                         messages = messages,
                     ),
                 )

@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlin.jvm.JvmSynthetic
+
 /**
  * Loop-termination checks for the tool loop.
  * @since 0.3.0-beta01
@@ -19,7 +21,9 @@ public object LoopTermination {
      *     pauses for host to resume)
      *   - The last step's finish reason is `Length` / `ContentFilter`
      *     (provider terminated, can't continue)
+     * @since 0.3.0-beta01
      */
+    @JvmSynthetic
     public suspend fun isLoopFinished(
         state: LoopState,
         stopWhen: StopCondition,

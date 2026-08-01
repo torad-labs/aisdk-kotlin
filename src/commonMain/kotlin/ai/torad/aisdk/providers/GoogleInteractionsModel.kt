@@ -51,7 +51,10 @@ internal class GoogleInteractionsLanguageModel(
             parseJson = true,
         )
         var body = response.value.jsonObject
-        if (modelInput !is GoogleInteractionsModelInput.Model && !googleInteractionsTerminal((body["status"] as? JsonPrimitive)?.contentOrNull)) {
+        // Poll any non-terminal interaction — including background *model* runs (Deep Research
+        // etc.). Previously only agent/managed-agent paths polled, so background model
+        // generate() returned a half-done interaction.
+        if (!googleInteractionsTerminal((body["status"] as? JsonPrimitive)?.contentOrNull)) {
             body = googlePollInteraction(
                 client = client,
                 settings = settings,

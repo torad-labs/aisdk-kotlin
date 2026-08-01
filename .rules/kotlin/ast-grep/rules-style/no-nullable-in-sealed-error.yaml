@@ -1,0 +1,32 @@
+id: no-nullable-in-sealed-error
+language: kotlin
+severity: warning
+message: "A variant of a sealed Result/Error hierarchy carries a nullable payload field. If this variant exists, the payload is presumably always present — a nullable type here means the illegal state (variant present, payload absent) is still representable. Make the field non-null, or split into variants that don't need it."
+rule:
+  kind: class_parameter
+  all:
+    - has: { kind: nullable_type }
+    - inside:
+        kind: primary_constructor
+        inside:
+          kind: class_declaration
+          any:
+            - has:
+                kind: delegation_specifier
+                has:
+                  kind: constructor_invocation
+                  has:
+                    kind: user_type
+                    has: { kind: type_identifier, regex: '(?i)(result|error)' }
+            - inside:
+                kind: class_body
+                inside:
+                  kind: class_declaration
+                  has: { kind: type_identifier, regex: '(?i)(result|error)' }
+note: >-
+  Matches both shapes: a variant nested inside the sealed type's own class_body
+  (`sealed class ResultX { data class Failure(val error: String?) : ResultX() }`)
+  and a variant declared as a top-level sibling delegating to it
+  (`data class Failure(val error: String?) : ResultX()`). Naming-based (Result/Error
+  in the sealed type's identifier) since ast-grep does not resolve `sealed`-ness
+  across files.

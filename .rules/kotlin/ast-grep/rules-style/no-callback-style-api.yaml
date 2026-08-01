@@ -1,0 +1,44 @@
+id: no-callback-style-api
+language: kotlin
+severity: warning
+message: "Public function takes a callback/listener parameter; prefer a suspend function or a Flow-returning function over a Java-style callback."
+note: |
+  Flags a non-suspend, non-Flow-returning, publicly-visible function that
+  declares a parameter named like a callback (`onXxx`, `callback`,
+  `listener`, case-insensitive) or typed as a `*Callback`/`*Listener`. This
+  is a naming-convention heuristic, not a generic "no lambda parameters"
+  rule: ordinary higher-order functions (`map { }`, a DSL builder lambda
+  named `block`) are intentionally NOT flagged — only the callback/listener
+  naming shape is. `suspend` functions, `private`/`internal`/`protected`
+  functions, and functions that already return `Flow<T>` are excluded, since
+  those are the target replacement shapes, not the anti-pattern.
+rule:
+  kind: function_declaration
+  all:
+    - not:
+        has:
+          kind: modifiers
+          has:
+            kind: function_modifier
+            regex: '^suspend$'
+    - not:
+        has:
+          kind: modifiers
+          has:
+            kind: visibility_modifier
+            regex: '^(private|internal|protected)$'
+    - not:
+        has:
+          kind: user_type
+          has:
+            kind: type_identifier
+            regex: '^Flow$'
+    - has:
+        kind: function_value_parameters
+        has:
+          kind: parameter
+          all:
+            - any:
+                - has: { kind: simple_identifier, regex: '(?i)^(on[A-Z]\w*|callback|listener)$' }
+                - has: { kind: user_type, has: { kind: type_identifier, regex: '(Callback|Listener)$' } }
+            - not: { regex: '\bsuspend\b' }

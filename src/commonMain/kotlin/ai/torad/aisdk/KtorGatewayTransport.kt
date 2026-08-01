@@ -327,7 +327,7 @@ public class KtorGatewayTransport(
                     provider = (spec["provider"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     modelId = (spec["modelId"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                 ),
-                modelType = GatewayModelType.fromWire((obj["modelType"] as? JsonPrimitive)?.contentOrNull),
+                modelType = GatewayModelTypeFromWire((obj["modelType"] as? JsonPrimitive)?.contentOrNull),
             )
         }
         return GatewayFetchMetadataResponse(models)
@@ -381,7 +381,7 @@ public class KtorGatewayTransport(
                     model = (obj["model"] as? JsonPrimitive)?.contentOrNull,
                     tag = (obj["tag"] as? JsonPrimitive)?.contentOrNull,
                     provider = (obj["provider"] as? JsonPrimitive)?.contentOrNull,
-                    credentialType = GatewayCredentialType.fromWire(
+                    credentialType = GatewayCredentialTypeFromWire(
                         (obj["credential_type"] as? JsonPrimitive)?.contentOrNull
                             ?: (obj["credentialType"] as? JsonPrimitive)?.contentOrNull,
                     ),
@@ -608,5 +608,5 @@ public class KtorGatewayTransport(
 
 /** Adapter for the shared transport's `errorFromResponse` hook — keeps the rich [GatewayError] hierarchy. */
 private val gatewayError: ResponseErrorFactory = { statusCode, _, raw, _ ->
-    GatewayError.fromResponse(statusCode, raw)
+    GatewayErrorFromResponse(statusCode, raw)
 }

@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -64,9 +65,8 @@ class GladiaProviderTest {
                         JsonObject(
                             mapOf(
                                 "gladia" to buildJsonObject {
-                                    put("contextPrompt", JsonPrimitive("domain words"))
+                                    put("enableCodeSwitching", JsonPrimitive(true))
                                     put("customVocabulary", buildJsonArray { add(JsonPrimitive("Kotlin")) })
-                                    put("detectLanguage", JsonPrimitive(true))
                                     put("diarization", JsonPrimitive(true))
                                     put("translation", JsonPrimitive(true))
                                     put("summarization", JsonPrimitive(true))
@@ -155,8 +155,14 @@ class GladiaProviderTest {
         assertEquals("key", init.requestHeaders.headerValue("x-gladia-key"))
         val body = init.requestBodyJson.jsonObject
         assertEquals("https://cdn.example/audio", body["audio_url"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("domain words", body["context_prompt"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("en", body["language"]?.jsonPrimitive?.contentOrNull)
+        val languageConfig = body["language_config"]?.jsonObject
+        assertEquals(
+            "en",
+            languageConfig?.get("languages")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull,
+        )
+        assertEquals(true, languageConfig?.get("code_switching")?.jsonPrimitive?.booleanOrNull)
+        assertEquals(null, body["detect_language"], "detect_language is not a top-level Gladia field")
+        assertEquals(null, languageConfig?.get("context_prompt"), "context_prompt is not on language_config")
         assertEquals("Kotlin", body["custom_vocabulary"]?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
         assertEquals(
             0.7f,
@@ -189,6 +195,75 @@ class GladiaProviderTest {
         val poll = fixture.calls[2]
         assertEquals("GET", poll.requestMethod)
         assertEquals("key", poll.requestHeaders.headerValue("x-gladia-key"))
+    }
+
+    @Test
+    fun `audio_to_llm_config maps prompts and enables audio_to_llm`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.gladia.io/v2/upload" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"audio_url":"https://cdn.example/audio"}""")),
+                ),
+                "https://api.gladia.io/v2/pre-recorded" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"result_url":"https://api.gladia.io/v2/pre-recorded/job"}""")),
+                ),
+                "https://api.gladia.io/v2/pre-recorded/job" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"done","result":{"transcription":{"full_transcript":"hi","utterances":[]}}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Gladia(
+            fixture.httpClient(),
+            GladiaProviderSettings {
+                apiKey("key")
+                pollingIntervalMillis(0)
+            },
+        ).transcription()
+        model.transcribe(
+            TranscriptionParams {
+                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "gladia" to buildJsonObject {
+                                    put(
+                                        "audioToLlmConfig",
+                                        buildJsonObject {
+                                            put(
+                                                "prompts",
+                                                kotlinx.serialization.json.JsonArray(
+                                                    listOf(JsonPrimitive("Summarize the call.")),
+                                                ),
+                                            )
+                                            put("model", JsonPrimitive("openai/gpt-5.4-nano"))
+                                        },
+                                    )
+                                },
+                            ),
+                        ),
+                    ),
+                )
+            },
+        )
+        val body = fixture.calls.first { it.requestUrl.contains("pre-recorded") && it.requestMethod == "POST" }
+            .requestBodyJson.jsonObject
+        assertEquals(true, body["audio_to_llm"]?.jsonPrimitive?.booleanOrNull)
+        assertEquals(
+            "Summarize the call.",
+            body["audio_to_llm_config"]?.jsonObject?.get("prompts")?.jsonArray?.single()
+                ?.jsonPrimitive?.contentOrNull,
+        )
+        assertEquals(
+            "openai/gpt-5.4-nano",
+            body["audio_to_llm_config"]?.jsonObject?.get("model")?.jsonPrimitive?.contentOrNull,
+        )
+        assertEquals(null, body["audio_to_llm_config"]?.jsonObject?.get("messages"))
     }
 
     @Test

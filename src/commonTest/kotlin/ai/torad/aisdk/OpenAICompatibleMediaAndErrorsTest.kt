@@ -25,6 +25,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @Suppress("LargeClass")
@@ -165,6 +166,44 @@ class OpenAICompatibleMediaAndErrorsTest {
         assertEquals("/v1/images/edits", seenPath)
         assertTrue(seenContentType?.startsWith("multipart/form-data") == true)
         assertEquals("ZWRpdA==", image.image.base64)
+    }
+
+    @Test
+    fun `an image-edit file URL that 404s fails instead of uploading the error page`() = runTest {
+        // The URL here is CALLER-supplied, so it never showed up in any hunt for provider-supplied
+        // download targets. Without a status check the 404 body was uploaded verbatim as the image,
+        // and the caller saw an opaque provider-side rejection instead of the download failure.
+        var uploadedBody: String? = null
+        val client = HttpClient(
+            MockEngine { request ->
+                if (request.url.host == "cdn.test") {
+                    respond("<html>not found</html>", HttpStatusCode.NotFound)
+                } else {
+                    uploadedBody = (request.body as? OutgoingContent.ByteArrayContent)?.bytes()?.decodeToString()
+                    respond(
+                        """{"data":[{"b64_json":"ZWRpdA=="}]}""",
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            },
+        )
+        val provider =
+            OpenAICompatible(client, OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+            })
+
+        val error = assertFailsWith<APICallError> {
+            ImageGeneration.generateImage(
+                model = provider.imageModel("image"),
+                prompt = "edit",
+                files = listOf(ImageGenerationFile(mediaType = "image/png", url = "https://cdn.test/missing.png")),
+            )
+        }
+
+        assertEquals(404, error.statusCode)
+        assertNull(uploadedBody, "the edits endpoint must never be reached with a failed download as its payload")
     }
 
     @Test

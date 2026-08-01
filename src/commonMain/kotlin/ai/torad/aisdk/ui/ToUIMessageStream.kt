@@ -1,10 +1,11 @@
 package ai.torad.aisdk.ui
 
 import ai.torad.aisdk.StreamEvent
-import ai.torad.aisdk.StreamEvent.Companion.toUIMessageChunk
+import ai.torad.aisdk.ToUIMessageChunk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.JsonObject
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Bridge an agent [StreamEvent] flow to the v6 UI-message-stream wire protocol:
@@ -17,5 +18,5 @@ import kotlinx.serialization.json.JsonObject
  * renderable snapshots in-process); use this when serving the stream over HTTP.
  * @since 0.3.0-beta01
  */
-public fun ToUIMessageStream(events: Flow<StreamEvent>): Flow<JsonObject> =
-    events.mapNotNull { it.toUIMessageChunk() }
+@JvmSynthetic public fun ToUIMessageStream(events: Flow<StreamEvent>): Flow<JsonObject> =
+    events.mapNotNull { it.ToUIMessageChunk() }

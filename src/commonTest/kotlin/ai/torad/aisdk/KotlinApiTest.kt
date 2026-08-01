@@ -30,7 +30,7 @@ class KotlinApiTest {
         private val generateResult: LanguageModelResult = LanguageModelResult(
             text = "ok",
             finishReason = FinishReason.Stop,
-            usage = Usage.of(promptTokens = 1, completionTokens = 1),
+            usage = Usage(promptTokens = 1, completionTokens = 1),
         ),
     ) : LanguageModel {
         override val modelId: String = "test/native"
@@ -49,7 +49,7 @@ class KotlinApiTest {
             emit(StreamEvent.TextStart("t1"))
             emit(StreamEvent.TextDelta("t1", "ok"))
             emit(StreamEvent.TextEnd("t1"))
-            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage.of(promptTokens = 1, completionTokens = 1)))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)))
         }
     }
 
@@ -59,9 +59,9 @@ class KotlinApiTest {
             put("reasoningEffort", JsonPrimitive("high"))
         })))
         val model = CapturingModel()
-        val request = TextGenerationRequest.of(
-            input = TextGenerationRequest.Input.messagesWithPrompt(
-                history = TextGenerationRequest.NonEmptyMessages.of(UserMessage("history")),
+        val request = TextGenerationRequest(
+            input = TextGenerationRequestInputMessagesWithPrompt(
+                history = TextGenerationRequestNonEmptyMessages(UserMessage("history")),
                 prompt = "answer",
             ),
             system = "be concise",
@@ -100,7 +100,7 @@ class KotlinApiTest {
                 responseFormat(s.responseFormat ?: ResponseFormat.Text)
                 maxRetries(s.maxRetries)
             },
-        ).generate(GenerationInput.from(prompt = request.prompt, messages = msgs)).first()
+        ).generate(GenerationInput(prompt = request.prompt, messages = msgs)).first()
 
         assertEquals("ok", result.text)
         val params = assertNotNull(model.generateParams)
@@ -135,7 +135,7 @@ class KotlinApiTest {
             if (request.system != null) add(SystemMessage(request.system))
             addAll(request.messages)
         }
-        TextGenerator(model).generate(GenerationInput.from(prompt = request.prompt, messages = msgs)).first()
+        TextGenerator(model).generate(GenerationInput(prompt = request.prompt, messages = msgs)).first()
 
         val params = assertNotNull(model.generateParams)
         assertEquals(listOf(MessageRole.User, MessageRole.User), params.messages.map { it.role })
@@ -144,7 +144,7 @@ class KotlinApiTest {
     @Test
     fun `empty message history is rejected by owned request input`() {
         assertFailsWith<IllegalArgumentException> {
-            TextGenerationRequest.NonEmptyMessages.from(emptyList())
+            TextGenerationRequestNonEmptyMessages(emptyList())
         }
     }
 
@@ -170,7 +170,7 @@ class KotlinApiTest {
                 if (request.system != null) add(SystemMessage(request.system))
                 addAll(request.messages)
             }
-            GenerationInput.from(prompt = request.prompt, messages = msgs)
+            GenerationInput(prompt = request.prompt, messages = msgs)
         }
     }
 
@@ -183,7 +183,7 @@ class KotlinApiTest {
                 if (request.system != null) add(SystemMessage(request.system))
                 addAll(request.messages)
             }
-            GenerationInput.from(prompt = request.prompt, messages = msgs)
+            GenerationInput(prompt = request.prompt, messages = msgs)
         }
     }
 
@@ -224,7 +224,7 @@ class KotlinApiTest {
             generateResult = LanguageModelResult(
                 text = """{"name":"cake"}""",
                 finishReason = FinishReason.Stop,
-                usage = Usage.of(promptTokens = 1, completionTokens = 1),
+                usage = Usage(promptTokens = 1, completionTokens = 1),
             ),
         )
         val output = OutputObj<Recipe>(serializer(), name = "Recipe")

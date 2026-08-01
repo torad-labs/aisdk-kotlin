@@ -1,0 +1,11 @@
+id: no-jvmstatic-on-expect
+language: kotlin
+severity: warning
+message: "@JvmStatic on an expect declaration has no effect — expect declares only a signature with no body, so there's no member to make static. Move @JvmStatic to the actual implementation(s) that need it."
+rule:
+  kind: modifiers
+  all:
+    - has:
+        kind: annotation
+        has: { kind: type_identifier, regex: '^JvmStatic$', stopBy: end }
+    - has: { kind: platform_modifier, regex: '^expect$' }

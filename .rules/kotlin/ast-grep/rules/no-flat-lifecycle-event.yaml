@@ -1,0 +1,49 @@
+id: no-flat-lifecycle-event
+language: kotlin
+severity: error
+# ACTIVE (the file carries no disabled_ prefix, so both the Claude PreToolUse hook and the
+# whole-tree ci-gate enforce it). The header used to say "STAGED ... activate by renaming ...
+# once the 9 flat lifecycle events are converted": the redesign landed, the rename happened,
+# and the prose describing the rule as inert outlived both — so a reader checking whether this
+# invariant is enforced would have concluded it is not. It is.
+#
+# Its zero live hits are a CORRECTLY unmoved instrument, not an inert rule: Lifecycle.kt:24 and
+# Streaming.kt:84 are the only event hierarchies left and both are `sealed class` with nested
+# subtypes, i.e. the shape this forbids has genuinely been eliminated. The fixture proves the
+# rule still fires on a flat `OnFooEvent(...)`, which is what separates zero-because-clean from
+# zero-because-broken.
+#
+# Enforces: a top-level `data class …Event` MUST be a subtype of the sealed event
+# hierarchy (have a `: AgentEvent()` supertype), never a free-floating flat struct.
+# Tested: matches a flat `OnFooEvent(...)`; skips `… : AgentEvent()` subtypes and
+# non-event data classes.
+#
+# Two holes closed after review, both of which made the wall narrower than this header claims:
+#
+#  1. It required `class_modifier: data`. This repo's CLAUDE.md mandates `@Poko class` over
+#     `data class` for public value types, and Lifecycle.kt:29 is written exactly that way
+#     (`@Poko public class Started<TContext> ... : AgentEvent()`). So the rule was blind to the
+#     ONLY shape a new event would be written in under current policy — its zero was guaranteed
+#     regardless of what anyone added. Now matches either idiom.
+#  2. It was `not: has: delegation_specifier` — "must have SOME supertype". A flat
+#     `data class OnBarEvent(...) : Serializable` satisfied that and passed, while the header
+#     claimed subtyping of the sealed hierarchy. Now the supertype must actually name
+#     AgentEvent/StreamEvent.
+rule:
+  all:
+    - kind: class_declaration
+    - inside: { kind: source_file }
+    - has: { kind: type_identifier, regex: 'Event$', stopBy: neighbor }
+    - has:
+        kind: modifiers
+        any:
+          - has: { kind: class_modifier, regex: 'data' }
+          - has: { kind: annotation, has: { kind: type_identifier, regex: '^Poko$', stopBy: end } }
+    - not:
+        has:
+          kind: delegation_specifier
+          stopBy: neighbor
+          has:
+            stopBy: end
+            kind: type_identifier
+            regex: '(AgentEvent|StreamEvent)$'

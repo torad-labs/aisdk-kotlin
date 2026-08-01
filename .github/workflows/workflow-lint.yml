@@ -1,0 +1,90 @@
+# Static analysis of GitHub Actions workflows themselves.
+#
+# - actionlint: syntax, expression types, common shell pitfalls in `run:` blocks
+# - zizmor: security-oriented audit (untrusted input into run:, pull_request_target
+#   footguns, overly broad permissions, template injection)
+#
+# Both tools are checksum-pinned binaries (same integrity bar as AST_GREP in ci.yml).
+# Not a main required check yet — land signal first, promote if clean.
+name: workflow-lint
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - ".github/actions/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - ".github/actions/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflow-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ACTIONLINT_VERSION: "1.7.12"
+  ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+  ZIZMOR_VERSION: "1.28.0"
+  ZIZMOR_SHA256: "e87b67160194884e375a46a12c57ccc904f762b53845f254fab7f17d98809c09"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install actionlint (checksum-pinned)
+        run: |
+          set -euo pipefail
+          curl -fsSL -o actionlint.tgz \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  actionlint.tgz" | sha256sum -c -
+          tar -xzf actionlint.tgz actionlint
+          install -m 0755 actionlint /usr/local/bin/actionlint
+          actionlint -version
+
+      - name: Install zizmor (checksum-pinned)
+        run: |
+          set -euo pipefail
+          curl -fsSL -o zizmor.tgz \
+            "https://github.com/zizmorcore/zizmor/releases/download/v${ZIZMOR_VERSION}/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ZIZMOR_SHA256}  zizmor.tgz" | sha256sum -c -
+          tar -xzf zizmor.tgz
+          install -m 0755 zizmor /usr/local/bin/zizmor
+          zizmor --version
+
+      # Before trusting either analyzer's verdict on the real workflows, prove the FLAGS
+      # below still reach their audits: a pwn-request must trip zizmor and a shell syntax
+      # error must trip actionlint. Both flags previously disabled an analyzer outright
+      # while this job reported green. Runs here, not in ci-gate's fixture harness, because
+      # only this job installs the checksum-pinned binaries.
+      - name: Verify the gate's own analyzer flags
+        run: tools/verify-workflow-lint-flags
+
+      - name: actionlint
+        # shellcheck ON. `-shellcheck=` (empty string) turned the integration OFF
+        # entirely — including SC1072-class shell SYNTAX errors — while this step's
+        # old comment claimed infos "stay as annotations". The one ignored class is
+        # SC2016, which false-positives on intentional markdown backticks inside
+        # single-quoted printf formats (the gate-summary tables); every SC2086 site
+        # it found was quoted instead of suppressed.
+        run: actionlint -color -ignore 'SC2016:'
+
+      - name: zizmor
+        # min-severity=high only — NO confidence filter. `--min-confidence=high`
+        # silently dropped the dangerous-triggers audit (High severity / MEDIUM
+        # confidence), i.e. the pull_request_target/workflow_run pwn-request class
+        # this gate most needs to see; a canonical pwn-request fixture exited 0
+        # under the old flags. Accepted per-case tradeoffs are silenced at the
+        # site with `# zizmor: ignore[...]` (docs.yml, release.yml already do),
+        # never with a global filter that also blinds future workflows.
+        run: zizmor --min-severity=high .github/workflows

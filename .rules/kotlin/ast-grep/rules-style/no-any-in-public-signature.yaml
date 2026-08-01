@@ -1,0 +1,39 @@
+id: no-any-in-public-signature
+language: kotlin
+severity: warning
+message: "Any/Any? used as a parameter or return type on a public function erases type information from the API — callers have to unsafe-cast it back to something useful. Use a concrete type, a reified/generic type parameter, or a sealed hierarchy instead of Any/Any?."
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: visibility_modifier
+          regex: '^public$'
+    - any:
+        - has:
+            kind: function_value_parameters
+            has:
+              kind: parameter
+              has:
+                any:
+                  - all:
+                      - kind: user_type
+                      - has: { kind: type_identifier, regex: '^Any$' }
+                  - all:
+                      - kind: nullable_type
+                      - has:
+                          kind: user_type
+                          has: { kind: type_identifier, regex: '^Any$' }
+        - has:
+            any:
+              - all:
+                  - kind: user_type
+                  - has: { kind: type_identifier, regex: '^Any$' }
+                  - follows: { kind: function_value_parameters, stopBy: end }
+              - all:
+                  - kind: nullable_type
+                  - has:
+                      kind: user_type
+                      has: { kind: type_identifier, regex: '^Any$' }
+                  - follows: { kind: function_value_parameters, stopBy: end }
