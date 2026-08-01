@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# Self-test for the workflow-lint gate's own ANALYZER FLAGS: prove they still detect what
+# the gate claims, independently of whether today's workflows happen to be clean.
+#
+# Both flags had been silently disabling an entire analyzer:
+#   -shellcheck=            turned shellcheck OFF (empty string = disabled), including
+#                           SC1072-class shell SYNTAX errors, while the step comment said
+#                           infos "stay as annotations".
+#   --min-confidence=high   dropped the dangerous-triggers audit (High severity / MEDIUM
+#                           confidence) — the pull_request_target pwn-request class. A
+#                           canonical pwn-request exited 0 and printed "No findings to
+#                           report. Good job!" under those flags.
+#
+# RUNS IN workflow-lint.yml, NOT the gate-fixture harness. It was written as a fixture
+# first and that was wrong: ci-gate.sh runs in the `verify` job, which never installs
+# actionlint or zizmor — only workflow-lint.yml downloads the checksum-pinned binaries.
+# A fixture that skips when its tool is missing is the fail-open shape the harness exists
+# to prevent, and one that fails is permanently red there. The check belongs next to the
+# binaries it validates, run with the exact pinned versions.
+#
+# Missing tools are therefore a HARD FAILURE here: in this job they were just installed,
+# so absence means the install step regressed.
+set -euo pipefail
+
+for tool in actionlint zizmor; do
+  command -v "$tool" >/dev/null 2>&1 || {
+    echo "FAIL: $tool not on PATH — the pinned install step did not run" >&2
+    exit 1
+  }
+done
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+mkdir -p "$tmp/.github/workflows"
+# actionlint refuses to run outside a git repo ("no project was found in any parent
+# directories"). Make the scratch tree one — it must NOT inherit the live repo.
+git -C "$tmp" init -q
+
+pwn_request() {
+  cat > "$tmp/.github/workflows/probe.yml" <<'YAML'
+name: probe
+on: pull_request_target
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: ./gradlew build
+YAML
+}
+
+shell_syntax_error() {
+  cat > "$tmp/.github/workflows/probe.yml" <<'YAML'
+name: probe
+on: push
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: broken shell
+        run: |
+          if [ "$UNCLOSED" = x ; then
+            echo never
+          fi
+YAML
+}
+
+clean_workflow() {
+  cat > "$tmp/.github/workflows/probe.yml" <<'YAML'
+name: probe
+on: push
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: quoted and safe
+        run: |
+          set -euo pipefail
+          target="${HOME}/x"
+          echo "using ${target}"
+YAML
+}
+
+# The exact commands the gate runs (kept in sync with .github/workflows/workflow-lint.yml).
+run_actionlint() { (cd "$tmp" && actionlint -ignore 'SC2016:'); }
+run_zizmor()     { zizmor --min-severity=high "$tmp/.github/workflows"; }
+
+# GREEN: a clean workflow must pass BOTH analyzers, so a probe that fails for an
+# unrelated reason cannot be mistaken for the detection this script is proving.
+clean_workflow
+run_actionlint
+run_zizmor
+
+# RED: each analyzer must report its own probe. `set -e` is disarmed around these on
+# purpose — a zero exit here is the failure.
+pwn_request
+if run_zizmor >/dev/null 2>&1; then
+  echo "FAIL: zizmor flags do not report a pull_request_target pwn-request" >&2
+  echo "      (--min-confidence=high silently drops the dangerous-triggers audit)" >&2
+  exit 1
+fi
+
+shell_syntax_error
+if run_actionlint >/dev/null 2>&1; then
+  echo "FAIL: actionlint flags do not report a shell syntax error — shellcheck is off" >&2
+  echo "      (-shellcheck= passes the empty string, which DISABLES the integration)" >&2
+  exit 1
+fi
+
+echo "workflow-lint flag self-test OK: zizmor sees pwn-requests, actionlint sees shell syntax errors"
