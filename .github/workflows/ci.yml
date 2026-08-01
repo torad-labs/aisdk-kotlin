@@ -81,14 +81,14 @@ jobs:
       # caches ~/.gradle, so cache ~/.konan separately (keyed on the version
       # catalog so a Kotlin bump invalidates it). JetBrains-recommended.
       - name: Cache Kotlin/Native toolchain (~/.konan)
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
       - name: Cache ast-grep binary
         id: cache_ast_grep
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .tools/ast-grep/${{ env.AST_GREP_VERSION }}
           key: ast-grep-${{ runner.os }}-${{ env.AST_GREP_VERSION }}
@@ -234,7 +234,7 @@ jobs:
       # Kotlin/Native work in CI. Caching ~/.konan (compiler + platform libs +
       # klib caches) avoids re-downloading and re-warming it on every run.
       - name: Cache Kotlin/Native toolchain (~/.konan)
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
