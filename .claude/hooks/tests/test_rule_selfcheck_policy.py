@@ -10,7 +10,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 TARGET = ROOT / ".claude" / "hooks" / "orchestrator" / "pretooluse.py"
-RULES_DIR = ROOT / ".claude" / "hooks" / "rules" / "kotlin"
+# e674eb5 moved the rule package to .rules/kotlin/ast-grep/ and split it into rules/ (LAW)
+# and rules-style/ (opt-in). This fixture still pointed at the old flat directory, so it
+# died on FileNotFoundError before asserting anything.
+RULES_ROOT = ROOT / ".rules" / "kotlin" / "ast-grep"
+RULE_LANES = (RULES_ROOT / "rules", RULES_ROOT / "rules-style")
+
+
+def resolve_rule_file(rule_id: str):
+    """Locate a rule by id across both lanes; the manifest does not record which one."""
+    for lane in RULE_LANES:
+        candidate = lane / f"{rule_id}.yaml"
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(f"rule {rule_id!r} not found in {[str(p) for p in RULE_LANES]}")
 MANIFEST = ROOT / ".claude" / "hooks" / "rules" / "manifest.json"
 REGISTRY = ROOT / ".claude" / "hooks" / "rules" / "autofix-registry.json"
 VALIDATE_RULES = ROOT / ".claude" / "hooks" / "rules" / "validate_rules.py"
@@ -52,7 +65,7 @@ def run_validate_rules(*args: object) -> subprocess.CompletedProcess[str]:
 entries = json.loads(MANIFEST.read_text(encoding="utf-8"))
 covered = next(e for e in entries if isinstance(e, dict) and e.get("badExample") and e.get("goodExample"))
 covered_id = covered["id"]
-covered_path = RULES_DIR / f"{covered_id}.yaml"
+covered_path = resolve_rule_file(covered_id)
 covered_text = covered_path.read_text(encoding="utf-8")
 no_fix_entry = next(
     e for e in entries

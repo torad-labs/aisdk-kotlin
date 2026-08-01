@@ -49,7 +49,7 @@ class OutputTest {
     @Test
     fun `given an array Output and the v6 elements wrapper when decoded then a list of typed objects is returned`() {
         // GIVEN
-        val output: Output<List<Recipe>> = Output.array(serializer())
+        val output: Output<List<Recipe>> = OutputArray(serializer())
 
         // WHEN
         val decoded = output.decode("""{"elements":[{"name":"a","ingredients":[]}]}""")
@@ -88,7 +88,7 @@ class OutputTest {
     @Test
     fun `given a choice Output and a v6 result wrapper when decoded then the selected value is returned`() {
         // GIVEN
-        val output = Output.choice("small", "large")
+        val output = OutputChoice("small", "large")
 
         // WHEN
         val decoded = output.decode("""{"result":"large"}""")
@@ -117,7 +117,7 @@ class OutputTest {
     @Test
     fun `given a generic JSON Output when decoded then the parsed JSON tree is returned`() {
         // GIVEN
-        val output = Output.json()
+        val output = OutputJson()
 
         // WHEN
         val decoded = output.decode("""{"ok":true}""")

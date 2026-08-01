@@ -10,7 +10,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -47,7 +46,7 @@ public class HuggingFaceProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
     /** @since 0.3.0-beta01 */
-    public val generateId: () -> String = { IdGenerator.generate() },
+    public val generateId: () -> String = { GenerateId() },
 ) {
     internal fun huggingFaceHeaders(extra: Map<String, String>): Map<String, String> {
         val merged = linkedMapOf<String, String?>()
@@ -63,9 +62,13 @@ public class HuggingFaceProviderSettings internal constructor(
         val cachedTokens = (((JsonAccess.obj(obj, "input_tokens_details"))?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceIn(0, inputTokens)
         val outputTokens = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+        // reasoning_tokens is a SUBSET of output_tokens, so clamp into that range — symmetric with
+        // cached_tokens above. Replaces a `if (reasoning > output) output + reasoning` branch that
+        // could not distinguish a contract-violating response from a provider reporting text-only
+        // output_tokens, and silently under-counted the latter whenever its reasoning was shorter.
         val reasoningTokens = (((JsonAccess.obj(obj, "output_tokens_details"))?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
-            .coerceAtLeast(0)
-        val outputTotal = if (reasoningTokens > outputTokens) outputTokens + reasoningTokens else outputTokens
+            .coerceIn(0, outputTokens)
+        val outputTotal = outputTokens
         return Usage(
             inputTokens = Usage.InputTokenBreakdown(
                 total = inputTokens,
@@ -127,7 +130,7 @@ public class HuggingFaceProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://router.huggingface.co/v1"
     private var headers: Map<String, String> = emptyMap()
-    private var generateId: () -> String = { IdGenerator.generate() }
+    private var generateId: () -> String = { GenerateId() }
 
     /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): HuggingFaceProviderSettingsBuilder {
@@ -350,7 +353,7 @@ private class HuggingFaceResponsesLanguageModel(
         response: HttpResponse,
         parseJson: Boolean,
     ): HuggingFaceHttpResponse {
-        val raw = response.bodyAsText()
+        val raw = with(HttpTransport) { response.bodyAsTextCapped(response.call.request.url.toString()) }
         val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
         if (response.status.value !in 200..299) {
             val parsed = TypedJsonOps.parseJsonElementOrNull(aiSdkJson, raw)

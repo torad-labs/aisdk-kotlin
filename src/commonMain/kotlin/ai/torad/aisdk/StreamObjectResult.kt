@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public class StreamObjectResult<TOutput> internal constructor(
@@ -143,7 +144,8 @@ public class StreamObjectResult<TOutput> internal constructor(
         }
     }
 
-    public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
         val textBlocks = OrderedTextBlocks()
         val decoder = ElementStreamDecoder(arrayOutput)
 
@@ -182,6 +184,8 @@ public class StreamObjectResult<TOutput> internal constructor(
         decoder.ready(textBlocks.joinedText(), complete = true).forEach { emit(it) }
     }
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun finish(): StreamObjectFinish<TOutput> {
         val textBlocks = OrderedTextBlocks()
         var usage = Usage()
@@ -232,6 +236,8 @@ public class StreamObjectResult<TOutput> internal constructor(
         )
     }
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun objectValue(): TOutput = finish().value
 
     private fun decodeOrThrow(
@@ -345,7 +351,7 @@ public fun <TOutput> StreamObjectResult(
         if (system != null) add(SystemMessage(system))
         addAll(messages)
     }
-    val input = GenerationInput.from(
+    val input = GenerationInput(
         prompt = prompt,
         messages = inputMessages,
     )

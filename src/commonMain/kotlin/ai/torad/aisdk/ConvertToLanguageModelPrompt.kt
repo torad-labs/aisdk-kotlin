@@ -10,6 +10,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.jvm.JvmSynthetic
 
 /**
  * The base64 bytes + media type of a downloaded asset.
@@ -44,7 +45,9 @@ public object PromptConversion {
      *
      * Call this before handing a prompt to a provider that doesn't natively accept
      * asset URLs. It is a no-op for prompts that are already inline and well-formed.
+     * @since 0.3.0-beta01
      */
+    @JvmSynthetic
     public suspend fun convertToLanguageModelPrompt(
         messages: List<ModelMessage>,
         supportedUrls: Map<String, List<String>> = emptyMap(),
@@ -253,7 +256,7 @@ public object PromptConversion {
             // (e.g. data:text/plain,Hello) aren't representable as our base64 part, so
             // they're left untouched for the provider rather than crashing splitDataUrl.
             url.startsWith("data:") && ";base64," in url -> {
-                val data = DataUrl.parse(url)
+                val data = DataUrl(url)
                 ResolvedAsset(data.base64, mediaType.ifEmpty { data.mediaType })
             }
             url.startsWith("data:") -> null

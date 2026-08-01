@@ -1,0 +1,18 @@
+{
+  "baseCommit": "0421def3c4e4f36193eac8e6e2e2f9cba8ffd5d6",
+  "baselinePatch": "dev/campaigns/stringly-domain-types/wave-R2-baseline.patch",
+  "baselinePatchSha256": "2e3e24ddbba9451f827c93fcec60e03f786e895b9f4d3fe717a6a0a91301d7f6",
+  "untrackedSourceFiles": {
+    "src/commonTest/kotlin/ai/torad/aisdk/FireworksPollingStatusTest.kt": "721cd6de11740e342c4fab700da9a83b39cae053ab5bf7c60a9ff162da0939fe",
+    "src/commonTest/kotlin/ai/torad/aisdk/BlackForestLabsPollingStatusTest.kt": "ba4bd89d1701aa4fbcb35a642da1cc2205c5e8a38d7c2cdbbeac87459ea7f616"
+  },
+  "targetFileSha256": {
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/VoyageProvider.kt": "1335cfc956333f7f54b0c9f8f1fa5a6c0635215a446bbcd70704c738b8d3e227",
+    "src/commonTest/kotlin/ai/torad/aisdk/VoyageProviderTest.kt": "c556149941148130b561958b864af6c398e8f7c063c14fd3963b33e114935286",
+    "src/commonTest/kotlin/ai/torad/aisdk/VoyageDefensiveParsingTest.kt": "4479638cf1ccf5d058949ad9a5eb3f51554a61e031b60b913b217726539c9318",
+    "CHANGELOG.md": "d86dbc6e3984aac5288bedef4b87842824c07aa0c8dc8f4836602e8b753152ca",
+    "INTERFACE_CONTRACT.md": "a7813f99970bfddfa22b511e76fe23d11d39162338a9a76379f03f777c38893e",
+    "api/jvm/torad-aisdk.api": "2db13ce7fc55ace8be3ffc6db49e63d8481be06ce35de25df7538f64c0085980",
+    "api/torad-aisdk.klib.api": "90374757106fff495c2c414240cf933a9878474f76ea59f7033de0d3b1b7c3e6"
+  }
+}

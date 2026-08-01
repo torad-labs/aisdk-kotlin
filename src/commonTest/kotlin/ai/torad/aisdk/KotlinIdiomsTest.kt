@@ -1,9 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.AbortSignals.asAbortSignal
-import ai.torad.aisdk.AgentSessions.session
-import ai.torad.aisdk.GeneratedFiles.bytes
-import ai.torad.aisdk.GeneratedFiles.fileData
 import ai.torad.aisdk.TypedJsonOps.decodeAs
 import ai.torad.aisdk.TypedJsonOps.decodeProviderMetadata
 import ai.torad.aisdk.TypedJsonOps.decodeValue
@@ -12,7 +8,6 @@ import ai.torad.aisdk.TypedJsonOps.putJson
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
-import ai.torad.aisdk.ui.UIMessageMetadata.metadataAs
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
 import kotlinx.coroutines.Job
@@ -123,7 +118,7 @@ class KotlinIdiomsTest {
         assertEquals("object", descriptor.parametersSchema.jsonObject["type"]?.jsonPrimitive?.content)
 
         assertFailsWith<IllegalArgumentException> {
-            val t = tools.find("weather") ?: error("missing tool")
+            val t = assertNotNull(tools.find("weather"), "missing tool")
             ToolSet(t, t)
         }
     }
@@ -192,7 +187,7 @@ class KotlinIdiomsTest {
     @Test
     fun `job abort signal follows coroutine cancellation`() {
         val job = Job()
-        val signal = job.asAbortSignal()
+        val signal = AbortSignals.from(job)
 
         assertFalse(signal.isAborted)
         job.cancel()
@@ -207,7 +202,7 @@ class KotlinIdiomsTest {
         val result = LanguageModelResult(
             text = "ok",
             finishReason = FinishReason.Stop,
-            usage = Usage.of(promptTokens = 1, completionTokens = 1),
+            usage = Usage(promptTokens = 1, completionTokens = 1),
             providerMetadata = metadata,
             content = listOf(ContentPart.Text("ok", providerMetadata = metadata)),
         )

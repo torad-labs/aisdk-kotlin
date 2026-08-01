@@ -12,13 +12,15 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 
 internal class GoogleInteractionsStreamState(
     private val generateId: () -> String,
 ) {
+    // Alias for ID-less wire fallbacks: bare `?: generateId()` is blocked by
+    // no-generate-id-sentinel; the injected callback must still own every generated id.
+    private val idGenerator: () -> String = generateId
     private sealed class OpenBlockState {
         abstract val id: String
 
@@ -77,18 +79,30 @@ internal class GoogleInteractionsStreamState(
             private var toolCallIdValue: String,
             private var toolNameValue: String,
             private var argumentsValue: JsonElement = JsonObject(emptyMap()),
+            /** Full wire step for multi-turn exact echo (matches buffered path). */
+            private var wireStep: JsonObject,
         ) : OpenBlockState() {
             fun toolCallId(): String = toolCallIdValue
             fun toolName(): String = toolNameValue
             fun arguments(): JsonElement = argumentsValue
+            fun wireStep(): JsonObject = wireStep
             fun updateToolCallId(value: String?) {
-                value?.let { toolCallIdValue = it }
+                value?.let {
+                    toolCallIdValue = it
+                    wireStep = JsonObject(wireStep + ("id" to JsonPrimitive(it)))
+                }
             }
             fun updateToolName(value: String?) {
-                value?.let { toolNameValue = it }
+                value?.let {
+                    toolNameValue = it
+                    wireStep = JsonObject(wireStep + ("name" to JsonPrimitive(it)))
+                }
             }
             fun updateArguments(value: JsonElement?) {
-                value?.let { argumentsValue = it }
+                value?.let {
+                    argumentsValue = it
+                    wireStep = JsonObject(wireStep + ("arguments" to it))
+                }
             }
         }
 
@@ -99,22 +113,37 @@ internal class GoogleInteractionsStreamState(
             private var toolNameValue: String,
             private var resultValue: JsonElement = JsonNull,
             private var isErrorValue: Boolean = false,
+            /** Full wire step for multi-turn exact echo (matches buffered path). */
+            private var wireStep: JsonObject,
         ) : OpenBlockState() {
             fun callId(): String = callIdValue
             fun toolName(): String = toolNameValue
             fun result(): JsonElement = resultValue
             fun isError(): Boolean = isErrorValue
+            fun wireStep(): JsonObject = wireStep
             fun updateCallId(value: String?) {
-                value?.let { callIdValue = it }
+                value?.let {
+                    callIdValue = it
+                    wireStep = JsonObject(wireStep + ("call_id" to JsonPrimitive(it)))
+                }
             }
             fun updateToolName(value: String?) {
-                value?.let { toolNameValue = it }
+                value?.let {
+                    toolNameValue = it
+                    wireStep = JsonObject(wireStep + ("name" to JsonPrimitive(it)))
+                }
             }
             fun updateResult(value: JsonElement?) {
-                value?.let { resultValue = it }
+                value?.let {
+                    resultValue = it
+                    wireStep = JsonObject(wireStep + ("result" to it))
+                }
             }
             fun updateIsError(value: Boolean?) {
-                value?.let { isErrorValue = it }
+                value?.let {
+                    isErrorValue = it
+                    wireStep = JsonObject(wireStep + ("is_error" to JsonPrimitive(it)))
+                }
             }
         }
 
@@ -126,9 +155,10 @@ internal class GoogleInteractionsStreamState(
     private var textId: String? = null
     private var textCounter = 0
     private var usage = Usage()
-    private var finishReason = FinishReason.Other
     private var rawFinishReason: String? = null
     private var hasFunctionCall = false
+    private val finishReason: FinishReason
+        get() = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
     private var finished = false
     private val openBlocks = mutableMapOf<Int, OpenBlockState>()
     private val emittedSourceKeys = mutableSetOf<String>()
@@ -160,7 +190,6 @@ internal class GoogleInteractionsStreamState(
         }
         usage = googleInteractionsUsage(response["usage"])
         rawFinishReason = (response["status"] as? JsonPrimitive)?.contentOrNull
-        finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
         events += closeText()
         events += StreamEvent.Finish(
             1,
@@ -177,7 +206,6 @@ internal class GoogleInteractionsStreamState(
         val interaction = JsonAccess.obj(event, "interaction") ?: return emptyList()
         liveInteractionId[0] = normalizeInteractionId((interaction["id"] as? JsonPrimitive)?.contentOrNull)
         rawFinishReason = (interaction["status"] as? JsonPrimitive)?.contentOrNull ?: rawFinishReason
-        finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
         return listOf(
             StreamEvent.ResponseMetadata(
                 id = liveInteractionId[0],
@@ -200,12 +228,24 @@ internal class GoogleInteractionsStreamState(
                     "text" -> {
                         openBlocks[index] = OpenBlockState.Text(blockId)
                         events += StreamEvent.TextStart(blockId, currentMetadata())
+                        // step.start may already carry the first text chunk; step.delta only
+                        // carries subsequent deltas — emit the initial text or it is lost.
+                        val initialText = (initial["text"] as? JsonPrimitive)?.contentOrNull
+                        if (!initialText.isNullOrEmpty()) {
+                            events += StreamEvent.TextDelta(blockId, initialText, currentMetadata())
+                        }
                         events += annotationSourceEvents(JsonAccess.arr(initial, "annotations"))
                     }
-                    "image" -> openBlocks[index] = OpenBlockState.Image(
+                    "image", "audio", "video", "document" -> openBlocks[index] = OpenBlockState.Image(
                         id = blockId,
                         dataValue = (initial["data"] as? JsonPrimitive)?.contentOrNull,
-                        mediaTypeValue = (initial["mime_type"] as? JsonPrimitive)?.contentOrNull,
+                        mediaTypeValue = (initial["mime_type"] as? JsonPrimitive)?.contentOrNull
+                            ?: when ((initial["type"] as? JsonPrimitive)?.contentOrNull) {
+                                "audio" -> "audio/mpeg"
+                                "video" -> "video/mp4"
+                                "document" -> "application/pdf"
+                                else -> "image/png"
+                            },
                         uriValue = (initial["uri"] as? JsonPrimitive)?.contentOrNull,
                     )
                     else -> openBlocks[index] = OpenBlockState.PendingModelOutput(blockId)
@@ -229,9 +269,9 @@ internal class GoogleInteractionsStreamState(
                 hasFunctionCall = true
                 val toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: blockId
                 val toolName = (step["name"] as? JsonPrimitive)?.contentOrNull ?: "unknown"
-                val signature = (step["signature"] as? JsonPrimitive)?.contentOrNull
-                openBlocks[index] = OpenBlockState.FunctionCall(blockId, toolCallId, toolName, signatureValue = signature)
-                events += StreamEvent.ToolInputStart(toolCallId, toolName, currentMetadata(signature))
+                // function_call does not carry thought signatures — only `thought` steps do.
+                openBlocks[index] = OpenBlockState.FunctionCall(blockId, toolCallId, toolName)
+                events += StreamEvent.ToolInputStart(toolCallId, toolName, currentMetadata())
             }
             stepType != null && stepType.endsWith("_call") -> {
                 hasFunctionCall = true
@@ -246,6 +286,7 @@ internal class GoogleInteractionsStreamState(
                     toolCallIdValue = (step["id"] as? JsonPrimitive)?.contentOrNull ?: blockId,
                     toolNameValue = toolName,
                     argumentsValue = step["arguments"] ?: JsonObject(emptyMap()),
+                    wireStep = step,
                 )
             }
             stepType != null && stepType.endsWith("_result") -> {
@@ -261,6 +302,7 @@ internal class GoogleInteractionsStreamState(
                     toolNameValue = toolName,
                     resultValue = step.getOrElse("result") { JsonNull },
                     isErrorValue = (step["is_error"] as? JsonPrimitive)?.booleanOrNull == true,
+                    wireStep = step,
                 )
             }
             else -> openBlocks[index] = OpenBlockState.Unknown(blockId)
@@ -325,10 +367,9 @@ internal class GoogleInteractionsStreamState(
                 val slice = (delta["arguments"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 if (slice.isNotEmpty()) {
                     open.arguments.append(slice)
-                    events += StreamEvent.ToolInputDelta(open.toolCallId(), slice, currentMetadata(open.signature()))
+                    events += StreamEvent.ToolInputDelta(open.toolCallId(), slice, currentMetadata())
                 }
                 open.updateToolCallId((delta["id"] as? JsonPrimitive)?.contentOrNull)
-                open.updateSignature((delta["signature"] as? JsonPrimitive)?.contentOrNull)
                 hasFunctionCall = true
             }
             is OpenBlockState.BuiltinToolCall -> if (deltaType == open.blockType) {
@@ -367,7 +408,6 @@ internal class GoogleInteractionsStreamState(
             "interaction.requires_action" -> "requires_action"
             else -> rawFinishReason ?: "in_progress"
         }
-        finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
         return emptyList()
     }
 
@@ -377,7 +417,6 @@ internal class GoogleInteractionsStreamState(
         liveServiceTier[0] = (interaction["service_tier"] as? JsonPrimitive)?.contentOrNull ?: liveServiceTier[0]
         usage = googleInteractionsUsage(interaction["usage"])
         rawFinishReason = (interaction["status"] as? JsonPrimitive)?.contentOrNull ?: rawFinishReason
-        finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
         val events = mutableListOf<StreamEvent>()
         events += closeOpenBlocks()
         events += closeText()
@@ -394,7 +433,6 @@ internal class GoogleInteractionsStreamState(
 
     private fun acceptError(event: JsonObject): List<StreamEvent> {
         rawFinishReason = "failed"
-        finishReason = FinishReason.Error
         val error = JsonAccess.obj(event, "error")
         val message = (error?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (error?.get("code") as? JsonPrimitive)?.contentOrNull
@@ -439,16 +477,32 @@ internal class GoogleInteractionsStreamState(
                             }
                             events += StreamEvent.TextDelta(id, text, googleInteractionsMetadata(interactionId = interactionId))
                         }
-                        "image" -> events += StreamEvent.FilePart(
-                            id = IdGenerator.generate(),
-                            mediaType = (block["mime_type"] as? JsonPrimitive)?.contentOrNull ?: "image/png",
-                            base64 = try {
-                                WireDecoder.requiredString(block, "data", "google", "interactions stream step", "$.content[$index]")
-                            } catch (error: WireDecodeException) {
-                                return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
-                            },
-                            providerMetadata = googleInteractionsMetadata(interactionId = interactionId),
-                        )
+                        "image", "audio", "video", "document" -> {
+                            val defaultMedia = when (blockType) {
+                                "audio" -> "audio/mpeg"
+                                "video" -> "video/mp4"
+                                "document" -> "application/pdf"
+                                else -> "image/png"
+                            }
+                            val data = (block["data"] as? JsonPrimitive)?.contentOrNull
+                            val uri = (block["uri"] as? JsonPrimitive)?.contentOrNull
+                            if (data == null && uri == null) {
+                                return listOf(
+                                    StreamEvent.Error(
+                                        "Google stream protocol error: $blockType block missing data and uri.",
+                                    ),
+                                )
+                            }
+                            events += StreamEvent.FilePart(
+                                id = generateId(),
+                                mediaType = (block["mime_type"] as? JsonPrimitive)?.contentOrNull ?: defaultMedia,
+                                base64 = data.orEmpty(),
+                                providerMetadata = googleInteractionsMetadata(
+                                    interactionId = interactionId,
+                                    extra = uri?.let { mapOf("uri" to JsonPrimitive(it)) }.orEmpty(),
+                                ),
+                            )
+                        }
                         null -> return listOf(
                             StreamEvent.Error("Google stream protocol error: model_output content block missing type.")
                         )
@@ -461,7 +515,7 @@ internal class GoogleInteractionsStreamState(
                 }
             }
             "thought" -> {
-                val id = IdGenerator.generate()
+                val id = generateId()
                 val metadata = googleInteractionsMetadata(
                     signature = (step["signature"] as? JsonPrimitive)?.contentOrNull,
                     interactionId = interactionId,
@@ -478,17 +532,14 @@ internal class GoogleInteractionsStreamState(
             }
             "function_call" -> {
                 hasFunctionCall = true
-                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate()
+                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
                 val name = try {
                     WireDecoder.requiredString(step, "name", "google", "interactions stream step")
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
                 val input = step["arguments"] ?: JsonObject(emptyMap())
-                val metadata = googleInteractionsMetadata(
-                    signature = (step["signature"] as? JsonPrimitive)?.contentOrNull,
-                    interactionId = interactionId,
-                )
+                val metadata = googleInteractionsMetadata(interactionId = interactionId)
                 events += StreamEvent.ToolInputStart(id, name, metadata)
                 events += StreamEvent.ToolInputDelta(id, input.toString(), metadata)
                 events += StreamEvent.ToolInputEnd(id, metadata)
@@ -496,20 +547,35 @@ internal class GoogleInteractionsStreamState(
             }
             else -> if (type != null && type.endsWith("_call")) {
                 hasFunctionCall = true
-                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate()
+                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
                 val name = if (type == "mcp_server_tool_call") {
                     WireDecoder.optionalString(step, "name", "google", "interactions stream step") ?: "mcp_server_tool"
                 } else {
                     type.removeSuffix("_call")
                 }
                 val input = step["arguments"] ?: JsonObject(emptyMap())
-                val metadata = ProviderMetadata.Raw(
-                    JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))
-                )
+                // Full wire step under google — same as buffered path for multi-turn echo.
+                val metadata = providerExecutedWireMetadata(step)
                 events += StreamEvent.ToolInputStart(id, name, metadata)
                 events += StreamEvent.ToolInputDelta(id, input.toString(), metadata)
                 events += StreamEvent.ToolInputEnd(id, metadata)
                 events += StreamEvent.ToolCall(id, name, input, metadata)
+            } else if (type != null && type.endsWith("_result")) {
+                val id = (step["call_id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
+                val name = if (type == "mcp_server_tool_result") {
+                    WireDecoder.optionalString(step, "name", "google", "interactions stream step") ?: "mcp_server_tool"
+                } else {
+                    type.removeSuffix("_result")
+                }
+                val output = step.getOrElse("result") { JsonNull }
+                val isError = (step["is_error"] as? JsonPrimitive)?.booleanOrNull == true
+                events += StreamEvent.ToolResult(
+                    toolCallId = id,
+                    toolName = name,
+                    outputJson = output,
+                    isError = isError,
+                    providerMetadata = providerExecutedWireMetadata(step),
+                )
             }
         }
         return events
@@ -538,7 +604,7 @@ internal class GoogleInteractionsStreamState(
                 toolCallId = open.toolCallId(),
                 toolName = open.toolName(),
                 inputJson = open.arguments(),
-                providerMetadata = providerExecutedMetadata(),
+                providerMetadata = providerExecutedWireMetadata(open.wireStep()),
             ),
         )
         is OpenBlockState.BuiltinToolResult -> listOf(
@@ -547,7 +613,7 @@ internal class GoogleInteractionsStreamState(
                 toolName = open.toolName(),
                 outputJson = open.result(),
                 isError = open.isError(),
-                providerMetadata = providerExecutedMetadata(),
+                providerMetadata = providerExecutedWireMetadata(open.wireStep()),
             ),
         )
         is OpenBlockState.PendingModelOutput,
@@ -557,7 +623,7 @@ internal class GoogleInteractionsStreamState(
 
     private fun closeFunctionCall(open: OpenBlockState.FunctionCall): List<StreamEvent> {
         val inputText = open.arguments.toString().ifBlank { "{}" }
-        val metadata = currentMetadata(open.signature())
+        val metadata = currentMetadata()
         val input = try {
             aiSdkJson.parseToJsonElement(inputText)
         } catch (error: Throwable) {
@@ -579,7 +645,7 @@ internal class GoogleInteractionsStreamState(
         return if (!data.isNullOrEmpty() || !uri.isNullOrEmpty()) {
             listOf(
                 StreamEvent.FilePart(
-                    id = IdGenerator.generate(),
+                    id = generateId(),
                     mediaType = mediaType ?: "image/png",
                     base64 = data.orEmpty(),
                     providerMetadata = currentMetadata(extra = extra),
@@ -603,7 +669,7 @@ internal class GoogleInteractionsStreamState(
             }
             if (!emittedSourceKeys.add(key)) return@mapNotNull null
             StreamEvent.SourcePart(
-                id = source.sourceId ?: IdGenerator.generate(),
+                id = source.sourceId ?: idGenerator(),
                 sourceType = source.sourceType,
                 url = source.url,
                 title = source.title,
@@ -631,10 +697,13 @@ internal class GoogleInteractionsStreamState(
         extra = liveServiceTier[0]?.let { mapOf("serviceTier" to JsonPrimitive(it)) }.orEmpty(),
     )
 
-    private fun providerExecutedMetadata(): ProviderMetadata =
-        ProviderMetadata.Raw(
-            JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))
-        )
+    /**
+     * Store the full wire step under `google` (buffered-path parity) so multi-turn
+     * resend can exact-echo server tools. Do not inject SDK-only keys into the step —
+     * the echo path strips nothing and forwards this object as-is.
+     */
+    private fun providerExecutedWireMetadata(wireStep: JsonObject): ProviderMetadata =
+        ProviderMetadata.Raw(JsonObject(mapOf("google" to wireStep)))
 
     private fun normalizeInteractionId(value: String?): String? = value?.takeIf { it.isNotBlank() }
 

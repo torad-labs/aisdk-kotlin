@@ -105,21 +105,19 @@ class AnthropicReAuditTest {
             AnthropicProviderSettings { baseURL("https://anthropic.test/v1") }
         )
 
-        val mcpContent = with(ToolResultOutputs) {
-            ToolResultOutput.Content(
-                value = listOf(
-                    buildJsonObject {
-                        put("type", JsonPrimitive("text"))
-                        put("text", JsonPrimitive("snapshot taken"))
-                    },
-                    buildJsonObject {
-                        put("type", JsonPrimitive("image-data"))
-                        put("mediaType", JsonPrimitive("image/png"))
-                        put("data", JsonPrimitive("aW1n"))
-                    },
-                ),
-            ).toJsonElement()
-        }
+        val mcpContent = ToolResultOutput.Content(
+            value = listOf(
+                buildJsonObject {
+                    put("type", JsonPrimitive("text"))
+                    put("text", JsonPrimitive("snapshot taken"))
+                },
+                buildJsonObject {
+                    put("type", JsonPrimitive("image-data"))
+                    put("mediaType", JsonPrimitive("image/png"))
+                    put("data", JsonPrimitive("aW1n"))
+                },
+            ),
+        ).toJsonElement()
 
         provider.messages(ModelId("claude-sonnet-4-5")).generate(
             LanguageModelCallParams {
@@ -162,9 +160,7 @@ class AnthropicReAuditTest {
             AnthropicProviderSettings { baseURL("https://anthropic.test/v1") }
         )
 
-        val errorOutput = with(ToolResultOutputs) {
-            ToolResultOutput.Error("upstream timed out").toJsonElement()
-        }
+        val errorOutput = ToolResultOutput.Error("upstream timed out").toJsonElement()
 
         provider.messages(ModelId("claude-sonnet-4-5")).generate(
             LanguageModelCallParams {

@@ -22,6 +22,11 @@ import kotlin.coroutines.coroutineContext
  * Idiomatic use: bind to the calling [CoroutineScope]'s job. When the
  * scope cancels, the signal aborts, and any subagent/tool execution
  * observing [throwIfAborted] or [register] surfaces the cancellation.
+ *
+ * Consumer implementations are supported: this interface is intentionally
+ * open (not sealed) so a host can bridge a platform-specific cancellation
+ * source (e.g. a JS `AbortSignal` or an iOS cancellation token) into it
+ * without going through [AbortController].
  */
 /** @since 0.3.0-beta01 */
 public interface AbortSignal {
@@ -40,6 +45,12 @@ public interface AbortSignal {
     /**
      * Register a callback that fires exactly once on abort. If already
      * aborted, fires synchronously. Returns a handle to deregister.
+     *
+     * The parameter is named `onAbort` deliberately. `no-callback-style-api`
+     * flags the `onXxx` shape, but that rule is about preferring suspend/Flow
+     * over Java-style callbacks — renaming the parameter silences the check
+     * without changing the shape, and this name is already published in
+     * INTERFACE_CONTRACT.md, so moving it breaks named-argument call sites.
      * @since 0.3.0-beta01
      */
     public fun register(onAbort: () -> Unit): AbortRegistration
@@ -192,32 +203,35 @@ internal object AbortSignalRuntime {
 }
 
 /**
- * Bind an abort signal to a [Job] so the signal fires when the job
- * completes (cancelled or otherwise). Lets a parent scope's lifetime
- * automatically cancel anything observing the signal.
- * @since 0.3.0-beta01
- */
-public fun AbortSignalFromJob(job: Job): AbortSignal {
-    val controller = AbortController()
-    job.invokeOnCompletion { controller.abort() }
-    return controller.signal
-}
-
-/**
- * Member-extensions converting coroutine handles into [AbortSignal]s.
+ * Factory functions converting coroutine handles into [AbortSignal]s.
  * @since 0.3.0-beta01
  */
 public object AbortSignals {
-    /** @since 0.3.0-beta01 */
-    public fun Job.asAbortSignal(): AbortSignal = AbortSignalFromJob(this)
+    /**
+     * Binds to [job] so the signal fires when the job completes (cancelled
+     * or otherwise). Lets a parent scope's lifetime automatically cancel
+     * anything observing the signal.
+     * @since 0.3.0-beta01
+     */
+    public fun from(job: Job): AbortSignal {
+        val controller = AbortController()
+        job.invokeOnCompletion { controller.abort() }
+        return controller.signal
+    }
 
-    /** @since 0.3.0-beta01 */
-    public fun CoroutineScope.asAbortSignal(): AbortSignal =
-        coroutineContext[Job]?.asAbortSignal() ?: AbortSignalNever
+    /**
+     * Binds to [scope]'s job. Returns [AbortSignalNever] if the scope's
+     * context has no [Job].
+     * @since 0.3.0-beta01
+     */
+    public fun from(scope: CoroutineScope): AbortSignal {
+        val job = scope.coroutineContext[Job] ?: return AbortSignalNever
+        return from(job)
+    }
 }
 
-// FunctionNaming/ReturnCount: PascalCase factory (matches AbortSignalFromJob) with intentional
-// early returns for the empty / single / already-aborted fast paths — long-standing, baselined.
+// FunctionNaming/ReturnCount: PascalCase factory (matches the AbortSignal* factory family) with
+// intentional early returns for the empty / single / already-aborted fast paths — long-standing, baselined.
 @OptIn(ExperimentalAtomicApi::class)
 @Suppress("FunctionNaming", "ReturnCount")
 /** @since 0.3.0-beta01 */

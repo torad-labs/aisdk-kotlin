@@ -3,7 +3,6 @@
 
 package ai.torad.aisdk
 
-import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonString
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
@@ -52,6 +51,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
+import kotlin.jvm.JvmSynthetic
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
@@ -98,70 +98,68 @@ public class MCPClientError(
     cause: Throwable? = null,
 ) : AiSdkException(message, cause)
 
-@Serializable
-/** @since 0.3.0-beta01 */
-public sealed interface JSONRPCMessage {
-    public companion object {
-        internal fun JSONRPCMessage.toJsonElement(): JsonObject = when (this) {
-            is JSONRPCRequest -> mcpJson.encodeToJsonElement(JSONRPCRequest.serializer(), this).jsonObject
-            is JSONRPCNotification -> mcpJson.encodeToJsonElement(JSONRPCNotification.serializer(), this).jsonObject
-            is JSONRPCResponse -> mcpJson.encodeToJsonElement(JSONRPCResponse.serializer(), this).jsonObject
-            is JSONRPCError -> mcpJson.encodeToJsonElement(JSONRPCError.serializer(), this).jsonObject
-        }
+internal fun ToJsonElement(message: JSONRPCMessage): JsonObject = when (message) {
+    is JSONRPCRequest -> mcpJson.encodeToJsonElement(JSONRPCRequest.serializer(), message).jsonObject
+    is JSONRPCNotification -> mcpJson.encodeToJsonElement(JSONRPCNotification.serializer(), message).jsonObject
+    is JSONRPCResponse -> mcpJson.encodeToJsonElement(JSONRPCResponse.serializer(), message).jsonObject
+    is JSONRPCError -> mcpJson.encodeToJsonElement(JSONRPCError.serializer(), message).jsonObject
+}
 
-        internal fun JSONRPCMessage.toJsonString(): String = toJsonElement().toString()
+internal fun ToJsonString(message: JSONRPCMessage): String = ToJsonElement(message).toString()
 
-        internal fun fromJson(text: String): JSONRPCMessage {
-            val obj = WireDecoder.parseObject(text, provider = "mcp", operation = "json-rpc message")
-            val envelope = WireDecoder.decode(
-                JSONRPCEnvelope.serializer(),
-                obj,
-                provider = "mcp",
-                operation = "json-rpc message",
-            )
-            if (envelope.jsonrpc != JSONRPC_VERSION) {
-                WireDecoder.fail(
-                    provider = "mcp",
-                    operation = "json-rpc message",
-                    path = "$.jsonrpc",
-                    message = "expected JSON-RPC version $JSONRPC_VERSION",
-                    value = obj["jsonrpc"],
-                )
-            }
-            val hasId = "id" in obj
-            return when {
-                envelope.method != null && hasId -> WireDecoder.decode(
-                    JSONRPCRequest.serializer(),
-                    obj,
-                    "mcp",
-                    "json-rpc request"
-                )
-                envelope.method != null -> WireDecoder.decode(
-                    JSONRPCNotification.serializer(),
-                    obj,
-                    "mcp",
-                    "json-rpc notification"
-                )
-                hasId && envelope.error == null -> WireDecoder.decode(
-                    JSONRPCResponse.serializer(),
-                    obj,
-                    "mcp",
-                    "json-rpc response"
-                )
-                hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
-                else -> WireDecoder.fail("mcp", "json-rpc message", "$", "invalid JSON-RPC envelope", obj)
-            }
-        }
-
-        internal fun fromJsonBatch(text: String): List<JSONRPCMessage> {
-            val element = mcpJson.parseToJsonElement(text)
-            return when (element) {
-                is JsonArray -> element.map { fromJson(it.toString()) }
-                else -> listOf(fromJson(element.toString()))
-            }
-        }
+internal fun ParseJSONRPCMessage(text: String): JSONRPCMessage {
+    val obj = WireDecoder.parseObject(text, provider = "mcp", operation = "json-rpc message")
+    val envelope = WireDecoder.decode(
+        JSONRPCEnvelope.serializer(),
+        obj,
+        provider = "mcp",
+        operation = "json-rpc message",
+    )
+    if (envelope.jsonrpc != JSONRPC_VERSION) {
+        WireDecoder.fail(
+            provider = "mcp",
+            operation = "json-rpc message",
+            path = "$.jsonrpc",
+            message = "expected JSON-RPC version $JSONRPC_VERSION",
+            value = obj["jsonrpc"],
+        )
+    }
+    val hasId = "id" in obj
+    return when {
+        envelope.method != null && hasId -> WireDecoder.decode(
+            JSONRPCRequest.serializer(),
+            obj,
+            "mcp",
+            "json-rpc request"
+        )
+        envelope.method != null -> WireDecoder.decode(
+            JSONRPCNotification.serializer(),
+            obj,
+            "mcp",
+            "json-rpc notification"
+        )
+        hasId && envelope.error == null -> WireDecoder.decode(
+            JSONRPCResponse.serializer(),
+            obj,
+            "mcp",
+            "json-rpc response"
+        )
+        hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
+        else -> WireDecoder.fail("mcp", "json-rpc message", "$", "invalid JSON-RPC envelope", obj)
     }
 }
+
+internal fun ParseJSONRPCMessageBatch(text: String): List<JSONRPCMessage> {
+    val element = mcpJson.parseToJsonElement(text)
+    return when (element) {
+        is JsonArray -> element.map { ParseJSONRPCMessage(it.toString()) }
+        else -> listOf(ParseJSONRPCMessage(element.toString()))
+    }
+}
+
+@Serializable
+/** @since 0.3.0-beta01 */
+public sealed interface JSONRPCMessage
 
 @Serializable
 private data class JSONRPCEnvelope(
@@ -191,8 +189,13 @@ public interface MCPTransport {
     /** @since 0.3.0-beta01 */
     public fun setProtocolVersion(version: String?)
 
+    /** @since 0.3.0-beta01 */
     public suspend fun start()
+
+    /** @since 0.3.0-beta01 */
     public suspend fun send(message: JSONRPCMessage)
+
+    /** @since 0.3.0-beta01 */
     public suspend fun close()
 }
 
@@ -278,74 +281,92 @@ public fun MCPClientConfig(
 @ExperimentalAiSdkApi
 public typealias experimental_MCPClientConfig = MCPClientConfig
 
-/** @since 0.3.0-beta01 */
-public interface MCPClient {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class MCPClient {
     /** @since 0.3.0-beta01 */
-    public val serverInfo: Configuration
+    public abstract val serverInfo: Configuration
 
     /** @since 0.3.0-beta01 */
-    public val instructions: String?
+    public abstract val instructions: String?
 
-    public suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
+    /** @since 0.3.0-beta01 */
+    public abstract suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
 
-    public suspend fun listTools(
+    /** @since 0.3.0-beta01 */
+    public abstract suspend fun listTools(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListToolsResult
 
-    public fun <TContext> toolsFromDefinitions(
+    /** @since 0.3.0-beta01 */
+    public abstract fun <TContext> toolsFromDefinitions(
         definitions: ListToolsResult,
         schemas: MCPToolSchemas? = null,
     ): ToolSet<TContext>
 
-    public suspend fun listResources(
+    /** @since 0.3.0-beta01 */
+    public abstract suspend fun listResources(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListResourcesResult
 
-    public suspend fun readResource(
+    /** @since 0.3.0-beta01 */
+    public abstract suspend fun readResource(
         uri: String,
         options: MCPRequestOptions? = null,
     ): ReadResourceResult
 
-    public suspend fun listResourceTemplates(
+    /** @since 0.3.0-beta01 */
+    public abstract suspend fun listResourceTemplates(
         options: MCPRequestOptions? = null,
     ): ListResourceTemplatesResult
 
+    /** @since 0.3.0-beta01 */
     @ExperimentalAiSdkApi
-    public suspend fun experimental_listPrompts(
+    public abstract suspend fun experimental_listPrompts(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListPromptsResult
 
+    /** @since 0.3.0-beta01 */
     @ExperimentalAiSdkApi
-    public suspend fun experimental_getPrompt(
+    public abstract suspend fun experimental_getPrompt(
         name: String,
         arguments: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): GetPromptResult
 
     /** @since 0.3.0-beta01 */
-    public fun onElicitationRequest(
+    public abstract fun onElicitationRequest(
         schema: ElicitationRequestSchema,
         handler: suspend (ElicitationRequest) -> ElicitResult,
     )
 
-    public suspend fun close()
+    /** @since 0.3.0-beta01 */
+    public abstract suspend fun close()
 }
 
 @ExperimentalAiSdkApi
 public typealias experimental_MCPClient = MCPClient
 
+/** @since 0.3.0-beta01 */
+@JvmSynthetic
 public suspend fun CreateMCPClient(config: MCPClientConfig): MCPClient =
     DefaultMCPClient(config).also { it.init() }
 
 @ExperimentalAiSdkApi
+@JvmSynthetic
 public suspend fun Experimental_CreateMCPClient(config: MCPClientConfig): MCPClient =
     CreateMCPClient(config)
 
 @OptIn(ExperimentalAtomicApi::class)
-private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
+private class DefaultMCPClient(config: MCPClientConfig) : MCPClient() {
     private val transport: MCPTransport = config.transport
     private val onUncaughtError = config.onUncaughtError
     private val clientInfo = Configuration {
@@ -613,8 +634,15 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             options?.signal?.throwIfAborted()
             val result = deferred.await()
             options?.signal?.throwIfAborted()
+            val resultElement = result ?: throw MCPClientError("Server response returned null result for $method")
             return try {
-                mcpJson.decodeFromJsonElement(serializer, result ?: JsonNull)
+                mcpJson.decodeFromJsonElement(serializer, resultElement)
+            } catch (ce: CancellationException) {
+                // Defensive: decodeFromJsonElement does not suspend, so cancellation cannot
+                // reach here today. Guarded anyway because this is the one catch in the request
+                // path that REWRITES the exception type — a cancelled call would surface to the
+                // caller as a protocol error rather than a cancellation.
+                throw ce
             } catch (error: Throwable) {
                 throw MCPClientError("Failed to parse server response", cause = error)
             }
@@ -740,7 +768,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private suspend fun onResponse(response: JSONRPCResponse) {
         val handler = responseHandlersMutex.withLock { responseHandlers[rpcIdKey(response.id)] }
             ?: throw MCPClientError(
-                "Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}"
+                "Protocol error: Received a response for an unknown message ID: ${ToJsonString(response)}"
             )
         handler.complete(response.result)
     }
@@ -748,7 +776,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private suspend fun onResponse(response: JSONRPCError) {
         val handler = responseHandlersMutex.withLock { responseHandlers[rpcIdKey(response.id)] }
             ?: throw MCPClientError(
-                "Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}"
+                "Protocol error: Received a response for an unknown message ID: ${ToJsonString(response)}"
             )
         handler.completeExceptionally(
             MCPClientError(
@@ -849,18 +877,46 @@ public interface OAuthClientProvider {
     /** @since 0.3.0-beta01 */
     public val clientMetadata: OAuthClientMetadata
 
+    /** @since 0.3.0-beta01 */
     public suspend fun tokens(): OAuthTokens?
+
+    /** @since 0.3.0-beta01 */
     public suspend fun saveTokens(tokens: OAuthTokens)
+
+    /** @since 0.3.0-beta01 */
     public suspend fun redirectToAuthorization(authorizationUrl: String)
+
+    /** @since 0.3.0-beta01 */
     public suspend fun saveCodeVerifier(codeVerifier: String)
+
+    /** @since 0.3.0-beta01 */
     public suspend fun codeVerifier(): String
+
+    /** @since 0.3.0-beta01 */
     public suspend fun clientInformation(): OAuthClientInformation?
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun saveClientInformation(clientInformation: OAuthClientInformation): Unit = Unit
+
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun invalidateCredentials(scope: String): Unit = Unit
+
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun state(): String? = null
+
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun saveState(state: String): Unit = Unit
+
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun storedState(): String? = null
+
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun validateResourceURL(serverUrl: String, resource: String?): String? {
         if (resource == null) return null
         val requestedResource = McpResourceUrl.fromServerUrl(serverUrl)
@@ -869,6 +925,9 @@ public interface OAuthClientProvider {
         }
         return McpResourceUrl.stripSlash(resource)
     }
+
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun addClientAuthentication(
         headers: Map<String, String>,
         params: Map<String, String>,
@@ -985,7 +1044,7 @@ internal object McpAuth {
 
         // OAuth state (CSRF) and PKCE code_verifier must come from a CSPRNG, not the
         // seeded Random.Default — RFC 7636 §4.1 requires high-entropy cryptographic random.
-        val state = provider.state() ?: IdGenerator.generate(prefix = "mcp", random = SecureRandom())
+        val state = provider.state() ?: GenerateId(prefix = "mcp", random = SecureRandom())
         provider.saveState(state)
         val codeVerifier = IdGenerator {
             prefix("mcp-verifier")
@@ -1211,6 +1270,14 @@ internal class McpConnectionLifecycle {
     val isActive: Boolean get() = state.load() is State.Active
 
     /**
+     * True once [close] has won — permanently. Distinguishes a CLOSED lifecycle from one that
+     * merely returned to Idle because the reader exited on its own, which [setReader] cannot tell
+     * apart on its own: both are "not Active", but only the former means the caller still owns the
+     * process it just spawned.
+     */
+    val isClosed: Boolean get() = state.load() is State.Closed
+
+    /**
      * Attempt Idle → Active. The single caller that wins gets the freshly built
      * [CoroutineScope]; any caller that finds the lifecycle already Active or
      * Closed gets null. This is the concurrent-start / already-started guard.
@@ -1230,11 +1297,33 @@ internal class McpConnectionLifecycle {
     }
 
     /** Publish (or replace, e.g. on an inbound retry) the reader job while Active; no-op otherwise. */
-    fun setReader(job: Job?) {
+    /**
+     * Attach the reader job to the Active state. Returns false when the connection is no longer
+     * Active — a concurrent [close] won the transition — in which case the CALLER still owns
+     * whatever it created for this reader, because close() cannot see it.
+     */
+    fun setReader(job: Job?): Boolean {
+        // NOTE: false means "not Active" — which is Closed OR back to Idle after the reader exited.
+        // Callers that clean up on false MUST check [isClosed] to tell those apart.
         while (true) {
-            val current = state.load() as? State.Active ?: return
-            if (state.compareAndSet(current, State.Active(current.scope, job))) return
+            val current = state.load() as? State.Active ?: return false
+            if (state.compareAndSet(current, State.Active(current.scope, job))) return true
         }
+    }
+
+    /**
+     * Attach the reader, or undo a start that a concurrent [close] won.
+     *
+     * The safe reading of [setReader]'s `false`: it means "not Active", which is Closed OR back to
+     * Idle because the reader already exited and ran its own teardown. Only Closed means this start
+     * lost and the caller still owns what it created — treating Idle the same way turns a start that
+     * SUCCEEDED into a failure. Lives here rather than at the call sites so the distinction is made
+     * once, next to the state machine that defines it.
+     */
+    suspend fun adoptReaderOrThrowIfClosed(job: Job, closedMessage: String) {
+        if (setReader(job) || !isClosed) return
+        job.cancelAndJoin()
+        throw MCPClientError(closedMessage)
     }
 
     /** The live scope while Active, else null. */
@@ -1283,6 +1372,22 @@ internal class McpConnectionLifecycle {
         if (job == null) return
         if (job === coroutineContext[Job]) job.cancel() else job.cancelAndJoin()
     }
+}
+
+/**
+ * The bearer credential from `Authorization`, or null when absent or another scheme. RFC 7235
+ * makes the scheme case-insensitive: `removePrefix("Bearer ")` no-ops on `bearer <t>` (or a
+ * `Basic` credential) and returned the WHOLE header value as the token. The reauthorize path
+ * compares that against the freshly-issued token to detect a concurrent refresh, so a
+ * scheme-prefixed value never matches and drives a redundant reauth on every overlapping 401.
+ */
+private fun BearerAccessToken(headers: Map<String, String>): String? {
+    val scheme = "Bearer "
+    return headers.entries.firstOrNull { it.key.equals(HttpHeaders.Authorization, ignoreCase = true) }
+        ?.value
+        ?.takeIf { it.regionMatches(0, scheme, 0, scheme.length, ignoreCase = true) }
+        ?.substring(scheme.length)
+        ?.takeIf { it.isNotBlank() }
 }
 
 private class McpOAuthReauthorizer(
@@ -1348,14 +1453,6 @@ private class McpOAuthReauthorizer(
                 if (inFlight === result) inFlight = null
             }
         }
-    }
-
-    companion object {
-        fun bearerAccessToken(headers: Map<String, String>): String? =
-            headers.entries.firstOrNull { it.key.equals(HttpHeaders.Authorization, ignoreCase = true) }
-                ?.value
-                ?.removePrefix("Bearer ")
-                ?.takeIf { it.isNotBlank() }
     }
 }
 
@@ -1446,12 +1543,12 @@ public class HttpMCPTransport(
                 HttpHeaders.Accept to "application/json, text/event-stream",
             ),
         )
-        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
+        val requestAccessToken = BearerAccessToken(requestHeaders)
         val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             requestHeaders.forEach { (name, value) -> header(name, value) }
-            setBody(message.toJsonString())
+            setBody(ToJsonString(message))
         }
         mcpSessionId(response)?.let { sessionId.store(it) }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
@@ -1487,7 +1584,7 @@ public class HttpMCPTransport(
         when {
             contentType.contains("application/json", ignoreCase = true) -> {
                 val text = with(HttpTransport) { response.bodyAsTextCapped(url) }
-                JSONRPCMessage.fromJsonBatch(text).forEach { onMessage?.invoke(it) }
+                ParseJSONRPCMessageBatch(text).forEach { onMessage?.invoke(it) }
             }
             contentType.contains("text/event-stream", ignoreCase = true) -> launchPostResponseSse(response)
             else -> {
@@ -1509,13 +1606,13 @@ public class HttpMCPTransport(
         val activeScope = lifecycle.scopeOrNull() ?: return
         activeScope.launch(start = CoroutineStart.UNDISPATCHED) {
             try {
-                McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+                ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
                     if (event.event == "message") {
                         // Isolate per-message handling (mirrors readInboundSse): a malformed/
                         // unknown-ID frame is a NON-fatal protocol error routed to onError, not
                         // an unwind that kills the rest of the stream.
                         try {
-                            onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                            onMessage?.invoke(ParseJSONRPCMessage(event.data))
                         } catch (error: Throwable) {
                             if (error is CancellationException) throw error
                             onError?.invoke(error)
@@ -1563,7 +1660,7 @@ public class HttpMCPTransport(
                     }
                 },
             )
-            val firstAccessToken = McpOAuthReauthorizer.bearerAccessToken(firstHeaders)
+            val firstAccessToken = BearerAccessToken(firstHeaders)
             val firstResponse = client.request(url) {
                 method = HttpMethod.Get
                 firstHeaders.forEach { (name, value) -> header(name, value) }
@@ -1600,7 +1697,7 @@ public class HttpMCPTransport(
                 return
             }
             val receivedEvent = booleanArrayOf(false)
-            McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+            ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
                 event.id?.let { id -> lastInboundEventId.store(id.takeIf { it.isNotEmpty() }) }
                 if (!receivedEvent[0]) {
                     receivedEvent[0] = true
@@ -1609,9 +1706,9 @@ public class HttpMCPTransport(
                 if (event.event == "message") {
                     // Isolate per-message handling (mirrors the stdio reader): a malformed/unknown-ID
                     // frame is a NON-fatal protocol error routed to onError — it must not unwind
-                    // parseStream and kill the inbound reader (dropping all later messages).
+                    // ParseSseStream and kill the inbound reader (dropping all later messages).
                     try {
-                        onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                        onMessage?.invoke(ParseJSONRPCMessage(event.data))
                     } catch (error: Throwable) {
                         if (error is CancellationException) throw error
                         onError?.invoke(error)
@@ -1761,7 +1858,7 @@ public class SseMCPTransport(
                         "MCP SSE Transport Error: ${response.status.value} ${response.status.description}$hint",
                     )
                 }
-                McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+                ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
                     when (event.event) {
                         "endpoint" -> {
                             val resolvedEndpoint = McpUrl.resolve(event.data, url)
@@ -1779,7 +1876,7 @@ public class SseMCPTransport(
                         // unknown-ID frame is a NON-fatal protocol error routed to onError. Only the
                         // "message" branch is guarded — an "endpoint" handshake error stays fatal.
                         "message" -> try {
-                            onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                            onMessage?.invoke(ParseJSONRPCMessage(event.data))
                         } catch (error: Throwable) {
                             if (error is CancellationException) throw error
                             onError?.invoke(error)
@@ -1806,7 +1903,7 @@ public class SseMCPTransport(
                 }
             }
         }
-        lifecycle.setReader(reader)
+        lifecycle.adoptReaderOrThrowIfClosed(reader, "MCP SSE Transport Error: closed during start")
         try {
             // Bound the handshake (wait for the SSE `endpoint` event) in real time
             // so an unresponsive server can't hang start() forever; runTest-safe.
@@ -1822,7 +1919,7 @@ public class SseMCPTransport(
 
     private suspend fun openSseConnection(triedAuth: Boolean): HttpResponse {
         val requestHeaders = mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream"))
-        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
+        val requestAccessToken = BearerAccessToken(requestHeaders)
         val response = client.request(url) {
             method = HttpMethod.Get
             requestHeaders.forEach { (name, value) -> header(name, value) }
@@ -1846,12 +1943,12 @@ public class SseMCPTransport(
         val requestHeaders = mcpCommonHeaders(
             mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString())
         )
-        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
+        val requestAccessToken = BearerAccessToken(requestHeaders)
         val response = client.request(destination) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             requestHeaders.forEach { (name, value) -> header(name, value) }
-            setBody(message.toJsonString())
+            setBody(ToJsonString(message))
         }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
             if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
@@ -1894,14 +1991,41 @@ public class SseMCPTransport(
     }
 }
 
+internal suspend fun ParseSseStream(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
+    val frame = McpSseFrame.FrameBuffer()
+    while (true) {
+        val line = channel.readLine() ?: break
+        when {
+            line.isEmpty() -> frame.flush(onEvent)
+            line.startsWith("event:") -> frame.setEvent(line.removePrefix("event:").trimStart())
+            line.startsWith("data:") -> frame.addData(line.removePrefix("data:").trimStart())
+            line.startsWith("id:") -> frame.setId(line.removePrefix("id:").trimStart())
+        }
+    }
+    frame.flush(onEvent)
+}
+
+/**
+ * [ParseSseStream] that ALWAYS releases the channel on EOF/error/cancel — on some Ktor engines
+ * the connection only closes when the body channel is explicitly cancelled (mirrors
+ * HttpTransport.streamSse). Used by the MCP SSE read sites so the release isn't duplicated.
+ */
+internal suspend fun ParseSseStreamReleasing(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
+    try {
+        ParseSseStream(channel, onEvent)
+    } finally {
+        channel.cancel(null)
+    }
+}
+
 internal data class McpSseFrame(
     val event: String,
     val data: String,
     val id: String? = null,
 ) {
     // Per-frame accumulator for the SSE line parser. Holds the mutable
-    // event/id/data state so the companion's parseStream stays var-free.
-    private class FrameBuffer {
+    // event/id/data state so ParseSseStream stays var-free.
+    internal class FrameBuffer {
         private var eventName: String = "message"
         private var eventId: String? = null
         private val data: MutableList<String> = mutableListOf()
@@ -1930,35 +2054,6 @@ internal data class McpSseFrame(
             eventName = "message"
             eventId = null
             data.clear()
-        }
-    }
-
-    internal companion object {
-        suspend fun parseStream(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
-            val frame = FrameBuffer()
-            while (true) {
-                val line = channel.readLine() ?: break
-                when {
-                    line.isEmpty() -> frame.flush(onEvent)
-                    line.startsWith("event:") -> frame.setEvent(line.removePrefix("event:").trimStart())
-                    line.startsWith("data:") -> frame.addData(line.removePrefix("data:").trimStart())
-                    line.startsWith("id:") -> frame.setId(line.removePrefix("id:").trimStart())
-                }
-            }
-            frame.flush(onEvent)
-        }
-
-        /**
-         * [parseStream] that ALWAYS releases the channel on EOF/error/cancel — on some Ktor engines
-         * the connection only closes when the body channel is explicitly cancelled (mirrors
-         * HttpTransport.streamSse). Used by the MCP SSE read sites so the release isn't duplicated.
-         */
-        suspend fun parseStreamReleasing(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
-            try {
-                parseStream(channel, onEvent)
-            } finally {
-                channel.cancel(null)
-            }
         }
     }
 }
@@ -2051,6 +2146,7 @@ internal expect fun CreateMCPStdioProcess(config: StdioConfig): MCPStdioProcess
 
 @ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
+@Suppress("TooManyFunctions") // transport surface + private teardown helpers + test seams
 public class Experimental_StdioMCPTransport(
     /** @since 0.3.0-beta01 */
     public val config: StdioConfig,
@@ -2061,10 +2157,29 @@ public class Experimental_StdioMCPTransport(
     private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
     private val protocolVersion = AtomicReference<String?>(null)
 
+    // Default: platform actual. Tests swap this before start() to drive lifecycle paths
+    // (cancel-during-stale-close, spawn failure) without a real child process.
+    private var processFactory: (StdioConfig) -> MCPStdioProcess = { CreateMCPStdioProcess(it) }
+
     override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
     override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
     override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
     override fun setProtocolVersion(version: String?) { protocolVersion.store(version) }
+
+    /**
+     * Test seam: plant a stale process and/or replace the platform factory before [start]
+     * so lifecycle/teardown paths can be driven without a real child process.
+     */
+    internal fun prepareProcessForTest(
+        stale: MCPStdioProcess? = null,
+        factory: ((StdioConfig) -> MCPStdioProcess)? = null,
+    ) {
+        if (stale != null) process = stale
+        if (factory != null) processFactory = factory
+    }
+
+    /** Test-only: true while a live process handle is retained. */
+    internal val hasProcessForTest: Boolean get() = process != null
 
     private val lifecycle = McpConnectionLifecycle()
     private var process: MCPStdioProcess? = null
@@ -2073,25 +2188,27 @@ public class Experimental_StdioMCPTransport(
         val readerScope = lifecycle.begin { CoroutineScope(SupervisorJob() + engineContext) }
             ?: throw MCPClientError("StdioMCPTransport already started.")
         // Close any pre-existing process before overwriting the field — a reconnect after the
-        // reader EOF'd would otherwise leak the prior child + its FDs.
-        process?.let { stale -> closeProcessPreservingCancellation(stale) }
+        // reader EOF'd would otherwise leak the prior child + its FDs. Retain the handle so a
+        // cancellation mid-close can still finish teardown NonCancellably and clear the field;
+        // otherwise a concurrent restart races a dangling process reference after lifecycle is Idle.
+        val stale = process
         val started = try {
-            CreateMCPStdioProcess(config)
+            stale?.let { closeProcessPreservingCancellation(it) }
+            processFactory(config)
         } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
-            // Spawn failed (bad command/cwd/permissions) AFTER begin() already won Idle->Active: undo
-            // the transition and cancel the freshly built scope, else the transport is wedged Active
-            // (a later start() throws "already started") with a leaked scope. Rethrow the real cause.
-            lifecycle.onReaderExited()?.cancel()
+            // Cleanup BEFORE rethrow — including CancellationException from a cancelled stale
+            // close. Rethrowing CE first would skip teardown and leave process dangling.
+            undoFailedStart(stale)
             throw error
         }
         process = started
-        lifecycle.setReader(
+        val readerJob =
             readerScope.launch {
                 try {
                     while (true) {
                         val line = started.readLine() ?: break
                         try {
-                            onMessage?.invoke(JSONRPCMessage.fromJson(line))
+                            onMessage?.invoke(ParseJSONRPCMessage(line))
                         } catch (error: Throwable) {
                             if (error is CancellationException) throw error
                             onError?.invoke(error)
@@ -2114,14 +2231,52 @@ public class Experimental_StdioMCPTransport(
                         }
                     }
                 }
-            },
-        )
+            }
+        adoptReaderOrUndoLostStart(readerJob)
+    }
+
+    /**
+     * Attach the reader, or clean up after a concurrent [close] that won the lifecycle transition.
+     *
+     * close() reads the `process` field AFTER winning, so a close() that won before
+     * `process = started` captured the stale handle (or null) and cannot see the new child:
+     * setReader no-ops, the reader lands in an already-cancelled scope, and its onReaderExited()
+     * returns null for Closed — so nothing would ever destroy the child or clear the field, while
+     * send() could still write to it. Claim whatever the field now holds and tear it down here; if
+     * close() did see `started` it already nulled the field, so nothing is closed twice.
+     */
+    private suspend fun adoptReaderOrUndoLostStart(readerJob: Job) {
+        if (lifecycle.setReader(readerJob)) return
+        // setReader also returns false when the reader ALREADY EXITED (immediate EOF), which puts
+        // the lifecycle back to Idle and means its own `finally` has already destroyed the process
+        // and cleared the field. That is a start that SUCCEEDED, so it must not be undone or
+        // reported as a failure — only a genuinely Closed lifecycle means close() won and left the
+        // new child orphaned.
+        if (!lifecycle.isClosed) return
+        readerJob.cancel()
+        withContext(NonCancellable) {
+            val orphan = process
+            process = null
+            orphan?.let { closeProcessForTeardown(it) }
+        }
+        throw MCPClientError("StdioMCPTransport was closed during start.")
+    }
+
+    /** Finish stale teardown + lifecycle reset after start fails post-begin(). */
+    private suspend fun undoFailedStart(stale: MCPStdioProcess?) {
+        withContext(NonCancellable) {
+            if (process === stale) {
+                stale?.let { closeProcessForTeardown(it) }
+                process = null
+            }
+        }
+        lifecycle.onReaderExited()?.cancel()
     }
 
     override suspend fun send(message: JSONRPCMessage) {
         val active = process ?: throw MCPClientError("StdioClientTransport not connected")
         try {
-            active.writeLine(message.toJsonString())
+            active.writeLine(ToJsonString(message))
         } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {

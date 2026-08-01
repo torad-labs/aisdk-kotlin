@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 /**
  * Validates the middleware-shape fix for `simulateStreamingMiddleware`.
@@ -45,11 +46,11 @@ class SimulateStreamingTest {
                 text = text,
                 toolCalls = toolCalls,
                 finishReason = FinishReason.Stop,
-                usage = Usage.of(promptTokens = PROMPT_TOK_FIXTURE, completionTokens = text.length),
+                usage = Usage(promptTokens = PROMPT_TOK_FIXTURE, completionTokens = text.length),
             )
 
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-            error("GenerateOnlyModel.stream should never be called when simulateStreamingMiddleware is wired correctly")
+            fail("GenerateOnlyModel.stream should never be called when simulateStreamingMiddleware is wired correctly")
         }
     }
 

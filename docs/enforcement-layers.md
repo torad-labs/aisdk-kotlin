@@ -17,7 +17,9 @@ every contributor.
 
 ## Layer 1 — ast-grep PreToolUse hooks (`.claude/hooks/`)
 
-71 ast-grep rules under `.claude/hooks/rules/kotlin/`, run by the orchestrator
+The ast-grep rule package under `.rules/kotlin/ast-grep/` — `rules/` (LAW,
+`severity: error`, blocking) and `rules-style/` (opt-in tenets, `severity: warning`,
+non-blocking); active count is `[meas: ast_grep_rule_count]` — run by the orchestrator
 (`.claude/hooks/orchestrator/pretooluse.py` → `modules/pretooluse/kotlin_antipattern_policy.py`)
 **before an edit is written**. This is the fastest possible feedback — the bad code never
 lands — but it only sees **Claude's** edits, and only one file at a time.
@@ -26,8 +28,9 @@ lands — but it only sees **Claude's** edits, and only one file at a time.
   rules are staged (skipped until renamed to activate).
 - **Node-scoped regex only**: `regex:` is always a predicate on a matched AST node (a
   `simple_identifier`, a `comment`), never raw-text matching.
-- **Add a rule**: drop a `*.yaml` in `.claude/hooks/rules/kotlin/`, add it to
-  `manifest.json`, add a test in `.claude/hooks/tests/`.
+- **Add a rule**: drop a `*.yaml` in `.rules/kotlin/ast-grep/rules/` (LAW) or
+  `rules-style/` (opt-in), add it to `.claude/hooks/rules/manifest.json`, add a test
+  in `.claude/hooks/tests/`.
 
 ## Layer 2 — detekt + Konsist (the developer-facing lints)
 

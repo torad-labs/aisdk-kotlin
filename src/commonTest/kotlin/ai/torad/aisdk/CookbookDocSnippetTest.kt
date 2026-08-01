@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalAiSdkApi::class)
+
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockEmbeddingModel
@@ -34,7 +36,7 @@ class CookbookDocSnippetTest {
             temperature(0.2f)
             maxOutputTokens(800)
             providerOptions(
-                ProviderOptions.ofPairs(
+                ProviderOptions(
                     "openai" to buildJsonObject {
                         put("reasoningEffort", JsonPrimitive("medium"))
                     },
@@ -44,12 +46,12 @@ class CookbookDocSnippetTest {
 
         val result = TextGenerator(model, config).generate(
             GenerationInput.Messages(
-                GenerationInput.NonEmptyMessages.of(
+                GenerationInputNonEmptyMessages(
                     SystemMessage("Answer as an SDK maintainer."),
                     UserMessage("Route this request: user needs invoice copy."),
                 ),
             ),
-            output = Output.obj(serializer<RouteDecision>(), name = "RouteDecision"),
+            output = OutputObj(serializer<RouteDecision>(), name = "RouteDecision"),
         ).first()
 
         assertEquals(RouteDecision("billing", 0.9), result.output)
@@ -114,7 +116,16 @@ class CookbookDocSnippetTest {
             when (event) {
                 is AgentEvent.StepFinished -> tokenCounts += event.step.usage.totalTokens
                 is AgentEvent.Finished<*, *> -> savedMessages += event.messages
-                else -> Unit
+                is AgentEvent.Started<*> -> Unit
+                is AgentEvent.StepStarted -> Unit
+                is AgentEvent.Chunk -> Unit
+                is AgentEvent.ToolCallStarted -> Unit
+                is AgentEvent.ToolCallFinished -> Unit
+                is AgentEvent.Errored -> Unit
+                is AgentEvent.Aborted -> Unit
+                is AgentEvent.ModelCallStarted -> Unit
+                is AgentEvent.ModelCallFinished -> Unit
+                is AgentEvent.SpanEmitted -> Unit
             }
         }
 

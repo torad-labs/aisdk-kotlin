@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.AgentSessions.session
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable

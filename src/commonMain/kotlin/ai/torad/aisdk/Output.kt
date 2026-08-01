@@ -29,12 +29,21 @@ import kotlinx.serialization.json.decodeFromJsonElement
  * val recipe = TextGenerator(model)
  *     .generate(
  *         GenerationInput.Prompt("Generate a chocolate cake recipe"),
- *         Output.obj(serializer<Recipe>()),
+ *         OutputObj(serializer<Recipe>()),
  *     )
  *     .first()
  *     .output
  * ```
  */
+internal fun ExtractChoiceValue(text: String): String {
+    val element = aiSdkOutputJson.parseToJsonElement(text)
+    return when (element) {
+        is JsonObject -> (element["result"] as? JsonPrimitive)?.contentOrNull
+        is JsonPrimitive -> element.contentOrNull
+        else -> null
+    } ?: throw InvalidResponseDataError(element, "Expected a JSON object with a 'result' string")
+}
+
 /** @since 0.3.0-beta01 */
 public sealed class Output<T> {
 
@@ -157,7 +166,7 @@ public sealed class Output<T> {
         }.toString()
 
         override fun decode(text: String): T {
-            val value = extractChoiceValue(text)
+            val value = ExtractChoiceValue(text)
             require(value in encodedOptions) {
                 "Expected one of ${encodedOptions.joinToString(prefix = "[", postfix = "]")}, got `$value`"
             }
@@ -175,54 +184,10 @@ public sealed class Output<T> {
         override val schemaJson: String = "{}"
         override fun decode(text: String): JsonElement = aiSdkOutputJson.parseToJsonElement(text)
     }
-
-    public companion object {
-        public fun <T> obj(
-            serializer: KSerializer<T>,
-            name: String = serializer.descriptor.serialName.substringAfterLast('.'),
-            description: String? = null,
-        ): Output<T> = Obj(serializer, name, description)
-
-        public fun <T> array(
-            elementSerializer: KSerializer<T>,
-            name: String = elementSerializer.descriptor.serialName.substringAfterLast('.') + "[]",
-            description: String? = null,
-        ): Output<List<T>> = Arr(elementSerializer, name, description)
-
-        /** @since 0.3.0-beta01 */
-        public fun choice(
-            options: Iterable<String>,
-            name: String = "choice",
-            description: String? = null,
-        ): Output<String> = Choice(options.toList(), encode = { it }, decodeChoice = { it }, name, description)
-
-        /** @since 0.3.0-beta01 */
-        public fun choice(
-            vararg options: String,
-            name: String = "choice",
-            description: String? = null,
-        ): Output<String> = choice(options.asIterable(), name, description)
-
-        /** @since 0.3.0-beta01 */
-        public fun json(
-            name: String = "json",
-            description: String? = null,
-        ): Output<JsonElement> = JsonTree(name, description)
-
-        internal fun extractChoiceValue(text: String): String {
-            val element = aiSdkOutputJson.parseToJsonElement(text)
-            return when (element) {
-                is JsonObject -> (element["result"] as? JsonPrimitive)?.contentOrNull
-                is JsonPrimitive -> element.contentOrNull
-                else -> null
-            } ?: throw InvalidResponseDataError(element, "Expected a JSON object with a 'result' string")
-        }
-    }
 }
 
 // Top-level constructors + codec.
-// Naming: `Output<Variant>(...)` so call sites read as `OutputObj(...)`
-// while `Output.obj(...)` also works for v6-shaped call sites.
+// Naming: `Output<Variant>(...)` so call sites read as `OutputObj(...)`.
 
 public fun <T> OutputObj(
     serializer: KSerializer<T>,
@@ -241,14 +206,14 @@ public fun OutputChoice(
     options: Iterable<String>,
     name: String = "choice",
     description: String? = null,
-): Output<String> = Output.choice(options, name, description)
+): Output<String> = Output.Choice(options.toList(), encode = { it }, decodeChoice = { it }, name, description)
 
 /** @since 0.3.0-beta01 */
 public fun OutputChoice(
     vararg options: String,
     name: String = "choice",
     description: String? = null,
-): Output<String> = Output.choice(options.asIterable(), name, description)
+): Output<String> = OutputChoice(options.asIterable(), name, description)
 
 public fun <T> OutputChoice(
     options: Iterable<T>,

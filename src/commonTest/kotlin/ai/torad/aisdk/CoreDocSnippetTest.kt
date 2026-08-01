@@ -36,7 +36,7 @@ class CoreDocSnippetTest {
             .first()
 
         val input = GenerationInput.Messages(
-            GenerationInput.NonEmptyMessages.of(
+            GenerationInputNonEmptyMessages(
                 SystemMessage("Answer with short bullets."),
                 UserMessage("What changed in the latest release?"),
             ),
@@ -66,7 +66,7 @@ class CoreDocSnippetTest {
         val result = TextGenerator(model)
             .generate(
                 GenerationInput.Prompt("Classify this ticket: payment failed after checkout."),
-                Output.obj(serializer<Label>()),
+                OutputObj(serializer<Label>()),
             )
             .first()
         val label: Label = result.output
@@ -76,7 +76,7 @@ class CoreDocSnippetTest {
             maxOutputTokens(600)
             stopSequences(listOf("</answer>"))
             providerOptions(
-                ProviderOptions.ofPairs(
+                ProviderOptions(
                     "openai" to buildJsonObject {
                         put("reasoningEffort", JsonPrimitive("high"))
                     },
@@ -91,7 +91,7 @@ class CoreDocSnippetTest {
                     How do provider options work?
                     """.trimIndent(),
                 ),
-                Output.obj(serializer<Label>()),
+                OutputObj(serializer<Label>()),
             )
             .first()
         val settings = CallSettings {

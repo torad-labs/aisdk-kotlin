@@ -74,7 +74,7 @@ owned by the host app.
 ```kotlin
 val signal = CombineAbortSignals(
     userRequestSignal,
-    with(AbortSignals) { backgroundJob.asAbortSignal() },
+    AbortSignals.from(backgroundJob),
 )
 ```
 

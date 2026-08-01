@@ -14,6 +14,7 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -525,6 +526,65 @@ class OpenResponsesProviderTest {
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("missing item"))
+    }
+
+    @Test
+    fun `unknown provider tool type still posts but surfaces a local unsupported warning`() = runTest {
+        // Forward-compat keeps unknown types on the wire; a typo'd providerToolId must still
+        // emit CallWarning("unsupported", …) locally so it does not look like a remote outage.
+        val okBody = buildString {
+            append("""{"id":"resp_1","created_at":1,"model":"gpt-resp",""")
+            append(""""output":[{"type":"message","id":"m","role":"assistant",""")
+            append(""""content":[{"type":"output_text","text":"ok"}]}],""")
+            append(""""usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}""")
+        }
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                respond(
+                    content = okBody,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType to listOf("application/json")),
+                )
+            },
+        )
+        val provider = OpenResponses(
+            client,
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+                apiKey("secret")
+            },
+        )
+        val result = provider.responses("gpt-resp").generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(
+                    listOf(
+                        LanguageModelTool(
+                            name = "mystery_tool",
+                            description = "Unknown server tool",
+                            parametersSchemaJson = objectSchema().toString(),
+                            providerExecuted = true,
+                            metadata = mapOf(
+                                "providerToolId" to JsonPrimitive("openai.not_a_real_tool"),
+                            ),
+                        ),
+                    ),
+                )
+            },
+        )
+        val tools = assertIs<JsonArray>(seenBodies.single()["tools"])
+        assertEquals("not_a_real_tool", tools.single().jsonObject["type"]?.jsonPrimitive?.content)
+        assertTrue(
+            result.warnings.any {
+                it.type == "unsupported" &&
+                    it.message.orEmpty().contains("not_a_real_tool") &&
+                    it.message.orEmpty().contains("mystery_tool")
+            },
+            "unknown provider tool type must surface a local unsupported warning, got: ${result.warnings}",
+        )
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {

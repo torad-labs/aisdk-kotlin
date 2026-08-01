@@ -69,7 +69,9 @@ internal object BedrockRequest {
             if (!isAnthropicThinking) {
                 params.temperature?.coerceIn(0f, 1f)?.let { put("temperature", JsonPrimitive(it)) }
                 params.topP?.let { put("topP", JsonPrimitive(it)) }
-                params.topK?.let { put("topK", JsonPrimitive(it)) }
+                // topK is NOT a member of inferenceConfig — Converse rejects it with
+                // ValidationException. Model-specific sampling (e.g. Anthropic top_k) goes
+                // in additionalModelRequestFields below.
             }
             if (params.stopSequences.isNotEmpty()) {
                 put(
@@ -82,8 +84,18 @@ internal object BedrockRequest {
         warnings += converted.warnings
         val tools = bedrockTools(modelId, params.tools, params.toolChoice, params.responseFormat)
         warnings += tools.warnings
-        val bedrockOptions = bedrockAdditionalModelRequestFields(options, modelId, params.responseFormat)
+        val topKForAdditional =
+            if (!isAnthropicThinking) params.topK else null
+        val bedrockOptions = bedrockAdditionalModelRequestFields(
+            options = options,
+            modelId = modelId,
+            responseFormat = params.responseFormat,
+            topK = topKForAdditional,
+        )
         val serviceTier = (options["serviceTier"] as? JsonPrimitive)?.contentOrNull
+        // Converse-native structured output (docs: outputConfig.textFormat). Prefer this over
+        // stuffing the schema only into additionalModelRequestFields, and do not gate on thinking.
+        val outputConfig = bedrockOutputConfig(params.responseFormat)
 
         return BedrockPreparedChatRequest(
             body = buildJsonObject {
@@ -91,9 +103,12 @@ internal object BedrockRequest {
                 put("messages", converted.messages)
                 if (bedrockOptions.isNotEmpty()) put("additionalModelRequestFields", bedrockOptions)
                 if (modelId.contains("anthropic")) {
-                    put("additionalModelResponseFieldPaths", JsonArray(listOf(JsonPrimitive("/delta/stop_sequence"))))
+                    // Docs example: ["/stop_sequence"] — model-native field at the top of
+                    // additionalModelResponseFields, not nested under /delta.
+                    put("additionalModelResponseFieldPaths", JsonArray(listOf(JsonPrimitive("/stop_sequence"))))
                 }
                 if (inferenceConfig.isNotEmpty()) put("inferenceConfig", inferenceConfig)
+                outputConfig?.let { put("outputConfig", it) }
                 serviceTier?.let {
                     put("serviceTier", buildJsonObject { put("type", JsonPrimitive(it)) })
                 }
@@ -102,6 +117,42 @@ internal object BedrockRequest {
             warnings = warnings,
             usesJsonResponseTool = tools.usesJsonResponseTool,
         )
+    }
+
+    private fun bedrockOutputConfig(responseFormat: ResponseFormat): JsonObject? {
+        if (responseFormat !is ResponseFormat.Json) return null
+        val schema = responseFormat.schemaJson ?: return null
+        // Converse OutputConfig.structure is a tagged union; only `jsonSchema` is valid.
+        // schema itself must be a JSON-encoded string per the API reference.
+        val schemaWire = when (schema) {
+            is JsonPrimitive -> schema.content
+            else -> schema.toString()
+        }
+        return buildJsonObject {
+            put(
+                "textFormat",
+                buildJsonObject {
+                    put("type", JsonPrimitive("json_schema"))
+                    put(
+                        "structure",
+                        buildJsonObject {
+                            put(
+                                "jsonSchema",
+                                buildJsonObject {
+                                    put("schema", JsonPrimitive(schemaWire))
+                                    responseFormat.schemaName?.takeIf { it.isNotBlank() }?.let {
+                                        put("name", JsonPrimitive(it))
+                                    }
+                                    responseFormat.schemaDescription?.takeIf { it.isNotBlank() }?.let {
+                                        put("description", JsonPrimitive(it))
+                                    }
+                                },
+                            )
+                        },
+                    )
+                },
+            )
+        }
     }
 
     private fun bedrockMessages(messages: List<ModelMessage>): BedrockConvertedMessages {
@@ -183,21 +234,28 @@ internal object BedrockRequest {
 
     private fun bedrockAssistantPart(part: ContentPart): JsonElement? = when (part) {
         is ContentPart.Text -> buildJsonObject { put("text", JsonPrimitive(part.text)) }
-        is ContentPart.Reasoning -> buildJsonObject {
-            put(
-                "reasoningContent",
-                buildJsonObject {
-                    put(
-                        "reasoningText",
-                        buildJsonObject {
-                            put("text", JsonPrimitive(part.text))
-                            JsonAccess.obj(part.providerMetadata.toMap(), "bedrock")
-                                ?.get("signature")
-                                ?.let { put("signature", it) }
-                        },
-                    )
-                },
-            )
+        is ContentPart.Reasoning -> {
+            val bedrockMeta = JsonAccess.obj(part.providerMetadata.toMap(), "bedrock")
+            val redacted = bedrockMeta?.get("redactedData")
+            buildJsonObject {
+                put(
+                    "reasoningContent",
+                    buildJsonObject {
+                        if (redacted != null && redacted !is kotlinx.serialization.json.JsonNull) {
+                            // Wire key is redactedContent (not redactedReasoning/data).
+                            put("redactedContent", redacted)
+                        } else {
+                            put(
+                                "reasoningText",
+                                buildJsonObject {
+                                    put("text", JsonPrimitive(part.text))
+                                    bedrockMeta?.get("signature")?.let { put("signature", it) }
+                                },
+                            )
+                        }
+                    },
+                )
+            }
         }
         is ContentPart.ToolCall -> buildJsonObject {
             put(
@@ -287,9 +345,11 @@ internal object BedrockRequest {
             is ToolChoice.Required -> tools
             is ToolChoice.None -> tools
         }
-        val usesJsonResponseTool = responseFormat is ResponseFormat.Json && responseFormat.schemaJson != null
-        if (usesJsonResponseTool) {
-            preparedTools += LanguageModelTool("json", "Respond with a JSON object.", responseFormat.schemaJson.toString())
+        // Prefer Converse-native outputConfig.textFormat for structured output. The legacy
+        // "json" pseudo-tool dual-path conflicts with outputConfig and is no longer injected.
+        val usesJsonResponseTool = false
+        if (responseFormat is ResponseFormat.Json && responseFormat.schemaJson != null) {
+            // no-op: schema rides outputConfig (see bedrockOutputConfig)
         }
         val bedrockTools = preparedTools.mapNotNull { tool ->
             if (tool.providerExecuted && !modelId.contains("anthropic")) {
@@ -337,8 +397,14 @@ internal object BedrockRequest {
         options: JsonObject,
         modelId: String,
         responseFormat: ResponseFormat,
+        topK: Int? = null,
     ): JsonObject {
         val additional = JsonAccess.obj(options, "additionalModelRequestFields")?.toMutableMap() ?: mutableMapOf()
+        // Converse inferenceConfig has no topK; Anthropic (and others that honor it) take
+        // top_k via additionalModelRequestFields.
+        if (topK != null && "top_k" !in additional && "topK" !in additional) {
+            additional["top_k"] = JsonPrimitive(topK)
+        }
         val reasoningConfig = JsonAccess.obj(options, "reasoningConfig")
         val reasoningType = (reasoningConfig?.get("type") as? JsonPrimitive)?.contentOrNull
         val maxReasoningEffort = (reasoningConfig?.get("maxReasoningEffort") as? JsonPrimitive)?.contentOrNull
@@ -363,16 +429,23 @@ internal object BedrockRequest {
                 }
             }
         }
-        if (modelId.contains("anthropic") && responseFormat is ResponseFormat.Json && responseFormat.schemaJson != null && reasoningType in setOf("enabled", "adaptive")) {
-            val existing = JsonAccess.obj(additional, "output_config") ?: JsonObject(emptyMap())
-            additional["output_config"] = JsonObject(
-                existing + (
-                    "format" to buildJsonObject {
-                        put("type", JsonPrimitive("json_schema"))
-                        put("schema", responseFormat.schemaJson)
-                    }
-                    ),
-            )
+        // Structured output: prefer Converse outputConfig.textFormat (documented). Do not
+        // gate on thinking — schema JSON is valid with or without reasoningConfig.
+        if (responseFormat is ResponseFormat.Json && responseFormat.schemaJson != null) {
+            // Keep anthropic additional output_config.format for thinking models that
+            // historically required it, but always also emit the Converse-native path
+            // via a side channel the body builder can pick up (see bedrockChatRequestBody).
+            if (modelId.contains("anthropic") && reasoningType in setOf("enabled", "adaptive")) {
+                val existing = JsonAccess.obj(additional, "output_config") ?: JsonObject(emptyMap())
+                additional["output_config"] = JsonObject(
+                    existing + (
+                        "format" to buildJsonObject {
+                            put("type", JsonPrimitive("json_schema"))
+                            put("schema", responseFormat.schemaJson)
+                        }
+                        ),
+                )
+            }
         }
         (JsonAccess.arr(options, "anthropicBeta"))?.let { additional["anthropic_beta"] = it }
         return JsonObject(additional)
@@ -575,6 +648,14 @@ internal object BedrockRequest {
                 put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
             },
         )
+    }
+
+    /** Responses API tool shape (flat name/parameters, not nested under `function`). */
+    fun bedrockMantleResponsesTool(tool: LanguageModelTool): JsonObject = buildJsonObject {
+        put("type", JsonPrimitive("function"))
+        put("name", JsonPrimitive(tool.name))
+        if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
+        put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
     }
 
     private fun bedrockImageFileBase64(file: ImageGenerationFile): String =

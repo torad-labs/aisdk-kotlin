@@ -12,6 +12,7 @@ import ai.torad.aisdk.providers.DeepSeek
 import ai.torad.aisdk.providers.DeepSeekProviderSettings
 import ai.torad.aisdk.providers.FIREWORKS_VERSION
 import ai.torad.aisdk.providers.Fireworks
+import ai.torad.aisdk.providers.FireworksProvider
 import ai.torad.aisdk.providers.FireworksProviderSettings
 import ai.torad.aisdk.providers.GROQ_VERSION
 import ai.torad.aisdk.providers.Groq
@@ -29,6 +30,8 @@ import ai.torad.aisdk.providers.VERCEL_VERSION
 import ai.torad.aisdk.providers.Vercel
 import ai.torad.aisdk.providers.VercelProviderSettings
 import ai.torad.aisdk.providers.browserSearch
+import io.ktor.client.plugins.HttpRedirect
+import io.ktor.client.utils.HttpRequestIsReadyForSending
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -324,7 +327,8 @@ class OpenAICompatibleProviderFacadesTest {
         val body = fixture.calls.single().requestBodyJson.jsonObject
         assertEquals(null, body["tools"])
         assertEquals(null, body["tool_choice"])
-        assertEquals(null, body["stop"])
+        // stop is documented on /v1/sonar — keep it. seed remains dropped.
+        assertEquals("END", body["stop"]?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
         assertEquals(null, body["seed"])
         val messages = body["messages"]!!.jsonArray.map { it.jsonObject }
         assertEquals(listOf("user", "assistant"), messages.map { it["role"]?.jsonPrimitive?.contentOrNull })
@@ -680,6 +684,483 @@ class OpenAICompatibleProviderFacadesTest {
             ),
             fixture.calls.map { it.requestUrl },
         )
+    }
+
+    /** Submit + poll wiring shared by the redirect tests; [sample] is the returned image URL. */
+    private fun fireworksRedirectFixture(
+        sample: String,
+        vararg downloadHandlers: Pair<String, UrlHandler>,
+    ): CreatedTestServer {
+        val base = "https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-kontext-pro"
+        return TestServer.createTestServer(
+            mutableMapOf(
+                base to UrlHandler(UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req_1"}"""))),
+                "$base/get_result" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement("""{"status":"Ready","result":{"sample":"$sample"}}"""),
+                    ),
+                ),
+                *downloadHandlers,
+            ),
+        )
+    }
+
+    private fun fireworksRedirectProvider(fixture: CreatedTestServer) = Fireworks(
+        fixture.httpClient(),
+        FireworksProviderSettings {
+            apiKey("key")
+            baseURL("https://fireworks.test/inference/v1")
+            headers(mapOf("Cookie" to "session=secret", "x-org-token" to "org-secret"))
+        },
+    )
+
+    private suspend fun generateFireworksImage(provider: FireworksProvider) =
+        provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(
+            ImageGenerationParams { prompt("edit") }
+        )
+
+    @Test
+    fun `fireworks image download does not carry the previous hop's query to a new host`() = runTest {
+        // A signed same-origin URL: the query is the capability. It must not ride to the CDN.
+        val fixture = fireworksRedirectFixture(
+            sample = "https://fireworks.test/inference/v1/download/1?token=secret&sig=abc",
+            "https://fireworks.test/inference/v1/download/1?token=secret&sig=abc" to UrlHandler(
+                UrlResponse.Empty(
+                    status = 302,
+                    headers = mapOf(HttpHeaders.Location to "https://cdn.test/result.png"),
+                ),
+            ),
+            "https://cdn.test/result.png" to UrlHandler(
+                UrlResponse.Binary(byteArrayOf(9, 8, 7), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+            ),
+        )
+        fixture.server.start()
+
+        generateFireworksImage(fireworksRedirectProvider(fixture))
+
+        val downloadUrl = fixture.calls.map { it.requestUrl }.last()
+        assertEquals("https://cdn.test/result.png", downloadUrl, "inherited query must be cleared")
+    }
+
+    @Test
+    fun `fireworks image download refuses an HTTPS to HTTP redirect`() = runTest {
+        val fixture = fireworksRedirectFixture(
+            sample = "https://fireworks.test/inference/v1/download/1",
+            "https://fireworks.test/inference/v1/download/1" to UrlHandler(
+                UrlResponse.Empty(
+                    status = 302,
+                    headers = mapOf(HttpHeaders.Location to "http://cdn.test/result.png"),
+                ),
+            ),
+        )
+        fixture.server.start()
+
+        // With the default redirect policy Ktor itself declines the downgrade, so the 302 stands
+        // as the terminal response rather than the image.
+        val error = assertFailsWith<APICallError> {
+            generateFireworksImage(fireworksRedirectProvider(fixture))
+        }
+        assertEquals(302, error.statusCode)
+        assertTrue(
+            fixture.calls.none { it.requestUrl.startsWith("http://") },
+            "the insecure hop must never be requested",
+        )
+    }
+
+    @Test
+    fun `fireworks image download refuses a downgrade even when the caller allows one`() = runTest {
+        val fixture = fireworksRedirectFixture(
+            sample = "https://fireworks.test/inference/v1/download/1",
+            "https://fireworks.test/inference/v1/download/1" to UrlHandler(
+                UrlResponse.Empty(
+                    status = 302,
+                    headers = mapOf(HttpHeaders.Location to "http://cdn.test/result.png"),
+                ),
+            ),
+            "http://cdn.test/result.png" to UrlHandler(
+                UrlResponse.Binary(byteArrayOf(9, 8, 7), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+            ),
+        )
+        fixture.server.start()
+        // The caller opted into downgrades globally; this download must not inherit that.
+        val permissive = fixture.httpClient().config {
+            install(HttpRedirect) { allowHttpsDowngrade = true }
+        }
+        val provider = Fireworks(
+            permissive,
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("https://fireworks.test/inference/v1")
+            },
+        )
+
+        val error = assertFailsWith<DownloadError> { generateFireworksImage(provider) }
+
+        assertTrue(
+            error.message.orEmpty().contains("insecure hop"),
+            "the download's own guard must refuse it: ${error.message}",
+        )
+        assertTrue(
+            fixture.calls.none { it.requestUrl.startsWith("http://") },
+            "the insecure hop must never be requested",
+        )
+    }
+
+    @Test
+    fun `fireworks image download treats 304 as a terminal response rather than a redirect`() = runTest {
+        // 304 sits inside 3xx but is NOT a redirect; a Location on it must not be followed.
+        val downloadUrl = "https://fireworks.test/inference/v1/download/1"
+        val fixture = fireworksRedirectFixture(
+            sample = downloadUrl,
+            downloadUrl to UrlHandler(
+                UrlResponse.Empty(
+                    status = 304,
+                    headers = mapOf(HttpHeaders.Location to "https://cdn.test/should-not-be-fetched.png"),
+                ),
+            ),
+        )
+        fixture.server.start()
+
+        // Assert the SPECIFIC terminal failure: a bare runCatching would also pass if submit,
+        // polling, or client construction had failed before the 304 was ever reached.
+        val error = assertFailsWith<APICallError> {
+            generateFireworksImage(fireworksRedirectProvider(fixture))
+        }
+
+        assertEquals(304, error.statusCode, "the 304 itself must surface as the terminal status")
+        assertEquals(1, fixture.calls.count { it.requestUrl == downloadUrl }, "download attempted once")
+        assertTrue(
+            fixture.calls.none { it.requestUrl.contains("should-not-be-fetched") },
+            "304 must not be followed as a redirect",
+        )
+    }
+
+    @Test
+    fun `fireworks image download keeps caller headers on a same-origin redirect`() = runTest {
+        val fixture = fireworksRedirectFixture(
+            sample = "https://fireworks.test/inference/v1/download/1",
+            "https://fireworks.test/inference/v1/download/1" to UrlHandler(
+                UrlResponse.Empty(
+                    status = 302,
+                    headers = mapOf(HttpHeaders.Location to "https://fireworks.test/inference/v1/download/2"),
+                ),
+            ),
+            "https://fireworks.test/inference/v1/download/2" to UrlHandler(
+                UrlResponse.Binary(byteArrayOf(9, 8, 7), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+            ),
+        )
+        fixture.server.start()
+
+        generateFireworksImage(fireworksRedirectProvider(fixture))
+
+        fun Map<String, String>.header(name: String): String? =
+            entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+
+        val hop = fixture.calls.single { it.requestUrl.endsWith("/download/2") }
+        assertEquals("Bearer key", hop.requestHeaders.header(HttpHeaders.Authorization))
+        assertEquals("session=secret", hop.requestHeaders.header("Cookie"))
+        assertEquals("org-secret", hop.requestHeaders.header("x-org-token"))
+    }
+
+    @Test
+    fun `fireworks image download restores caller headers when a redirect returns to the API origin`() = runTest {
+        val fixture = fireworksRedirectFixture(
+            sample = "https://cdn.test/bounce.png",
+            "https://cdn.test/bounce.png" to UrlHandler(
+                UrlResponse.Empty(
+                    status = 302,
+                    headers = mapOf(HttpHeaders.Location to "https://fireworks.test/inference/v1/download/3"),
+                ),
+            ),
+            "https://fireworks.test/inference/v1/download/3" to UrlHandler(
+                UrlResponse.Binary(byteArrayOf(9, 8, 7), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+            ),
+        )
+        fixture.server.start()
+
+        generateFireworksImage(fireworksRedirectProvider(fixture))
+
+        fun Map<String, String>.header(name: String): String? =
+            entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+
+        val offOrigin = fixture.calls.single { it.requestUrl == "https://cdn.test/bounce.png" }
+        assertEquals(null, offOrigin.requestHeaders.header(HttpHeaders.Authorization))
+        assertEquals(null, offOrigin.requestHeaders.header("Cookie"))
+
+        // Policy is re-evaluated per hop in BOTH directions, not latched off on first departure.
+        val backOnOrigin = fixture.calls.single { it.requestUrl.endsWith("/download/3") }
+        assertEquals("Bearer key", backOnOrigin.requestHeaders.header(HttpHeaders.Authorization))
+        assertEquals("session=secret", backOnOrigin.requestHeaders.header("Cookie"))
+    }
+
+    @Test
+    fun `fireworks image download strips credentials a caller interceptor adds off-origin`() = runTest {
+        val fixture = fireworksRedirectFixture(
+            sample = "https://fireworks.test/inference/v1/download/1",
+            "https://fireworks.test/inference/v1/download/1" to UrlHandler(
+                UrlResponse.Empty(
+                    status = 302,
+                    headers = mapOf(HttpHeaders.Location to "https://cdn.test/result.png"),
+                ),
+            ),
+            "https://cdn.test/result.png" to UrlHandler(
+                UrlResponse.Binary(byteArrayOf(9, 8, 7), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+            ),
+        )
+        fixture.server.start()
+        // A caller interceptor that injects a credential on EVERY request, the way Auth or
+        // DefaultRequest would. The policy is SUBSCRIBED after derived-client configuration
+        // completes — not merely installed after it — so it must still win.
+        val callerInterceptorSawUrls = mutableListOf<String>()
+        val injecting = fixture.httpClient().config {
+            // The STRING-KEYED category on purpose: Ktor installs every ClientPlugin first and
+            // these afterwards, so this subscriber runs after any plugin-based policy on the same
+            // event. Injecting from a ClientPlugin would only prove plugin-vs-plugin ordering and
+            // could not catch that bypass.
+            install("injector") {
+                monitor.subscribe(HttpRequestIsReadyForSending) { request ->
+                    callerInterceptorSawUrls += request.url.buildString()
+                    request.headers.remove(HttpHeaders.Cookie)
+                    request.headers.append(HttpHeaders.Cookie, "injected=leak")
+                    // A name the SDK has never heard of, absent from the settings baseline.
+                    // A denylist of known credential headers cannot catch this one.
+                    request.headers.remove("X-Org-Token")
+                    request.headers.append("X-Org-Token", "injected=leak")
+                }
+            }
+        }
+        val provider = Fireworks(
+            injecting,
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("https://fireworks.test/inference/v1")
+            },
+        )
+
+        generateFireworksImage(provider)
+
+        // Without this the test would be vacuous: it also passes if the caller's interceptor
+        // never ran on the download at all. This is what proves config{} keeps caller transport
+        // policy.
+        assertTrue(
+            callerInterceptorSawUrls.any { it == "https://cdn.test/result.png" },
+            "the caller's own interceptor must still run on the download hop: $callerInterceptorSawUrls",
+        )
+
+        val download = fixture.calls.single { it.requestUrl == "https://cdn.test/result.png" }
+        listOf(HttpHeaders.Cookie, "X-Org-Token").forEach { header ->
+            assertEquals(
+                null,
+                download.requestHeaders.entries.firstOrNull { it.key.equals(header, true) }?.value,
+                "$header injected by a caller interceptor must not survive the off-origin hop",
+            )
+        }
+    }
+
+    @Test
+    fun `fireworks image download treats an explicit default port as the same origin`() = runTest {
+        // Ktor normalises :443 away on the hop, so a textual authority compare would call this
+        // asset cross-origin and strip the very headers its own API needs.
+        val base = "https://fireworks.test:443/inference/v1"
+        val model = "accounts/fireworks/models/flux-kontext-pro"
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://fireworks.test/inference/v1/workflows/$model" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req_1"}""")),
+                ),
+                "https://fireworks.test/inference/v1/workflows/$model/get_result" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"Ready","result":{"sample":"https://fireworks.test/inference/v1/a.png"}}""",
+                        ),
+                    ),
+                ),
+                "https://fireworks.test/inference/v1/a.png" to UrlHandler(
+                    UrlResponse.Binary(byteArrayOf(4, 5, 6), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Fireworks(
+            fixture.httpClient(),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL(base)
+                headers(mapOf("x-org-token" to "org-secret"))
+            },
+        )
+
+        generateFireworksImage(provider)
+
+        val download = fixture.calls.single { it.requestUrl.endsWith("/a.png") }
+        fun Map<String, String>.header(name: String): String? =
+            entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+        assertEquals("Bearer key", download.requestHeaders.header(HttpHeaders.Authorization))
+        assertEquals("org-secret", download.requestHeaders.header("x-org-token"))
+    }
+
+    @Test
+    fun `fireworks image download refuses a plain HTTP sample URL from an HTTPS api`() = runTest {
+        // No redirect involved: the HTTPS API names an insecure asset outright. Stripping the
+        // headers is not enough — the bytes and any signed query would still be in the clear.
+        val insecureSample = "http://cdn.test/result.png?signature=secret"
+        val fixture = fireworksRedirectFixture(
+            sample = insecureSample,
+            insecureSample to UrlHandler(
+                UrlResponse.Binary(byteArrayOf(9, 8, 7), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+            ),
+        )
+        fixture.server.start()
+
+        val error = assertFailsWith<DownloadError> {
+            generateFireworksImage(fireworksRedirectProvider(fixture))
+        }
+
+        assertTrue(
+            error.message.orEmpty().contains("insecure hop"),
+            "an HTTPS API must not be talked out of TLS by the URL it returned: ${error.message}",
+        )
+        assertTrue(
+            fixture.calls.none { it.requestUrl.startsWith("http://") },
+            "the insecure asset must never be requested",
+        )
+    }
+
+    @Test
+    fun `fireworks image download allows plain HTTP when the configured api is itself HTTP`() = runTest {
+        // A deliberately-insecure local gateway must keep working: neither anchor is secure.
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "http://local.test/v1/workflows/accounts/fireworks/models/flux-kontext-pro" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req_1"}""")),
+                ),
+                "http://local.test/v1/workflows/accounts/fireworks/models/flux-kontext-pro/get_result" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"Ready","result":{"sample":"http://local.test/v1/asset.png"}}""",
+                        ),
+                    ),
+                ),
+                "http://local.test/v1/asset.png" to UrlHandler(
+                    UrlResponse.Binary(byteArrayOf(1, 2, 3), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Fireworks(
+            fixture.httpClient(),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("http://local.test/v1")
+            },
+        )
+
+        val result = generateFireworksImage(provider)
+
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.images.single().base64)
+    }
+
+    @Test
+    fun `fireworks async image download sends no caller credentials across a redirect`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-kontext-pro" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req_1"}""")),
+                ),
+                "https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-kontext-pro/get_result" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"Ready","result":{"sample":""" +
+                                """"https://fireworks.test/inference/v1/download/1"}}""",
+                        ),
+                    ),
+                ),
+                // Same-origin sample URL — headers are legitimately forwarded here — that
+                // bounces to a third-party CDN. The hop, not the first request, is the leak.
+                "https://fireworks.test/inference/v1/download/1" to UrlHandler(
+                    UrlResponse.Empty(
+                        status = 302,
+                        headers = mapOf(HttpHeaders.Location to "https://cdn.test/result.png"),
+                    ),
+                ),
+                "https://cdn.test/result.png" to UrlHandler(
+                    UrlResponse.Binary(byteArrayOf(9, 8, 7), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Fireworks(
+            fixture.httpClient(),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("https://fireworks.test/inference/v1")
+                headers(mapOf("Cookie" to "session=secret", "x-org-token" to "org-secret"))
+            },
+        )
+
+        provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(
+            ImageGenerationParams { prompt("edit") }
+        )
+
+        fun Map<String, String>.header(name: String): String? =
+            entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+
+        val download = fixture.calls.single { it.requestUrl == "https://cdn.test/result.png" }
+        listOf(HttpHeaders.Authorization, "x-api-key", "Cookie", "x-org-token").forEach { header ->
+            assertEquals(
+                null,
+                download.requestHeaders.header(header),
+                "$header must not survive a redirect to a cross-origin image host",
+            )
+        }
+    }
+
+    @Test
+    fun `fireworks async image download sends no caller credentials cross-origin`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-kontext-pro" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req_1"}""")),
+                ),
+                "https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-kontext-pro/get_result" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"status":"Ready","result":{"sample":"https://cdn.test/result.png"}}""")),
+                ),
+                "https://cdn.test/result.png" to UrlHandler(
+                    UrlResponse.Binary(byteArrayOf(9, 8, 7), headers = mapOf(HttpHeaders.ContentType to "image/png")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Fireworks(
+            fixture.httpClient(),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("https://fireworks.test/inference/v1")
+                // A host-configured credential the SDK does not set itself: the old denylist
+                // named only Authorization/x-api-key, so this reached the third-party CDN.
+                headers(mapOf("Cookie" to "session=secret", "x-org-token" to "org-secret"))
+            },
+        )
+
+        provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(
+            ImageGenerationParams { prompt("edit") }
+        )
+
+        fun Map<String, String>.header(name: String): String? =
+            entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+
+        val submit = fixture.calls.first { it.requestUrl.endsWith("/flux-kontext-pro") }
+        assertEquals("Bearer key", submit.requestHeaders.header(HttpHeaders.Authorization))
+        assertEquals("session=secret", submit.requestHeaders.header("Cookie"))
+
+        val download = fixture.calls.single { it.requestUrl == "https://cdn.test/result.png" }
+        listOf(HttpHeaders.Authorization, "x-api-key", "Cookie", "x-org-token").forEach { header ->
+            assertEquals(
+                null,
+                download.requestHeaders.header(header),
+                "$header must not be forwarded to the cross-origin image host",
+            )
+        }
     }
 
     @Test

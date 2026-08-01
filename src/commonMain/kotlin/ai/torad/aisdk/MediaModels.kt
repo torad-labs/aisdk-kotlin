@@ -19,7 +19,39 @@ public class GeneratedFile(
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     /** @since 0.3.0-beta01 */
     public val url: String? = null,
-)
+) {
+    /** @since 0.3.0-beta01 */
+    public fun fileData(): FileData =
+        url?.let { FileData.Url(it, mediaType = mediaType, filename = filename) }
+            ?: FileData.Base64(base64, mediaType = mediaType, filename = filename)
+
+    /**
+     * Decode the inline base64 payload to bytes.
+     *
+     * @throws IllegalStateException when this file is URL-backed (no inline
+     * bytes) — fetch [url] to obtain the data. Without this guard a
+     * URL-backed file (whose `base64` is `""`) silently decoded to an empty
+     * `ByteArray`, a wrong answer indistinguishable from a genuinely empty file.
+     * @since 0.3.0-beta01
+     */
+    public fun bytes(): ByteArray {
+        if (base64.isEmpty()) {
+            check(url == null) {
+                "GeneratedFile is URL-backed (mediaType=$mediaType); it has no inline bytes. " +
+                    "Fetch `url` to obtain the data, or use bytesOrNull()."
+            }
+            return ByteArray(0)
+        }
+        return Base64Codec.decode(base64)
+    }
+
+    /**
+     * Like [bytes] but returns null for a URL-backed file instead of throwing.
+     * @since 0.3.0-beta01
+     */
+    public fun bytesOrNull(): ByteArray? =
+        if (base64.isEmpty() && url != null) null else bytes()
+}
 
 /** @since 0.3.0-beta01 */
 public sealed class FileData {
@@ -124,45 +156,6 @@ public fun ImageGenerationFile(data: FileData): ImageGenerationFile = when (data
     )
 }
 
-/**
- * GeneratedFile read accessors as member-extensions. Use via member-import
- * (`import ai.torad.aisdk.GeneratedFiles.bytes`) or `with(GeneratedFiles) { ... }`.
- * @since 0.3.0-beta01
- */
-public object GeneratedFiles {
-    /** @since 0.3.0-beta01 */
-    public fun GeneratedFile.fileData(): FileData =
-        url?.let { FileData.Url(it, mediaType = mediaType, filename = filename) }
-            ?: FileData.Base64(base64, mediaType = mediaType, filename = filename)
-
-    /**
-     * Decode the inline base64 payload to bytes.
-     *
-     * @throws IllegalStateException when this file is URL-backed (no inline
-     * bytes) — fetch [GeneratedFile.url] to obtain the data. Without this guard a
-     * URL-backed file (whose `base64` is `""`) silently decoded to an empty
-     * `ByteArray`, a wrong answer indistinguishable from a genuinely empty file.
-     * @since 0.3.0-beta01
-     */
-    public fun GeneratedFile.bytes(): ByteArray {
-        if (base64.isEmpty()) {
-            check(url == null) {
-                "GeneratedFile is URL-backed (mediaType=$mediaType); it has no inline bytes. " +
-                    "Fetch `url` to obtain the data, or use bytesOrNull()."
-            }
-            return ByteArray(0)
-        }
-        return Base64Codec.decode(base64)
-    }
-
-    /**
-     * Like [bytes] but returns null for a URL-backed file instead of throwing.
-     * @since 0.3.0-beta01
-     */
-    public fun GeneratedFile.bytesOrNull(): ByteArray? =
-        if (base64.isEmpty() && url != null) null else bytes()
-}
-
 public typealias GeneratedAudioFile = GeneratedFile
 
 @ExperimentalAiSdkApi
@@ -178,22 +171,20 @@ public typealias Experimental_SpeechResult = GenerateSpeechResult
 public typealias Experimental_TranscriptionResult = TranscribeResult
 
 /** @since 0.3.0-beta01 */
-public class DefaultGeneratedFile private constructor(
+public fun DefaultGeneratedFile(data: String, mediaType: String): DefaultGeneratedFile =
+    DefaultGeneratedFile(base64Data = data, byteArrayData = null, mediaType = mediaType)
+
+/** @since 0.3.0-beta01 */
+public fun DefaultGeneratedFile(data: ByteArray, mediaType: String): DefaultGeneratedFile =
+    DefaultGeneratedFile(base64Data = null, byteArrayData = data.copyOf(), mediaType = mediaType)
+
+/** @since 0.3.0-beta01 */
+public class DefaultGeneratedFile internal constructor(
     private var base64Data: String?,
     private var byteArrayData: ByteArray?,
     /** @since 0.3.0-beta01 */
     public val mediaType: String,
 ) {
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun fromBase64(data: String, mediaType: String): DefaultGeneratedFile =
-            DefaultGeneratedFile(base64Data = data, byteArrayData = null, mediaType = mediaType)
-
-        /** @since 0.3.0-beta01 */
-        public fun fromBytes(data: ByteArray, mediaType: String): DefaultGeneratedFile =
-            DefaultGeneratedFile(base64Data = null, byteArrayData = data.copyOf(), mediaType = mediaType)
-    }
-
     /** @since 0.3.0-beta01 */
     public val base64: String
         get() {

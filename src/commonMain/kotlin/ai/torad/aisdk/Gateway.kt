@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.jvm.JvmSynthetic
 import kotlin.time.Clock
 
 public const val AI_GATEWAY_PROTOCOL_VERSION: String = "0.0.1"
@@ -18,22 +19,22 @@ public enum class GatewayAuthMethod(public val wireValue: String) {
     Oidc("oidc"),
 }
 
+internal suspend fun GatewayAuthTokenFromSettings(settings: GatewayProviderSettings): GatewayAuthToken? {
+    val key = (settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"])?.takeIf { it.isNotBlank() }
+    if (key != null) return GatewayAuthToken(key, GatewayAuthMethod.ApiKey)
+    // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
+    // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).
+    return settings.authTokenProvider?.invoke()
+        ?: settings.environment["VERCEL_OIDC_TOKEN"]
+            ?.takeIf { it.isNotBlank() }
+            ?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
+}
+
 /** @since 0.3.0-beta01 */
 public data class GatewayAuthToken(
     val token: String,
     val authMethod: GatewayAuthMethod,
-) {
-    internal companion object {
-        internal suspend fun fromSettings(settings: GatewayProviderSettings): GatewayAuthToken? {
-            val key = (settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"])?.takeIf { it.isNotBlank() }
-            if (key != null) return GatewayAuthToken(key, GatewayAuthMethod.ApiKey)
-            // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
-            // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).
-            return settings.authTokenProvider?.invoke()
-                ?: settings.environment["VERCEL_OIDC_TOKEN"]?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
-        }
-    }
-}
+)
 
 /** @since 0.3.0-beta01 */
 public class GatewayProviderSettings internal constructor(
@@ -60,7 +61,7 @@ public class GatewayProviderSettings internal constructor(
     public val environment: Map<String, String> = emptyMap(),
 ) {
     internal suspend fun gatewayHeaders(): Map<String, String> {
-        val auth = GatewayAuthToken.fromSettings(this)
+        val auth = GatewayAuthTokenFromSettings(this)
         val base = linkedMapOf<String, String>()
         auth?.let {
             base["Authorization"] = "Bearer ${it.token}"
@@ -176,64 +177,80 @@ public fun GatewayGenerationInfoParams(
 ): GatewayGenerationInfoParams =
     GatewayGenerationInfoParamsBuilder().apply(block).build()
 
+internal fun GatewayTransportMissing(): Nothing = throw GatewayTransportNotConfiguredError()
+
 /** @since 0.3.0-beta01 */
 public interface GatewayTransport {
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun generateText(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: LanguageModelCallParams,
-    ): LanguageModelResult = gatewayTransportMissing()
+    ): LanguageModelResult = GatewayTransportMissing()
 
     /** @since 0.3.0-beta01 */
-    public fun streamText(
+    @JvmSynthetic public fun streamText(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: LanguageModelCallParams,
     ): Flow<StreamEvent> = flow { throw GatewayTransportNotConfiguredError() }
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun embed(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: EmbeddingModelCallParams,
-    ): EmbeddingModelResult = gatewayTransportMissing()
+    ): EmbeddingModelResult = GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun generateImage(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: ImageGenerationParams,
-    ): ImageModelResult = gatewayTransportMissing()
+    ): ImageModelResult = GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun generateVideo(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: VideoGenerationParams,
-    ): VideoModelResult = gatewayTransportMissing()
+    ): VideoModelResult = GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun rerank(
         context: GatewayRequestContext,
         modelId: ModelId,
         params: RerankingParams,
-    ): RerankingModelResult = gatewayTransportMissing()
+    ): RerankingModelResult = GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun getAvailableModels(context: GatewayRequestContext): GatewayFetchMetadataResponse =
-        gatewayTransportMissing()
+        GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun getCredits(context: GatewayRequestContext): GatewayCreditsResponse =
-        gatewayTransportMissing()
+        GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun getSpendReport(
         context: GatewayRequestContext,
         params: GatewaySpendReportParams,
-    ): GatewaySpendReportResponse = gatewayTransportMissing()
+    ): GatewaySpendReportResponse = GatewayTransportMissing()
 
+    /** @since 0.3.0-beta01 */
+    @JvmSynthetic
     public suspend fun getGenerationInfo(
         context: GatewayRequestContext,
         params: GatewayGenerationInfoParams,
-    ): GatewayGenerationInfo = gatewayTransportMissing()
-
-    public companion object {
-        internal fun gatewayTransportMissing(): Nothing = throw GatewayTransportNotConfiguredError()
-    }
+    ): GatewayGenerationInfo = GatewayTransportMissing()
 }
 
 /** @since 0.3.0-beta01 */
@@ -243,13 +260,19 @@ public data object GatewayTransportNotConfigured : GatewayTransport
 public class GatewayTransportNotConfiguredError :
     AiSdkException("Gateway transport is not configured. Provide GatewayProviderSettings.transport.")
 
-/** @since 0.3.0-beta01 */
-public interface GatewayProvider : Provider {
+/**
+ * Sealed (not `sealed interface`; see the repo's `no-sealed-interface` tenet — this
+ * type is a single-implementation service facade, not a `@Serializable` wire type or
+ * a private state machine, so the class form is what stays compliant) so the SDK
+ * keeps the freedom to add members without breaking an external implementer.
+ * @since 0.3.0-beta01
+ */
+public sealed class GatewayProvider : Provider {
     /** @since 0.3.0-beta01 */
-    public val settings: GatewayProviderSettings
+    public abstract val settings: GatewayProviderSettings
 
     /** @since 0.3.0-beta01 */
-    public val tools: GatewayTools
+    public abstract val tools: GatewayTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
@@ -271,10 +294,17 @@ public interface GatewayProvider : Provider {
     /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
 
-    public suspend fun getAvailableModels(): GatewayFetchMetadataResponse
-    public suspend fun getCredits(): GatewayCreditsResponse
-    public suspend fun getSpendReport(params: GatewaySpendReportParams): GatewaySpendReportResponse
-    public suspend fun getGenerationInfo(params: GatewayGenerationInfoParams): GatewayGenerationInfo
+    /** @since 0.3.0-beta01 */
+    public abstract suspend fun getAvailableModels(): GatewayFetchMetadataResponse
+
+    /** @since 0.3.0-beta01 */
+    public abstract suspend fun getCredits(): GatewayCreditsResponse
+
+    /** @since 0.3.0-beta01 */
+    public abstract suspend fun getSpendReport(params: GatewaySpendReportParams): GatewaySpendReportResponse
+
+    /** @since 0.3.0-beta01 */
+    public abstract suspend fun getGenerationInfo(params: GatewayGenerationInfoParams): GatewayGenerationInfo
 }
 
 /** @since 0.3.0-beta01 */
@@ -298,7 +328,7 @@ public val gateway: GatewayProvider = GatewayProvider()
 
 private class DefaultGatewayProvider(
     override val settings: GatewayProviderSettings,
-) : GatewayProvider {
+) : GatewayProvider() {
     override val providerId: String = "gateway"
     override val tools: GatewayTools = GatewayTools()
 

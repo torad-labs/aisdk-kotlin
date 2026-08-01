@@ -22,7 +22,7 @@ import tempfile
 from pathlib import Path
 
 from orchestrator.result import HookResult
-from rules.validate_rules import _parses, _scan, _write_kt, ast_grep_binary
+from rules.validate_rules import _parses, _scan, _write_kt, ast_grep_binary, rule_yaml_matches
 
 MODULE_ORDER = 30
 MODULE_NAME = "rule_selfcheck_policy"
@@ -31,8 +31,9 @@ WRITE_TOOLS = {"Write", "Edit", "MultiEdit"}
 
 HOOKS_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = HOOKS_ROOT.parents[1]
-RULES_DIR = HOOKS_ROOT / "rules" / "kotlin"
-MANIFEST_PATH = HOOKS_ROOT / "rules" / "manifest.json"
+RULES_ROOT = REPO_ROOT / ".rules" / "kotlin" / "ast-grep"
+RULES_DIRS = [RULES_ROOT / "rules", RULES_ROOT / "rules-style"]
+MANIFEST_PATH = HOOKS_ROOT / "rules" / "manifest.json"  # legacy, may migrate later
 SELFCHECK_SCAN_TIMEOUT = 2.0
 
 
@@ -93,10 +94,14 @@ def _resolve_event_path(data: dict, raw: str) -> Path:
 def _is_checked_path(path: Path) -> bool:
     if path == MANIFEST_PATH.resolve(strict=False):
         return True
-    try:
-        return path.suffix == ".yaml" and path.is_relative_to(RULES_DIR.resolve(strict=False))
-    except ValueError:
+    if path.suffix != ".yaml":
         return False
+    resolved = path.resolve(strict=False)
+    return any(
+        resolved.is_relative_to(rd.resolve(strict=False))
+        for rd in RULES_DIRS
+        if rd.is_dir()
+    )
 
 
 def _post_edit_content(data: dict, path: Path) -> str | None:
@@ -184,7 +189,9 @@ def _check_rule_file(path: Path, post: str) -> HookResult | None:
                 )
 
         manifest_yaml = entry.get("yaml")
-        if isinstance(manifest_yaml, str) and manifest_yaml.strip() != post.strip():
+        # Shared with validate_rules' drift gate — see rule_yaml_matches. These two used different
+        # normalizations, so trailing whitespace warned here and passed there.
+        if isinstance(manifest_yaml, str) and not rule_yaml_matches(manifest_yaml, post):
             return _warn(
                 f"RULE SELF-CHECK: manifest.json carries a stale copy of "
                 f"`{rule_id}` — re-sync the manifest `yaml` field with the "
@@ -211,7 +218,7 @@ def _check_manifest(post: str) -> HookResult | None:
     dangling = [
         str(e.get("id"))
         for e in entries
-        if isinstance(e, dict) and not (RULES_DIR / f"{e.get('id')}.yaml").is_file()
+        if isinstance(e, dict) and not _rule_file_exists(str(e.get("id", "")))
     ]
     if dangling:
         return _block(
@@ -219,6 +226,14 @@ def _check_manifest(post: str) -> HookResult | None:
             "files: " + ", ".join(dangling[:5]) + ". Fix the ids or add the rules."
         )
     return None
+
+
+def _rule_file_exists(rule_id: str) -> bool:
+    """Check if a rule file exists in any of the rules directories."""
+    for rule_dir in RULES_DIRS:
+        if (rule_dir / f"{rule_id}.yaml").is_file():
+            return True
+    return False
 
 
 def _manifest_entry(rule_id: str) -> dict | None:

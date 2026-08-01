@@ -1,7 +1,6 @@
 @file:OptIn(LowLevelLanguageModelApi::class)
 
 package ai.torad.aisdk
-import ai.torad.aisdk.ToolResultOutputs.toJsonElement
 import ai.torad.aisdk.providers.OpenResponses
 import ai.torad.aisdk.providers.OpenResponsesProviderSettings
 import io.ktor.client.HttpClient

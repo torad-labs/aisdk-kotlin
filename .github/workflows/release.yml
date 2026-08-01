@@ -15,6 +15,12 @@ on:
 permissions:
   contents: read
 
+# One release at a time per ref. cancel-in-progress: false so a tag push is never
+# cancelled mid-Central-upload by a concurrent dry-run dispatch.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AI_SDK_REFERENCE_VERSION: 6.0.208
@@ -29,23 +35,56 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Verify release tag
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
         run: |
-          if [ "${DRY_RUN}" = "true" ]; then
-            project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
-            echo "Dry-run release preflight for ${project_version} on ${GITHUB_REF_NAME}; tag and main-ancestry checks are publish-only."
-            exit 0
-          fi
-          tag_version="${GITHUB_REF_NAME#v}"
+          set -euo pipefail
           project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
-          test "${tag_version}" = "${project_version}"
+          group="$(awk -F= '$1 == "GROUP" { print $2 }' gradle.properties)"
+          artifact="$(awk -F= '$1 == "POM_ARTIFACT_ID" { print $2 }' gradle.properties)"
+
           if [[ "${project_version}" == *-SNAPSHOT ]]; then
             echo "Release tags must not publish SNAPSHOT versions: ${project_version}" >&2
             exit 1
           fi
+
+          # Maven Central coordinates are immutable. Fail closed if this VERSION_NAME
+          # is already on repo1 so we never plan a retag/republish of a shipped line
+          # (the 0.3.0-beta01 trap). Dry-run still checks so local smoke cannot lie.
+          # Fail closed on every outcome except a definite "not published". `|| true` plus a
+          # 200-only rejection made this gate open on the failures it exists to survive: a
+          # timeout, DNS error, proxy interception or repo1 5xx all left central_code empty
+          # or non-200 and were reported as "not yet listed", clearing the way to republish
+          # over a shipped coordinate. Only 404 (and 410, tombstoned) prove absence.
+          group_path="${group//.//}"
+          central_pom="https://repo1.maven.org/maven2/${group_path}/${artifact}/${project_version}/${artifact}-${project_version}.pom"
+          if ! central_code="$(curl -sS -o /dev/null -w '%{http_code}' --retry 3 --retry-connrefused --max-time 30 "${central_pom}")"; then
+            echo "::error::Maven Central preflight could not reach ${central_pom}. Refusing to release without proof the coordinate is free." >&2
+            exit 1
+          fi
+          case "${central_code}" in
+            404|410)
+              echo "Maven Central does not list ${project_version} (HTTP ${central_code})."
+              ;;
+            200)
+              echo "::error::VERSION_NAME ${project_version} is already on Maven Central (${central_pom}). Bump VERSION_NAME (e.g. beta02) before releasing." >&2
+              exit 1
+              ;;
+            *)
+              echo "::error::Unexpected Maven Central status ${central_code} for ${central_pom}. Refusing to release without proof the coordinate is free." >&2
+              exit 1
+              ;;
+          esac
+
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "Dry-run release preflight for ${project_version} on ${GITHUB_REF_NAME}; tag and main-ancestry checks are publish-only."
+            exit 0
+          fi
+          tag_version="${GITHUB_REF_NAME#v}"
+          test "${tag_version}" = "${project_version}"
           git fetch origin main
           git merge-base --is-ancestor "${GITHUB_SHA}" origin/main
       - name: Beta readiness gate
@@ -59,36 +98,52 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Release produces signed artifacts, so no mutable cache may feed a publish —
+          # read OR write. cache-read-only stopped this path WRITING a cache but it still
+          # restored one, which is the half zizmor's cache-poisoning audit flags. A release
+          # runs once per version, so the lost cache warm costs little next to a build that
+          # cannot be influenced by any earlier run's artifacts.
+          cache-disabled: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
+          lookup-only: true
       - name: Verify Apple targets (compile all, test simulator)
         run: ./gradlew iosSimulatorArm64Test compileKotlinIosArm64 compileKotlinIosX64
       - name: Verify Swift import smoke
         run: tools/run-ios-swift-smoke
 
-  publish:
+  # Verification runs WITHOUT publish credentials. Everything here resolves or executes
+  # third-party code -- an upstream clone, npm dependency lifecycle scripts, the Gradle
+  # test suite and its plugins -- so none of it may share a job with SIGNING_KEY or
+  # id-token: write. A compromised dependency running beside the signing key would yield
+  # SIGNED artifacts on Maven Central, which is unrecoverable for a published library.
+  #
+  # Fail-closed behaviour is unchanged: the aggregator below still exits non-zero when any
+  # gate fails, and publish consumes this job via needs:, so a red gate stops the release
+  # before anything is staged.
+  verify-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
     needs:
       - preflight
-      - verify-apple
     permissions:
       contents: read
-      packages: write
-      id-token: write
-      attestations: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
@@ -96,12 +151,20 @@ jobs:
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Release produces signed artifacts, so no mutable cache may feed a publish —
+          # read OR write. cache-read-only stopped this path WRITING a cache but it still
+          # restored one, which is the half zizmor's cache-poisoning audit flags. A release
+          # runs once per version, so the lost cache warm costs little next to a build that
+          # cannot be influenced by any earlier run's artifacts.
+          cache-disabled: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
+          lookup-only: true
       - name: Fetch Vercel AI SDK v6 reference
         run: |
           mkdir -p .reference
@@ -158,6 +221,52 @@ jobs:
           done
 
           exit "$failed"
+
+  # Credentialed job. It holds SIGNING_KEY / SONATYPE_* and id-token: write, so it runs
+  # ONLY the staging publish, signing, attestation and upload. Those cannot move -- the
+  # signed bundle has to be produced here -- so Gradle plugins still execute in this job
+  # by necessity; that residual exposure is the honest limit of this split. What it does
+  # remove from the key's blast radius is the whole test suite, npm, and the upstream
+  # clone. Enforced by detect-release-workflow-trust.py.
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    needs:
+      - preflight
+      - verify-apple
+      - verify-release
+    permissions:
+      # contents:write — create the GitHub Release + attach bundle.zip/SBOM so
+      # consumer-canary can gh release download + attest-verify (gap #1).
+      contents: write
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          # Release produces signed artifacts, so no mutable cache may feed a publish —
+          # read OR write. cache-read-only stopped this path WRITING a cache but it still
+          # restored one, which is the half zizmor's cache-poisoning audit flags. A release
+          # runs once per version, so the lost cache warm costs little next to a build that
+          # cannot be influenced by any earlier run's artifacts.
+          cache-disabled: true
+      - name: Cache Kotlin/Native toolchain (~/.konan)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+          lookup-only: true
       # Maven Central is the release target. The Central Portal takes a single zip
       # in Maven Repository Layout, validates it asynchronously, and (with
       # publishingType=AUTOMATIC) syncs to Maven Central if validation passes.
@@ -190,11 +299,28 @@ jobs:
             echo "DRY RUN: would publish ${artifact_count} artifacts"
           fi
           echo "artifact_count=${artifact_count}" >> "${GITHUB_OUTPUT}"
+      # SBOM of the staged Maven layout (not the whole runner FS). Attested on
+      # real publishes so consumers can verify the release coordinate set.
+      - name: Generate release SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: build/staging-deploy
+          format: spdx-json
+          artifact-name: torad-aisdk-sbom.spdx.json
+          output-file: torad-aisdk-sbom.spdx.json
+          # Attached to the GitHub Release below (not only the ephemeral Actions artifact).
+          upload-artifact: true
+          upload-release-assets: false
       - name: Attest Maven Central bundle provenance
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: bundle.zip
+      - name: Attest release SBOM provenance
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: torad-aisdk-sbom.spdx.json
       - name: Publish to Maven Central
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
         env:
@@ -278,3 +404,21 @@ jobs:
           }
           EOF
           ./gradlew -b build/release-smoke.gradle.kts verifyPublishedArtifact --refresh-dependencies
+      # Consumer-canary downloads bundle.zip from the GitHub Release and runs
+      # `gh attestation verify` on it. Without this step that canary is permanently
+      # stuck on "waiting on first release". Also attaches the SPDX SBOM next to
+      # the bundle so the release coordinate set is durable beyond artifact retention.
+      - name: Create GitHub Release (bundle.zip + SBOM)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        # zizmor: ignore[superfluous-actions] informational: `gh release create` is the
+        # equivalent, and dropping a third-party action from the credential-bearing publish
+        # job would be a real gain — but this step only ever executes on a genuine tag push,
+        # so a rewrite cannot be exercised before the release it would break. The action is
+        # SHA-pinned and Dependabot-tracked. Revisit deliberately, not to satisfy a lint.
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          files: |
+            bundle.zip
+            torad-aisdk-sbom.spdx.json
+          fail_on_unmatched_files: true
+          generate_release_notes: true

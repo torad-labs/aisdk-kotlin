@@ -63,7 +63,11 @@ public fun ToolApprovalResponseMessage(
 )
 
 @Serializable
-/** @since 0.3.0-beta01 */
+/**
+ * This enum may gain variants in future releases. Consumers must not rely on
+ * exhaustiveness — include an `else` branch when matching.
+ * @since 0.3.0-beta01
+ */
 public enum class MessageRole { System, User, Assistant, Tool }
 
 /**
@@ -83,11 +87,51 @@ public enum class MessageRole { System, User, Assistant, Tool }
 // wire tags, so kotlinx (de)serializes parts under v6's discriminators (H-6).
 // Note: a few fields are SDK extensions beyond v6's wire shape (e.g.
 // ToolResult.modelVisible), so this is tag-compatible, not byte-identical.
+/**
+ * Tool-call `input` decoded from an OpenAI-compatible arguments
+ * string: blank → empty object, valid JSON → parsed, otherwise the
+ * raw string. Shared by the chat model (full response) and the
+ * streaming state (incremental deltas).
+ */
+internal fun ParseOpenAIToolInput(value: String?): JsonElement =
+    if (value.isNullOrBlank()) {
+        JsonObject(emptyMap())
+    } else {
+        runCatching { aiSdkJson.parseToJsonElement(value) }.getOrElse { JsonPrimitive(value) }
+    }
+
+/** Whether a streamed OpenAI-compatible arguments buffer is now complete (parseable) JSON. */
+internal fun IsParsableOpenAIJson(value: String): Boolean =
+    value.isNotBlank() && runCatching { aiSdkJson.parseToJsonElement(value) }.isSuccess
+
+/** Google `thought_signature` provider-metadata pulled from an OpenAI-compatible tool-call object. */
+internal fun ThoughtSignatureMetadata(value: JsonObject): Map<String, JsonElement>? {
+    val google = (JsonAccess.obj(value, "extra_content"))?.get("google") as? JsonObject
+    val element = google?.get("thought_signature")
+    val signature = (element as? JsonPrimitive)?.contentOrNull
+    return signature?.let { mapOf("thoughtSignature" to JsonPrimitive(it)) }
+}
+
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonClassDiscriminator("type")
 /** @since 0.3.0-beta01 */
 public sealed class ContentPart {
+
+    /** @since 0.3.0-beta01 */
+    public val metadata: ProviderMetadata
+        get() = when (this) {
+            is Text -> providerMetadata
+            is Reasoning -> providerMetadata
+            is ToolCall -> providerMetadata
+            is ToolResult -> providerMetadata
+            is ToolApprovalRequest -> providerMetadata
+            is ToolApprovalResponse -> ProviderMetadata.None
+            is Source -> providerMetadata
+            is File -> providerMetadata
+            is Image -> providerMetadata
+            is Raw -> ProviderMetadata.None
+        }
 
     @Serializable
     @SerialName("text")
@@ -137,34 +181,7 @@ public sealed class ContentPart {
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : ContentPart() {
-        public companion object {
-            /**
-             * Tool-call `input` decoded from an OpenAI-compatible arguments
-             * string: blank → empty object, valid JSON → parsed, otherwise the
-             * raw string. Shared by the chat model (full response) and the
-             * streaming state (incremental deltas).
-             */
-            internal fun parseOpenAIToolInput(value: String?): JsonElement =
-                if (value.isNullOrBlank()) {
-                    JsonObject(emptyMap())
-                } else {
-                    runCatching { aiSdkJson.parseToJsonElement(value) }.getOrElse { JsonPrimitive(value) }
-                }
-
-            /** Whether a streamed OpenAI-compatible arguments buffer is now complete (parseable) JSON. */
-            internal fun isParsableOpenAIJson(value: String): Boolean =
-                value.isNotBlank() && runCatching { aiSdkJson.parseToJsonElement(value) }.isSuccess
-
-            /** Google `thought_signature` provider-metadata pulled from an OpenAI-compatible tool-call object. */
-            internal fun thoughtSignatureMetadata(value: JsonObject): Map<String, JsonElement>? {
-                val google = (JsonAccess.obj(value, "extra_content"))?.get("google") as? JsonObject
-                val element = google?.get("thought_signature")
-                val signature = (element as? JsonPrimitive)?.contentOrNull
-                return signature?.let { mapOf("thoughtSignature" to JsonPrimitive(it)) }
-            }
-        }
-    }
+    ) : ContentPart()
 
     /**
      * Tool execution result. [output] is the canonical FULL payload —

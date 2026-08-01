@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonElement
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public data class ChatState(
@@ -65,7 +66,11 @@ public class ChatSession(
     }
 
     /** @since 0.3.0-beta01 */
-    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
+    @JvmSynthetic
+    public fun sendMessage(
+        message: UIMessage,
+        body: Map<String, JsonElement> = emptyMap(),
+    ): Flow<UIMessage> = flow {
         // L-3 (eager vs cold): this stays a cold Flow — its contract, exercised
         // by ChatSessionTest, is that no turn starts until collection. So the
         // optimistic Submitted/append happens at collection time, not at call
@@ -93,7 +98,7 @@ public class ChatSession(
     }
 
     /** @since 0.3.0-beta01 */
-    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
+    @JvmSynthetic public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
         mutableState.update { it.copy(status = ChatStatus.Submitted, error = null) }
         try {
             chat.regenerate(body).collect { response ->
@@ -112,7 +117,7 @@ public class ChatSession(
     }
 
     /** @since 0.3.0-beta01 */
-    public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
+    @JvmSynthetic public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         chat.resumeStream(headers)
 
     private fun syncState() {
@@ -134,11 +139,3 @@ public fun ChatSession(
         transport = transport,
     ),
 )
-
-// Public Chat extension (was top-level `fun Chat.asSession()`), now a
-// member-extension. Callers use member-import or `with(ChatSessionFactory) { ... }`.
-/** @since 0.3.0-beta01 */
-public object ChatSessionFactory {
-    /** @since 0.3.0-beta01 */
-    public fun Chat.asSession(): ChatSession = ChatSession(this)
-}

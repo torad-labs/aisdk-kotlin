@@ -8,8 +8,12 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.charset
 import io.ktor.http.contentType
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.charsets.decode
 import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.readLine
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +22,7 @@ import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.io.Buffer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -25,6 +30,71 @@ import kotlin.coroutines.CoroutineContext
 
 /** Maximum response body size for non-streaming requests (50 MB). */
 internal const val MAX_RESPONSE_BODY_BYTES: Long = 50L * 1024 * 1024
+
+/** HTTP statuses this SDK treats as success. Named so the range is not re-spelled per provider. */
+@Suppress("MagicNumber")
+internal val SUCCESS_STATUS_RANGE: IntRange = 200..299
+
+/** Bytes plus the response metadata a caller needs after [AssetDownload.capped]. */
+internal class CappedDownload(
+    val bytes: ByteArray,
+    val headers: Map<String, String>,
+    val contentType: String?,
+)
+
+/**
+ * Fetching bytes from a host the SDK does not control — a signed CDN URL out of a provider
+ * response, or a URL the caller handed us to upload.
+ *
+ * Its own object rather than another [HttpTransport] member because it is a different concern from
+ * request/response plumbing, and because it is the ONE download path whose cap bounds memory.
+ */
+internal object AssetDownload {
+    /**
+     * Downloads with a cap that ACTUALLY bounds memory, unlike [HttpTransport.bodyAsBytesCapped]
+     * on a `client.request(...)` response — see that function's note. Uses `prepareRequest {
+     * }.execute { }`, the only construction in Ktor 3.5 that does not pre-buffer the whole body,
+     * so a hostile host streaming 4 GiB is cut off at [maxBytes] instead of being resident before
+     * the check can run. `CappedDownloadIsStreamingTest` is the instrument for that claim.
+     *
+     * Also the single owner of the download shape that had been hand-copied into four provider
+     * files (xAI, Prodia, OpenAI-compatible, the Fireworks facade): request, read capped, check
+     * status, raise [APICallError] carrying the error body. The copies had already drifted — one
+     * checked status BEFORE reading and so reported `rawBody = ""`, losing the host's explanation
+     * of its own failure. Reading first and checking after is deliberate: on a failed download the
+     * error body is the most useful thing there is.
+     */
+    suspend fun capped(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String> = emptyMap(),
+        maxBytes: Long = MAX_RESPONSE_BODY_BYTES,
+    ): CappedDownload =
+        client.prepareRequest(url) {
+            method = HttpMethod.Get
+            headers.forEach { (name, value) -> header(name, value) }
+        }.execute { response ->
+            with(HttpTransport) {
+                val bytes = response.bodyAsBytesCapped(url, maxBytes)
+                val flattened = response.flattenedHeaders()
+                if (response.status.value !in SUCCESS_STATUS_RANGE) {
+                    throw APICallError(
+                        message = "Failed to download $url: HTTP ${response.status.value}",
+                        url = url,
+                        statusCode = response.status.value,
+                        responseHeaders = flattened,
+                        responseBody = bytes.decodeToString(),
+                        isRetryable = false,
+                    )
+                }
+                CappedDownload(
+                    bytes = bytes,
+                    headers = flattened,
+                    contentType = response.headers[HttpHeaders.ContentType],
+                )
+            }
+        }
+}
 
 /**
  * Default ceiling for a single non-streaming HTTP round-trip (connect + send +
@@ -178,17 +248,42 @@ internal object HttpTransport {
         }
 
     /**
-     * Reads the response body up to [maxBytes], throwing an [APICallError] if the
-     * body exceeds that limit rather than buffering the whole thing. The limit
-     * defends against hostile or misconfigured endpoints on non-streaming paths.
+     * Reads the response body up to [maxBytes], throwing an [APICallError] if the body exceeds
+     * that limit.
      *
-     * Uses [bodyAsChannel] + [readAvailable] in 8 KiB chunks, so in the common
-     * case (small JSON bodies) no large allocation happens at all.
+     * IMPORTANT — what this does and does NOT bound. On a response obtained from
+     * `client.request(...)` it does NOT bound memory. Ktor 3.x installs `SaveBody` on every
+     * [HttpClient] unconditionally, and that plugin calls `readRemaining()` on the raw channel
+     * before any user code runs, so the complete body is already resident by the time this
+     * function reads its first chunk. Ktor 3.5 removed the escape hatch: `skipSavingBody()` now
+     * throws, directing callers to `prepareRequest { }.execute { }` — which is what
+     * [AssetDownload.capped] does and why it exists. Verified against ktor-client-core-jvm 3.5.0
+     * bytecode: `HttpClient.<clinit>` installs `SaveBody`; `SaveBody` -> `SavedCallKt.save` ->
+     * `ByteReadChannelOperationsKt.readRemaining`.
+     *
+     * On a `client.request(...)` response this is therefore a CONTENT check, not a memory
+     * defense: it stops an oversized body from propagating into a decoded string, an error
+     * `rawBody`, or a `GeneratedFile`, which is worth having and is why the call sites keep it.
+     * For an actual memory bound the request must not be saved at all — use [AssetDownload.capped].
      */
     internal suspend fun HttpResponse.bodyAsTextCapped(
         url: String,
         maxBytes: Long = MAX_RESPONSE_BODY_BYTES,
-    ): String = bodyAsBytesCapped(url, maxBytes).decodeToString()
+    ): String {
+        val bytes = bodyAsBytesCapped(url, maxBytes)
+        // Honor the response's declared charset the way Ktor's own bodyAsText() does, rather than
+        // assuming UTF-8. Migrating error paths off bodyAsText() had quietly dropped this: a
+        // gateway returning `502 text/html; charset=ISO-8859-1` with a non-ASCII message decoded
+        // to U+FFFD mojibake in APICallError.rawBody — precisely the response a human most needs
+        // to read. JSON APIs are UTF-8 by spec, so it only shows up on the proxy/gateway error
+        // path, the one place the SDK can least afford to guess.
+        val charset = charset() ?: Charsets.UTF_8
+        if (charset == Charsets.UTF_8) return bytes.decodeToString()
+        // Ktor's own bodyAsText() runs a CharsetDecoder (verified in 3.5.0 bytecode); the
+        // ByteArray-taking `String(bytes, charset =)` shortcut is deprecated in favour of exactly
+        // this, so decode through the same path rather than reintroducing a deprecation.
+        return charset.newDecoder().decode(Buffer().apply { write(bytes) })
+    }
 
     /**
      * Binary sibling of [bodyAsTextCapped]. Reads response bytes in chunks, enforcing
@@ -238,6 +333,20 @@ internal object HttpTransport {
         return full
     }
 
+    /**
+     * Downloads an asset with a cap that ACTUALLY bounds memory, unlike [bodyAsBytesCapped] on a
+     * `client.request(...)` response — see that function's note. Uses `prepareRequest { }.execute
+     * { }`, the only construction in Ktor 3.5 that does not pre-buffer the whole body, so a
+     * hostile host streaming 4 GiB is cut off at [maxBytes] instead of being resident before the
+     * check runs.
+     *
+     * Also the single owner of the download shape that had been hand-copied into four provider
+     * files (xAI, Prodia, OpenAI-compatible, and the Fireworks facade): request, read capped,
+     * check status, raise [APICallError] carrying the error body. The copies had already drifted —
+     * one checked the status before reading and so reported `rawBody = ""`, losing the provider's
+     * explanation of its own failure. Reading first and checking after is deliberate: the error
+     * body is the most useful part of a failed download.
+     */
     /**
      * Applies the shared read→status-check→parse pipeline to a response the caller
      * already obtained (multipart bodies, abort-signal-wrapped requests, …). Throws

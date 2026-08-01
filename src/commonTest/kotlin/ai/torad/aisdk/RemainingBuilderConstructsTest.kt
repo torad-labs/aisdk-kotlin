@@ -8,6 +8,7 @@ import ai.torad.aisdk.providers.BedrockCredentials
 import ai.torad.aisdk.providers.LiteRTChannel
 import ai.torad.aisdk.providers.LiteRTLanguageModelSettings
 import ai.torad.aisdk.providers.LiteRTSamplerConfig
+import ai.torad.aisdk.providers.LiteRTSamplerConfigDefault
 import ai.torad.aisdk.providers.OpenResponsesAllowedTools
 import ai.torad.aisdk.providers.OpenResponsesOptions
 import ai.torad.aisdk.providers.XaiLanguageModelChatOptions
@@ -73,7 +74,7 @@ class RemainingBuilderConstructsTest {
         assertEquals(3, reconnect.maxRetries)
         assertEquals(false, schemaOptions.strict)
         assertEquals(8, sampler.topK)
-        assertEquals(LiteRTSamplerConfig.Default, defaultSampler)
+        assertEquals(LiteRTSamplerConfigDefault, defaultSampler)
         assertEquals(equalToolPolicy, toolPolicy)
         assertEquals(equalToolPolicy.hashCode(), toolPolicy.hashCode())
     }
@@ -207,7 +208,7 @@ class RemainingBuilderConstructsTest {
         val retryPolicy = RetryPolicy {
             maxRetries(1)
             baseDelayMs(0)
-            delayGenerator(RetryDelayGenerator.deterministic(0))
+            delayGenerator(RetryDelayGeneratorDeterministic(0))
         }
         val equalShapeRetryPolicy = RetryPolicy {
             maxRetries(1)

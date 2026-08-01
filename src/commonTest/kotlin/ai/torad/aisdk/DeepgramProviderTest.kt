@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 class DeepgramProviderTest {
     @Test
     fun `speech model maps output format provider options warnings and binary audio`() = runTest {
-        val url = "https://api.deepgram.com/v1/speak?model=aura-2-helena-en&encoding=opus&container=ogg&bit_rate=64000&callback=https%3A%2F%2Fexample.com%2Fhook&callback_method=POST&mip_opt_out=true&tag=alpha%2Cbeta"
+        val url = "https://api.deepgram.com/v1/speak?model=aura-2-helena-en&encoding=opus&container=ogg&bit_rate=64000&callback=https%3A%2F%2Fexample.com%2Fhook&callback_method=POST&mip_opt_out=true&tag=alpha%2Cbeta&speed=1.2"
         val fixture = TestServer.createTestServer(
             mutableMapOf(
                 url to UrlHandler(
@@ -72,10 +72,9 @@ class DeepgramProviderTest {
         assertEquals("deepgram.speech", model.provider)
         assertEquals("audio/ogg", result.audio?.mediaType)
         assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.audio?.base64)
-        assertEquals(4, result.warnings.size)
+        assertEquals(3, result.warnings.size)
         assertTrue(result.warnings.any { it.message.orEmpty().contains("sample_rate") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("voice parameter") })
-        assertTrue(result.warnings.any { it.message.orEmpty().contains("speed adjustment") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("instructions") })
 
         val request = fixture.calls.single()
@@ -83,6 +82,10 @@ class DeepgramProviderTest {
         assertEquals("Token key", request.requestHeaders.headerValue(HttpHeaders.Authorization))
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/deepgram/$DEEPGRAM_VERSION"))
         assertEquals("hello", request.requestBodyJson.jsonObject["text"]?.jsonPrimitive?.contentOrNull)
+        assertTrue(
+            request.requestUrl.contains("speed=1.2") || request.requestUrl.contains("speed=1.2"),
+            "speed should be forwarded as a query param: ${request.requestUrl}",
+        )
     }
 
     @Test

@@ -46,20 +46,24 @@ class ToolApprovalTest {
     private fun duplicateApprovalAgent(executed: MutableList<String>) = TestToolLoopAgent<Unit, String>(
         model = MockLanguageModel(
             responses = listOf(
-                ai.torad.aisdk.providers.ScriptedResponse(
-                    events = listOf(
-                        StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "first") }),
-                        StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "second") }),
-                    ),
-                    finishReason = FinishReason.ToolCalls,
-                ),
-                ai.torad.aisdk.providers.ScriptedResponse(
-                    events = listOf(
-                        StreamEvent.TextStart("t1"),
-                        StreamEvent.TextDelta("t1", "done"),
-                        StreamEvent.TextEnd("t1"),
-                    ),
-                ),
+                ai.torad.aisdk.providers.ScriptedResponse {
+                    events(
+                        listOf(
+                            StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "first") }),
+                            StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "second") }),
+                        ),
+                    )
+                    finishReason(FinishReason.ToolCalls)
+                },
+                ai.torad.aisdk.providers.ScriptedResponse {
+                    events(
+                        listOf(
+                            StreamEvent.TextStart("t1"),
+                            StreamEvent.TextDelta("t1", "done"),
+                            StreamEvent.TextEnd("t1"),
+                        ),
+                    )
+                },
             ),
         ),
         instructions = "use send",
@@ -331,7 +335,7 @@ class ToolApprovalTest {
                 ),
                 instructions = "use send",
                 tools = ToolSet(sendTool),
-                output = Output.obj(serializer<Receipt>()),
+                output = OutputObj(serializer<Receipt>()),
             )
 
             val first = agent.generate(prompt = "trigger").first()

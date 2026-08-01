@@ -12,6 +12,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -685,7 +686,9 @@ private class AssemblyAITranscriptionModel(
     ): JsonObject {
         val options = options(params.providerOptions)
         return buildJsonObject {
-            put("speech_model", JsonPrimitive(modelId))
+            // Current AssemblyAI API expects `speech_models` (plural array). The deprecated
+            // singular `speech_model` 400s for current model names.
+            put("speech_models", JsonArray(listOf(JsonPrimitive(modelId))))
             putOptions(options, params.language)
             put("audio_url", JsonPrimitive(uploadUrl))
         }

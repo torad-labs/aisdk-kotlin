@@ -7,12 +7,15 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class TelemetryParityTest {
+    private class SpanFailure(message: String) : IllegalStateException(message)
+
     @AfterTest
     fun clearTelemetry() {
-        Telemetry.clearGlobalTelemetry()
+        ClearGlobalTelemetry()
     }
 
     @Test
@@ -60,10 +63,9 @@ class TelemetryParityTest {
     @Test
     fun `global telemetry integrations broadcast in registration order`() = runTest {
         val calls = mutableListOf<String>()
-        Telemetry.registerTelemetry(OrderedIntegration("first", calls))
-        Telemetry.registerTelemetry(OrderedIntegration("second", calls))
-        val composite = Telemetry.resolveTelemetry(null)
-        checkNotNull(composite)
+        RegisterTelemetry(OrderedIntegration("first", calls))
+        RegisterTelemetry(OrderedIntegration("second", calls))
+        val composite = assertNotNull(ResolveTelemetry(null))
         val call = TelemetryCall(callId = "c1", agentId = "agent")
 
         composite.onEvent(call, AgentEvent.Started<Unit>(null, emptyList(), null))
@@ -89,9 +91,9 @@ class TelemetryParityTest {
         assertEquals(JsonPrimitive("gpt-test"), tracer.spans.single().attributes["ai.model.id"])
         assertEquals(JsonPrimitive("ok"), tracer.spans.single().attributes["custom"])
 
-        val error = assertFailsWith<IllegalStateException> {
+        val error = assertFailsWith<SpanFailure> {
             TelemetryTracing.recordSpan(name = "ai.fail", tracer = tracer) {
-                error("boom")
+                throw SpanFailure("boom")
             }
         }
 

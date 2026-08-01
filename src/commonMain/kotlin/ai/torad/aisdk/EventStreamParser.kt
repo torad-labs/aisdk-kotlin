@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlin.jvm.JvmSynthetic
 
 /** @since 0.3.0-beta01 */
 public sealed class ParseResult<out T> {
@@ -26,6 +27,7 @@ internal object EventStreamParser {
     // A streaming SSE line-state machine (framing + the non-SSE-body detection): branchy by nature,
     // and detekt sums its local flush/recordNonSse/processLine helpers into the count.
     @Suppress("CyclomaticComplexMethod")
+    @JvmSynthetic
     public fun <T> parse(
         chunks: Flow<String>,
         schema: Schema<T>,
@@ -116,6 +118,7 @@ internal object EventStreamParser {
     private fun <T> safeParseJson(text: String, schema: Schema<T>, json: Json): ParseResult<T> =
         try {
             val element = json.parseToJsonElement(text)
+
             @Suppress("UNCHECKED_CAST")
             ParseResult.Success(schema.validate?.invoke(element) ?: (element as T))
         } catch (error: SerializationException) {

@@ -1,0 +1,18 @@
+id: no-untyped-map-key
+language: kotlin
+severity: warning
+message: "`Map<String, ...>` uses a raw String as the key. If the key set is a closed, meaningful domain (a header name, a provider id, a locale), a bare String lets any string in — typos and lookups against the wrong key compile fine and fail at runtime. Prefer a value class or enum for the key, or confirm the key genuinely is open-ended user text."
+rule:
+  kind: type_projection
+  all:
+    - has: { kind: user_type, has: { kind: type_identifier, regex: '^String$' } }
+    - not: { follows: { kind: type_projection, stopBy: end } }
+    - inside:
+        kind: type_arguments
+        inside:
+          kind: user_type
+          has: { kind: type_identifier, regex: '^(Map|MutableMap)$' }
+note: >-
+  Matches only the first type argument of Map/MutableMap (the key position) via
+  "no preceding type_projection sibling" — Map<Foo, String> (String as the value)
+  is intentionally not flagged.

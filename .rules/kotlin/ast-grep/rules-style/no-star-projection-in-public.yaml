@@ -1,0 +1,36 @@
+id: no-star-projection-in-public
+language: kotlin
+severity: warning
+message: "KClass<*>/Class<*> in a public function's parameter or return type throws away the type information the caller could otherwise get back, and forces unchecked casts wherever the value is used. Take a reified type parameter (inline fun <reified T>) or a concrete KClass<T>/Class<T> instead of a star projection."
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: visibility_modifier
+          regex: '^public$'
+    - any:
+        - has:
+            kind: function_value_parameters
+            has:
+              kind: parameter
+              has:
+                kind: user_type
+                all:
+                  - has: { kind: type_identifier, regex: '^(KClass|Class)$' }
+                  - has:
+                      kind: type_arguments
+                      has:
+                        kind: type_projection
+                        not: { has: { kind: user_type } }
+        - has:
+            kind: user_type
+            all:
+              - has: { kind: type_identifier, regex: '^(KClass|Class)$' }
+              - has:
+                  kind: type_arguments
+                  has:
+                    kind: type_projection
+                    not: { has: { kind: user_type } }
+              - follows: { kind: function_value_parameters, stopBy: end }

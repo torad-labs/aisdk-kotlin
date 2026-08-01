@@ -70,7 +70,7 @@ class AgentStepResultParityTest {
             model = richModel(FinishReason.Length),
             instructions = "hi",
             tools = ToolSet(),
-            output = Output.obj(kotlinx.serialization.serializer<Holder>()),
+            output = OutputObj(kotlinx.serialization.serializer<Holder>()),
         )
         assertFailsWith<NoOutputGeneratedError> { agent.generate(prompt = "go", options = Unit).first() }
     }

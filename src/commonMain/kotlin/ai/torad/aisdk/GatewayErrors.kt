@@ -6,6 +6,28 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 
+internal fun GatewayErrorFromResponse(statusCode: Int, raw: String): GatewayError {
+    val parsed = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull()
+    val error = (parsed?.get("error") as? JsonObject)
+    val type = (error?.get("type") as? JsonPrimitive)?.contentOrNull
+    val message = (error?.get("message") as? JsonPrimitive)?.contentOrNull
+        ?: raw.ifBlank { "Gateway request failed" }
+    val generationId = (parsed?.get("generationId") as? JsonPrimitive)?.contentOrNull
+    return when (type) {
+        "authentication_error" -> GatewayAuthenticationError(message, statusCode, generationId)
+        "invalid_request_error" -> GatewayInvalidRequestError(message, statusCode, generationId)
+        "rate_limit_exceeded" -> GatewayRateLimitError(message, statusCode, generationId)
+        "model_not_found" -> GatewayModelNotFoundError(message, statusCode, generationId = generationId)
+        "internal_server_error" -> GatewayInternalServerError(message, statusCode, generationId)
+        else -> GatewayResponseError(
+            message = message,
+            statusCode = statusCode,
+            response = parsed,
+            generationId = generationId,
+        )
+    }
+}
+
 /** @since 0.3.0-beta01 */
 public open class GatewayError(
     message: String,
@@ -18,31 +40,7 @@ public open class GatewayError(
     cause: Throwable? = null,
     /** @since 0.3.0-beta01 */
     public val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500,
-) : AiSdkException(if (generationId == null) message else "$message [$generationId]", cause) {
-    internal companion object {
-        internal fun fromResponse(statusCode: Int, raw: String): GatewayError {
-            val parsed = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull()
-            val error = (parsed?.get("error") as? JsonObject)
-            val type = (error?.get("type") as? JsonPrimitive)?.contentOrNull
-            val message = (error?.get("message") as? JsonPrimitive)?.contentOrNull
-                ?: raw.ifBlank { "Gateway request failed" }
-            val generationId = (parsed?.get("generationId") as? JsonPrimitive)?.contentOrNull
-            return when (type) {
-                "authentication_error" -> GatewayAuthenticationError(message, statusCode, generationId)
-                "invalid_request_error" -> GatewayInvalidRequestError(message, statusCode, generationId)
-                "rate_limit_exceeded" -> GatewayRateLimitError(message, statusCode, generationId)
-                "model_not_found" -> GatewayModelNotFoundError(message, statusCode, generationId = generationId)
-                "internal_server_error" -> GatewayInternalServerError(message, statusCode, generationId)
-                else -> GatewayResponseError(
-                    message = message,
-                    statusCode = statusCode,
-                    response = parsed,
-                    generationId = generationId,
-                )
-            }
-        }
-    }
-}
+) : AiSdkException(if (generationId == null) message else "$message [$generationId]", cause)
 
 /** @since 0.3.0-beta01 */
 public class GatewayAuthenticationError(

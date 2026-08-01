@@ -1,0 +1,21 @@
+id: no-suspend-default-dispatcher
+language: kotlin
+severity: warning
+message: "The entire suspend function body is `withContext(Dispatchers.Default) { ... }`; inject the dispatcher as a parameter (e.g. `context: CoroutineContext = Dispatchers.Default`) instead of hardcoding it so callers/tests can override it."
+note: |
+  Narrower companion to the existing `no-hardcoded-dispatcher-in-builder`
+  rule, which already flags `withContext(Dispatchers.$D) { ... }` for ANY
+  dispatcher, anywhere in a function body. This rule matches only the
+  strongest instance of that shape: a `suspend fun`'s entire body (its `=`
+  expression body, with or without a declared return type) is exactly
+  `withContext(Dispatchers.Default) { ... }` — i.e. the function exists
+  solely to hardcode a dispatcher hop. That specific shape is the clearest
+  signal the function should just take an injected `CoroutineContext`
+  parameter (defaulted to `Dispatchers.Default`) instead. A `withContext`
+  call nested inside a larger block body, or using any dispatcher other
+  than `Default`, is left to `no-hardcoded-dispatcher-in-builder`.
+rule:
+  kind: function_declaration
+  any:
+    - pattern: 'suspend fun $NAME($$$PARAMS): $RET = withContext(Dispatchers.Default) { $$$BODY }'
+    - pattern: 'suspend fun $NAME($$$PARAMS) = withContext(Dispatchers.Default) { $$$BODY }'

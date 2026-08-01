@@ -1,0 +1,23 @@
+# ast-grep configuration for torad-aisdk Kotlin rules
+#
+# Structure:
+#   rules/       - LAW rules (blocking, always scanned)
+#   rules-style/ - opt-in tenets (NOT scanned by default - intentionally excluded)
+#   codemods/    - mechanical migrations with fix: clauses
+#   normalize/   - stop-time auto-formatters
+#   utils/       - shared rule fragments
+#   tests/       - native ast-grep test fixtures
+#
+# Run: ast-grep scan --config .rules/kotlin/ast-grep/sgconfig.yml src/
+
+ruleDirs:
+  - rules
+  - codemods
+  - normalize
+
+utilDirs:
+  - utils
+
+testConfigs:
+  - testDir: tests
+    snapshotDir: __snapshots__

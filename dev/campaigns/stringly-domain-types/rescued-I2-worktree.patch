@@ -1,0 +1,128 @@
+diff --git a/src/commonMain/kotlin/ai/torad/aisdk/providers/ReplicateProvider.kt b/src/commonMain/kotlin/ai/torad/aisdk/providers/ReplicateProvider.kt
+index fac8d2f..42e57c7 100644
+--- a/src/commonMain/kotlin/ai/torad/aisdk/providers/ReplicateProvider.kt
++++ b/src/commonMain/kotlin/ai/torad/aisdk/providers/ReplicateProvider.kt
+@@ -579,6 +579,20 @@ private class ReplicateImageModel(
+         headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+ }
+ 
++private sealed interface ReplicatePredictionState {
++    data object Starting : ReplicatePredictionState
++
++    data object Processing : ReplicatePredictionState
++
++    data object Succeeded : ReplicatePredictionState
++
++    data object Failed : ReplicatePredictionState
++
++    data object Canceled : ReplicatePredictionState
++
++    data class Unknown(val raw: String) : ReplicatePredictionState
++}
++
+ private class ReplicateVideoModel(
+     private val client: HttpClient,
+     private val settings: ReplicateProviderSettings,
+@@ -665,35 +679,56 @@ private class ReplicateVideoModel(
+             .toInt()
+             .coerceAtLeast(1)
+         var attempts = 0
+-        while (replicateStatus(prediction) in setOf("starting", "processing")) {
+-            if (attempts >= maxPollAttempts) {
+-                throw NoVideoGeneratedError("Video generation timed out after ${pollTimeoutMs}ms")
+-            }
+-            if (pollIntervalMs > 0) delay(pollIntervalMs)
+-            abortSignal.throwIfAborted()
+-            val pollUrl = ((JsonAccess.obj(prediction, "urls"))?.get("get") as? JsonPrimitive)?.contentOrNull
+-                ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing urls.get")
+-            prediction = settings.replicateGetJson(
+-                client = client,
+-                url = pollUrl,
+-                headers = settings.replicateHeaders(),
+-                abortSignal = abortSignal,
+-            ).value.jsonObject
+-            attempts++
+-        }
+-        when (replicateStatus(prediction)) {
+-            "failed" -> {
+-                val detail = (prediction["error"] as? JsonPrimitive)?.contentOrNull ?: "Unknown error"
+-                throw NoVideoGeneratedError("Video generation failed: $detail")
++        while (true) {
++            when (val state = replicatePredictionState(prediction)) {
++                ReplicatePredictionState.Starting,
++                ReplicatePredictionState.Processing,
++                -> {
++                    if (attempts >= maxPollAttempts) {
++                        throw NoVideoGeneratedError("Video generation timed out after ${pollTimeoutMs}ms")
++                    }
++                    if (pollIntervalMs > 0) delay(pollIntervalMs)
++                    abortSignal.throwIfAborted()
++                    val pollUrl = ((JsonAccess.obj(prediction, "urls"))?.get("get") as? JsonPrimitive)?.contentOrNull
++                        ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing urls.get")
++                    prediction = settings.replicateGetJson(
++                        client = client,
++                        url = pollUrl,
++                        headers = settings.replicateHeaders(),
++                        abortSignal = abortSignal,
++                    ).value.jsonObject
++                    attempts++
++                }
++                ReplicatePredictionState.Succeeded -> return prediction
++                ReplicatePredictionState.Failed -> {
++                    val detail = (prediction["error"] as? JsonPrimitive)?.contentOrNull ?: "Unknown error"
++                    throw NoVideoGeneratedError("Video generation failed: $detail")
++                }
++                ReplicatePredictionState.Canceled -> throw NoVideoGeneratedError("Video generation was canceled")
++                is ReplicatePredictionState.Unknown -> throw InvalidResponseDataError(
++                    prediction["status"],
++                    "Unknown Replicate prediction status: ${state.raw}",
++                )
+             }
+-            "canceled" -> throw NoVideoGeneratedError("Video generation was canceled")
+         }
+-        return prediction
+     }
+ 
+-    private fun replicateStatus(prediction: JsonObject): String =
+-        (prediction["status"] as? JsonPrimitive)?.contentOrNull
++    private fun replicatePredictionState(prediction: JsonObject): ReplicatePredictionState {
++        val status = prediction["status"]
+             ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing status")
++        val raw = (status as? JsonPrimitive)
++            ?.takeIf(JsonPrimitive::isString)
++            ?.contentOrNull
++            ?: throw InvalidResponseDataError(status, "Replicate prediction status is not a string")
++        return when (raw) {
++            "starting" -> ReplicatePredictionState.Starting
++            "processing" -> ReplicatePredictionState.Processing
++            "succeeded" -> ReplicatePredictionState.Succeeded
++            "failed" -> ReplicatePredictionState.Failed
++            "canceled" -> ReplicatePredictionState.Canceled
++            else -> ReplicatePredictionState.Unknown(raw)
++        }
++    }
+ 
+     private fun replicateVideoProviderMetadata(prediction: JsonObject, videoUrl: String): JsonElement = buildJsonObject {
+         put(
+diff --git a/src/commonTest/kotlin/ai/torad/aisdk/ReplicateProviderTest.kt b/src/commonTest/kotlin/ai/torad/aisdk/ReplicateProviderTest.kt
+index 1abe14f..4339999 100644
+--- a/src/commonTest/kotlin/ai/torad/aisdk/ReplicateProviderTest.kt
++++ b/src/commonTest/kotlin/ai/torad/aisdk/ReplicateProviderTest.kt
+@@ -187,6 +187,8 @@ class ReplicateProviderTest {
+         assertEquals(1, model.maxVideosPerCall)
+         assertEquals("video/mp4", result.videos.single().mediaType)
+         assertEquals("https://cdn.example/video.mp4", result.videos.single().url)
++        assertEquals(2, fixture.calls.size)
++        assertEquals(listOf("POST", "GET"), fixture.calls.map { it.requestMethod })
+         val create = fixture.calls[0]
+         assertEquals("wait=1", create.requestHeaders.headerValue("prefer"))
+         val input = create.requestBodyJson.jsonObject["input"]?.jsonObject
+@@ -236,6 +238,8 @@ class ReplicateProviderTest {
+         )
+ 
+         assertEquals("https://cdn.example/array.mp4", result.videos.single().url)
++        assertEquals(1, fixture.calls.size)
++        assertEquals("POST", fixture.calls.single().requestMethod)
+     }
+ 
+     @Test

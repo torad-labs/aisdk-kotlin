@@ -2,10 +2,10 @@
 
 package ai.torad.aisdk
 
-import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Provider middleware. Per invariants I-9 and R-11, provider differences
@@ -33,14 +33,20 @@ public interface LanguageModelMiddleware {
      * the downstream call. This is the params-only seam — a middleware can implement
      * just this (e.g. `ai.torad.aisdk.middleware.defaultSettingsMiddleware`).
      * Default: pass through. Mirrors v6's `transformParams({ type, params, model })`.
+     * @since 0.3.0-beta01
      */
+    @JvmSynthetic
     public suspend fun transformParams(
         operation: MiddlewareOperation,
         params: LanguageModelCallParams,
         model: LanguageModel,
     ): LanguageModelCallParams = params
 
-    /** Wrap the one-shot generate call. Default: pass through. */
+    /**
+     * Wrap the one-shot generate call. Default: pass through.
+     * @since 0.3.0-beta01
+     */
+    @JvmSynthetic
     public suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
         context.doGenerate(context.params)
 
@@ -48,7 +54,7 @@ public interface LanguageModelMiddleware {
      * Wrap the streaming call. Default: pass through.
      * @since 0.3.0-beta01
      */
-    public fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
+    @JvmSynthetic public fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
         context.doStream(context.params)
 
     /**
@@ -99,7 +105,6 @@ public enum class MiddlewareOperation { Generate, Stream }
  * generate path. This is the load-bearing property that lets
  * `simulateStreamingMiddleware` work.
  */
-@Poko
 /** @since 0.3.0-beta01 */
 public class MiddlewareCallContext(
     /** @since 0.3.0-beta01 */

@@ -7,7 +7,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -19,6 +18,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 
 public const val HUME_VERSION: String = "2.0.33"
 
@@ -147,6 +147,7 @@ private class HumeSpeechModel(
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
         val warnings = mutableListOf<CallWarning>()
         val format = humeOutputFormat(params.responseFormat, warnings)
+        val options = humeOptions(params.providerOptions)
         val body = buildJsonObject {
             put(
                 "utterances",
@@ -160,7 +161,12 @@ private class HumeSpeechModel(
                                 "voice",
                                 buildJsonObject {
                                     put("id", JsonPrimitive(params.voice ?: HUME_DEFAULT_VOICE_ID))
-                                    put("provider", JsonPrimitive("HUME_AI"))
+                                    // Docs default is CUSTOM_VOICE (custom library). HUME_AI is only
+                                    // for built-in library voices — forcing it breaks custom voices.
+                                    val voiceProvider = (options["voiceProvider"] as? JsonPrimitive)?.contentOrNull
+                                        ?: (options["provider"] as? JsonPrimitive)?.contentOrNull
+                                        ?: "CUSTOM_VOICE"
+                                    put("provider", JsonPrimitive(voiceProvider))
                                 },
                             )
                         },
@@ -168,7 +174,7 @@ private class HumeSpeechModel(
                 ),
             )
             put("format", buildJsonObject { put("type", JsonPrimitive(format)) })
-            (JsonAccess.obj(humeOptions(params.providerOptions), "context"))?.let { context ->
+            (JsonAccess.obj(options, "context"))?.let { context ->
                 put("context", humeContext(context))
             }
         }
@@ -190,7 +196,7 @@ private class HumeSpeechModel(
     }
 
     private suspend fun parseHumeBinary(response: HttpResponse, url: String, format: String): HumeBinaryResponse {
-        val bytes = response.bodyAsBytes()
+        val bytes = with(HttpTransport) { response.bodyAsBytesCapped(url) }
         val headers = with(HttpTransport) { response.flattenedHeaders() }
         if (response.status.value !in 200..299) {
             val raw = bytes.decodeToString()

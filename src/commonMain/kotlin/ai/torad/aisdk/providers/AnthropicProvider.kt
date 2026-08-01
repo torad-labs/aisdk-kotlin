@@ -32,6 +32,59 @@ public typealias AnthropicToolOptions = JsonObject
 public typealias AnthropicMessageMetadata = JsonObject
 public typealias AnthropicUsageIteration = JsonObject
 
+internal fun AnthropicCacheControl(metadata: Map<String, JsonElement>?): JsonElement? =
+    (metadata?.get("anthropic") as? JsonObject)?.let { it["cacheControl"] ?: it["cache_control"] }
+
+internal fun AnthropicFileOptions(metadata: Map<String, JsonElement>?): JsonObject? {
+    val options = metadata?.get("anthropic") as? JsonObject ?: return null
+    return buildJsonObject {
+        (JsonAccess.obj(options, "citations"))?.let { put("citations", it) }
+        options["title"]?.let { put("title", it) }
+        options["context"]?.let { put("context", it) }
+    }.takeIf { it.isNotEmpty() }
+}
+
+// Models that reject temperature/top_p/top_k (5-series flagships + late 4.x opus).
+internal val anthropicRejectsSamplingParameterModelFragments: Set<String> =
+    setOf(
+        "claude-opus-4-8",
+        "claude-opus-4-7",
+        "claude-fable",
+        "claude-mythos",
+        "claude-opus-5",
+        "claude-sonnet-5",
+        "claude-haiku-5",
+        "claude-5",
+    )
+
+/**
+ * The default `max_tokens` for a Claude model when the caller omits maxOutputTokens.
+ * Ports upstream's getModelCapabilities table — hardcoding 4096 truncated output on
+ * every modern Claude model.
+ */
+@Suppress("MagicNumber") // the values ARE the per-model max-output-token limits
+internal fun AnthropicMaxOutputTokensOrNull(modelId: String): Int? = when {
+    // 5-series flagships (fable/opus/sonnet/mythos and claude-*-5*) — docs: 128k max output.
+    modelId.contains("claude-fable") ||
+        modelId.contains("claude-mythos") ||
+        modelId.contains("claude-opus-5") ||
+        modelId.contains("claude-sonnet-5") ||
+        modelId.contains("claude-haiku-5") ||
+        modelId.contains("claude-5") -> 128_000
+    modelId.contains("claude-opus-4-8") || modelId.contains("claude-opus-4-7") -> 128_000
+    modelId.contains("claude-sonnet-4-6") || modelId.contains("claude-opus-4-6") -> 128_000
+    modelId.contains("claude-sonnet-4-5") || modelId.contains("claude-opus-4-5") ||
+        modelId.contains("claude-haiku-4-5") -> 64_000
+    modelId.contains("claude-opus-4-1") -> 32_000
+    modelId.contains("claude-sonnet-4-") -> 64_000
+    modelId.contains("claude-opus-4-") -> 32_000
+    modelId.contains("claude-3-haiku") -> 4_096
+    else -> null
+}
+
+internal fun AnthropicMaxOutputTokensForModel(modelId: String): Int =
+    AnthropicMaxOutputTokensOrNull(modelId) ?: 4_096
+
 /** @since 0.3.0-beta01 */
 public class AnthropicProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
@@ -52,7 +105,7 @@ public class AnthropicProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val supportedUrls: Map<String, List<String>>? = null,
     /** @since 0.3.0-beta01 */
-    public val generateId: () -> String = { IdGenerator.generate() },
+    public val generateId: () -> String = { GenerateId() },
     /** @since 0.3.0-beta01 */
     public val name: String = "anthropic.messages",
 ) {
@@ -137,44 +190,6 @@ public class AnthropicProviderSettings internal constructor(
                 ?: (citation["document_title"] as? JsonPrimitive)?.contentOrNull,
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to citation))),
         )
-
-    internal companion object {
-        internal fun anthropicCacheControl(metadata: Map<String, JsonElement>?): JsonElement? =
-            (metadata?.get("anthropic") as? JsonObject)?.let { it["cacheControl"] ?: it["cache_control"] }
-
-        internal fun anthropicFileOptions(metadata: Map<String, JsonElement>?): JsonObject? {
-            val options = metadata?.get("anthropic") as? JsonObject ?: return null
-            return buildJsonObject {
-                (JsonAccess.obj(options, "citations"))?.let { put("citations", it) }
-                options["title"]?.let { put("title", it) }
-                options["context"]?.let { put("context", it) }
-            }.takeIf { it.isNotEmpty() }
-        }
-
-        internal val anthropicRejectsSamplingParameterModelFragments: Set<String> =
-            setOf("claude-opus-4-8", "claude-opus-4-7", "claude-fable-5")
-
-        /**
-         * The default `max_tokens` for a Claude model when the caller omits maxOutputTokens.
-         * Ports upstream's getModelCapabilities table — hardcoding 4096 truncated output on
-         * every modern Claude model.
-         */
-        @Suppress("MagicNumber") // the values ARE the per-model max-output-token limits
-        internal fun anthropicMaxOutputTokensOrNull(modelId: String): Int? = when {
-            modelId.contains("claude-opus-4-8") || modelId.contains("claude-opus-4-7") -> 128_000
-            modelId.contains("claude-sonnet-4-6") || modelId.contains("claude-opus-4-6") -> 128_000
-            modelId.contains("claude-sonnet-4-5") || modelId.contains("claude-opus-4-5") ||
-                modelId.contains("claude-haiku-4-5") -> 64_000
-            modelId.contains("claude-opus-4-1") -> 32_000
-            modelId.contains("claude-sonnet-4-") -> 64_000
-            modelId.contains("claude-opus-4-") -> 32_000
-            modelId.contains("claude-3-haiku") -> 4_096
-            else -> null
-        }
-
-        internal fun anthropicMaxOutputTokensForModel(modelId: String): Int =
-            anthropicMaxOutputTokensOrNull(modelId) ?: 4_096
-    }
 }
 
 /** @since 0.3.0-beta01 */
@@ -188,7 +203,7 @@ public class AnthropicProviderSettingsBuilder {
     private var buildRequestUrl: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)? = null
     private var transformRequestBody: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)? = null
     private var supportedUrls: Map<String, List<String>>? = null
-    private var generateId: () -> String = { IdGenerator.generate() }
+    private var generateId: () -> String = { GenerateId() }
     private var name: String = "anthropic.messages"
 
     /** @since 0.3.0-beta01 */
@@ -335,6 +350,34 @@ public fun Anthropic(
 ): AnthropicProvider = AnthropicProvider(client, settings)
 
 /** @since 0.3.0-beta01 */
+public fun ForwardAnthropicContainerIdFromLastStep(
+    steps: List<Map<String, JsonElement>>,
+): Map<String, JsonElement>? {
+    for (step in steps.asReversed()) {
+        val containerObj = (JsonAccess.obj(step, "anthropic"))?.get("container") as? JsonObject
+        val idElement = containerObj?.get("id")
+        val containerId = (idElement as? JsonPrimitive)?.contentOrNull
+        if (!containerId.isNullOrBlank()) {
+            return mapOf(
+                "anthropic" to buildJsonObject {
+                    put("container", buildJsonObject { put("id", JsonPrimitive(containerId)) })
+                },
+            )
+        }
+    }
+    return null
+}
+
+internal fun AnthropicErrorMessage(parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject ?: return raw
+    val error = JsonAccess.obj(obj, "error")
+    return (error?.get("message") as? JsonPrimitive)?.contentOrNull
+        ?: (error?.get("type") as? JsonPrimitive)?.contentOrNull
+        ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
+        ?: raw
+}
+
+/** @since 0.3.0-beta01 */
 public class AnthropicMessagesLanguageModel(
     private val client: HttpClient,
     private val settings: AnthropicProviderSettings,
@@ -347,7 +390,7 @@ public class AnthropicMessagesLanguageModel(
     )
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val prepared = PreparedAnthropicRequest.anthropicRequestBody(settings, modelId, params, stream = false)
+        val prepared = PreparedAnthropicRequest(settings, modelId, params, stream = false)
         val response = anthropicPost(prepared.body, prepared.betas, params.headers)
         return anthropicGenerateResult(
             response = response.value.jsonObject,
@@ -361,7 +404,7 @@ public class AnthropicMessagesLanguageModel(
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        val prepared = PreparedAnthropicRequest.anthropicRequestBody(settings, modelId, params, stream = true)
+        val prepared = PreparedAnthropicRequest(settings, modelId, params, stream = true)
         val state = AnthropicStreamState(settings, aiSdkJson)
         var sseHeaders: Map<String, String> = emptyMap()
         val rawLines = anthropicStreamSse(prepared.body, prepared.betas, params.headers) { sseHeaders = it }
@@ -394,7 +437,7 @@ public class AnthropicMessagesLanguageModel(
                     val errorType = (error["type"] as? JsonPrimitive)?.contentOrNull
                     val statusCode = if (errorType == "overloaded_error") 529 else 500
                     throw APICallError(
-                        message = anthropicErrorMessage(obj["error"] ?: obj, obj.toString()),
+                        message = AnthropicErrorMessage(obj["error"] ?: obj, obj.toString()),
                         url = requestUrl,
                         requestBodyValues = prepared.body,
                         statusCode = statusCode,
@@ -418,7 +461,7 @@ public class AnthropicMessagesLanguageModel(
     }
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult {
-        val prepared = PreparedAnthropicRequest.anthropicRequestBody(settings, modelId, params, stream = true)
+        val prepared = PreparedAnthropicRequest(settings, modelId, params, stream = true)
         return LanguageModelStreamResult(stream = stream(params), request = LanguageModelRequestMetadata(prepared.body))
     }
 
@@ -444,7 +487,7 @@ public class AnthropicMessagesLanguageModel(
                 url = url,
                 parseJson = true,
                 requestBodyValues = requestBody,
-                errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
+                errorMessage = { _, parsed, raw -> AnthropicErrorMessage(parsed, raw) },
             )
         }
     }
@@ -472,7 +515,7 @@ public class AnthropicMessagesLanguageModel(
                 body = requestBody,
                 json = aiSdkJson,
                 requestBodyValues = requestBody,
-                errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
+                errorMessage = { _, parsed, raw -> AnthropicErrorMessage(parsed, raw) },
                 onResponse = onResponse,
             ),
         )
@@ -492,7 +535,8 @@ public class AnthropicMessagesLanguageModel(
         (JsonAccess.arr(response, "content")).orEmpty().forEachIndexed { index, part ->
             val obj = part as? JsonObject ?: return@forEachIndexed
             val path = "$.content[$index]"
-            when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
+            val type = (obj["type"] as? JsonPrimitive)?.contentOrNull
+            when (type) {
                 "text" -> {
                     (obj["text"] as? JsonPrimitive)?.contentOrNull?.let { text -> content += ContentPart.Text(text) }
                     for (citation in (JsonAccess.arr(obj, "citations")).orEmpty()) {
@@ -545,18 +589,17 @@ public class AnthropicMessagesLanguageModel(
                             obj["name"],
                         )
                     }
+                    val wireType = type
+                    val providerExecuted = wireType != "tool_use"
                     val toolCall = ContentPart.ToolCall(
                         toolCallId = toolCallId,
                         toolName = toolName,
                         input = obj["input"] ?: JsonObject(emptyMap()),
-                        providerMetadata = if ((obj["type"] as? JsonPrimitive)?.contentOrNull != "tool_use") {
-                            ProviderMetadata.Raw(
-                                JsonObject(
-                                    mapOf(
-                                        "anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }
-                                    )
-                                )
-                            )
+                        providerExecuted = providerExecuted,
+                        // Keep the full wire block so multi-turn resend can echo type +
+                        // encrypted_content byte-exact (required for server/mcp tool_use).
+                        providerMetadata = if (providerExecuted) {
+                            ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to obj)))
                         } else {
                             ProviderMetadata.None
                         },
@@ -564,7 +607,17 @@ public class AnthropicMessagesLanguageModel(
                     toolCalls += toolCall
                     content += toolCall
                 }
-                "mcp_tool_result", "web_search_tool_result", "web_fetch_tool_result", "code_execution_tool_result" -> {
+                "mcp_tool_result",
+                "web_search_tool_result",
+                "web_fetch_tool_result",
+                "code_execution_tool_result",
+                "bash_code_execution_tool_result",
+                "text_editor_code_execution_tool_result",
+                "tool_search_tool_result",
+                -> {
+                    // Server-tool result blocks correlate via tool_use_id; the Messages API does
+                    // not send `name` on these blocks (unlike client tool_result). Fall back to
+                    // the block type so generate() does not throw on every server-tool response.
                     val toolCallId = WireDecoder.optionalString(obj, "tool_use_id", "anthropic", "response content", path)
                         ?.takeIf { it.isNotBlank() }
                         ?: WireDecoder.optionalString(obj, "id", "anthropic", "response content", path)
@@ -576,20 +629,26 @@ public class AnthropicMessagesLanguageModel(
                             "missing non-blank required field: tool_use_id or id",
                             obj,
                         )
-                    val toolName = WireDecoder.requiredString(obj, "name", "anthropic", "response content", path)
-                    if (toolName.isBlank()) {
-                        WireDecoder.fail(
-                            "anthropic",
-                            "response content",
-                            WireDecoder.child(path, "name"),
-                            "expected non-blank string",
-                            obj["name"],
-                        )
-                    }
+                    // Correlate with the originating call rather than deriving from the block type.
+                    // `type.removeSuffix("_result")` turned web_search_tool_result into
+                    // "web_search_tool" — the real name is "web_search" (AnthropicTools.kt:261) —
+                    // so one response emitted a ToolCall and a ToolResult carrying DIFFERENT names
+                    // for the same toolCallId. Suffix arithmetic cannot be repaired either:
+                    // "_tool_result" yields "mcp" for mcp_tool_result, and "tool_search" for
+                    // tool_search_tool_result whose real names are tool_search_tool_regex/_bm25.
+                    // Anthropic always emits the server_tool_use/mcp_tool_use block before its
+                    // result block, and toolCalls is accumulated in this same loop, so the paired
+                    // call is already present and is authoritative.
+                    val toolName = WireDecoder.optionalString(obj, "name", "anthropic", "response content", path)
+                        ?.takeIf { it.isNotBlank() }
+                        ?: toolCalls.firstOrNull { it.toolCallId == toolCallId }?.toolName
+                        ?: type.removeSuffix("_result")
                     content += ContentPart.ToolResult(
                         toolCallId = toolCallId,
                         toolName = toolName,
                         output = obj["content"] ?: obj,
+                        providerExecuted = true,
+                        // Full wire block for byte-exact multi-turn echo.
                         providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to obj))),
                     )
                 }
@@ -597,19 +656,19 @@ public class AnthropicMessagesLanguageModel(
         }
 
         val stopReason = (response["stop_reason"] as? JsonPrimitive)?.contentOrNull
-        val usage = Usage.fromAnthropic(response["usage"])
+        val usage = UsageFromAnthropic(response["usage"])
         val text = content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
         val metadata = buildJsonObject {
             response["usage"]?.let { put("usage", it) }
             put("cacheCreationInputTokens", JsonPrimitive(usage.inputTokens.cacheWrite))
             response["stop_sequence"]?.let { put("stopSequence", it) }
-            response["container"]?.let { put("container", PreparedAnthropicRequest.camelToSnakeJson(it)) }
+            response["container"]?.let { put("container", CamelToSnakeJson(it)) }
             response["context_management"]?.let { put("contextManagement", it) }
         }
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
-            finishReason = FinishReason.fromAnthropicStopReason(stopReason),
+            finishReason = FinishReasonFromAnthropicStopReason(stopReason),
             usage = usage,
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to metadata))),
             content = content,
@@ -623,36 +682,6 @@ public class AnthropicMessagesLanguageModel(
                 body = responseBody,
             ),
         )
-    }
-
-    public companion object {
-        /** @since 0.3.0-beta01 */
-        public fun forwardAnthropicContainerIdFromLastStep(
-            steps: List<Map<String, JsonElement>>,
-        ): Map<String, JsonElement>? {
-            for (step in steps.asReversed()) {
-                val containerObj = (JsonAccess.obj(step, "anthropic"))?.get("container") as? JsonObject
-                val idElement = containerObj?.get("id")
-                val containerId = (idElement as? JsonPrimitive)?.contentOrNull
-                if (!containerId.isNullOrBlank()) {
-                    return mapOf(
-                        "anthropic" to buildJsonObject {
-                            put("container", buildJsonObject { put("id", JsonPrimitive(containerId)) })
-                        },
-                    )
-                }
-            }
-            return null
-        }
-
-        internal fun anthropicErrorMessage(parsed: JsonElement?, raw: String): String {
-            val obj = parsed as? JsonObject ?: return raw
-            val error = JsonAccess.obj(obj, "error")
-            return (error?.get("message") as? JsonPrimitive)?.contentOrNull
-                ?: (error?.get("type") as? JsonPrimitive)?.contentOrNull
-                ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
-                ?: raw
-        }
     }
 }
 
@@ -696,7 +725,7 @@ private class AnthropicStreamState(
                 }
                 responseId = (message["id"] as? JsonPrimitive)?.contentOrNull
                 modelId = (message["model"] as? JsonPrimitive)?.contentOrNull
-                usage = Usage.fromAnthropic(message["usage"])
+                usage = UsageFromAnthropic(message["usage"])
                 events += StreamEvent.ResponseMetadata(id = responseId, modelId = modelId)
             }
             "content_block_start" -> {
@@ -720,20 +749,34 @@ private class AnthropicStreamState(
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }
-                val isToolBlock = blockType == "tool_use" || blockType == "server_tool_use" || blockType == "mcp_tool_use"
-                val id = if (isToolBlock) {
-                    (block["id"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+                val isToolCallBlock = blockType == "tool_use" || blockType == "server_tool_use" || blockType == "mcp_tool_use"
+                val isToolResultBlock = blockType.endsWith("_tool_result") || blockType == "mcp_tool_result"
+                val id = when {
+                    isToolCallBlock -> (block["id"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
                         ?: return listOf(missingToolIdentityError(type, "id"))
-                } else {
-                    (block["id"] as? JsonPrimitive)?.contentOrNull ?: "block-$index"
+                    isToolResultBlock -> (block["tool_use_id"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+                        ?: (block["id"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+                        ?: "block-$index"
+                    else -> (block["id"] as? JsonPrimitive)?.contentOrNull ?: "block-$index"
                 }
-                val toolName = if (isToolBlock) {
-                    (block["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+                val toolName = when {
+                    isToolCallBlock -> (block["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
                         ?: return listOf(missingToolIdentityError(type, "name"))
-                } else {
-                    (block["name"] as? JsonPrimitive)?.contentOrNull
+                    // Same correlation as the buffered path above: the result block's tool_use_id
+                    // equals the earlier server_tool_use block's id, and that block is still in
+                    // `blocks`, so prefer its decoded name over suffix arithmetic on the type.
+                    isToolResultBlock -> (block["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+                        ?: blocks.values.firstOrNull { it.id == id }?.toolName
+                        ?: blockType.removeSuffix("_result")
+                    else -> (block["name"] as? JsonPrimitive)?.contentOrNull
                 }
-                blocks[index] = AnthropicStreamBlock(id, blockType, toolName, anthropicInitialStreamInput(block["input"]))
+                blocks[index] = AnthropicStreamBlock(
+                    id = id,
+                    type = blockType,
+                    toolName = toolName,
+                    input = anthropicInitialStreamInput(block["input"]),
+                    wireBlock = if (isToolCallBlock || isToolResultBlock) block else null,
+                )
                 when (blockType) {
                     "text" -> events += StreamEvent.TextStart(id)
                     "thinking" -> events += StreamEvent.ReasoningStart(id)
@@ -746,6 +789,7 @@ private class AnthropicStreamState(
                     "tool_use", "server_tool_use", "mcp_tool_use" -> {
                         events += StreamEvent.ToolInputStart(id, toolName ?: return listOf(missingToolIdentityError(type, "name")))
                     }
+                    // Server-tool result blocks: no progressive input stream; emit on stop.
                 }
             }
             "content_block_delta" -> {
@@ -845,24 +889,55 @@ private class AnthropicStreamState(
                             toolName = toolName,
                             inputJson = inputJson,
                             providerMetadata = if (block.type != "tool_use") {
-                                ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
+                                // Prefer the full start block (encrypted_content etc.) for resend.
+                                val meta = block.wireBlock ?: buildJsonObject {
+                                    put("type", JsonPrimitive(block.type))
+                                    put("id", JsonPrimitive(block.id))
+                                    put("name", JsonPrimitive(toolName))
+                                    put("input", inputJson)
                                     put("providerExecuted", JsonPrimitive(true))
-                                })))
+                                }
+                                ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to meta)))
                             } else {
                                 ProviderMetadata.None
                             },
                         )
+                    }
+                    else -> {
+                        // Server-tool result blocks (web_search_tool_result, bash_code_execution_…, …).
+                        if (block.type.endsWith("_tool_result") || block.type == "mcp_tool_result") {
+                            val toolName = block.toolName ?: block.type.removeSuffix("_result")
+                            val output = block.wireBlock?.get("content")
+                                ?: block.wireBlock
+                                ?: JsonObject(emptyMap())
+                            events += StreamEvent.ToolResult(
+                                toolCallId = block.id,
+                                toolName = toolName,
+                                outputJson = output,
+                                providerMetadata = ProviderMetadata.Raw(
+                                    JsonObject(
+                                        mapOf(
+                                            "anthropic" to (block.wireBlock ?: buildJsonObject {
+                                                put("type", JsonPrimitive(block.type))
+                                                put("tool_use_id", JsonPrimitive(block.id))
+                                                put("content", output)
+                                            }),
+                                        ),
+                                    ),
+                                ),
+                            )
+                        }
                     }
                 }
             }
             "message_delta" -> {
                 val delta = (JsonAccess.obj(obj, "delta")) ?: JsonObject(emptyMap())
                 rawStopReason = (delta["stop_reason"] as? JsonPrimitive)?.contentOrNull
-                finishReason = FinishReason.fromAnthropicStopReason(rawStopReason)
+                finishReason = FinishReasonFromAnthropicStopReason(rawStopReason)
                 // Merge onto the message_start usage (delta usually has only output_tokens).
-                usage = Usage.mergeAnthropic(usage, obj["usage"])
+                usage = UsageMergeAnthropic(usage, obj["usage"])
             }
-            "error" -> events += StreamEvent.Error(AnthropicMessagesLanguageModel.anthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
+            "error" -> events += StreamEvent.Error(AnthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
         }
         return events
     }
@@ -927,4 +1002,6 @@ private data class AnthropicStreamBlock(
      *  eventual [StreamEvent.ReasoningEnd] so streamed reasoning carries its signature
      *  for replay (mirrors the non-streaming `signature` capture). */
     var signature: String? = null,
+    /** Original content_block JSON for provider-executed tool call/result resend. */
+    val wireBlock: JsonObject? = null,
 )

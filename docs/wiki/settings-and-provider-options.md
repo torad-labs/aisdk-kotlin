@@ -142,8 +142,7 @@ val result = TextGenerator(
     .first()
 ```
 
-For coroutine-owned work, derive signals from jobs with `AbortSignalFromJob`
-or `AbortSignals`.
+For coroutine-owned work, derive signals from jobs with `AbortSignals.from`.
 
 ## Result Metadata
 

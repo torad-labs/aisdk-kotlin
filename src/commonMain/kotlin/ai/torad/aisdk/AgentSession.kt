@@ -301,7 +301,7 @@ public class AgentSession<TContext, TOutput>(
                                     isError = event.isError,
                                     // Carry the tool's model-facing summary (toModelOutput)
                                     // so a resumed turn doesn't re-feed the full payload.
-                                    modelVisible = with(ToolResultOutputs) { event.modelOutput.toJsonElement() },
+                                    modelVisible = event.modelOutput.toJsonElement(),
                                     providerMetadata = event.providerMetadata,
                                 ),
                             )
@@ -324,7 +324,7 @@ public class AgentSession<TContext, TOutput>(
                     }
                     is StreamEvent.ToolOutputDenied -> {
                         val output = ToolResultOutput.ExecutionDenied(event.reason)
-                        val outputJson = with(ToolResultOutputs) { output.toJsonElement() }
+                        val outputJson = output.toJsonElement()
                         toolResults += StreamingToolResultRecord(
                             result = ContentPart.ToolResult(
                                 toolCallId = event.toolCallId,
@@ -539,16 +539,4 @@ public class AgentSession<TContext, TOutput>(
             add(ModelMessage(MessageRole.Tool, projection.tools.results))
         }
     }
-}
-
-/** @since 0.3.0-beta01 */
-public object AgentSessions {
-    public fun <TContext, TOutput> Agent<TContext, TOutput>.session(
-        scope: CoroutineScope,
-        initialMessages: List<ModelMessage> = emptyList(),
-    ): AgentSession<TContext, TOutput> = AgentSession(
-        scope = scope,
-        agent = this,
-        initialMessages = initialMessages,
-    )
 }

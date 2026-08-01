@@ -66,7 +66,7 @@ class MediaPollRobustnessTest {
                 VideoGenerationParams {
                     prompt("x")
                     providerOptions(
-                        ProviderOptions.ofPairs(
+                        ProviderOptions(
                             "fal" to buildJsonObject { put("pollIntervalMs", JsonPrimitive(0)) },
                         )
                     )
@@ -213,7 +213,7 @@ class MediaPollRobustnessTest {
                 ImageGenerationParams {
                     prompt("x")
                     providerOptions(
-                        ProviderOptions.ofPairs(
+                        ProviderOptions(
                             "luma" to buildJsonObject { put("pollIntervalMillis", JsonPrimitive(0)) },
                         )
                     )
@@ -266,7 +266,7 @@ class MediaPollRobustnessTest {
                 VideoGenerationParams {
                     prompt("x")
                     providerOptions(
-                        ProviderOptions.ofPairs(
+                        ProviderOptions(
                             "klingai" to buildJsonObject { put("pollIntervalMs", JsonPrimitive(0)) },
                         )
                     )
@@ -351,7 +351,7 @@ class MediaPollRobustnessTest {
                 VideoGenerationParams {
                     prompt("x")
                     providerOptions(
-                        ProviderOptions.ofPairs(
+                        ProviderOptions(
                             "klingai" to buildJsonObject {
                                 put("pollIntervalMs", JsonPrimitive(0))
                                 put("pollTimeoutMs", JsonPrimitive(0))

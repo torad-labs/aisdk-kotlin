@@ -6,6 +6,306 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+- **Java interop: `@JvmSynthetic` removed from 52 public abstract members (ABI change).**
+  A codemod had applied it to body-less declarations across 25 files. On an abstract
+  member that emits `ACC_ABSTRACT | ACC_SYNTHETIC`, and `javac` skips synthetic members
+  when checking that a class implements everything abstract — so a Java class
+  implementing `StopCondition`, `ChatTransport`, `Tool`, `LanguageModel`, `Agent`,
+  `StreamingTool`, `CompletionTransport` and friends **compiled clean and then threw
+  `java.lang.AbstractMethodError`** on the first call. Verified against the built jar
+  (`javap -v` showed `flags: (0x1401) ACC_PUBLIC, ACC_ABSTRACT, ACC_SYNTHETIC`) and
+  reproduced end-to-end. The JVM ABI dump loses `synthetic` on 51 members; **no
+  signature changed and nothing was added or removed**, so this is compatible for
+  callers and *restores* the ability to implement these interfaces from Java.
+  `no-public-suspend-without-jvmsynthetic` and `no-flow-return-without-wrapper` now
+  exempt body-less declarations (keyed on absence of a function body, not the
+  `abstract` keyword — most are interface members that never write it), and
+  `AbstractSpiJavaInteropTest` is a Java-source wall that fails to compile if the
+  annotation is ever reapplied there.
+- **Tool results reached Google, Google Interactions and LiteRT wrapped in the SDK's
+  internal envelope.** `ContentPart.ToolResult.modelVisible` carries what
+  `ToolResultOutput.toJsonElement()` emits; once its `Json` arm began tagging values as
+  `{"type":"json","value":…}`, those three providers wrote the wrapper straight to the
+  wire, so a tool returning `{"temperature":72}` reached Gemini as
+  `{"type":"json","value":{"temperature":72}}`. Five other providers already decoded it.
+  Added `ToolResultOutputs.toolResultPayloadJson` (internal) as the shared inverse and
+  applied it at the three sites; error/denial variants flatten to their message rather
+  than landing in the model's context as a tagged object.
+- **Anthropic server-tool results carried a malformed `toolName`.**
+  `"web_search_tool_result".removeSuffix("_result")` produced `"web_search_tool"`; the
+  real tool is `"web_search"`, so one response emitted a `ToolCall` and a `ToolResult`
+  with different names for the same `toolCallId`. Both the buffered and streaming paths
+  now take the name from the paired originating call. Suffix arithmetic could not be
+  repaired in place — `"_tool_result"` yields `"mcp"` for `mcp_tool_result` and
+  `"tool_search"` for `tool_search_tool_result`, whose real names are
+  `tool_search_tool_regex` / `tool_search_tool_bm25`.
+- **Provider wire fixes (Tier 1 — live-API breakages against current docs):**
+  - **Anthropic:** server-tool result blocks no longer require `name` (API omits it);
+    5-series flagships default `max_tokens` to 128k; `redacted_thinking` is resent
+    byte-exact with `data` instead of as plain `thinking`.
+  - **Bedrock:** `topK` moved from invalid `inferenceConfig` into
+    `additionalModelRequestFields.top_k`; Mantle `responses()` uses the Responses
+    contract (`input` / `output`, not Chat Completions) with Responses tool shape +
+    `input_tokens`/`output_tokens` usage; redacted reasoning reads wire key
+    `redactedContent`; stream handles `serviceUnavailableException`;
+    `additionalModelResponseFieldPaths` is `/stop_sequence` (not `/delta/...`);
+    `outputConfig.textFormat.structure` wraps `jsonSchema`; legacy `json`
+    pseudo-tool dual-path removed.
+  - **Google Interactions:** `function_result` is a top-level input step; initial
+    text on `step.start` is emitted; retrieval defaults to documented
+    `rag_store` types + config passthrough; `budget_exceeded` is terminal.
+  - **Mistral:** specific `tool_choice` objects are preserved; `prefix: true` is
+    opt-in via `providerOptions.mistral.prefix` and only applied when the
+    conversation ends on an assistant message.
+  - **xAI:** `stop` forwarded; `parallel_function_calling` maps to
+    `parallel_tool_calls`; Responses code tool is `code_interpreter`; image
+    options drop undocumented `sync_mode`/`quality`.
+  - **Speech/STT:** AssemblyAI `speech_models` (plural array); Deepgram TTS
+    forwards `speed`; Gladia `language_config` is `{languages[], code_switching}`
+    only and `audio_to_llm_config` uses `prompts` + auto-enables `audio_to_llm`;
+    Rev.ai errors parse RFC 7807.
+  - **Media:** BFL FLUX.2 uses `disable_pup`, 8-image cap, aspect_ratio gated off
+    for FLUX.2 / FLUX.1 [pro], validation `detail[].msg` extracted; Fal speech
+    sends `prompt`+`text` and accepts `audio_url`, video sends `start_image_url`,
+    queue host honors `baseURL`; Luma refs use `*_ref` keys; Kling Motion Control
+    requires `image_url`; Alibaba wan2.7 media types `first_frame` /
+    `reference_image` + `parameters.ratio`; ByteDance errors read top-level
+    `error_code`/`message`; Together `guidance` → `guidance_scale`; xAI drops
+    image `output_format`, maps `1080p`, treats video `expired` as terminal;
+    Replicate image output accepts `{url}` objects.
+  - **LMNT:** wire key `format`, default model `blizzard`, required
+    `lmnt-version` header, documented format allowlist incl. `pcm_f32le`; drops
+    unsupported `speed`/`conversational`/`length` body fields.
+  - **Security:** Fireworks image download sends no caller-configured credentials
+    off-origin. The download URL comes from the provider's `result.sample`, so the
+    cross-origin path now forwards only `User-Agent` (an allowlist) rather than
+    stripping a fixed `Authorization`/`x-api-key` pair — a denylist could not cover
+    a `Cookie` or bespoke auth header set through `settings.headers`. The decision is
+    re-made on every physical send, so it survives redirects: a same-origin URL that
+    redirects to a third-party CDN is the ordinary shape of a signed download, and
+    Ktor's own redirect handling drops only `Authorization`. Same-origin hops keep the
+    full provider + per-call header baseline, so gateway/proxy deployments are
+    unaffected. Ktor keeps ownership of redirect mechanics; the download additionally
+    refuses an HTTPS-to-HTTP hop even if the caller's client allows downgrades.
+
+- **Provider wire fixes (Tier 2 — silent loss / wrong defaults):**
+  - **LiteRT:** sampler carries `maxOutputTokens` / `presencePenalty` /
+    `frequencyPenalty`; request carries native `responseFormat` (prompt injection
+    kept as fallback); `thinkingTokenBudget` maps into extra context; stream
+    terminal usage/finish no longer wiped by trailing empty messages.
+  - **Voyage:** embeddings batch cap 128 → 1_000 (documented max); forwards
+    `encoding_format`; normalizes documented JSON-array and base64 float32/int8/uint8
+    storage into the existing `List<List<Float>>` result while keeping binary/ubinary
+    bit-packed. `providerMetadata.voyage.embeddingRepresentation` now records dtype,
+    packing, logical dimension, and each row's stored-element count without adding
+    strict shape validation; custom dtypes remain compatible for numeric arrays and
+    fail explicitly for uninterpretable base64 storage.
+  - **Groq / Cerebras:** chat max-output key is `max_completion_tokens`; Groq
+    browser_search allowlist includes `openai/gpt-oss-safeguard-20b`.
+  - **Groq transcription:** legacy `responseFormat` access remains source/binary
+    compatible but is warning-deprecated after 0.3.0-beta01 because the transport
+    only requests and decodes JSON. The pre-existing raw `response_format`
+    exclusion is preserved; multipart passthrough now also excludes serialized
+    camel `responseFormat` and omits null-valued typed defaults instead of
+    emitting literal `null` form fields.
+  - **Perplexity:** `stop` is forwarded (documented on `/v1/sonar`).
+  - **ElevenLabs STT:** no longer force `diarize=true`; parse `speaker_id` into
+    `TranscriptSegment.speakerId`.
+  - **Anthropic:** sampling-rejection set covers full 5-series flagships.
+  - **Azure:** deployment-based URLs no longer pair with `api-version=v1`
+    (auto-use dated `2024-10-21` classic version).
+  - **Open Responses:** `web_search_preview` no longer sends unsupported
+    `filters`/`external_web_access`; code-interpreter containers keep
+    `memory_limit`/`network_policy`; MCP `tool_choice` includes `server_label`;
+    standalone SSE `error` events surface as stream errors.
+  - **Bedrock:** Converse `outputConfig.textFormat` for structured JSON (not
+    thinking-gated only); image moderation reads the documented `error` string.
+  - **Google Interactions:** `generate()` polls non-terminal model runs;
+    `requires_action` is terminal for the poll loop; default poll cap 60 min;
+    `mcp_server` tools send name/url from args.
+  - **Google Gemini:** Gemma system instructions fold into the first user turn
+    (with a warning); finish-reason map covers `UNEXPECTED_TOOL_CALL` /
+    `TOO_MANY_TOOL_CALLS` / `MISSING_THOUGHT_SIGNATURE`.
+  - **Cohere:** `tool-plan-delta` → reasoning; citation events with URLs →
+    `SourcePart`.
+  - **Hume:** default voice provider `CUSTOM_VOICE` (override via options).
+  - **Prodia video:** defaults to `/job/async` for long jobs.
+  - **Replicate:** `Prefer: wait=` coerces to integer seconds.
+  - **Quiver:** prefers documented `credits` over deprecated `usage`.
+  - **Anthropic multi-turn/stream:** provider-executed tool calls/results store
+    full wire blocks and echo them on resend (incl. `encrypted_content`); stream
+    emits server-tool result blocks (`web_search_tool_result`,
+    `bash_code_execution_tool_result`, …); adaptive thinking no longer sends
+    `budget_tokens`; MCP connector beta → `mcp-client-2025-11-20` and emits
+    required `mcp_toolset` entries in `tools` (no deprecated
+    `tool_configuration` on servers).
+  - **Google Interactions multi-turn/media:** provider-executed steps echo
+    exact wire type on resend (buffered + stream paths store full wire step);
+    model_output accepts audio/video/document.
+  - **Quiver:** surfaces response/image `attributes` in providerMetadata; request
+    supports `attributes` + `viewBox` (typed options + providerOptions).
+  - **LMNT:** `pcm_f32le` MIME falls back to octet-stream; default voice is `leah`
+    (docs canonical system voice).
+  - **Google Interactions:** stop inventing `signature` on client `function_call` /
+    `function_result` (thought-signatures live on `thought` only).
+  - **Cohere:** documents Specific→REQUIRED+filter approximation via warning.
+  - **Vercel:** clarifies v0 vs AI Gateway; adds `VercelAIGateway` +
+    `AI_GATEWAY_OPENAI_COMPAT_BASE_URL` (full gateway remains `Gateway`).
+  - **AnthropicAws:** SigV4 signing region derived from endpoint host (host/region
+    mismatch was a signature rejection).
+  - **Azure media:** image/audio paths always use classic deployment URLs (v1
+    path is chat/responses only).
+  - **Vertex:** comment corrected — v1beta1 is the documented surface (not "v1
+    unavailable").
+
+- **CI/CD hardening:**
+  - CI cancels superseded runs on the same ref (`concurrency` on `ci.yml`).
+  - Release preflight refuses a `VERSION_NAME` already present on Maven
+    Central (immutable coordinates) and documents the main→tag checklist.
+  - Release publish emits an SPDX SBOM of the staged Maven layout and attests
+    it alongside the Central bundle; creates a GitHub Release attaching
+    `bundle.zip` + SBOM so consumer-canary attestation can fire.
+  - Weekly OpenSSF Scorecard workflow publishes SARIF to code scanning.
+  - `workflow-lint` runs checksum-pinned `actionlint` + `zizmor` on workflow
+    changes.
+  - `dependency-submission` publishes the Gradle graph so dependency-review
+    sees shipping deps; Dependabot PR helpers (verification-metadata regen +
+    patch/minor auto-merge) live in one Actions workflow
+    (`.github/workflows/dependabot.yml`).
+  - CI builds `samples/jvm-chat-cli`, runs Windows `jvmTest`, uploads reports
+    on failure, generates Dokka on every verify, and opens issues on scheduled
+    job failures.
+  - Branch protection: stale reviews dismiss, conversation resolution
+    required, admins enforced, `dependency-review` required. Repo security:
+    secret scanning, push protection, Dependabot security updates enabled.
+  - Snapshots workflow documents the post-release `VERSION_NAME` bump before
+    re-arming push-to-main.
+
+- **PR review follow-ups (release hardening):**
+  - **Security:** `issue-triage.yml` no longer interpolates `workflow_dispatch` input
+    into Bash source; the issue number is passed via `env` and validated as decimal.
+  - **Wire:** `ToolResultOutput.Json.toJsonElement()` now emits a `type=json` envelope
+    (matching the existing decoder), so a success payload that collides with an
+    error/denial shape cannot be re-decoded as `Error`.
+  - **Provider registry:** `ModelRef` resolution on `ProviderRegistry` dispatches from
+    the typed `providerId`/`modelId` components and no longer re-stringifies through
+    colon-hardcoded `qualifiedName` (custom separators work on the typed path).
+  - **MCP stdio:** `start()` failure after `begin()` (including cancellation during a
+    stale-process close) finishes teardown under `NonCancellable`, clears the process
+    field, and resets the lifecycle before rethrowing.
+  - **IDs:** Google Interactions / Google Language Model / Bedrock Mantle ID-less
+    fallbacks use the injected `generateId` callback instead of the global
+    `GenerateId()`.
+  - **Gateway:** blank `VERCEL_OIDC_TOKEN` is treated as absent (same as blank API key).
+  - **Mock:** `ScriptedResponse` is `@Poko` + internal constructor + DSL factory
+    (no public `data class` / `copy`); data-class budget ratcheted 40 → 39.
+  - **Triage:** `classify.sh` partitions labels into at most one type + two areas.
+  - **Rules:** `no-deprecated-without-version` binds only the message argument
+    (ReplaceWith strings no longer false-positive); `no-public-without-since` requires
+    a real KDoc `/**` opener.
+  - **Open Responses:** unknown provider-tool types still passthrough for forward-compat
+    but now emit a local `CallWarning("unsupported", …)` so a typo'd `providerToolId`
+    does not look like a remote 4xx outage.
+  - **KDoc:** `ProviderId`/`ModelId`/`ToolCallId`/`ToolName`/`ApprovalId` companion
+    `invoke` factories tagged `@since 0.3.0-beta01` alongside their `of()` siblings.
+  - **Bugfix:** `ModelRef(providerId, modelId)` factory no longer recurses into itself.
+
+- **Breaking (source):** every public `companion object` factory moved to a top-level
+  declaration, completing the `no-companion-objects` migration. The capabilities are
+  unchanged — only the call syntax moves — and the committed ABI dumps now record it.
+  39 members across 28 companions, in two shapes:
+  - **Invoke-style factories** become a PascalCase function of the same name:
+    `DataUrl.parse(s)` → `DataUrl(s)`, `ProviderOptions.ofPairs(...)` →
+    `ProviderOptions(...)`, `ProviderMetadata.ofPairs(...)` → `ProviderMetadata(...)`,
+    `ProviderRegistry.createProviderRegistry(vararg Pair, ...)` → `ProviderRegistry(...)`,
+    `Usage.of(...)` → `Usage(...)`, and each `LiteRTContent.<Kind>.invoke(...)` →
+    `LiteRTContent<Kind>(...)`.
+    - **One member has no same-signature replacement.** The companion also carried a
+      `Map`-taking overload, `createProviderRegistry(Map<String, Provider>, ...)`, present
+      in the `v0.2.0` and `v0.3.0-alpha01` ABI dumps. Its capability now lives on
+      `ProviderRegistry`'s public primary constructor, so Kotlin callers write
+      `ProviderRegistry(map, ...)` — but a JVM caller compiled against the companion
+      static gets a `NoSuchMethodError` and must move to the constructor. A top-level
+      `Map` factory of the same name is not available as a migration shim: it collides
+      with that constructor (`Conflicting overloads`), which is why the constructor is
+      the replacement rather than a matching function. So the migration is 39 members
+      relocated to a same-signature replacement plus this one relocated to a constructor.
+  - **Named factories** become `<Type><Member>`: `Output.obj/array/choice/json` →
+    `OutputObj` / `OutputArray` / `OutputChoice` / `OutputJson`;
+    `RetryDelayGenerator.Companion.fullJitter` / `.deterministic` →
+    `RetryDelayGeneratorFullJitter` / `RetryDelayGeneratorDeterministic`;
+    `ModelRef.parse` → `ParseModelRef`; `TypeValidationError.wrap` →
+    `WrapTypeValidationError`; `Telemetry.registerTelemetry` / `.clearGlobalTelemetry`
+    → `RegisterTelemetry` / `ClearGlobalTelemetry`;
+    `GenerationInput.from` → the top-level `GenerationInput(prompt, messages)` factory;
+    `TextGenerationRequest.Input.messages` / `.messagesWithPrompt` / `.prompt` →
+    `TextGenerationRequestInputMessages` / `TextGenerationRequestInputMessagesWithPrompt`
+    / `TextGenerationRequestInputPrompt`; `DefaultGeneratedFile.fromBase64` /
+    `.fromBytes` → the overloaded `DefaultGeneratedFile(data, mediaType)` factory
+    (`data: String` base64 / `data: ByteArray`);
+    `AnthropicMessagesLanguageModel.forwardAnthropicContainerIdFromLastStep` →
+    `ForwardAnthropicContainerIdFromLastStep`.
+  - `ToolExecutionPolicy`'s `DEFAULT_MAX_PARALLEL_TOOL_CALLS`,
+    `DEFAULT_MAX_TOOL_CALLS_PER_STEP` and `DEFAULT_PROGRESS_BUFFER_CAPACITY` are now
+    top-level `public const val` in the same package.
+
+- Pre-tag ABI-evolvability hardening (see `docs/reports/pre-beta-abi-audit.md`):
+  - `MCPClient`, `AnthropicAwsProvider`, `BlackForestLabsProvider`,
+    `ByteDanceProvider`, `OpenAICompatibleProvider`, `OpenResponsesProvider`,
+    and `GatewayProvider` are now `sealed class` (not `interface`) — each had
+    exactly one in-module implementation and no plausible external
+    implementer, so the SDK keeps the freedom to add members later without
+    breaking a third party. (`sealed class`, not `sealed interface`, per this
+    repo's `no-sealed-interface` tenet.)
+  - `ContentPart.metadata` and `StreamEvent.metadata`, the last 2 public
+    top-level extension declarations, are now members of the respective
+    sealed base class — completes the "no public extensions" migration.
+  - `Schema`, `MiddlewareCallContext`, `EmbeddingMiddlewareCallContext`, and
+    `ImageMiddlewareCallContext` are no longer `@Poko`: all 4 hold a closure
+    or provider-instance field, so value equality on them was meaningless;
+    they are now plain regular classes with identity equality.
+  - Removed the duplicate top-level `AbortSignalFromJob(job: Job)` — use
+    `AbortSignals.from(job)`, which now holds the implementation directly.
+  - `GatewayModelType` gained `Speech` and `Transcription` variants, matching
+    the SDK's existing `SpeechModel`/`TranscriptionModel` interfaces.
+  - `AgentEvent.Finished.output` and the public DevTools surface
+    (`DevToolsStep`, `DevToolsStepResult`, `DevToolsRecorder`,
+    `InMemoryDevToolsRecorder`, `DevToolsMiddleware`) are now
+    `@ExperimentalAiSdkApi`.
+  - `PruneReasoning` is now a `sealed class` with `data object` leaves
+    (`All`/`BeforeLastMessage`/`None`), matching `PruneToolCalls`'s shape.
+  - `MessageRole`, `UIMessageRole`, `ToolCallState`, `ChatStatus`,
+    `RetryErrorReason`, and `FinishReason` now document a forward-compat
+    contract: consumers must not rely on exhaustive `when` over these enums.
+- `AbortSignals` is now plain factory functions instead of member-extensions:
+  `AbortSignals.from(job: Job)` / `AbortSignals.from(scope: CoroutineScope)`
+  replace `Job.asAbortSignal()` / `CoroutineScope.asAbortSignal()`, so a call
+  site no longer needs `with(AbortSignals) { ... }` or a member-extension
+  import.
+- Seven more public member-extension functions parked inside public `object`s
+  moved onto the type they extend, so call sites no longer need a
+  member-extension import or `with(Object) { ... }`:
+  - `ProviderModels.provider/languageModel/embeddingModel/imageModel/speechModel/transcriptionModel/rerankingModel/videoModel`
+    (typed `ProviderId`/`ModelId`/`ModelRef` overloads) are now default methods
+    on `Provider` itself, alongside the existing `String`-typed overloads.
+  - `GeneratedFiles.fileData/bytes/bytesOrNull` are now members of
+    `GeneratedFile`.
+  - `AgentSessions.session` is now a default method on `Agent`.
+  - `ChatSessionFactory.asSession` is now a member of `Chat`.
+  - `ToolResultOutputs.isToolResultError/toJsonElement` are now members of
+    `ToolResultOutput`; `ToolResultOutputs` itself is now `internal` (it kept
+    only internal wire-codec helpers).
+  - `UsageArithmetic.plus` is now the member operator `Usage.plus`, so
+    `a + b` works directly without importing or scoping into `UsageArithmetic`.
+  - `UIMessageMetadata.metadataAs` (both overloads) are now members of
+    `UIMessage`.
+  - A new ast-grep rule, `no-public-member-extension-in-object`, blocks the
+    pattern from re-entering the public API.
+- **Upgrader callout:** `RetryPolicy.maxRetries` defaults to `2`. If you already
+  retry transient failures in your own transport/middleware, composing both
+  means the same failing call is attempted `(1 + maxRetries) *
+  (1 + middlewareRetries)` times. Pass `maxRetries(0)` on the `RetryPolicy`
+  builder if your middleware already owns retry behavior.
 - Cancellation hardening: broad `catch(Throwable)` paths no longer swallow
   coroutine cancellation in telemetry dispatch, memoized stream replay, retry
   classification, completion fallback, agent submit, smooth-stream flushing,

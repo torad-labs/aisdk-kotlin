@@ -10,13 +10,18 @@ on:
 permissions:
   contents: read
 
+# Cancel superseded runs on the same ref so a push-train does not burn runners.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AI_SDK_REFERENCE_VERSION: 6.0.208
   AI_SDK_REFERENCE_COMMIT: 3270146267b1d82f07972bc40f09e9b4ee8bb9d3
   # Update AST_GREP_SHA256 together with AST_GREP_VERSION; the package.json drift-check below enforces version consistency.
-  AST_GREP_VERSION: 0.42.1
-  AST_GREP_SHA256: 5de8b87cba67fc8dc3e239d54b6484802ad745a7ae3de76be4fe89661dc52657
+  AST_GREP_VERSION: 0.44.0
+  AST_GREP_SHA256: a074982c59a749371d225e6129faf5815f731f460aa080c004af9b7e79c55632
 
 jobs:
   reference-freshness:
@@ -24,6 +29,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Fetch Vercel AI SDK v6 reference
         id: fetch_reference
         run: |
@@ -49,10 +56,20 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    # Read-only. Issue creation lives in report-scheduled-failure, which runs no
+    # repository-controlled code — this job runs `npm ci`, a downloaded ast-grep binary
+    # and the full Gradle build, and a job's `permissions:` cannot be narrowed per step,
+    # so granting `issues: write` here scoped a writable token to the whole build.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
+          # This job runs `npm ci` (third-party lifecycle scripts), a downloaded ast-grep
+          # binary, and the full Gradle build, so the job token must not sit in .git/config
+          # for them to read. The failure-issue step gets it through env instead.
+          persist-credentials: false
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
@@ -125,6 +142,12 @@ jobs:
         id: publish_to_maven_local
         continue-on-error: true
         run: ./gradlew publishToMavenLocal
+      # Dokka is otherwise only exercised at release-time docs deploy — the worst
+      # moment to discover a KDoc generation failure.
+      - name: Dokka generate
+        id: dokka_generate
+        continue-on-error: true
+        run: ./gradlew dokkaGenerate
       - name: Summarize verify gates
         if: always()
         run: |
@@ -134,6 +157,7 @@ jobs:
             "beta_readiness|Beta readiness gate|${{ steps.beta_readiness.outcome }}"
             "gradle_check|Verify (tests + detekt + ABI + coverage)|${{ steps.gradle_check.outcome }}"
             "publish_to_maven_local|Verify publication metadata|${{ steps.publish_to_maven_local.outcome }}"
+            "dokka_generate|Dokka HTML generation|${{ steps.dokka_generate.outcome }}"
           )
 
           failed=0
@@ -156,7 +180,40 @@ jobs:
             "hook-self-tests=${{ steps.hook_self_tests.outcome }}" \
             "beta-readiness=${{ steps.beta_readiness.outcome }}" \
             "gradle-check=${{ steps.gradle_check.outcome }}" \
-            "publish-to-maven-local=${{ steps.publish_to_maven_local.outcome }}"
+            "publish-to-maven-local=${{ steps.publish_to_maven_local.outcome }}" \
+            "dokka-generate=${{ steps.dokka_generate.outcome }}"
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verify-reports-${{ github.run_id }}
+          path: |
+            build/reports/**
+            **/build/reports/**
+          if-no-files-found: ignore
+          retention-days: 7
+  # Isolated so the writable token never coexists with the build. Checks out `tools/`
+  # only (sparse, blobless) and runs one first-party script — no Gradle, no npm, no
+  # downloaded binaries — so nothing here can execute repository-controlled code.
+  report-scheduled-failure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: verify
+    if: failure() && github.event_name == 'schedule'
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+          sparse-checkout: tools/open-ci-failure-issue.sh
+          sparse-checkout-cone-mode: false
+          filter: blob:none
+      - name: Open issue on scheduled failure
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: tools/open-ci-failure-issue.sh "ci/verify"
 
   # Apple targets cannot build on Linux; without this leg the published iOS
   # frameworks were compiled/tested nowhere (kotlin.native.ignoreDisabledTargets
@@ -166,6 +223,8 @@ jobs:
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
@@ -194,3 +253,48 @@ jobs:
           node tools/assert-expected-gates.mjs verify-apple \
             "apple-targets=${{ steps.apple_targets.outcome }}" \
             "swift-import-smoke=${{ steps.swift_import_smoke.outcome }}"
+
+  # samples/jvm-chat-cli has its own Gradle build + Dependabot entry but was never
+  # compiled in CI — Dependabot could automerge uncompiled sample bumps. Builds
+  # against mavenLocal from a fresh publishToMavenLocal of this SHA.
+  sample-jvm-chat-cli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - name: Publish library to mavenLocal
+        run: ./gradlew publishToMavenLocal
+      - name: Build jvm-chat-cli sample
+        run: |
+          set -euo pipefail
+          version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
+          ./gradlew -p samples/jvm-chat-cli build -PaisdkVersion="${version}"
+
+  # jvmAndAndroidMain carries ProcessBuilder MCP stdio + java.security actuals.
+  # Linux-only JVM tests miss Windows path/process/line-ending failures.
+  verify-windows-jvm:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - name: JVM tests on Windows
+        run: ./gradlew jvmTest

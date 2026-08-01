@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.GeneratedFiles.fileData
 import ai.torad.aisdk.providers.MockAudioSource
 import ai.torad.aisdk.providers.MockEmbeddingModel
 import ai.torad.aisdk.providers.MockImageModel

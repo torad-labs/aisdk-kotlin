@@ -219,6 +219,20 @@ def main() -> int:
             "The count ratchet still refuses upward movement."
         )
         return 1
+    missing_symbols = sorted(tracked - current_symbols)
+    if args.check and missing_symbols:
+        print(
+            "TRACKED PUBLIC DATA-CLASS DECLARATION(S) NO LONGER DETECTED:\n"
+            + "\n".join(f"  - {symbol}" for symbol in missing_symbols)
+            + "\n\nThis can indicate:\n"
+            "  1. A rule regression (the ast-grep rule stopped matching these declarations)\n"
+            "  2. An ast-grep version change with grammar differences\n"
+            "  3. The declarations were intentionally removed (if so, run --update to re-seed)\n"
+            "\nIf these classes still exist and should be tracked, investigate the ast-grep rule.\n"
+            "If they were intentionally removed, run:\n"
+            "  python3 .claude/hooks/rules/detect-public-data-class-budget.py src/commonMain/kotlin --update"
+        )
+        return 1
     print(
         f"data-class budget gate OK: {count} public data class "
         f"(budget {budget}, tracked {len(tracked)} declarations)"

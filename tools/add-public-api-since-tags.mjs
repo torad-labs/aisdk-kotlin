@@ -2,11 +2,11 @@
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
+import { declaration } from './lib/public-api-declaration.mjs';
 
 const root = resolve(new URL('..', import.meta.url).pathname);
 const sourceRoot = join(root, 'src/commonMain/kotlin');
 const sinceVersion = '0.3.0-beta01';
-const declaration = /^\s*public\s+(?:(?:data|sealed|abstract|open|final)\s+)*(?:class|interface|object|enum\s+class|fun|val|var)\s+([A-Za-z_][A-Za-z0-9_]*)/;
 
 function main() {
   if (!existsSync(sourceRoot)) {
