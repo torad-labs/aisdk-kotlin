@@ -1,4 +1,11 @@
-# Dependabot PR helpers (Actions). Config for *what* Dependabot bumps lives in
+# Dependency-change PR helpers (Actions).
+#
+# Runs for Dependabot AND for the operator's own `operator/*` branches. Gating on
+# Dependabot alone was a real gap: any PR that changes a resolved dependency needs
+# its verification checksums regenerated, and an operator PR pinning patched
+# transitives changed 26 of them — every one failing verification with no job
+# willing to regenerate. The condition described WHO opened the PR when what
+# matters is WHAT it changed. Config for *what* Dependabot bumps lives in
 # .github/dependabot.yml (GitHub-reserved path — not a workflow).
 #
 # Jobs (Dependabot PRs only):
@@ -40,7 +47,8 @@ jobs:
     # and zizmor's bot-conditions audit flags it), whereas the PR author is fixed at open
     # time. `automerge` below already used this form.
     if: >-
-      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      (github.event.pull_request.user.login == 'dependabot[bot]' ||
+       startsWith(github.event.pull_request.head.ref, 'operator/')) &&
       github.repository == 'torad-labs/aisdk-kotlin'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -88,7 +96,8 @@ jobs:
   # executes here and must never see a writable token.
   verification-metadata-apple:
     if: >-
-      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      (github.event.pull_request.user.login == 'dependabot[bot]' ||
+       startsWith(github.event.pull_request.head.ref, 'operator/')) &&
       github.repository == 'torad-labs/aisdk-kotlin'
     needs: verification-metadata
     runs-on: macos-latest
@@ -156,7 +165,8 @@ jobs:
     # and zizmor's bot-conditions audit flags it), whereas the PR author is fixed at open
     # time. `automerge` below already used this form.
     if: >-
-      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      (github.event.pull_request.user.login == 'dependabot[bot]' ||
+       startsWith(github.event.pull_request.head.ref, 'operator/')) &&
       github.repository == 'torad-labs/aisdk-kotlin'
     needs: verification-metadata-apple
     runs-on: ubuntu-latest
