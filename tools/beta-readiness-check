@@ -50,7 +50,13 @@ class Reporter:
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, cwd=ROOT, check=False, text=True, capture_output=True)
+    try:
+        return subprocess.run(command, cwd=ROOT, check=False, text=True, capture_output=True)
+    except FileNotFoundError as exc:
+        # A missing delegate tool must be a CHECK FAILURE, not a crash. The unguarded form
+        # raised out of the whole run, which both aborted every later check and read as
+        # "gate broken" — and a broken gate is exactly the state that must report red.
+        return subprocess.CompletedProcess(command, returncode=127, stdout="", stderr=str(exc))
 
 
 def check_detekt_budget(reporter: Reporter) -> None:
@@ -140,6 +146,14 @@ def checkout_steps(text: str) -> list[tuple[int, str]]:
 
 
 def check_workflows(reporter: Reporter) -> None:
+    # Zero-scan guard: a checker that examined zero files must fail, not pass. The glob
+    # replaced a hand-listed [ci.yml, release.yml] that left eight workflows unchecked for
+    # weeks while reporting ok — an empty glob (renamed dir, wrong root, botched checkout)
+    # would silently reproduce that exact hole for ALL workflows.
+    if not WORKFLOWS:
+        reporter.fail("workflow checks scanned zero files (.github/workflows empty or missing)")
+        return
+
     unpinned: list[str] = []
     missing_timeouts: list[str] = []
     global_npm_installs: list[str] = []
@@ -274,14 +288,21 @@ def check_local_staging_smoke_fixture(reporter: Reporter) -> None:
 
 def check_lenient_codec_not_used_for_encoding(reporter: Reporter) -> None:
     offenders: list[str] = []
+    scanned = 0
     for base in [ROOT / "src/commonMain/kotlin", ROOT / "src/commonTest/kotlin"]:
         if not base.exists():
             continue
         for path in base.rglob("*.kt"):
+            scanned += 1
             text = path.read_text(encoding="utf-8", errors="replace")
             for line_no, line in enumerate(text.splitlines(), start=1):
                 if "aiSdkJson.encode" in line:
                     offenders.append(f"{path.relative_to(ROOT)}:{line_no}: {line.strip()}")
+    # Zero-scan guard: this repo always has Kotlin sources; scanning none means the check
+    # is pointed at the wrong tree, and "found no offenders in nothing" must not read as ok.
+    if scanned == 0:
+        reporter.fail("lenient-codec check scanned zero Kotlin files (src/*Main missing?)")
+        return
     if offenders:
         reporter.fail(
             "decode-lenient aiSdkJson is used for outbound encoding; use aiSdkOutputJson instead:\n  "
@@ -315,18 +336,40 @@ def main() -> int:
         default=os.environ.get("BETA_READINESS_STRICT_README") == "1",
         help="fail if README extraction markers are missing; default is warn because docs may be owned by another worker",
     )
+    parser.add_argument(
+        "--only",
+        action="append",
+        metavar="CHECK",
+        help="run only the named sub-check (repeatable). This exists so each sub-check can "
+        "carry its own red/green fixture under tools/gate-fixtures/beta-readiness-*; a "
+        "sub-check that can only run inside the full gate can never be proven able to fail.",
+    )
     args = parser.parse_args()
 
+    # Registry, not a call sequence: the fixture harness needs to address sub-checks by
+    # name, and a name that stops resolving must be an error, never a silent no-op run.
+    checks: dict[str, object] = {
+        "detekt-budget": check_detekt_budget,
+        "readme-sample": lambda r: check_readme_sample_presence(r, strict_readme=args.strict_readme),
+        "dependency-verification": check_dependency_verification,
+        "workflows": check_workflows,
+        "generated-outputs": check_no_generated_outputs_tracked,
+        "release-changelog": check_release_version_and_changelog,
+        "lenient-codec": check_lenient_codec_not_used_for_encoding,
+        "staging-fixture": check_local_staging_smoke_fixture,
+        "additional-gates": check_additional_gates,
+    }
+
+    selected = args.only or list(checks)
+    unknown = [name for name in selected if name not in checks]
+    if unknown:
+        print(f"unknown --only check(s): {', '.join(unknown)}; known: {', '.join(checks)}", file=sys.stderr)
+        return 2
+
     reporter = Reporter()
-    check_detekt_budget(reporter)
-    check_readme_sample_presence(reporter, strict_readme=args.strict_readme)
-    check_dependency_verification(reporter)
-    check_workflows(reporter)
-    check_no_generated_outputs_tracked(reporter)
-    check_release_version_and_changelog(reporter)
-    check_lenient_codec_not_used_for_encoding(reporter)
-    check_local_staging_smoke_fixture(reporter)
-    check_additional_gates(reporter)
+    for name in checks:  # registry order, filtered — repeats in --only run once
+        if name in selected:
+            checks[name](reporter)
 
     if reporter.errors:
         print(f"\nbeta readiness failed: {len(reporter.errors)} error(s), {len(reporter.warnings)} warning(s)", file=sys.stderr)
