@@ -1,1 +1,0 @@
-bash "$GATE_FIXTURE_DIR/run.sh"
