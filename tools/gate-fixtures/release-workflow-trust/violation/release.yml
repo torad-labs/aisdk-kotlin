@@ -19,14 +19,18 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
-      - name: Verify release tag
+      - name: Verify promoted version
+        env:
+          RELEASE_LINE: ${{ github.ref_name }}
         run: |
-          tag_version="${GITHUB_REF_NAME#v}"
           project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
-          test "${tag_version}" = "${project_version}"
           if [[ "${project_version}" == *-SNAPSHOT ]]; then
             exit 1
           fi
+          case "${RELEASE_LINE}" in
+            beta) [[ "${project_version}" =~ -(alpha|beta|rc) ]] || exit 1 ;;
+            prod) [[ "${project_version}" =~ -(alpha|beta|rc) ]] && exit 1 ;;
+          esac
           git merge-base --is-ancestor "${GITHUB_SHA}" origin/main
 
   verify-apple:
@@ -53,3 +57,34 @@ jobs:
         run: bash .claude/hooks/rules/ci-gate.sh
       - name: Verify checks
         run: ./gradlew check
+      # Violation A (step-scoped): signing secrets exported into the SAME STEP that
+      # launches a second Gradle build (the local-staging smoke) — the leak shape the
+      # adversarial review found live in PR #14.
+      - name: Stage sign and smoke in one step
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          ./gradlew publishAllPublicationsToLocalStagingRepository
+          tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
+
+  # Violation B (JOB-scoped inheritance): the smoke step below carries no secrets of its
+  # own, but `jobs.<id>.env` is inherited by every step, so it runs the second Gradle
+  # build with SIGNING_* in its process env anyway. A purely step-text scan reports no
+  # hit here — this job is what pins that hole closed. Kept as a SEPARATE job from
+  # violation A so a regression in either code path fails on its own rather than being
+  # masked by the other.
+  stage-inherited-env:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: preflight
+    permissions:
+      contents: read
+    env:
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+    steps:
+      - name: Stage
+        run: ./gradlew publishAllPublicationsToLocalStagingRepository
+      - name: Smoke looks secret-free but inherits the job env
+        run: tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy

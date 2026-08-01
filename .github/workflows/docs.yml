@@ -22,18 +22,26 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           # `./gradlew dokkaGenerate` below runs the checked-out build; nothing here pushes,
           # so the job token has no reason to sit in .git/config where that build can read it.
           persist-credentials: false
-      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          # Caching disabled: this job runs from workflow_run in the privileged
+          # default-branch context and checks out workflow_run.head_sha, so a
+          # build from untrusted code would populate a cache that later
+          # privileged runs restore. CodeQL flags exactly this as
+          # actions/cache-poisoning/poisonable-step (high). Docs build once per
+          # release; a cold Gradle start is cheaper than the vector.
+          cache-disabled: true
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Generate Dokka HTML

@@ -3,11 +3,21 @@
 #
 # Jobs (Dependabot PRs only):
 #   1. verification-metadata — regenerate gradle/verification-metadata.xml checksums
-#      from the PR head. READ-ONLY: this runs the PR's own Gradle build, so it must
-#      never hold a writable token (see job note).
-#   2. publish-verification-metadata — push the regenerated file onto the Dependabot
+#      from the PR head, on LINUX. READ-ONLY: this runs the PR's own Gradle build, so
+#      it must never hold a writable token (see job note).
+#   2. verification-metadata-apple — the SAME regen on macOS, seeded with (1)'s output.
+#      A checksum can only be recorded for an artifact the runner actually downloads,
+#      and Kotlin/Native ships a different prebuilt per host: a Linux-only regen never
+#      sees kotlin-native-prebuilt-macos-aarch64, so verify-apple failed on every
+#      Kotlin bump with "Dependency verification failed" — aisdk-kotlin#20, and every
+#      such PR before it. Chained rather than run in parallel because Gradle's
+#      generation is INCREMENTAL and preserves existing entries (Gradle docs,
+#      "Verifying Dependencies"), so running Linux-then-macOS accumulates both
+#      platforms into one file. Two parallel jobs would instead produce two partial
+#      files that something would then have to merge by hand.
+#   3. publish-verification-metadata — push the regenerated file onto the Dependabot
 #      branch. Holds `contents: write` but executes no build.
-#   3. automerge — enable auto-merge for patch/minor; GitHub merges only after
+#   4. automerge — enable auto-merge for patch/minor; GitHub merges only after
 #      required checks pass (verify, verify-apple, dependency-review).
 #
 # automerge needs the publish job so checksum regen finishes before we arm merge
@@ -43,16 +53,16 @@ jobs:
     outputs:
       changed: ${{ steps.regen.outputs.changed }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           persist-credentials: false
-      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
       - name: Regenerate verification-metadata checksums
         id: regen
         run: |
@@ -64,7 +74,72 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-      - name: Upload regenerated metadata
+      # Unconditional: the Apple leg starts from this file either way, so making
+      # the upload conditional would just add a branch that has to stay in sync.
+      - name: Upload Linux-side metadata
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verification-metadata-linux-${{ github.run_id }}
+          path: gradle/verification-metadata.xml
+          retention-days: 1
+
+  # The other half of the checksum set. Same read-only posture as the Linux leg —
+  # this also configures the build from the PR head, so a bumped Gradle plugin
+  # executes here and must never see a writable token.
+  verification-metadata-apple:
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.repository == 'torad-labs/aisdk-kotlin'
+    needs: verification-metadata
+    runs-on: macos-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.regen.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+      # Mirrors verify-apple in ci.yml: the Kotlin/Native toolchain is the
+      # expensive part of any Apple-side Gradle run.
+      - name: Cache Kotlin/Native toolchain (~/.konan)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+      - name: Seed with the Linux-side checksums
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: verification-metadata-linux-${{ github.run_id }}
+          path: gradle
+      - name: Add the Apple-side checksums
+        id: regen
+        # Resolving the Apple targets is what pulls kotlin-native-prebuilt for this
+        # host; `help` alone would not, which is the whole reason the Linux leg could
+        # never produce these entries. `changed` is measured against the COMMITTED
+        # file, so it covers both platforms' additions regardless of which leg added
+        # them — that makes this job the single source of truth for whether a push
+        # is needed.
+        run: |
+          set -euo pipefail
+          ./gradlew --write-verification-metadata sha256 \
+            compileKotlinIosArm64 compileKotlinIosSimulatorArm64
+          if git diff --quiet -- gradle/verification-metadata.xml; then
+            echo "verification-metadata.xml unchanged on both platforms"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- gradle/verification-metadata.xml
+          fi
+      - name: Upload the combined metadata
         if: steps.regen.outputs.changed == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -83,24 +158,24 @@ jobs:
     if: >-
       github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.repository == 'torad-labs/aisdk-kotlin'
-    needs: verification-metadata
+    needs: verification-metadata-apple
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write # push regenerated metadata onto the Dependabot branch
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        if: needs.verification-metadata.outputs.changed == 'true'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: needs.verification-metadata-apple.outputs.changed == 'true'
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           persist-credentials: false
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
-        if: needs.verification-metadata.outputs.changed == 'true'
+        if: needs.verification-metadata-apple.outputs.changed == 'true'
         with:
           name: verification-metadata-${{ github.run_id }}
           path: gradle
       - name: Commit and push
-        if: needs.verification-metadata.outputs.changed == 'true'
+        if: needs.verification-metadata-apple.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.event.pull_request.head.ref }}

@@ -1,5 +1,18 @@
 name: Release
 
+# PROMOTION, NOT TAGS. `beta` and `prod` are the release lines, matching torad-fleet:
+#
+#   beta release:  git push origin main:beta      (or merge main -> beta)
+#   prod release:  merge main -> prod
+#
+# The version shipped is gradle.properties VERSION_NAME; the branch says WHICH LINE it
+# goes out on, and preflight refuses a version whose shape disagrees with the branch
+# (a -beta/-rc version on prod, or a final version on beta).
+#
+# This replaced `push: tags: ['v*']`. That trigger was never how this org releases, and
+# leaving it in place meant a promotion did nothing while a stray tag published — two
+# contradictory paths to the same irreversible action. The tag is now an OUTPUT of the
+# release (created from VERSION_NAME on the promoted commit), not its trigger.
 on:
   workflow_dispatch:
     inputs:
@@ -9,13 +22,14 @@ on:
         default: false
         type: boolean
   push:
-    tags:
-      - "v*"
+    branches:
+      - beta
+      - prod
 
 permissions:
   contents: read
 
-# One release at a time per ref. cancel-in-progress: false so a tag push is never
+# One release at a time per line. cancel-in-progress: false so a promotion is never
 # cancelled mid-Central-upload by a concurrent dry-run dispatch.
 concurrency:
   group: release-${{ github.ref }}
@@ -32,14 +46,19 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+    outputs:
+      version: ${{ steps.verify.outputs.version }}
+      tag: ${{ steps.verify.outputs.tag }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Verify release tag
+      - name: Verify promoted version
+        id: verify
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+          RELEASE_LINE: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
@@ -47,9 +66,41 @@ jobs:
           artifact="$(awk -F= '$1 == "POM_ARTIFACT_ID" { print $2 }' gradle.properties)"
 
           if [[ "${project_version}" == *-SNAPSHOT ]]; then
-            echo "Release tags must not publish SNAPSHOT versions: ${project_version}" >&2
+            echo "::error::A release must not publish a SNAPSHOT version: ${project_version}" >&2
             exit 1
           fi
+
+          # Branch <-> version-shape agreement. Under tag-triggered releases this slot held
+          # `test "${tag_version}" = "${project_version}"`, which tied the ref to the version.
+          # Promotion has no version in the ref, so the invariant becomes: the LINE you
+          # promoted to must match the KIND of version in gradle.properties. Without it,
+          # promoting to prod with 0.3.0-beta01 still in VERSION_NAME would publish a
+          # prerelease as the stable line, and Central coordinates are immutable.
+          prerelease_re='-(alpha|beta|rc)([.-]?[0-9]+)?$'
+          case "${RELEASE_LINE}" in
+            beta)
+              if [[ ! "${project_version}" =~ ${prerelease_re} ]]; then
+                echo "::error::branch 'beta' expects a prerelease VERSION_NAME (-alpha/-beta/-rc), got ${project_version}. Promote to prod for a final version." >&2
+                exit 1
+              fi
+              ;;
+            prod)
+              if [[ "${project_version}" =~ ${prerelease_re} ]]; then
+                echo "::error::branch 'prod' expects a final VERSION_NAME, got prerelease ${project_version}. Promote to beta instead, or bump VERSION_NAME on main first." >&2
+                exit 1
+              fi
+              ;;
+            *)
+              # workflow_dispatch from any ref reaches here; only dry-run is meaningful.
+              if [ "${DRY_RUN}" != "true" ]; then
+                echo "::error::a real release must be promoted to 'beta' or 'prod' (ref was ${RELEASE_LINE}). Use workflow_dispatch only with dry_run: true." >&2
+                exit 1
+              fi
+              ;;
+          esac
+
+          echo "version=${project_version}" >> "${GITHUB_OUTPUT}"
+          echo "tag=v${project_version}" >> "${GITHUB_OUTPUT}"
 
           # Maven Central coordinates are immutable. Fail closed if this VERSION_NAME
           # is already on repo1 so we never plan a retag/republish of a shipped line
@@ -80,13 +131,17 @@ jobs:
           esac
 
           if [ "${DRY_RUN}" = "true" ]; then
-            echo "Dry-run release preflight for ${project_version} on ${GITHUB_REF_NAME}; tag and main-ancestry checks are publish-only."
+            echo "Dry-run release preflight for ${project_version} on ${RELEASE_LINE}; the main-ancestry check is promotion-only."
             exit 0
           fi
-          tag_version="${GITHUB_REF_NAME#v}"
-          test "${tag_version}" = "${project_version}"
+          # THE promotion invariant: a release line only ever carries commits that came
+          # from main. This is what makes "promote main -> beta/prod" the single path in —
+          # a commit pushed straight to beta, or a beta branch that has drifted, fails here.
           git fetch origin main
-          git merge-base --is-ancestor "${GITHUB_SHA}" origin/main
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" origin/main; then
+            echo "::error::${GITHUB_SHA} on '${RELEASE_LINE}' is not an ancestor of origin/main. Release lines are promoted from main, never committed to directly." >&2
+            exit 1
+          fi
       - name: Beta readiness gate
         run: tools/beta-readiness-check
 
@@ -97,14 +152,14 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: "21"
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           # Release produces signed artifacts, so no mutable cache may feed a publish —
           # read OR write. cache-read-only stopped this path WRITING a cache but it still
@@ -113,7 +168,7 @@ jobs:
           # cannot be influenced by any earlier run's artifacts.
           cache-disabled: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
@@ -141,16 +196,16 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
-      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           # Release produces signed artifacts, so no mutable cache may feed a publish —
           # read OR write. cache-read-only stopped this path WRITING a cache but it still
@@ -159,7 +214,7 @@ jobs:
           # cannot be influenced by any earlier run's artifacts.
           cache-disabled: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
@@ -168,8 +223,8 @@ jobs:
       - name: Fetch Vercel AI SDK v6 reference
         run: |
           mkdir -p .reference
-          git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}
-          actual_commit="$(git -C .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION} rev-parse HEAD)"
+          git clone --depth 1 --branch "ai@${AI_SDK_REFERENCE_VERSION}" https://github.com/vercel/ai ".reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}"
+          actual_commit="$(git -C ".reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}" rev-parse HEAD)"
           test "${actual_commit}" = "${AI_SDK_REFERENCE_COMMIT}"
       - name: Verify AI SDK reference version
         id: ai_sdk_reference
@@ -222,12 +277,17 @@ jobs:
 
           exit "$failed"
 
-  # Credentialed job. It holds SIGNING_KEY / SONATYPE_* and id-token: write, so it runs
-  # ONLY the staging publish, signing, attestation and upload. Those cannot move -- the
-  # signed bundle has to be produced here -- so Gradle plugins still execute in this job
-  # by necessity; that residual exposure is the honest limit of this split. What it does
-  # remove from the key's blast radius is the whole test suite, npm, and the upstream
-  # clone. Enforced by detect-release-workflow-trust.py.
+  # Credentialed job. It holds SIGNING_KEY / SONATYPE_* and id-token: write. The
+  # staging publish, signing, attestation and upload cannot move — the signed bundle
+  # has to be produced here — so this repo's OWN Gradle build still executes beside
+  # the key by necessity; that residual exposure is the honest limit of the job split.
+  # What the split removes from the key's blast radius is the test suite, npm, and the
+  # upstream clone. WITHIN the job, credentials are STEP-scoped: only "Stage and sign
+  # publications" carries SIGNING_* in env; the local-staging smoke (a second Gradle
+  # build with no dependency verification of its own) and everything after run without
+  # them. An earlier revision exported the key into the smoke's process env and this
+  # very comment claimed otherwise — both are now enforced step-scoped by
+  # detect-release-workflow-trust.py.
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -243,16 +303,16 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
-      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           # Release produces signed artifacts, so no mutable cache may feed a publish —
           # read OR write. cache-read-only stopped this path WRITING a cache but it still
@@ -261,7 +321,7 @@ jobs:
           # cannot be influenced by any earlier run's artifacts.
           cache-disabled: true
       - name: Cache Kotlin/Native toolchain (~/.konan)
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
@@ -274,9 +334,8 @@ jobs:
       # fail-fast after the pre-publish gate aggregator above. Dry-run proves
       # local staging/signing/smoke only; it cannot prove Central auth or the
       # Central Portal state machine.
-      - name: Build Maven Central release bundle
+      - name: Stage and sign publications
         env:
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
         run: |
@@ -287,8 +346,32 @@ jobs:
           # globally, but the signing plugin's tasks aren't config-cache compatible
           # and PublishToMavenRepository captures Project references — both only
           # surface during real (remote) publishing, which is CI-only anyway.
+          #
+          # ONLY this step carries SIGNING_* (env: is step-scoped in Actions). The
+          # smoke below launches a SECOND Gradle build whose consumer projects have
+          # no verification-metadata.xml of their own — its plugins must never
+          # execute with the signing key in their process env. Enforced step-scoped
+          # by detect-release-workflow-trust.py.
           ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache
-          tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
+      # Fail closed BEFORE the smoke and the bundle: assert the staged tree contains
+      # every publication the release is supposed to ship, each complete and signed.
+      # kotlin.native.ignoreDisabledTargets=true makes a target that cannot build on
+      # this ubuntu host vanish silently (task and artifacts together), and the old
+      # artifact_count was echoed but never compared — so a beta could ship without
+      # iOS with every gate green. Maven Central coordinates are immutable, so this
+      # has to be caught here, not from the Portal.
+      - name: Verify the staged publication set
+        run: tools/check-release-bundle build/staging-deploy
+      # No credentials: this drives a separate Gradle build rooted at
+      # smoke-tests/local-staging, which resolves com.android.library / kotlin
+      # plugin markers unverified. It only READS build/staging-deploy.
+      - name: Smoke-test the staged artifacts
+        run: tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
+      - name: Bundle the staged artifacts
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+        run: |
+          set -euo pipefail
           # A release bundle must contain only the versioned artifacts. The Portal
           # generates its own group-level metadata, and leaving version-listing
           # maven-metadata.xml in the zip can trip bundle validation.
@@ -408,15 +491,29 @@ jobs:
       # `gh attestation verify` on it. Without this step that canary is permanently
       # stuck on "waiting on first release". Also attaches the SPDX SBOM next to
       # the bundle so the release coordinate set is durable beyond artifact retention.
+      # The tag is an OUTPUT of the release, not its trigger: preflight derives it from
+      # VERSION_NAME and this step creates it on the promoted commit.
+      #
+      # tag_name/target_commitish are load-bearing under promotion. This action defaults
+      # tag_name to `github.ref`, which under the old tag trigger was the version tag and
+      # under promotion is the literal branch — so without these it would cut a GitHub
+      # Release named "beta" pointing at a moving branch, once, and then collide on the
+      # next beta. Explicit values make the release name the version and pin it to the SHA.
       - name: Create GitHub Release (bundle.zip + SBOM)
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
         # zizmor: ignore[superfluous-actions] informational: `gh release create` is the
         # equivalent, and dropping a third-party action from the credential-bearing publish
-        # job would be a real gain — but this step only ever executes on a genuine tag push,
+        # job would be a real gain — but this step only ever executes on a genuine promotion,
         # so a rewrite cannot be exercised before the release it would break. The action is
         # SHA-pinned and Dependabot-tracked. Revisit deliberately, not to satisfy a lint.
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
+          tag_name: ${{ needs.preflight.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ needs.preflight.outputs.tag }}
+          # A promotion to `beta` carries a prerelease VERSION_NAME (preflight enforces it),
+          # so mark the GitHub Release accordingly instead of advertising it as latest.
+          prerelease: ${{ github.ref_name == 'beta' }}
           files: |
             bundle.zip
             torad-aisdk-sbom.spdx.json
