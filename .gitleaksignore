@@ -1,0 +1,16 @@
+# Vetted false positives (2026-07-30 triage, PR #15). Every fingerprint was
+# inspected: an Ed25519 PUBLIC key used to verify campaign transitions, and
+# sha256 content digests recorded in campaign baselines. No credential has ever
+# been committed to this repo. A NEW finding must be triaged, not appended here.
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/manifest.py:generic-api-key:133
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/wave-R2-baseline.json:generic-api-key:15
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/wave-R2-baseline.json:generic-api-key:16
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/current-working-tree-I1.patch:generic-api-key:206
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/current-working-tree.patch:generic-api-key:166
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/current-working-tree-I1b.patch:generic-api-key:206
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/wave-I3-baseline.patch:generic-api-key:331
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/current-working-tree-I4.patch:generic-api-key:528
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/current-working-tree-I3.patch:generic-api-key:528
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/wave-R1-baseline.patch:generic-api-key:528
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/wave-I4-baseline.patch:generic-api-key:528
+6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/wave-R2-baseline.patch:generic-api-key:528
