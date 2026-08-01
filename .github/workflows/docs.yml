@@ -34,6 +34,14 @@ jobs:
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          # Caching disabled: this job runs from workflow_run in the privileged
+          # default-branch context and checks out workflow_run.head_sha, so a
+          # build from untrusted code would populate a cache that later
+          # privileged runs restore. CodeQL flags exactly this as
+          # actions/cache-poisoning/poisonable-step (high). Docs build once per
+          # release; a cold Gradle start is cheaper than the vector.
+          cache-disabled: true
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Generate Dokka HTML
