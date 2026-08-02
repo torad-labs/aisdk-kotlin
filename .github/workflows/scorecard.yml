@@ -71,6 +71,40 @@ jobs:
         uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         with:
           sarif_file: results.sarif
+      - name: Score-floor regression gate
+        # Three checks were DISMISSED from code scanning 2026-08-02 because their perfect
+        # score is structurally unreachable for a solo-maintainer repo (GitHub forbids
+        # approving your own PRs; the top tiers of Branch-Protection/Code-Review require
+        # a second human; SAST's commit window counts GITHUB_TOKEN bot-merges, which
+        # trigger no CI). A dismissed alert NEVER re-fires, so the regression signal
+        # lives here instead: a score DROPPING below its recorded floor fails this
+        # workflow, and the scheduled-failure step below opens an issue. The signal
+        # fires on change, not on state — the alert list stays actionable. Raise a
+        # floor only in the same PR that raises the score. Floors recorded 2026-08-02.
+        # A rule absent from the SARIF scored 10 (clean results are not emitted).
+        env:
+          FLOORS: '{"BranchProtectionID":5,"CodeReviewID":3,"SASTID":9}'
+        run: |
+          set -euo pipefail
+          failed=0
+          for rule in $(echo "$FLOORS" | jq -r 'keys[]'); do
+            floor=$(echo "$FLOORS" | jq -r --arg r "$rule" '.[$r]')
+            msg=$(jq -r --arg r "$rule" \
+              '[.runs[].results[] | select(.ruleId == $r) | .message.text] | first // ""' \
+              results.sarif)
+            score=$(echo "$msg" | grep -oE 'score is [0-9]+' | grep -oE '[0-9]+' || true)
+            if [ -z "$score" ]; then
+              echo "$rule: no SARIF result (score 10 or unemitted) — above floor $floor"
+              continue
+            fi
+            if [ "$score" -lt "$floor" ]; then
+              echo "::error::$rule regressed: score $score < floor $floor"
+              failed=1
+            else
+              echo "$rule: score $score >= floor $floor"
+            fi
+          done
+          exit "$failed"
       - name: Open issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
         env:
