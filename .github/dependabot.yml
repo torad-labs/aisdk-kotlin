@@ -89,6 +89,18 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
+  # The ClusterFuzzLite build image. Its FROM is pinned by digest so CI builds the same
+  # base the fuzz target was validated against; this is what moves that digest forward.
+  # Without it the pin would freeze the fuzzing environment on whatever base was current
+  # the day it was written, and a pinned-and-abandoned base image receives no security
+  # updates at all — strictly worse than the floating tag it replaced.
+  - package-ecosystem: "docker"
+    directory: "/.clusterfuzzlite"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
