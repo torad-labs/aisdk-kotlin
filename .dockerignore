@@ -1,0 +1,18 @@
+# Build context for .clusterfuzzlite/Dockerfile.
+#
+# ClusterFuzzLite builds from a fresh checkout in CI, where the tracked tree is ~19 MB.
+# Locally the same directory carries multi-gigabyte scratch that is not tracked at all
+# (dev/campaigns alone is several GB; .reference/ and node_modules/ are wholly
+# untracked), so without this the local image build ships a context two orders of
+# magnitude larger than the one CI produces. Everything listed here is either generated
+# or developer-local, and nothing under it is read by the Gradle build — dev/ appears in
+# build.gradle.kts only inside a comment pointing at the measurements ledger.
+build/
+*/build/
+.gradle/
+.kotlin/
+.git/
+
+.reference/
+node_modules/
+dev/campaigns/
