@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""Keep gradle/verification-metadata.xml free of versions a security pin superseded.
+
+`./gradlew --write-verification-metadata` only ever APPENDS. It has no notion of a
+version falling out of the graph, so every artifact the build has ever resolved stays
+recorded forever. That is harmless for verification itself — an unused checksum verifies
+nothing — but the file is also a dependency manifest that scanners read, and a recorded
+checksum for `httpclient-4.5.6.jar` reads to a scanner as "this project uses 4.5.6".
+
+That is not hypothetical. OSSF Scorecard's Vulnerabilities check runs osv-scanner over
+the checkout, and osv-scanner has a `gradle/verification-metadata.xml` extractor. It
+reported 17 vulnerabilities against this repo at a commit where every one of those
+advisories had already been pinned away in all three Gradle resolution scopes: 2 for
+jackson-core, 7 for jackson-databind, 2 for bcprov, and one each for bcpkix, jose4j,
+jdom2, commons-lang3, httpclient and opentelemetry-api. Seventeen, exactly — every one
+of them a stale entry in this file, and not one of them reachable by the build.
+
+So the invariant: for any module carrying a security pin in gradle/libs.versions.toml,
+this file may record ONLY the pinned version. A leftover is a scanner-visible claim that
+the project ships a vulnerable version, and driving the alert count to zero is what makes
+a non-zero count meaningful.
+
+Pruning is safe precisely because verification is fail-closed. If the build ever did
+resolve a pruned version, the missing checksum would fail the build loudly rather than
+silently accepting it — so a wrong prune is self-reporting, not a hole. (Verified
+empirically: after pruning, `--write-verification-metadata` re-adds nothing.)
+
+  check: tools/check-verification-metadata-pins
+  fix:   tools/check-verification-metadata-pins --prune
+
+The pinned modules are derived from the catalog rather than listed here, so a new pin is
+covered the moment it is added and cannot drift out of sync with a second copy.
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+CATALOG = REPO / "gradle" / "libs.versions.toml"
+METADATA = REPO / "gradle" / "verification-metadata.xml"
+
+# The catalog aliases whose versions are security pins. These are exactly the entries
+# under the "Build-classpath security pins" heading in [libraries]; a module is only
+# subject to this gate if a pin forces its version everywhere.
+PINNED_ALIASES = (
+    "bouncycastle-prov",
+    "bouncycastle-pkix",
+    "jackson-core",
+    "jackson-databind",
+    "jose4j",
+    "jdom2",
+    "commons-lang3",
+    "httpclient",
+    "opentelemetry-api",
+)
+
+_VERSION_RE = re.compile(r'^\s*([\w.-]+)\s*=\s*"([^"]+)"', re.MULTILINE)
+_LIBRARY_RE = re.compile(
+    r'^\s*([\w.-]+)\s*=\s*\{\s*module\s*=\s*"([^"]+)"\s*,\s*version\.ref\s*=\s*"([^"]+)"',
+    re.MULTILINE,
+)
+_COMPONENT_RE = re.compile(
+    r'<component\s+group="([^"]+)"\s+name="([^"]+)"\s+version="([^"]+)"'
+)
+
+
+def pinned_modules() -> dict[tuple[str, str], str]:
+    """Map (group, name) -> pinned version, read from the catalog."""
+    text = CATALOG.read_text()
+    section = text.split("[libraries]", 1)
+    versions = dict(
+        (k, v) for k, v in _VERSION_RE.findall(section[0])
+    )
+    libraries = {
+        alias: (module, ref) for alias, module, ref in _LIBRARY_RE.findall(text)
+    }
+
+    out: dict[tuple[str, str], str] = {}
+    for alias in PINNED_ALIASES:
+        if alias not in libraries:
+            sys.exit(
+                f"{CATALOG}: no [libraries] entry '{alias}'. The verification-metadata "
+                f"pin gate cannot check a module it cannot resolve. Fix the catalog "
+                f"rather than dropping the alias from PINNED_ALIASES."
+            )
+        module, ref = libraries[alias]
+        if ref not in versions:
+            sys.exit(f"{CATALOG}: '{alias}' references missing version '{ref}'.")
+        group, _, name = module.partition(":")
+        out[(group, name)] = versions[ref]
+    return out
+
+
+def component_spans(text: str) -> list[tuple[str, str, str, int, int]]:
+    """Every <component ...>...</component> block as (group, name, version, start, end)."""
+    spans = []
+    for m in _COMPONENT_RE.finditer(text):
+        close = text.index("</component>", m.end()) + len("</component>")
+        # Swallow the whole line, including its leading indentation and trailing newline,
+        # so removal leaves no blank line behind.
+        start = text.rfind("\n", 0, m.start()) + 1
+        end = close
+        if text[end : end + 1] == "\n":
+            end += 1
+        spans.append((*m.groups(), start, end))
+    return spans
+
+
+def main() -> int:
+    prune = "--prune" in sys.argv[1:]
+    pins = pinned_modules()
+    text = METADATA.read_text()
+
+    components = component_spans(text)
+    # Zero-scan guard. This gate reports "OK" by finding nothing, so a regex that stopped
+    # matching — Gradle reordering the component attributes, say — would look identical to
+    # a clean file and silently stop enforcing. A verification-metadata.xml with no
+    # components at all is not a state this repo can reach, so treat it as parser drift.
+    if not components:
+        print(
+            f"{METADATA.relative_to(REPO)}: parsed ZERO <component> entries. "
+            f"This gate passes by finding nothing, so a file it cannot read is "
+            f"indistinguishable from a clean one — refusing to report OK. Check whether "
+            f"the component-element format changed.",
+            file=sys.stderr,
+        )
+        return 1
+
+    stale = [
+        s
+        for s in components
+        if (s[0], s[1]) in pins and s[2] != pins[(s[0], s[1])]
+    ]
+
+    if not stale:
+        print(
+            f"verification-metadata pins OK: {len(pins)} pinned modules, "
+            f"no superseded versions recorded"
+        )
+        return 0
+
+    for group, name, version, _, _ in stale:
+        print(
+            f"  stale: {group}:{name}:{version} "
+            f"(pinned to {pins[(group, name)]})"
+        )
+
+    if not prune:
+        print(
+            f"\n{METADATA.relative_to(REPO)} records {len(stale)} version(s) that a "
+            f"security pin has superseded.\n"
+            f"A scanner reading this file reports them as vulnerabilities in this "
+            f"project.\nRun: tools/check-verification-metadata-pins --prune",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Remove back-to-front so earlier offsets stay valid.
+    for _, _, _, start, end in sorted(stale, key=lambda s: s[3], reverse=True):
+        text = text[:start] + text[end:]
+    METADATA.write_text(text)
+    print(f"\npruned {len(stale)} superseded component entries")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

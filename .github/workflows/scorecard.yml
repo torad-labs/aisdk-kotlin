@@ -1,5 +1,5 @@
-# OpenSSF Scorecard — weekly + main-push supply-chain score. Not a merge gate;
-# results land in the Security → Code scanning tab and as a workflow summary.
+# OpenSSF Scorecard — weekly supply-chain score. Not a merge gate; results land in the
+# Security → Code scanning tab and as a workflow summary.
 #
 # What it grades that we care about: branch protection, pinned Actions, token
 # permissions, dangerous workflow patterns, maintained dependencies, code review.
@@ -9,8 +9,20 @@ on:
   schedule:
     # Offset from CodeQL (17 4 * * 3) and consumer-canary (37 9 * * 1).
     - cron: "41 5 * * 1"
-  push:
-    branches: [main]
+  # NO `push:` trigger, deliberately. Scorecard's BinaryArtifacts check clears this
+  # repo's gradle-wrapper.jar only when the workflow running
+  # `gradle/actions/wrapper-validation` has a SUCCESSFUL run whose head SHA equals the
+  # LATEST COMMIT (scorecard checks/raw/binary_artifact.go, gradleWrapperValidated).
+  # On a push trigger, Scorecard and ci.yml start in the same second and Scorecard
+  # finishes first — measured on ce866399: Scorecard done 04:21:31, ci.yml done
+  # 04:32:01. It therefore evaluated the wrapper while its own validator was still
+  # running, and reported "binary detected" every single time.
+  #
+  # That is not a flaky alert, it is a structurally unsatisfiable one: a push-triggered
+  # run can never observe a completed CI run for the commit that triggered it. Left in
+  # place it would emit a permanent false high-severity finding, which is the specific
+  # failure this repo refuses to accept — an alert list you cannot trust is worse than
+  # no list. On the weekly cron, CI has long since settled on the tip commit.
   workflow_dispatch:
 
 permissions:
