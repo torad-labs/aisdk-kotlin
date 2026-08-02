@@ -177,6 +177,9 @@ tools/beta-readiness-check || fail=1
 echo "== release workflow trust gate =="
 python3 .claude/hooks/rules/detect-release-workflow-trust.py .github/workflows/release.yml --check || fail=1
 
+echo "== verification-metadata pin gate =="
+tools/check-verification-metadata-pins || fail=1
+
 if [ "$fail" != 0 ]; then
   echo ""
   echo "ARCHITECTURE GATE FAILED — fix the violations above (do not bypass)."

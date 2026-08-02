@@ -21,13 +21,14 @@ on:
   schedule:
     - cron: "17 4 * * 3"
 
+# Read-only at the top level. `analyze` is the only job here and declares its own
+# permissions, and a job-level block REPLACES the top-level one rather than adding to
+# it — so granting `security-events: write` here bought nothing and only widened the
+# default any future job would inherit. Scorecard's TokenPermissions check flags exactly
+# that shape (alert #9, "topLevel 'security-events' permission set to 'write'"). The
+# write lives on the job that uploads the SARIF, which is the only thing that needs it.
 permissions:
   contents: read
-  security-events: write
-  # Documented by GitHub's starter workflow as required for the init action to fetch
-  # CodeQL query packs. `actions: read` is deliberately NOT granted — it is only needed
-  # for workflows in PRIVATE repositories, and this one is public.
-  packages: read
 
 concurrency:
   group: codeql-${{ github.workflow }}-${{ github.ref }}
@@ -40,7 +41,10 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
-      security-events: write
+      security-events: write # upload SARIF to code scanning
+      # Documented by GitHub's starter workflow as required for the init action to fetch
+      # CodeQL query packs. `actions: read` is deliberately NOT granted — it is only
+      # needed for workflows in PRIVATE repositories, and this one is public.
       packages: read
       issues: write # scheduled-failure issue creation
     strategy:

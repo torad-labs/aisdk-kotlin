@@ -47,6 +47,25 @@ jobs:
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - name: Generate Gradle dependency graph
         uses: gradle/actions/dependency-submission@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        env:
+          # PIN THE CORRELATOR. GitHub keys dependency snapshots by job.correlator, and
+          # the action defaults it to `${workflow}-${job}`
+          # (DependencyGraphConfig.constructJobCorrelator). A correlator derived from the
+          # job id means renaming a job silently forks the snapshot history instead of
+          # continuing it — and per GitHub's dependency-submission docs, "if there are two
+          # correlators with the same detector, the resolved dependencies are MERGED".
+          # The old snapshot is not superseded; it is merged in, forever.
+          #
+          # That is exactly how this repo kept one advisory open. Splitting this workflow
+          # into generate/submit renamed the job `dependency-submission` -> `generate`, so
+          # the pinned httpclient 4.5.14 landed under a NEW correlator while the previous
+          # snapshot went on reporting 4.5.6 from an orphaned one. The submitted artifact
+          # contained only 4.5.14; the repo SBOM showed both. The orphan was cleared by
+          # posting an empty snapshot at the stale correlator.
+          #
+          # `maybeExportVariable` only sets this when it is unset, so an explicit value
+          # here wins. Job ids stay free to change; the snapshot lineage does not.
+          GITHUB_DEPENDENCY_GRAPH_JOB_CORRELATOR: dependency-submission-generate
         with:
           dependency-graph: generate-and-upload
         # THE FULL GRAPH IS GENERATED ON PURPOSE — build classpath and Swift-export tooling
