@@ -277,6 +277,25 @@ jobs:
 
           exit "$failed"
 
+      # Build the API docs HERE, where the release commit is already checked out and has
+      # passed every gate above, and hand it to the Docs workflow as an artifact.
+      #
+      # Docs used to build in docs.yml, which runs on `workflow_run` in the privileged
+      # default-branch context and checked out `workflow_run.head_sha` to do it. That is
+      # the pwn-request shape: Scorecard flagged it critical (DangerousWorkflow, "untrusted
+      # code checkout") and CodeQL flagged the Gradle step high (cache-poisoning). Both are
+      # about running repository-controlled code in a privileged context — so the fix is to
+      # not run it there, rather than to harden it in place.
+      - name: Generate API docs (Dokka HTML)
+        run: ./gradlew dokkaGenerate
+      - name: Upload docs for the Docs workflow
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dokka-html
+          path: build/dokka/html
+          if-no-files-found: error
+          retention-days: 7
+
   # Credentialed job. It holds SIGNING_KEY / SONATYPE_* and id-token: write. The
   # staging publish, signing, attestation and upload cannot move — the signed bundle
   # has to be produced here — so this repo's OWN Gradle build still executes beside
@@ -519,3 +538,47 @@ jobs:
             torad-aisdk-sbom.spdx.json
           fail_on_unmatched_files: true
           generate_release_notes: true
+
+  # Publish the API docs to GitHub Pages, in the SAME workflow that built them.
+  #
+  # This replaced a separate docs.yml triggered by `workflow_run`. That shape carried two
+  # findings at once — Scorecard DangerousWorkflow (CRITICAL: it checked out
+  # `workflow_run.head_sha`, i.e. repository-controlled code, in the privileged
+  # default-branch context) and CodeQL cache-poisoning (HIGH: the Gradle step it ran
+  # there) — plus zizmor's dangerous-triggers on `workflow_run` itself.
+  #
+  # Deploying from the producing run removes all three causes rather than mitigating them:
+  # no cross-workflow trigger, no second checkout of the release commit, no build in a
+  # privileged job, and no `actions: read` to fetch an artifact across runs. This job runs
+  # no repository code at all — it downloads the artifact verify-release produced within
+  # this same run and hands it to Pages.
+  deploy-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs:
+      - verify-release
+      - publish
+    # Never on a dry run: a dry run publishes nothing, so it must not move the docs site.
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download docs built by verify-release
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: dokka-html
+          path: dokka-html
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dokka-html
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

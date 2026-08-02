@@ -19,11 +19,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dependency-submission:
+  # GENERATE — runs the Gradle build, holds NO write token.
+  #
+  # Split from the submit step per the action's own `generate-and-upload` /
+  # `download-and-submit` contract, which exists for exactly this: "where the workflow
+  # generating the dependency-graph cannot (or should not) be given the `contents: write`
+  # permissions". Resolving the graph configures the build, so plugin code executes here;
+  # a job's `permissions:` cannot be narrowed per step, so a write token granted for the
+  # submit call would have been reachable by that plugin code for the whole run.
+  #
+  # This is the same shape as the release workflow's signing split and the Dependabot
+  # metadata split: the job that runs repository-controlled code and the job that holds
+  # the credential are never the same job.
+  generate:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write # required to submit the dependency snapshot
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -33,23 +45,42 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
-      - name: Submit Gradle dependency graph
+      - name: Generate Gradle dependency graph
         uses: gradle/actions/dependency-submission@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-        # THE FULL GRAPH IS SUBMITTED ON PURPOSE — build classpath and Swift-export tooling
+        with:
+          dependency-graph: generate-and-upload
+        # THE FULL GRAPH IS GENERATED ON PURPOSE — build classpath and Swift-export tooling
         # included, not only what ships.
         #
-        # An earlier revision of this file filtered the graph down to *RuntimeClasspath so
-        # the 15 build-only advisories would stop appearing. That was the wrong trade. The
-        # alerts were never FALSE — they reported genuinely vulnerable versions that were
-        # simply unfixed — and a filtered list leaves the reader with the question the whole
+        # An earlier revision filtered the graph down to *RuntimeClasspath so the 15
+        # build-only advisories would stop appearing. That was the wrong trade. The alerts
+        # were never FALSE — they reported genuinely vulnerable versions that were simply
+        # unfixed — and a filtered list leaves the reader with the question the whole
         # mechanism exists to answer: "is this list complete?" A short list you distrust is
         # worse than a long list you have driven to zero.
         #
-        # So the contract here is: submit everything, PIN everything, and keep the alert
-        # count at zero. Any alert that appears is then a real unpatched dependency by
-        # construction, whether it reaches consumers or only the build — and a compromised
-        # build is a supply-chain compromise, so that lane deserves the same visibility.
+        # So the contract is: submit everything, PIN everything, keep the count at zero.
+        # Any alert that appears is then a real unpatched dependency by construction,
+        # whether it reaches consumers or only the build — and a compromised build is a
+        # supply-chain compromise, so that lane deserves the same visibility.
         #
-        # The pins live in build.gradle.kts (buildscript classpath) and in the
-        # swiftExportClasspathResolvable block beside it. When a new advisory lands, the
+        # Pins live in settings.gradle.kts (settings plugin classpath) and build.gradle.kts
+        # (buildscript classpath + configurations.all). When a new advisory lands, the
         # answer is a pin, not a filter.
+
+  # SUBMIT — holds the write token, runs no build. Downloads the artifact the generate job
+  # produced and posts it to the dependency-submission API.
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: generate
+    permissions:
+      contents: write # dependency snapshot submission; nothing else runs in this job
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Submit dependency graph
+        uses: gradle/actions/dependency-submission@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          dependency-graph: download-and-submit

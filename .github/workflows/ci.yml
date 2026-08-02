@@ -70,6 +70,19 @@ jobs:
           # binary, and the full Gradle build, so the job token must not sit in .git/config
           # for them to read. The failure-issue step gets it through env instead.
           persist-credentials: false
+      # Explicit wrapper validation, BEFORE any ./gradlew invocation — gradle-wrapper.jar is
+      # a committed binary, and the wrapper script executes it, so validating it after a
+      # build has already run would be checking the lock after the door opened.
+      #
+      # setup-gradle already validates wrappers by default (`validate-wrappers: true`, and
+      # the logs show "All Gradle Wrapper jars are valid"), so this is not new coverage —
+      # it is the same check in a form Scorecard's BinaryArtifacts detector can SEE. That
+      # detector clears a gradle-wrapper.jar only when a dedicated wrapper-validation
+      # action appears as a step in a workflow that passed on the default branch
+      # (ossf/scorecard#2039); an equivalent input on another action is invisible to it,
+      # which is why the alert stayed open while the jar was in fact verified on every run.
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
       - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
