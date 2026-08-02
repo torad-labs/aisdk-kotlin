@@ -33,32 +33,55 @@ buildscript {
                 libs.jose4j,
                 libs.jdom2,
                 libs.commons.lang3,
-                // opentelemetry-api is NOT here on purpose: it does not resolve onto this
-                // classpath at all (`buildEnvironment` shows zero matches). It enters via
-                // swiftExportClasspathResolvable instead, and is pinned there — see below.
-                // A force on the wrong configuration is a no-op wearing the appearance of
-                // a fix, which is worse than no pin.
+                // opentelemetry-api is NOT here: it does not resolve onto this classpath at
+                // all (`buildEnvironment` shows zero matches). It enters through project
+                // configurations, which the configurations.all block below covers. A force
+                // on the wrong scope is a no-op wearing the appearance of a fix.
             )
         }
     }
 }
 
-// io.opentelemetry:opentelemetry-api 1.41.0 arrives through
-// org.jetbrains.kotlin:swift-export-embeddable, in the swiftExportClasspathResolvable
-// configuration — a PROJECT configuration, so the buildscript force above cannot reach it.
-// GHSA (medium): unbounded memory allocation parsing W3C baggage; patched in 1.62.0.
+// The same pins applied to EVERY project configuration — not to a named list of them.
 //
-// Pinned rather than filtered out of the dependency graph. The alert was never false — the
-// version really was vulnerable — and a graph trimmed to hide it would leave every future
-// alert under suspicion of being another thing somebody decided not to look at.
+// A Gradle build has three independent resolution scopes, and a pin only covers the one it
+// is written in. Each was found the hard way, one Dependabot re-scan at a time:
+//   1. the SETTINGS plugin classpath      -> pinned in settings.gradle.kts
+//   2. the project BUILDSCRIPT classpath  -> pinned in the buildscript block above
+//   3. every other PROJECT configuration  -> this block
 //
-// The risk this carries is a Kotlin-internal tooling bump (1.41 -> 1.62) on the Swift
-// export path, which cannot be exercised from a Linux host. It does not go unverified:
-// the `verify-apple` CI leg runs `tools/run-ios-swift-smoke` on macOS, so a break shows up
-// as a red required check rather than as a surprise at release time.
-configurations.matching { it.name == "swiftExportClasspathResolvable" }.configureEach {
+// Scope 3 is why 12 advisories survived two rounds of pinning. `androidLintTool` (Android
+// Lint's own tool classpath) and `dokkaHtmlGeneratorRuntime` (Dokka's generator runtime)
+// each drag in their own jackson / bouncycastle / commons-lang3, so the submitted
+// dependency graph carried BOTH versions of every module — patched from the pinned scopes,
+// vulnerable from these — and an advisory stays open while any vulnerable version remains.
+//
+// `configurations.all`, not `configurations.matching { it.name == ... }`: naming the tool
+// configurations is a denylist over an open set that grows with every plugin added.
+// swiftExportClasspathResolvable, androidLintTool and dokkaHtmlGeneratorRuntime were each
+// discovered only AFTER they had already put a vulnerable version into the graph. Covering
+// every configuration closes the class instead of chasing its members.
+//
+// This cannot change what SHIPS: `force` only binds modules already present in a graph, and
+// none of these appear in any *RuntimeClasspath (verified). If one ever did, forcing it to
+// the patched version is exactly what should happen.
+//
+// opentelemetry-api is included here rather than in its own block: it enters through
+// org.jetbrains.kotlin:swift-export-embeddable, which this reaches. The Kotlin-tooling bump
+// (1.41 -> 1.62) is covered by the macOS `verify-apple` leg running
+// tools/run-ios-swift-smoke, which passed on PR #36.
+configurations.all {
     resolutionStrategy {
-        force(libs.opentelemetry.api)
+        force(
+            libs.bouncycastle.prov,
+            libs.bouncycastle.pkix,
+            libs.jackson.core,
+            libs.jackson.databind,
+            libs.jose4j,
+            libs.jdom2,
+            libs.commons.lang3,
+            libs.opentelemetry.api,
+        )
     }
 }
 
