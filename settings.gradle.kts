@@ -52,6 +52,7 @@ buildscript {
                 "org.bitbucket.b_c:jose4j:${pin("jose4j")}",
                 "org.jdom:jdom2:${pin("jdom2")}",
                 "org.apache.commons:commons-lang3:${pin("commons-lang3")}",
+                "org.apache.httpcomponents:httpclient:${pin("httpclient")}",
             )
         }
     }
