@@ -29,6 +29,7 @@ jackson = "2.18.9"          # PolymorphicTypeValidator + allowlist bypasses, asy
 jose4j = "0.9.6"            # DoS via compressed JWE content
 jdom2 = "2.0.6.1"           # XXE injection
 commons-lang3 = "3.18.0"    # uncontrolled recursion
+opentelemetry = "1.62.0"    # unbounded memory allocation parsing W3C baggage
 konsist = "0.17.3"
 kover = "0.9.9"
 dokka = "2.2.0"
@@ -45,6 +46,7 @@ jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", ver
 jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "jose4j" }
 jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
