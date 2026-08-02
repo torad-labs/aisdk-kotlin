@@ -27,12 +27,38 @@ buildscript {
         resolutionStrategy {
             force(
                 libs.bouncycastle.prov,
+                libs.bouncycastle.pkix,
                 libs.jackson.core,
                 libs.jackson.databind,
                 libs.jose4j,
                 libs.jdom2,
+                libs.commons.lang3,
+                // opentelemetry-api is NOT here on purpose: it does not resolve onto this
+                // classpath at all (`buildEnvironment` shows zero matches). It enters via
+                // swiftExportClasspathResolvable instead, and is pinned there — see below.
+                // A force on the wrong configuration is a no-op wearing the appearance of
+                // a fix, which is worse than no pin.
             )
         }
+    }
+}
+
+// io.opentelemetry:opentelemetry-api 1.41.0 arrives through
+// org.jetbrains.kotlin:swift-export-embeddable, in the swiftExportClasspathResolvable
+// configuration — a PROJECT configuration, so the buildscript force above cannot reach it.
+// GHSA (medium): unbounded memory allocation parsing W3C baggage; patched in 1.62.0.
+//
+// Pinned rather than filtered out of the dependency graph. The alert was never false — the
+// version really was vulnerable — and a graph trimmed to hide it would leave every future
+// alert under suspicion of being another thing somebody decided not to look at.
+//
+// The risk this carries is a Kotlin-internal tooling bump (1.41 -> 1.62) on the Swift
+// export path, which cannot be exercised from a Linux host. It does not go unverified:
+// the `verify-apple` CI leg runs `tools/run-ios-swift-smoke` on macOS, so a break shows up
+// as a red required check rather than as a surprise at release time.
+configurations.matching { it.name == "swiftExportClasspathResolvable" }.configureEach {
+    resolutionStrategy {
+        force(libs.opentelemetry.api)
     }
 }
 

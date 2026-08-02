@@ -35,3 +35,21 @@ jobs:
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - name: Submit Gradle dependency graph
         uses: gradle/actions/dependency-submission@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        # THE FULL GRAPH IS SUBMITTED ON PURPOSE — build classpath and Swift-export tooling
+        # included, not only what ships.
+        #
+        # An earlier revision of this file filtered the graph down to *RuntimeClasspath so
+        # the 15 build-only advisories would stop appearing. That was the wrong trade. The
+        # alerts were never FALSE — they reported genuinely vulnerable versions that were
+        # simply unfixed — and a filtered list leaves the reader with the question the whole
+        # mechanism exists to answer: "is this list complete?" A short list you distrust is
+        # worse than a long list you have driven to zero.
+        #
+        # So the contract here is: submit everything, PIN everything, and keep the alert
+        # count at zero. Any alert that appears is then a real unpatched dependency by
+        # construction, whether it reaches consumers or only the build — and a compromised
+        # build is a supply-chain compromise, so that lane deserves the same visibility.
+        #
+        # The pins live in build.gradle.kts (buildscript classpath) and in the
+        # swiftExportClasspathResolvable block beside it. When a new advisory lands, the
+        # answer is a pin, not a filter.
