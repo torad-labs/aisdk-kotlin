@@ -53,7 +53,23 @@ jobs:
           # resolution proves are applied. Those pins are now load-bearing rather than
           # belt-and-braces, because this exclusion is what stops the alerts reminding us.
           #
-          # Anchored `^classpath$`: an unanchored `classpath` would also swallow
-          # *CompileClasspath / *RuntimeClasspath, i.e. exactly the shipped configurations
-          # this gate exists to report.
-          dependency-graph-exclude-configurations: "^classpath$"
+          # ALLOWLIST what ships, rather than denylisting what does not. An exclude-list
+          # has to enumerate every non-shipping configuration and goes stale the moment the
+          # toolchain adds one — which it already had: `^classpath$` alone still leaked
+          # `swiftExportClasspathResolvable`, the Kotlin Swift-export tooling configuration,
+          # which is where io.opentelemetry:opentelemetry-api enters via
+          # org.jetbrains.kotlin:swift-export-embeddable. Same denylist-vs-allowlist lesson
+          # as the Fireworks download headers.
+          #
+          # Resolves to: androidRuntimeClasspath, jvmMainRuntimeClasspath,
+          # jvmRuntimeClasspath. Verified those carry the real shipped graph (61 ktor /
+          # kotlinx entries in jvmRuntimeClasspath).
+          dependency-graph-include-configurations: ".*RuntimeClasspath"
+          # ...minus the test lanes, which match the include pattern but ship nothing.
+          dependency-graph-exclude-configurations: ".*[Tt]est.*"
+          #
+          # KNOWN LIMIT, stated rather than papered over: Kotlin/Native targets (linuxX64,
+          # ios*) do not use *RuntimeClasspath configuration names, so their graphs are not
+          # submitted. In practice the same KMP coordinates appear on the JVM lane, so an
+          # advisory on a shared dependency is still reported — but a native-ONLY dependency
+          # would be invisible here. Revisit if a native-only dependency is ever added.
