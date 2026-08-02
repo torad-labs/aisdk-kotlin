@@ -14,9 +14,29 @@ version: 2
 # that limit was lifted in CodeQL 2.26.0 and the extractor now supports Kotlin 1.8.0
 # through 2.4.1x. A Kotlin bump still needs the ABI dumps regenerated
 # (./gradlew updateKotlinAbi) when it changes the public surface.
+# The root build declares GitHub Packages as a PUBLISH target (build.gradle.kts
+# `publishing` block), and Dependabot's Gradle updater probes every repository URL it can
+# parse out of the build files — publish targets included. GitHub Packages requires
+# authentication for ALL reads, even public ones, so the probe 401s and the weekly job
+# fails with private_source_authentication_failure (measured 2026-08-02, update job
+# 1500244524 — it still opened its PRs, but exits red and cannot check anything only
+# resolvable there). These credentials let the probe authenticate. PACKAGES_READ_TOKEN is
+# a CLASSIC PAT with exactly one scope, `read:packages` — fine-grained PATs cannot
+# authenticate to GitHub Packages' Maven registry at all (repository-scoped registries
+# are classic-PAT-only, github/roadmap#558) — stored as a DEPENDABOT secret: Dependabot
+# cannot read Actions secrets, and never receives the automatic GITHUB_TOKEN.
+registries:
+  github-packages:
+    type: maven-repository
+    url: https://maven.pkg.github.com/torad-labs/aisdk-kotlin
+    username: marcospaulo
+    password: ${{secrets.PACKAGES_READ_TOKEN}}
+
 updates:
   - package-ecosystem: "gradle"
     directory: "/"
+    registries:
+      - github-packages
     schedule:
       interval: "weekly"
     # Supply-chain dwell time: do not adopt a release until it has been public for a

@@ -52,6 +52,15 @@ jobs:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
+          # Branch-Protection reads five settings (UpToDateBeforeMerge, DismissStaleReviews,
+          # EnforceAdmins, RequireLastPushApproval, RequiresStatusChecks) that GitHub's API
+          # only exposes to an admin-capable token. With the default GITHUB_TOKEN the check
+          # reports them as DISABLED no matter what the repo enforces — measured 2026-08-02:
+          # strict ("up-to-date branches") was set on main and the run still warned it was
+          # disabled. SCORECARD_TOKEN is a fine-grained PAT scoped to this repo only
+          # (Administration:read + Contents:read) so the score reflects the settings, not
+          # the token's eyesight. An unset secret degrades to the old behaviour, not a failure.
+          repo_token: ${{ secrets.SCORECARD_TOKEN }}
       - name: Upload Scorecard SARIF
         uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         with:
