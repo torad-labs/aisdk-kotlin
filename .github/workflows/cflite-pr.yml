@@ -41,6 +41,14 @@ jobs:
     steps:
       - name: Build fuzzers
         id: build
+        # NO `github-token:` here, deliberately. This step builds and runs the PR's own
+        # Dockerfile and build.sh, so a token handed to it is a token reachable by
+        # repository-controlled code — the same split the dependency-submission and
+        # release workflows enforce. The cost is visible in the log: build_fuzzers logs
+        # `Could not get coverage: Github API request failed` (401) because it cannot read
+        # the artifacts API, so each run starts from an empty corpus instead of resuming a
+        # stored one. That is non-fatal and accepted; a 300s run still executes ~7.4M
+        # inputs. Do not "fix" the 401 by passing a token into this step.
         uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
         with:
           language: jvm
