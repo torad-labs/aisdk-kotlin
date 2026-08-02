@@ -27,10 +27,16 @@ buildscript {
         resolutionStrategy {
             force(
                 libs.bouncycastle.prov,
+                libs.bouncycastle.pkix,
                 libs.jackson.core,
                 libs.jackson.databind,
                 libs.jose4j,
                 libs.jdom2,
+                libs.commons.lang3,
+                // NOT opentelemetry-api: its advisory is reported against
+                // settings.gradle.kts, but it does not resolve onto this classpath at all
+                // (`buildEnvironment` shows zero matches), so a force here would be a
+                // no-op wearing the appearance of a fix. Tracked instead of faked.
             )
         }
     }

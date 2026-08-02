@@ -35,3 +35,25 @@ jobs:
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - name: Submit Gradle dependency graph
         uses: gradle/actions/dependency-submission@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          # Submit only what SHIPS. `classpath` is the Gradle buildscript/plugin classpath;
+          # its transitives (jackson, bouncycastle, jdom2, jose4j, commons-lang3,
+          # opentelemetry-api, httpclient...) come from AGP, detekt and the signing plugins
+          # and reach NO consumer — verified: `./gradlew :dependencies --configuration
+          # jvmRuntimeClasspath` matches none of them.
+          #
+          # Submitting them anyway produced 15 open Dependabot alerts, 1 critical, that look
+          # identical to a consumer-facing one. That is not a cosmetic problem: an alert
+          # stream where most entries are irrelevant is one you stop reading, and the next
+          # real advisory arrives into a list nobody trusts. Scoping the graph makes the
+          # signal mean something — an alert here now implies a consumer is affected.
+          #
+          # The build classpath is NOT thereby unguarded; it moves from an alert stream to a
+          # deliberate control: the force() pins in build.gradle.kts, which the buildscript
+          # resolution proves are applied. Those pins are now load-bearing rather than
+          # belt-and-braces, because this exclusion is what stops the alerts reminding us.
+          #
+          # Anchored `^classpath$`: an unanchored `classpath` would also swallow
+          # *CompileClasspath / *RuntimeClasspath, i.e. exactly the shipped configurations
+          # this gate exists to report.
+          dependency-graph-exclude-configurations: "^classpath$"
