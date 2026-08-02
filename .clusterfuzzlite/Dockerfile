@@ -11,7 +11,13 @@
 #  * The Android SDK. The Android KMP plugin is applied at the ROOT of this build, and
 #    Gradle configures every plugin before it runs any task — so even `:jvmJar`, which
 #    produces no Android output at all, cannot CONFIGURE without an SDK present.
-FROM gcr.io/oss-fuzz-base/base-builder-jvm
+# Pinned by digest, like every Action in this repo. This is the exact image the fuzz
+# target was built and run against locally (7.4M inputs, no crashes) — a floating tag
+# would mean the thing that was validated and the thing CI builds are only related by
+# hope. Bumped by Dependabot's `docker` ecosystem, added to .github/dependabot.yml in the
+# same change: a pin with nothing to move it forward is a base image that silently stops
+# receiving security updates, which is worse than the tag it replaced.
+FROM gcr.io/oss-fuzz-base/base-builder-jvm@sha256:cc3c3da52c2f48d7a6caf1d5736ab8ec8cb213f4345329b33cb6e497780b1ed0
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends openjdk-21-jdk && \
