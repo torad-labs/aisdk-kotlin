@@ -1,0 +1,13 @@
+// Stages the JVM target's runtime classpath where build.sh can put it on javac's -cp.
+//
+// An init script rather than a task in build.gradle.kts: the published build file should
+// not carry a task that exists only for the fuzzing image, and this way the fuzz harness
+// cannot drift the library's own build. `jvmRuntimeClasspath` is the configuration the
+// Kotlin Multiplatform plugin creates for the jvm target, so this resolves exactly what a
+// consumer of the published jvm artifact would get.
+gradle.rootProject {
+    tasks.register('fuzzRuntimeLibs', Copy) {
+        from configurations.named('jvmRuntimeClasspath')
+        into layout.buildDirectory.dir('fuzz-libs')
+    }
+}

@@ -1,0 +1,67 @@
+# ClusterFuzzLite — fuzz the code a pull request changes.
+#
+# Pairs with .clusterfuzzlite/, which builds the Jazzer harness for the partial-JSON
+# repair state machine. Without this workflow the .clusterfuzzlite/ directory would be a
+# fuzzing setup nothing ever runs, which is the same failure this repo's gate fixtures
+# exist to prevent: an unexercised check is indistinguishable from a broken one.
+#
+# `mode: code-change` fuzzes only what the PR touched, so the cost is bounded by the diff
+# rather than by the size of the library.
+#
+# Trigger is `pull_request`, NOT `pull_request_target`: this builds and executes the PR's
+# own code, so it must run with the fork's read-only token and no repo secrets. That is
+# the same rule that got docs.yml deleted.
+#
+# On pinning: the action SHAs below are the v1 tag's commit, but both are thin Docker
+# actions whose logic lives in `gcr.io/oss-fuzz-base/clusterfuzzlite-*:v1` — a floating
+# image tag Google maintains. Pinning the SHA therefore does NOT pin the behaviour here,
+# unlike every other Action in this repo. Recorded rather than hidden; upstream publishes
+# no digest-pinned release.
+name: cflite-pr
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cflite-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    # The image build is the long pole: JDK 21 plus the Android SDK the root build needs
+    # to configure, then a Gradle build, before a single input is fuzzed.
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Build fuzzers
+        id: build
+        # NO `github-token:` here, deliberately. This step builds and runs the PR's own
+        # Dockerfile and build.sh, so a token handed to it is a token reachable by
+        # repository-controlled code — the same split the dependency-submission and
+        # release workflows enforce. The cost is visible in the log: build_fuzzers logs
+        # `Could not get coverage: Github API request failed` (401) because it cannot read
+        # the artifacts API, so each run starts from an empty corpus instead of resuming a
+        # stored one. That is non-fatal and accepted; a 300s run still executes ~7.4M
+        # inputs. Do not "fix" the 401 by passing a token into this step.
+        uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: jvm
+          sanitizer: address
+          # Leave the broken-target check on: a harness that fails to link is the exact
+          # regression this workflow exists to catch, and "0 targets built" must not
+          # read as "nothing to fuzz, all good".
+          bad-build-check: true
+      - name: Run fuzzers
+        id: run
+        uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fuzz-seconds: 300
+          mode: code-change
+          sanitizer: address
