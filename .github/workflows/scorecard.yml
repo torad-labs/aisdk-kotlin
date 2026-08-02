@@ -23,6 +23,12 @@ on:
   # place it would emit a permanent false high-severity finding, which is the specific
   # failure this repo refuses to accept — an alert list you cannot trust is worse than
   # no list. On the weekly cron, CI has long since settled on the tip commit.
+  #
+  # The same race applies to a MANUAL dispatch: gating one on the `verify` job alone is
+  # not enough. Measured 2026-08-02 — dispatch at :54:55 with verify green (:54:53) still
+  # beat verify-windows-jvm (:55:27) and emitted alert #4 ("binary detected") on a clean
+  # tree; a re-run minutes later cleared it. Before any workflow_dispatch, wait for the
+  # FULL ci.yml run to complete on the tip, not just the job you care about.
   workflow_dispatch:
 
 permissions:
