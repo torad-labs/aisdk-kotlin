@@ -1,0 +1,87 @@
+# OpenSSF Security Insights (security-insights.yml), schema v2.2.0.
+# Machine-readable security posture for ai.torad:torad-aisdk — the machine half of
+# the contract whose human half is SECURITY.md ("Reading our security signals").
+# Consumed by CLOMonitor / LFX Insights / the OSPS Baseline scanner; every claim
+# below was verified against the repo on 2026-08-02 (see docs/openssf-badge-dossier.md).
+header:
+  schema-version: 2.2.0
+  last-updated: '2026-08-02'
+  last-reviewed: '2026-08-02'
+  url: https://raw.githubusercontent.com/torad-labs/aisdk-kotlin/main/security-insights.yml
+  comment: |
+    Single-repository security-insights.yml for the AI SDK for Kotlin
+    (ai.torad:torad-aisdk), a Kotlin Multiplatform client SDK published to
+    Maven Central.
+
+project:
+  name: AI SDK Kotlin (torad-aisdk)
+  homepage: https://torad-labs.github.io/aisdk-kotlin/
+  administrators:
+    - name: Marcos Paulo
+      affiliation: Torad Labs
+      primary: true
+      social: https://github.com/marcospaulo
+  repositories:
+    - name: aisdk-kotlin
+      url: https://github.com/torad-labs/aisdk-kotlin
+      comment: |
+        The only repository: library source, samples, smoke tests, and CI.
+  vulnerability-reporting:
+    reports-accepted: true
+    bug-bounty-available: false
+    policy: https://github.com/torad-labs/aisdk-kotlin/blob/main/SECURITY.md
+    in-scope:
+      - credential exposure across origins (headers forwarded to provider-supplied URLs, tokens reaching logs or telemetry)
+      - request-signing, retry, redaction, or transport defects
+      - deserialization, schema-validation, or tool-execution issues reachable from model output
+      - supply-chain problems in the published artifacts or their dependencies
+    out-of-scope:
+      - vulnerabilities in a provider's own remote service (report to the provider)
+      - advisories affecting only this repository's build tooling, which never reach consumers of the published library
+    comment: |
+      Private reporting via GitHub private vulnerability reporting (link in
+      SECURITY.md), email fallback listed there. Ack within 3 business days,
+      initial assessment within 10, fix or documented mitigation within 90.
+  documentation:
+    quickstart-guide: https://github.com/torad-labs/aisdk-kotlin#readme
+    detailed-guide: https://torad-labs.github.io/aisdk-kotlin/
+    release-process: https://github.com/torad-labs/aisdk-kotlin/blob/main/docs/beta-readiness.md
+    support-policy: https://github.com/torad-labs/aisdk-kotlin/blob/main/SECURITY.md#supported-versions
+    signature-verification: https://github.com/torad-labs/aisdk-kotlin/blob/main/SECURITY.md#verifying-a-release
+
+repository:
+  url: https://github.com/torad-labs/aisdk-kotlin
+  status: active
+  accepts-change-request: true
+  accepts-automated-change-request: true
+  core-team:
+    - name: Marcos Paulo
+      affiliation: Torad Labs
+      primary: true
+      social: https://github.com/marcospaulo
+  license:
+    expression: Apache-2.0
+    url: https://github.com/torad-labs/aisdk-kotlin/blob/main/LICENSE
+  documentation:
+    contributing-guide: https://github.com/torad-labs/aisdk-kotlin/blob/main/CONTRIBUTING.md
+    security-policy: https://github.com/torad-labs/aisdk-kotlin/blob/main/SECURITY.md
+  security:
+    champions:
+      - name: Marcos Paulo
+        affiliation: Torad Labs
+        primary: true
+        social: https://github.com/marcospaulo
+    assessments:
+      self:
+        date: '2026-08-02'
+        evidence: https://github.com/torad-labs/aisdk-kotlin/blob/main/docs/openssf-badge-dossier.md
+        name: OpenSSF Best Practices "passing" self-assessment
+        comment: |
+          All 67 passing-level criteria pre-assessed against repo evidence
+          (docs/openssf-badge-dossier.md); badge registration pending. Continuous
+          verification rather than a point-in-time document: CodeQL weekly + on
+          every PR, OpenSSF Scorecard weekly behind a score-floor regression gate
+          (dev/scorecard-floors.toml), ClusterFuzzLite fuzzing on PRs, detekt /
+          ktlint / Konsist / explicitApi gating every change, GitHub secret
+          scanning with push protection, Dependabot with 7-day supply-chain
+          cooldowns, and GitHub Actions pinned by SHA.

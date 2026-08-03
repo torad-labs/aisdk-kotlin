@@ -1,0 +1,38 @@
+# Scorecard score floors — the machine-readable contract behind the dismissed
+# code-scanning alerts. Read by the "Score-floor regression gate" step in
+# .github/workflows/scorecard.yml: a watched check scoring BELOW its floor fails
+# the weekly workflow, and the scheduled-failure step turns that into a GitHub
+# issue. The signal fires on change, not on state.
+#
+# Why floors exist (2026-08-02): three OpenSSF Scorecard checks are structurally
+# capped for a solo-maintainer repo — GitHub forbids approving your own PRs, and
+# the top tiers of Branch-Protection and Code-Review require a second human;
+# SAST's rolling commit window counts GITHUB_TOKEN bot-merges, which GitHub
+# blocks from triggering CI. Their permanently-red alerts were dismissed with
+# per-alert justification comments; a dismissed alert NEVER re-fires, so THIS
+# FILE is the regression signal. Everything not listed here still alerts
+# normally in Security → Code scanning.
+#
+# Raise a floor only in the same PR that raises the score. Lower one only with
+# the reason written in the PR body — that PR is the regression review.
+
+[[check]]
+id = "BranchProtectionID"
+floor = 5
+recorded = "2026-08-02"
+cap = "Solo-maintainer ceiling: the top tiers require 2 approving reviewers, last-push approval, and enforce-admins — each needs a second human. strict, code-owner review, dismiss-stale, conversation resolution, and linear history are all ON."
+signal = "weekly score-floor gate → workflow failure → auto-filed issue"
+
+[[check]]
+id = "CodeReviewID"
+floor = 3
+recorded = "2026-08-02"
+cap = "Solo-maintainer ceiling: approved changesets require a second human reviewer and GitHub forbids self-approval. The maintainer's own merge discipline is the control; the required-approval rule still walls off everyone else from merging."
+signal = "weekly score-floor gate → workflow failure → auto-filed issue"
+
+[[check]]
+id = "SASTID"
+floor = 9
+recorded = "2026-08-02"
+cap = "Human-authored PRs are 100% CodeQL-covered; the unchecked commits in the rolling window are GITHUB_TOKEN bot-merges, which trigger no workflows. Root fix tracked upstream in the github-operator automerge template (App token)."
+signal = "weekly score-floor gate → workflow failure → auto-filed issue"
