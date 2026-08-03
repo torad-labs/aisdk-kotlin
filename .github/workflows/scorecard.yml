@@ -72,39 +72,48 @@ jobs:
         with:
           sarif_file: results.sarif
       - name: Score-floor regression gate
-        # Three checks were DISMISSED from code scanning 2026-08-02 because their perfect
-        # score is structurally unreachable for a solo-maintainer repo (GitHub forbids
-        # approving your own PRs; the top tiers of Branch-Protection/Code-Review require
-        # a second human; SAST's commit window counts GITHUB_TOKEN bot-merges, which
-        # trigger no CI). A dismissed alert NEVER re-fires, so the regression signal
-        # lives here instead: a score DROPPING below its recorded floor fails this
-        # workflow, and the scheduled-failure step below opens an issue. The signal
-        # fires on change, not on state — the alert list stays actionable. Raise a
-        # floor only in the same PR that raises the score. Floors recorded 2026-08-02.
-        # A rule absent from the SARIF scored 10 (clean results are not emitted).
-        env:
-          FLOORS: '{"BranchProtectionID":5,"CodeReviewID":3,"SASTID":9}'
+        # Floors live in dev/scorecard-floors.toml — the checked-in contract for the
+        # code-scanning alerts dismissed 2026-08-02 (structurally capped for a
+        # solo-maintainer repo: perfect scores need a second human; SAST's window
+        # counts GITHUB_TOKEN bot-merges that trigger no CI). A dismissed alert
+        # NEVER re-fires, so this step owns the regression signal: a score DROPPING
+        # below its floor fails this workflow, and the scheduled-failure step below
+        # opens an issue. Fires on change, not on state. Raise a floor only in the
+        # same PR that raises the score. A rule absent from the SARIF scored 10
+        # (clean results are not emitted).
         run: |
           set -euo pipefail
-          failed=0
-          for rule in $(echo "$FLOORS" | jq -r 'keys[]'); do
-            floor=$(echo "$FLOORS" | jq -r --arg r "$rule" '.[$r]')
-            msg=$(jq -r --arg r "$rule" \
-              '[.runs[].results[] | select(.ruleId == $r) | .message.text] | first // ""' \
-              results.sarif)
-            score=$(echo "$msg" | grep -oE 'score is [0-9]+' | grep -oE '[0-9]+' || true)
-            if [ -z "$score" ]; then
-              echo "$rule: no SARIF result (score 10 or unemitted) — above floor $floor"
-              continue
-            fi
-            if [ "$score" -lt "$floor" ]; then
-              echo "::error::$rule regressed: score $score < floor $floor"
-              failed=1
-            else
-              echo "$rule: score $score >= floor $floor"
-            fi
-          done
-          exit "$failed"
+          python3 - <<'PYEOF'
+          import json, sys, tomllib
+
+          with open("dev/scorecard-floors.toml", "rb") as fh:
+              floors = {c["id"]: c["floor"] for c in tomllib.load(fh)["check"]}
+          with open("results.sarif") as fh:
+              sarif = json.load(fh)
+
+          texts = {}
+          for run in sarif.get("runs", []):
+              for res in run.get("results", []):
+                  texts.setdefault(res.get("ruleId", ""), res.get("message", {}).get("text", ""))
+
+          failed = False
+          for rule, floor in floors.items():
+              text = texts.get(rule, "")
+              score = None
+              if "score is " in text:
+                  try:
+                      score = int(text.split("score is ", 1)[1].split(":", 1)[0].strip())
+                  except ValueError:
+                      score = None
+              if score is None:
+                  print(f"{rule}: no SARIF result (score 10 or unemitted) — above floor {floor}")
+              elif score < floor:
+                  print(f"::error::{rule} regressed: score {score} < floor {floor}")
+                  failed = True
+              else:
+                  print(f"{rule}: score {score} >= floor {floor}")
+          sys.exit(1 if failed else 0)
+          PYEOF
       - name: Open issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
         env:
