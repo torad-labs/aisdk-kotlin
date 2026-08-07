@@ -1,0 +1,618 @@
+# ═════════════════════════════════════════════════════════════════════════════════════════════
+# SDK-REVIEW CAMPAIGN — fixes for the 2026-08-06 full-SDK adversarial review
+#
+# Source: workflow wf_e4224ec6-891 (15 section reviewers + adversarial verifiers, 73 agents).
+# Every item here survived a verifier whose stance was "refute this"; several were confirmed
+# with executed repro tests. Raw per-agent evidence: the workflow journal
+# (session 416b7bfc, subagents/workflows/wf_e4224ec6-891/journal.jsonl).
+# 36 lower-ranked raw findings were NEVER verified and are NOT items here — a follow-up
+# verification pass may add them.
+#
+# CLI: bun dev/campaigns/ledger.ts dev/campaigns/sdk-review.toml <command>   (raw edits hook-blocked)
+#
+# LAW: every fix lands with a regression test that FAILS on unmodified HEAD (red proof noted in
+#      the item) and passes after — a fix without a red test is unvalidated.
+# LAW: every commit passes bash .claude/hooks/rules/ci-gate.sh — never --no-verify, never a
+#      skip env; a misfiring gate gets fixed, not bypassed.
+# LAW: public API changes regenerate ABI dumps (./gradlew updateKotlinAbi) and update
+#      CHANGELOG.md + INTERFACE_CONTRACT.md in the same commit.
+# LAW: done = builder claims landed; verified = orchestrator independently re-ran the gates and
+#      read the diff. Only the orchestrator sets verified.
+# LAW: wire-format claims (codecs, provider request/response mapping) are verified against the
+#      REAL wire — a captured payload or the provider's documented schema cited in the note —
+#      never against the code's own mirror types.
+# ═════════════════════════════════════════════════════════════════════════════════════════════
+
+[[items]]
+id = "H01"
+phase = "core-generation"
+title = "[high] In-band AbortError permanently hangs all StreamTextResult collectors (Generate.kt:256)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/Generate.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: MemoizedStreamReplay.collectUpstream rethrows any CancellationException from the upstream flow without recording a terminal state (`CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }`). That guard is correct for the teardown path (unregisterCollector cancels the producer scope only when activeCollectors == 0), but AbortError extends CancellationException (AbortSignal.kt:182) and providers throw it IN-BAND while collectors are still attached: LiteRTLanguageModel.stream calls `params.abortSignal.throwIfAborted()` per chunk (LiteRTLanguageModel.kt:1104), and HttpTransport/OpenAICompatibleFacadeSupport cancel the request with a bridged AbortError. When that happens the pr…
+# 2026-08-07 REPRO: Host calls TextGenerator(model, CallConfig { abortSignal(controller.signal) }).streamResult(input) against the LiteRT on-device model, launches `result.textStream.collect { render(it) }`, and the user presses stop -> controller.abort(). On the next chunk the provider's throwIfAborted() throws AbortError; the replay producer rethrows it as a CancellationException and dies without setting a terminal; the UI's collect coroutine (and any later `warnings.first()` call) suspends forever — the stop bu…
+# 2026-08-07 VERDICT (confirmed): CONFIRMED — statically traced and empirically reproduced. Static chain (every link verified in source): 1. AbortError IS a CancellationException: `public class AbortError(...) : kotlin.coroutines.cancellation.CancellationException(message)` (src/commonMain/kotlin/ai/torad/aisdk/AbortSignal.kt:182-184). 2. Providers throw it IN-BAND while the stream is live: LiteRTLanguageModel.stream calls `param…
+
+[[items]]
+id = "H02"
+phase = "agent-toolloop"
+title = "[high] Resuming one of several pending approvals corrupts the turn and strands the rest (AgentSession.kt:437)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/AgentSession.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: Both resume surfaces respond to exactly one approval and immediately relaunch the loop: AgentSession.resumeApproval (AgentSession.kt:437-464) appends a single ToolApprovalResponseMessage, and the engine's resumeWithApproval (ToolLoopAgent.kt:347-396) filters pendingApprovals to the one matching id. ToolApprovalCoordinator.applyToolApprovalResponses only reads approvals from the LAST Tool-role message (ToolApprovalCoordinator.kt:52-54), and the loop never re-emits or re-pauses on the still-unanswered approval requests. The unanswered gated call is exempted from the SDK's dangling-tool-call validator because its ToolApprovalRequest part is present (ConvertToLanguageModelPrompt.kt:310-317), ye…
+# 2026-08-07 REPRO: A step gates two tools (e.g. two file-writes whose needsApproval returns true). GenerateResult.pendingApprovals = [a1, a2]. Host calls session.approve(a1). The resume executes a1, then the next model call sends an assistant message containing tool_use for a2 with no corresponding tool_result and no response — Anthropic returns 400 ("tool_use ids without tool_result"), the session settles status=Error, and pendingApprovals is empty so a2 can never be approved or denied. The conversation history…
+# 2026-08-07 VERDICT (confirmed): Every link in the claimed failure chain checks out in code, and no test or intentional-design evidence refutes it. 1. Reachable setup: one step can gate two distinct tool calls — both land in toolsRequiringApproval (ToolLoopAgent.kt:1222-1246), each gets a ContentPart.ToolApprovalRequest appended to the same assistant message (1266-1300), the loop breaks (1438), and pendingApprovals = [a1, a2] is…
+
+[[items]]
+id = "H03"
+phase = "tools"
+title = "[high] Approving with the documented effective approvalId throws InvalidApprovalResponse (ToolApprovalCoordinator.kt:228)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/ToolApprovalCoordinator.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: In the common single-approval case, ToolLoopAgent.kt:1267-1272 issues the ContentPart.ToolApprovalRequest with approvalId = null, and PendingApproval/ApprovalIds document that 'the host treats approvalId = toolCallId' (ToolApproval.kt:33-38, ApprovalIds.effectiveApprovalId). But indexOfApprovalResponse only matches a non-null response approvalId against request?.approvalId (which is null), and for approved == true it returns -1 without the toolCallId fallback that the denial branch has (line 231). applyToolApprovalResponses then throws AgentError.InvalidApprovalResponse at line 75 — with a validIds list that contains exactly the id it just rejected (line 77 computes request?.approvalId ?: t…
+# 2026-08-07 REPRO: Host gets GenerateResult.pendingApprovals = [PendingApproval(toolCallId="call_1", approvalId=null)], follows the SDK's own guidance and sends ToolApprovalResponseMessage("call_1", approved = true, approvalId = ApprovalIds.effectiveApprovalId(pending) /* = "call_1" */). On resume, indexOfFirst { it.request?.approvalId == "call_1" } finds nothing (request.approvalId is null), approved==true skips the toolCallId fallback, occurrenceIndex == -1, and generate() aborts with AgentError.InvalidApproval…
+# 2026-08-07 VERDICT (confirmed): Confirmed empirically with a live reproduction test run against HEAD (temporary test since deleted; suite result: 3/3 passed, `tests="3" failures="0"`). Mechanics, verified in code: In the common single-approval case, ToolLoopAgent.kt:1267-1272 issues the ContentPart.ToolApprovalRequest with approvalId = null; PendingApproval therefore also carries approvalId = null (ToolLoopAgent.kt:1463-1469).…
+
+[[items]]
+id = "H04"
+phase = "transport-gateway"
+title = "[high] Internal 120s request timeout leaks TimeoutCancellationException — surfaces as cooperative cancellation, silently swallowed and never retried (HttpTransport.kt:187)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/HttpTransport.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: withRealTimeout uses withTimeout, so when the SDK-internal DEFAULT_REQUEST_TIMEOUT_MS (120s) ceiling fires inside requestJson (line 220), a raw kotlinx.coroutines.TimeoutCancellationException — a CancellationException subclass — escapes the SDK's public API (generate/embed/getCredits/etc. via KtorGatewayTransport and every provider using requestJson). Three consequences: (1) RetryPolicy.executeLoop (RetryPolicy.kt:165-168) explicitly rethrows CancellationException before classification, so a stalled-server timeout is never retried even though Ktor's own HttpRequestTimeoutException IS classified retryable — inconsistent handling of the same failure mode; (2) an uncaught CancellationException…
+# 2026-08-07 REPRO: A gateway/provider host accepts the connection but stalls (sends nothing). After 120s, withTimeout throws TimeoutCancellationException; it passes RetryPolicy's CancellationException rethrow untouched (no retry), propagates out of generateText, and in the consumer's `scope.launch { textGenerator.generate(...) }` the job completes as 'cancelled' — no exception handler fires, no log, no error event. The app's request just vanishes.
+# 2026-08-07 VERDICT (confirmed): Confirmed with full evidence chain. HttpTransport.kt:183-187 uses raw withTimeout, so the internal 120s ceiling (line 106, applied at requestJson line 220) throws TimeoutCancellationException — a CancellationException subclass — and nothing on the path maps it: the SDK never installs Ktor's HttpTimeout plugin, so this is the default stall path. RetryPolicy.kt:166-167 rethrows CancellationExceptio…
+
+[[items]]
+id = "H05"
+phase = "mcp"
+title = "[high] SSE reads use client.request, which Ktor 3.5 SaveBody fully pre-buffers — live SSE never streams (MCP.kt:1923)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/MCP.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: All MCP streaming reads go through plain `client.request(...)` + `response.bodyAsChannel()`: SseMCPTransport.openSseConnection (line 1923), HttpMCPTransport.readInboundSse (line 1664), and postMessage's text/event-stream branch (line 1547 -> launchPostResponseSse). In ktor 3.5.1, the always-installed SaveBody plugin intercepts HttpReceivePipeline.Before and calls SavedCallKt.save -> readRemaining() on the raw channel BEFORE client.request returns, unless SKIP_SAVE_BODY is set — which only prepareRequest{}.execute{} sets. Verified in ktor-client-core-jvm 3.5.1 bytecode, and the repo's own HttpTransport.kt (lines 255-262) documents exactly this and uses prepareRequest for provider SSE (stream…
+# 2026-08-07 REPRO: Against any real server: (a) SseMCPTransport — the SSE GET stream is held open indefinitely by the server, client.request never returns, the 'endpoint' event is never parsed, and start() always fails with the 30s handshake timeout: the SSE transport is nonfunctional outside tests. (b) HttpMCPTransport — the standing inbound GET stream buffers in memory without bound and server->client messages (notifications, elicitation/ping requests, responses to 202-accepted requests) are only delivered when…
+# 2026-08-07 VERDICT (confirmed): Confirmed by direct bytecode inspection of the pinned dependency (gradle/libs.versions.toml:10, ktor 3.5.1; ktor-client-core-jvm-3.5.1.jar). DoubleReceivePluginKt's SaveBody plugin intercepts HttpReceivePipeline.Before and, unless SKIP_SAVE_BODY is set, calls SavedCallKt.save -> getRawContent() -> readRemaining() -> readByteArray(), eagerly consuming the entire raw channel before client.request r…
+
+[[items]]
+id = "H06"
+phase = "utils-media-embedding"
+title = "[high] SigV4 canonical path single-encodes; AWS expects double-encoding for non-S3 — every Bedrock colon model id signs wrong (AwsSigV4.kt:128)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/AwsSigV4.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: uriEncodePreservingEscapes (used by canonicalAwsPath, line 105-106) preserves existing %XX escapes in the path, producing a SINGLE-encoded canonical URI. The SigV4 spec requires each path segment to be URI-encoded twice for every service except S3, and both reference clients confirm it: real botocore, given this repo's own test URL /model/anthropic.claude-3-5-sonnet-20240620-v1%3A0/converse, emits canonical path /model/...%253A0/converse (verified by running botocore locally), and aws4fetch (the signer used by upstream Vercel's Bedrock provider) runs encodeURIComponent(encodedPath) for non-S3 (aws4fetch.cjs lines 138-140). Ktor sends %3A on the wire unchanged (verified against ktor-http-jvm…
+# 2026-08-07 REPRO: AmazonBedrock provider configured with accessKeyId/secretAccessKey (no apiKey) calls converse on modelId "anthropic.claude-3-5-sonnet-20240620-v1:0". URL path carries %3A; the wire request sends %3A; the Authorization signature is computed over canonical path containing %3A while AWS computes it over %253A → HTTP 403 SignatureDoesNotMatch on every request.
+# 2026-08-07 VERDICT (confirmed): Confirmed at high severity. (1) AwsSigV4.kt:128-133 preserves existing %XX escapes, so canonicalAwsPath (AwsSigV4.kt:105-106) emits a single-encoded canonical URI (%3A). (2) The SigV4 spec requires double URI-encoding of path segments for non-S3 services; I verified empirically by running real botocore 1.43.66 locally on the repo test's exact inputs (same URL, body, credentials, frozen amzDate 20…
+
+[[items]]
+id = "H07"
+phase = "middleware-protocol"
+title = "[high] tool-result decode reads \"output\" but the V3 wire field is \"result\" — decode throws and kills the stream (GatewayToolStreamCodec.kt:52)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/protocol/GatewayToolStreamCodec.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: LanguageModelV3ToolResult (vercel/ai packages/provider/src/language-model/v3/language-model-v3-tool-result.ts) defines the provider-executed tool-result stream part as {type:'tool-result', toolCallId, toolName, result, isError?, preliminary?, dynamic?}. The field is `result`, not `output`. GatewayToolStreamCodec.toolResult() calls WireDecoder.required(obj, "output", ...) which throws on a missing key, and HttpTransport.forwardSseEvents (HttpTransport.kt:492) invokes the decoder inside collect{} with no per-event catch, so the exception aborts the whole stream flow. The same mismatch exists in GatewayContentDecoder.decodeToolResult (GatewayContentDecoder.kt:59), which makes the non-streaming…
+# 2026-08-07 REPRO: Stream any gateway model that runs a provider-executed tool (e.g. openai web_search through ai-gateway.vercel.sh). The gateway emits {"type":"tool-result","toolCallId":"...","toolName":"web_search","result":{...}}; WireDecoder.required fails with "missing required field $.output" and the consumer's collect terminates exceptionally mid-conversation.
+# 2026-08-07 VERDICT (confirmed): Confirmed against both the upstream spec and the full code path. (1) Wire premise verified: vercel/ai packages/provider/src/language-model/v3/language-model-v3-tool-result.ts defines the provider-executed tool-result part with field `result` at both main and the stable ai@6.0.0 tag (never `output` in V3; V4 kept `result` too), and packages/gateway/src/gateway-language-model.ts passes SSE chunks t…
+
+[[items]]
+id = "H08"
+phase = "middleware-protocol"
+title = "[high] tool-approval-request decode requires toolName and input, which do not exist on the V3 wire part (GatewayToolStreamCodec.kt:77)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/protocol/GatewayToolStreamCodec.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: LanguageModelV3ToolApprovalRequest is {type:'tool-approval-request', approvalId, toolCallId, providerMetadata?} — no toolName, no input, and approvalId is REQUIRED. approvalRequest() calls WireDecoder.requiredString(obj, "toolName", ...) (line 77) and WireDecoder.required(obj, "input", ...) (line 78), both of which throw on a spec-conformant part, while treating approvalId as optional (line 79) — the exact inverse of the wire contract. The stream dies with a decode exception precisely at the moment a provider-executed tool asks for user approval, so the approval flow can never complete over the gateway. GatewayContentDecoder.decodeApprovalRequest (GatewayContentDecoder.kt:76-77) has the sam…
+# 2026-08-07 REPRO: A gateway MCP/provider-executed tool requires approval; the SSE data is {"type":"tool-approval-request","approvalId":"apr_1","toolCallId":"call_1"}. requiredString("toolName") throws "missing required field $.toolName" and the flow collecting the stream aborts; the user never sees the approval prompt.
+# 2026-08-07 VERDICT (confirmed): Confirmed against the vendored upstream contract. The wire type is exactly what the reviewer says: .reference/vercel-ai-sdk-ai-6.0.208/packages/provider/src/language-model/v3/language-model-v3-tool-approval-request.ts defines {type:'tool-approval-request', approvalId (REQUIRED), toolCallId, providerMetadata?} — no toolName, no input; language-model-v3-stream-part.ts:70 and language-model-v3-conte…
+
+[[items]]
+id = "H09"
+phase = "middleware-protocol"
+title = "[high] Usage decode reads flat legacy token keys; the V3 wire sends nested inputTokens/outputTokens breakdown objects — all counts decode to 0 (GatewayUsageCodec.kt:11)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/protocol/GatewayUsageCodec.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: LanguageModelV3Usage (language-model-v3-usage.ts) is {inputTokens: {total, noCache, cacheRead, cacheWrite}, outputTokens: {total, text, reasoning}, raw?} — exactly the breakdown this SDK's own Usage type mirrors. GatewayUsageCodec.decode reads "inputTokens"/"outputTokens" as flat JsonPrimitive ints via ProtocolJson.intOrNull; on the real wire those keys hold OBJECTS, so `as? JsonPrimitive` yields null for every key and every count silently decodes to 0. This poisons both the stream finish usage (GatewayTerminalStreamCodec lines 15/21) and the generate path (KtorGatewayTransport.usageFromJson line 591-592 delegates here). Token accounting, cost tracking, and cache-hit telemetry for the flags…
+# 2026-08-07 REPRO: generateText via GatewayProvider against ai-gateway.vercel.sh; response usage is {"inputTokens":{"total":1200,"noCache":200,"cacheRead":1000,"cacheWrite":0},"outputTokens":{"total":300,"text":250,"reasoning":50}}. result.usage comes back Usage(inputTokens.total=0, outputTokens.total=0); any consumer metering spend or enforcing token budgets records zero usage with no error.
+# 2026-08-07 VERDICT (confirmed): CONFIRMED. (1) Decode mechanics: GatewayUsageCodec.kt:11-27 reads every count via ProtocolJson.intOrNull (ProtocolJson.kt:21-22), which does `(obj[key] as? JsonPrimitive)?.intOrNull` — a nested JsonObject under "inputTokens"/"outputTokens" casts to null, and the other keys tried (promptTokens, prompt_tokens, cachedInputTokens, cacheCreationInputTokens, reasoningTokens, ...) do not exist on the V3…
+
+[[items]]
+id = "H10"
+phase = "middleware-protocol"
+title = "[high] tool-call `input` is a stringified-JSON string on the V3 wire but is stored as a raw JsonElement — inputJson becomes a string primitive and tool dispatch breaks (GatewayToolStreamCodec.kt:47)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/protocol/GatewayToolStreamCodec.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: LanguageModelV3ToolCall documents `input` as "Stringified JSON object with the tool call arguments" (a JSON string, not an object). toolCall() stores WireDecoder.required(obj, "input") directly into StreamEvent.ToolCall.inputJson, so on the real wire inputJson is JsonPrimitive("{\"city\":\"Paris\"}") instead of the parsed JsonObject. Every other provider in this repo normalizes this (ParseOpenAIToolInput in ModelMessage.kt:96 parses the arguments string), so downstream consumers — ToolLoopAgent argument decoding, UiToolMessageChunkCodec's put("input", event.inputJson) — assume an object and fail or serialize a double-encoded string. GatewayContentDecoder.decodeToolCall (GatewayContentDecode…
+# 2026-08-07 REPRO: streamText through the gateway with a client-executed tool; the wire part is {"type":"tool-call","toolCallId":"c1","toolName":"getWeather","input":"{\"city\":\"Paris\"}"}. inputJson is a string primitive; schema-based argument decoding in the tool loop fails (expected object, got string), so the tool call errors on every invocation despite valid model output.
+# 2026-08-07 VERDICT (confirmed): Confirmed with the failure scenario occurring exactly as described. (1) Wire premise verified against upstream source fetched live: vercel/ai's LanguageModelV3ToolCall declares `input: string` ("Stringified JSON object with the tool call arguments"), and packages/gateway/gateway-language-model.ts pipes gateway SSE stream parts through verbatim with no input transformation — the AI SDK TS core the…
+
+[[items]]
+id = "H11"
+phase = "ui"
+title = "[high] getResponseUiMessageId reuses any prior assistant id, so turn 2 overwrites turn 1's reply (Streams.kt:214)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/ui/Streams.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: UiMessageStreams.getResponseUiMessageId returns `messages.lastOrNull { it.role == UIMessageRole.Assistant }?.id`, i.e. it reuses the id of ANY earlier assistant message in history. The v6 upstream (`getResponseUIMessageId`) reuses an id only when the LAST message is an assistant message (a continuation); otherwise it generates a fresh id. TextStreamChatTransport (Chat.kt:102-104) uses this helper to pick the assistant message id for every new turn, and Chat's InternalState.withUpsert (Chat.kt:356-364) replaces messages by id in place. The existing parity test (FullPortFeatureParityTest.kt:370) only covers the case where the last message IS the assistant, so it cannot distinguish the two sem…
+# 2026-08-07 REPRO: Chat(id="c", transport=TextStreamChatTransport{...}). Turn 1: send user u1 -> no assistant in history -> id "msg_2", history becomes [u1, msg_2(asst reply A)]. Turn 2: send user u3 -> request.messages=[u1, msg_2, u3]; last message is u3 (User) but lastOrNull{Assistant} finds msg_2, so the new streamed reply is emitted with id "msg_2"; withUpsert finds index 1 and REPLACES reply A in place. Final history is [u1, msg_2(reply B), u3]: turn 1's assistant reply is destroyed and turn 2's reply sits B…
+# 2026-08-07 VERDICT (confirmed): Confirmed at high severity. Streams.kt:214 returns messages.lastOrNull { it.role == UIMessageRole.Assistant }?.id, reusing the id of any prior assistant message regardless of position; upstream v6 getResponseUIMessageId reuses only when the LAST message is an assistant (continuation), otherwise generates fresh. TextStreamChatTransport (Chat.kt:102-104) uses this helper per turn, TransformTextToUi…
+
+[[items]]
+id = "H12"
+phase = "ui"
+title = "[high] convertToModelMessages crashes on messages produced by Chat.addToolOutput (ConvertToModelMessages.kt:261)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/ui/ConvertToModelMessages.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: Chat.addToolOutput (Chat.kt:232-245) appends a User-role UIMessage containing a single ToolUI part with state=OutputAvailable, output=<result>, input=null, approvalId=null. In convertToModelMessages, approvalResponseMessage returns null for it (approvalId is null, line 118), so the part goes through convertToolCall's OutputAvailable branch, which executes `requireNotNull(input) { "ToolCall.input absent at OutputAvailable..." }` and throws IllegalStateException — input is always null for addToolOutput messages. Even if input were present, the branch would emit a ContentPart.ToolCall inside a User-role ModelMessage, which is wire-invalid for every provider. The two APIs in this same section a…
+# 2026-08-07 REPRO: A client-executed tool: assistant streams a tool call, the host runs it and calls chat.addToolOutput(toolCallId, output). The chat history is then persisted and later replayed via ModelMessageConversion.convertToModelMessages(messages) (the exact use case its own KDoc names: "history replay, crash recovery"). The call throws IllegalStateException("ToolCall.input absent at OutputAvailable in UIMessage(id=tool_approval_1)") and the resume fails 100% of the time.
+# 2026-08-07 VERDICT (confirmed): Reproduced with an actual run, not just code reading. A temporary jvmTest (added, run, deleted; src tree left clean) doing exactly the claimed scenario — `Chat(transport=...).addToolOutput("call_1", JsonPrimitive("result"))` then `ModelMessageConversion.convertToModelMessages(chat.messages)` — threw `IllegalArgumentException: ToolCall.input absent at OutputAvailable in UIMessage(id=tool_approval_…
+
+[[items]]
+id = "H13"
+phase = "providers-anthropic-bedrock"
+title = "[high] BedrockMantle stream() silently drops tool calls (and reasoning) from the emitted stream (AmazonBedrockProvider.kt:728)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: BedrockMantleChatLanguageModel.stream() fakes streaming by calling generate() and then re-emitting only StreamStart, ResponseMetadata, the text as one TextDelta, and Finish. result.toolCalls is never emitted as ToolInputStart/ToolInputDelta/ToolCall events, yet Finish carries result.finishReason which will be FinishReason.ToolCalls when the model called a tool. Any consumer driving a tool loop off the stream (streamText / ToolLoopAgent) sees finishReason=ToolCalls with zero tool-call events, so no tool is ever executed and the call's tool output is silently lost. Reasoning content is likewise dropped.
+# 2026-08-07 REPRO: BedrockMantle(client, settings).chat(model) with tools registered, consumed via the streaming path: the Mantle endpoint returns tool_calls; generate() decodes them into result.toolCalls, but stream() emits no ToolCall event. The agent loop receives Finish(finishReason=ToolCalls) with no pending tool calls, executes nothing, and the run terminates (or loops) with the tool invocation silently discarded.
+# 2026-08-07 VERDICT (confirmed): Confirmed with full evidence chain. AmazonBedrockProvider.kt:728-754: BedrockMantleChatLanguageModel.stream() calls generate() and emits only StreamStart, ResponseMetadata, TextStart/TextDelta/TextEnd, and Finish — result.toolCalls is never emitted as ToolInputStart/ToolInputDelta/ToolCall events, while Finish carries result.finishReason, which is FinishReason.ToolCalls when the model called a to…
+
+[[items]]
+id = "H14"
+phase = "providers-anthropic-bedrock"
+title = "[high] bedrockMantleMessage drops ToolCall/ToolResult parts, breaking multi-turn tool conversations on both Mantle paths (BedrockRequest.kt:638)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/BedrockRequest.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: bedrockMantleMessage serializes every message as {role, content} where content is the concatenation of Text parts only ('' for anything else). An assistant message containing ContentPart.ToolCall loses the call entirely (no tool_calls array / no function_call item), and a MessageRole.Tool message containing ContentPart.ToolResult is sent as role:"tool" with content "" and no tool_call_id. Both the chat-completions contract (role:tool requires tool_call_id; assistant turns must echo tool_calls) and the Responses contract (function_call / function_call_output items) are violated, so the second turn of any tool conversation either 400s or presents the model a history with empty turns. bedrockM…
+# 2026-08-07 REPRO: Tool loop on BedrockMantle: turn 1 returns a tool call; the SDK executes the tool and resends the conversation. The resent body contains an assistant message with content "" (tool call gone) and a tool message with content "" and no tool_call_id. An OpenAI-compatible endpoint rejects the request ('tool message must be a response to a preceding tool_calls') or, if lenient, the model never sees the tool result — every multi-turn tool interaction is broken.
+# 2026-08-07 VERDICT (confirmed): Confirmed at BedrockRequest.kt:638 — content is text-parts-only join; ToolCall/ToolResult parts serialize to "". Both Mantle paths use it (AmazonBedrockProvider.kt:594 chat, :580/:725 responses). Tool support is intended and active: tools sent (:588/:600), tool_calls parsed to ContentPart.ToolCall with FinishReason.ToolCalls (:630-640, :678-688; test at AmazonBedrockProviderTest.kt:845). The SDK'…
+
+[[items]]
+id = "H15"
+phase = "providers-anthropic-bedrock"
+title = "[high] Streaming server-tool-result toolName correlation always misses: paired call block was already removed at its content_block_stop (AnthropicProvider.kt:769)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: For a *_tool_result content_block_start, the toolName is resolved via `blocks.values.firstOrNull { it.id == id }?.toolName`, with the comment asserting the earlier server_tool_use block 'is still in blocks'. It is not: Anthropic streams content blocks strictly sequentially, so the server_tool_use block's content_block_stop (which does `blocks.remove(index)` at line 866) always precedes the result block's content_block_start. The lookup therefore always fails and falls back to `blockType.removeSuffix("_result")` — producing 'web_search_tool' where the paired ToolCall carried 'web_search' (and 'mcp_tool'/'tool_search_tool' variants) — exactly the mismatch the buffered path's comment (lines 63…
+# 2026-08-07 REPRO: Stream a request using the web_search server tool. Events emitted: ToolCall(toolCallId=X, toolName="web_search") from the server_tool_use block, then ToolResult(toolCallId=X, toolName="web_search_tool") from the result block. Consumers that key results by toolName (or validate call/result name pairing) fail to correlate; multi-step transcripts record two different tool names for one invocation.
+# 2026-08-07 VERDICT (confirmed): Confirmed at AnthropicProvider.kt. The streaming correlation at line 769 (`blocks.values.firstOrNull { it.id == id }?.toolName`) can never find the paired server_tool_use block: AnthropicStreamState's only store is `blocks` (line 695), and `content_block_stop` removes each block at line 866. Anthropic streams content blocks strictly sequentially, so the server_tool_use block's stop always precede…
+
+[[items]]
+id = "H16"
+phase = "providers-google"
+title = "[high] googlePostJson bypasses requestJson: no request timeout and abortSignal is inert once the request is in flight (GoogleHttp.kt:53)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleHttp.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: googlePostJson hand-rolls client.request with only a pre-flight abortSignal.throwIfAborted(); it does not register the abort callback that cancels executionContext, and it does not wrap in HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS). The shared pipeline HttpTransport.requestJson (HttpTransport.kt:204-248) exists precisely to provide both (its doc comment: "so a stalled server can't hang the caller forever"), and nearly every other provider uses it. The Google video model even re-implements the full abort+timeout wiring for its GET retry helper (GoogleMediaModels.kt:359-382), showing the intent. The same gap exists in googleGetJson used by googlePollInteraction (GoogleInteracti…
+# 2026-08-07 REPRO: Caller fires AbortSignal while a Google generateContent request is in flight against a slow/hung server: the coroutine does not cancel and blocks until the socket eventually times out (or forever if the server trickles bytes). Every other provider's identical call would be cancelled immediately and is bounded by DEFAULT_REQUEST_TIMEOUT_MS.
+# 2026-08-07 VERDICT (confirmed): CONFIRMED. GoogleHttp.googlePostJson (src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleHttp.kt:44-60) performs only a pre-flight abortSignal.throwIfAborted() (line 52) and then a hand-rolled client.request with no abort registration and no timeout. The shared pipeline HttpTransport.requestJson (src/commonMain/kotlin/ai/torad/aisdk/HttpTransport.kt:204-248) provides both: withRealTimeout(DEFAU…
+
+[[items]]
+id = "H17"
+phase = "providers-media-audio"
+title = "[high] Prodia video default async path is structurally broken — parses 201 job JSON as multipart and never polls (ProdiaModels.kt:227)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/ProdiaModels.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: ProdiaVideoModel defaults to useAsync=true and POSTs to /v2/job/async, then feeds the response through prodiaParseMultipartResponse, which requires a multipart boundary and an output part. Per Prodia's docs (docs.prodia.com/reference/async/), POST /v2/job/async returns '201 Created' with the full job JSON (application/json) while the job is still processing; outputs must be retrieved by polling GET /v2/job/async/:id/job.state.current and then GET /v2/job/async/:id/output/:filename. There is no polling code anywhere in ProdiaVideoModel, so the async path can never yield a video: either prodiaParseMultipartResponse throws InvalidResponseDataError('Prodia response missing multipart boundary in…
+# 2026-08-07 REPRO: Prodia(client, settings).video(ModelId("inference.wan2-2.lightning.txt2vid.v0")).generate(params) with no provider options → POST https://inference.prodia.com/v2/job/async?price=true → 201 with Content-Type: application/json job body → InvalidResponseDataError thrown on every default video generation; the submitted job keeps running server-side.
+# 2026-08-07 VERDICT (confirmed): Confirmed with code and live-docs evidence. (1) Default is async: ProdiaModels.kt:227 computes useAsync as `!= "false"` on a missing option → true, so the default POST goes to /v2/job/async?price=true (ProdiaModels.kt:228-236). (2) The response is fed directly to prodiaParseMultipartResponse (ProdiaProvider.kt:70, 113-119); a 201 passes isSuccess, then the boundary regex on Content-Type `applicat…
+
+[[items]]
+id = "H18"
+phase = "providers-media-audio"
+title = "[high] Hume default voice id (Voice Library) is paired with default provider CUSTOM_VOICE — default TTS call always fails (HumeProvider.kt:168)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/HumeProvider.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: When params.voice is null the request uses HUME_DEFAULT_VOICE_ID (d8ab67c6-953d-4bd8-9370-8fa53a0f1453, the 'Male English Actor' voice from Hume's shared Voice Library, same id upstream @ai-sdk/hume sends with provider HUME_AI), but the provider field defaults to "CUSTOM_VOICE" when no voiceProvider option is set. Hume's API docs are explicit: 'When using voices from Hume's Voice Library, you must explicitly set the provider to HUME_AI' — CUSTOM_VOICE looks the id up only in the caller's private saved voices. So the combination {id: <library voice>, provider: CUSTOM_VOICE} can never resolve for any account that has not saved that voice. The CUSTOM_VOICE default is right for user-supplied vo…
+# 2026-08-07 REPRO: Hume(client, HumeProviderSettings { apiKey("...") }).speech().generate(SpeechGenerationParams(text = "hi")) with no voice and no providerOptions → POST /v0/tts/file with voice {id: d8ab67c6-..., provider: CUSTOM_VOICE} → Hume rejects with voice-not-found; the documented zero-config happy path fails for every user.
+# 2026-08-07 VERDICT (confirmed): Every factual link in the claim checks out against the code and live external sources. 1. The code does what the claim says. src/commonMain/kotlin/ai/torad/aisdk/providers/HumeProvider.kt:163 sends `params.voice ?: HUME_DEFAULT_VOICE_ID` (d8ab67c6-953d-4bd8-9370-8fa53a0f1453, defined at line 264), and lines 166-169 default the `provider` field to "CUSTOM_VOICE" when neither `voiceProvider` nor `p…
+
+[[items]]
+id = "M01"
+phase = "core-generation"
+title = "[medium] Output.Arr default schemaName \"Type[]\" is rejected by OpenAI structured outputs (Output.kt:97)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/Output.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: Output.Arr defaults its name to `elementSerializer.descriptor.serialName.substringAfterLast('.') + "[]"` (e.g. "Recipe[]"). Output.toResponseFormat() puts this into ResponseFormat.Json.schemaName, and the OpenAI-compatible wire mapping sends it verbatim as `response_format.json_schema.name` (OpenAICompatibleHttp.kt:529). OpenAI's documented constraint for json_schema.name is `^[a-zA-Z0-9_-]+$` (letters, digits, underscore, dash; no brackets), so the default name is guaranteed-invalid and the whole request is rejected with a 400 before any generation happens. The same default is duplicated in the OutputArray factory (line 200). Square brackets need to be stripped/sanitized from the default (…
+# 2026-08-07 REPRO: TextGenerator(model).generate(input, OutputArray(serializer<Recipe>())).first() against any OpenAI-compatible endpoint with supportsStructuredOutputs=true: the request body carries json_schema.name = "Recipe[]" and the provider returns 400 "Invalid 'response_format.json_schema.name': string does not match pattern" on every call; the default path of the array-output API cannot succeed against the most common provider.
+# 2026-08-07 VERDICT (confirmed): Every link in the claimed failure chain verifies against the code, and the external OpenAI constraint is confirmed by live evidence, not memory. In-repo chain: (1) Output.kt:97 defaults Output.Arr's name to `elementSerializer.descriptor.serialName.substringAfterLast('.') + "[]"` (e.g. "Recipe[]"), duplicated in the OutputArray factory at Output.kt:200. (2) Output.kt:66-70 `toResponseFormat()` cop…
+
+[[items]]
+id = "M02"
+phase = "core-generation"
+title = "[medium] Top-level StreamObjectResult factory freezes a 16-parameter default-arg signature into the ABI (StreamObjectResult.kt:329)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/StreamObjectResult.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: The public top-level factory `StreamObjectResult(model, output, prompt, messages, system, temperature, topP, topK, maxOutputTokens, stopSequences, seed, providerOptions, abortSignal, presencePenalty, frequencyPenalty, responseFormat, repairText)` is a construct surface (it is exactly the CallConfig field set) expressed as positional parameters with defaults. Under the repo's own ABI law (CLAUDE.md: construct-types must not freeze a positional parameter list; the DSL-factory pattern takes a single builder block), this is the trap the CallConfig/CallSettings builders exist to avoid: adding any parameter later changes both the full-arity method and the synthesized `StreamObjectResult$default`…
+# 2026-08-07 REPRO: 0.3.0 ships this signature; 0.4.0 adds `headers: Map<String,String> = emptyMap()` before repairText. A consumer app compiled against 0.3.0 that calls StreamObjectResult(model, output, prompt = "...") hits NoSuchMethodError at link time when 0.4.0 is substituted at runtime, because the $default bridge's arity/mask signature changed.
+# 2026-08-07 VERDICT (confirmed): Confirmed with file:line evidence. (1) Mechanics: the top-level factory at src/commonMain/kotlin/ai/torad/aisdk/StreamObjectResult.kt:329-347 has 17 positional params (15 defaulted); the JVM ABI dump freezes both the full-arity static (api/jvm/torad-aisdk.api:5737) and the synthetic StreamObjectResult$default bridge (api/jvm/torad-aisdk.api:5738). Adding any parameter changes both descriptors, so…
+
+[[items]]
+id = "M03"
+phase = "streaming"
+title = "[medium] SmoothStream silently drops providerMetadata from re-chunked TextDelta/ReasoningDelta events (SmoothStream.kt:84)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/SmoothStream.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: flushText and flushReasoning re-emit buffered text as new StreamEvent.TextDelta(id, chunk) / StreamEvent.ReasoningDelta(id, chunk) (lines 84, 93, 103, 112) without passing the incoming events' providerMetadata, so every delta downstream of SmoothStream carries ProviderMetadata.None. This metadata is load-bearing in this SDK: GoogleInteractionsStreamState.kt:360 attaches the reasoning thought-signature to ReasoningDelta.providerMetadata (currentMetadata(open.signature())), BedrockResponse.kt:243, LiteRTLanguageModel.kt:1199 and GoogleLanguageModel.kt:729 attach per-delta metadata, and AgentSession.kt:248-251 explicitly merges ReasoningDelta.providerMetadata into the accumulated metadata that…
+# 2026-08-07 REPRO: A consumer wraps a Google Interactions (or Bedrock) reasoning stream with SmoothStream(upstream) before accumulating events into messages. The reasoning thought-signature that rides ReasoningDelta.providerMetadata is replaced with ProviderMetadata.None on every re-emitted chunk, so the assembled ContentPart.Reasoning has no signature. When the conversation is replayed to the provider on the next turn, the unsigned thinking block is rejected or silently degraded — with no error at the point the…
+# 2026-08-07 VERDICT (confirmed): Code claim verified: SmoothStream.kt:84/93 (flushText) and :103/112 (flushReasoning) construct StreamEvent.TextDelta(id, chunk) / ReasoningDelta(id, chunk) with no third argument, so providerMetadata defaults to ProviderMetadata.None (Streaming.kt:198, :236); the incoming events' metadata is discarded when text is appended to the buffer (SmoothStream.kt:127, :136). A metadata-only delta with empt…
+
+[[items]]
+id = "M04"
+phase = "agent-toolloop"
+title = "[medium] Streaming session merges multi-step turns into one misordered assistant message (AgentSession.kt:391)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/AgentSession.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: submitStreaming's projection accumulators (text StringBuilder, toolCalls, toolResults — AgentSession.kt:181-188) are never reset at step boundaries: StreamEvent.StepFinish and StepStart are handled as Unit (line 384/391). streamingMessages (line 506-541) therefore renders an entire multi-step turn as a single assistant message whose Text part concatenates every step's text and whose tool-call parts span all steps, followed by one Tool message holding all results. Step-2 text (produced AFTER step 1's tool result) is positioned before the step-1 tool call, and the assistant's post-tool-result answer message does not exist at all in the log. This projected log is exactly what the next submit()…
+# 2026-08-07 REPRO: Streamed turn: step 1 the model says "Let me check the weather" and calls get_weather; the tool returns; step 2 the model streams "It's 20°C in Paris.". session.state.messages now contains Assistant[Text("Let me check the weatherIt's 20°C in Paris."), toolCall] then Tool[result] — the final answer is folded into the pre-tool-call position and no assistant message follows the tool result. The user's next submit() sends this scrambled history to the provider; the model sees a conversation in whic…
+# 2026-08-07 VERDICT (confirmed): Confirmed empirically, not just by reading. Evidence: (1) AgentSession.kt:181-188 — the projection accumulators (text StringBuilder, toolCalls, toolResults) are created once per submitStreaming launch and never reset; StreamEvent.StepStart and StreamEvent.StepFinish fall into the `-> Unit` arm at AgentSession.kt:384/391, and neither event carries step messages that could be used instead (Streamin…
+
+[[items]]
+id = "M05"
+phase = "agent-toolloop"
+title = "[medium] Queued tool calls still execute after the abort signal fires (ToolLoopParallelExecution.kt:146)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/ToolLoopParallelExecution.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: runBoundedParallelToolCalls receives no AbortSignal, and the worker loop (line 146: `for (item in work)`) dispatches every queued call unconditionally; the executeCall lambda in ToolLoopAgent.kt:1323-1374 likewise performs no abortSignal.isAborted pre-check before invoking executeToolWithPolicy, and executeTool has no throwIfAborted at entry. Abort is only observed if the tool's own executor cooperatively polls ctx.abortSignal. When the host uses agent.stream()/generate() with an AbortController (signal-only abort — no structural job cancellation, per DECISION 3's decoupling), aborting during the tool phase stops nothing that is queued: only the worker whose tool actually throws AbortError…
+# 2026-08-07 REPRO: A step's model turn emits 10 tool calls (e.g. HTTP POSTs) with maxParallelToolCalls = 2. The user hits stop, firing AbortController.abort() while calls 1-2 run. Calls 3-10 are still sitting in the work channel and each one is subsequently executed to completion — 8 unwanted network mutations fire after the user cancelled — because no code checks the signal between dequeuing a call and running its executor.
+# 2026-08-07 VERDICT (confirmed): Confirmed at medium. Code evidence: runBoundedParallelToolCalls (ToolLoopParallelExecution.kt:85-91) receives no AbortSignal and the worker loop (line 146-149) dispatches each dequeued call unconditionally; the executeCall lambda (ToolLoopAgent.kt:1323-1374), executeToolWithPolicy (1513-1540), and executeTool (1543+) contain no isAborted/throwIfAborted check — the signal is only handed to the too…
+
+[[items]]
+id = "M06"
+phase = "tools"
+title = "[medium] Only the last Tool message's approval responses are processed; earlier ones silently dropped (ToolApprovalCoordinator.kt:52)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/ToolApprovalCoordinator.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: applyToolApprovalResponses reads approvals only from messages.lastOrNull { it.role == MessageRole.Tool }. The only public helper for building an approval response is ToolApprovalResponseMessage (ModelMessage.kt:55-63), which produces a ModelMessage containing exactly ONE ToolApprovalResponse part — there is no multi-response helper. So when a step yields two or more pendingApprovals, the natural host code `result.messages + pendings.map { ToolApprovalResponseMessage(...) }` appends multiple Tool messages, and every response except the last is silently ignored. The ignored calls stay unresolved in pendingOccurrences, are never executed or denied, and no error is raised.
+# 2026-08-07 REPRO: Model emits two gated calls (call_A, call_B); host appends ToolApprovalResponseMessage("call_A", true) and ToolApprovalResponseMessage("call_B", true) and calls generate() again. Only call_B is executed; call_A's approval is dropped and its tool call gets no tool result. The next model call sends an assistant message whose tool_use call_A has no matching tool_result — Anthropic/OpenAI reject the request with a 400, wedging the conversation with no indication of what went wrong. Fix direction: c…
+# 2026-08-07 VERDICT (confirmed): Confirmed by both code reading and an executed reproduction test. ToolApprovalCoordinator.kt:52 reads approvals only from the last Tool-role message; a resume built as `result.messages + pendingApprovals.map { ToolApprovalResponseMessage(...) }` (the pattern the docs at Agent.kt:25 / ToolApproval.kt:12 show, using the only public helper, ModelMessage.kt:55-63, which emits one single-part message…
+
+[[items]]
+id = "M07"
+phase = "tools"
+title = "[medium] ToolSchema is a consumer-constructed type with a frozen public positional constructor (Tool.kt:32)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/Tool.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: ToolSchema is a construct-type under the repo's own law — every Tool subclass authors one (`override val schema = ToolSchema("searchDocs", "...")`, the pattern shown in Tool.kt's own KDoc at line 108) — yet it exposes a public positional 7-parameter constructor with no builder/DSL factory (no `fun ToolSchema(block: ...)` exists anywhere in the repo). Per CLAUDE.md, construct-types must use an internal constructor + builder so the parameter list is never frozen into the ABI; the F1 public-ctor carve-out covers only PRODUCED read-only types that consumers merely read. Adding any field to ToolSchema later changes the synthesized constructor signature and breaks every compiled consumer with NoS…
+# 2026-08-07 REPRO: Post-0.3.0, a new ToolSchema field is needed (e.g. per-tool `outputSchema` or `deferred`). Appending `public val outputSchema: JsonElement? = null` changes the primary constructor's JVM signature; every already-compiled consumer library whose Tool subclass does `ToolSchema("name", "desc")` throws NoSuchMethodError at link time, or the field can never be added — the exact trap the CLAUDE.md law exists to prevent, on the single most-constructed type in the tools surface.
+# 2026-08-07 VERDICT (confirmed): Confirmed on all load-bearing points. (1) src/commonMain/kotlin/ai/torad/aisdk/Tool.kt:31-47: ToolSchema is @Poko with a PUBLIC 7-parameter positional constructor (name, description, strict, inputExamples, metadata, providerExecuted, providerOptions); the frozen signature is recorded in the ABI dump (api/*.klib.api line 10934). (2) No ToolSchemaBuilder and no `fun ToolSchema(block: ...)` DSL fact…
+
+[[items]]
+id = "M08"
+phase = "transport-gateway"
+title = "[medium] Gateway error factory discards response headers, so Retry-After on gateway 429s is silently dropped (KtorGatewayTransport.kt:610)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/KtorGatewayTransport.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: The `gatewayError: ResponseErrorFactory` adapter ignores the fourth `headers` parameter (`{ statusCode, _, raw, _ -> GatewayErrorFromResponse(statusCode, raw) }`), and the GatewayError hierarchy (GatewayErrors.kt) has no responseHeaders field to carry them. RetryPolicy.retryAfterDelayMs (RetryPolicy.kt:238-249) only reads `(t as? APICallError)?.responseHeaders`, so for every request routed through KtorGatewayTransport (all errorFromResponse = gatewayError call sites: postJson, getJson, streamSse for streamText and generateVideo), the server's `Retry-After` / `retry-after-ms` guidance never reaches the retry layer. A gateway 429 becomes GatewayRateLimitError (retryable) but is retried with o…
+# 2026-08-07 REPRO: Gateway responds 429 with `Retry-After: 30`. GatewayErrorFromResponse produces GatewayRateLimitError with no headers; RetryPolicy classifies it retryable, retryAfterDelayMs returns null (not an APICallError), and the SDK retries after ~100-200ms jitter — re-hitting the rate limit twice more and exhausting retries in under a second instead of waiting the 30s the server asked for.
+# 2026-08-07 VERDICT (confirmed): Every link verified against source. (1) KtorGatewayTransport.kt:610-612 — the gatewayError ResponseErrorFactory ignores its fourth headers parameter, which HttpTransport.toJsonResponse (HttpTransport.kt:367) and streamSse (:438) populate with the flattened response headers. (2) GatewayErrors.kt:32-43 — GatewayError extends AiSdkException (sibling of APICallError) and no class in the hierarchy has…
+
+[[items]]
+id = "M09"
+phase = "transport-gateway"
+title = "[medium] WrapProvider breaks ModelRef resolution and provider() lookup when wrapping a ProviderRegistry (Provider.kt:457)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/Provider.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: The anonymous Provider returned by WrapProvider only overrides the String-id model accessors. The ModelRef overloads and provider(ProviderId) fall through to the Provider interface defaults, which resolve against `this` (the wrapper) instead of delegating to the wrapped provider. resolveModelRef (Provider.kt:108-112) compares `ref.providerId` against the wrapper's providerId — for a wrapped ProviderRegistry that is the literal string "registry" — and throws NoSuchProviderError for any ref that names a real registered provider. Likewise provider(ProviderId) (Provider.kt:40-44) takes the non-registry branch because the wrapper `is ProviderRegistry` check fails, so registry provider lookup thr…
+# 2026-08-07 REPRO: val wrapped = WrapProvider(ProviderRegistry("openai" to openai, "anthropic" to anthropic), middleware). `wrapped.languageModel("openai:gpt-4o")` works (String overload delegates), but the typed path `wrapped.languageModel(ModelRef("openai:gpt-4o"))` throws NoSuchProviderError("openai"), and `wrapped.provider(ProviderId("openai"))` also throws — identical inputs succeed on the unwrapped registry.
+# 2026-08-07 VERDICT (confirmed): The failure scenario occurs exactly as described. WrapProvider (Provider.kt:456-473) overrides only the String-id accessors and providerId; the ModelRef overloads and provider(ProviderId) fall through to Provider interface defaults. For a wrapped ProviderRegistry the wrapper's providerId is the literal "registry" (Provider.kt:458 copying ProviderRegistry.providerId, Provider.kt:326). So wrapped.l…
+
+[[items]]
+id = "M10"
+phase = "mcp"
+title = "[medium] SSE FrameBuffer keeps event type/id across a data-less frame, corrupting the next event (MCP.kt:2048)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/MCP.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: McpSseFrame.FrameBuffer.flush() returns early when `data` is empty without resetting eventName/eventId. The SSE spec (dispatch step 2) requires that when the data buffer is empty, the data buffer AND the event type buffer are reset before returning. eventsource-parser (used by the Vercel reference) follows the spec; this parser does not, so a frame consisting only of `event:` and/or `id:` lines leaks its event name into the next dispatched frame.
+# 2026-08-07 REPRO: Server emits a data-less heartbeat `event: ping\n\n`, then a normal `data: {jsonrpc response}\n\n` (default event type 'message'). The second frame is dispatched with event="ping", fails the `event.event == "message"` filter in readInboundSse / the SSE reader, and is silently dropped — a JSON-RPC response is lost and the awaiting request hangs until the 30s timeout. Same corruption applies to id-only frames (also, per spec last-event-id should be tracked even for data-less frames; here it never…
+# 2026-08-07 VERDICT (confirmed): The defect is real and the failure scenario occurs exactly as described. FrameBuffer.flush() (MCP.kt:2047-2051) returns early on empty data without reset(), violating the SSE dispatch algorithm which requires resetting the event type buffer when the data buffer is empty. Trace: `event: ping\n\n` sets eventName="ping" (MCP.kt:2000/2033); the blank line's flush early-returns at 2048 leaving "ping"…
+
+[[items]]
+id = "M11"
+phase = "mcp"
+title = "[medium] McpOAuthReauthorizer propagates the winner's CancellationException to unrelated awaiting requests (MCP.kt:1448)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/MCP.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: runReauthorization's `catch (error: Throwable)` also catches CancellationException (including TimeoutCancellationException from the winning request's withRealTimeout) and completes the shared `inFlight` CompletableDeferred exceptionally with it. Other requests parked in the Decision.Await branch then rethrow that CancellationException from `await()` inside coroutines that were never cancelled.
+# 2026-08-07 REPRO: Two concurrent requests hit 401. Request A wins and runs the reauth; A's 30s request timeout fires mid-token-refresh, cancelling A with TimeoutCancellationException. Request B, awaiting the shared deferred, gets A's CancellationException rethrown in its own (non-cancelled) coroutine — B's caller sees a spurious 'cancellation' and, per the standard CE-means-rethrow convention, may silently swallow the failure instead of surfacing an auth error or retrying. Fix: rethrow CE after completing the de…
+# 2026-08-07 VERDICT (confirmed): Confirmed as described. (1) The winner's request timeout covers the reauth: MCP.kt:607 wraps send in HttpTransport.withRealTimeout (HttpTransport.kt:183-187), and the 401 branch at MCP.kt:1554-1555 runs reauthorizeAfter401 -> runReauthorization -> McpAuth.auth inside that block, so a mid-refresh timeout (or caller cancellation) makes McpAuth.auth throw TimeoutCancellationException/CancellationExc…
+
+[[items]]
+id = "M12"
+phase = "mcp"
+title = "[medium] MCP tool calls are hard-capped at 30s with no consumer override (MCP.kt:603)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/MCP.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: request() applies MCP_DEFAULT_REQUEST_TIMEOUT_MS (30s) whenever options carry no timeout. toolsFromDefinitions builds the callTool options at line 502-504 with only `signal(abortSignal)` — no timeout and no way for a consumer to supply one through tools()/ToolSet, and callTool is private. The reference SDKs default to 60s and allow per-request override/reset-on-progress; MCP tools (builds, searches, agent sub-tasks) routinely exceed 30s.
+# 2026-08-07 REPRO: A consumer wires `client.tools()` into an agent and calls an MCP tool that legitimately takes 45s. Every invocation fails at exactly 30s with a timeout MCPClientError; there is no API surface (MCPRequestOptions on tools(), tool metadata, or config) through which the consumer can raise the ceiling, making long-running MCP tools unusable via the ToolSet path.
+# 2026-08-07 VERDICT (confirmed): Confirmed with file:line evidence. (1) MCP.kt:603 defaults request() to MCP_DEFAULT_REQUEST_TIMEOUT_MS (30_000L, MCP.kt:80) whenever options carry no timeoutMillis/maxTotalTimeoutMillis, enforced via HttpTransport.withRealTimeout (HttpTransport.kt:183-187, plain withTimeout, no reset-on-progress). (2) MCP.kt:499-505: the DynamicTool executor from toolsFromDefinitions builds MCPRequestOptions with…
+
+[[items]]
+id = "M13"
+phase = "errors-telemetry"
+title = "[medium] InMemoryDevToolsRecorder (the DevToolsMiddleware default) races on unsynchronized mutable collections (DevTools.kt:73)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/DevTools.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: InMemoryDevToolsRecorder backs `runs`/`steps`/`results` with plain `mutableListOf`/`linkedMapOf` and mutates them in suspend methods with no synchronization. It is the default `recorder` for DevToolsMiddleware (line 104), and one middleware-wrapped model instance is routinely shared across concurrent generate/stream calls — the middleware itself takes a `stateMutex` for its own `runCreated`/`stepCounter`, acknowledging exactly this concurrency, but the recorder calls happen outside that lock. The properties also return the live backing collections (`get() = _steps`), so reading while a concurrent step lands throws ConcurrentModificationException.
+# 2026-08-07 REPRO: An app wraps one shared LanguageModel in DevToolsMiddleware() (default recorder) and an agent step executes two tool-triggered model calls in parallel, or two coroutines call generate concurrently. Both invoke `recorder.createStep` -> `_steps += step` on the same ArrayList concurrently: lost writes, ArrayIndexOutOfBoundsException from ArrayList.add, or a ConcurrentModificationException in a UI thread iterating `recorder.steps` — devtools data silently corrupted or a crash.
+# 2026-08-07 VERDICT (confirmed): Confirmed as a real defect at the claimed medium severity. InMemoryDevToolsRecorder (src/commonMain/kotlin/ai/torad/aisdk/DevTools.kt:73-98) mutates plain mutableListOf/linkedMapOf in suspend methods with no synchronization and exposes the live backing collections (get() = _runs/_steps/_results at lines 79/82/85). It is the default recorder for DevToolsMiddleware (line 104). Concurrent use of one…
+
+[[items]]
+id = "M14"
+phase = "ui"
+title = "[medium] Completeness predicates never become true under Chat's append-a-user-message model (Streams.kt:250)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/ui/Streams.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: lastAssistantMessageIsCompleteWithToolCalls (line 250) and lastAssistantMessageIsCompleteWithApprovalResponses (line 260) inspect only the LAST ASSISTANT message's ToolUI part states. But Chat.addToolOutput and Chat.addToolApprovalResponse never transition the assistant message's part — they append a separate User-role message. Nothing in the entire codebase ever sets ToolCallState.ApprovalResponded (grep confirms it is only declared, matched in ConvertToModelMessages, and mentioned in a doc comment). So after the user answers an approval request or supplies a client tool output, the assistant part stays ApprovalRequested / InputAvailable and both predicates permanently return false.
+# 2026-08-07 REPRO: Host implements the standard v6 auto-resubmit loop: after chat.addToolApprovalResponse(id, approved=true), it checks UiMessageStreams.lastAssistantMessageIsCompleteWithApprovalResponses(chat.messages) to decide whether to re-send. The last assistant message still contains the part in ApprovalRequested state, the predicate returns false forever, and the conversation stalls — the approval is recorded but the resubmit gate never opens. Same for lastAssistantMessageIsCompleteWithToolCalls after add…
+# 2026-08-07 VERDICT (confirmed): The claim survives adversarial scrutiny; every load-bearing assertion checks out against the code. Mechanics verified: (1) Streams.kt:250-257 — lastAssistantMessageIsCompleteWithToolCalls finds the last Assistant-role message and requires every ToolUI part to be OutputAvailable/OutputDenied/OutputError; Streams.kt:260-265 — lastAssistantMessageIsCompleteWithApprovalResponses requires no ToolUI pa…
+
+[[items]]
+id = "M15"
+phase = "ui"
+title = "[medium] resumeStream never integrates resumed messages into chat state (Chat.kt:330)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/ui/Chat.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: Chat.resumeStream / reconnectToStream return the transport's Flow<UIMessage> verbatim: unlike sendInternal (which upserts each response via applyState + withUpsert and manages status), no emission is ever written into internalState, and status never leaves Ready. ChatSession.resumeStream (ChatSession.kt:120-121) likewise bypasses syncState entirely. The resumed assistant message therefore exists only in the collector's hands and never enters chat.messages.
+# 2026-08-07 REPRO: App reconnects after process death: collects chat.resumeStream() and renders the recovered assistant reply from the flow. chat.messages still lacks that reply, so the next chat.sendMessage(userMsg) builds a ChatRequest whose history omits the assistant turn the user just read — the model re-answers or contradicts itself. Meanwhile chat.state.status stays Ready during the resumed stream, so any isStreaming-driven UI (spinner, disabled input) is wrong for the whole resumption.
+# 2026-08-07 VERDICT (confirmed): Confirmed at the claimed medium severity. Chat.resumeStream (Chat.kt:330-331) and Chat.reconnectToStream (Chat.kt:326-327) return transport.reconnectToStream(id, headers) verbatim — no applyState, no withUpsert, no status transition — while sendInternal (Chat.kt:277-315) upserts every emission into internalState and drives Submitted→Streaming→Ready. ChatSession.resumeStream (ChatSession.kt:120-12…
+
+[[items]]
+id = "M16"
+phase = "providers-anthropic-bedrock"
+title = "[medium] bedrockUsage inverts AWS's documented cache-token semantics and clamps real cacheRead/cacheWrite values to the non-cached count (BedrockResponse.kt:145)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/BedrockResponse.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: AWS documents (bedrock prompt-caching guide, 'Important' note): with caching enabled `inputTokens` is ONLY the non-cached tokens, and total input = inputTokens + cacheReadInputTokens + cacheWriteInputTokens. bedrockUsage does the opposite: it treats `input` as the inclusive total (total = input, noCache = input - cacheRead - cacheWrite) and clamps cacheRead to [0, input] and cacheWrite to [0, input - cacheRead]. In the canonical caching pattern (large cached prefix + small fresh turn) cacheRead exceeds inputTokens, so the clamp destroys the real value. The sibling decoder UsageFromAnthropic (Usage.kt:111-117) handles the identical exclusive semantics correctly (total = input + cacheWrite +…
+# 2026-08-07 REPRO: Converse response usage {inputTokens:45, cacheReadInputTokens:3626, cacheWriteInputTokens:0} (AWS's own documented example shape). bedrockUsage reports inputTokens.total=45, cacheRead=45 (clamped from 3626), noCache=0 — under-reporting total input ~80x and mangling the cache-hit metric any cost-metering consumer relies on. Correct values: total=3671, noCache=45, cacheRead=3626.
+# 2026-08-07 VERDICT (confirmed): CONFIRMED. (1) AWS docs verified live (bedrock prompt-caching userguide, 'Important' note, quoted verbatim): with caching enabled `inputTokens` is ONLY non-cached tokens; total input = inputTokens + cacheReadInputTokens + cacheWriteInputTokens. Real Converse traces show cacheWriteInputTokens=2647 vs inputTokens=13; litellm #15292, langchainjs #10841, ruby_llm #832 all fixed this exact misreading…
+
+[[items]]
+id = "M17"
+phase = "providers-google"
+title = "[medium] Streaming path drops executableCode/codeExecutionResult parts that generate() handles (GoogleLanguageModel.kt:697)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleLanguageModel.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: googleLanguageResult (lines 556-577) maps `executableCode` parts to provider-executed ContentPart.ToolCall and `codeExecutionResult` to ContentPart.ToolResult. GoogleStreamState.accept only inspects `text`, `functionCall`, and `inlineData` keys — a streamed part containing executableCode or codeExecutionResult matches none of them and produces zero events. The code_execution tool is a first-class provider tool in this SDK (GoogleTools.codeExecution).
+# 2026-08-07 REPRO: User enables tools = listOf(googleTools.codeExecution) and calls stream(): the model's executed code and its result are silently absent from the event stream (no ToolCall/ToolResult events), while the identical request through generate() surfaces both. Downstream step-tracking sees a text-only turn.
+# 2026-08-07 VERDICT (confirmed): Confirmed at src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleLanguageModel.kt. generate() path: googleLanguageResult lines 558-577 maps executableCode -> ContentPart.ToolCall("code_execution", providerExecuted=true) and codeExecutionResult -> ContentPart.ToolResult. Streaming path: GoogleStreamState.accept (684-821) branches only on text (708-741), functionCall (742-774), inlineData (775-798…
+
+[[items]]
+id = "M18"
+phase = "providers-openai-compatible"
+title = "[medium] OpenResponses non-streaming postJson has no request timeout (bypasses the shared transport pipeline) (OpenResponsesProvider.kt:545)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesProvider.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: OpenResponsesLanguageModel.postJson calls client.request(settings.url) directly instead of HttpTransport.requestJson. Every other non-streaming provider path (postJson/postMultipart/postBytes in OpenAICompatibleHttpModel, requestJson itself) is wrapped in withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS), whose doc comment states it exists 'to stop a stalled server from hanging the caller forever'. The Open Responses path — the DEFAULT path for OpenAIProvider.languageModel() and AzureOpenAIProvider — has no such bound and also never registers the abort bridge.
+# 2026-08-07 REPRO: OpenAI(client)("gpt-4o").generate(...) against a server (or proxy) that accepts the connection but never responds: the coroutine suspends indefinitely. The identical call through provider.chat(modelId) fails after 120s with an APICallError. Callers relying on the SDK's documented stall protection hang forever on the default model path.
+# 2026-08-07 VERDICT (confirmed): Confirmed with file:line evidence. OpenResponsesProvider.kt:545 calls client.request(settings.url) raw — no withRealTimeout, no HttpTransport.requestJson — and generate() (line 488) uses it. HttpTransport.kt:99-106 documents DEFAULT_REQUEST_TIMEOUT_MS as bounding every non-streaming round-trip (only streaming is exempt), and requestJson enforces it at HttpTransport.kt:220; every sibling raw-reque…
+
+[[items]]
+id = "M19"
+phase = "providers-openai-compatible"
+title = "[medium] Provider-tool args silently dropped for unmapped tool types (xAI x_search/view_image/view_x_video, forward-compat tools) (OpenResponsesRequestMapping.kt:312)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesRequestMapping.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: OpenResponsesProviderToolJson's else branch emits only {"type": <type>} and discards the tool's args entirely, even though args were extracted (OpenResponsesProviderToolArgs) and the surrounding comments claim 'unknown types still passthrough for forward-compat'. XaiProvider.responses() routes through this mapping, and XaiTools ships xSearch ("x_search"), viewImage ("view_image"), and viewXVideo ("view_x_video") — none in the mapped set — so their configuration args never reach the wire. The only signal is a misleading 'unknown provider tool type' warning for tools the SDK itself vends.
+# 2026-08-07 REPRO: Xai(client).responses(ModelId("grok-4")) with tools = [XSearch(args = buildJsonObject { put("allowed_x_handles", ...) })]: the request body contains only {"type":"x_search"}. The handle restriction is silently ignored and the model searches all of X — no error, results just quietly violate the caller's constraint. Same for any new OpenAI Responses server tool passed with args before this mapping learns its shape.
+# 2026-08-07 VERDICT (confirmed): The failure scenario occurs exactly as described, verified through every link of the chain. 1. The SDK vends the tools with args in metadata: `XaiProviderTool` (src/commonMain/kotlin/ai/torad/aisdk/providers/XaiProvider.kt:567-581) builds a `ProviderExecutedTool` with `metadata = {"providerToolId": "xai.<name>", "providerOptions": args}`. `XSearch(args)` uses name "x_search" (XaiProvider.kt:631-6…
+
+[[items]]
+id = "M20"
+phase = "providers-openai-compatible"
+title = "[medium] Image response with explicit \"b64_json\": null throws instead of falling back to \"url\" (OpenAICompatibleModels.kt:385)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAICompatibleModels.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: requiredOneOfString(obj, …, "b64_json", "url") delegates to WireDecoder.optionalString, which calls stringValue on any present element; JsonNull is a JsonPrimitive with isString == false, so stringValue throws WireDecodeException rather than skipping to the next key. Many OpenAI-compatible backends (and any server serializing with explicit nulls) return {"url": "https://…", "b64_json": null} for URL-mode image results.
+# 2026-08-07 REPRO: An OpenAI-compatible image server responds 200 with data: [{"b64_json": null, "url": "https://cdn…/img.png"}]. Instead of returning the URL-bearing GeneratedFile, generate() throws WireDecodeException("expected string" at $.data[0].b64_json), failing a fully valid response. The symmetric case ({"b64_json":"…","url":null}) is also affected only via the first key ordering.
+# 2026-08-07 VERDICT (confirmed): Confirmed mechanically and empirically. Chain: OpenAICompatibleModels.kt:385-392 calls WireDecoder.requiredOneOfString(obj, ..., "b64_json", "url"); WireDecoder.kt:97 tries each key via optionalString; WireDecoder.kt:87-88 does obj[key]?.let { stringValue(...) } — an explicit JSON null parses to JsonNull, which is a PRESENT map entry (not Kotlin null), so the ?.let runs; WireDecoder.kt:100-102 st…
+
+[[items]]
+id = "M21"
+phase = "providers-facades-text"
+title = "[medium] Filtering browser_search to empty tools leaves an orphaned tool_choice in the request (GroqFacade.kt:64)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/GroqFacade.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: groqTransformChatBody drops the `tools` key when the browser_search filter empties it, but `tool_choice` (emitted by OpenAICompatibleModels.kt:156 whenever the original tools list was non-empty — including "auto") passes through the `else -> put(key, value)` branch untouched. The code's own comment states tool_choice without tools is invalid, yet only tools is removed.
+# 2026-08-07 REPRO: Request on model "llama-3.3-70b-versatile" (not in GROQ_BROWSER_SEARCH_MODELS) whose only tool is groq.tools.browserSearch: openAIToolChoiceJson(Auto) put tool_choice="auto" into the body, the transform deletes tools but keeps tool_choice, and Groq rejects the request with a 400 instead of degrading gracefully to a plain completion.
+# 2026-08-07 VERDICT (confirmed): Confirmed both statically and empirically. Static chain: (1) LanguageModelCallParams.toolChoice is non-nullable with default ToolChoice.Auto (src/commonMain/kotlin/ai/torad/aisdk/LanguageModel.kt:100). (2) OpenAICompatibleModels.kt:152-157 emits tool_choice whenever the ORIGINAL params.tools is non-empty, and openAIToolChoiceJson is total — every branch returns non-null, Auto → "auto" (OpenAIComp…
+
+[[items]]
+id = "M22"
+phase = "providers-media-audio"
+title = "[medium] fal API key sent to server-provided response_url with no same-origin guard (FalVideoModel.kt:48)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/FalVideoModel.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: FalVideoModel polls the literal response_url string taken from the queue response JSON and attaches settings.falHeaders(params.headers), which includes 'Authorization: Key <apiKey>' plus all configured headers. The repo's own established invariant (GladiaProvider.kt pollResult, lines 615-620: 'Only attach credentialed headers when it is same-origin with the API; otherwise a malicious result_url would exfiltrate the API key') is violated here: any deviation of response_url from the queue origin ships the credential to that host. FalTranscriptionModel avoids this by constructing the poll URL itself from queueBase + request_id; FalVideoModel should either do the same (request_id is available i…
+# 2026-08-07 REPRO: A compromised/misbehaving queue endpoint (or a custom baseURL proxy) returns response_url pointing at an attacker host; the very next poll request delivers the caller's fal API key and any custom auth headers to that host.
+# 2026-08-07 VERDICT (confirmed): Mechanically verified: FalVideoModel.kt:41-48 polls the literal server-provided response_url via settings.falPollJson with settings.falHeaders(params.headers); FalProvider.kt:44-47 shows falHeaders unconditionally includes Authorization: Key <apiKey> plus all configured/per-call headers, and FalProvider.kt:75-113 (falPollJson/falGetJson) contains no origin check — so a queue response whose respon…
+
+[[items]]
+id = "M23"
+phase = "providers-media-audio"
+title = "[medium] BlackForestLabsImageModelOptions inputImage..inputImage10 are declared but never serialized into the request (BlackForestLabsProvider.kt:40)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/BlackForestLabsProvider.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: The public options class (and its builder) exposes inputImage through inputImage10, but bflRequestBody never reads options["inputImage"]/inputImage2..10 — input_image fields are emitted only from params.files via putBflInputImages, and BFL has no unknown-key passthrough loop (unlike Fal/Luma). Every one of these 11 documented option fields is silently dropped. The options class also permits 10 images while putBflInputImages throws above 8 ('Docs stop at input_image_8'), so the typed surface promises a capability (10 reference images via options) that the wire layer cannot deliver at all.
+# 2026-08-07 REPRO: blackForestLabs image call with BlackForestLabsImageModelOptions { inputImage("data:image/png;base64,...") } serialized into providerOptions and no params.files → request body contains no input_image key → BFL generates a plain text-to-image result; the caller's reference image is silently ignored with no warning.
+# 2026-08-07 VERDICT (confirmed): Confirmed against the full file. BlackForestLabsImageModelOptions declares inputImage..inputImage10 (BlackForestLabsProvider.kt:40-58) and its builder wires them (89-98, 261-270), but bflRequestBody (484-550) reads only width/height/steps/guidance/imagePromptStrength/imagePrompt/outputFormat/promptUpsampling/raw/safetyTolerance/webhookSecret/webhookUrl from the options object — no options["inputI…
+
+[[items]]
+id = "M24"
+phase = "errors-telemetry"
+title = "[medium] ToolError sanitization leaks unredacted AgentError (raw tool input, response bodies) into telemetry (StreamEventTelemetryRedaction.kt:51)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/StreamEventTelemetryRedaction.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: In StreamEventTelemetryRedaction.sanitize, the StreamEvent.ToolError branch redacts `message` but passes `error = event.error` through verbatim. `event.error` is an AgentError: AgentError.InvalidToolInput exposes the raw model-supplied tool input via its public `rawArgs` field AND embeds it in its own `message` ("... (raw=$rawArgs)", AgentError.kt:31); AgentError.ToolExecution carries `executorError`, which can be an APICallError holding `url`, `requestBodyValues`, and `responseBody` verbatim. Every sibling path scrubs throwables (AgentEvent.Errored is replaced via redactedThrowable, StreamEvent.Error rebuilds its cause with a redacted message at lines 54-59), so this one field defeats the…
+# 2026-08-07 REPRO: Host uses default privacy settings (recordInputs=false, recordOutputs=false) with a registered telemetry integration. The model calls a tool with an input containing PII or a credential; JSON decode fails, the loop emits StreamEvent.ToolError(error = AgentError.InvalidToolInput(rawArgs = <full raw input>)). The integration receives AgentEvent.Chunk whose sanitized ToolError still carries the AgentError: reading `error.rawArgs` or even `error.message` yields the complete unredacted tool input —…
+# 2026-08-07 VERDICT (downgraded high->medium): The code reading is correct but the failure scenario is not reachable. Confirmed facts: StreamEventTelemetryRedaction.kt:47-53 passes error = event.error verbatim while redacting message; AgentError.InvalidToolInput (AgentError.kt:23-33) exposes raw model input via public rawArgs and embeds it in its message; AgentError.ToolExecution.executorError can be an APICallError holding url/requestBodyVal…
+
+[[items]]
+id = "M25"
+phase = "providers-facades-text"
+title = "[medium] Assistant tool calls and tool results are dropped from history, breaking multi-step tool loops (HuggingFaceProvider.kt:595)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/HuggingFaceProvider.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: huggingFaceMessages() converts assistant ContentPart.ToolCall parts to Unit (silently dropped, lines 599-607) and converts MessageRole.Tool messages to only a warning (line 610). The HF router Responses API (which this provider targets and which mirrors OpenAI Responses) supports `function_call` and `function_call_output` input items, and the provider fully supports emitting tool calls (huggingFaceTools/ToolCall events), so declared tool support is one-shot only: on the second step of any tool loop the model receives a conversation with no record of the call it made or the result it got.
+# 2026-08-07 REPRO: ToolLoopAgent with a HuggingFace model and one local tool: step 1 returns a function_call; the agent executes it and appends the assistant tool-call part plus a tool-result message; the step-2 request body contains neither item, so the model has no evidence its tool ever ran and re-issues the same call. The loop burns steps (hasLocalToolWork stays true) until StepCountIs(20) fires, never producing a grounded answer.
+# 2026-08-07 VERDICT (downgraded high->medium): Mechanics confirmed: HuggingFaceProvider.kt:595-608 drops assistant ContentPart.ToolCall/ToolResult parts (mapped to Unit) and line 610 converts MessageRole.Tool messages to only CallWarning("unsupported", "tool messages"); no function_call/function_call_output input items are emitted and no previous_response_id is sent, so on step 2 of a tool loop the model indeed sees no record of its call or t…
+
+[[items]]
+id = "L01"
+phase = "core-generation"
+title = "[low] New completion request surfaces the previous run's text as its Streaming state (CompletionApi.kt:586)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/CompletionApi.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: CompletionApi.callCompletionApi never clears the completion at request start (upstream Vercel callCompletionApi calls setCompletion('') immediately after setLoading(true)/setError(undefined)). Completion.complete's setLoading(true) handler then does `s.copy(phase = CompletionPhase.Streaming(s.completion))`, which relabels the PREVIOUS run's Done text as the new run's Streaming text. Until the first delta of the new response arrives (which replaces it wholesale, since the StringBuilder restarts empty), `completion` returns stale text while `loading` is true.
+# 2026-08-07 REPRO: User runs complete("summarize A") -> Done("Summary of A"). User then runs complete("summarize B"): while the new request is connecting (potentially seconds), state.completion still returns "Summary of A" with loading=true, so a UI bound to state renders the old answer as if it were streaming for the new prompt, then abruptly swaps to the new text at the first chunk.
+# 2026-08-07 VERDICT (confirmed): Confirmed at the claimed severity (low). Evidence: CompletionApi.kt:443-445 — callCompletionApi calls setLoading(true) and setError(null) but never setCompletion(""); the first setCompletion happens only at the first delta (line 450) from a freshly restarted StringBuilder (line 443). Completion.complete's setLoading(true) handler (lines 583-586) executes s.copy(phase = CompletionPhase.Streaming(s…
+
+[[items]]
+id = "L02"
+phase = "streaming"
+title = "[low] WORD_REGEX permanently stalls chunking when a latin/digit run directly precedes CJK text (SmoothStream.kt:56)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/SmoothStream.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: WORD_REGEX has two alternations: a latin-word branch requiring trailing whitespace (\s*[^\s CJK]+\s+) and a per-codepoint CJK branch (\s*[CJK]). For text where a latin run is immediately followed by a CJK character with no intervening whitespace (e.g. "iPhone搭載", "GPT-5対応", "hello你好"), neither alternation can match at offset 0: the latin branch fails because no whitespace follows the run, and the CJK branch fails on the leading latin character. regex.find() then returns a match starting mid-buffer (verified: first match in "iPhone搭載の" starts at index 6), and flushText's `if (match.range.first != 0) break` guard (line 91) breaks out on every invocation forever — the block's entire text accum…
+# 2026-08-07 REPRO: A Japanese chat response streaming "iPhone搭載のAIモデルは..." through SmoothStream(upstream, chunkBy = ChunkBy.Word) emits nothing while deltas arrive — the buffer never matches at offset 0 — and then the entire block appears in a single TextDelta when TextEnd arrives, instead of word-by-word/character-by-character pacing.
+# 2026-08-07 VERDICT (confirmed): Confirmed by direct reproduction against the same regex engine Kotlin/JVM uses (java.util.regex, JDK 21), simulating flushText's exact loop (SmoothStream.kt:89-96). Evidence: 1. WORD_REGEX (src/commonMain/kotlin/ai/torad/aisdk/SmoothStream.kt:56) has exactly the two alternations described: latin branch `\s*[^\s CJK]+\s+` (requires trailing whitespace) and per-codepoint CJK branch `\s*[CJK]`. 2. F…
+
+[[items]]
+id = "L03"
+phase = "agent-toolloop"
+title = "[low] Abort of a structured-output generate() surfaces as NoOutputGeneratedError, not abort (ToolLoopAgent.kt:665)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: When the loop aborts cooperatively (step-boundary check at line 848 or the AbortError catch at line 1100), streamInternal returns without emitting StreamEvent.Finish. generate() then proceeds to build a result: pausedForApproval is false, so decodeFinalOutput (line 652-666) runs with the last step's finishReason (ToolCalls/Other), and for a structured-output agent (output != null) it throws NoOutputGeneratedError("the model finished with `X`, not `stop`") — a misleading diagnosis for a user-initiated abort, and it discards the partial steps/usage/messages. In AgentSession.submit the exception is thrown from .first() before the `effectiveAbortSignal.isAborted` check at line 138 can run, so t…
+# 2026-08-07 REPRO: Structured-output agent (Output set). Host calls session.submit(prompt, abortSignal = controller.signal) and later controller.abort() mid-run without cancelling the job. The flow ends via the abort path, generate() throws NoOutputGeneratedError, and the session reports status=Error with a "model finished with tool-calls, not stop" message — the UI shows a failure for what was the user's own cancel action.
+# 2026-08-07 VERDICT (confirmed): Confirmed at claimed severity (low). All abort exits in streamInternal (ToolLoopAgent.kt:848-852, 1100-1108, 1396-1400) emit StreamEvent.Abort and return without StreamEvent.Finish. generate() treats Abort as Unit (ToolLoopAgent.kt:587), leaving finishReason = Other/ToolCalls, pausedForApproval = false (line 614), so decodeFinalOutput (lines 652-666) throws NoOutputGeneratedError for any structur…
+
+[[items]]
+id = "L04"
+phase = "tools"
+title = "[low] ProviderToolFactoryWithOutputSchema.create silently discards caller-supplied outputSerializer/outputSchema (ProviderToolFactory.kt:212)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/ProviderToolFactory.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: create(options) rebuilds the options and hard-codes `outputSerializer(outputSerializer)` and `outputSchema(outputSchema)` from the factory's own fields (lines 213-214), copying every other field from the caller's options but never options.outputSerializer/options.outputSchema. Yet ProviderToolFactoryOptionsBuilder.build() makes outputSerializer REQUIRED (requireNotNull at line 141), so a caller invoking this factory variant is forced to supply a serializer that is then silently thrown away. The sibling ProviderToolFactory.create passes the caller's options through untouched, so the two variants disagree.
+# 2026-08-07 REPRO: A consumer creates a provider tool via ProviderToolFactoryWithOutputSchema and passes `ProviderToolFactoryOptions { outputSerializer(LenientResultSerializer); ... }` to tolerate a provider's extra fields in the tool result. The custom serializer is discarded without any error; decoding runs with the factory's strict default serializer and fails at runtime on responses the caller's serializer was written to handle — with no hint that their serializer was never installed. If discarding is intende…
+# 2026-08-07 VERDICT (confirmed): Confirmed at the claimed low severity. Mechanics: ProviderToolFactory.kt:200-226 — ProviderToolFactoryWithOutputSchema.create rebuilds the options (line 212), hard-coding outputSerializer/outputSchema from the factory's own fields (lines 213-214, fields declared at 186-187) while copying the other nine fields from the caller's options (lines 215-224); options.outputSerializer and options.outputSc…
+
+[[items]]
+id = "L05"
+phase = "transport-gateway"
+title = "[low] AssetDownload.capped has no wall-clock timeout — a stalled asset host hangs the caller indefinitely (HttpTransport.kt:67)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/HttpTransport.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: AssetDownload.capped is a non-streaming round-trip (image/mask download from a provider-supplied CDN URL) but, unlike every other non-streaming path in the codebase, is not wrapped in HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) — the constant whose own doc says it exists "to stop a stalled server from hanging the caller forever" on non-streaming round-trips. Its call sites (providers/XaiMediaModels.kt:146, providers/ProdiaProvider.kt:483, providers/OpenAICompatibleModels.kt:471) do not add one either, while the functionally identical sibling download in providers/ReplicateProvider.kt:567 IS wrapped in withRealTimeout. The size cap bounds memory but not time: a host that accept…
+# 2026-08-07 REPRO: xAI image generation returns a signed CDN URL; the CDN accepts the GET, sends headers, then stalls mid-body. xaiDownloadImage suspends inside channel.readAvailable indefinitely — the generateImage call never completes and never errors, while the same stall on Replicate's path would fail after 120s.
+# 2026-08-07 VERDICT (confirmed): Confirmed with file:line evidence. (1) AssetDownload.capped (HttpTransport.kt:67-96) has no withRealTimeout; a stall suspends indefinitely in channel.readAvailable inside bodyAsBytesCapped (HttpTransport.kt:303). (2) The SDK never installs Ktor's HttpTimeout plugin (only reference is a comment at FireworksFacade.kt:494 saying the caller's HttpTimeout policy is preserved). (3) All three call sites…
+
+[[items]]
+id = "L06"
+phase = "errors-telemetry"
+title = "[low] Sanitized ToolResult drops isError, reporting failed tool results as successes to telemetry (StreamEventTelemetryRedaction.kt:146)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/StreamEventTelemetryRedaction.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: toolResult() reconstructs StreamEvent.ToolResult passing only toolCallId/toolName/outputJson/preliminary. StreamEvent.ToolResult (Streaming.kt:407-427) re-derives `isError` from `modelOutput`, which is itself re-derived from `outputJson`. With recordOutputs=false the sanitized outputJson is JsonObject(emptyMap()), so `isError` always recomputes to false regardless of `event.isError`. `isError` is a boolean flag, not payload — there is no privacy reason to strip it; the omission of `isError = event.isError` (and providerMetadata=None, which IS intentional elsewhere) silently rewrites failure as success.
+# 2026-08-07 REPRO: recordOutputs=false (the default), a tool executor returns an error-shaped result (isError=true — this path does NOT emit ToolError, only ToolResult). The telemetry integration receives the Chunk with ToolResult.isError=false; an observability dashboard counting tool failures reports zero failures while the agent is actually degrading.
+# 2026-08-07 VERDICT (confirmed): The claimed mechanism is real and exact. StreamEventTelemetryRedaction.toolResult() (src/commonMain/kotlin/ai/torad/aisdk/StreamEventTelemetryRedaction.kt:141-155) rebuilds StreamEvent.ToolResult without passing isError/output/modelOutput. StreamEvent.ToolResult (Streaming.kt:407-427) defaults isError = modelOutput.isToolResultError(), modelOutput = output, output = toolResultOutputFromJson(outpu…
+
+[[items]]
+id = "L07"
+phase = "utils-media-embedding"
+title = "[low] decode() normalizes base64url alphabet but rejects unpadded input, diverging from upstream's tolerant decoder (Base64Codec.kt:9)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/Base64Codec.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: Base64Codec.decode maps '-'→'+' and '_'→'/' specifically to accept URL-safe base64 (mirroring upstream Vercel's convertBase64ToUint8Array, which does the same replace then atob). But it then decodes with Base64.Default, whose padding option is PRESENT — decode requires padding (verified: Base64.Default.decode("aGVsbG8") throws IllegalArgumentException 'The padding option is set to PRESENT, but the input is not properly padded'). URL-safe base64 is conventionally emitted WITHOUT padding (JWTs, many provider payloads), and upstream's atob accepts unpadded input (it rejects only length%4==1). So the half of base64url tolerance that matters most is missing: any unpadded payload reaching the ~20…
+# 2026-08-07 REPRO: A provider (or consumer fixture) supplies audio/image data as unpadded base64url, e.g. AudioSource(base64 = "aGVsbG8"). Transcription.transcribe → Base64Codec.decode throws IllegalArgumentException and the call fails, while the identical payload works in the upstream JS SDK.
+# 2026-08-07 VERDICT (confirmed): Confirmed by execution and source evidence. (1) Base64Codec.kt:8-9 normalizes the base64url alphabet then decodes with Base64.Default; I ran a kotlinc script proving Base64.Default.decode("aGVsbG8") throws IllegalArgumentException ("padding option is set to PRESENT, but the input is not properly padded") while Base64.withPadding(PaddingOption.ABSENT_OPTIONAL) decodes it fine. (2) The vendored ups…
+
+[[items]]
+id = "L08"
+phase = "utils-media-embedding"
+title = "[low] DefaultGeneratedFile lazy caches are unsynchronized shared mutable state; ByteArray publication is unsafe (MediaModels.kt:198)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/MediaModels.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: DefaultGeneratedFile.base64 and .byteArray getters mutate private var base64Data / byteArrayData with no synchronization or @Volatile. Under the JVM memory model, a ByteArray written by one thread and read via an unsynchronized field by another is not safely published: the reader can observe a non-null reference to an array whose contents are not yet visible (default zeros), so byteArray's copyOf() can return partially-zeroed data; String caching is safe only by accident of String's final fields. On Kotlin/Native the same racy lazy-init pattern applies. The class is a public value handed to provider code that may touch it from multiple dispatcher threads. Either compute both eagerly in the…
+# 2026-08-07 REPRO: A DefaultGeneratedFile built from a base64 string is shared between two coroutines on different Dispatchers.Default threads; both read .byteArray concurrently. Thread B observes byteArrayData != null before A's array contents are visible and returns a copy containing zeroed bytes — corrupted audio/image data with no exception.
+# 2026-08-07 VERDICT (confirmed): Confirmed at the claimed low severity. MediaModels.kt:182-204: DefaultGeneratedFile's public `base64`/`byteArray` getters mutate `private var base64Data`/`byteArrayData` with no @Volatile/lock/atomics — a hand-rolled lazy(NONE). For a base64-built file (factory at line 174), thread A's write `byteArrayData = Base64Codec.decode(...)` (line 201) has no happens-before edge with thread B's plain read…
+
+[[items]]
+id = "L09"
+phase = "utils-media-embedding"
+title = "[low] SSRF guard bypassed by shorthand/integer IPv4 literals and non-canonical IPv6 forms (UrlOps.kt:49)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/UrlOps.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: validateDownload's private-address check runs isPrivateIPv4 only when isIPv4(host) is true, and isIPv4 accepts strictly dotted-quad (4 parts). The JVM resolver accepts the BSD shorthand forms d.d.d, d.d, and plain decimal d (verified: InetAddress.getByName("127.1") and ("2130706433") both return /127.0.0.1). So http://127.1/, http://2130706433/, http://0x7f000001/ (and octal forms) pass the guard yet connect to loopback. Additional gaps in isPrivateIPv6 (line 99-109): the ::ffff: mapped check only recognizes dotted-quad payloads, so the pure-hex mapped form [::ffff:7f00:1] (= 127.0.0.1) passes; and link-local fe80::/10 spans fe80-febf but only the literal prefix "fe80" is blocked, so [fe81:…
+# 2026-08-07 REPRO: A host application wires UrlOps.validateDownload in front of a user-supplied asset URL fetch. Attacker submits http://2130706433/latest/meta-data/ (or http://127.1:8080/admin). validateDownload passes it; the JVM HTTP client resolves 2130706433 to 127.0.0.1 and the request reaches the internal service the guard exists to block.
+# 2026-08-07 VERDICT (downgraded medium->low): PARSING GAPS ARE REAL (code-confirmed): - src/commonMain/kotlin/ai/torad/aisdk/UrlOps.kt:49 gates isPrivateIPv4 behind isIPv4(host); UrlOps.kt:79-85 requires exactly 4 dotted parts, each a canonical 0..255 decimal. So host "127.1" (2 parts) and "2130706433" (1 part) never reach isPrivateIPv4, and isPrivateIPv6 (UrlOps.kt:99-109) returns false for them, so validateDownload does not throw. - UrlOps…
+
+[[items]]
+id = "L10"
+phase = "providers-openai-compatible"
+title = "[low] Base64-decode heuristic misclassifies real file ids, sending them as garbage base64 payloads (OpenResponsesInputMapping.kt:90)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesInputMapping.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: IsOpenResponsesFileId requires !IsOpenResponsesBase64Payload(value), and IsOpenResponsesBase64Payload succeeds whenever Base64Codec.decode succeeds. Base64Codec.decode maps '-' to '+' and '_' to '/' before strict decoding, so any file id made of [A-Za-z0-9-_] whose total length is a multiple of 4 decodes 'successfully' and is misclassified as an inline base64 payload. The id is then emitted as `image_url`/`file_data` = "data:<mediaType>;base64,file-…" instead of `file_id`. The guard also protects nothing: standard-alphabet base64 output (what Base64Codec.encode produces) can never contain '-', so a genuine payload can never start with a prefix like "file-" or "assistant-" in the first place…
+# 2026-08-07 REPRO: AzureOpenAIProvider.responses() configures fileIdPrefixes(["assistant-"]). A caller passes ContentPart.File(base64 = "assistant-Vy8jUoYYyCXfFuL8YuHY12") (32 chars — 32 % 4 == 0, all base64-alphabet after '-'→'+'). Base64.Default.decode succeeds, IsOpenResponsesFileId returns false, and the request carries "file_data": "data:application/pdf;base64,assistant-Vy8j…" — the provider 400s (or ingests garbage bytes), while an id one character shorter (33 % 4 != 0) works fine. Deterministic, length-dep…
+# 2026-08-07 VERDICT (downgraded high->low): Mechanics confirmed: IsOpenResponsesFileId (OpenResponsesInputMapping.kt:87-91) rejects any prefix-matching value that Base64Codec.decode accepts, and Base64Codec.kt:8-9 maps '-'→'+' / '_'→'/' before strict decode, so a url-safe-alphabet id with length ≡ 0 (mod 4) (e.g. the 32-char "assistant-Vy8jUoYYyCXfFuL8YuHY12" with AzureProvider.kt:149's fileIdPrefixes(["assistant-"])) is emitted inline as…
+
+[[items]]
+id = "L11"
+phase = "providers-facades-text"
+title = "[low] Finish-reason mapping keyed on values the Responses API never sends (length/tool-calls misreported) (HuggingFaceProvider.kt:493)"
+files = ["src/commonMain/kotlin/ai/torad/aisdk/providers/HuggingFaceProvider.kt"]
+status = "todo"
+verify = "regression test red on unmodified HEAD then green + ./gradlew check + bash .claude/hooks/rules/ci-gate.sh"
+# 2026-08-07 WHAT: responsesResult() computes finishReason via mapHuggingFaceFinishReason(incompleteReason ?: "stop"), where incompleteReason comes from `incomplete_details.reason`. The Responses wire protocol reports truncation as "max_output_tokens" (not "length"), and tool-call completions have no incomplete reason at all — the sibling OpenResponsesProvider.kt:845-849 maps exactly this shape (null→ToolCalls when hasToolCalls, "max_output_tokens"→Length). Here a truncated response maps to FinishReason.Other and a tool-call step maps to FinishReason.Stop. The same defect exists in the stream state at lines 915-917.
+# 2026-08-07 REPRO: generate() hits max_output_tokens: response carries incomplete_details.reason="max_output_tokens", mapHuggingFaceFinishReason returns Other, so a caller branching on FinishReason.Length (e.g. retry-with-larger-budget, truncation telemetry) never detects the truncation; a step that returned tool calls reports Stop instead of ToolCalls, misleading any consumer inspecting step finish reasons.
+# 2026-08-07 VERDICT (downgraded medium->low): The code shape is as claimed (HuggingFaceProvider.kt:87-94 keys on "length"/"tool_calls"; lines 493 and 915-917 feed `incomplete_details.reason ?: "stop"`), but the claim's headline failure scenario is half impossible and the surviving half is less severe than stated. (1) Truncation half REFUTED on this wire: the provider targets router.huggingface.co/v1/responses, which is powered by huggingface…
