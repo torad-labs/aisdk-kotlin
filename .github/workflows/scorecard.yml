@@ -23,6 +23,12 @@ on:
   # place it would emit a permanent false high-severity finding, which is the specific
   # failure this repo refuses to accept — an alert list you cannot trust is worse than
   # no list. On the weekly cron, CI has long since settled on the tip commit.
+  #
+  # The same race applies to a MANUAL dispatch: gating one on the `verify` job alone is
+  # not enough. Measured 2026-08-02 — dispatch at :54:55 with verify green (:54:53) still
+  # beat verify-windows-jvm (:55:27) and emitted alert #4 ("binary detected") on a clean
+  # tree; a re-run minutes later cleared it. Before any workflow_dispatch, wait for the
+  # FULL ci.yml run to complete on the tip, not just the job you care about.
   workflow_dispatch:
 
 permissions:
@@ -52,10 +58,62 @@ jobs:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
+          # Branch-Protection reads five settings (UpToDateBeforeMerge, DismissStaleReviews,
+          # EnforceAdmins, RequireLastPushApproval, RequiresStatusChecks) that GitHub's API
+          # only exposes to an admin-capable token. With the default GITHUB_TOKEN the check
+          # reports them as DISABLED no matter what the repo enforces — measured 2026-08-02:
+          # strict ("up-to-date branches") was set on main and the run still warned it was
+          # disabled. SCORECARD_TOKEN is a fine-grained PAT scoped to this repo only
+          # (Administration:read + Contents:read) so the score reflects the settings, not
+          # the token's eyesight. An unset secret degrades to the old behaviour, not a failure.
+          repo_token: ${{ secrets.SCORECARD_TOKEN }}
       - name: Upload Scorecard SARIF
         uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         with:
           sarif_file: results.sarif
+      - name: Score-floor regression gate
+        # Floors live in dev/scorecard-floors.toml — the checked-in contract for the
+        # code-scanning alerts dismissed 2026-08-02 (structurally capped for a
+        # solo-maintainer repo: perfect scores need a second human; SAST's window
+        # counts GITHUB_TOKEN bot-merges that trigger no CI). A dismissed alert
+        # NEVER re-fires, so this step owns the regression signal: a score DROPPING
+        # below its floor fails this workflow, and the scheduled-failure step below
+        # opens an issue. Fires on change, not on state. Raise a floor only in the
+        # same PR that raises the score. A rule absent from the SARIF scored 10
+        # (clean results are not emitted).
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import json, sys, tomllib
+
+          with open("dev/scorecard-floors.toml", "rb") as fh:
+              floors = {c["id"]: c["floor"] for c in tomllib.load(fh)["check"]}
+          with open("results.sarif") as fh:
+              sarif = json.load(fh)
+
+          texts = {}
+          for run in sarif.get("runs", []):
+              for res in run.get("results", []):
+                  texts.setdefault(res.get("ruleId", ""), res.get("message", {}).get("text", ""))
+
+          failed = False
+          for rule, floor in floors.items():
+              text = texts.get(rule, "")
+              score = None
+              if "score is " in text:
+                  try:
+                      score = int(text.split("score is ", 1)[1].split(":", 1)[0].strip())
+                  except ValueError:
+                      score = None
+              if score is None:
+                  print(f"{rule}: no SARIF result (score 10 or unemitted) — above floor {floor}")
+              elif score < floor:
+                  print(f"::error::{rule} regressed: score {score} < floor {floor}")
+                  failed = True
+              else:
+                  print(f"{rule}: score {score} >= floor {floor}")
+          sys.exit(1 if failed else 0)
+          PYEOF
       - name: Open issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
         env:

@@ -55,3 +55,26 @@ reach consumers of the published library.
 Releases are published to Maven Central with PGP signatures, and GitHub Releases carry a
 build-provenance attestation plus an SPDX SBOM. The release pipeline and its gates are
 documented in [docs/beta-readiness.md](docs/beta-readiness.md).
+
+## Reading our security signals
+
+The code-scanning tab is kept actionable by construction: anything that appears there
+is new and deserves attention. Signals are split across three channels:
+
+| Channel | What it means |
+| --- | --- |
+| GitHub Issues (auto-filed by CI) | A regression — a watched score dropped below its floor, or a scheduled security workflow failed |
+| Security → Code scanning | A new finding (CodeQL, secret scanning, or any Scorecard check not listed in the floors file) |
+| Dependabot PRs | Dependency maintenance; security updates are enabled |
+
+Three OpenSSF Scorecard checks are structurally capped for a solo-maintainer project
+(Branch-Protection, Code-Review, and the SAST commit window — the first two require a
+second human reviewer, the third counts bot-merges that trigger no CI). Their
+permanently-red alerts were dismissed on 2026-08-02 with per-alert justification
+comments, and the regression signal lives in
+[`dev/scorecard-floors.toml`](dev/scorecard-floors.toml): a score dropping below its
+recorded floor fails the weekly Scorecard run and auto-files an issue. Raise a floor
+only in the same PR that raises the score.
+
+This file is the human half of the contract; the machine half is
+[`security-insights.yml`](security-insights.yml) (OpenSSF Security Insights spec).
