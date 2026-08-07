@@ -26,10 +26,17 @@ import kotlin.jvm.JvmSynthetic
 
 /**
  * LLM-visible metadata for a [Tool]. Separates schema from executor.
+ *
+ * Every [Tool] subclass authors one, so this is a construct-type: build it with the
+ * [ToolSchema] DSL factory — `ToolSchema { name("searchDocs"); description("…") }`. The
+ * positional constructor is internal so fields can grow without freezing a parameter
+ * list into the ABI (see CLAUDE.md public-value-types rule).
  * @since 0.3.0-beta01
  */
 @Poko
-public class ToolSchema(
+public class ToolSchema
+@Suppress("LongParameterList") // internal ctor; public surface is the DSL builder
+internal constructor(
     /** @since 0.3.0-beta01 */
     public val name: String,
     /** @since 0.3.0-beta01 */
@@ -45,6 +52,74 @@ public class ToolSchema(
     /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions = ProviderOptions.None,
 )
+
+/** @since 0.3.0-beta01 */
+public class ToolSchemaBuilder {
+    private var name: String? = null
+    private var description: String? = null
+    private var strict: Boolean? = null
+    private var inputExamples: List<String> = emptyList()
+    private var metadata: Map<String, JsonElement> = emptyMap()
+    private var providerExecuted: Boolean = false
+    private var providerOptions: ProviderOptions = ProviderOptions.None
+
+    /** @since 0.3.0-beta01 */
+    public fun name(value: String): ToolSchemaBuilder {
+        name = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun description(value: String): ToolSchemaBuilder {
+        description = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun strict(value: Boolean?): ToolSchemaBuilder {
+        strict = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun inputExamples(value: List<String>): ToolSchemaBuilder {
+        inputExamples = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun metadata(value: Map<String, JsonElement>): ToolSchemaBuilder {
+        metadata = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun providerExecuted(value: Boolean): ToolSchemaBuilder {
+        providerExecuted = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun providerOptions(value: ProviderOptions): ToolSchemaBuilder {
+        providerOptions = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
+    public fun build(): ToolSchema = ToolSchema(
+        name = requireNotNull(name) { "ToolSchema.name is required" },
+        description = requireNotNull(description) { "ToolSchema.description is required" },
+        strict = strict,
+        inputExamples = inputExamples,
+        metadata = metadata,
+        providerExecuted = providerExecuted,
+        providerOptions = providerOptions,
+    )
+}
+
+/** @since 0.3.0-beta01 */
+public fun ToolSchema(block: ToolSchemaBuilder.() -> Unit): ToolSchema =
+    ToolSchemaBuilder().apply(block).build()
 
 /**
  * Bundles selected [ToolSchema] flags for factory functions.
@@ -105,7 +180,7 @@ public sealed class ToolResult<out O> {
  * **1. Extend it** — named subclass carrying both schema and executor:
  * ```
  * class SearchDocsTool(private val repo: DocRepository) : Tool<SearchInput, List<SearchResult>, AppContext>() {
- *     override val schema = ToolSchema("searchDocs", "Search the product documentation")
+ *     override val schema = ToolSchema { name("searchDocs"); description("Search the product documentation") }
  *     override val inputSerializer = serializer<SearchInput>()
  *     override val outputSerializer = serializer<List<SearchResult>>()
  *     override fun execute(input: SearchInput, ctx: ToolExecutionContext<AppContext>) = flow {
@@ -203,7 +278,7 @@ public abstract class Tool<TInput, TOutput, TContext> {
  *
  * ```
  * class LineupTool(private val repo: LineupRepo) : StreamingTool<LineupQuery, Lineup, AppContext>() {
- *     override val schema = ToolSchema("getLineup", "Get sets playing at a stage on a given day")
+ *     override val schema = ToolSchema { name("getLineup"); description("Get sets playing at a stage on a given day") }
  *     override val inputSerializer = serializer<LineupQuery>()
  *     override val outputSerializer = serializer<Lineup>()
  *     override fun ToolExecutionContext<AppContext>.executeStream(input: LineupQuery) = flow {

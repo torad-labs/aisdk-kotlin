@@ -2,13 +2,18 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.ui.Chat
 import ai.torad.aisdk.ui.DirectChatTransport
+import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
+import ai.torad.aisdk.ui.UiMessageStreams
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ChatApprovalResponseTest {
     @Test
@@ -58,4 +63,46 @@ class ChatApprovalResponseTest {
         assertEquals("tool_approval_4", response.id)
         assertEquals("approval_1", part.output?.jsonPrimitive?.content)
     }
+
+    @Test
+    fun `approval response opens the approval-completion gate`() {
+        val chat = chatWithPendingToolPart(ToolCallState.ApprovalRequested, approvalId = "approval_1")
+
+        assertFalse(UiMessageStreams.lastAssistantMessageIsCompleteWithApprovalResponses(chat.messages))
+
+        chat.addToolApprovalResponse(toolCallId = "call_1", approved = true, approvalId = "approval_1")
+
+        assertTrue(UiMessageStreams.lastAssistantMessageIsCompleteWithApprovalResponses(chat.messages))
+    }
+
+    @Test
+    fun `tool output opens the tool-call-completion gate`() {
+        val chat = chatWithPendingToolPart(ToolCallState.InputAvailable, approvalId = null)
+
+        assertFalse(UiMessageStreams.lastAssistantMessageIsCompleteWithToolCalls(chat.messages))
+
+        chat.addToolOutput(toolCallId = "call_1", output = JsonPrimitive("done"), toolName = "getWeather")
+
+        assertTrue(UiMessageStreams.lastAssistantMessageIsCompleteWithToolCalls(chat.messages))
+    }
+
+    private fun chatWithPendingToolPart(state: ToolCallState, approvalId: String?): Chat =
+        Chat(
+            initialMessages = listOf(
+                UIMessage(
+                    id = "a1",
+                    role = UIMessageRole.Assistant,
+                    parts = listOf(
+                        UIMessagePart.ToolUI(
+                            toolCallId = "call_1",
+                            toolName = "getWeather",
+                            state = state,
+                            input = JsonPrimitive("Paris"),
+                            approvalId = approvalId,
+                        ),
+                    ),
+                ),
+            ),
+            transport = DirectChatTransport { emptyFlow() },
+        )
 }

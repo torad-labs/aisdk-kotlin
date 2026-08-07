@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -139,6 +140,79 @@ class McpSseTransportTest : MCPClientTestBase() {
 
         assertEquals("notifications/server", assertIs<JSONRPCNotification>(received).method)
         assertNotNull(errored, "the malformed frame is surfaced as a non-fatal error, not a teardown")
+        transport.close()
+    }
+
+    /**
+     * SSE dispatch step 2: when the data buffer is empty the data buffer AND the event type
+     * buffer are reset before returning. The parser returned early without resetting, so a
+     * data-less `event: ping` heartbeat leaked "ping" into the NEXT frame — which then failed
+     * every consumer's `event == "message"` filter and was silently dropped. When that frame
+     * is a JSON-RPC response, the awaiting request hangs until its timeout.
+     */
+    @Test
+    fun `a data-less event frame does not leak its event name into the next frame`() = runTest {
+        val serverNotification = """{"jsonrpc":"2.0","method":"notifications/server"}"""
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/sse" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            "event: endpoint\ndata: /messages\n\n",
+                            "event: ping\n\n", // data-less heartbeat: dispatches nothing, resets the type
+                            "data: $serverNotification\n\n", // no event: line -> the default "message"
+                        ),
+                    ),
+                ),
+                "https://mcp.test/messages" to UrlHandler(UrlResponse.Empty(status = 202)),
+            ),
+        )
+        fixture.server.start()
+        val transport = SseMCPTransport(fixture.httpClient(), "https://mcp.test/sse")
+        val received = CompletableDeferred<JSONRPCMessage>()
+        transport.setOnMessage { received.complete(it) }
+
+        transport.start()
+        val message = HttpTransport.withRealTimeout(5_000) { received.await() }
+
+        assertEquals("notifications/server", assertIs<JSONRPCNotification>(message).method)
+        transport.close()
+    }
+
+    /**
+     * The whole point of SSE: a real server holds the GET open forever and pushes events down
+     * it. Every other test here uses a stream the fixture has already CLOSED, which hides the
+     * defect — Ktor 3.5 installs `SaveBody` unconditionally and it calls `readRemaining()` on
+     * the raw channel before `client.request(...)` returns, so against a live server the
+     * `endpoint` frame is never parsed and `start()` only ever dies at the handshake timeout.
+     * `prepareRequest { }.execute { }` is the one construction that does not pre-buffer (see
+     * `HttpTransport.streamSse`, which already had to learn this).
+     */
+    @Test
+    fun `SSE MCP transport handshakes and delivers while the stream is still open`() = runTest {
+        val serverNotification = """{"jsonrpc":"2.0","method":"notifications/server"}"""
+        val controller = TestResponseController()
+        controller.write("event: endpoint\ndata: /messages\n\n")
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/sse" to UrlHandler(UrlResponse.ControlledStream(controller)),
+                "https://mcp.test/messages" to UrlHandler(UrlResponse.Empty(status = 202)),
+            ),
+        )
+        fixture.server.start()
+        val transport = SseMCPTransport(fixture.httpClient(), "https://mcp.test/sse")
+        var received: JSONRPCMessage? = null
+        transport.setOnMessage { received = it }
+
+        // Bounded well under the 30s handshake ceiling so a pre-buffering transport fails
+        // fast and loud instead of stalling the suite.
+        HttpTransport.withRealTimeout(5_000) { transport.start() }
+
+        controller.write("event: message\ndata: $serverNotification\n\n")
+        waitForRealTime { received != null }
+
+        assertEquals("notifications/server", assertIs<JSONRPCNotification>(received).method)
+        controller.close()
         transport.close()
     }
 }

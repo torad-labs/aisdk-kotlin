@@ -102,8 +102,12 @@ internal object AwsSigV4 {
         return AwsParsedUrl(host = authority.lowercase(), path = path, query = query)
     }
 
+    // SigV4 requires every path segment to be URI-encoded TWICE for all services except S3, so the
+    // already-encoded wire path is encoded once more here: escaping '%' before the single-encode pass
+    // turns each existing escape into its double-encoded form, so a Bedrock model id sent as
+    // `...-v1%3A0` is signed over `...-v1%253A0`, matching botocore. The query stays single-encoded.
     private fun canonicalAwsPath(path: String): String =
-        uriEncodePreservingEscapes(path.ifBlank { "/" }, encodeSlash = false)
+        uriEncodePreservingEscapes(path.ifBlank { "/" }.replace("%", "%25"), encodeSlash = false)
 
     private fun canonicalAwsQuery(query: String): String {
         if (query.isBlank()) return ""

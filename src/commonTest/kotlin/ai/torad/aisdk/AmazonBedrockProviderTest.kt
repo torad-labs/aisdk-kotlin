@@ -177,7 +177,9 @@ class AmazonBedrockProviderTest {
         assertEquals("tool-1", result.toolCalls.single().toolCallId)
         assertEquals("Paris", result.toolCalls.single().input.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
         assertEquals("thinking", result.content.filterIsInstance<ContentPart.Reasoning>().single().text)
-        assertEquals(12, result.usage.promptTokens)
+        // AWS's exclusive cache semantics: total input = inputTokens(12) + cacheRead(2) + cacheWrite(3).
+        assertEquals(17, result.usage.promptTokens)
+        assertEquals(12, result.usage.inputTokens.noCache)
         assertEquals(5, result.usage.completionTokens)
         assertEquals(2, result.usage.inputTokens.cacheRead)
         assertEquals(3, result.usage.inputTokens.cacheWrite)
@@ -874,6 +876,159 @@ class AmazonBedrockProviderTest {
     }
 
     @Test
+    fun `mantle chat stream emits the decoded tool calls it finishes on`() = runTest {
+        val toolCall =
+            """{"id":"call_abc","function":{"name":"get_weather","arguments":"{\"city\":\"Paris\"}"}}"""
+        val message = """{"content":null,"tool_calls":[$toolCall]}"""
+        val body = """{"choices":[{"message":$message,"finish_reason":"tool_calls"}]}"""
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mantle.test/v1/chat/completions" to
+                    UrlHandler(UrlResponse.JsonValue(Json.parseToJsonElement(body))),
+            ),
+        )
+        fixture.server.start()
+        val provider = BedrockMantle(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://mantle.test/v1")
+            }),
+        )
+        val events = drainAllItems(
+            provider.chat(ModelId("m")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                    tools(listOf(LanguageModelTool("get_weather", "d", """{"type":"object"}""")))
+                },
+            ),
+        )
+
+        val streamedCall = events.filterIsInstance<StreamEvent.ToolCall>().single()
+        assertEquals("call_abc", streamedCall.toolCallId)
+        assertEquals("get_weather", streamedCall.toolName)
+        assertEquals("Paris", streamedCall.inputJson.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            FinishReason.ToolCalls,
+            events.filterIsInstance<StreamEvent.Finish>().single().finishReason,
+        )
+    }
+
+    @Test
+    fun `mantle chat resends tool history as tool_calls plus tool_call_id`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mantle.test/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"choices":[{"message":{"content":"sunny"},"finish_reason":"stop"}]}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = BedrockMantle(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://mantle.test/v1")
+            }),
+        )
+        provider.chat(ModelId("m")).generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        UserMessage("weather?"),
+                        ModelMessage(
+                            MessageRole.Assistant,
+                            listOf(
+                                ContentPart.ToolCall(
+                                    "call_abc",
+                                    "get_weather",
+                                    buildJsonObject { put("city", JsonPrimitive("Paris")) },
+                                ),
+                            ),
+                        ),
+                        ToolMessage("call_abc", "get_weather", JsonPrimitive("18C")),
+                    ),
+                )
+            },
+        )
+
+        val messages = fixture.calls.single().requestBodyJson.jsonObject["messages"]?.jsonArray
+        val assistant = messages?.get(1)?.jsonObject
+        val sentCall = assistant?.get("tool_calls")?.jsonArray?.single()?.jsonObject
+        assertEquals("call_abc", sentCall?.get("id")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "get_weather",
+            sentCall?.get("function")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull,
+        )
+        val toolMessage = messages?.get(2)?.jsonObject
+        assertEquals("tool", toolMessage?.get("role")?.jsonPrimitive?.contentOrNull)
+        assertEquals("call_abc", toolMessage?.get("tool_call_id")?.jsonPrimitive?.contentOrNull)
+        assertEquals("18C", toolMessage?.get("content")?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `mantle responses resends tool history as function_call plus function_call_output`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mantle.test/v1/responses" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "status":"completed",
+                              "output":[{"type":"message","content":[{"type":"output_text","text":"sunny"}]}]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = BedrockMantle(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://mantle.test/v1")
+            }),
+        )
+        provider.responses(ModelId("m")).generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        UserMessage("weather?"),
+                        ModelMessage(
+                            MessageRole.Assistant,
+                            listOf(
+                                ContentPart.ToolCall(
+                                    "call_abc",
+                                    "get_weather",
+                                    buildJsonObject { put("city", JsonPrimitive("Paris")) },
+                                ),
+                            ),
+                        ),
+                        ToolMessage("call_abc", "get_weather", JsonPrimitive("18C")),
+                    ),
+                )
+            },
+        )
+
+        val input = fixture.calls.single().requestBodyJson.jsonObject["input"]?.jsonArray
+        val functionCall = input?.get(1)?.jsonObject
+        assertEquals("function_call", functionCall?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals("call_abc", functionCall?.get("call_id")?.jsonPrimitive?.contentOrNull)
+        assertEquals("get_weather", functionCall?.get("name")?.jsonPrimitive?.contentOrNull)
+        val functionOutput = input?.get(2)?.jsonObject
+        assertEquals("function_call_output", functionOutput?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals("call_abc", functionOutput?.get("call_id")?.jsonPrimitive?.contentOrNull)
+        assertEquals("18C", functionOutput?.get("output")?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
     fun `bedrock SigV4 clock skew errors include actionable clock guidance`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
@@ -947,6 +1102,54 @@ class AmazonBedrockProviderTest {
             payload.copyInto(frame, destinationOffset = 12 + headers.size)
             frame.writeInt32BE(totalLength - 4, bedrockCrc32(frame, 0, totalLength - 4))
         }
+    }
+
+    @Test
+    fun `converse usage treats inputTokens as the non cached count AWS documents`() = runTest {
+        // AWS prompt-caching guide, "Important": with caching enabled `inputTokens` counts ONLY
+        // the non-cached tokens, and total input = inputTokens + cacheRead + cacheWrite. Reading
+        // it as an inclusive total clamped a 3626-token cache hit down to 45.
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "output":{"message":{"role":"assistant","content":[{"text":"cached"}]}},
+                              "stopReason":"end_turn",
+                              "usage":{
+                                "inputTokens":45,
+                                "outputTokens":6,
+                                "cacheReadInputTokens":3626,
+                                "cacheWriteInputTokens":0
+                              }
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = AmazonBedrock(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://bedrock.test")
+            }),
+        )
+
+        val result = provider.languageModel("amazon.nova-lite-v1:0").generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
+        )
+
+        assertEquals(3671, result.usage.inputTokens.total)
+        assertEquals(45, result.usage.inputTokens.noCache)
+        assertEquals(3626, result.usage.inputTokens.cacheRead)
+        assertEquals(0, result.usage.inputTokens.cacheWrite)
     }
 
     private fun smithyStringHeader(name: String, value: String): ByteArray {

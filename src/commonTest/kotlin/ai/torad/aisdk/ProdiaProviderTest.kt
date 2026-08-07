@@ -196,7 +196,7 @@ class ProdiaProviderTest {
     fun `video model supports text and image job request paths`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
-                "https://prodia.test/v2/job/async?price=true" to UrlHandler { options ->
+                "https://prodia.test/v2/job?price=true" to UrlHandler { options ->
                     if (options.callNumber == 0) {
                         prodiaMultipartResponse(
                             jobJson = """{"id":"job-video-json","metrics":{"elapsed":2.0}}""",
@@ -234,7 +234,14 @@ class ProdiaProviderTest {
                 seed(77)
                 providerOptions(
                     ProviderOptions.Raw(
-                        JsonObject(mapOf("prodia" to buildJsonObject { put("resolution", JsonPrimitive("720p")) }))
+                        JsonObject(
+                            mapOf(
+                                "prodia" to buildJsonObject {
+                                    put("resolution", JsonPrimitive("720p"))
+                                    put("async", JsonPrimitive("false"))
+                                },
+                            )
+                        )
                     )
                 )
             },
@@ -244,6 +251,11 @@ class ProdiaProviderTest {
                 prompt("animate frame")
                 image(GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/input.png"))
                 resolution("480p")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(mapOf("prodia" to buildJsonObject { put("async", JsonPrimitive("false")) }))
+                    )
+                )
             },
         )
 
@@ -281,12 +293,87 @@ class ProdiaProviderTest {
     }
 
     @Test
+    fun `video model polls async job state and downloads the output file`() = runTest {
+        val fixture = TestServer.createTestServer(prodiaAsyncJobRoutes())
+        fixture.server.start()
+        val model = Prodia(
+            fixture.httpClient(),
+            ProdiaProviderSettings {
+                apiKey("token")
+                baseURL("https://prodia.test/v2")
+            },
+        ).video(ModelId("inference.wan2-2.lightning.txt2vid.v0"))
+
+        val result = model.generate(VideoGenerationParams { prompt("a puppy in a field") })
+
+        assertEquals("video/mp4", result.videos.single().mediaType)
+        assertEquals(Base64Codec.encode(byteArrayOf(12, 13)), result.videos.single().base64)
+        assertEquals(
+            "job-async",
+            result.providerMetadata.toMap()["prodia"]?.jsonObject?.get(
+                "videos"
+            )?.jsonArray?.single()?.jsonObject?.get("jobId")?.jsonPrimitive?.contentOrNull
+        )
+        assertEquals(
+            4.0,
+            result.providerMetadata.toMap()["prodia"]?.jsonObject?.get(
+                "videos"
+            )?.jsonArray?.single()?.jsonObject?.get("elapsed")?.jsonPrimitive?.doubleOrNull
+        )
+
+        assertEquals(
+            listOf(
+                "POST" to "https://prodia.test/v2/job/async?price=true",
+                "GET" to "https://prodia.test/v2/job/async/job-async/job.state.current",
+                "GET" to "https://prodia.test/v2/job/async/job-async/job.state.current",
+                "GET" to "https://prodia.test/v2/job/async/job-async/job.json",
+                "GET" to "https://prodia.test/v2/job/async/job-async/output",
+                "GET" to "https://prodia.test/v2/job/async/job-async/output/video.mp4",
+            ),
+            fixture.calls.map { it.requestMethod to it.requestUrl },
+        )
+        assertEquals("application/json", fixture.calls[0].requestHeaders.headerValue(HttpHeaders.Accept))
+        assertEquals("Bearer token", fixture.calls.last().requestHeaders.headerValue(HttpHeaders.Authorization))
+    }
+
+    @Test
     fun `unsupported Prodia surfaces and unconfigured singleton fail explicitly`() {
         val provider =
             Prodia(TestServer.createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings { apiKey("token") })
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }
+    }
+
+    private fun prodiaAsyncJobRoutes(): UrlHandlers {
+        val jobUrl = "https://prodia.test/v2/job/async/job-async"
+        return mutableMapOf(
+            "https://prodia.test/v2/job/async?price=true" to UrlHandler(
+                UrlResponse.Error(
+                    status = 201,
+                    body = """{"id":"job-async","state":{"current":"processing"}}""",
+                    headers = mapOf(HttpHeaders.ContentType to "application/json"),
+                ),
+            ),
+            "$jobUrl/job.state.current" to UrlHandler { options ->
+                val state = if (options.callNumber == 1) "processing" else "processed"
+                UrlResponse.Binary(
+                    state.encodeToByteArray(),
+                    headers = mapOf(HttpHeaders.ContentType to "text/plain"),
+                )
+            },
+            "$jobUrl/job.json" to UrlHandler(
+                UrlResponse.JsonValue(
+                    Json.parseToJsonElement("""{"id":"job-async","metrics":{"elapsed":4.0}}"""),
+                ),
+            ),
+            "$jobUrl/output" to UrlHandler(
+                UrlResponse.JsonValue(Json.parseToJsonElement("""["video.mp4"]""")),
+            ),
+            "$jobUrl/output/video.mp4" to UrlHandler(
+                UrlResponse.Binary(byteArrayOf(12, 13), headers = mapOf(HttpHeaders.ContentType to "video/mp4")),
+            ),
+        )
     }
 
     private data class ProdiaOutputPart(

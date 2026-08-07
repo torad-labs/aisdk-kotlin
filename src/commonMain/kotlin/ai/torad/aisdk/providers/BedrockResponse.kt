@@ -142,12 +142,15 @@ internal object BedrockResponse {
         val cacheWrite = (obj["cacheWriteInputTokens"] as? JsonPrimitive)?.intOrNull
             ?: (obj["cacheWriteInputTokenCount"] as? JsonPrimitive)?.intOrNull
             ?: 0
-        val safeCacheRead = cacheRead.coerceIn(0, input)
-        val safeCacheWrite = cacheWrite.coerceIn(0, input - safeCacheRead)
+        // AWS prompt-caching guide ("Important"): with caching enabled `inputTokens` counts ONLY
+        // the non-cached tokens, so the total input is inputTokens + cacheRead + cacheWrite. The
+        // sibling [UsageFromAnthropic] decodes the identical exclusive semantics the same way.
+        val safeCacheRead = cacheRead.coerceAtLeast(0)
+        val safeCacheWrite = cacheWrite.coerceAtLeast(0)
         return Usage(
             inputTokens = Usage.InputTokenBreakdown(
-                total = input,
-                noCache = input - safeCacheRead - safeCacheWrite,
+                total = input + safeCacheRead + safeCacheWrite,
+                noCache = input,
                 cacheRead = safeCacheRead,
                 cacheWrite = safeCacheWrite,
             ),

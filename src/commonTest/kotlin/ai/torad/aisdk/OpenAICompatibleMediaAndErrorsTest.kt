@@ -55,6 +55,32 @@ class OpenAICompatibleMediaAndErrorsTest {
     }
 
     @Test
+    fun `image model falls back to url when b64_json is an explicit null`() = runTest {
+        // Servers that serialize nulls (Go without omitempty, Jackson, Python exclude_none=False)
+        // send the unused member as an explicit null rather than omitting it. An explicit null is
+        // absent, not a malformed string — the url alternative must still be honored.
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    """{"data":[{"b64_json":null,"url":"https://cdn.test/img.png"}]}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider =
+            OpenAICompatible(client, OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+            })
+
+        val image = ImageGeneration.generateImage(provider.imageModel("image"), prompt = "logo")
+
+        assertEquals("", image.image.base64)
+        assertEquals("https://cdn.test/img.png", image.image.url)
+    }
+
+    @Test
     @Suppress("LongMethod")
     fun `embedding image speech and transcription models map native endpoints`() = runTest {
         val seenPaths = mutableListOf<String>()
