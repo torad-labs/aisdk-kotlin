@@ -191,6 +191,100 @@ class BlackForestLabsProviderTest {
     }
 
     @Test
+    fun `input image options are serialized onto the input_image wire keys`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.bfl.ai/v1/flux-pro-1.1" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"req1","polling_url":"https://api.bfl.ai/v1/poll?id=req1"}""")),
+                ),
+                "https://api.bfl.ai/v1/poll?id=req1" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement("""{"status":"Ready","result":{"sample":"https://cdn.test/o.png"}}"""),
+                    ),
+                ),
+                "https://cdn.test/o.png" to UrlHandler(UrlResponse.Binary(byteArrayOf(1))),
+            ),
+        )
+        fixture.server.start()
+        val model = BlackForestLabs(
+            fixture.httpClient(),
+            BlackForestLabsProviderSettings { apiKey("key") },
+        ).image(ModelId("flux-pro-1.1"))
+
+        model.generate(
+            ImageGenerationParams {
+                prompt("a reference-guided render")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "blackForestLabs" to buildJsonObject {
+                                    put("inputImage", JsonPrimitive("data:image/png;base64,first"))
+                                    put("inputImage2", JsonPrimitive("data:image/png;base64,second"))
+                                    put("inputImage10", JsonPrimitive("data:image/png;base64,tenth"))
+                                    put("pollIntervalMillis", JsonPrimitive(1))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
+        )
+
+        val body = fixture.calls.first().requestBodyJson.jsonObject
+        assertEquals("data:image/png;base64,first", body["input_image"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("data:image/png;base64,second", body["input_image_2"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("data:image/png;base64,tenth", body["input_image_10"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, body["input_image_3"])
+    }
+
+    @Test
+    fun `params files take the input image slots over the matching options`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.bfl.ai/v1/flux-pro-1.1" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"req1","polling_url":"https://api.bfl.ai/v1/poll?id=req1"}""")),
+                ),
+                "https://api.bfl.ai/v1/poll?id=req1" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement("""{"status":"Ready","result":{"sample":"https://cdn.test/o.png"}}"""),
+                    ),
+                ),
+                "https://cdn.test/o.png" to UrlHandler(UrlResponse.Binary(byteArrayOf(1))),
+            ),
+        )
+        fixture.server.start()
+        val model = BlackForestLabs(
+            fixture.httpClient(),
+            BlackForestLabsProviderSettings { apiKey("key") },
+        ).image(ModelId("flux-pro-1.1"))
+
+        model.generate(
+            ImageGenerationParams {
+                prompt("a reference-guided render")
+                files(listOf(ImageGenerationFile(url = "https://example.com/file.png")))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "blackForestLabs" to buildJsonObject {
+                                    put("inputImage", JsonPrimitive("data:image/png;base64,first"))
+                                    put("inputImage2", JsonPrimitive("data:image/png;base64,second"))
+                                    put("pollIntervalMillis", JsonPrimitive(1))
+                                },
+                            )
+                        )
+                    )
+                )
+            },
+        )
+
+        val body = fixture.calls.first().requestBodyJson.jsonObject
+        assertEquals("https://example.com/file.png", body["input_image"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("data:image/png;base64,second", body["input_image_2"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
     fun `poll failure and input image limit fail explicitly`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

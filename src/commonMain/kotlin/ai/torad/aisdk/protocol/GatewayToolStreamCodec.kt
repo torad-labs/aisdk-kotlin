@@ -5,6 +5,7 @@ import ai.torad.aisdk.ToolResultOutput
 import ai.torad.aisdk.ToolResultOutputs
 import ai.torad.aisdk.WireDecoder
 import ai.torad.aisdk.protocol.ProtocolJson.requiredOneOfString
+import ai.torad.aisdk.protocol.ProtocolJson.toolInput
 import kotlinx.serialization.json.JsonObject
 
 internal object GatewayToolStreamCodec {
@@ -44,12 +45,15 @@ internal object GatewayToolStreamCodec {
         StreamEvent.ToolCall(
             toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "stream event"),
             toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "stream event"),
-            inputJson = WireDecoder.required(obj, "input", "gateway", "stream event"),
+            inputJson = toolInput(WireDecoder.required(obj, "input", "gateway", "stream event")),
             providerMetadata = ProtocolMetadata.fromJson(obj["providerMetadata"]),
         )
 
     private fun toolResult(obj: JsonObject): StreamEvent.ToolResult = with(ToolResultOutputs) {
-        val output = toolResultOutputFromWire(WireDecoder.required(obj, "output", "gateway", "stream event"))
+        // v3's response-side tool-result carries the payload under `result`; `output` is the
+        // PROMPT-side field name and stays a fallback for gateways that echo the prompt shape.
+        val payload = obj["result"] ?: WireDecoder.required(obj, "output", "gateway", "stream event")
+        val output = toolResultOutputFromWire(payload)
         StreamEvent.ToolResult(
             toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "stream event"),
             toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "stream event"),
@@ -71,11 +75,14 @@ internal object GatewayToolStreamCodec {
             providerMetadata = ProtocolMetadata.fromJson(obj["providerMetadata"]),
         )
 
+    // v3's tool-approval-request is {approvalId, toolCallId, providerMetadata?} — it carries
+    // NEITHER toolName NOR input (the host correlates them through the matching tool-call).
+    // Both stay optional so a spec-conformant part decodes instead of killing the stream.
     private fun approvalRequest(obj: JsonObject): StreamEvent.ToolApprovalRequest =
         StreamEvent.ToolApprovalRequest(
             toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "stream event"),
-            toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "stream event"),
-            inputJson = WireDecoder.required(obj, "input", "gateway", "stream event"),
+            toolName = WireDecoder.optionalString(obj, "toolName", "gateway", "stream event").orEmpty(),
+            inputJson = obj["input"]?.let(::toolInput) ?: JsonObject(emptyMap()),
             approvalId = WireDecoder.optionalString(obj, "approvalId", "gateway", "stream event"),
             signature = WireDecoder.optionalString(obj, "signature", "gateway", "stream event"),
             providerMetadata = ProtocolMetadata.fromJson(obj["providerMetadata"]),

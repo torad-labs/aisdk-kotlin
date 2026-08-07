@@ -43,6 +43,39 @@ class RegistryCustomProviderR5Test {
         assertEquals("wrapped", registry.languageModel("p:m").modelId, "middleware override applied")
     }
 
+    /**
+     * [WrapProvider] overrode only the String-id accessors, so the typed [ModelRef] path and
+     * `provider(ProviderId)` fell through to the [Provider] interface defaults and resolved
+     * against the WRAPPER — whose `providerId` for a wrapped registry is the literal
+     * "registry". Every ref naming a real registered provider therefore threw
+     * [NoSuchProviderError] through the wrapper while succeeding on the registry itself.
+     */
+    @Test
+    fun `WrapProvider resolves a ModelRef and a provider lookup through the wrapped registry`() {
+        val openai = providerWith("openai", stubModel("openai/gpt-4o"))
+        val registry = ProviderRegistry("openai" to openai, "anthropic" to providerWith("anthropic", stubModel("a")))
+        val wrapped = WrapProvider(registry, ProviderMiddleware())
+
+        assertEquals("openai/gpt-4o", wrapped.languageModel("openai:gpt-4o").modelId, "String path already worked")
+        assertEquals(
+            "openai/gpt-4o",
+            wrapped.languageModel(ModelRef("openai:gpt-4o")).modelId,
+            "the typed ModelRef path must resolve through the wrapped registry",
+        )
+        assertEquals(openai, wrapped.provider(ProviderId("openai")), "registry lookup must survive wrapping")
+    }
+
+    @Test
+    fun `WrapProvider still applies language-model middleware on the ModelRef path`() {
+        val mw = object : LanguageModelMiddleware {
+            override fun overrideModelId(model: LanguageModel) = "wrapped"
+        }
+        val registry = ProviderRegistry("openai" to providerWith("openai", stubModel("openai/gpt-4o")))
+        val wrapped = WrapProvider(registry, ProviderMiddleware { languageModelMiddlewares(listOf(mw)) })
+
+        assertEquals("wrapped", wrapped.languageModel(ModelRef("openai:gpt-4o")).modelId)
+    }
+
     @Test
     fun `convertToLanguageModelPrompt merges consecutive tool messages`() = runTest {
         val messages = listOf(

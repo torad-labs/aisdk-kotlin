@@ -60,9 +60,9 @@ public object ModelMessageConversion {
     ): List<ModelMessage> {
         val result = mutableListOf<ModelMessage>()
         for (uiMsg in messages) {
-            val approvalResponse = approvalResponseMessage(uiMsg)
-            if (approvalResponse != null) {
-                result.add(approvalResponse)
+            val toolResponse = approvalResponseMessage(uiMsg) ?: toolOutputMessage(uiMsg)
+            if (toolResponse != null) {
+                result.add(toolResponse)
                 continue
             }
             val role = when (uiMsg.role) {
@@ -132,6 +132,38 @@ public object ModelMessageConversion {
                 ),
             ),
         )
+    }
+
+    /**
+     * A client-executed tool's output as [Chat.addToolOutput] records it: a lone
+     * [UIMessagePart.ToolUI] with an output but NO input and no approval identity, appended
+     * as its own message. It replays as the `Tool`-role [ContentPart.ToolResult] the model
+     * expects — the generic path would demand the absent input and throw.
+     */
+    private fun toolOutputMessage(uiMsg: UIMessage): ModelMessage? {
+        val part = (uiMsg.parts.singleOrNull() as? UIMessagePart.ToolUI)?.takeIf {
+            uiMsg.role == UIMessageRole.User &&
+                it.approvalId == null &&
+                it.input == null &&
+                !it.preliminary &&
+                it.state == ToolCallState.OutputAvailable
+        }
+        val output = part?.output
+        return if (part == null || output == null) {
+            null
+        } else {
+            ModelMessage(
+                role = MessageRole.Tool,
+                content = listOf(
+                    ContentPart.ToolResult(
+                        toolCallId = part.toolCallId,
+                        toolName = part.toolName,
+                        output = output,
+                        providerMetadata = part.providerMetadata,
+                    ),
+                ),
+            )
+        }
     }
 
     /**

@@ -326,52 +326,30 @@ public class StreamObjectFinish<TOutput>(
     public val response: LanguageModelResponseMetadata,
 )
 
+/**
+ * Streams [output] from [model]. Call settings travel as one [CallConfig] — the same shape
+ * [StructuredObjectGenerator] and [TextGenerator] take — instead of a flattened positional list, so
+ * a later setting is added to `CallConfig` and this signature never has to change (a widened
+ * parameter list would be a `NoSuchMethodError` for already-compiled callers).
+ *
+ * When [config] leaves `responseFormat` at [ResponseFormat.Text], the format is derived from
+ * [output] so the provider is constrained to the schema.
+ * @since 0.3.0-beta01
+ */
 public fun <TOutput> StreamObjectResult(
     model: LanguageModel,
     output: Output<TOutput>,
-    prompt: String? = null,
-    messages: List<ModelMessage> = emptyList(),
-    system: String? = null,
-    temperature: Float? = null,
-    topP: Float? = null,
-    topK: Int? = null,
-    maxOutputTokens: Int? = null,
-    stopSequences: List<String> = emptyList(),
-    seed: Int? = null,
-    providerOptions: ProviderOptions = ProviderOptions.None,
-    abortSignal: AbortSignal = AbortSignalNever,
-    presencePenalty: Float? = null,
-    frequencyPenalty: Float? = null,
-    responseFormat: ResponseFormat = ResponseFormat.Text,
+    input: GenerationInput,
+    config: CallConfig = CallConfig(),
     repairText: ((String) -> String?)? = null,
 ): StreamObjectResult<TOutput> {
-    val effectiveResponseFormat =
-        if (responseFormat == ResponseFormat.Text) output.toResponseFormat() else responseFormat
-    val inputMessages = buildList {
-        if (system != null) add(SystemMessage(system))
-        addAll(messages)
+    val effectiveConfig = if (config.responseFormat != ResponseFormat.Text) {
+        config
+    } else {
+        config.withResponseFormat(output.toResponseFormat())
     }
-    val input = GenerationInput(
-        prompt = prompt,
-        messages = inputMessages,
-    )
     return StreamObjectResult(
-        events = TextGenerator(
-            model,
-            CallConfig {
-                temperature(temperature)
-                topP(topP)
-                topK(topK)
-                maxOutputTokens(maxOutputTokens)
-                stopSequences(stopSequences)
-                seed(seed)
-                providerOptions(providerOptions)
-                abortSignal(abortSignal)
-                presencePenalty(presencePenalty)
-                frequencyPenalty(frequencyPenalty)
-                responseFormat(effectiveResponseFormat)
-            },
-        ).stream(input),
+        events = TextGenerator(model, effectiveConfig).stream(input),
         output = output,
         repairText = repairText,
     )

@@ -80,8 +80,12 @@ class AwsSigV4Test {
         assertTrue(!canonicalPath.contains("%253A"))
         assertEquals("bedrock-runtime.us-east-1.amazonaws.com", headers.headerValue("host"))
         assertEquals("20150830T123600Z", headers.headerValue("x-amz-date"))
+        // boto3/botocore signs the canonical path DOUBLE-encoded for every service except S3, i.e.
+        // over `/model/anthropic.claude-3-5-sonnet-20240620-v1%253A0/converse` for this wire path.
         assertEquals(
-            "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/bedrock/aws4_request, SignedHeaders=content-type;host;x-amz-date, Signature=d01a8d899a4fa4002b4b754611d4da1c824394200b23acaaa4609304bef93847",
+            "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/bedrock/aws4_request, " +
+                "SignedHeaders=content-type;host;x-amz-date, " +
+                "Signature=40f11609b51d318bc71127993eb5b075cc12b3bde24aa11d2a25186d1fc1d196",
             headers.headerValue("Authorization"),
         )
     }

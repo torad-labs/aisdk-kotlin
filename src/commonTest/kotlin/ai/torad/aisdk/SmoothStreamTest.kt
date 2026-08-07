@@ -3,6 +3,8 @@ package ai.torad.aisdk
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -137,5 +139,81 @@ class SmoothStreamTest {
 
             // THEN
             assertEquals(listOf("こ", "ん", "に", "ち", "は"), texts)
+        }
+
+    @Test
+    fun `given latin text directly followed by CJK when smoothed then chunks flush before block end`() =
+        runTest {
+            // GIVEN — "iPhone搭載" shaped mixed-script output is ubiquitous in Japanese responses.
+            // The latin branch required TRAILING whitespace, so with a CJK char directly after a
+            // latin run neither alternation could match at offset 0; flushText's offset guard then
+            // broke on every invocation and the whole block sat in the buffer until TextEnd —
+            // byte-for-byte the pre-#32 jitter the CJK rewrite exists to remove.
+            val events = flow<StreamEvent> {
+                emit(StreamEvent.TextDelta("t_1", "iPhone搭載の"))
+                emit(StreamEvent.TextDelta("t_1", "AIモデル"))
+                emit(StreamEvent.TextEnd("t_1"))
+            }
+
+            // WHEN
+            val out = drainAllItems(SmoothStream(events, delayMs = 0L))
+            val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
+
+            // THEN — paced chunks, not one giant delta at block end.
+            assertEquals("iPhone搭載のAIモデル", texts.joinToString(""))
+            assertTrue(texts.size > 1, "chunking stalled; whole block arrived as $texts")
+            assertEquals("iPhone", texts.first(), "the latin run before the CJK boundary is its own chunk")
+        }
+
+    @Test
+    fun `given a reasoning delta carrying provider metadata when re-chunked then the metadata survives`() =
+        runTest {
+            // GIVEN — Bedrock and Google attach the thinking thought-signature to ReasoningDelta
+            // metadata ONLY (ReasoningEnd is bare), and replay reads it back off the assembled
+            // ContentPart.Reasoning. Re-chunking without it silently unsigns the block.
+            val signature = ProviderMetadata(
+                "bedrock" to buildJsonObject { put("signature", JsonPrimitive("sig-1")) },
+            )
+            val events = flow<StreamEvent> {
+                emit(StreamEvent.ReasoningStart("r_1"))
+                emit(StreamEvent.ReasoningDelta("r_1", "thinking out loud ", signature))
+                emit(StreamEvent.ReasoningEnd("r_1"))
+            }
+
+            // WHEN
+            val out = drainAllItems(SmoothStream(events, delayMs = 0L))
+            val deltas = out.filterIsInstance<StreamEvent.ReasoningDelta>()
+
+            // THEN
+            assertEquals("thinking out loud ", deltas.joinToString("") { it.text })
+            var merged: ProviderMetadata = ProviderMetadata.None
+            deltas.forEach { merged += it.providerMetadata }
+            assertEquals(signature, merged)
+        }
+
+    @Test
+    fun `given a metadata-only reasoning delta when smoothed then it is not swallowed`() =
+        runTest {
+            // GIVEN — a signature-only delta with empty text: its text appended nothing, so nothing
+            // was ever re-emitted for it and the metadata disappeared with it.
+            val signature = ProviderMetadata(
+                "bedrock" to buildJsonObject { put("signature", JsonPrimitive("sig-2")) },
+            )
+            val events = flow<StreamEvent> {
+                emit(StreamEvent.ReasoningStart("r_1"))
+                emit(StreamEvent.ReasoningDelta("r_1", "done"))
+                emit(StreamEvent.ReasoningDelta("r_1", "", signature))
+                emit(StreamEvent.ReasoningEnd("r_1"))
+            }
+
+            // WHEN
+            val out = drainAllItems(SmoothStream(events, delayMs = 0L))
+            val deltas = out.filterIsInstance<StreamEvent.ReasoningDelta>()
+
+            // THEN
+            assertEquals("done", deltas.joinToString("") { it.text })
+            var merged: ProviderMetadata = ProviderMetadata.None
+            deltas.forEach { merged += it.providerMetadata }
+            assertEquals(signature, merged)
         }
 }
