@@ -7,7 +7,7 @@ android-compile-sdk = "36"
 coroutines = "1.11.0"
 serialization = "1.11.0"
 turbine = "1.2.1"
-ktor = "3.5.1"
+ktor = "3.5.2"
 detekt = "1.23.8"
 # Patched versions of PLUGIN-CLASSPATH transitives carrying advisories. Declared
 # here so Dependabot has something to bump: it detected all six and opened no PR
