@@ -131,6 +131,16 @@ class AnthropicProviderStreamingTest {
         assertTrue(errorIndex > textIndex, events.toString())
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertEquals("after text", error.message)
+        // TERMINAL is the word in this test's name, and ordering alone does not check it: a
+        // regression that emitted the error and then kept streaming would satisfy every assertion
+        // above. The error is not literally last — a terminal Finish still closes the stream so
+        // consumers get usage and metadata — so the invariant is that nothing CONTENT-BEARING
+        // survives the error.
+        val afterError = events.drop(errorIndex + 1)
+        assertTrue(
+            afterError.all { it is StreamEvent.Finish },
+            "only the terminal Finish may follow the error, but got: $afterError",
+        )
     }
 
     @Test

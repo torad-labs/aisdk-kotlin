@@ -63,7 +63,7 @@
     "src/commonMain/kotlin/ai/torad/aisdk/providers/VoyageProvider.kt": 612,
     "src/commonTest/kotlin/ai/torad/aisdk/VoyageProviderTest.kt": 516,
     "src/commonTest/kotlin/ai/torad/aisdk/AgentSessionTest.kt": 563,
-    "src/commonTest/kotlin/ai/torad/aisdk/AnthropicProviderStreamingTest.kt": 501,
+    "src/commonTest/kotlin/ai/torad/aisdk/AnthropicProviderStreamingTest.kt": 511,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenAICompatibleMediaAndErrorsTest.kt": 501,
     "src/commonTest/kotlin/ai/torad/aisdk/ToolApprovalTest.kt": 528
   }
