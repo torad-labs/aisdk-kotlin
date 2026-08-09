@@ -163,9 +163,11 @@ private class HumeSpeechModel(
                                     put("id", JsonPrimitive(params.voice ?: HUME_DEFAULT_VOICE_ID))
                                     // Docs default is CUSTOM_VOICE (custom library). HUME_AI is only
                                     // for built-in library voices — forcing it breaks custom voices.
+                                    // The fallback id is itself a Voice Library voice, so it only
+                                    // resolves under HUME_AI.
                                     val voiceProvider = (options["voiceProvider"] as? JsonPrimitive)?.contentOrNull
                                         ?: (options["provider"] as? JsonPrimitive)?.contentOrNull
-                                        ?: "CUSTOM_VOICE"
+                                        ?: if (params.voice == null) "HUME_AI" else "CUSTOM_VOICE"
                                     put("provider", JsonPrimitive(voiceProvider))
                                 },
                             )

@@ -59,9 +59,11 @@ public class GroqProviderSettings internal constructor(
             for ((key, value) in body) {
                 when (key) {
                     "messages" -> put("messages", groqMessages(value as? JsonArray))
-                    // browser_search may have been filtered out — drop the tools key if now empty
-                    // (an empty tools array is invalid, same as sending tool_choice without tools).
+                    // browser_search may have been filtered out — drop the tools key if now empty,
+                    // and tool_choice along with it (an empty tools array is invalid, same as
+                    // sending tool_choice without tools).
                     "tools" -> if (tools.isNotEmpty()) put("tools", tools)
+                    "tool_choice" -> if (tools.isNotEmpty()) put("tool_choice", value)
                     else -> put(key, value)
                 }
             }

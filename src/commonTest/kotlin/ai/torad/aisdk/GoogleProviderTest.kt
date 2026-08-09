@@ -5,7 +5,15 @@ import ai.torad.aisdk.providers.GOOGLE_VERSION
 import ai.torad.aisdk.providers.GoogleGenerativeAI
 import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -19,6 +27,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
@@ -774,6 +783,92 @@ class GoogleProviderTest {
             },
         )
         put("required", kotlinx.serialization.json.JsonArray(required.map(::JsonPrimitive)))
+    }
+
+    @Test
+    fun `stream maps code execution parts like generateContent does`() = runTest {
+        val executable = """{"executableCode":{"language":"PYTHON","code":"print(1)"}}"""
+        val executionResult = """{"codeExecutionResult":{"outcome":"OUTCOME_OK","output":"1"}}"""
+        val parts = "$executable,$executionResult"
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"candidates":[{"content":{"parts":[$parts]},"finishReason":"STOP"}]}
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = GoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key")
+                baseURL("https://google.test/v1beta")
+            },
+        )
+
+        val events = drainAllItems(
+            provider.chat(ModelId("gemini-2.5-flash")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("run it")))
+                }
+            ),
+        )
+
+        val toolCall = events.filterIsInstance<StreamEvent.ToolCall>().single()
+        assertEquals("code_execution", toolCall.toolName)
+        assertEquals("print(1)", toolCall.inputJson.jsonObject["code"]?.jsonPrimitive?.contentOrNull)
+        val toolResult = events.filterIsInstance<StreamEvent.ToolResult>().single()
+        assertEquals("code_execution", toolResult.toolName)
+        assertEquals(toolCall.toolCallId, toolResult.toolCallId)
+        assertEquals("1", toolResult.outputJson.jsonObject["output"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `generateContent is cancelled when abort fires in flight`() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val responseBody = TestResponseController()
+        val controller = AbortController()
+        val client = HttpClient(
+            MockEngine {
+                requestStarted.complete(Unit)
+                respond(
+                    content = responseBody.stream,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            }
+        )
+        val model = GoogleGenerativeAI(
+            client,
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key")
+                baseURL("https://google.test/v1beta")
+            },
+        )(ModelId("gemini-2.5-flash"))
+
+        val pending = async {
+            model.generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                    abortSignal(controller.signal)
+                },
+            )
+        }
+        requestStarted.await()
+        controller.abort()
+
+        try {
+            assertFailsWith<AbortError> { HttpTransport.withRealTimeout(5_000) { pending.await() } }
+        } finally {
+            pending.cancel()
+            responseBody.close()
+        }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

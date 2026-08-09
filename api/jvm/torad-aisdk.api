@@ -1778,8 +1778,8 @@ public final class ai/torad/aisdk/GatewayAuthToken {
 
 public final class ai/torad/aisdk/GatewayAuthenticationError : ai/torad/aisdk/GatewayError {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;)V
-	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class ai/torad/aisdk/GatewayCredentialType : java/lang/Enum {
@@ -1801,9 +1801,10 @@ public final class ai/torad/aisdk/GatewayCreditsResponse {
 }
 
 public class ai/torad/aisdk/GatewayError : ai/torad/aisdk/AiSdkException {
-	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Z)V
-	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ZLjava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ZLjava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getGenerationId ()Ljava/lang/String;
+	public final fun getResponseHeaders ()Ljava/util/Map;
 	public final fun getStatusCode ()I
 	public final fun getType ()Ljava/lang/String;
 	public final fun isRetryable ()Z
@@ -1857,14 +1858,14 @@ public final class ai/torad/aisdk/GatewayGenerationInfoParamsBuilder {
 
 public final class ai/torad/aisdk/GatewayInternalServerError : ai/torad/aisdk/GatewayError {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;)V
-	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class ai/torad/aisdk/GatewayInvalidRequestError : ai/torad/aisdk/GatewayError {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;)V
-	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class ai/torad/aisdk/GatewayKt {
@@ -1911,8 +1912,8 @@ public final class ai/torad/aisdk/GatewayLanguageModelSpecification {
 
 public final class ai/torad/aisdk/GatewayModelNotFoundError : ai/torad/aisdk/GatewayError {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
-	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getModelId ()Ljava/lang/String;
 }
 
@@ -2012,8 +2013,8 @@ public final class ai/torad/aisdk/GatewayProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/GatewayRateLimitError : ai/torad/aisdk/GatewayError {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;)V
-	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class ai/torad/aisdk/GatewayRequestContext {
@@ -2027,8 +2028,8 @@ public final class ai/torad/aisdk/GatewayRequestContext {
 
 public final class ai/torad/aisdk/GatewayResponseError : ai/torad/aisdk/GatewayError {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;ILkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/Throwable;)V
-	public synthetic fun <init> (Ljava/lang/String;ILkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;ILkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;ILkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/Throwable;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getResponse ()Lkotlinx/serialization/json/JsonElement;
 }
 
@@ -3198,6 +3199,7 @@ public final class ai/torad/aisdk/MCPClientConfig {
 	public final fun getClientName ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
 	public final fun getOnUncaughtError ()Lkotlin/jvm/functions/Function1;
+	public final fun getRequestTimeoutMillis ()Ljava/lang/Long;
 	public final fun getTransport ()Lai/torad/aisdk/MCPTransport;
 	public final fun getVersion ()Ljava/lang/String;
 }
@@ -3209,6 +3211,7 @@ public final class ai/torad/aisdk/MCPClientConfigBuilder {
 	public final fun clientName (Ljava/lang/String;)Lai/torad/aisdk/MCPClientConfigBuilder;
 	public final fun name (Ljava/lang/String;)Lai/torad/aisdk/MCPClientConfigBuilder;
 	public final fun onUncaughtError (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/MCPClientConfigBuilder;
+	public final fun requestTimeoutMillis (Ljava/lang/Long;)Lai/torad/aisdk/MCPClientConfigBuilder;
 	public final fun transport (Lai/torad/aisdk/MCPTransport;)Lai/torad/aisdk/MCPClientConfigBuilder;
 	public final fun version (Ljava/lang/String;)Lai/torad/aisdk/MCPClientConfigBuilder;
 }
@@ -5734,8 +5737,8 @@ public final class ai/torad/aisdk/StreamObjectResult {
 }
 
 public final class ai/torad/aisdk/StreamObjectResultKt {
-	public static final fun StreamObjectResult (Lai/torad/aisdk/LanguageModel;Lai/torad/aisdk/Output;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Lai/torad/aisdk/AbortSignal;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/StreamObjectResult;
-	public static synthetic fun StreamObjectResult$default (Lai/torad/aisdk/LanguageModel;Lai/torad/aisdk/Output;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Lai/torad/aisdk/AbortSignal;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/StreamObjectResult;
+	public static final fun StreamObjectResult (Lai/torad/aisdk/LanguageModel;Lai/torad/aisdk/Output;Lai/torad/aisdk/GenerationInput;Lai/torad/aisdk/CallConfig;Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/StreamObjectResult;
+	public static synthetic fun StreamObjectResult$default (Lai/torad/aisdk/LanguageModel;Lai/torad/aisdk/Output;Lai/torad/aisdk/GenerationInput;Lai/torad/aisdk/CallConfig;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/StreamObjectResult;
 }
 
 public final class ai/torad/aisdk/StreamTextResult {
@@ -6283,6 +6286,7 @@ public final class ai/torad/aisdk/ToolKt {
 	public static synthetic fun ToolNameMapping$default (Ljava/util/List;Ljava/util/Map;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/ToolNameMapping;
 	public static final fun ToolPredicateOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ToolPredicateOptions;
 	public static synthetic fun ToolPredicateOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/ToolPredicateOptions;
+	public static final fun ToolSchema (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ToolSchema;
 	public static final fun ToolSchemaOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ToolSchemaOptions;
 	public static synthetic fun ToolSchemaOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/ToolSchemaOptions;
 	public static final fun ToolSet ([Lai/torad/aisdk/Tool;)Lai/torad/aisdk/ToolSet;
@@ -6680,8 +6684,6 @@ public final class ai/torad/aisdk/ToolResultOutput$Text$Companion {
 }
 
 public final class ai/torad/aisdk/ToolSchema {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/Map;ZLai/torad/aisdk/ProviderOptions;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;Ljava/util/Map;ZLai/torad/aisdk/ProviderOptions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getInputExamples ()Ljava/util/List;
@@ -6692,6 +6694,18 @@ public final class ai/torad/aisdk/ToolSchema {
 	public final fun getStrict ()Ljava/lang/Boolean;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/ToolSchemaBuilder {
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/ToolSchema;
+	public final fun description (Ljava/lang/String;)Lai/torad/aisdk/ToolSchemaBuilder;
+	public final fun inputExamples (Ljava/util/List;)Lai/torad/aisdk/ToolSchemaBuilder;
+	public final fun metadata (Ljava/util/Map;)Lai/torad/aisdk/ToolSchemaBuilder;
+	public final fun name (Ljava/lang/String;)Lai/torad/aisdk/ToolSchemaBuilder;
+	public final fun providerExecuted (Z)Lai/torad/aisdk/ToolSchemaBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/ToolSchemaBuilder;
+	public final fun strict (Ljava/lang/Boolean;)Lai/torad/aisdk/ToolSchemaBuilder;
 }
 
 public final class ai/torad/aisdk/ToolSchemaOptions {

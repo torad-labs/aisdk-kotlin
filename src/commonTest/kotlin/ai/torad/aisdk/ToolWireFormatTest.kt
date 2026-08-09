@@ -53,24 +53,24 @@ class ToolWireFormatTest {
 
     @Test
     fun `D7 Poko tool result types keep value semantics`() {
-        val schema = ToolSchema(
-            name = "lookup",
-            description = "Lookup a city.",
-            inputExamples = listOf("""{"city":"Paris"}"""),
-            metadata = mapOf("providerToolId" to JsonPrimitive("provider.lookup")),
-        )
-        val equalSchema = ToolSchema(
-            name = "lookup",
-            description = "Lookup a city.",
-            inputExamples = listOf("""{"city":"Paris"}"""),
-            metadata = mapOf("providerToolId" to JsonPrimitive("provider.lookup")),
-        )
-        val differentSchema = ToolSchema(
-            name = "lookup",
-            description = "Lookup a different value.",
-            inputExamples = listOf("""{"city":"Paris"}"""),
-            metadata = mapOf("providerToolId" to JsonPrimitive("provider.lookup")),
-        )
+        val schema = ToolSchema {
+            name("lookup")
+            description("Lookup a city.")
+            inputExamples(listOf("""{"city":"Paris"}"""))
+            metadata(mapOf("providerToolId" to JsonPrimitive("provider.lookup")))
+        }
+        val equalSchema = ToolSchema {
+            name("lookup")
+            description("Lookup a city.")
+            inputExamples(listOf("""{"city":"Paris"}"""))
+            metadata(mapOf("providerToolId" to JsonPrimitive("provider.lookup")))
+        }
+        val differentSchema = ToolSchema {
+            name("lookup")
+            description("Lookup a different value.")
+            inputExamples(listOf("""{"city":"Paris"}"""))
+            metadata(mapOf("providerToolId" to JsonPrimitive("provider.lookup")))
+        }
         assertEquals(schema, equalSchema)
         assertEquals(schema.hashCode(), equalSchema.hashCode())
         assertNotEquals(schema, differentSchema)

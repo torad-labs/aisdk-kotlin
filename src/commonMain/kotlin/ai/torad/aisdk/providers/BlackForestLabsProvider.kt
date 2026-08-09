@@ -528,7 +528,7 @@ private class BlackForestLabsImageModel(
                     (options["imagePromptStrength"] as? JsonPrimitive)?.doubleOrNull,
                 )
                 putStringIfNotNull("image_prompt", (options["imagePrompt"] as? JsonPrimitive)?.contentOrNull)
-                putBflInputImages(modelId, params.files)
+                putBflInputImages(modelId, params.files, options)
                 putStringIfNotNull("mask", params.mask?.bflValue())
                 putStringIfNotNull("output_format", (options["outputFormat"] as? JsonPrimitive)?.contentOrNull)
                 // FLUX.2 schema uses `disable_pup` (inverted); older FLUX.1 keeps prompt_upsampling.
@@ -563,10 +563,22 @@ private class BlackForestLabsImageModel(
         return true
     }
 
-    private fun JsonObjectBuilder.putBflInputImages(modelId: String, files: List<ImageGenerationFile>) {
+    private fun JsonObjectBuilder.putBflInputImages(
+        modelId: String,
+        files: List<ImageGenerationFile>,
+        options: JsonObject,
+    ) {
         // Docs stop at input_image_8 (8 images total including the first).
         if (files.size > 8) throw InvalidArgumentError("files", "Black Forest Labs supports up to 8 input images.")
         val inputImageField = if (modelId == "flux-pro-1.0-fill") "image" else "input_image"
+        // inputImage..inputImage10 map 1:1 onto the input_image..input_image_10 wire keys;
+        // params.files own the same slots and are written last so they win when both are set.
+        for (slot in 1..BFL_INPUT_IMAGE_OPTION_SLOTS) {
+            putStringIfNotNull(
+                "$inputImageField${if (slot == 1) "" else "_$slot"}",
+                (options[if (slot == 1) "inputImage" else "inputImage$slot"] as? JsonPrimitive)?.contentOrNull,
+            )
+        }
         files.forEachIndexed { index, file ->
             val suffix = if (index == 0) "" else "_${index + 1}"
             putStringIfNotNull("$inputImageField$suffix", file.bflValue())
@@ -796,6 +808,9 @@ private class BlackForestLabsImageModel(
 
 private const val DEFAULT_BFL_POLL_INTERVAL_MILLIS: Long = 500L
 private const val DEFAULT_BFL_POLL_TIMEOUT_MILLIS: Long = 60_000L
+
+// BlackForestLabsImageModelOptions exposes inputImage..inputImage10.
+private const val BFL_INPUT_IMAGE_OPTION_SLOTS: Int = 10
 
 internal data class BflArgs(
     val body: JsonObject,

@@ -354,8 +354,6 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             }
             return
         }
-        currentEngineAbortControllerRef.load()?.abort()
-        currentEngineJobRef.load()?.cancel()
         val priorMessages = currentState.messages
         val approvalResponse = ModelMessage(
             role = MessageRole.Tool,
@@ -369,6 +367,19 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             },
         )
         val updatedMessages = priorMessages + approvalResponse
+        val remainingApprovals = currentState.pendingApprovals - matchingApprovals.toSet()
+        // A step can gate several DISTINCT tool calls. Resuming after answering only one would
+        // replay the others to the provider as tool_use blocks with no tool_result (a 400 that
+        // wedges the conversation) and clear pendingApprovals, losing their handles. Record this
+        // response and stay paused until every pending approval has been answered.
+        if (remainingApprovals.isNotEmpty()) {
+            mutableEngineState.update {
+                it.copy(messages = updatedMessages, pendingApprovals = remainingApprovals)
+            }
+            return
+        }
+        currentEngineAbortControllerRef.load()?.abort()
+        currentEngineJobRef.load()?.cancel()
         mutableEngineState.update {
             it.copy(
                 messages = updatedMessages,
@@ -543,6 +554,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         var collectedMessages: List<ModelMessage> = emptyList()
         var finishReason = FinishReason.Other
         var totalUsage = Usage()
+        var aborted = false
         val captureCollector = StreamCapture { event ->
             when (event) {
                 is StreamEvent.TextDelta -> accumulator.append(event.text)
@@ -566,6 +578,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     )
                 }
                 is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
+                StreamEvent.Abort -> aborted = true
                 is StreamEvent.StreamStart,
                 is StreamEvent.ResponseMetadata,
                 is StreamEvent.StepStart,
@@ -584,7 +597,6 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 is StreamEvent.ToolResult,
                 is StreamEvent.ToolError,
                 is StreamEvent.ToolOutputDenied,
-                StreamEvent.Abort,
                 is StreamEvent.Raw,
                 -> Unit
             }
@@ -608,15 +620,12 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         val text = accumulator.toString()
         val steps = collectedSteps.toList()
         val approvals = collectedApprovals.toList()
-        // A loop paused on tool approval has no final object yet — the host inspects
-        // pendingApprovals and resumes. Decoding (or throwing NoOutputGeneratedError) here
-        // would discard the approvals, making structured-output + approval unresumable.
-        val pausedForApproval = approvals.isNotEmpty() || finishReason == FinishReason.ToolApprovalRequested
         val usage = steps.lastOrNull()?.usage ?: totalUsage
-        if (output != null && pausedForApproval) {
+        val unavailableReason = outputUnavailableReason(approvals, finishReason, aborted)
+        if (output != null && unavailableReason != null) {
             emit(
                 GenerateResultUnavailable(
-                    outputUnavailableReason = "No object generated: the run is paused for tool approval.",
+                    outputUnavailableReason = unavailableReason,
                     text = text,
                     steps = steps,
                     finishReason = finishReason,
@@ -641,6 +650,26 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 )
             )
         }
+    }
+
+    /**
+     * Why a structured-output run has no final object to decode. A loop paused on tool approval has
+     * none yet — the host inspects pendingApprovals and resumes, and decoding (or throwing
+     * [NoOutputGeneratedError]) here would discard the approvals, making structured-output +
+     * approval unresumable. A user-initiated abort has none either: the last step's finish reason
+     * would otherwise be read as a decode diagnosis ("finished with `tool-calls`, not `stop`"),
+     * misreporting the cancel and discarding the partial steps/usage/messages. Null means the run
+     * really did end with an output to decode.
+     */
+    private fun outputUnavailableReason(
+        approvals: List<PendingApproval>,
+        finishReason: FinishReason,
+        aborted: Boolean,
+    ): String? = when {
+        approvals.isNotEmpty() || finishReason == FinishReason.ToolApprovalRequested ->
+            "No object generated: the run is paused for tool approval."
+        aborted -> "No object generated: the run was aborted."
+        else -> null
     }
 
     /**
@@ -1322,7 +1351,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 parentOut = parentOut,
                 executeCall = { index, call, progressOut ->
                     val toolDef = stepTools.find(call.toolName)
-                    if (toolDef == null) {
+                    if (abortSignal.isAborted) {
+                        // The user aborted while this call sat queued. Abort is signal-only on the
+                        // plain stream()/generate() path (DECISION 3 decouples it from coroutine
+                        // cancellation), so without this check a worker dequeues and fully executes
+                        // it — side effects and all — after the stop.
+                        OrderedToolCompletion.Aborted(index)
+                    } else if (toolDef == null) {
                         OrderedToolCompletion.Skipped(index)
                     } else {
                         dispatcher.runHook(stepNumber, feed, hooks) {

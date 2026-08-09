@@ -47,13 +47,19 @@ public sealed class ChunkBy {
 // chars are `\S`. The first capture group below uses a negative character
 // class so latin/digit words don't swallow CJK runs.
 //
+// The latin branch ends on whitespace OR on a lookahead at the next CJK code point. Without that
+// lookahead, "iPhone搭載" (latin run directly followed by CJK, ubiquitous in real Japanese output)
+// matched neither branch at offset 0 — the latin branch found no trailing whitespace and the CJK
+// branch tripped on 'i' — so flushText's `range.first != 0` guard broke forever and the block was
+// held until TextEnd: exactly the pre-#32 behaviour this regex exists to remove.
+//
 // Unicode ranges covered for CJK:
 //   U+4E00–U+9FFF  CJK Unified Ideographs (Han)
 //   U+3040–U+309F  Hiragana
 //   U+30A0–U+30FF  Katakana
 //   U+AC00–U+D7AF  Hangul Syllables
 private val WORD_REGEX = Regex(
-    """\s*[^\s一-鿿぀-ゟ゠-ヿ가-힯]+\s+|\s*[一-鿿぀-ゟ゠-ヿ가-힯]""",
+    """\s*[^\s一-鿿぀-ゟ゠-ヿ가-힯]+(?:\s+|(?=[一-鿿぀-ゟ゠-ヿ가-힯]))|\s*[一-鿿぀-ゟ゠-ヿ가-힯]""",
     RegexOption.MULTILINE,
 )
 private val LINE_REGEX = Regex("""[^\n]*\n""", RegexOption.MULTILINE)
@@ -76,12 +82,20 @@ public fun SmoothStream(
     }
     val textBuffers = mutableMapOf<String, StringBuilder>()
     val reasoningBuffers = mutableMapOf<String, StringBuilder>()
+    // Re-chunking rebuilds the delta events, so the incoming providerMetadata has to be carried
+    // across the buffer or it is destroyed: Bedrock and Google attach the thinking signature to
+    // reasoning DELTAS only, and replay reads it back off the assembled ContentPart.Reasoning.
+    // Pending metadata rides the next re-emitted chunk and is taken (not copied) so a signature is
+    // published exactly once, and a metadata-only delta with empty text still gets a carrier event.
+    val textMetadata = mutableMapOf<String, ProviderMetadata>()
+    val reasoningMetadata = mutableMapOf<String, ProviderMetadata>()
 
     suspend fun flushText(id: String, all: Boolean = false) {
         val buf = textBuffers[id] ?: return
         if (all) {
-            if (buf.isNotEmpty()) {
-                emit(StreamEvent.TextDelta(id, buf.toString()))
+            val metadata = textMetadata.remove(id) ?: ProviderMetadata.None
+            if (buf.isNotEmpty() || metadata != ProviderMetadata.None) {
+                emit(StreamEvent.TextDelta(id, buf.toString(), metadata))
                 buf.clear()
             }
             return
@@ -90,7 +104,7 @@ public fun SmoothStream(
             val match = regex.find(buf) ?: break
             if (match.range.first != 0) break
             val chunk = match.value
-            emit(StreamEvent.TextDelta(id, chunk))
+            emit(StreamEvent.TextDelta(id, chunk, textMetadata.remove(id) ?: ProviderMetadata.None))
             buf.deleteRange(0, chunk.length)
             if (delayMs > 0) delay(delayMs)
         }
@@ -99,8 +113,9 @@ public fun SmoothStream(
     suspend fun flushReasoning(id: String, all: Boolean = false) {
         val buf = reasoningBuffers[id] ?: return
         if (all) {
-            if (buf.isNotEmpty()) {
-                emit(StreamEvent.ReasoningDelta(id, buf.toString()))
+            val metadata = reasoningMetadata.remove(id) ?: ProviderMetadata.None
+            if (buf.isNotEmpty() || metadata != ProviderMetadata.None) {
+                emit(StreamEvent.ReasoningDelta(id, buf.toString(), metadata))
                 buf.clear()
             }
             return
@@ -109,7 +124,7 @@ public fun SmoothStream(
             val match = regex.find(buf) ?: break
             if (match.range.first != 0) break
             val chunk = match.value
-            emit(StreamEvent.ReasoningDelta(id, chunk))
+            emit(StreamEvent.ReasoningDelta(id, chunk, reasoningMetadata.remove(id) ?: ProviderMetadata.None))
             buf.deleteRange(0, chunk.length)
             if (delayMs > 0) delay(delayMs)
         }
@@ -125,6 +140,8 @@ public fun SmoothStream(
             when (event) {
                 is StreamEvent.TextDelta -> {
                     textBuffers.getOrPut(event.id) { StringBuilder() }.append(event.text)
+                    textMetadata[event.id] =
+                        (textMetadata[event.id] ?: ProviderMetadata.None) + event.providerMetadata
                     flushText(event.id)
                 }
                 is StreamEvent.TextEnd -> {
@@ -134,6 +151,8 @@ public fun SmoothStream(
                 }
                 is StreamEvent.ReasoningDelta -> {
                     reasoningBuffers.getOrPut(event.id) { StringBuilder() }.append(event.text)
+                    reasoningMetadata[event.id] =
+                        (reasoningMetadata[event.id] ?: ProviderMetadata.None) + event.providerMetadata
                     flushReasoning(event.id)
                 }
                 is StreamEvent.ReasoningEnd -> {
