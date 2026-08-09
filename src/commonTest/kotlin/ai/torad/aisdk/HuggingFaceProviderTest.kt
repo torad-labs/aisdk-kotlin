@@ -21,6 +21,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -226,7 +227,6 @@ class HuggingFaceProviderTest {
                 "presencePenalty",
                 "frequencyPenalty",
                 "stopSequences",
-                "tool messages",
                 "provider-defined tool providerHosted"
             ),
             result.warnings.mapNotNull { it.message }.toSet(),
@@ -283,6 +283,9 @@ class HuggingFaceProviderTest {
             "Previous reasoning.",
             input[3].jsonObject["content"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull
         )
+        // Tool messages are carried as function_call_output items instead of being warned away.
+        assertEquals("function_call_output", input[4].jsonObject["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("call-old", input[4].jsonObject["call_id"]?.jsonPrimitive?.contentOrNull)
     }
 
     @Test
@@ -479,6 +482,144 @@ class HuggingFaceProviderTest {
             )
         }
         assertTrue(error.message.orEmpty().contains("text/plain"))
+    }
+
+    @Test
+    fun `second tool-loop step replays the tool call and its result`() = runTest {
+        // Without the call and its output in the input, the model has no evidence its tool ever
+        // ran and re-issues the same call until the step limit fires — a tool loop that can never
+        // reach a grounded answer. The HF router maps both item types onto chat tool messages.
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://hf.test/v1/responses" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"id":"resp-2","model":"Qwen/Qwen3-32B","object":"response",""" +
+                                """"created_at":1780000000,"status":"completed",""" +
+                                """"output":[{"type":"message","id":"msg-2","role":"assistant",""" +
+                                """"content":[{"type":"output_text","text":"Paris is in France."}]}]}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = HuggingFace(
+            fixture.httpClient(),
+            HuggingFaceProviderSettings(block = { baseURL("https://hf.test/v1") }),
+        )
+        val toolCall = ContentPart.ToolCall(
+            toolCallId = "call-1",
+            toolName = "lookup",
+            input = buildJsonObject { put("city", JsonPrimitive("Paris")) },
+        )
+
+        provider.responses(ModelId("Qwen/Qwen3-32B")).generate(
+            LanguageModelCallParams {
+                messages(
+                    listOf(
+                        UserMessage("Where is Paris?"),
+                        ModelMessage(MessageRole.Assistant, listOf(toolCall)),
+                        ToolMessage("call-1", "lookup", JsonPrimitive("France")),
+                    )
+                )
+                tools(listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())))
+            },
+        )
+
+        val input = fixture.calls.single().requestBodyJson.jsonObject["input"]?.jsonArray.orEmpty()
+        val call = input.map { it.jsonObject }
+            .firstOrNull { it["type"]?.jsonPrimitive?.contentOrNull == "function_call" }
+        assertNotNull(call, "the assistant tool call must be replayed as a function_call item: $input")
+        assertEquals("call-1", call["call_id"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("lookup", call["name"]?.jsonPrimitive?.contentOrNull)
+        assertTrue(call["arguments"]?.jsonPrimitive?.contentOrNull.orEmpty().contains("Paris"))
+        val output = input.map { it.jsonObject }
+            .firstOrNull { it["type"]?.jsonPrimitive?.contentOrNull == "function_call_output" }
+        assertNotNull(output, "the tool result must be replayed as a function_call_output item: $input")
+        assertEquals("call-1", output["call_id"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("France", output["output"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `tool-call turn without an incomplete reason finishes as ToolCalls`() = runTest {
+        // A completed Responses turn carries no incomplete_details, so the only evidence that the
+        // step ended in tool calls is the calls themselves. Reporting Stop misleads every consumer
+        // branching on the step finish reason.
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://hf.test/v1/responses" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"resp-3",
+                              "model":"Qwen/Qwen3-32B",
+                              "object":"response",
+                              "created_at":1780000000,
+                              "status":"completed",
+                              "output":[{"type":"function_call","id":"fc-1","call_id":"call-1","name":"lookup","arguments":"{\"city\":\"Paris\"}"}]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = HuggingFace(
+            fixture.httpClient(),
+            HuggingFaceProviderSettings(block = { baseURL("https://hf.test/v1") }),
+        )
+
+        val result = provider.responses(ModelId("Qwen/Qwen3-32B")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Where is Paris?")))
+                tools(listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())))
+            },
+        )
+
+        assertEquals(FinishReason.ToolCalls, result.finishReason)
+        assertNull(result.rawFinishReason)
+    }
+
+    @Test
+    fun `streamed tool-call turn without an incomplete reason finishes as ToolCalls`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://hf.test/v1/responses" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"fc-1","call_id":"call-1","name":"lookup","arguments":""},"sequence_number":1}
+
+                            data: {"type":"response.output_item.done","output_index":0,"item":{"type":"function_call","id":"fc-1","call_id":"call-1","name":"lookup","arguments":"{\"city\":\"Paris\"}"},"sequence_number":2}
+
+                            data: {"type":"response.completed","response":{"id":"resp-stream-2","model":"Qwen/Qwen3-32B","object":"response","created_at":1780000001,"status":"completed","output":[]}}
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = HuggingFace(
+            fixture.httpClient(),
+            HuggingFaceProviderSettings(block = { baseURL("https://hf.test/v1") }),
+        )
+
+        val events = drainAllItems(
+            provider.responses(ModelId("Qwen/Qwen3-32B")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("Where is Paris?")))
+                    tools(listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())))
+                },
+            ),
+        )
+
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(FinishReason.ToolCalls, finish.finishReason)
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {

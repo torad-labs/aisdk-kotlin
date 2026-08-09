@@ -211,7 +211,10 @@ public object UiMessageStreams {
             "msg_${messages.size + 1}"
         }
     ): String =
-        messages.lastOrNull { it.role == UIMessageRole.Assistant }?.id ?: createId()
+        // Reuse an existing id ONLY when the LAST message is the assistant's — that is a
+        // continuation of the same turn. Reusing the id of any EARLIER assistant message makes
+        // the new turn's reply overwrite that older reply in Chat's upsert-by-id state.
+        messages.lastOrNull()?.takeIf { it.role == UIMessageRole.Assistant }?.id ?: createId()
 
     /** @since 0.3.0-beta01 */
     public fun handleUiMessageStreamFinish(
@@ -248,19 +251,36 @@ public object UiMessageStreams {
 
     /** @since 0.3.0-beta01 */
     public fun lastAssistantMessageIsCompleteWithToolCalls(messages: List<UIMessage>): Boolean {
-        val last = messages.lastOrNull { it.role == UIMessageRole.Assistant } ?: return true
-        return last.parts.filterIsInstance<UIMessagePart.ToolUI>().all {
-            it.state == ToolCallState.OutputAvailable ||
-                it.state == ToolCallState.OutputDenied ||
-                it.state == ToolCallState.OutputError
+        val lastAssistant = messages.indexOfLast { it.role == UIMessageRole.Assistant }
+        if (lastAssistant < 0) return true
+        val answered = answeredToolCallIds(messages, lastAssistant)
+        return messages[lastAssistant].parts.filterIsInstance<UIMessagePart.ToolUI>().all {
+            it.state.isToolOutputComplete() || it.toolCallId in answered
         }
     }
 
     /** @since 0.3.0-beta01 */
-    public fun lastAssistantMessageIsCompleteWithApprovalResponses(messages: List<UIMessage>): Boolean =
-        messages.lastOrNull { it.role == UIMessageRole.Assistant }
-            ?.parts
-            ?.filterIsInstance<UIMessagePart.ToolUI>()
-            ?.none { it.state == ToolCallState.ApprovalRequested }
-            ?: true
+    public fun lastAssistantMessageIsCompleteWithApprovalResponses(messages: List<UIMessage>): Boolean {
+        val lastAssistant = messages.indexOfLast { it.role == UIMessageRole.Assistant }
+        if (lastAssistant < 0) return true
+        val answered = answeredToolCallIds(messages, lastAssistant)
+        return messages[lastAssistant].parts.filterIsInstance<UIMessagePart.ToolUI>()
+            .none { it.state == ToolCallState.ApprovalRequested && it.toolCallId !in answered }
+    }
+
+    // [Chat.addToolOutput] / [Chat.addToolApprovalResponse] never transition the assistant
+    // part — they APPEND a message carrying the answer (the shape ModelMessageConversion
+    // replays). So a still-pending assistant part counts as answered when a LATER message
+    // carries a completed tool part for the same tool-call id.
+    private fun answeredToolCallIds(messages: List<UIMessage>, afterIndex: Int): Set<String> =
+        messages.drop(afterIndex + 1)
+            .flatMap { it.parts }
+            .filterIsInstance<UIMessagePart.ToolUI>()
+            .filter { it.state.isToolOutputComplete() }
+            .mapTo(mutableSetOf()) { it.toolCallId }
+
+    private fun ToolCallState.isToolOutputComplete(): Boolean =
+        this == ToolCallState.OutputAvailable ||
+            this == ToolCallState.OutputDenied ||
+            this == ToolCallState.OutputError
 }

@@ -607,6 +607,9 @@ public class KtorGatewayTransport(
 }
 
 /** Adapter for the shared transport's `errorFromResponse` hook — keeps the rich [GatewayError] hierarchy. */
-private val gatewayError: ResponseErrorFactory = { statusCode, _, raw, _ ->
-    GatewayErrorFromResponse(statusCode, raw)
+private val gatewayError: ResponseErrorFactory = { statusCode, _, raw, headers ->
+    // The headers must ride along: RetryPolicy reads `Retry-After` off the error, so
+    // dropping them here retried a gateway 429 on the ~100ms backoff instead of the
+    // 30s the server asked for.
+    GatewayErrorFromResponse(statusCode, raw, headers)
 }

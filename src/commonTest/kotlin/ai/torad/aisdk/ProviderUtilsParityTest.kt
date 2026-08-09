@@ -18,6 +18,7 @@ import ai.torad.aisdk.ui.UiMessageStreams.validateUIMessages
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -29,10 +30,14 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalAiSdkApi::class)
 class ProviderUtilsParityTest {
+    /** Stands in for a caller's behaviourally-different serializer for a fixed TOutput. */
+    private class CallerJsonObjectSerializer : KSerializer<JsonObject> by JsonObject.serializer()
+
     @Test
     fun `gateway headers and errors mirror public gateway package behavior`() = runTest {
         val apiKeyHeaders = GatewayProviderSettings {
@@ -128,6 +133,10 @@ class ProviderUtilsParityTest {
 
         assertEquals(raw.toList(), Base64Codec.decode(encoded).toList())
         assertEquals(encoded, Base64Codec.encode(raw))
+        // base64url is conventionally emitted UNPADDED (JWT parts, provider payloads) and upstream's
+        // atob accepts that, so decode must accept absent padding as well as the -_ alphabet.
+        assertEquals("hello".encodeToByteArray().toList(), Base64Codec.decode("aGVsbG8").toList())
+        assertEquals(byteArrayOf(-5, -1).toList(), Base64Codec.decode("-_8").toList())
         UrlOps.validateDownload("https://example.com/file.png")
         UrlOps.validateDownload("data:text/plain;base64,SGk=")
         assertFailsWith<DownloadError> { UrlOps.validateDownload("http://localhost/file") }
@@ -137,6 +146,13 @@ class ProviderUtilsParityTest {
         // the parser previously yielded host "[" for these and let the loopback through.
         assertFailsWith<DownloadError> { UrlOps.validateDownload("http://user@[::1]/path") }
         assertFailsWith<DownloadError> { UrlOps.validateDownload("http://[::1]/path") }
+        // ...nor by a non-dotted-quad spelling of the same loopback address: the resolver accepts the
+        // BSD shorthand forms (127.1, 2130706433) and the pure-hex IPv4-mapped IPv6 form.
+        assertFailsWith<DownloadError> { UrlOps.validateDownload("http://127.1/latest") }
+        assertFailsWith<DownloadError> { UrlOps.validateDownload("http://2130706433/latest") }
+        assertFailsWith<DownloadError> { UrlOps.validateDownload("http://[::ffff:7f00:1]/latest") }
+        // Public addresses stay allowed through the same normalization.
+        UrlOps.validateDownload("https://1.2.3.4/file.png")
         // Non-ASCII is percent-encoded from its UTF-8 bytes, not passed through as Latin-1 chars.
         assertEquals("%C3%A9", UrlOps.encode("é"))
         assertEquals("caf%C3%A9", UrlOps.encode("café"))
@@ -270,6 +286,39 @@ class ProviderUtilsParityTest {
         assertEquals(JsonPrimitive("kmp"), (executed.single() as ExecuteToolResult.Final).output.jsonObject["seen"])
         assertEquals(JsonPrimitive(true), withOutputSchema.metadata["supportsDeferredResults"])
         assertEquals(outputSchema.jsonSchema, withOutputSchema.metadata["outputSchema"])
+    }
+
+    @Test
+    fun `provider tool factory with output schema keeps the caller's output serializer`() = runTest {
+        val inputSchema = Schemas.jsonSchema<JsonObject>(
+            buildJsonObject { put("type", JsonPrimitive("object")) },
+        ) { value -> value.jsonObject }
+        val factoryOutputSchema = Schemas.jsonSchema<JsonObject>(
+            buildJsonObject { put("type", JsonPrimitive("object")) },
+        ) { value -> value.jsonObject }
+        // A caller's own serializer for the SAME fixed TOutput — e.g. a lenient one written to
+        // tolerate a provider's extra fields.
+        val callerSerializer: KSerializer<JsonObject> = CallerJsonObjectSerializer()
+        val factory = ProviderTools.createProviderToolFactoryWithOutputSchema<JsonObject, JsonObject, Unit>(
+            id = "web.lookup",
+            inputSerializer = JsonObject.serializer(),
+            inputSchema = inputSchema,
+            outputSerializer = JsonObject.serializer(),
+            outputSchema = factoryOutputSchema,
+        )
+
+        val tool = factory.create(
+            ProviderToolFactoryOptions {
+                // outputSerializer is REQUIRED by the options builder, so a caller who needs to set
+                // execute/needsApproval/... must supply one; it must not then be thrown away.
+                outputSerializer(callerSerializer)
+                name("lookup")
+            },
+        )
+
+        assertSame(callerSerializer, tool.outputSerializer)
+        // The factory owns the output SCHEMA, so omitting it still falls back to the factory's.
+        assertEquals(factoryOutputSchema.jsonSchema, tool.metadata["outputSchema"])
     }
 
     @Test

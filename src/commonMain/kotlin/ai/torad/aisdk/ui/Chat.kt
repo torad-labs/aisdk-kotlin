@@ -5,6 +5,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -276,9 +277,7 @@ public class Chat(
         transformMessages: (List<UIMessage>) -> List<UIMessage>,
     ): Flow<UIMessage> = flow {
         val op = Any()
-        val opJob = currentCoroutineContext()[Job]
-        currentOpJobRef.store(opJob)
-        currentOpRef.store(op)
+        val opJob = startOperation(op)
         val request = applyState {
             copy(messages = transformMessages(messages), status = ChatStatus.Submitted, error = null)
         }.let {
@@ -287,8 +286,33 @@ public class Chat(
                 body(body)
             }
         }
+        collectIntoState(transport.sendMessages(request), op, opJob)
+    }
+
+    // A resumed stream is a live turn like any other: its emissions must land in chat state
+    // (otherwise the next send's request omits the turn the user just read) and it must drive
+    // status so isStreaming-driven UI is correct for the whole resumption.
+    private fun resumeInternal(source: Flow<UIMessage>): Flow<UIMessage> = flow {
+        val op = Any()
+        val opJob = startOperation(op)
+        applyState { copy(status = ChatStatus.Submitted, error = null) }
+        collectIntoState(source, op, opJob)
+    }
+
+    private suspend fun startOperation(op: Any): Job? {
+        val opJob = currentCoroutineContext()[Job]
+        currentOpJobRef.store(opJob)
+        currentOpRef.store(op)
+        return opJob
+    }
+
+    private suspend fun FlowCollector<UIMessage>.collectIntoState(
+        source: Flow<UIMessage>,
+        op: Any,
+        opJob: Job?,
+    ) {
         try {
-            transport.sendMessages(request).collect { response ->
+            source.collect { response ->
                 if (currentOpRef.load() === op) {
                     applyState { copy(status = ChatStatus.Streaming).withUpsert(response) }
                 }
@@ -324,7 +348,7 @@ public class Chat(
 
     /** @since 0.3.0-beta01 */
     public fun reconnectToStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage>? =
-        transport.reconnectToStream(id, headers)
+        transport.reconnectToStream(id, headers)?.let(::resumeInternal)
 
     /** @since 0.3.0-beta01 */
     @JvmSynthetic public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =

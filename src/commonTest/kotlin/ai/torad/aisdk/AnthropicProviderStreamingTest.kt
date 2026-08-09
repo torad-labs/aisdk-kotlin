@@ -131,6 +131,16 @@ class AnthropicProviderStreamingTest {
         assertTrue(errorIndex > textIndex, events.toString())
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertEquals("after text", error.message)
+        // TERMINAL is the word in this test's name, and ordering alone does not check it: a
+        // regression that emitted the error and then kept streaming would satisfy every assertion
+        // above. The error is not literally last — a terminal Finish still closes the stream so
+        // consumers get usage and metadata — so the invariant is that nothing CONTENT-BEARING
+        // survives the error.
+        val afterError = events.drop(errorIndex + 1)
+        assertTrue(
+            afterError.all { it is StreamEvent.Finish },
+            "only the terminal Finish may follow the error, but got: $afterError",
+        )
     }
 
     @Test
@@ -442,6 +452,57 @@ class AnthropicProviderStreamingTest {
         assertTrue(events.filterIsInstance<StreamEvent.ToolCall>().isEmpty())
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("malformed tool input JSON"))
+    }
+
+    @Test
+    fun `stream names a provider tool result from its originating call`() = runTest {
+        // Content blocks stream strictly sequentially, so the server_tool_use block is already
+        // removed from the in-flight block map by the time its result block starts. The name must
+        // still come from the paired call: "web_search_tool_result".removeSuffix("_result") is
+        // "web_search_tool", while the ToolCall for the same tool_use_id carries "web_search".
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"type":"content_block_start","index":0,"content_block":{"type":"server_tool_use","id":"srv_1","name":"web_search","input":{}}}
+
+                            data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"query\":\"kotlin\"}"}}
+
+                            data: {"type":"content_block_stop","index":0}
+
+                            data: {"type":"content_block_start","index":1,"content_block":{"type":"web_search_tool_result","tool_use_id":"srv_1","content":{"type":"web_search_result"}}}
+
+                            data: {"type":"content_block_stop","index":1}
+
+                            data: {"type":"message_stop"}
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Anthropic(
+            fixture.httpClient(),
+            AnthropicProviderSettings { baseURL("https://anthropic.test/v1") }
+        )
+
+        val events = drainAllItems(
+            provider.messages(ModelId("claude-sonnet-4-5")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
+
+        val call = events.filterIsInstance<StreamEvent.ToolCall>().single()
+        val result = events.filterIsInstance<StreamEvent.ToolResult>().single()
+        assertEquals("web_search", call.toolName)
+        assertEquals(call.toolCallId, result.toolCallId)
+        assertEquals(call.toolName, result.toolName)
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

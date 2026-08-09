@@ -61,7 +61,7 @@ class StreamObjectResultTest {
         val result = StreamObjectResult(
             model = streamingModel("""{"name":"An""", """n","age":30}"""),
             output = OutputObj(serializer<Person>()),
-            prompt = "make a person",
+            input = GenerationInput.Prompt("make a person"),
         )
         assertEquals(Person("Ann", 30), result.objectValue())
     }
@@ -71,7 +71,7 @@ class StreamObjectResultTest {
         val result = StreamObjectResult(
             model = streamingModel("""{"name":"Bo""", """b",""", """"age":7}"""),
             output = OutputObj(serializer<Person>()),
-            prompt = "make a person",
+            input = GenerationInput.Prompt("make a person"),
         )
         val partials = result.partialObjectStream.toList()
         assertTrue(partials.isNotEmpty(), "at least one partial emitted")
@@ -86,7 +86,7 @@ class StreamObjectResultTest {
             // The model wrapped the JSON in a ```json fence — invalid as-is.
             model = streamingModel("```json\n", """{"name":"Cy","age":9}""", "\n```"),
             output = OutputObj(serializer<Person>()),
-            prompt = "make a person",
+            input = GenerationInput.Prompt("make a person"),
             repairText = { raw ->
                 val start = raw.indexOf('{')
                 val end = raw.lastIndexOf('}')
@@ -109,7 +109,7 @@ class StreamObjectResultTest {
                 emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage(), rawFinishReason = "stop"))
             }
         }
-        val finish = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go").finish()
+        val finish = StreamObjectResult(model, OutputObj(serializer<Person>()), GenerationInput.Prompt("go")).finish()
         assertEquals(Person("Zed", 5), finish.value)
         assertEquals(FinishReason.ToolCalls, finish.finishReason)
     }
@@ -124,7 +124,7 @@ class StreamObjectResultTest {
                 """{"name":"C","age":3}]}""",
             ),
             output = arrayOutput,
-            prompt = "make people",
+            input = GenerationInput.Prompt("make people"),
         )
         val elements = result.elementStream(arrayOutput).toList()
         assertEquals(listOf(Person("A", 1), Person("B", 2), Person("C", 3)), elements)
@@ -149,7 +149,7 @@ class StreamObjectResultTest {
             }
         }
 
-        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go")
+        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), GenerationInput.Prompt("go"))
         assertEquals(Person("Ann", 30), result.objectValue())
     }
 
@@ -158,7 +158,7 @@ class StreamObjectResultTest {
         val result = StreamObjectResult(
             outOfOrderDeltaModel("b" to "}", "a" to """{"name":"Ann","age":30"""),
             OutputObj(serializer<Person>()),
-            prompt = "go",
+            input = GenerationInput.Prompt("go"),
         )
 
         assertEquals(Person("Ann", 30), result.objectValue())
@@ -169,7 +169,7 @@ class StreamObjectResultTest {
         val result = StreamObjectResult(
             outOfOrderDeltaModel("b" to "}", "a" to """{"name":"Bea","age":4"""),
             OutputObj(serializer<Person>()),
-            prompt = "go",
+            input = GenerationInput.Prompt("go"),
         )
 
         assertEquals(Person("Bea", 4), result.partialObjectStream.toList().last())
@@ -184,7 +184,7 @@ class StreamObjectResultTest {
                 "a" to """{"elements":[{"name":"A","age":1},""",
             ),
             arrayOutput,
-            prompt = "go",
+            input = GenerationInput.Prompt("go"),
         )
 
         assertEquals(listOf(Person("A", 1), Person("B", 2)), result.elementStream(arrayOutput).toList())
@@ -200,7 +200,7 @@ class StreamObjectResultTest {
                 "a" to ",\"age\":1",
             ),
             arrayOutput,
-            prompt = "go",
+            input = GenerationInput.Prompt("go"),
         )
 
         assertEquals(
@@ -224,7 +224,7 @@ class StreamObjectResultTest {
                 emit(StreamEvent.Error("provider failed", IllegalStateException("root cause")))
             }
         }
-        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go")
+        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), GenerationInput.Prompt("go"))
 
         assertFailsWith<UiMessageStreamError> { result.partialObjectStream.toList() }
         val second = assertFailsWith<UiMessageStreamError> { result.objectValue() }
@@ -252,7 +252,7 @@ class StreamObjectResultTest {
                 emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
             }
         }
-        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go")
+        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), GenerationInput.Prompt("go"))
 
         val first = async(Dispatchers.Default) {
             result.partialObjectStream.collect {
@@ -291,7 +291,7 @@ class StreamObjectResultTest {
             }
         }
 
-        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go")
+        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), GenerationInput.Prompt("go"))
         assertEquals(listOf("{\"name\":\"Ann\"", ",\"age\":30", "}"), result.textStream.toList())
     }
 
@@ -311,7 +311,7 @@ class StreamObjectResultTest {
             }
         }
 
-        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go")
+        val result = StreamObjectResult(model, OutputObj(serializer<Person>()), GenerationInput.Prompt("go"))
 
         assertEquals(listOf("""{"name":"Bea","age":4}"""), result.textStream.toList())
     }
@@ -331,7 +331,7 @@ class StreamObjectResultTest {
                 }
             },
             output = OutputObj(serializer<Person>()),
-            prompt = "go",
+            input = GenerationInput.Prompt("go"),
         )
 
         assertEquals(listOf("""{"name":"Cy","age":9}"""), result.textStream.toList())
@@ -354,7 +354,7 @@ class StreamObjectResultTest {
             }
         }
 
-        val finish = StreamObjectResult(model, OutputObj(serializer<Person>()), prompt = "go").finish()
+        val finish = StreamObjectResult(model, OutputObj(serializer<Person>()), GenerationInput.Prompt("go")).finish()
 
         assertEquals("resp_1", finish.response.id)
         assertEquals("test-model", finish.response.modelId)
@@ -371,7 +371,7 @@ class StreamObjectResultTest {
                 """{"name":"C","age":3}]""",
             ),
             output = arrayOutput,
-            prompt = "make people",
+            input = GenerationInput.Prompt("make people"),
         )
 
         val elements = result.elementStream(arrayOutput).toList()

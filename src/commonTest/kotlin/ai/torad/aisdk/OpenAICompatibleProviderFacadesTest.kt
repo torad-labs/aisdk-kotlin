@@ -484,6 +484,9 @@ class OpenAICompatibleProviderFacadesTest {
         // browser_search was the only tool and is unsupported on llama → tools key omitted entirely.
         val body = fixture.calls.single().requestBodyJson.jsonObject
         assertEquals(null, body["tools"], "unsupported browser_search dropped; empty tools key omitted")
+        // tool_choice ("auto" by default) without tools is rejected by Groq — it has to go too,
+        // otherwise the graceful degradation to a plain completion becomes a 400.
+        assertEquals(null, body["tool_choice"], "tool_choice must not outlive the tools it referred to")
     }
 
     @Test

@@ -48,6 +48,33 @@ public class CallConfig internal constructor(
             "timeout must be positive when set"
         }
     }
+
+    /**
+     * Copy carrying every caller setting through with [responseFormat] replaced.
+     *
+     * Structured-output entry points derive the response format from the requested `Output`, but
+     * must not quietly discard the rest of the call settings while doing it. This copy has to list
+     * EVERY field above: one omitted here is a setting the caller passed and the request never
+     * sees, with nothing at the call site to show it went missing. `CallConfigCopyCoverageTest`
+     * fails when this class gains a field the copy does not carry.
+     */
+    internal fun withResponseFormat(responseFormat: ResponseFormat): CallConfig =
+        CallConfig(
+            temperature = temperature,
+            topP = topP,
+            topK = topK,
+            maxOutputTokens = maxOutputTokens,
+            stopSequences = stopSequences,
+            seed = seed,
+            providerOptions = providerOptions,
+            abortSignal = abortSignal,
+            presencePenalty = presencePenalty,
+            frequencyPenalty = frequencyPenalty,
+            responseFormat = responseFormat,
+            headers = headers,
+            timeoutBox = timeoutBox,
+            maxRetries = maxRetries,
+        )
 }
 
 @AiSdkDsl

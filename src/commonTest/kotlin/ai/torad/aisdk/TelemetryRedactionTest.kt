@@ -226,6 +226,69 @@ class TelemetryRedactionTest {
     }
 
     @Test
+    fun `chunk telemetry drops the typed tool error carrying raw model input`() = runTest {
+        val capturing = CapturingTelemetry()
+        val telemetry = ResolveTelemetry(
+            TelemetrySettings {
+                integrations(listOf(capturing))
+            }
+        ) ?: fail("telemetry should resolve")
+
+        telemetry.onEvent(
+            call,
+            AgentEvent.Chunk(
+                StreamEvent.ToolError(
+                    toolCallId = "call_1",
+                    toolName = "search",
+                    message = "tool failed",
+                    error = AgentError.InvalidToolInput(
+                        "search",
+                        """{"apiKey":"sk-live-secret"}""",
+                        RuntimeException("decode failed"),
+                    ),
+                ),
+                stepNumber = 1,
+            ),
+        )
+
+        val toolError = assertIs<StreamEvent.ToolError>(
+            assertIs<AgentEvent.Chunk>(capturing.events.single()).event,
+        )
+        assertEquals(null, toolError.error)
+        val projected = capturing.events.joinToString("\n")
+        assertTrue("sk-live-secret" !in projected, projected)
+    }
+
+    @Test
+    fun `chunk telemetry preserves the tool result error flag`() = runTest {
+        val capturing = CapturingTelemetry()
+        val telemetry = ResolveTelemetry(
+            TelemetrySettings {
+                integrations(listOf(capturing))
+            }
+        ) ?: fail("telemetry should resolve")
+
+        telemetry.onEvent(
+            call,
+            AgentEvent.Chunk(
+                StreamEvent.ToolResult(
+                    toolCallId = "call_1",
+                    toolName = "search",
+                    outputJson = buildJsonObject { put("error", "output secret") },
+                    isError = true,
+                ),
+                stepNumber = 1,
+            ),
+        )
+
+        val toolResult = assertIs<StreamEvent.ToolResult>(
+            assertIs<AgentEvent.Chunk>(capturing.events.single()).event,
+        )
+        assertTrue(toolResult.isError, "sanitized ToolResult must keep the failure flag")
+        assertEquals(JsonObject(emptyMap()), toolResult.outputJson)
+    }
+
+    @Test
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     fun `chunk telemetry strips provider metadata from stream events`() = runTest {
         val capturing = CapturingTelemetry()

@@ -40,12 +40,36 @@ class ToolSubclassTest {
 
     /** Reusable, dependency-injected single-value tool. */
     private class PrefixTool(private val prefix: String) : StreamingTool<Query, Answer, Unit>() {
-        override val schema = ToolSchema("prefix", "Prefixes the query")
+        override val schema = ToolSchema {
+            name("prefix")
+            description("Prefixes the query")
+        }
         override val inputSerializer = serializer<Query>()
         override val outputSerializer = serializer<Answer>()
         override fun ToolExecutionContext<Unit>.executeStream(input: Query): Flow<Answer> = flow {
             emit(Answer("$prefix:${input.q}"))
         }
+    }
+
+    @Test
+    fun `ToolSchema is authored through its DSL factory`() {
+        // ToolSchema is a construct-type — every Tool subclass authors one — so it must be built
+        // through a builder/DSL, never a frozen public positional constructor (CLAUDE.md).
+        val schema = ToolSchema {
+            name("searchDocs")
+            description("Search the product documentation")
+            strict(true)
+            inputExamples(listOf("""{"q":"kmp"}"""))
+            metadata(mapOf("owner" to JsonPrimitive("docs")))
+            providerExecuted(true)
+        }
+
+        assertEquals("searchDocs", schema.name)
+        assertEquals("Search the product documentation", schema.description)
+        assertEquals(true, schema.strict)
+        assertEquals(listOf("""{"q":"kmp"}"""), schema.inputExamples)
+        assertEquals(JsonPrimitive("docs"), schema.metadata["owner"])
+        assertTrue(schema.providerExecuted)
     }
 
     @Test
@@ -72,7 +96,10 @@ class ToolSubclassTest {
 
     /** Reusable streaming tool: a preliminary snapshot, then the final answer. */
     private class ProgressTool : StreamingTool<Query, Answer, Unit>() {
-        override val schema = ToolSchema("progress", "Emits a preliminary snapshot then the final answer")
+        override val schema = ToolSchema {
+            name("progress")
+            description("Emits a preliminary snapshot then the final answer")
+        }
         override val inputSerializer = serializer<Query>()
         override val outputSerializer = serializer<Answer>()
         override fun ToolExecutionContext<Unit>.executeStream(input: Query): Flow<Answer> = flow {
@@ -91,7 +118,10 @@ class ToolSubclassTest {
 
     /** Subclass overriding the optional approval hook. */
     private class GatedTool : StreamingTool<Query, Answer, Unit>() {
-        override val schema = ToolSchema("gated", "Requires approval when the query mentions 'danger'")
+        override val schema = ToolSchema {
+            name("gated")
+            description("Requires approval when the query mentions 'danger'")
+        }
         override val inputSerializer = serializer<Query>()
         override val outputSerializer = serializer<Answer>()
         override fun ToolExecutionContext<Unit>.executeStream(input: Query): Flow<Answer> = flow {
@@ -121,7 +151,10 @@ class ToolSubclassTest {
 
     /** Gated subclass — overrides both [execute] and [needsApproval]. */
     private class SendTool(private val onSend: () -> Unit) : StreamingTool<SendInput, SendResult, Unit>() {
-        override val schema = ToolSchema("send", "Send a message")
+        override val schema = ToolSchema {
+            name("send")
+            description("Send a message")
+        }
         override val inputSerializer = serializer<SendInput>()
         override val outputSerializer = serializer<SendResult>()
         override fun ToolExecutionContext<Unit>.executeStream(input: SendInput): Flow<SendResult> = flow {
@@ -164,7 +197,10 @@ class ToolSubclassTest {
 
     /** Non-gated subclass — only overrides [execute]. */
     private class CityTool : StreamingTool<CityInput, String, Unit>() {
-        override val schema = ToolSchema("weather", "Get weather for a city")
+        override val schema = ToolSchema {
+            name("weather")
+            description("Get weather for a city")
+        }
         override val inputSerializer = serializer<CityInput>()
         override val outputSerializer = serializer<String>()
         override fun ToolExecutionContext<Unit>.executeStream(input: CityInput): Flow<String> = flow {

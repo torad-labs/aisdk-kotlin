@@ -21,12 +21,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.Buffer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.milliseconds
 
 /** Maximum response body size for non-streaming requests (50 MB). */
 internal const val MAX_RESPONSE_BODY_BYTES: Long = 50L * 1024 * 1024
@@ -63,13 +64,20 @@ internal object AssetDownload {
      * checked status BEFORE reading and so reported `rawBody = ""`, losing the host's explanation
      * of its own failure. Reading first and checking after is deliberate: on a failed download the
      * error body is the most useful thing there is.
+     *
+     * [maxBytes] bounds MEMORY; [timeoutMs] bounds TIME, and both are needed. A host
+     * that accepts the GET, sends headers and then trickles or stalls never trips a
+     * size cap, so without the [DEFAULT_REQUEST_TIMEOUT_MS] ceiling every other
+     * non-streaming round-trip carries (the Replicate/BFL/Luma/fal/Google downloads
+     * all wrap theirs) the caller's coroutine is pinned forever.
      */
     suspend fun capped(
         client: HttpClient,
         url: String,
         headers: Map<String, String> = emptyMap(),
         maxBytes: Long = MAX_RESPONSE_BODY_BYTES,
-    ): CappedDownload =
+        timeoutMs: Long = DEFAULT_REQUEST_TIMEOUT_MS,
+    ): CappedDownload = HttpTransport.withRealTimeout(timeoutMs) {
         client.prepareRequest(url) {
             method = HttpMethod.Get
             headers.forEach { (name, value) -> header(name, value) }
@@ -94,6 +102,7 @@ internal object AssetDownload {
                 )
             }
         }
+    }
 }
 
 /**
@@ -179,12 +188,33 @@ internal object HttpTransport {
      * [Dispatchers.Default] gives `withTimeout` a real `Delay`, so the timeout means
      * wall-clock seconds in production and never spuriously fires in tests whose
      * mocks respond promptly. Used for non-streaming requests and MCP handshakes.
+     *
+     * A fired deadline surfaces as [CallTimeoutError], NOT as `withTimeout`'s
+     * `TimeoutCancellationException`. A stalled server is a FAILURE, not cooperative
+     * cancellation: as a `CancellationException` it slipped past `RetryPolicy`'s
+     * rethrow unclassified, every `catch (ce: CancellationException) { throw ce }`
+     * guard read it as the caller cancelling, and in a consumer's
+     * `scope.launch { generate(…) }` it completed the job as "cancelled" — no
+     * `CoroutineExceptionHandler`, no parent failure, the request silently gone.
+     * `withTimeoutOrNull` (not `withTimeout`) so only THIS deadline is converted: a
+     * `TimeoutCancellationException` from an enclosing timeout, and the caller's own
+     * cancellation, still propagate unchanged. Mirrors [CallTimeout.run].
      */
     internal suspend fun <T> withRealTimeout(
         timeoutMs: Long,
         dispatcher: CoroutineContext = Dispatchers.Default,
         block: suspend () -> T,
-    ): T = withContext(dispatcher) { withTimeout(timeoutMs) { block() } }
+    ): T = withContext(dispatcher) {
+        // Unwrap the sentinel only AFTER the null check: `result?.value ?: throw` would
+        // report a timeout for a block that legitimately returned null (the Google media
+        // poller's retry path does exactly that).
+        val result = withTimeoutOrNull(timeoutMs) { RealTimeoutValue(block()) }
+            ?: throw CallTimeoutError(timeoutMs.milliseconds)
+        result.value
+    }
+
+    /** Distinguishes "the block returned null" from "the deadline fired". */
+    private class RealTimeoutValue<T>(val value: T)
 
     /** Flatten Ktor's multi-valued headers into the `Map<String, String>` providers carry. */
     internal fun HttpResponse.flattenedHeaders(): Map<String, String> =

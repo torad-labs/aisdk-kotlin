@@ -693,6 +693,16 @@ private class AnthropicStreamState(
     private val json: Json,
 ) {
     private val blocks = mutableMapOf<Int, AnthropicStreamBlock>()
+
+    // Tool names by tool-call id, kept for the whole stream: `blocks` only holds the block
+    // currently in flight, and content blocks stream strictly sequentially, so a server-tool
+    // call block is always removed at its content_block_stop before its result block starts.
+    //
+    // A LIST per id, not one value: a provider tool-call id is a correlation label, not a unique
+    // occurrence id. Storing one name per id would make a repeated id silently answer the second
+    // result with the first call's name — the same occurrence-collapse this stream state was
+    // fixed for. Each result consumes its call's name, so occurrences pair in arrival order.
+    private val toolNamesByCallId = mutableMapOf<String, MutableList<String>>()
     private var finishReason = FinishReason.Other
     private var rawStopReason: String? = null
     private var usage = Usage()
@@ -763,10 +773,10 @@ private class AnthropicStreamState(
                     isToolCallBlock -> (block["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
                         ?: return listOf(missingToolIdentityError(type, "name"))
                     // Same correlation as the buffered path above: the result block's tool_use_id
-                    // equals the earlier server_tool_use block's id, and that block is still in
-                    // `blocks`, so prefer its decoded name over suffix arithmetic on the type.
+                    // equals the earlier server_tool_use block's id, so prefer that block's decoded
+                    // name (recorded in `toolNamesByCallId`) over suffix arithmetic on the type.
                     isToolResultBlock -> (block["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
-                        ?: blocks.values.firstOrNull { it.id == id }?.toolName
+                        ?: toolNamesByCallId[id]?.removeFirstOrNull()
                         ?: blockType.removeSuffix("_result")
                     else -> (block["name"] as? JsonPrimitive)?.contentOrNull
                 }
@@ -777,6 +787,9 @@ private class AnthropicStreamState(
                     input = anthropicInitialStreamInput(block["input"]),
                     wireBlock = if (isToolCallBlock || isToolResultBlock) block else null,
                 )
+                if (isToolCallBlock && toolName != null) {
+                    toolNamesByCallId.getOrPut(id) { mutableListOf() } += toolName
+                }
                 when (blockType) {
                     "text" -> events += StreamEvent.TextStart(id)
                     "thinking" -> events += StreamEvent.ReasoningStart(id)

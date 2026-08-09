@@ -623,41 +623,6 @@ internal object BedrockRequest {
         )
     }
 
-    fun bedrockMantleMessage(message: ModelMessage): JsonObject = buildJsonObject {
-        put(
-            "role",
-            JsonPrimitive(
-                when (message.role) {
-                    MessageRole.System -> "system"
-                    MessageRole.User -> "user"
-                    MessageRole.Assistant -> "assistant"
-                    MessageRole.Tool -> "tool"
-                },
-            ),
-        )
-        put("content", JsonPrimitive(message.content.joinToString("") { if (it is ContentPart.Text) it.text else "" }))
-    }
-
-    fun bedrockMantleTool(tool: LanguageModelTool): JsonObject = buildJsonObject {
-        put("type", JsonPrimitive("function"))
-        put(
-            "function",
-            buildJsonObject {
-                put("name", JsonPrimitive(tool.name))
-                put("description", JsonPrimitive(tool.description))
-                put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
-            },
-        )
-    }
-
-    /** Responses API tool shape (flat name/parameters, not nested under `function`). */
-    fun bedrockMantleResponsesTool(tool: LanguageModelTool): JsonObject = buildJsonObject {
-        put("type", JsonPrimitive("function"))
-        put("name", JsonPrimitive(tool.name))
-        if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
-        put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
-    }
-
     private fun bedrockImageFileBase64(file: ImageGenerationFile): String =
         file.base64 ?: throw UnsupportedFunctionalityError("url-based images", "URL-based images are not supported for Amazon Bedrock image editing. Provide base64 data directly.")
 
@@ -684,4 +649,137 @@ internal object BedrockRequest {
             ((metadata?.get("bedrock") as? JsonObject)?.get("citations") as? JsonObject)
                 ?.get("enabled") as? JsonPrimitive
             )?.contentOrNull == "true"
+}
+
+/**
+ * Bedrock Mantle request bodies — the OpenAI-shaped `/chat/completions` and `/responses`
+ * message and tool payloads. Split out of [BedrockRequest] to keep that object under the
+ * LargeClass threshold.
+ */
+internal object BedrockMantleRequest {
+    /**
+     * One SDK message as Chat Completions wire messages. A Tool-role message expands to one
+     * `{role:"tool", tool_call_id, content}` per [ContentPart.ToolResult] — a text-only join
+     * sent `content:""` with no `tool_call_id`, which strict OpenAI-compatible endpoints reject
+     * ("tool message must be a response to a preceding tool_calls") — and an assistant turn
+     * echoes its [ContentPart.ToolCall]s as `tool_calls`, without which the model never sees the
+     * call its result answers.
+     */
+    fun bedrockMantleMessages(message: ModelMessage): List<JsonObject> {
+        if (message.role == MessageRole.Tool) {
+            return message.content.filterIsInstance<ContentPart.ToolResult>().map { result ->
+                buildJsonObject {
+                    put("role", JsonPrimitive("tool"))
+                    put("tool_call_id", JsonPrimitive(result.toolCallId))
+                    put("content", JsonPrimitive(bedrockMantleToolResultContent(result.modelVisible)))
+                }
+            }
+        }
+        return listOf(
+            buildJsonObject {
+                put("role", JsonPrimitive(bedrockMantleRole(message.role)))
+                put("content", JsonPrimitive(bedrockMantleText(message)))
+                val toolCalls = message.content.filterIsInstance<ContentPart.ToolCall>()
+                if (toolCalls.isNotEmpty()) {
+                    put(
+                        "tool_calls",
+                        JsonArray(
+                            toolCalls.map { call ->
+                                buildJsonObject {
+                                    put("id", JsonPrimitive(call.toolCallId))
+                                    put("type", JsonPrimitive("function"))
+                                    put(
+                                        "function",
+                                        buildJsonObject {
+                                            put("name", JsonPrimitive(call.toolName))
+                                            put("arguments", JsonPrimitive(call.input.toString()))
+                                        },
+                                    )
+                                }
+                            },
+                        ),
+                    )
+                }
+            },
+        )
+    }
+
+    /**
+     * The same message as Responses `input` items. The Responses contract carries tool turns as
+     * standalone `function_call` / `function_call_output` items, not as `tool_calls` on a message.
+     */
+    fun bedrockMantleResponsesItems(message: ModelMessage): List<JsonObject> {
+        if (message.role == MessageRole.Tool) {
+            return message.content.filterIsInstance<ContentPart.ToolResult>().map { result ->
+                buildJsonObject {
+                    put("type", JsonPrimitive("function_call_output"))
+                    put("call_id", JsonPrimitive(result.toolCallId))
+                    put("output", JsonPrimitive(bedrockMantleToolResultContent(result.modelVisible)))
+                }
+            }
+        }
+        val toolCalls = message.content.filterIsInstance<ContentPart.ToolCall>()
+        val text = bedrockMantleText(message)
+        val items = mutableListOf<JsonObject>()
+        if (toolCalls.isEmpty() || text.isNotEmpty()) {
+            items += buildJsonObject {
+                put("role", JsonPrimitive(bedrockMantleRole(message.role)))
+                put("content", JsonPrimitive(text))
+            }
+        }
+        toolCalls.mapTo(items) { call ->
+            buildJsonObject {
+                put("type", JsonPrimitive("function_call"))
+                put("call_id", JsonPrimitive(call.toolCallId))
+                put("name", JsonPrimitive(call.toolName))
+                put("arguments", JsonPrimitive(call.input.toString()))
+            }
+        }
+        return items
+    }
+
+    private fun bedrockMantleRole(role: MessageRole): String = when (role) {
+        MessageRole.System -> "system"
+        MessageRole.User -> "user"
+        MessageRole.Assistant -> "assistant"
+        MessageRole.Tool -> "tool"
+    }
+
+    private fun bedrockMantleText(message: ModelMessage): String =
+        message.content.joinToString("") { if (it is ContentPart.Text) it.text else "" }
+
+    private fun bedrockMantleToolResultContent(value: JsonElement): String =
+        when (val output = ToolResultOutputs.toolResultOutputFromWire(value)) {
+            is ToolResultOutput.Text -> output.text
+            is ToolResultOutput.Error -> output.message
+            is ToolResultOutput.ExecutionDenied -> output.reason ?: "Tool execution denied."
+            is ToolResultOutput.Json -> output.json.toString()
+            is ToolResultOutput.ErrorJson -> output.json.toString()
+            is ToolResultOutput.Content -> output.value.joinToString("") { item ->
+                (
+                    (item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+                        ?.get("text") as? JsonPrimitive
+                    )?.contentOrNull.orEmpty()
+            }
+        }
+
+    fun bedrockMantleTool(tool: LanguageModelTool): JsonObject = buildJsonObject {
+        put("type", JsonPrimitive("function"))
+        put(
+            "function",
+            buildJsonObject {
+                put("name", JsonPrimitive(tool.name))
+                put("description", JsonPrimitive(tool.description))
+                put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
+            },
+        )
+    }
+
+    /** Responses API tool shape (flat name/parameters, not nested under `function`). */
+    fun bedrockMantleResponsesTool(tool: LanguageModelTool): JsonObject = buildJsonObject {
+        put("type", JsonPrimitive("function"))
+        put("name", JsonPrimitive(tool.name))
+        if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
+        put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
+    }
 }

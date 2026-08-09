@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -253,7 +254,14 @@ private class MemoizedStreamReplay(
             }
             complete(producerRunId, ReplayTerminal.Complete)
         } catch (t: Throwable) {
-            CancellationExceptions.asCancellationExceptionOrNull(t)?.let { throw it }
+            // Only TEARDOWN cancellation may stay cancellation: unregisterCollector cancels this
+            // producer's scope when the last collector leaves, and there is nobody left to notify.
+            // An in-band CancellationException from upstream — AbortError is one, and providers
+            // throw it per chunk from throwIfAborted — arrives while collectors are still attached,
+            // so it has to become a terminal or they wait forever on one the dead producer will
+            // never publish.
+            val cancellation = CancellationExceptions.asCancellationExceptionOrNull(t)
+            if (cancellation != null && !currentCoroutineContext().isActive) throw cancellation
             complete(producerRunId, ReplayTerminal.Error(t))
         }
     }

@@ -7,6 +7,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class HttpTransportBodyCapTest {
     @Test
@@ -41,5 +42,26 @@ class HttpTransportBodyCapTest {
         assertEquals(200, error.statusCode)
         assertEquals(false, error.isRetryable)
         assertTrue(error.message.orEmpty().contains("exceeded 3 bytes limit"))
+    }
+
+    @Test
+    fun `AssetDownload capped bounds a stalled host in wall-clock time`() = runTest {
+        // The size cap bounds MEMORY, never TIME. A host that accepts the GET, sends
+        // headers and then trickles or stalls pins the caller's coroutine forever —
+        // AssetDownload.capped is a non-streaming round-trip and needs the same
+        // DEFAULT_REQUEST_TIMEOUT_MS ceiling every other non-streaming path has.
+        val url = "https://transport.test/stalled-asset"
+        val controller = TestResponseController()
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(url to UrlHandler(UrlResponse.ControlledStream(controller))),
+        )
+        fixture.server.start()
+
+        val error = assertFailsWith<CallTimeoutError> {
+            AssetDownload.capped(fixture.httpClient(), url, timeoutMs = 250)
+        }
+
+        assertEquals(250.milliseconds, error.timeout)
+        controller.close()
     }
 }

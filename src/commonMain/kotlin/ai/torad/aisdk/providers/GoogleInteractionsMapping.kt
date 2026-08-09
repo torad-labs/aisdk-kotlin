@@ -4,8 +4,6 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -781,20 +779,26 @@ internal object GoogleInteractions {
         -> false
     }
 
+    // Same shared pipeline as [GoogleHttp.googlePostJson]: a hand-rolled client.request left the
+    // poll unbounded and its abort signal inert once a fetch was in flight.
     private suspend fun googleGetJson(
         client: HttpClient,
         url: String,
         headers: Map<String, String>,
         abortSignal: AbortSignal,
         parseJson: Boolean = true,
-    ): HttpJsonResponse {
-        abortSignal.throwIfAborted()
-        val response = client.request(url) {
-            method = HttpMethod.Get
-            headers.forEach { (name, value) -> header(name, value) }
+    ): HttpJsonResponse =
+        AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = headers,
+                parseJson = parseJson,
+                errorMessage = GoogleHttp.googleErrorExtractor,
+                abortSignal = abortSignal,
+            )
         }
-        return with(GoogleHttp) { response.parseGoogleResponse(url, parseJson = parseJson) }
-    }
 
     suspend fun googlePollInteraction(
         client: HttpClient,

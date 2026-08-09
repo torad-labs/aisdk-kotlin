@@ -2,6 +2,7 @@
 
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.XAI_VERSION
+import ai.torad.aisdk.providers.XSearch
 import ai.torad.aisdk.providers.Xai
 import ai.torad.aisdk.providers.XaiProviderSettings
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
@@ -773,6 +774,56 @@ class XaiProviderTest {
         assertProviderTool(provider.tools.xSearch, "x_search", "xai.x_search")
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }
+    }
+
+    @Test
+    fun `responses path keeps args of xAI provider tools the mapping does not model`() = runTest {
+        // x_search / view_image / view_x_video are vended by this SDK but have no field-by-field
+        // branch in the Open Responses mapping. Passing the type through without the caller's args
+        // silently drops constraints like allowed_x_handles: the request still succeeds and the
+        // model searches everything the caller asked it not to.
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/responses" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"resp-1",
+                              "created_at":1780000001,
+                              "model":"grok-4",
+                              "output":[
+                                {"type":"message","id":"msg-1","role":"assistant","content":[{"type":"output_text","text":"ok"}]}
+                              ],
+                              "usage":{"input_tokens":3,"output_tokens":4}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
+        val xSearch = XSearch(
+            buildJsonObject {
+                put("allowed_x_handles", buildJsonArray { add(JsonPrimitive("grok")) })
+            },
+        )
+        provider.responses(ModelId("grok-4")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hi")))
+                tools(ToolSet<Any?>(mapOf(xSearch.name to xSearch)).descriptors)
+            },
+        )
+
+        val tool = fixture.calls.single().requestBodyJson.jsonObject["tools"]?.jsonArray?.single()?.jsonObject
+        assertEquals("x_search", tool?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            listOf("grok"),
+            tool?.get("allowed_x_handles")?.jsonArray?.map { it.jsonPrimitive.content },
+            "x_search args must reach the wire, not be dropped: $tool",
+        )
     }
 
     private fun assertProviderTool(tool: Tool<JsonElement, JsonElement, Any?>, name: String, providerToolId: String) {

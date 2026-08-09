@@ -4,6 +4,7 @@ import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.WireDecoder
 import ai.torad.aisdk.protocol.ProtocolJson.stringFromAny
+import ai.torad.aisdk.protocol.ProtocolJson.toolInput
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
@@ -41,7 +42,7 @@ internal object GatewayContentDecoder {
         ContentPart.ToolCall(
             toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "content part"),
             toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "content part"),
-            input = WireDecoder.required(obj, "input", "gateway", "content part"),
+            input = toolInput(WireDecoder.required(obj, "input", "gateway", "content part")),
             providerExecuted = WireDecoder.optionalBoolean(
                 obj,
                 "providerExecuted",
@@ -52,14 +53,16 @@ internal object GatewayContentDecoder {
             providerMetadata = ProtocolMetadata.fromJson(obj["providerMetadata"]),
         )
 
-    private fun decodeToolResult(obj: JsonObject): ContentPart.ToolResult =
-        ContentPart.ToolResult(
+    private fun decodeToolResult(obj: JsonObject): ContentPart.ToolResult {
+        // v3's response-side tool-result carries the payload under `result`; `output` is the
+        // PROMPT-side field name and stays a fallback for gateways that echo the prompt shape.
+        val output = obj["result"] ?: WireDecoder.required(obj, "output", "gateway", "content part")
+        return ContentPart.ToolResult(
             toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "content part"),
             toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "content part"),
-            output = WireDecoder.required(obj, "output", "gateway", "content part"),
+            output = output,
             isError = WireDecoder.optionalBoolean(obj, "isError", "gateway", "content part") ?: false,
-            modelVisible = obj["modelVisible"] ?: obj["modelOutput"]
-                ?: WireDecoder.required(obj, "output", "gateway", "content part"),
+            modelVisible = obj["modelVisible"] ?: obj["modelOutput"] ?: output,
             dynamic = WireDecoder.optionalBoolean(obj, "dynamic", "gateway", "content part") ?: false,
             providerExecuted = WireDecoder.optionalBoolean(
                 obj,
@@ -69,12 +72,15 @@ internal object GatewayContentDecoder {
             ) ?: false,
             providerMetadata = ProtocolMetadata.fromJson(obj["providerMetadata"]),
         )
+    }
 
+    // v3's tool-approval-request is {approvalId, toolCallId, providerMetadata?} — it carries
+    // NEITHER toolName NOR input (the host correlates them through the matching tool-call).
     private fun decodeApprovalRequest(obj: JsonObject): ContentPart.ToolApprovalRequest =
         ContentPart.ToolApprovalRequest(
             toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "content part"),
-            toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "content part"),
-            input = WireDecoder.required(obj, "input", "gateway", "content part"),
+            toolName = WireDecoder.optionalString(obj, "toolName", "gateway", "content part").orEmpty(),
+            input = obj["input"]?.let(::toolInput) ?: JsonObject(emptyMap()),
             approvalId = WireDecoder.optionalString(obj, "approvalId", "gateway", "content part"),
             signature = WireDecoder.optionalString(obj, "signature", "gateway", "content part"),
             providerMetadata = ProtocolMetadata.fromJson(obj["providerMetadata"]),

@@ -24,6 +24,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalAiSdkApi::class, ExperimentalCoroutinesApi::class, InternalAiSdkApi::class)
 class MCPClientTest : MCPClientTestBase() {
@@ -57,6 +58,48 @@ class MCPClientTest : MCPClientTestBase() {
 
         val initialized = transport.sent.filterIsInstance<JSONRPCNotification>().single()
         assertEquals("notifications/initialized", initialized.method)
+    }
+
+    /**
+     * `tools/call` was hard-capped at the 30s default with no consumer-facing override: the
+     * DynamicTool executor built its [MCPRequestOptions] with only `signal(abortSignal)`,
+     * `callTool` is private, [MCPClient] is sealed, and neither `tools()` nor the config carried
+     * a timeout. BL-025's own acceptance criterion required the non-init timeout to be
+     * CONFIGURABLE — it landed on listTools/readResource/prompts and missed the one path a
+     * long-running MCP tool (a build, a search, an agent sub-task) actually uses.
+     */
+    @Test
+    fun `an MCP tool call honors the configured request timeout`() = runTest {
+        // The server answers the handshake and tools/list, then never answers tools/call.
+        val transport = FakeMCPTransport { message ->
+            when {
+                message is JSONRPCRequest && message.method == "initialize" ->
+                    respond(message.id, initializeResult())
+                message is JSONRPCRequest && message.method == "tools/list" ->
+                    respond(message.id, listToolsResult())
+            }
+        }
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+                requestTimeoutMillis(100)
+            },
+        )
+        val echoTool = client.tools<Unit>().byName["echo"].asJsonTool()
+        val echoCtx = ToolExecutionContext(
+            context = Unit,
+            abortSignal = AbortSignalNever,
+            stepNumber = 0,
+            messages = emptyList(),
+            toolCallId = "call_1",
+        )
+
+        val error = assertFailsWith<CallTimeoutError> {
+            echoTool.execute(buildJsonObject { put("message", JsonPrimitive("hi")) }, echoCtx).first()
+        }
+
+        assertEquals(100.milliseconds, error.timeout, "the ceiling must be the consumer's, not the 30s default")
+        client.close()
     }
 
     @Test

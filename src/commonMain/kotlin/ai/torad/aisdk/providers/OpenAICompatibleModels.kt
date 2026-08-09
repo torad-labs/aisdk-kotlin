@@ -392,7 +392,7 @@ internal class OpenAICompatibleImageModel(
                 )
                 GeneratedFile(
                     mediaType = (obj["media_type"] as? JsonPrimitive)?.contentOrNull ?: "image/png",
-                    base64 = obj["b64_json"]?.let { imageData }.orEmpty(),
+                    base64 = obj["b64_json"]?.takeIf { it !is JsonNull }?.let { imageData }.orEmpty(),
                     url = (obj["url"] as? JsonPrimitive)?.contentOrNull,
                 )
             },

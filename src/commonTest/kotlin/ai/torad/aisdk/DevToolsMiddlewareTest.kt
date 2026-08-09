@@ -3,10 +3,14 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
@@ -81,6 +85,50 @@ class DevToolsMiddlewareTest {
         assertEquals(JsonPrimitive("raw-provider-event"), result.rawChunks.single())
         assertEquals("finish", result.rawResponse!!.jsonArray.last().jsonObject["type"]!!.jsonPrimitive.content)
     }
+
+    @Test
+    fun `inMemoryDevToolsRecorder hands out snapshots a later step cannot mutate`() = runTest {
+        val recorder = InMemoryDevToolsRecorder()
+        recorder.createRun("run_1")
+        recorder.createStep(recorderStep("step_1"))
+        val runs = recorder.runs
+        val steps = recorder.steps
+        val results = recorder.results
+
+        recorder.createRun("run_2")
+        recorder.createStep(recorderStep("step_2"))
+        recorder.updateStepResult("step_1", DevToolsStepResult(1, null, null, null))
+
+        assertEquals(listOf("run_1"), runs)
+        assertEquals(listOf("step_1"), steps.map { it.id })
+        assertEquals(emptySet(), results.keys)
+    }
+
+    @Test
+    fun `inMemoryDevToolsRecorder records every step written by concurrent callers`() = runTest {
+        val recorder = InMemoryDevToolsRecorder()
+
+        withContext(Dispatchers.Default) {
+            (0 until 8).map { writer ->
+                launch {
+                    repeat(200) { index -> recorder.createStep(recorderStep("step_${writer}_$index")) }
+                }
+            }.joinAll()
+        }
+
+        assertEquals(1600, recorder.steps.size)
+    }
+
+    private fun recorderStep(id: String): DevToolsStep = DevToolsStep(
+        id = id,
+        runId = "run_1",
+        stepNumber = 1,
+        type = "generate",
+        modelId = "mock/test",
+        provider = "mock",
+        input = JsonObject(emptyMap()),
+        providerOptions = ProviderOptions.None,
+    )
 
     @Test
     fun `devToolsMiddleware rejects production environment`() {

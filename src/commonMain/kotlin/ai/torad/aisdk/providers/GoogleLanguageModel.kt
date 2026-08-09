@@ -679,6 +679,7 @@ private class GoogleStreamState(
     private var reasoningId: String? = null
     private var blockCounter = 0
     private var hasToolCalls = false
+    private var lastCodeExecutionId: String? = null
     private val emittedSourceKeys = mutableSetOf<String>()
 
     fun accept(value: JsonObject): List<StreamEvent> {
@@ -704,6 +705,29 @@ private class GoogleStreamState(
                 )
             } catch (error: WireDecodeException) {
                 return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+            }
+            // Mirrors googleLanguageResult: the code_execution provider tool arrives as
+            // executableCode + codeExecutionResult parts. They matched none of the branches
+            // below, so the executed code and its result silently vanished from the stream
+            // while the identical response through generate() surfaced both.
+            (JsonAccess.obj(obj, "executableCode"))?.let { code ->
+                val id = idGenerator()
+                lastCodeExecutionId = id
+                hasToolCalls = true
+                val metadata = googleProviderExecutedMetadata()
+                events += StreamEvent.ToolInputStart(id, "code_execution", metadata)
+                events += StreamEvent.ToolInputDelta(id, code.toString(), metadata)
+                events += StreamEvent.ToolInputEnd(id, metadata)
+                events += StreamEvent.ToolCall(id, "code_execution", code, metadata)
+            }
+            (JsonAccess.obj(obj, "codeExecutionResult"))?.let { result ->
+                events += StreamEvent.ToolResult(
+                    toolCallId = lastCodeExecutionId ?: idGenerator(),
+                    toolName = "code_execution",
+                    outputJson = result,
+                    providerMetadata = googleProviderExecutedMetadata(),
+                )
+                lastCodeExecutionId = null
             }
             val text = try {
                 WireDecoder.optionalString(
@@ -837,4 +861,9 @@ private class GoogleStreamState(
         )
         return events
     }
+
+    private fun googleProviderExecutedMetadata(): ProviderMetadata =
+        ProviderMetadata.Raw(
+            JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })),
+        )
 }

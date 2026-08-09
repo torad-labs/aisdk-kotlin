@@ -6,7 +6,11 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 
-internal fun GatewayErrorFromResponse(statusCode: Int, raw: String): GatewayError {
+internal fun GatewayErrorFromResponse(
+    statusCode: Int,
+    raw: String,
+    responseHeaders: Map<String, String>? = null,
+): GatewayError {
     val parsed = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull()
     val error = (parsed?.get("error") as? JsonObject)
     val type = (error?.get("type") as? JsonPrimitive)?.contentOrNull
@@ -14,20 +18,31 @@ internal fun GatewayErrorFromResponse(statusCode: Int, raw: String): GatewayErro
         ?: raw.ifBlank { "Gateway request failed" }
     val generationId = (parsed?.get("generationId") as? JsonPrimitive)?.contentOrNull
     return when (type) {
-        "authentication_error" -> GatewayAuthenticationError(message, statusCode, generationId)
-        "invalid_request_error" -> GatewayInvalidRequestError(message, statusCode, generationId)
-        "rate_limit_exceeded" -> GatewayRateLimitError(message, statusCode, generationId)
-        "model_not_found" -> GatewayModelNotFoundError(message, statusCode, generationId = generationId)
-        "internal_server_error" -> GatewayInternalServerError(message, statusCode, generationId)
+        "authentication_error" ->
+            GatewayAuthenticationError(message, statusCode, generationId, responseHeaders = responseHeaders)
+        "invalid_request_error" ->
+            GatewayInvalidRequestError(message, statusCode, generationId, responseHeaders = responseHeaders)
+        "rate_limit_exceeded" ->
+            GatewayRateLimitError(message, statusCode, generationId, responseHeaders = responseHeaders)
+        "model_not_found" -> GatewayModelNotFoundError(
+            message = message,
+            statusCode = statusCode,
+            generationId = generationId,
+            responseHeaders = responseHeaders,
+        )
+        "internal_server_error" ->
+            GatewayInternalServerError(message, statusCode, generationId, responseHeaders = responseHeaders)
         else -> GatewayResponseError(
             message = message,
             statusCode = statusCode,
             response = parsed,
             generationId = generationId,
+            responseHeaders = responseHeaders,
         )
     }
 }
 
+@Suppress("LongParameterList") // exception carrier: one field per wire concern, all defaulted
 /** @since 0.3.0-beta01 */
 public open class GatewayError(
     message: String,
@@ -40,6 +55,14 @@ public open class GatewayError(
     cause: Throwable? = null,
     /** @since 0.3.0-beta01 */
     public val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500,
+    /**
+     * Response headers captured from the gateway, or null when unavailable. Carried so the
+     * retry layer can honor the server's `Retry-After` on a retryable gateway error — the
+     * sibling field on [APICallError] is what `RetryPolicy` reads, and a gateway error that
+     * dropped its headers fell back to the tiny exponential backoff and re-hit the limit.
+     * @since 0.3.0-beta01
+     */
+    public val responseHeaders: Map<String, String>? = null,
 ) : AiSdkException(if (generationId == null) message else "$message [$generationId]", cause)
 
 /** @since 0.3.0-beta01 */
@@ -48,7 +71,8 @@ public class GatewayAuthenticationError(
     statusCode: Int = 401,
     generationId: String? = null,
     cause: Throwable? = null,
-) : GatewayError(message, statusCode, "authentication_error", generationId, cause)
+    responseHeaders: Map<String, String>? = null,
+) : GatewayError(message, statusCode, "authentication_error", generationId, cause, responseHeaders = responseHeaders)
 
 /** @since 0.3.0-beta01 */
 public class GatewayInvalidRequestError(
@@ -56,7 +80,8 @@ public class GatewayInvalidRequestError(
     statusCode: Int = 400,
     generationId: String? = null,
     cause: Throwable? = null,
-) : GatewayError(message, statusCode, "invalid_request_error", generationId, cause)
+    responseHeaders: Map<String, String>? = null,
+) : GatewayError(message, statusCode, "invalid_request_error", generationId, cause, responseHeaders = responseHeaders)
 
 /** @since 0.3.0-beta01 */
 public class GatewayRateLimitError(
@@ -64,7 +89,8 @@ public class GatewayRateLimitError(
     statusCode: Int = 429,
     generationId: String? = null,
     cause: Throwable? = null,
-) : GatewayError(message, statusCode, "rate_limit_exceeded", generationId, cause)
+    responseHeaders: Map<String, String>? = null,
+) : GatewayError(message, statusCode, "rate_limit_exceeded", generationId, cause, responseHeaders = responseHeaders)
 
 /** @since 0.3.0-beta01 */
 public class GatewayModelNotFoundError(
@@ -74,7 +100,8 @@ public class GatewayModelNotFoundError(
     public val modelId: String? = null,
     generationId: String? = null,
     cause: Throwable? = null,
-) : GatewayError(message, statusCode, "model_not_found", generationId, cause)
+    responseHeaders: Map<String, String>? = null,
+) : GatewayError(message, statusCode, "model_not_found", generationId, cause, responseHeaders = responseHeaders)
 
 /** @since 0.3.0-beta01 */
 public class GatewayInternalServerError(
@@ -82,7 +109,8 @@ public class GatewayInternalServerError(
     statusCode: Int = 500,
     generationId: String? = null,
     cause: Throwable? = null,
-) : GatewayError(message, statusCode, "internal_server_error", generationId, cause)
+    responseHeaders: Map<String, String>? = null,
+) : GatewayError(message, statusCode, "internal_server_error", generationId, cause, responseHeaders = responseHeaders)
 
 /** @since 0.3.0-beta01 */
 public class GatewayResponseError(
@@ -92,7 +120,8 @@ public class GatewayResponseError(
     public val response: JsonElement? = null,
     generationId: String? = null,
     cause: Throwable? = null,
-) : GatewayError(message, statusCode, "response_error", generationId, cause)
+    responseHeaders: Map<String, String>? = null,
+) : GatewayError(message, statusCode, "response_error", generationId, cause, responseHeaders = responseHeaders)
 
 /** @since 0.3.0-beta01 */
 public class GatewayTimeoutError(

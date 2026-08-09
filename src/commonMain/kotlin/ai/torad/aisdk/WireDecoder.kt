@@ -5,6 +5,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -94,7 +95,12 @@ internal object WireDecoder {
         path: String = "$",
         vararg keys: String,
     ): String =
-        keys.firstNotNullOfOrNull { key -> optionalString(obj, key, provider, operation, path) }
+        // An explicit JSON null is absent, not malformed: a server that serializes its unused
+        // alternative as `"b64_json": null` must still fall through to the next key instead of
+        // failing a fully valid response.
+        keys.firstNotNullOfOrNull { key ->
+            obj[key]?.takeIf { it !is JsonNull }?.let { stringValue(it, provider, operation, child(path, key)) }
+        }
             ?: fail(provider, operation, path, "missing one required field: ${keys.joinToString(" or ")}")
 
     fun stringValue(value: JsonElement, provider: String, operation: String, path: String = "$"): String =

@@ -236,7 +236,12 @@ public class RetryPolicy internal constructor(
     }
 
     private fun retryAfterDelayMs(t: Throwable): Long? {
-        val headers = (t as? APICallError)?.responseHeaders ?: return null
+        // [GatewayError] is a SIBLING of [APICallError], not a subclass, so the cast alone
+        // silently dropped the server's backoff guidance for the whole gateway transport —
+        // the same blind spot `IsDefaultRetryable` above already had to close for retryability.
+        val headers = (t as? APICallError)?.responseHeaders
+            ?: (t as? GatewayError)?.responseHeaders
+            ?: return null
 
         // The flattened header map preserves the server's wire casing, and HTTP/1.1 servers send
         // `Retry-After` / `Retry-After-Ms` in Title-Case — so these MUST be looked up

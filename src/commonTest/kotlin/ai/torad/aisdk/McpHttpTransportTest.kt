@@ -679,4 +679,93 @@ class McpHttpTransportTest : MCPClientTestBase() {
         assertEquals("echo", tools.tools.single().name)
         client.close()
     }
+
+    /**
+     * A real Streamable-HTTP server holds the standing inbound GET open forever and pushes
+     * server→client traffic down it. Ktor 3.5 installs `SaveBody` unconditionally and it calls
+     * `readRemaining()` on the raw channel before `client.request(...)` returns, so every frame
+     * on that stream was buffered — unboundedly — and delivered only when the server eventually
+     * closed it. Every other inbound test here uses a stream the fixture closes, which is why a
+     * green suite never saw it. `prepareRequest { }.execute { }` keeps the body a live channel.
+     */
+    @Test
+    fun `HTTP inbound SSE delivers a server message while the stream is still open`() = runTest {
+        val serverNotification = """{"jsonrpc":"2.0","method":"notifications/server"}"""
+        val controller = TestResponseController()
+        val getSeen = CompletableDeferred<Unit>()
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when (request.method) {
+                            "GET" -> {
+                                getSeen.complete(Unit)
+                                UrlResponse.ControlledStream(controller)
+                            }
+                            else -> UrlResponse.Empty(status = 202)
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val transport = HttpMCPTransport(fixture.httpClient(), "https://mcp.test/mcp")
+        val received = CompletableDeferred<JSONRPCMessage>()
+        transport.setOnMessage { received.complete(it) }
+
+        transport.start()
+        HttpTransport.withRealTimeout(5_000) { getSeen.await() }
+        controller.write("event: message\ndata: $serverNotification\n\n")
+
+        val message = HttpTransport.withRealTimeout(5_000) { received.await() }
+
+        assertEquals("notifications/server", assertIs<JSONRPCNotification>(message).method)
+        controller.close()
+        transport.close()
+    }
+
+    /**
+     * The third pre-buffering site: a POST answered with `text/event-stream` that the server
+     * keeps open after writing the correlated response. `client.request(...)` consumed the whole
+     * stream before returning, so `send()` — and therefore the caller's request — blocked until
+     * the server closed it instead of returning as soon as the response had been delivered.
+     */
+    @Test
+    fun `HTTP transport resolves a request whose POST SSE answer stays open`() = runTest {
+        val controller = TestResponseController()
+        val listToolsFrame =
+            ToJsonElement(JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()))
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when {
+                            request.method == "GET" -> UrlResponse.Error(status = 405, body = "GET not supported")
+                            "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
+                                ToJsonElement(JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult())),
+                            )
+                            "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
+                            "\"method\":\"tools/list\"" in request.body -> UrlResponse.ControlledStream(controller)
+                            else -> UrlResponse.Error(status = 500, body = "unexpected request: ${request.body}")
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val transport = HttpMCPTransport(fixture.httpClient(), "https://mcp.test/mcp")
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(transport)
+            }
+        )
+
+        // Answer on the stream but never close it — the request must resolve anyway.
+        controller.write("event: message\ndata: $listToolsFrame\n\n")
+        val tools = HttpTransport.withRealTimeout(5_000) { client.listTools() }
+
+        assertEquals("echo", tools.tools.single().name)
+        controller.close()
+        client.close()
+    }
 }

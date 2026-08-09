@@ -2,18 +2,11 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -41,6 +34,9 @@ internal object GoogleHttp {
             )
         }
 
+    // Goes through the shared pipeline (not a hand-rolled client.request) so the round-trip is
+    // bounded by DEFAULT_REQUEST_TIMEOUT_MS and an abort fired mid-flight actually cancels the
+    // call — a pre-flight throwIfAborted alone left AbortSignal inert once the request was away.
     suspend fun googlePostJson(
         client: HttpClient,
         url: String,
@@ -48,16 +44,20 @@ internal object GoogleHttp {
         headers: Map<String, String>,
         abortSignal: AbortSignal,
         parseJson: Boolean,
-    ): HttpJsonResponse {
-        abortSignal.throwIfAborted()
-        val response = client.request(url) {
-            method = HttpMethod.Post
-            contentType(ContentType.Application.Json)
-            headers.forEach { (name, value) -> header(name, value) }
-            setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
+    ): HttpJsonResponse =
+        AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Post,
+                headers = headers,
+                body = body,
+                parseJson = parseJson,
+                requestBodyValues = body,
+                errorMessage = googleErrorExtractor,
+                abortSignal = abortSignal,
+            )
         }
-        return response.parseGoogleResponse(url, parseJson, requestBodyValues = body)
-    }
 
 /** Streaming counterpart of [googlePostJson]: reads the SSE body incrementally. */
     fun googleStreamSse(

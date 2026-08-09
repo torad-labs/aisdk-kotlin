@@ -180,28 +180,25 @@ public fun DefaultGeneratedFile(data: ByteArray, mediaType: String): DefaultGene
 
 /** @since 0.3.0-beta01 */
 public class DefaultGeneratedFile internal constructor(
-    private var base64Data: String?,
-    private var byteArrayData: ByteArray?,
+    base64Data: String?,
+    byteArrayData: ByteArray?,
     /** @since 0.3.0-beta01 */
     public val mediaType: String,
 ) {
+    // Memoized through `lazy` (SYNCHRONIZED by default) rather than a hand-rolled mutable field: this
+    // is a public value a consumer may share across threads, and a plain field write publishing a
+    // freshly decoded ByteArray is not safely published — a reader can observe the array reference
+    // before its element writes and copy out zeroed bytes.
+    private val base64Value: String by lazy { base64Data ?: Base64Codec.encode(byteArrayData ?: ByteArray(0)) }
+    private val byteArrayValue: ByteArray by lazy { byteArrayData ?: Base64Codec.decode(base64Data.orEmpty()) }
+
     /** @since 0.3.0-beta01 */
     public val base64: String
-        get() {
-            if (base64Data == null) {
-                base64Data = Base64Codec.encode(byteArrayData ?: ByteArray(0))
-            }
-            return base64Data.orEmpty()
-        }
+        get() = base64Value
 
     /** @since 0.3.0-beta01 */
     public val byteArray: ByteArray
-        get() {
-            if (byteArrayData == null) {
-                byteArrayData = Base64Codec.decode(base64Data.orEmpty())
-            }
-            return byteArrayData?.copyOf() ?: ByteArray(0)
-        }
+        get() = byteArrayValue.copyOf()
 
     /** @since 0.3.0-beta01 */
     public fun toGeneratedFile(

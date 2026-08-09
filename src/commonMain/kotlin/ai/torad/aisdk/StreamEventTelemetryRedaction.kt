@@ -44,11 +44,15 @@ internal object StreamEventTelemetryRedaction {
                     providerMetadata = ProviderMetadata.None,
                 )
             is StreamEvent.ToolResult -> toolResult(event, settings, redactor)
+            // The typed AgentError is dropped, not forwarded: InvalidToolInput exposes the raw
+            // model-supplied input via `rawArgs`, and ToolExecution's `executorError` can be an
+            // APICallError carrying url/requestBodyValues/responseBody. The redacted [message] is
+            // the safe rendering, matching how StreamEvent.Error rebuilds its cause below.
             is StreamEvent.ToolError -> StreamEvent.ToolError(
                 toolCallId = event.toolCallId,
                 toolName = event.toolName,
                 message = redactor.redactText(event.message),
-                error = event.error,
+                error = null,
                 providerMetadata = ProviderMetadata.None,
             )
             is StreamEvent.Error -> StreamEvent.Error(
@@ -151,6 +155,9 @@ internal object StreamEventTelemetryRedaction {
             } else {
                 JsonObject(emptyMap())
             },
+            // Carried explicitly: isError is a flag, not payload, and the constructor would otherwise
+            // re-derive it from the redacted outputJson and report every failed tool call as a success.
+            isError = event.isError,
             preliminary = event.preliminary,
         )
 

@@ -93,8 +93,12 @@ public sealed class Output<T> {
     public class Arr<T>(
         /** @since 0.3.0-beta01 */
         public val elementSerializer: KSerializer<T>,
-        /** @since 0.3.0-beta01 */
-        public val name: String = elementSerializer.descriptor.serialName.substringAfterLast('.') + "[]",
+        /**
+         * Suffixed `_array`, not `[]`: this becomes `response_format.json_schema.name` on the wire,
+         * and OpenAI-compatible providers enforce `^[a-zA-Z0-9_-]+$` on it with a 400.
+         * @since 0.3.0-beta01
+         */
+        public val name: String = elementSerializer.descriptor.serialName.substringAfterLast('.') + "_array",
         override val schemaDescription: String? = null,
     ) : Output<List<T>>() {
         override val schemaName: String = name
@@ -197,7 +201,7 @@ public fun <T> OutputObj(
 
 public fun <T> OutputArray(
     elementSerializer: KSerializer<T>,
-    name: String = elementSerializer.descriptor.serialName.substringAfterLast('.') + "[]",
+    name: String = elementSerializer.descriptor.serialName.substringAfterLast('.') + "_array",
     description: String? = null,
 ): Output<List<T>> = Output.Arr(elementSerializer, name, description)
 

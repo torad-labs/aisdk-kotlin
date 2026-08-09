@@ -2,8 +2,10 @@
 
 package ai.torad.aisdk
 
+import ai.torad.aisdk.providers.MockLanguageModel
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.providers.MockToolInput
+import ai.torad.aisdk.providers.ScriptedResponse
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -71,6 +73,65 @@ class AgentSessionTest {
     }
 
     @Test
+    fun `approving one of two pending approvals keeps the other answerable`() = runTest {
+        val executed = mutableListOf<String>()
+        val sendTool = Tool<SendInput, SendResult, Unit>(
+            name = "send",
+            description = "send message",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+            needsApproval = { _, _ -> true },
+        ) { input ->
+            executed += input.message
+            SendResult(sent = true)
+        }
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = MockLanguageModel(
+                responses = listOf(
+                    ScriptedResponse {
+                        events(
+                            listOf(
+                                StreamEvent.ToolCall("call_A", "send", buildJsonObject { put("message", "first") }),
+                                StreamEvent.ToolCall("call_B", "send", buildJsonObject { put("message", "second") }),
+                            ),
+                        )
+                        finishReason(FinishReason.ToolCalls)
+                    },
+                    ScriptedResponse {
+                        events(
+                            listOf(
+                                StreamEvent.TextStart("t1"),
+                                StreamEvent.TextDelta("t1", "done"),
+                                StreamEvent.TextEnd("t1"),
+                            ),
+                        )
+                    },
+                ),
+            ),
+            instructions = "use send",
+            tools = ToolSet(sendTool),
+        )
+        val session = agent.session(this)
+
+        session.submit(prompt = "trigger").join()
+        val pendings = session.state.value.pendingApprovals
+        assertEquals(2, pendings.size, "a step gating two tools surfaces two approvals")
+
+        session.approve(pendings[0]).join()
+
+        // Answering one of two must NOT relaunch the loop: the unanswered call would be
+        // replayed to the provider as a tool_use with no tool_result, and the host would
+        // have lost the handle needed to answer it.
+        assertEquals(listOf(pendings[1]), session.state.value.pendingApprovals)
+        assertEquals(AgentSessionStatus.AwaitingApproval, session.state.value.status)
+
+        session.approve(pendings[1]).join()
+
+        assertEquals(listOf("first", "second"), executed)
+        assertEquals(AgentSessionStatus.Ready, session.state.value.status)
+    }
+
+    @Test
     fun `streaming session records tool-call and tool-result parts in the message log`() = runTest {
         val tools = ToolSet(
             Tool<WeatherInput, WeatherOutput, Unit>(
@@ -104,6 +165,71 @@ class AgentSessionTest {
             parts.any { it is ContentPart.ToolResult && it.toolName == "weather" },
             "streamed tool-result part must be in the message log",
         )
+    }
+
+    @Test
+    fun `streaming session keeps each step's messages separate and in order`() = runTest {
+        val tools = ToolSet(
+            Tool<WeatherInput, WeatherOutput, Unit>(
+                name = "weather",
+                description = "Get weather.",
+            ) { input -> WeatherOutput(temperature = input.city.length) }
+        )
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = MockLanguageModel(
+                responses = listOf(
+                    ScriptedResponse {
+                        events(
+                            listOf(
+                                StreamEvent.TextStart("t1"),
+                                StreamEvent.TextDelta("t1", "Let me check the weather"),
+                                StreamEvent.TextEnd("t1"),
+                                StreamEvent.ToolCall(
+                                    "call_1",
+                                    "weather",
+                                    buildJsonObject { put("city", "Paris") },
+                                ),
+                            ),
+                        )
+                        finishReason(FinishReason.ToolCalls)
+                    },
+                    ScriptedResponse {
+                        events(
+                            listOf(
+                                StreamEvent.TextStart("t2"),
+                                StreamEvent.TextDelta("t2", "It is 20C in Paris."),
+                                StreamEvent.TextEnd("t2"),
+                            ),
+                        )
+                    },
+                ),
+            ),
+            instructions = "Be brief.",
+            tools = tools,
+        )
+        val session = agent.session(this)
+
+        session.submitStreaming(prompt = "weather?").join()
+
+        // The projected log is fed straight back to the model on the next submit()/approve(),
+        // so it must mirror the real turn: step 1's text + tool call, the tool result, THEN
+        // step 2's answer — not one merged assistant message with both steps' text.
+        val messages = session.state.value.messages
+        assertEquals(
+            listOf(MessageRole.User, MessageRole.Assistant, MessageRole.Tool, MessageRole.Assistant),
+            messages.map { it.role },
+        )
+        assertEquals(
+            listOf("Let me check the weather"),
+            messages[1].content.filterIsInstance<ContentPart.Text>().map { it.text },
+        )
+        assertTrue(messages[1].content.any { it is ContentPart.ToolCall && it.toolCallId == "call_1" })
+        assertEquals(
+            listOf("It is 20C in Paris."),
+            messages[3].content.filterIsInstance<ContentPart.Text>().map { it.text },
+        )
+        // state.text stays the whole turn's text (parity with the non-streaming submit path).
+        assertEquals("Let me check the weatherIt is 20C in Paris.", session.state.value.text)
     }
 
     @Test
@@ -367,6 +493,40 @@ class AgentSessionTest {
 
         // The returned result must NOT be committed as Ready — the abort wins,
         // mirroring submitStreaming's StreamEvent.Abort handling.
+        assertEquals(AgentSessionStatus.Cancelled, session.state.value.status)
+    }
+
+    @Test
+    fun `structured-output submit settles Cancelled when aborted mid-run`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val weatherTool = Tool<WeatherInput, WeatherOutput, Unit>(
+            name = "weather",
+            description = "Get weather.",
+        ) { input ->
+            gate.await()
+            WeatherOutput(temperature = input.city.length)
+        }
+        val agent = TestToolLoopAgent<Unit, WeatherOutput>(
+            model = MockLanguageModelToolThenText(
+                toolName = "weather",
+                toolInput = MockToolInput("city" to "Paris"),
+                finalText = """{"temperature":20}""",
+            ),
+            instructions = "Be brief.",
+            tools = ToolSet(weatherTool),
+            output = OutputObj(serializer<WeatherOutput>()),
+        )
+        val session = agent.session(this)
+
+        val controller = AbortController()
+        val job = session.submit(prompt = "weather?", abortSignal = controller.signal)
+        runCurrent() // the tool parks at the gate inside step 1
+        controller.abort()
+        gate.complete(Unit) // step 1 finishes; the loop aborts at the next step boundary
+        job.join()
+
+        // The user's own cancel must settle Cancelled — not Error("the model finished with
+        // `tool-calls`, not `stop`"), which is a decode diagnosis for a length/step-cap ending.
         assertEquals(AgentSessionStatus.Cancelled, session.state.value.status)
     }
 

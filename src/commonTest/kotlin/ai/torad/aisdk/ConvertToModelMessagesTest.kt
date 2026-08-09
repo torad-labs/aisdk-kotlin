@@ -1,10 +1,13 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.ui.Chat
+import ai.torad.aisdk.ui.DirectChatTransport
 import ai.torad.aisdk.ui.ModelMessageConversion.convertToModelMessages
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
@@ -340,5 +343,20 @@ class ConvertToModelMessagesTest {
         assertEquals(2, result.size, "DynamicToolUI converts the same way as ToolUI")
         assertEquals(MessageRole.Assistant, result[0].role)
         assertEquals(MessageRole.Tool, result[1].role)
+    }
+
+    @Test
+    fun `given a client tool output added through Chat when converted then it becomes a tool result message`() {
+        val chat = Chat(transport = DirectChatTransport { emptyFlow() })
+        chat.addToolOutput(toolCallId = "call_1", output = JsonPrimitive("sunny"), toolName = "getWeather")
+
+        val result = convertToModelMessages(chat.messages)
+
+        assertEquals(1, result.size)
+        assertEquals(MessageRole.Tool, result[0].role)
+        val toolResult = result[0].content.single() as ContentPart.ToolResult
+        assertEquals("call_1", toolResult.toolCallId)
+        assertEquals("getWeather", toolResult.toolName)
+        assertEquals(JsonPrimitive("sunny"), toolResult.output)
     }
 }
