@@ -950,7 +950,15 @@ private class AnthropicStreamState(
                 // Merge onto the message_start usage (delta usually has only output_tokens).
                 usage = UsageMergeAnthropic(usage, obj["usage"])
             }
-            "error" -> events += StreamEvent.Error(AnthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
+            "error" -> {
+                events += StreamEvent.Error(AnthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
+                // The terminal Finish still has to say WHY the stream ended. Leaving the default
+                // `Other` here reported a mid-stream server error as an ordinary completion, so a
+                // consumer branching on finishReason — or IsLoopFinished, which treats Error as
+                // terminal — could not tell the two apart. Matches the sibling providers
+                // (OpenAICompatibleStreaming, CohereStreamState) which already mark Error.
+                finishReason = FinishReason.Error
+            }
         }
         return events
     }

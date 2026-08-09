@@ -141,6 +141,14 @@ class AnthropicProviderStreamingTest {
             afterError.all { it is StreamEvent.Finish },
             "only the terminal Finish may follow the error, but got: $afterError",
         )
+        // ...and that Finish must say WHY. Reporting Other here made a mid-stream server error
+        // indistinguishable from an ordinary completion for anyone branching on finishReason
+        // (IsLoopFinished treats Error as terminal). Sibling providers already mark Error.
+        assertEquals(
+            FinishReason.Error,
+            events.filterIsInstance<StreamEvent.Finish>().single().finishReason,
+            "a stream that died on a server error must finish with FinishReason.Error: $events",
+        )
     }
 
     @Test

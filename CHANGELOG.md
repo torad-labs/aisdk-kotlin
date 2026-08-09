@@ -72,6 +72,15 @@ per-item repro, verifier evidence, and rulings is `dev/campaigns/sdk-review.toml
   `json_schema.name` must match `^[a-zA-Z0-9_-]+$`, so the default array-output path 400'd on
   every call. The default suffix is now `_array`.
 
+**Behaviour change**
+
+- **An Anthropic stream that dies on a server error now finishes with `FinishReason.Error`.**
+  It reported `Other`, which made a mid-stream failure indistinguishable from an ordinary
+  completion for anyone branching on `finishReason` — and `IsLoopFinished` treats `Error` as
+  terminal, so the distinction is load-bearing. The sibling providers
+  (`OpenAICompatibleStreaming`, `CohereStreamState`) already marked `Error`; Anthropic was the
+  outlier. The event sequence is unchanged: the error is still followed by the terminal `Finish`.
+
 **Not changed, deliberately**
 
 - An OpenResponses file id whose characters happen to form valid base64 is still sent inline
