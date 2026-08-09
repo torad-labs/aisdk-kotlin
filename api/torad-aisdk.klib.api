@@ -4395,10 +4395,6 @@ final class ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings { // ai.
     final val videoPollIntervalMillis // ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings.videoPollIntervalMillis|{}videoPollIntervalMillis[0]
         final fun <get-videoPollIntervalMillis>(): kotlin/Long // ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings.videoPollIntervalMillis.<get-videoPollIntervalMillis>|<get-videoPollIntervalMillis>(){}[0]
 
-    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings.toString|toString(){}[0]
-
     final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings> { // ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings.$serializer|null[0]
         final val descriptor // ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings.$serializer.descriptor|{}descriptor[0]
             final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]

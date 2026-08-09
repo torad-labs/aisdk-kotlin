@@ -30,6 +30,42 @@ import kotlin.test.assertTrue
 class McpHttpTransportTest : MCPClientTestBase() {
 
     @Test
+    fun `HTTP MCP transport session cleanup DELETE sends the session id exactly once`() = runTest {
+        // mcpCommonHeaders already injects mcp-session-id, so appending it again produced
+        // `mcp-session-id: session-1, session-1` on the wire — a value no conformant server can
+        // match, silently turning the cleanup DELETE into a no-op and leaking the session.
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when {
+                            request.method == "DELETE" -> UrlResponse.Empty(status = 202)
+                            request.method == "GET" -> UrlResponse.Error(status = 405, body = "GET not supported")
+                            "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
+                                ToJsonElement(JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult())),
+                                headers = mapOf("mcp-session-id" to "session-1"),
+                            )
+                            "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
+                            else -> UrlResponse.Error(status = 500, body = "unexpected request: ${request.body}")
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(HttpMCPTransport(client = fixture.httpClient(), url = "https://mcp.test/mcp"))
+            },
+        )
+
+        client.close()
+
+        val delete = fixture.calls.single { it.requestMethod == "DELETE" }
+        assertEquals("session-1", delete.requestHeaders.headerValue("mcp-session-id"))
+    }
+
+    @Test
     fun `HTTP MCP transport performs initialize post session headers and tool list`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

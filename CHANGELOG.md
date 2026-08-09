@@ -72,6 +72,43 @@ per-item repro, verifier evidence, and rulings is `dev/campaigns/sdk-review.toml
   `json_schema.name` must match `^[a-zA-Z0-9_-]+$`, so the default array-output path 400'd on
   every call. The default suffix is now `_array`.
 
+### Review tail — 26 further verified defects fixed
+
+The full-SDK review produced 36 lower-ranked findings that were never adversarially verified when
+the first campaign landed. All 36 have now been through the same refute-by-default pass: **10 were
+refuted** (the code was already correct, or the behaviour was deliberate) and **26 were fixed**,
+each with a regression test proven to fail beforehand.
+
+- **`GoogleGenerativeAIProviderSettings` is no longer `@Poko` (ABI change).** It holds a
+  `generateId` closure, and CLAUDE.md's closure-holder law says such types stay plain classes:
+  value equality over a closure is meaningless, and the generated `equals`/`hashCode`/`toString`
+  are the only members the dump loses. Its `@Serializable` also threw at runtime on the
+  `Function0` polymorphic fallback; the lambda is now `@Transient`, so settings round-trip.
+  `AnthropicAwsProviderSettings` had the same `@Serializable`-on-a-closure defect, which would
+  have serialised AWS credentials had it ever encoded.
+- **An unterminated reasoning section never emitted `ReasoningEnd`**, so `AgentSession` dropped the
+  buffered reasoning from assistant history and the UI part stayed `Streaming` forever. Every
+  other reasoning producer in the SDK closes an open section at stream end; this middleware was
+  the sole holdout.
+- **Gateway prompt encoding emitted shapes the V3 schema does not define** — an `image` part type,
+  and file URLs under a nonexistent `url` key instead of `data` — and V3 `source` parts decoded to
+  `StreamEvent.Raw`, so gateway citations silently vanished.
+- **Anthropic never consulted `params.abortSignal`**, so aborting a generate or stream was a no-op
+  there and on AnthropicAws, which delegates to it.
+- **Several transport paths regained their bounds**: `postFacadeBinary` had neither a timeout nor
+  abort registration, and the Gladia/BFL poll GETs could not be cancelled mid-request.
+- **Smaller correctness fixes**: a superseded `AgentSession` job could clobber a newer submit's
+  state; a stale `StructuredObjectApi` submit clobbered a newer `abortController`, making `stop()`
+  a no-op; `Chat.stop()` tore down the whole collector rather than the in-flight request; a
+  mid-chunk decode failure discarded valid Google events; prediction-token metadata was keyed
+  inconsistently between `generate()` and `stream()`; `OutputError` tool parts were dropped on
+  resume; xAI citations were dropped by the streaming paths; MCP sent a duplicated session header
+  and read SSE lines unbounded; a malformed Google embed response returned an empty vector; and
+  `APICallError.requestBodyValues` carried the response body.
+
+Net effect on tracked debt: the detekt baseline **shrank by 31 entries** and every per-rule ceiling
+was re-seeded downward.
+
 **Behaviour change**
 
 - **An Anthropic stream that dies on a server error now finishes with `FinishReason.Error`.**

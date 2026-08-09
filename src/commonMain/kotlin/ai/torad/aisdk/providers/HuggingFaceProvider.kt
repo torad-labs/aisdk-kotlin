@@ -350,12 +350,13 @@ private class HuggingFaceResponsesLanguageModel(
             settings.huggingFaceHeaders(headers).forEach { (name, value) -> header(name, value) }
             setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
         }
-        return parseResponse(response, parseJson = true)
+        return parseResponse(response, parseJson = true, requestBody = body)
     }
 
     private suspend fun parseResponse(
         response: HttpResponse,
         parseJson: Boolean,
+        requestBody: JsonElement,
     ): HuggingFaceHttpResponse {
         val raw = with(HttpTransport) { response.bodyAsTextCapped(response.call.request.url.toString()) }
         val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
@@ -367,7 +368,9 @@ private class HuggingFaceResponsesLanguageModel(
                 rawBody = raw,
                 headers = headers,
                 message = "Hugging Face API error: ${parsed?.let(settings::huggingFaceErrorMessage) ?: raw}",
-                requestBodyValues = parsed,
+                // `parsed` is the error RESPONSE (already surfaced as rawBody); this field is
+                // documented as the REQUEST body, matching streamResponsesSse/responsesResult.
+                requestBodyValues = requestBody,
             )
         }
         return HuggingFaceHttpResponse(

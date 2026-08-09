@@ -1,12 +1,14 @@
 package ai.torad.aisdk
 
 import io.ktor.http.HttpHeaders
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -214,5 +216,32 @@ class McpSseTransportTest : MCPClientTestBase() {
         assertEquals("notifications/server", assertIs<JSONRPCNotification>(received).method)
         controller.close()
         transport.close()
+    }
+
+    /**
+     * The SSE bodies come off a live channel that bypasses Ktor's `SaveBody`, so the line
+     * accumulator was the only buffer in the path: a newline-free stream grew it without limit.
+     * `MCP_SSE_MAX_DATA_LINES` caps the NUMBER of data lines in a frame, not their length. This is
+     * the remote analogue of the stdio transport's `STDIO_MAX_LINE_CHARS` cap (BL-027).
+     */
+    @Test
+    fun `SSE parser caps a single unbounded line instead of buffering it`() = runTest {
+        val oversized = "data: " + "x".repeat(MCP_SSE_MAX_LINE_CHARS)
+
+        val error = assertFailsWith<MCPClientError> {
+            ParseSseStream(ByteReadChannel(oversized)) { }
+        }
+
+        assertTrue(error.message.orEmpty().contains("$MCP_SSE_MAX_LINE_CHARS characters"))
+    }
+
+    @Test
+    fun `SSE parser still delivers a frame just under the line cap`() = runTest {
+        val payload = "y".repeat(MCP_SSE_MAX_LINE_CHARS - "data: ".length)
+        val frames = mutableListOf<McpSseFrame>()
+
+        ParseSseStream(ByteReadChannel("data: $payload\n\n")) { frames += it }
+
+        assertEquals(payload, frames.single().data)
     }
 }

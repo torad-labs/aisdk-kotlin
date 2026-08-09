@@ -77,19 +77,35 @@ internal object FacadeHttp {
             abortSignal = abortSignal,
         )
 
+    // Both binary round-trips carry what every other non-streaming round-trip carries:
+    // the DEFAULT_REQUEST_TIMEOUT_MS ceiling (a stalled server must not pin the caller
+    // forever) and the caller's abort registration (an aborted request must not stay in
+    // flight). `postFacadeBinary` had neither.
     suspend fun postFacadeBinary(
         client: HttpClient,
         url: String,
         body: JsonElement,
         headers: Map<String, String>,
-    ): ProviderFacadeBinaryResponse {
-        val response = client.request(url) {
-            method = HttpMethod.Post
-            contentType(ContentType.Application.Json)
-            headers.forEach { (name, value) -> header(name, value) }
-            setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
+        abortSignal: AbortSignal = AbortSignalNever,
+    ): ProviderFacadeBinaryResponse = HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+        val abortRegistrations = mutableListOf<AbortSignal.AbortRegistration>()
+        try {
+            val response = client.request(url) {
+                abortSignal.throwIfAborted()
+                abortRegistrations += abortSignal.register {
+                    executionContext.cancel(
+                        with(AbortErrorCancellationBridge) { AbortError().asCoroutineCancellation() }
+                    )
+                }
+                method = HttpMethod.Post
+                contentType(ContentType.Application.Json)
+                headers.forEach { (name, value) -> header(name, value) }
+                setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
+            }
+            response.parseFacadeBinary(url)
+        } finally {
+            abortRegistrations.forEach { it.cancel() }
         }
-        return response.parseFacadeBinary(url)
     }
 
     suspend fun getFacadeBinary(
@@ -97,7 +113,7 @@ internal object FacadeHttp {
         url: String,
         headers: Map<String, String>,
         abortSignal: AbortSignal = AbortSignalNever,
-    ): ProviderFacadeBinaryResponse {
+    ): ProviderFacadeBinaryResponse = HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
         val abortRegistrations = mutableListOf<AbortSignal.AbortRegistration>()
         try {
             val response = client.request(url) {
@@ -110,7 +126,7 @@ internal object FacadeHttp {
                 method = HttpMethod.Get
                 headers.forEach { (name, value) -> header(name, value) }
             }
-            return response.parseFacadeBinary(url)
+            response.parseFacadeBinary(url)
         } finally {
             abortRegistrations.forEach { it.cancel() }
         }

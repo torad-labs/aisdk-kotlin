@@ -153,6 +153,69 @@ class GoogleMediaProviderTest {
     }
 
     @Test
+    fun `single value embedding rejects a malformed embedContent response`() = runTest {
+        // The single-value branch degraded a missing/misshapen container to an empty vector, so a
+        // caller got a count-matching success carrying a zero-dimension embedding. The batch
+        // branch and the image/video paths in this same file are already strict.
+        val malformedBodies = listOf(
+            "{}" to "$.embedding",
+            """{"embedding":null}""" to "$.embedding",
+            """{"embedding":{}}""" to "$.embedding.values",
+            """{"embedding":{"values":{"0":1.0}}}""" to "$.embedding.values",
+        )
+        for ((body, expectedPath) in malformedBodies) {
+            val fixture = TestServer.createTestServer(
+                mutableMapOf(
+                    "https://google.test/v1beta/models/text-embedding-004:embedContent" to UrlHandler(
+                        UrlResponse.JsonValue(Json.parseToJsonElement(body)),
+                    ),
+                ),
+            )
+            fixture.server.start()
+            val provider = GoogleGenerativeAI(
+                fixture.httpClient(),
+                GoogleGenerativeAIProviderSettings {
+                    apiKey("key")
+                    baseURL("https://google.test/v1beta")
+                },
+            )
+
+            val error = assertFailsWith<WireDecodeException> {
+                provider.embedding(ModelId("text-embedding-004")).embed(
+                    EmbeddingModelCallParams { values(listOf("only")) },
+                )
+            }
+
+            assertTrue(error.message.orEmpty().contains(expectedPath), "expected $expectedPath in ${error.message}")
+        }
+    }
+
+    @Test
+    fun `single value embedding maps a well formed embedContent response`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/text-embedding-004:embedContent" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"embedding":{"values":[1.5,2.5]}}""")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = GoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key")
+                baseURL("https://google.test/v1beta")
+            },
+        )
+
+        val result = provider.embedding(ModelId("text-embedding-004")).embed(
+            EmbeddingModelCallParams { values(listOf("only")) },
+        )
+
+        assertEquals(listOf(1.5f, 2.5f), result.embeddings.single())
+    }
+
+    @Test
     fun `image and video models reject malformed Google media wire data`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

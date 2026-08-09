@@ -54,6 +54,58 @@ class AnthropicProviderStreamingTest {
     }
 
     @Test
+    fun `stream surfaces malformed delta payload fields as wire error events`() = runTest {
+        // The delta arm's own `index`/`delta` reads were guarded, but the payload reads inside it
+        // (delta.type, text, thinking, partial_json) were not, so a nonconforming server threw a
+        // WireDecodeException out of the Flow instead of emitting StreamEvent.Error.
+        val malformedDeltas = mapOf(
+            """{"type":"text_delta"}""" to "$.delta.text",
+            """{"type":"thinking_delta"}""" to "$.delta.thinking",
+            """{"type":"input_json_delta"}""" to "$.delta.partial_json",
+            """{"type":7}""" to "$.delta.type",
+        )
+        for ((delta, expectedPath) in malformedDeltas) {
+            val fixture = TestServer.createTestServer(
+                mutableMapOf(
+                    "https://anthropic.test/v1/messages" to UrlHandler(
+                        UrlResponse.StreamChunks(
+                            listOf(
+                                """
+                                data: {"type":"content_block_start","index":0,"content_block":{"type":"text","id":"b0"}}
+
+                                data: {"type":"content_block_delta","index":0,"delta":$delta}
+
+                                data: {"type":"message_stop"}
+
+                                """.trimIndent(),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+            fixture.server.start()
+            val provider = Anthropic(
+                fixture.httpClient(),
+                AnthropicProviderSettings { baseURL("https://anthropic.test/v1") }
+            )
+
+            val events = drainAllItems(
+                provider.messages(ModelId("claude-sonnet-4-5")).stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    }
+                ),
+            )
+
+            val error = events.filterIsInstance<StreamEvent.Error>().single()
+            assertTrue(error.message.contains(expectedPath), "expected $expectedPath in ${error.message}")
+            // The stream still terminates normally: partial text and the finish event survive.
+            assertTrue(events.filterIsInstance<StreamEvent.TextStart>().isNotEmpty())
+            assertTrue(events.filterIsInstance<StreamEvent.Finish>().isNotEmpty())
+        }
+    }
+
+    @Test
     fun `stream leading Anthropic overloaded error throws retryable API call error before emitting events`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

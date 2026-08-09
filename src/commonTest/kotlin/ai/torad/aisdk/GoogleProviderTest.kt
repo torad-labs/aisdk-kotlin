@@ -270,43 +270,41 @@ class GoogleProviderTest {
     }
 
     @Test
-    fun `provider settings equality hash and string cover each stored field`() {
-        val generateId = { "fixed-id" }
-        fun settings(
-            baseURL: String = "https://google.test/base",
-            apiKey: String? = "key",
-            headers: Map<String, String> = mapOf("X-Test" to "yes"),
-            generateIdValue: () -> String = generateId,
-            name: String = "google.test",
-            videoPollIntervalMillis: Long = 250L,
-            videoMaxPollAttempts: Int = 7,
-        ): GoogleGenerativeAIProviderSettings =
+    fun `provider settings keep identity equality because they hold a closure`() {
+        // CLAUDE.md closure-holder law: a construct-type holding a FUNCTION is not a value
+        // type — value equality over a closure is meaningless — so these settings are a
+        // plain class (no @Poko, no data class) with Kotlin's honest identity equality.
+        fun settings(): GoogleGenerativeAIProviderSettings =
             GoogleGenerativeAIProviderSettings {
-                baseURL(baseURL)
-                apiKey(apiKey)
-                headers(headers)
-                generateId(generateIdValue)
-                name(name)
-                videoPollIntervalMillis(videoPollIntervalMillis)
-                videoMaxPollAttempts(videoMaxPollAttempts)
+                baseURL("https://google.test/base")
+                apiKey("key")
+                generateId { "fixed-id" }
             }
 
         val base = settings()
-        val same = settings()
 
         assertEquals(base, base)
-        assertEquals(base, same)
-        assertEquals(base.hashCode(), same.hashCode())
-        assertTrue(base.toString().contains("baseURL=https://google.test/base"))
-        assertTrue(base.toString().contains("videoMaxPollAttempts=7"))
+        assertEquals(base.hashCode(), base.hashCode())
         assertNotEquals(base, Any())
-        assertNotEquals(base, settings(baseURL = "https://google.test/other"))
-        assertNotEquals(base, settings(apiKey = null))
-        assertNotEquals(base, settings(headers = mapOf("X-Test" to "no")))
-        assertNotEquals(base, settings(generateIdValue = { "fixed-id" }))
-        assertNotEquals(base, settings(name = "google.other"))
-        assertNotEquals(base, settings(videoPollIntervalMillis = 500L))
-        assertNotEquals(base, settings(videoMaxPollAttempts = 8))
+        assertNotEquals(base, settings())
+    }
+
+    @Test
+    fun `provider settings round-trip through their serializer without the generateId closure`() {
+        val settings = GoogleGenerativeAIProviderSettings {
+            baseURL("https://google.test/v1")
+            apiKey("json-key")
+            generateId { "fixed-id" }
+            videoMaxPollAttempts(9)
+        }
+
+        val encoded = Json.encodeToString(GoogleGenerativeAIProviderSettings.serializer(), settings)
+        assertTrue("generateId" !in encoded, "the closure is not part of the wire shape")
+
+        val roundTripped = Json.decodeFromString(GoogleGenerativeAIProviderSettings.serializer(), encoded)
+        assertEquals("https://google.test/v1", roundTripped.baseURL)
+        assertEquals("json-key", roundTripped.apiKey)
+        assertEquals(9, roundTripped.videoMaxPollAttempts)
     }
 
     @Test
@@ -770,6 +768,53 @@ class GoogleProviderTest {
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("functionCall.name"))
+    }
+
+    @Test
+    fun `stream keeps events decoded before a malformed part in the same chunk`() = runTest {
+        val malformed = """{"candidates":[{"content":{"parts":[{"text":"Hello"},5]}}]}"""
+        val followUp =
+            """{"candidates":[{"content":{"parts":[{"text":" world"}]},"finishReason":"STOP"}]}"""
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            "data: $malformed\n\n",
+                            "data: $followUp\n\n",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = GoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key")
+                baseURL("https://google.test/v1beta")
+            },
+        )
+
+        val events = drainAllItems(
+            provider.chat(ModelId("gemini-2.5-flash")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ),
+        )
+
+        // The malformed part[1] must not discard the TextStart/TextDelta already decoded from
+        // part[0], nor leave textId set for a block the consumer never saw start.
+        assertEquals(
+            listOf("Hello", " world"),
+            events.filterIsInstance<StreamEvent.TextDelta>().map { it.text },
+        )
+        val firstStart = events.indexOfFirst { it is StreamEvent.TextStart }
+        val firstDelta = events.indexOfFirst { it is StreamEvent.TextDelta }
+        assertTrue(firstStart in 0 until firstDelta, "TextStart must precede the first TextDelta")
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertTrue(error.message.contains("parts[1]"))
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {

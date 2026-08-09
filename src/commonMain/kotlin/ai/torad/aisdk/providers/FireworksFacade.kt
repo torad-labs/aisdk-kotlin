@@ -336,6 +336,7 @@ public class FireworksImageModel(
                 url = fireworksImageUrl(settings.baseURL, modelId, backend),
                 body = body,
                 headers = requestHeaders,
+                abortSignal = params.abortSignal,
             )
             ImageModelResult(
                 images = listOf(response.toGeneratedFile(modelId)),

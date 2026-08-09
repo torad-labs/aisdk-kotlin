@@ -9956,7 +9956,6 @@ public final class ai/torad/aisdk/providers/GoogleGenerativeAIProvider : ai/tora
 
 public final class ai/torad/aisdk/providers/GoogleGenerativeAIProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/GoogleGenerativeAIProviderSettings$Companion;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
 	public final fun getGenerateId ()Lkotlin/jvm/functions/Function0;
@@ -9964,8 +9963,6 @@ public final class ai/torad/aisdk/providers/GoogleGenerativeAIProviderSettings {
 	public final fun getName ()Ljava/lang/String;
 	public final fun getVideoMaxPollAttempts ()I
 	public final fun getVideoPollIntervalMillis ()J
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public final synthetic class ai/torad/aisdk/providers/GoogleGenerativeAIProviderSettings$$serializer : kotlinx/serialization/internal/GeneratedSerializer {

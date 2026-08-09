@@ -2,10 +2,14 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.AssemblyAI
 import ai.torad.aisdk.providers.AssemblyAIProviderSettings
+import ai.torad.aisdk.providers.BlackForestLabs
+import ai.torad.aisdk.providers.BlackForestLabsProviderSettings
 import ai.torad.aisdk.providers.Fal
 import ai.torad.aisdk.providers.FalProviderSettings
 import ai.torad.aisdk.providers.Fireworks
 import ai.torad.aisdk.providers.FireworksProviderSettings
+import ai.torad.aisdk.providers.Gladia
+import ai.torad.aisdk.providers.GladiaProviderSettings
 import ai.torad.aisdk.providers.GoogleGenerativeAI
 import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings
 import ai.torad.aisdk.providers.KlingAI
@@ -270,6 +274,104 @@ class MediaPollRobustnessTest {
                             "klingai" to buildJsonObject { put("pollIntervalMs", JsonPrimitive(0)) },
                         )
                     )
+                    abortSignal(controller.signal)
+                }
+            )
+        }
+        pollStarted.await()
+        pollBody.error(AbortError())
+        controller.abort()
+
+        assertFailsWith<AbortError> { HttpTransport.withRealTimeout(5_000) { pending.await() } }
+        assertEquals(1, pollCalls)
+    }
+
+    @Test
+    fun `gladia poll GET is cancelled when abort fires in flight`() = runTest {
+        val pollStarted = CompletableDeferred<Unit>()
+        val pollBody = TestResponseController()
+        val controller = AbortController()
+        var pollCalls = 0
+        val client = HttpClient(
+            MockEngine { request ->
+                when (request.url.toString()) {
+                    "https://api.gladia.io/v2/upload" -> json("""{"audio_url":"https://cdn.example/audio"}""")
+                    "https://api.gladia.io/v2/pre-recorded" ->
+                        json("""{"result_url":"https://api.gladia.io/v2/pre-recorded/job"}""")
+                    "https://api.gladia.io/v2/pre-recorded/job" -> {
+                        pollCalls++
+                        pollStarted.complete(Unit)
+                        respond(
+                            content = pollBody.stream,
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                        )
+                    }
+                    else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
+                }
+            }
+        )
+        val model = Gladia(
+            client,
+            GladiaProviderSettings {
+                apiKey("key")
+                pollingIntervalMillis(0)
+            },
+        ).transcription()
+
+        val pending = async {
+            model.transcribe(
+                TranscriptionParams {
+                    audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                    abortSignal(controller.signal)
+                }
+            )
+        }
+        pollStarted.await()
+        pollBody.error(AbortError())
+        controller.abort()
+
+        assertFailsWith<AbortError> { HttpTransport.withRealTimeout(5_000) { pending.await() } }
+        assertEquals(1, pollCalls)
+    }
+
+    @Test
+    fun `black forest labs poll GET is cancelled when abort fires in flight`() = runTest {
+        val pollStarted = CompletableDeferred<Unit>()
+        val pollBody = TestResponseController()
+        val controller = AbortController()
+        var pollCalls = 0
+        val client = HttpClient(
+            MockEngine { request ->
+                when (request.url.toString()) {
+                    "https://bfl.test/v1/flux-pro-1.1" ->
+                        json("""{"id":"req1","polling_url":"https://bfl.test/v1/poll"}""")
+                    "https://bfl.test/v1/poll?id=req1" -> {
+                        pollCalls++
+                        pollStarted.complete(Unit)
+                        respond(
+                            content = pollBody.stream,
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                        )
+                    }
+                    else -> json("""{"unexpected":"${request.url}"}""", HttpStatusCode.NotFound)
+                }
+            }
+        )
+        val model = BlackForestLabs(
+            client,
+            BlackForestLabsProviderSettings {
+                apiKey("key")
+                baseURL("https://bfl.test/v1")
+                pollIntervalMillis(0)
+            },
+        ).image(ModelId("flux-pro-1.1"))
+
+        val pending = async {
+            model.generate(
+                ImageGenerationParams {
+                    prompt("x")
                     abortSignal(controller.signal)
                 }
             )

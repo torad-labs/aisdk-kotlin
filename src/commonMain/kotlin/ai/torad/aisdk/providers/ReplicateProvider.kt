@@ -323,13 +323,16 @@ public class ReplicateProviderSettings internal constructor(
         abortSignal: AbortSignal,
     ): HttpJsonResponse {
         abortSignal.throwIfAborted()
-        return HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = ::replicateErrorMessage,
-        )
+        return AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = headers,
+                errorMessage = ::replicateErrorMessage,
+                abortSignal = abortSignal,
+            )
+        }
     }
 
     private fun replicateErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
