@@ -108,6 +108,25 @@ const GUARDED: readonly {
   { pattern: /(^|\/)\.claude\/hooks\/grant-store\.ts$/, label: ".claude/hooks/grant-store.ts" },
   { pattern: /(^|\/)\.claude\/hooks\/modules\/03-grant-gate\.ts$/, label: ".claude/hooks/modules/03-grant-gate.ts" },
   /**
+   * This repo's issuance path, which upstream reaches through `modules/20-grant-issue.ts`. Listed
+   * by the same criterion as everything else here: breaking it produces no failure elsewhere.
+   *
+   * Honest scope note — the list is INFORMATIONAL in aisdk-kotlin, because `isLoadBearing` and
+   * `guardedLabels` have no local callers (the PreToolUse consumer is not vendored). The teeth for
+   * these two files are `.claude/hooks/tests/test_grant_issue_policy.py`, which ci-gate.sh runs and
+   * which fails if the reason requirement, the read-only subcommands, the token shape, or the
+   * MAX_HOURS clamp is weakened. The entries are here so the set stays true if the consumer is
+   * ever vendored.
+   */
+  {
+    pattern: /(^|\/)\.claude\/hooks\/modules\/userpromptsubmit\/grant_issue_policy\.py$/,
+    label: ".claude/hooks/modules/userpromptsubmit/grant_issue_policy.py",
+  },
+  {
+    pattern: /(^|\/)\.claude\/hooks\/orchestrator\/userpromptsubmit\.py$/,
+    label: ".claude/hooks/orchestrator/userpromptsubmit.py",
+  },
+  /**
    * EVERY GATE, not an enumerated subset.
    *
    * This was two entries — `no-python.ts` and `staged.ts` — and the omission was the last rung of

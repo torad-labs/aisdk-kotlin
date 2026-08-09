@@ -25,6 +25,20 @@ vendoring, note lineage, never hand-fork divergent logic):
   UserPromptSubmit, which fires only on text a human typed, so an assistant
   still cannot authorise itself. Never add an `issue()` mode to a script or CLI
   — that is the escape the whole design exists to prevent.
+  Teeth: `.claude/hooks/tests/test_grant_issue_policy.py`, run by `ci-gate.sh`,
+  fails if the reason requirement, the read-only subcommands, the token shape,
+  or the `MAX_HOURS` clamp is weakened. (The `GUARDED` list in `grant-store.ts`
+  names both Python paths for upstream parity, but is informational here: its
+  consumer is not vendored.)
+
+  **Typing `/grant` is the only sanctioned issuance.** A seat must never invoke
+  the handler itself, and must never write `.claude/.grant.json` directly, even
+  with after-the-fact operator authorization and even when it discloses doing
+  so. `grant-store.ts` explains why: an attestation satisfied by the party the
+  gate distrusts carries none of the property the gate exists for. A seat that
+  needs a grant asks the operator to type one and waits. There is one recorded
+  exception, on ledger items M05/L10, taken while this repo had no issuer at
+  all; both entries are annotated as closed precedent, not as a pattern.
 - **Runner:** bun (`bun dev/campaigns/ledger.ts <ledger.toml> <cmd>`).
 - **Predecessor:** `manifest.py` (torad-fleet lineage, vendored 2026-07-02)
   remains ONLY for the closed pre-migration campaigns
