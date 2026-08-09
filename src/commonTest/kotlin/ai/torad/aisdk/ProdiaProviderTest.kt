@@ -337,6 +337,32 @@ class ProdiaProviderTest {
     }
 
     @Test
+    fun `video model refuses an output filename that would walk outside the job namespace`() = runTest {
+        // The output listing is server-controlled and its entries are interpolated into a request
+        // that carries the caller's credentials, so a traversal entry must never be fetched.
+        val fixture = TestServer.createTestServer(
+            prodiaAsyncJobRoutes(outputListing = """["../../admin/secret.mp4"]"""),
+        )
+        fixture.server.start()
+        val model = Prodia(
+            fixture.httpClient(),
+            ProdiaProviderSettings {
+                apiKey("token")
+                baseURL("https://prodia.test/v2")
+            },
+        ).video(ModelId("inference.wan2-2.lightning.txt2vid.v0"))
+
+        assertFailsWith<NoVideoGeneratedError> {
+            model.generate(VideoGenerationParams { prompt("a puppy in a field") })
+        }
+
+        assertTrue(
+            fixture.calls.none { it.requestUrl.contains("admin/secret.mp4") || it.requestUrl.contains("..") },
+            "the traversal filename must never be requested; calls were ${fixture.calls.map { it.requestUrl }}",
+        )
+    }
+
+    @Test
     fun `unsupported Prodia surfaces and unconfigured singleton fail explicitly`() {
         val provider =
             Prodia(TestServer.createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings { apiKey("token") })
@@ -345,7 +371,7 @@ class ProdiaProviderTest {
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }
     }
 
-    private fun prodiaAsyncJobRoutes(): UrlHandlers {
+    private fun prodiaAsyncJobRoutes(outputListing: String = """["video.mp4"]"""): UrlHandlers {
         val jobUrl = "https://prodia.test/v2/job/async/job-async"
         return mutableMapOf(
             "https://prodia.test/v2/job/async?price=true" to UrlHandler(
@@ -368,7 +394,7 @@ class ProdiaProviderTest {
                 ),
             ),
             "$jobUrl/output" to UrlHandler(
-                UrlResponse.JsonValue(Json.parseToJsonElement("""["video.mp4"]""")),
+                UrlResponse.JsonValue(Json.parseToJsonElement(outputListing)),
             ),
             "$jobUrl/output/video.mp4" to UrlHandler(
                 UrlResponse.Binary(byteArrayOf(12, 13), headers = mapOf(HttpHeaders.ContentType to "video/mp4")),

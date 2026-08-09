@@ -51,6 +51,12 @@ per-item repro, verifier evidence, and rulings is `dev/campaigns/sdk-review.toml
 - **The internal request ceiling escaped as a bare `TimeoutCancellationException`**, which reads
   as cooperative cancellation: it was silently swallowed and never retried. It now surfaces as
   `CallTimeoutError`.
+- **MCP calls were hard-capped with no way to raise the ceiling.** `MCPClientConfig` gains
+  `requestTimeoutMillis`, the ceiling for non-handshake JSON-RPC requests that carry no
+  per-request timeout; it defaults to `null`, which keeps the previous built-in default
+  unchanged. The executor built by `tools()` / `toolsFromDefinitions()` takes no
+  `MCPRequestOptions`, so a legitimately long-running MCP tool — a build, a search, an agent
+  sub-task — was simply unusable through the `ToolSet` path.
 - **Multi-turn tool conversations were broken on Bedrock Mantle** (tool calls and results dropped
   from both the emitted stream and the request mapping) and on Hugging Face (assistant tool calls
   and tool results dropped from history).

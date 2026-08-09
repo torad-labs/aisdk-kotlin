@@ -628,8 +628,18 @@ class OpenResponsesProviderTest {
                 messages(listOf(UserMessage("hi")))
             },
         )
+        // This is a PRESENCE check: it proves the round trip runs inside HttpTransport's shared
+        // withRealTimeout wrapper. The CallTimeoutError mapping itself is pinned at the primitive
+        // in WithRealTimeoutTest, so the two together cover "a tripped deadline surfaces as
+        // CallTimeoutError here" without this test having to stall for the real deadline.
+        //
+        // Known coupling: kotlinx.coroutines' TimeoutCoroutine.toString() is a debug format, not
+        // API, so a coroutines upgrade could change it with no behaviour change in the SDK. Both
+        // of its identifying markers are accepted to blunt that; if the assertion ever fails after
+        // a dependency bump, check the format before suspecting the wrapper.
+        val job = requestJob.orEmpty()
         assertTrue(
-            requestJob.orEmpty().contains("timeMillis=$DEFAULT_REQUEST_TIMEOUT_MS"),
+            job.contains("timeMillis=$DEFAULT_REQUEST_TIMEOUT_MS") || job.contains("TimeoutCoroutine"),
             "non-streaming Open Responses request must run under the shared " +
                 "$DEFAULT_REQUEST_TIMEOUT_MS ms request bound, but ran under: $requestJob",
         )

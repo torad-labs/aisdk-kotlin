@@ -56,7 +56,7 @@
     "src/commonTest/kotlin/ai/torad/aisdk/HuggingFaceProviderTest.kt": 642,
     "src/commonTest/kotlin/ai/torad/aisdk/LiteRTLanguageModelTest.kt": 725,
     "src/commonTest/kotlin/ai/torad/aisdk/MCPClientTest.kt": 557,
-    "src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt": 662,
+    "src/commonTest/kotlin/ai/torad/aisdk/OpenResponsesProviderTest.kt": 672,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/MistralProvider.kt": 505,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/QuiverAIProvider.kt": 540,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/FireworksFacade.kt": 598,

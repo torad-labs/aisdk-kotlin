@@ -90,6 +90,40 @@ class AwsSigV4Test {
         )
     }
 
+    @Test
+    fun `a raw reserved char in the path signs the same as its pre-encoded form`() {
+        // Non-S3 SigV4 canonicalization double-encodes the path, so `/foo+bar` and `/foo%2Bbar`
+        // describe the same resource and MUST produce the same canonical path — `%252B` — and so
+        // the same signature. Escaping '%' alone left the raw form single-encoded at `%2B`, which
+        // is a hard 403 SignatureDoesNotMatch against any host whose base-URL prefix carries a raw
+        // reserved char (a custom bedrockRuntimeBaseURL or Anthropic AWS base URL; every in-repo
+        // caller pre-encodes, which is why the pinned botocore vector never caught it).
+        //
+        // Asserted as an equivalence rather than against a hardcoded signature: the botocore
+        // vector above remains the absolute oracle, and this pins the property that fix restores
+        // without inventing a second oracle by hand.
+        fun sign(path: String): String? = AwsSigV4.awsSigV4SignedHeaders(
+            method = "POST",
+            url = "https://bedrock-runtime.us-east-1.amazonaws.com$path",
+            service = "bedrock",
+            region = "us-east-1",
+            headers = mapOf("Content-Type" to "application/json"),
+            body = """{"messages":[]}""",
+            credentials = AwsSigV4Credentials(
+                accessKeyId = "AKIDEXAMPLE",
+                secretAccessKey = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+            ),
+            amzDate = "20150830T123600Z",
+        ).headerValue("Authorization")
+
+        assertEquals(
+            sign("/model/vendor.model-v1%2B0/converse"),
+            sign("/model/vendor.model-v1+0/converse"),
+            "a raw reserved char must canonicalize to the same double-encoded path as its " +
+                "pre-encoded twin, or requests to a host with such a prefix 403",
+        )
+    }
+
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }

@@ -1,5 +1,6 @@
 package ai.torad.aisdk.protocol
 
+import ai.torad.aisdk.JsonAccess
 import ai.torad.aisdk.Usage
 import ai.torad.aisdk.protocol.ProtocolJson.intOrNull
 import kotlinx.serialization.json.JsonElement
@@ -11,8 +12,8 @@ internal object GatewayUsageCodec {
         // v3 sends the breakdown NESTED — {inputTokens:{total,noCache,cacheRead,cacheWrite},
         // outputTokens:{total,text,reasoning}}. Read that first; the flat legacy keys stay a
         // fallback for gateways still emitting the pre-restructure shape.
-        val input = obj["inputTokens"] as? JsonObject
-        val output = obj["outputTokens"] as? JsonObject
+        val input = JsonAccess.obj(obj, "inputTokens")
+        val output = JsonAccess.obj(obj, "outputTokens")
         val prompt = count(
             input,
             "total",

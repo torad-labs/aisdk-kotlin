@@ -10,8 +10,18 @@ vendoring, note lineage, never hand-fork divergent logic):
   `dev/earn-artifacts/` skeleton, `.claude/hooks/grant-store.ts`.
 - **Local edits:** `review.ts` `defaultLedger()` points at
   `dev/campaigns/sdk-review.toml` (this repo's active campaign) instead of
-  compose-flow's `setup.toml`. Nothing else diverges — promote improvements
-  upstream via the toolkit pipeline, do not fork logic here.
+  compose-flow's `setup.toml`. Nothing else diverges in LOGIC — promote
+  improvements upstream via the toolkit pipeline, do not fork logic here.
+- **Deliberate gap — no grant issuer.** The bun hook runtime
+  (`runner.ts`, `registry.ts`, `modules/20-grant-issue.ts` and its
+  UserPromptSubmit wiring) is NOT vendored, because this repo's hooks are the
+  Python orchestrator under `.claude/hooks/modules/pretooluse/`. Only the read
+  side of the grant gate is vendored, so `liveGrant()` always returns null and
+  the two grant-gated ledger commands (`add-law`, `amend`) are closed here.
+  Corrections go through the append-only `note` channel instead. Do not close
+  the gap by giving a script an `issue()` mode — that discards the
+  operator-only-by-construction property the upstream design exists for; vendor
+  the hook runtime if issuance is ever genuinely needed.
 - **Runner:** bun (`bun dev/campaigns/ledger.ts <ledger.toml> <cmd>`).
 - **Predecessor:** `manifest.py` (torad-fleet lineage, vendored 2026-07-02)
   remains ONLY for the closed pre-migration campaigns

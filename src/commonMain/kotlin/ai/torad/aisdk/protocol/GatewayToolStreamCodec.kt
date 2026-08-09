@@ -98,11 +98,18 @@ internal object GatewayToolStreamCodec {
             providerMetadata = ProtocolMetadata.fromJson(obj["providerMetadata"]),
         )
 
+    /**
+     * `modelVisible` wins over the legacy `modelOutput`, matching GatewayContentEncoder (which
+     * writes `modelVisible`) and GatewayContentDecoder. Both names can arrive together from a
+     * transition-era gateway, and the two decode paths MUST agree on which one is canonical:
+     * disagreeing meant the same wire object produced one payload when it arrived as a stream
+     * event and a different one when replayed as a content part.
+     */
     private fun ToolResultOutputs.modelOutput(
         obj: JsonObject,
         output: ToolResultOutput,
     ): ToolResultOutput =
-        obj["modelOutput"]?.let(::toolResultOutputFromWire)
-            ?: obj["modelVisible"]?.let(::toolResultOutputFromWire)
+        obj["modelVisible"]?.let(::toolResultOutputFromWire)
+            ?: obj["modelOutput"]?.let(::toolResultOutputFromWire)
             ?: output
 }

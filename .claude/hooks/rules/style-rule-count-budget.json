@@ -32,7 +32,7 @@
     "no-jvmoverloads-on-expect": 0,
     "no-jvmstatic-on-expect": 0,
     "no-kdoc-todo": 0,
-    "no-keyed-json-container-cast": 10,
+    "no-keyed-json-container-cast": 8,
     "no-lateinit-in-data-class": 0,
     "no-let-elvis-run-pyramid": 0,
     "no-loop-in-init": 0,

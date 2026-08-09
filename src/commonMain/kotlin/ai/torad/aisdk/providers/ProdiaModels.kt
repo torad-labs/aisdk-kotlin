@@ -306,9 +306,20 @@ internal class ProdiaVideoModel(
     private suspend fun downloadOutput(jobUrl: String, headers: Map<String, String>): ProdiaRawResponse {
         val filename = (settings.prodiaRequest(client, "$jobUrl/output", headers).json() as? JsonArray)
             ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
-            ?.firstOrNull { MediaTypes.detect(filename = it)?.startsWith("video/") == true }
+            ?.firstOrNull { isProdiaVideoOutputName(it) }
             ?: throw NoVideoGeneratedError("Prodia async job produced no video output")
         return settings.prodiaRequest(client, "$jobUrl/output/$filename", headers)
+    }
+
+    /**
+     * The output listing is server-controlled and its entries are interpolated into a request path
+     * that carries the caller's credentials, so a bare extension check is not enough: `..` or a
+     * separator would walk the request off the job namespace and send the auth headers to whatever
+     * the normalized path resolves to. Require a plain filename that also looks like a video.
+     */
+    private fun isProdiaVideoOutputName(candidate: String): Boolean {
+        val isPlainFilename = '/' !in candidate && '\\' !in candidate && candidate != "." && candidate != ".."
+        return isPlainFilename && MediaTypes.detect(filename = candidate)?.startsWith("video/") == true
     }
 
     private suspend fun awaitJobState(jobUrl: String, headers: Map<String, String>, initialState: String?): String {

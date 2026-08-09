@@ -103,11 +103,22 @@ internal object AwsSigV4 {
     }
 
     // SigV4 requires every path segment to be URI-encoded TWICE for all services except S3, so the
-    // already-encoded wire path is encoded once more here: escaping '%' before the single-encode pass
-    // turns each existing escape into its double-encoded form, so a Bedrock model id sent as
-    // `...-v1%3A0` is signed over `...-v1%253A0`, matching botocore. The query stays single-encoded.
+    // wire path is encoded once more here: escaping '%' before the single-encode pass turns each
+    // existing escape into its double-encoded form, so a Bedrock model id sent as `...-v1%3A0` is
+    // signed over `...-v1%253A0`, matching botocore. The query stays single-encoded.
+    //
+    // The inner pass exists for a path that arrives with a RAW reserved char instead of a
+    // pre-encoded one. Every in-repo caller pre-encodes, but a custom bedrockRuntimeBaseURL() or
+    // Anthropic AWS base URL may carry one in its prefix, and escaping '%' alone would leave
+    // `/foo+bar` single-encoded as `%2B` where non-S3 canonicalization wants `%252B` — a hard 403
+    // SignatureDoesNotMatch on every request to such a host. Encoding first, then escaping '%',
+    // sends both shapes down the same double-encoded path; an already-encoded path is unchanged by
+    // the inner pass, so the pinned botocore vector is unaffected.
     private fun canonicalAwsPath(path: String): String =
-        uriEncodePreservingEscapes(path.ifBlank { "/" }.replace("%", "%25"), encodeSlash = false)
+        uriEncodePreservingEscapes(
+            uriEncodePreservingEscapes(path.ifBlank { "/" }, encodeSlash = false).replace("%", "%25"),
+            encodeSlash = false,
+        )
 
     private fun canonicalAwsQuery(query: String): String {
         if (query.isBlank()) return ""
