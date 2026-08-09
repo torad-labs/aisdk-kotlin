@@ -2,11 +2,13 @@ package ai.torad.aisdk
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
@@ -59,7 +61,12 @@ class McpHttpTransportTest : MCPClientTestBase() {
             },
         )
 
-        client.close()
+        // close() sends the cleanup DELETE inside withTimeoutOrNull(MCP_CLOSE_DELETE_TIMEOUT_MS).
+        // Under runTest that deadline runs on the VIRTUAL clock, which the scheduler advances as
+        // soon as it idles — so a real network round-trip can be cancelled before it is even sent,
+        // and no DELETE is recorded. It happened to win that race on JVM and lose it on the iOS
+        // simulator. Real dispatcher, real clock, matching waitForRealTime's reasoning.
+        withContext(Dispatchers.Default) { client.close() }
 
         val delete = fixture.calls.single { it.requestMethod == "DELETE" }
         assertEquals("session-1", delete.requestHeaders.headerValue("mcp-session-id"))
