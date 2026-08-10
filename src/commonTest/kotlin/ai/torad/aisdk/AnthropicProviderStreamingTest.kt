@@ -54,6 +54,58 @@ class AnthropicProviderStreamingTest {
     }
 
     @Test
+    fun `stream surfaces malformed delta payload fields as wire error events`() = runTest {
+        // The delta arm's own `index`/`delta` reads were guarded, but the payload reads inside it
+        // (delta.type, text, thinking, partial_json) were not, so a nonconforming server threw a
+        // WireDecodeException out of the Flow instead of emitting StreamEvent.Error.
+        val malformedDeltas = mapOf(
+            """{"type":"text_delta"}""" to "$.delta.text",
+            """{"type":"thinking_delta"}""" to "$.delta.thinking",
+            """{"type":"input_json_delta"}""" to "$.delta.partial_json",
+            """{"type":7}""" to "$.delta.type",
+        )
+        for ((delta, expectedPath) in malformedDeltas) {
+            val fixture = TestServer.createTestServer(
+                mutableMapOf(
+                    "https://anthropic.test/v1/messages" to UrlHandler(
+                        UrlResponse.StreamChunks(
+                            listOf(
+                                """
+                                data: {"type":"content_block_start","index":0,"content_block":{"type":"text","id":"b0"}}
+
+                                data: {"type":"content_block_delta","index":0,"delta":$delta}
+
+                                data: {"type":"message_stop"}
+
+                                """.trimIndent(),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+            fixture.server.start()
+            val provider = Anthropic(
+                fixture.httpClient(),
+                AnthropicProviderSettings { baseURL("https://anthropic.test/v1") }
+            )
+
+            val events = drainAllItems(
+                provider.messages(ModelId("claude-sonnet-4-5")).stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    }
+                ),
+            )
+
+            val error = events.filterIsInstance<StreamEvent.Error>().single()
+            assertTrue(error.message.contains(expectedPath), "expected $expectedPath in ${error.message}")
+            // The stream still terminates normally: partial text and the finish event survive.
+            assertTrue(events.filterIsInstance<StreamEvent.TextStart>().isNotEmpty())
+            assertTrue(events.filterIsInstance<StreamEvent.Finish>().isNotEmpty())
+        }
+    }
+
+    @Test
     fun `stream leading Anthropic overloaded error throws retryable API call error before emitting events`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
@@ -131,6 +183,24 @@ class AnthropicProviderStreamingTest {
         assertTrue(errorIndex > textIndex, events.toString())
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertEquals("after text", error.message)
+        // TERMINAL is the word in this test's name, and ordering alone does not check it: a
+        // regression that emitted the error and then kept streaming would satisfy every assertion
+        // above. The error is not literally last — a terminal Finish still closes the stream so
+        // consumers get usage and metadata — so the invariant is that nothing CONTENT-BEARING
+        // survives the error.
+        val afterError = events.drop(errorIndex + 1)
+        assertTrue(
+            afterError.all { it is StreamEvent.Finish },
+            "only the terminal Finish may follow the error, but got: $afterError",
+        )
+        // ...and that Finish must say WHY. Reporting Other here made a mid-stream server error
+        // indistinguishable from an ordinary completion for anyone branching on finishReason
+        // (IsLoopFinished treats Error as terminal). Sibling providers already mark Error.
+        assertEquals(
+            FinishReason.Error,
+            events.filterIsInstance<StreamEvent.Finish>().single().finishReason,
+            "a stream that died on a server error must finish with FinishReason.Error: $events",
+        )
     }
 
     @Test
@@ -442,6 +512,57 @@ class AnthropicProviderStreamingTest {
         assertTrue(events.filterIsInstance<StreamEvent.ToolCall>().isEmpty())
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("malformed tool input JSON"))
+    }
+
+    @Test
+    fun `stream names a provider tool result from its originating call`() = runTest {
+        // Content blocks stream strictly sequentially, so the server_tool_use block is already
+        // removed from the in-flight block map by the time its result block starts. The name must
+        // still come from the paired call: "web_search_tool_result".removeSuffix("_result") is
+        // "web_search_tool", while the ToolCall for the same tool_use_id carries "web_search".
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"type":"content_block_start","index":0,"content_block":{"type":"server_tool_use","id":"srv_1","name":"web_search","input":{}}}
+
+                            data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"query\":\"kotlin\"}"}}
+
+                            data: {"type":"content_block_stop","index":0}
+
+                            data: {"type":"content_block_start","index":1,"content_block":{"type":"web_search_tool_result","tool_use_id":"srv_1","content":{"type":"web_search_result"}}}
+
+                            data: {"type":"content_block_stop","index":1}
+
+                            data: {"type":"message_stop"}
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Anthropic(
+            fixture.httpClient(),
+            AnthropicProviderSettings { baseURL("https://anthropic.test/v1") }
+        )
+
+        val events = drainAllItems(
+            provider.messages(ModelId("claude-sonnet-4-5")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
+
+        val call = events.filterIsInstance<StreamEvent.ToolCall>().single()
+        val result = events.filterIsInstance<StreamEvent.ToolResult>().single()
+        assertEquals("web_search", call.toolName)
+        assertEquals(call.toolCallId, result.toolCallId)
+        assertEquals(call.toolName, result.toolName)
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

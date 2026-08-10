@@ -182,6 +182,27 @@ class AnthropicAwsProviderTest {
         )
     }
 
+    @Test
+    fun `provider settings encode skips the function-typed fields and still decodes`() {
+        val settings = AnthropicAwsProviderSettings(block = {
+            region("eu-west-1")
+            accessKeyId("AK")
+            secretAccessKey("SK")
+            generateId { "fixed-id" }
+        })
+
+        val encoded = Json.encodeToString(AnthropicAwsProviderSettings.serializer(), settings)
+        val fields = Json.parseToJsonElement(encoded).jsonObject
+        assertEquals("eu-west-1", fields["region"]?.jsonPrimitive?.contentOrNull)
+        assertTrue("generateId" !in fields)
+        assertTrue("credentialProvider" !in fields)
+
+        val decoded = Json.decodeFromString(AnthropicAwsProviderSettings.serializer(), encoded)
+        assertEquals("eu-west-1", decoded.region)
+        assertEquals("AK", decoded.accessKeyId)
+        assertEquals(null, decoded.credentialProvider)
+    }
+
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }

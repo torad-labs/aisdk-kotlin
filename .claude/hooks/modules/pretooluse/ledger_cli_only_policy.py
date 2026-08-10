@@ -114,4 +114,4 @@ def _display(path: Path) -> str:
 def _cli_hint(path: Path) -> str:
     if path == _MEASUREMENTS:
         return "python3 dev/measurements_ledger.py <command> ..."
-    return "python3 dev/campaigns/manifest.py <command> ..."
+    return "bun dev/campaigns/ledger.ts <ledger.toml> <command> ..."

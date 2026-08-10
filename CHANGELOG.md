@@ -6,6 +6,125 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+### Full-SDK review campaign — 53 verified defects fixed
+
+A section-by-section adversarial review of the whole SDK produced 54 findings that survived
+independent verification; 53 are fixed here and one was rejected on evidence (below). Every fix
+landed with a regression test proven to FAIL before it and pass after. The campaign ledger with
+per-item repro, verifier evidence, and rulings is `dev/campaigns/sdk-review.toml`.
+
+**Breaking public API changes**
+
+- **`StreamObjectResult(...)` no longer flattens call settings into 17 positional parameters.**
+  The factory is now `StreamObjectResult(model, output, input: GenerationInput, config: CallConfig
+  = CallConfig(), repairText)`, matching `TextGenerator` and `StructuredObjectGenerator`. The old
+  shape froze a 15-default parameter list plus its synthesized `$default` bridge into the ABI, so
+  adding any setting was a `NoSuchMethodError` for already-compiled callers — and it could not
+  express `headers`, `timeout`, or `maxRetries` at all, which now travel with everything else.
+  Migrate `StreamObjectResult(model, out, prompt = "x")` to
+  `StreamObjectResult(model, out, GenerationInput.Prompt("x"))`.
+- **`ToolSchema` is constructed through its DSL factory.** The 7-parameter positional constructor
+  is now `internal`; use `ToolSchema { name("searchDocs"); description("…") }`. Every `Tool`
+  subclass authors a `ToolSchema`, so the frozen parameter list was the same ABI trap.
+- **Gateway error types carry `responseHeaders`.** Appended last and defaulted on
+  `GatewayError` and its variants, so existing read sites are unaffected. Without it the retry
+  layer discarded the server's `Retry-After` on a gateway 429 and re-sent on its own schedule.
+
+**Correctness fixes worth calling out**
+
+- **A stopped stream deadlocked its collectors.** `AbortError` is a `CancellationException`, and
+  providers throw it in-band per chunk; the stream-replay layer rethrew it without recording a
+  terminal, so every `textStream`/`fullStream` collector — and `warnings`/`response` — waited
+  forever on a terminal the dead producer would never publish. The documented stop-button pattern
+  hung the UI instead of ending the stream. Teardown cancellation is now distinguished from an
+  in-band one and only the former stays a cancellation.
+- **Gateway V3 wire decoding was wrong in four places**, verified field-by-field against the
+  pinned `.reference` upstream: tool results are carried under `result` on the response side (the
+  decoder read the prompt-side `output` and threw, killing the stream); `tool-approval-request`
+  carries neither `toolName` nor `input`, which were required; tool-call `input` is a
+  stringified-JSON string, not a structured element; and usage arrives as nested
+  `inputTokens`/`outputTokens` breakdowns, so every token count decoded as 0.
+- **SigV4 signed every Bedrock model id wrong.** The canonical URI was single-encoded where AWS
+  requires double-encoding outside S3, so any model id containing a colon failed to authenticate.
+- **MCP SSE never streamed.** All three streaming reads used `client.request`, which Ktor 3.5
+  fully pre-buffers, so a live SSE session delivered nothing until the response completed.
+- **The internal request ceiling escaped as a bare `TimeoutCancellationException`**, which reads
+  as cooperative cancellation: it was silently swallowed and never retried. It now surfaces as
+  `CallTimeoutError`.
+- **MCP calls were hard-capped with no way to raise the ceiling.** `MCPClientConfig` gains
+  `requestTimeoutMillis`, the ceiling for non-handshake JSON-RPC requests that carry no
+  per-request timeout; it defaults to `null`, which keeps the previous built-in default
+  unchanged. The executor built by `tools()` / `toolsFromDefinitions()` takes no
+  `MCPRequestOptions`, so a legitimately long-running MCP tool — a build, a search, an agent
+  sub-task — was simply unusable through the `ToolSet` path.
+- **Multi-turn tool conversations were broken on Bedrock Mantle** (tool calls and results dropped
+  from both the emitted stream and the request mapping) and on Hugging Face (assistant tool calls
+  and tool results dropped from history).
+- **Chat turn state**: a second assistant reply reused the first turn's message id and overwrote
+  it, and `convertToModelMessages` crashed on messages produced by `Chat.addToolOutput`.
+- **Tool approvals**: approving with the documented effective `approvalId` threw
+  `InvalidApprovalResponse`; resuming one of several pending approvals corrupted the turn and
+  stranded the rest; only the last `Tool` message's responses were read.
+- **Two provider defaults could never succeed**: Prodia's default async video path parsed a 201
+  job response as multipart and never polled, and Hume's built-in fallback voice id was paired
+  with a provider value that rejects it.
+- **`Output.Arr`'s default schema name was rejected by OpenAI.** It defaulted to `Recipe[]`, and
+  `json_schema.name` must match `^[a-zA-Z0-9_-]+$`, so the default array-output path 400'd on
+  every call. The default suffix is now `_array`.
+
+### Review tail — 26 further verified defects fixed
+
+The full-SDK review produced 36 lower-ranked findings that were never adversarially verified when
+the first campaign landed. All 36 have now been through the same refute-by-default pass: **10 were
+refuted** (the code was already correct, or the behaviour was deliberate) and **26 were fixed**,
+each with a regression test proven to fail beforehand.
+
+- **`GoogleGenerativeAIProviderSettings` is no longer `@Poko` (ABI change).** It holds a
+  `generateId` closure, and CLAUDE.md's closure-holder law says such types stay plain classes:
+  value equality over a closure is meaningless, and the generated `equals`/`hashCode`/`toString`
+  are the only members the dump loses. Its `@Serializable` also threw at runtime on the
+  `Function0` polymorphic fallback; the lambda is now `@Transient`, so settings round-trip.
+  `AnthropicAwsProviderSettings` had the same `@Serializable`-on-a-closure defect, which would
+  have serialised AWS credentials had it ever encoded.
+- **An unterminated reasoning section never emitted `ReasoningEnd`**, so `AgentSession` dropped the
+  buffered reasoning from assistant history and the UI part stayed `Streaming` forever. Every
+  other reasoning producer in the SDK closes an open section at stream end; this middleware was
+  the sole holdout.
+- **Gateway prompt encoding emitted shapes the V3 schema does not define** — an `image` part type,
+  and file URLs under a nonexistent `url` key instead of `data` — and V3 `source` parts decoded to
+  `StreamEvent.Raw`, so gateway citations silently vanished.
+- **Anthropic never consulted `params.abortSignal`**, so aborting a generate or stream was a no-op
+  there and on AnthropicAws, which delegates to it.
+- **Several transport paths regained their bounds**: `postFacadeBinary` had neither a timeout nor
+  abort registration, and the Gladia/BFL poll GETs could not be cancelled mid-request.
+- **Smaller correctness fixes**: a superseded `AgentSession` job could clobber a newer submit's
+  state; a stale `StructuredObjectApi` submit clobbered a newer `abortController`, making `stop()`
+  a no-op; `Chat.stop()` tore down the whole collector rather than the in-flight request; a
+  mid-chunk decode failure discarded valid Google events; prediction-token metadata was keyed
+  inconsistently between `generate()` and `stream()`; `OutputError` tool parts were dropped on
+  resume; xAI citations were dropped by the streaming paths; MCP sent a duplicated session header
+  and read SSE lines unbounded; a malformed Google embed response returned an empty vector; and
+  `APICallError.requestBodyValues` carried the response body.
+
+Net effect on tracked debt: the detekt baseline **shrank by 31 entries** and every per-rule ceiling
+was re-seeded downward.
+
+**Behaviour change**
+
+- **An Anthropic stream that dies on a server error now finishes with `FinishReason.Error`.**
+  It reported `Other`, which made a mid-stream failure indistinguishable from an ordinary
+  completion for anyone branching on `finishReason` — and `IsLoopFinished` treats `Error` as
+  terminal, so the distinction is load-bearing. The sibling providers
+  (`OpenAICompatibleStreaming`, `CohereStreamState`) already marked `Error`; Anthropic was the
+  outlier. The event sequence is unchanged: the error is still followed by the terminal `Finish`.
+
+**Not changed, deliberately**
+
+- An OpenResponses file id whose characters happen to form valid base64 is still sent inline
+  rather than as a file id. The two cases are mechanically indistinguishable from the string
+  alone and the current classification is pinned by test; pass `openai.file_id` provider metadata
+  when a value must be treated as an id. Documented on `OpenResponsesProviderSettings.fileIdPrefixes`.
+
 - **Java interop: `@JvmSynthetic` removed from 52 public abstract members (ABI change).**
   A codemod had applied it to body-less declarations across 25 files. On an abstract
   member that emits `ACC_ABSTRACT | ACC_SYNTHETIC`, and `javac` skips synthetic members

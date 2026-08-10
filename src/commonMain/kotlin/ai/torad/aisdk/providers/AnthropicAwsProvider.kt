@@ -7,6 +7,7 @@ import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 public const val ANTHROPIC_AWS_VERSION: String = "1.0.3"
 
@@ -31,9 +32,14 @@ public class AnthropicAwsProviderSettings internal constructor(
     public val baseURL: String? = null,
     /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    // Function-typed: kotlinx has no serializer for a closure, so it falls back to a
+    // polymorphic one that always throws on encode. @Transient keeps the JSON-config
+    // decode direction (the reason this type is @Serializable) and makes encode work.
     /** @since 0.3.0-beta01 */
+    @Transient
     public val credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null,
     /** @since 0.3.0-beta01 */
+    @Transient
     public val generateId: () -> String = { GenerateId() },
 ) {
     internal fun anthropicAwsBaseURL(): String =

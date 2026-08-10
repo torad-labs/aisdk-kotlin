@@ -56,6 +56,12 @@ internal class OpenAICompatibleChatLanguageModel(
     settings: OpenAICompatibleProviderSettings,
     json: Json,
     modelId: String,
+    /**
+     * Per-chunk hook for provider extensions the OpenAI chat shape has no field for
+     * (xAI's top-level `citations`). Runs after the shared state so the extra events
+     * land alongside that chunk's deltas.
+     */
+    private val chunkStreamEvents: ((JsonObject) -> List<StreamEvent>)? = null,
 ) : OpenAICompatibleHttpModel(client, settings, json, modelId, "chat"), LanguageModel {
     override val provider: String
         get() = providerName
@@ -79,6 +85,7 @@ internal class OpenAICompatibleChatLanguageModel(
         return chatResultFromJson(
             transformed,
             provider = providerName,
+            providerKey = providerOptionsKey(),
             requestBody = prepared.body,
             responseHeaders = response.headers,
             responseBody = response.value,
@@ -112,7 +119,10 @@ internal class OpenAICompatibleChatLanguageModel(
                     .map { it.transformChatStreamEvent() },
                 capturedHeaders = { sseHeaders },
                 parseErrorPrefix = "Failed to parse OpenAI-compatible stream event",
-                onEvent = { state.accept(it).forEach { e -> emit(e) } },
+                onEvent = { chunk ->
+                    state.accept(chunk).forEach { e -> emit(e) }
+                    (chunk as? JsonObject)?.let { chunkStreamEvents?.invoke(it) }?.forEach { e -> emit(e) }
+                },
             )
         }
         state.finish().forEach { emit(it) }
@@ -392,7 +402,7 @@ internal class OpenAICompatibleImageModel(
                 )
                 GeneratedFile(
                     mediaType = (obj["media_type"] as? JsonPrimitive)?.contentOrNull ?: "image/png",
-                    base64 = obj["b64_json"]?.let { imageData }.orEmpty(),
+                    base64 = obj["b64_json"]?.takeIf { it !is JsonNull }?.let { imageData }.orEmpty(),
                     url = (obj["url"] as? JsonPrimitive)?.contentOrNull,
                 )
             },

@@ -679,6 +679,7 @@ private class GoogleStreamState(
     private var reasoningId: String? = null
     private var blockCounter = 0
     private var hasToolCalls = false
+    private var lastCodeExecutionId: String? = null
     private val emittedSourceKeys = mutableSetOf<String>()
 
     fun accept(value: JsonObject): List<StreamEvent> {
@@ -694,6 +695,10 @@ private class GoogleStreamState(
         candidate["safetyRatings"]?.let { providerMetadata["safetyRatings"] = it }
         candidate["finishMessage"]?.let { providerMetadata["finishMessage"] = it }
         val parts = ((JsonAccess.obj(candidate, "content"))?.get("parts") as? JsonArray).orEmpty()
+        // Each wire-decode failure below returns `events + Error`, never a bare `listOf(Error)`:
+        // discarding this chunk's already-built events did NOT roll back the state that produced
+        // them (textId/reasoningId/blockCounter/hasToolCalls survive) and the caller keeps
+        // collecting past an Error, so textId outlived a TextStart the consumer never received.
         for ((index, part) in parts.withIndex()) {
             val obj = try {
                 WireDecoder.objectValue(
@@ -703,7 +708,30 @@ private class GoogleStreamState(
                     "$.candidates[0].content.parts[$index]"
                 )
             } catch (error: WireDecodeException) {
-                return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
+            }
+            // Mirrors googleLanguageResult: the code_execution provider tool arrives as
+            // executableCode + codeExecutionResult parts. They matched none of the branches
+            // below, so the executed code and its result silently vanished from the stream
+            // while the identical response through generate() surfaced both.
+            (JsonAccess.obj(obj, "executableCode"))?.let { code ->
+                val id = idGenerator()
+                lastCodeExecutionId = id
+                hasToolCalls = true
+                val metadata = googleProviderExecutedMetadata()
+                events += StreamEvent.ToolInputStart(id, "code_execution", metadata)
+                events += StreamEvent.ToolInputDelta(id, code.toString(), metadata)
+                events += StreamEvent.ToolInputEnd(id, metadata)
+                events += StreamEvent.ToolCall(id, "code_execution", code, metadata)
+            }
+            (JsonAccess.obj(obj, "codeExecutionResult"))?.let { result ->
+                events += StreamEvent.ToolResult(
+                    toolCallId = lastCodeExecutionId ?: idGenerator(),
+                    toolName = "code_execution",
+                    outputJson = result,
+                    providerMetadata = googleProviderExecutedMetadata(),
+                )
+                lastCodeExecutionId = null
             }
             val text = try {
                 WireDecoder.optionalString(
@@ -714,7 +742,7 @@ private class GoogleStreamState(
                     "$.candidates[0].content.parts[$index]"
                 )
             } catch (error: WireDecodeException) {
-                return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
             }
             text?.let {
                 if ((obj["thought"] as? JsonPrimitive)?.booleanOrNull == true) {
@@ -748,7 +776,7 @@ private class GoogleStreamState(
                         "$.candidates[0].content.parts[$index].functionCall"
                     )
                 } catch (error: WireDecodeException) {
-                    return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                    return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
                 }
                 val id = (call["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
                 val name = try {
@@ -760,7 +788,7 @@ private class GoogleStreamState(
                         "$.candidates[0].content.parts[$index].functionCall"
                     )
                 } catch (error: WireDecodeException) {
-                    return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                    return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
                 }
                 val input = call["args"] ?: JsonObject(emptyMap())
                 hasToolCalls = true
@@ -781,7 +809,7 @@ private class GoogleStreamState(
                         "$.candidates[0].content.parts[$index].inlineData"
                     )
                 } catch (error: WireDecodeException) {
-                    return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                    return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
                 }
                 events += StreamEvent.FilePart(
                     id = generateId(),
@@ -789,7 +817,7 @@ private class GoogleStreamState(
                     base64 = try {
                         WireDecoder.requiredString(data, "data", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")
                     } catch (error: WireDecodeException) {
-                        return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                        return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
                     },
                     providerMetadata = GooglePartMetadata(obj)?.let {
                         ProviderMetadata.Raw(JsonObject(it))
@@ -837,4 +865,9 @@ private class GoogleStreamState(
         )
         return events
     }
+
+    private fun googleProviderExecutedMetadata(): ProviderMetadata =
+        ProviderMetadata.Raw(
+            JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })),
+        )
 }

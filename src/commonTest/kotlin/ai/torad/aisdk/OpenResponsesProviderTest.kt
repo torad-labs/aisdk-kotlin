@@ -12,6 +12,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.job
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -584,6 +586,62 @@ class OpenResponsesProviderTest {
                     it.message.orEmpty().contains("mystery_tool")
             },
             "unknown provider tool type must surface a local unsupported warning, got: ${result.warnings}",
+        )
+    }
+
+    @Test
+    fun `non-streaming generate runs its round trip under the shared request timeout`() = runTest {
+        // This is the DEFAULT model path for OpenAIProvider/AzureOpenAIProvider, so a server that
+        // accepts the connection and never answers must not hang the caller forever — every other
+        // non-streaming path bounds itself with withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS).
+        // authHeadersProvider is invoked inside the round trip, so the job it observes IS the job
+        // the request runs under; withTimeout names its deadline in that job's toString.
+        val okBody = buildString {
+            append("""{"id":"resp_1","created_at":1,"model":"gpt-resp",""")
+            append(""""output":[{"type":"message","id":"m","role":"assistant",""")
+            append(""""content":[{"type":"output_text","text":"ok"}]}],""")
+            append(""""usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}""")
+        }
+        var requestJob: String? = null
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = okBody,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType to listOf("application/json")),
+                )
+            },
+        )
+        val provider = OpenResponses(
+            client,
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+                authHeadersProvider {
+                    requestJob = currentCoroutineContext().job.toString()
+                    mapOf(HttpHeaders.Authorization to "Bearer secret")
+                }
+            },
+        )
+        provider.responses("gpt-resp").generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
+        )
+        // This is a PRESENCE check: it proves the round trip runs inside HttpTransport's shared
+        // withRealTimeout wrapper. The CallTimeoutError mapping itself is pinned at the primitive
+        // in WithRealTimeoutTest, so the two together cover "a tripped deadline surfaces as
+        // CallTimeoutError here" without this test having to stall for the real deadline.
+        //
+        // Known coupling: kotlinx.coroutines' TimeoutCoroutine.toString() is a debug format, not
+        // API, so a coroutines upgrade could change it with no behaviour change in the SDK. Both
+        // of its identifying markers are accepted to blunt that; if the assertion ever fails after
+        // a dependency bump, check the format before suspecting the wrapper.
+        val job = requestJob.orEmpty()
+        assertTrue(
+            job.contains("timeMillis=$DEFAULT_REQUEST_TIMEOUT_MS") || job.contains("TimeoutCoroutine"),
+            "non-streaming Open Responses request must run under the shared " +
+                "$DEFAULT_REQUEST_TIMEOUT_MS ms request bound, but ran under: $requestJob",
         )
     }
 

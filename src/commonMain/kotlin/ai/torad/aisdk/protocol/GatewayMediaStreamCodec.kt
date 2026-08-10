@@ -7,8 +7,10 @@ import kotlinx.serialization.json.JsonObject
 
 internal object GatewayMediaStreamCodec {
     fun decode(type: String, obj: JsonObject): StreamEvent? = when (type) {
-        "source-url" -> source(obj, StreamEvent.SourcePart.SourceType.Url)
-        "source-document" -> source(obj, StreamEvent.SourcePart.SourceType.Document)
+        // v3 emits BOTH source variants as `type: "source"`, discriminated by `sourceType`;
+        // `source-url`/`source-document` are the UI-layer names and stay accepted as aliases.
+        "source", "source-url", "source-document" ->
+            ProtocolJson.sourceType(type, obj)?.let { source(obj, it) }
         "file" -> file(obj)
         else -> null
     }

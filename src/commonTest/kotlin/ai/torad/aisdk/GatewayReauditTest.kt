@@ -223,6 +223,115 @@ class GatewayReauditTest {
         assertTrue(events.any { it == StreamEvent.Abort })
     }
 
+    /** Bug: the V3 stream tool-result payload field is `result`, not `output` — decode killed the stream. */
+    @Test
+    fun `stream tool-result decodes the V3 result field`() = runTest {
+        val body =
+            """
+            data: {"type":"tool-result","toolCallId":"call_1","toolName":"web_search","result":{"answer":"42"}}
+
+            data: {"type":"finish","finishReason":"stop"}
+            """.trimIndent()
+        val events = drainAllItems(gateway(sseClient(body)).languageModel("m").stream(params))
+
+        val result = assertIs<StreamEvent.ToolResult>(events.first { it is StreamEvent.ToolResult })
+        val output = assertIs<ToolResultOutput.Json>(result.output)
+        assertEquals("42", output.json.jsonObject["answer"]?.jsonPrimitive?.content)
+    }
+
+    /** Bug: the V3 tool-approval-request part carries only approvalId + toolCallId; toolName/input were required. */
+    @Test
+    fun `stream tool-approval-request decodes without toolName or input`() = runTest {
+        val body =
+            """
+            data: {"type":"tool-approval-request","approvalId":"apr_1","toolCallId":"call_1"}
+
+            data: {"type":"finish","finishReason":"tool-approval-requested"}
+            """.trimIndent()
+        val events = drainAllItems(gateway(sseClient(body)).languageModel("m").stream(params))
+
+        val approval = assertIs<StreamEvent.ToolApprovalRequest>(events.first { it is StreamEvent.ToolApprovalRequest })
+        assertEquals("apr_1", approval.approvalId)
+        assertEquals("call_1", approval.toolCallId)
+    }
+
+    /** Bug: the V3 tool-call `input` is a stringified JSON object; it was stored as a raw string primitive. */
+    @Test
+    fun `stream tool-call parses the stringified V3 input`() = runTest {
+        val body =
+            """
+            data: {"type":"tool-call","toolCallId":"c1","toolName":"getWeather","input":"{\"city\":\"Paris\"}"}
+
+            data: {"type":"finish","finishReason":"tool-calls"}
+            """.trimIndent()
+        val events = drainAllItems(gateway(sseClient(body)).languageModel("m").stream(params))
+
+        val call = assertIs<StreamEvent.ToolCall>(events.first { it is StreamEvent.ToolCall })
+        assertEquals("Paris", call.inputJson.jsonObject["city"]?.jsonPrimitive?.content)
+    }
+
+    /** Bug: V3 usage sends nested inputTokens/outputTokens breakdowns; flat-key decoding zeroed every count. */
+    @Test
+    @Suppress("MaxLineLength", "MaximumLineLength")
+    fun `generate decodes the nested V3 usage breakdown`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content =
+                    "{" +
+                        "\"content\":[]," +
+                        "\"finishReason\":\"stop\"," +
+                        "\"usage\":{\"inputTokens\":{\"total\":1200,\"noCache\":200,\"cacheRead\":1000,\"cacheWrite\":0},\"outputTokens\":{\"total\":300,\"text\":250,\"reasoning\":50}}" +
+                        "}",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+
+        val result = gateway(client).languageModel("m").generate(params)
+
+        assertEquals(1200, result.usage.inputTokens.total)
+        assertEquals(200, result.usage.inputTokens.noCache)
+        assertEquals(1000, result.usage.inputTokens.cacheRead)
+        assertEquals(0, result.usage.inputTokens.cacheWrite)
+        assertEquals(300, result.usage.outputTokens.total)
+        assertEquals(250, result.usage.outputTokens.text)
+        assertEquals(50, result.usage.outputTokens.reasoning)
+    }
+
+    /** Bug: the generate-path content decoder had the same V3 mismatches as the stream codec. */
+    @Test
+    @Suppress("MaxLineLength", "MaximumLineLength")
+    fun `generate decodes V3 tool content parts`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content =
+                    "{" +
+                        "\"content\":[" +
+                        "{\"type\":\"tool-call\",\"toolCallId\":\"c1\",\"toolName\":\"getWeather\",\"input\":\"{\\\"city\\\":\\\"Paris\\\"}\"}," +
+                        "{\"type\":\"tool-result\",\"toolCallId\":\"c1\",\"toolName\":\"getWeather\",\"result\":{\"answer\":\"42\"}}," +
+                        "{\"type\":\"tool-approval-request\",\"approvalId\":\"apr_1\",\"toolCallId\":\"c2\"}" +
+                        "]," +
+                        "\"finishReason\":\"stop\"" +
+                        "}",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+
+        val result = gateway(client).languageModel("m").generate(params)
+
+        val call = assertIs<ContentPart.ToolCall>(result.content[0])
+        val toolResult = assertIs<ContentPart.ToolResult>(result.content[1])
+        val approval = assertIs<ContentPart.ToolApprovalRequest>(result.content[2])
+        assertEquals("Paris", call.input.jsonObject["city"]?.jsonPrimitive?.content)
+        assertEquals("42", toolResult.output.jsonObject["answer"]?.jsonPrimitive?.content)
+        assertEquals("apr_1", approval.approvalId)
+    }
+
     @Test
     fun `metadata endpoints preserve the configured gateway base path`() = runTest {
         val seenPaths = mutableListOf<String>()

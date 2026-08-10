@@ -32,20 +32,26 @@ internal class FalVideoModel(
         params.abortSignal.throwIfAborted()
         val options = settings.falOptions(params.providerOptions)
         val body = falVideoRequestBody(params, options)
+        val queueBase = FalQueueBaseUrl(settings.baseURL)
         val queue = settings.falPostJson(
             client = client,
-            url = "${FalQueueBaseUrl(settings.baseURL)}/fal-ai/${falNormalizedVideoModelId(modelId)}",
+            url = "$queueBase/fal-ai/${falNormalizedVideoModelId(modelId)}",
             body = body,
             headers = settings.falHeaders(params.headers),
         )
         val responseUrl = (queue.value.jsonObject["response_url"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(queue.value, "No response URL returned from queue endpoint")
+        // The response_url is server-provided. Only attach credentialed headers (Authorization,
+        // custom headers) when it is same-origin with the queue API; otherwise a tampered
+        // response_url would exfiltrate the API key. Mirrors the Gladia result_url guard.
+        val sameOrigin = McpUrl.origin(responseUrl) == McpUrl.origin(queueBase)
+        val pollHeaders = if (sameOrigin) settings.falHeaders(params.headers) else emptyMap()
         val pollIntervalMillis = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
             ?: settings.videoPollIntervalMillis
         val result = settings.falPollJson(
             client = client,
             url = responseUrl,
-            headers = settings.falHeaders(params.headers),
+            headers = pollHeaders,
             abortSignal = params.abortSignal,
             pollIntervalMillis = pollIntervalMillis,
             maxPollAttempts = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()

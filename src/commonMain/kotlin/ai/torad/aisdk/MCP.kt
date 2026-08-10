@@ -6,6 +6,7 @@ package ai.torad.aisdk
 import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
+import io.ktor.client.request.prepareRequest
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -15,7 +16,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.readLine
+import io.ktor.utils.io.readLineTo
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -71,6 +72,15 @@ private const val HTTP_METHOD_NOT_ALLOWED = 405
 private const val DEFAULT_MCP_CLIENT_NAME = "ai-sdk-mcp-client"
 private const val DEFAULT_MCP_CLIENT_VERSION = "1.0.0"
 private const val MCP_SSE_MAX_DATA_LINES = 1_000
+
+/**
+ * Maximum characters in a single SSE line. The remote analogue of the stdio transport's
+ * `STDIO_MAX_LINE_CHARS`: SSE bodies are read off a live channel that bypasses Ktor's `SaveBody`,
+ * so the line accumulator is the only buffer in the path and a newline-free stream from a
+ * malicious or malfunctioning server would grow it until OOM. [MCP_SSE_MAX_DATA_LINES] caps the
+ * NUMBER of data lines per frame, not their length.
+ */
+internal const val MCP_SSE_MAX_LINE_CHARS: Int = 1_048_576
 private const val MCP_LAST_EVENT_ID_HEADER = "Last-Event-ID"
 
 /** Default ceiling for the MCP connect handshake (initialize round-trip, SSE endpoint event). */
@@ -199,6 +209,7 @@ public interface MCPTransport {
     public suspend fun close()
 }
 
+@Suppress("LongParameterList") // internal ctor behind MCPClientConfigBuilder; one param per knob
 /** @since 0.3.0-beta01 */
 public class MCPClientConfig internal constructor(
     /** @since 0.3.0-beta01 */
@@ -213,6 +224,15 @@ public class MCPClientConfig internal constructor(
     public val version: String = DEFAULT_MCP_CLIENT_VERSION,
     /** @since 0.3.0-beta01 */
     public val capabilities: MCPClientCapabilities = MCPClientCapabilities(),
+    /**
+     * Ceiling for non-handshake JSON-RPC requests that carry no per-request timeout, in
+     * milliseconds; null keeps the 30s default. This is the ONLY way to raise the ceiling on
+     * `tools/call`: the executor built by `tools()`/`toolsFromDefinitions()` cannot take
+     * [MCPRequestOptions], so a legitimately long-running MCP tool (a build, a search, an agent
+     * sub-task) was otherwise unusable through the ToolSet path.
+     * @since 0.3.0-beta01
+     */
+    public val requestTimeoutMillis: Long? = null,
 )
 
 /** @since 0.3.0-beta01 */
@@ -223,6 +243,7 @@ public class MCPClientConfigBuilder {
     private var name: String? = null
     private var version: String = DEFAULT_MCP_CLIENT_VERSION
     private var capabilities: MCPClientCapabilities = MCPClientCapabilities()
+    private var requestTimeoutMillis: Long? = null
 
     /** @since 0.3.0-beta01 */
     public fun transport(value: MCPTransport): MCPClientConfigBuilder {
@@ -261,6 +282,12 @@ public class MCPClientConfigBuilder {
     }
 
     /** @since 0.3.0-beta01 */
+    public fun requestTimeoutMillis(value: Long?): MCPClientConfigBuilder {
+        requestTimeoutMillis = value
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
     public fun build(): MCPClientConfig =
         MCPClientConfig(
             transport = requireNotNull(transport) { "MCPClientConfig.transport is required" },
@@ -269,6 +296,7 @@ public class MCPClientConfigBuilder {
             name = name,
             version = version,
             capabilities = capabilities,
+            requestTimeoutMillis = requestTimeoutMillis,
         )
 }
 
@@ -374,6 +402,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient() {
         version(config.version)
     }
     private val clientCapabilities = config.capabilities
+    private val defaultRequestTimeoutMillis = config.requestTimeoutMillis ?: MCP_DEFAULT_REQUEST_TIMEOUT_MS
     private val responseHandlers = mutableMapOf<String, CompletableDeferred<JsonElement?>>()
     private val responseHandlersMutex = Mutex()
     private var requestMessageId: Long = 0
@@ -600,7 +629,9 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient() {
         serializer: KSerializer<T>,
         options: MCPRequestOptions? = null,
     ): T {
-        val timeout = options?.timeoutMillis ?: options?.maxTotalTimeoutMillis ?: MCP_DEFAULT_REQUEST_TIMEOUT_MS
+        // The config default is what makes `tools/call` configurable at all: its options are
+        // built by the DynamicTool executor and carry only the abort signal.
+        val timeout = options?.timeoutMillis ?: options?.maxTotalTimeoutMillis ?: defaultRequestTimeoutMillis
         // Real-time so a JSON-RPC response that never correlates back (server
         // ACKed the POST but never answers) can't hang the caller forever, and
         // so the bound doesn't spuriously fire under runTest's virtual clock.
@@ -1390,7 +1421,7 @@ private fun BearerAccessToken(headers: Map<String, String>): String? {
         ?.takeIf { it.isNotBlank() }
 }
 
-private class McpOAuthReauthorizer(
+internal class McpOAuthReauthorizer(
     private val authProvider: OAuthClientProvider?,
     private val serverUrl: String,
     private val client: HttpClient,
@@ -1445,6 +1476,14 @@ private class McpOAuthReauthorizer(
             )
             result.complete(authResult)
             return authResult
+        } catch (cancellation: CancellationException) {
+            // This CancellationException belongs to the WINNER — its request timeout firing
+            // mid-refresh, or its caller cancelling. Waiters parked on this deferred are live
+            // coroutines that were never cancelled, so handing them a CancellationException
+            // makes them see a spurious cancellation that CE-convention code silently
+            // swallows. Give waiters a normal failure; the winner still gets its own CE.
+            result.completeExceptionally(MCPClientError("MCP reauthorization was cancelled", cause = cancellation))
+            throw cancellation
         } catch (error: Throwable) {
             result.completeExceptionally(error)
             throw error
@@ -1505,12 +1544,13 @@ public class HttpMCPTransport(
         val (connectionScope, _) = lifecycle.close() ?: return
         var cancellation: CancellationException? = null
         try {
-            sessionId.load()?.let { session ->
+            sessionId.load()?.let {
                 withTimeoutOrNull(MCP_CLOSE_DELETE_TIMEOUT_MS) {
                     client.request(url) {
                         method = HttpMethod.Delete
+                        // mcpCommonHeaders is the single source of mcp-session-id; Ktor's header()
+                        // appends rather than sets, so re-adding it here sent the id twice.
                         mcpCommonHeaders(emptyMap()).forEach { (name, value) -> header(name, value) }
-                        header("mcp-session-id", session)
                     }
                 }
             }
@@ -1536,6 +1576,20 @@ public class HttpMCPTransport(
         cancellation?.let { throw it }
     }
 
+    /** What [handlePostResponse] decided the caller should do once the answer was classified. */
+    private enum class PostOutcome {
+        Done,
+        Reauthorize,
+    }
+
+    // `prepareRequest{}.execute{}`, not client.request(...): Ktor 3.5's always-installed
+    // SaveBody calls readRemaining() on the raw channel before request() returns, so a POST
+    // answered with an SSE stream the server keeps open (the spec's normal shape) consumed
+    // the whole stream first — blocking send(), and therefore the caller's request, until
+    // the server closed it. The execute{} scope has to outlive this function for that
+    // branch, so the exchange runs on the connection scope (the way the inbound reader
+    // does) and `settled` — completed as soon as the answer is classified and any
+    // correlated response dispatched — is what send() actually waits on.
     private suspend fun postMessage(message: JSONRPCMessage, triedAuth: Boolean) {
         val requestHeaders = mcpCommonHeaders(
             mapOf(
@@ -1544,18 +1598,64 @@ public class HttpMCPTransport(
             ),
         )
         val requestAccessToken = BearerAccessToken(requestHeaders)
-        val response = client.request(url) {
-            method = HttpMethod.Post
-            contentType(ContentType.Application.Json)
-            requestHeaders.forEach { (name, value) -> header(name, value) }
-            setBody(ToJsonString(message))
+        val activeScope = lifecycle.scopeOrNull()
+            ?: throw MCPClientError("MCP HTTP Transport Error: Not connected")
+        val settled = CompletableDeferred<PostOutcome>()
+        val exchange = activeScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            try {
+                client.prepareRequest(url) {
+                    method = HttpMethod.Post
+                    contentType(ContentType.Application.Json)
+                    requestHeaders.forEach { (name, value) -> header(name, value) }
+                    setBody(ToJsonString(message))
+                }.execute { response -> handlePostResponse(message, response, triedAuth, settled) }
+            } catch (cancellation: CancellationException) {
+                // A cancellation of THIS coroutine (close() cancelling the connection scope)
+                // is not the caller's cancellation: hand the waiter a normal failure rather
+                // than a CancellationException its own live coroutine would misread.
+                settled.completeExceptionally(
+                    MCPClientError("MCP HTTP Transport Error: POST exchange was cancelled", cause = cancellation),
+                )
+                throw cancellation
+            } catch (error: Throwable) {
+                // Past `settled` the caller has moved on and the background SSE read owns the
+                // failure — route it the way the inbound reader does.
+                val ownedByCaller = settled.completeExceptionally(error)
+                if (!ownedByCaller && lifecycle.isActive) onError?.invoke(error)
+            } finally {
+                // Backstop: the exchange must never leave send() awaiting forever.
+                settled.completeExceptionally(
+                    MCPClientError("MCP HTTP Transport Error: POST exchange ended without a response"),
+                )
+            }
         }
-        mcpSessionId(response)?.let { sessionId.store(it) }
-        if (response.status.value == 401 && authProvider != null && !triedAuth) {
+        val outcome = try {
+            settled.await()
+        } catch (cancellation: CancellationException) {
+            // Cancelled before the exchange settled: the POST is still this caller's, so take
+            // it down. After settling it belongs to the background stream reader.
+            exchange.cancel()
+            throw cancellation
+        }
+        if (outcome == PostOutcome.Reauthorize) {
             if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
             postMessage(message, triedAuth = true)
+        }
+    }
+
+    @Suppress("CyclomaticComplexMethod", "ReturnCount")
+    private suspend fun handlePostResponse(
+        message: JSONRPCMessage,
+        response: HttpResponse,
+        triedAuth: Boolean,
+        settled: CompletableDeferred<PostOutcome>,
+    ) {
+        mcpSessionId(response)?.let { sessionId.store(it) }
+        if (response.status.value == 401 && authProvider != null && !triedAuth) {
+            // Settle before re-authorizing so the connection is not pinned across the refresh.
+            settled.complete(PostOutcome.Reauthorize)
             return
         }
         // Surface transport errors for BOTH requests and notifications. This check must run
@@ -1574,10 +1674,12 @@ public class HttpMCPTransport(
                     "MCP HTTP Transport Error: POSTing to endpoint (HTTP ${response.status.value})$hint: $text",
                 )
             onError?.invoke(error)
-            throw error
+            settled.completeExceptionally(error)
+            return
         }
         if (response.status.value == 202 || message is JSONRPCNotification) {
             ensureInboundSse()
+            settled.complete(PostOutcome.Done)
             return
         }
         val contentType = response.headers[HttpHeaders.ContentType].orEmpty()
@@ -1585,27 +1687,14 @@ public class HttpMCPTransport(
             contentType.contains("application/json", ignoreCase = true) -> {
                 val text = with(HttpTransport) { response.bodyAsTextCapped(url) }
                 ParseJSONRPCMessageBatch(text).forEach { onMessage?.invoke(it) }
+                settled.complete(PostOutcome.Done)
             }
-            contentType.contains("text/event-stream", ignoreCase = true) -> launchPostResponseSse(response)
-            else -> {
-                val error = MCPClientError("MCP HTTP Transport Error: Unexpected content type: $contentType")
-                onError?.invoke(error)
-                throw error
-            }
-        }
-    }
-
-    // A POST may be answered with an SSE stream that stays open until the server has
-    // streamed its response(s). Parsing it inline would block send() — and therefore
-    // the caller's request — until the stream closes. Launch the parse on the
-    // connection scope (the same way readInboundSse() is launched) and return
-    // immediately: the background reader delivers the response via onMessage,
-    // completing the caller's awaiting deferred. Mirrors the reference's non-blocking
-    // `processEvents(); return;`.
-    private fun launchPostResponseSse(response: HttpResponse) {
-        val activeScope = lifecycle.scopeOrNull() ?: return
-        activeScope.launch(start = CoroutineStart.UNDISPATCHED) {
-            try {
+            contentType.contains("text/event-stream", ignoreCase = true) -> {
+                // Release send() BEFORE reading: the server may hold this stream open long
+                // after the correlated response, and the caller's deferred is completed from
+                // onMessage below. Mirrors the reference's non-blocking `processEvents();
+                // return;`.
+                settled.complete(PostOutcome.Done)
                 ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
                     if (event.event == "message") {
                         // Isolate per-message handling (mirrors readInboundSse): a malformed/
@@ -1619,9 +1708,11 @@ public class HttpMCPTransport(
                         }
                     }
                 }
-            } catch (error: Throwable) {
-                if (error is CancellationException) throw error
-                if (lifecycle.isActive) onError?.invoke(error)
+            }
+            else -> {
+                val error = MCPClientError("MCP HTTP Transport Error: Unexpected content type: $contentType")
+                onError?.invoke(error)
+                settled.completeExceptionally(error)
             }
         }
     }
@@ -1651,67 +1742,38 @@ public class HttpMCPTransport(
     private suspend fun readInboundSse(includeLastEventId: Boolean) {
         var completion = InboundSseCompletion.Clean
         try {
-            val firstHeaders = mcpCommonHeaders(
-                linkedMapOf(HttpHeaders.Accept to "text/event-stream").apply {
-                    if (includeLastEventId) {
-                        lastInboundEventId.load()?.takeIf { it.isNotEmpty() }?.let {
-                            put(MCP_LAST_EVENT_ID_HEADER, it)
-                        }
+            openInboundSse(includeLastEventId) { response ->
+                mcpSessionId(response)?.let { sessionId.store(it) }
+                when {
+                    response.status.value == 405 -> Unit
+                    response.status.value !in 200..299 -> {
+                        val error =
+                            MCPClientError(
+                                "MCP HTTP Transport Error: GET SSE failed: " +
+                                    "${response.status.value} ${response.status.description}"
+                            )
+                        onError?.invoke(error)
                     }
-                },
-            )
-            val firstAccessToken = BearerAccessToken(firstHeaders)
-            val firstResponse = client.request(url) {
-                method = HttpMethod.Get
-                firstHeaders.forEach { (name, value) -> header(name, value) }
-            }
-            val response = if (firstResponse.status.value == 401 && authProvider != null) {
-                if (oauthReauthorizer.reauthorizeAfter401(firstAccessToken) != AuthResult.AUTHORIZED) {
-                    throw UnauthorizedError()
-                }
-                val retryHeaders = mcpCommonHeaders(
-                    linkedMapOf(HttpHeaders.Accept to "text/event-stream").apply {
-                        if (includeLastEventId) {
-                            lastInboundEventId.load()?.takeIf { it.isNotEmpty() }?.let {
-                                put(MCP_LAST_EVENT_ID_HEADER, it)
+                    else -> {
+                        val receivedEvent = booleanArrayOf(false)
+                        ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
+                            event.id?.let { id -> lastInboundEventId.store(id.takeIf { it.isNotEmpty() }) }
+                            if (!receivedEvent[0]) {
+                                receivedEvent[0] = true
+                                inboundMutex.withLock { inboundReconnectAttempts[0] = 0 }
+                            }
+                            if (event.event == "message") {
+                                // Isolate per-message handling (mirrors the stdio reader): a malformed/unknown-ID
+                                // frame is a NON-fatal protocol error routed to onError — it must not unwind
+                                // ParseSseStream and kill the inbound reader (dropping all later messages).
+                                try {
+                                    onMessage?.invoke(ParseJSONRPCMessage(event.data))
+                                } catch (error: Throwable) {
+                                    if (error is CancellationException) throw error
+                                    onError?.invoke(error)
+                                }
                             }
                         }
-                    },
-                )
-                client.request(url) {
-                    method = HttpMethod.Get
-                    retryHeaders.forEach { (name, value) -> header(name, value) }
-                }
-            } else {
-                firstResponse
-            }
-            mcpSessionId(response)?.let { sessionId.store(it) }
-            if (response.status.value == 405) return
-            if (response.status.value !in 200..299) {
-                val error =
-                    MCPClientError(
-                        "MCP HTTP Transport Error: GET SSE failed: " +
-                            "${response.status.value} ${response.status.description}"
-                    )
-                onError?.invoke(error)
-                return
-            }
-            val receivedEvent = booleanArrayOf(false)
-            ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
-                event.id?.let { id -> lastInboundEventId.store(id.takeIf { it.isNotEmpty() }) }
-                if (!receivedEvent[0]) {
-                    receivedEvent[0] = true
-                    inboundMutex.withLock { inboundReconnectAttempts[0] = 0 }
-                }
-                if (event.event == "message") {
-                    // Isolate per-message handling (mirrors the stdio reader): a malformed/unknown-ID
-                    // frame is a NON-fatal protocol error routed to onError — it must not unwind
-                    // ParseSseStream and kill the inbound reader (dropping all later messages).
-                    try {
-                        onMessage?.invoke(ParseJSONRPCMessage(event.data))
-                    } catch (error: Throwable) {
-                        if (error is CancellationException) throw error
-                        onError?.invoke(error)
                     }
                 }
             }
@@ -1721,6 +1783,51 @@ public class HttpMCPTransport(
             if (lifecycle.isActive) onError?.invoke(error)
         } finally {
             finishInboundSse(completion)
+        }
+    }
+
+    /**
+     * Opens the standing inbound SSE GET and runs [handle] against the LIVE response.
+     *
+     * `prepareRequest { }.execute { }`, not `client.request(...)`: Ktor 3.5's always-installed
+     * `SaveBody` calls `readRemaining()` on the raw channel before `request` returns, so this
+     * stream — which a real server never closes — buffered without bound and delivered every
+     * server→client message only at stream close, i.e. usually never. Re-issuing the GET on the
+     * 401 AFTER the block returns (rather than inline) also stops the connection being held open
+     * across the token refresh, and keeps one copy of the Last-Event-ID header construction.
+     */
+    private suspend fun openInboundSse(
+        includeLastEventId: Boolean,
+        handle: suspend (HttpResponse) -> Unit,
+    ) {
+        var triedAuth = false
+        while (true) {
+            val requestHeaders = mcpCommonHeaders(
+                linkedMapOf(HttpHeaders.Accept to "text/event-stream").apply {
+                    if (includeLastEventId) {
+                        lastInboundEventId.load()?.takeIf { it.isNotEmpty() }?.let {
+                            put(MCP_LAST_EVENT_ID_HEADER, it)
+                        }
+                    }
+                },
+            )
+            val requestAccessToken = BearerAccessToken(requestHeaders)
+            val needsReauth = client.prepareRequest(url) {
+                method = HttpMethod.Get
+                requestHeaders.forEach { (name, value) -> header(name, value) }
+            }.execute { response ->
+                if (response.status.value == 401 && authProvider != null && !triedAuth) {
+                    true
+                } else {
+                    handle(response)
+                    false
+                }
+            }
+            if (!needsReauth) return
+            if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
+                throw UnauthorizedError()
+            }
+            triedAuth = true
         }
     }
 
@@ -1847,39 +1954,40 @@ public class SseMCPTransport(
             // (replacing the old `connected` flag) without an experimental API.
             var established = false
             try {
-                val response = openSseConnection(triedAuth = false)
-                if (response.status.value !in 200..299) {
-                    val hint = if (response.status.value == HTTP_METHOD_NOT_ALLOWED) {
-                        ". This server does not support SSE transport. Try using `http` transport instead"
-                    } else {
-                        ""
-                    }
-                    throw MCPClientError(
-                        "MCP SSE Transport Error: ${response.status.value} ${response.status.description}$hint",
-                    )
-                }
-                ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
-                    when (event.event) {
-                        "endpoint" -> {
-                            val resolvedEndpoint = McpUrl.resolve(event.data, url)
-                            if (McpUrl.origin(resolvedEndpoint) != McpUrl.origin(url)) {
-                                throw MCPClientError(
-                                    "MCP SSE Transport Error: Endpoint origin does not " +
-                                        "match connection origin: ${McpUrl.origin(resolvedEndpoint)}",
-                                )
-                            }
-                            endpoint.store(resolvedEndpoint)
-                            established = true
-                            if (!ready.isCompleted) ready.complete(Unit)
+                openSseConnection(triedAuth = false) { response ->
+                    if (response.status.value !in 200..299) {
+                        val hint = if (response.status.value == HTTP_METHOD_NOT_ALLOWED) {
+                            ". This server does not support SSE transport. Try using `http` transport instead"
+                        } else {
+                            ""
                         }
-                        // Isolate per-message handling (mirrors the stdio reader): a malformed/
-                        // unknown-ID frame is a NON-fatal protocol error routed to onError. Only the
-                        // "message" branch is guarded — an "endpoint" handshake error stays fatal.
-                        "message" -> try {
-                            onMessage?.invoke(ParseJSONRPCMessage(event.data))
-                        } catch (error: Throwable) {
-                            if (error is CancellationException) throw error
-                            onError?.invoke(error)
+                        throw MCPClientError(
+                            "MCP SSE Transport Error: ${response.status.value} ${response.status.description}$hint",
+                        )
+                    }
+                    ParseSseStreamReleasing(response.bodyAsChannel()) { event ->
+                        when (event.event) {
+                            "endpoint" -> {
+                                val resolvedEndpoint = McpUrl.resolve(event.data, url)
+                                if (McpUrl.origin(resolvedEndpoint) != McpUrl.origin(url)) {
+                                    throw MCPClientError(
+                                        "MCP SSE Transport Error: Endpoint origin does not " +
+                                            "match connection origin: ${McpUrl.origin(resolvedEndpoint)}",
+                                    )
+                                }
+                                endpoint.store(resolvedEndpoint)
+                                established = true
+                                if (!ready.isCompleted) ready.complete(Unit)
+                            }
+                            // Isolate per-message handling (mirrors the stdio reader): a malformed/
+                            // unknown-ID frame is a NON-fatal protocol error routed to onError. Only the
+                            // "message" branch is guarded — an "endpoint" handshake error stays fatal.
+                            "message" -> try {
+                                onMessage?.invoke(ParseJSONRPCMessage(event.data))
+                            } catch (error: Throwable) {
+                                if (error is CancellationException) throw error
+                                onError?.invoke(error)
+                            }
                         }
                     }
                 }
@@ -1917,20 +2025,37 @@ public class SseMCPTransport(
         }
     }
 
-    private suspend fun openSseConnection(triedAuth: Boolean): HttpResponse {
+    /**
+     * Opens the inbound SSE GET and runs [handle] against the LIVE response.
+     *
+     * `prepareRequest { }.execute { }`, not `client.request(...)`: Ktor 3.5 installs `SaveBody`
+     * on every client and it calls `readRemaining()` on the raw channel before `request` returns,
+     * so against a real server — which holds this stream open indefinitely — the `endpoint` frame
+     * was never parsed and `start()` only ever ended at the handshake timeout. `HttpTransport`
+     * documents the same trap for provider streams. The response is only valid inside [handle];
+     * the 401 re-auth is deliberately run AFTER the block returns so the connection is not held
+     * open across the token refresh.
+     */
+    private suspend fun openSseConnection(triedAuth: Boolean, handle: suspend (HttpResponse) -> Unit) {
         val requestHeaders = mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream"))
         val requestAccessToken = BearerAccessToken(requestHeaders)
-        val response = client.request(url) {
+        val needsReauth = client.prepareRequest(url) {
             method = HttpMethod.Get
             requestHeaders.forEach { (name, value) -> header(name, value) }
+        }.execute { response ->
+            if (response.status.value == 401 && authProvider != null && !triedAuth) {
+                true
+            } else {
+                handle(response)
+                false
+            }
         }
-        if (response.status.value == 401 && authProvider != null && !triedAuth) {
+        if (needsReauth) {
             if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
-            return openSseConnection(triedAuth = true)
+            openSseConnection(triedAuth = true, handle)
         }
-        return response
     }
 
     override suspend fun send(message: JSONRPCMessage): Unit = sendInternal(message, triedAuth = false)
@@ -1991,10 +2116,45 @@ public class SseMCPTransport(
     }
 }
 
+/**
+ * [Appendable] that refuses to grow past [limit]. `ByteReadChannel.readLine` accumulates into an
+ * unbounded `StringBuilder`, which is the whole memory exposure the cap removes — the check has to
+ * happen while the line is being built, not after it is already resident.
+ */
+private class CappedLineBuilder(private val limit: Int) : Appendable {
+    private val builder = StringBuilder()
+
+    override fun append(value: Char): Appendable = apply {
+        requireCapacity(1)
+        builder.append(value)
+    }
+
+    override fun append(value: CharSequence?): Appendable = append(value, 0, value?.length ?: 0)
+
+    override fun append(value: CharSequence?, startIndex: Int, endIndex: Int): Appendable = apply {
+        requireCapacity(endIndex - startIndex)
+        builder.append(value, startIndex, endIndex)
+    }
+
+    override fun toString(): String = builder.toString()
+
+    private fun requireCapacity(additional: Int) {
+        if (builder.length + additional > limit) {
+            throw MCPClientError(
+                "MCP SSE Transport Error: SSE line exceeded " +
+                    "$limit characters; possible malformed stream"
+            )
+        }
+    }
+}
+
 internal suspend fun ParseSseStream(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
     val frame = McpSseFrame.FrameBuffer()
     while (true) {
-        val line = channel.readLine() ?: break
+        // Bounded read (not channel.readLine(), which buffers a line of any length).
+        val buffer = CappedLineBuilder(MCP_SSE_MAX_LINE_CHARS)
+        if (channel.readLineTo(buffer) < 0) break
+        val line = buffer.toString()
         when {
             line.isEmpty() -> frame.flush(onEvent)
             line.startsWith("event:") -> frame.setEvent(line.removePrefix("event:").trimStart())
@@ -2045,7 +2205,14 @@ internal data class McpSseFrame(
         }
 
         suspend fun flush(onEvent: suspend (McpSseFrame) -> Unit) {
-            if (data.isEmpty()) return
+            if (data.isEmpty()) {
+                // SSE dispatch step 2: an empty data buffer still resets the data AND the
+                // event type buffer before returning. Returning without the reset leaked a
+                // data-less `event: ping` heartbeat's name into the next frame, which then
+                // failed every consumer's `event == "message"` filter and was dropped.
+                reset()
+                return
+            }
             onEvent(McpSseFrame(eventName, data.joinToString("\n"), eventId))
             reset()
         }

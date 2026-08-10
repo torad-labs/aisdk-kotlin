@@ -78,8 +78,8 @@ class HardeningBranchCoverageTest {
                 url = "https://files.test/hi.txt",
             )
         )
-        assertEquals("https://files.test/hi.txt", remoteFile.stringField("url"))
-        assertNull(remoteFile["data"])
+        assertEquals("https://files.test/hi.txt", remoteFile.stringField("data"))
+        assertNull(remoteFile["url"])
 
         val inlineImage = GatewayContentEncoder.encode(
             ContentPart.Image(
@@ -87,7 +87,7 @@ class HardeningBranchCoverageTest {
                 base64 = "iVBORw0KGgo=",
             )
         )
-        assertEquals("image", inlineImage.stringField("type"))
+        assertEquals("file", inlineImage.stringField("type"))
         assertEquals("iVBORw0KGgo=", inlineImage.stringField("data"))
 
         val remoteImage = GatewayContentEncoder.encode(
@@ -96,8 +96,8 @@ class HardeningBranchCoverageTest {
                 url = "https://images.test/a.png",
             )
         )
-        assertEquals("https://images.test/a.png", remoteImage.stringField("url"))
-        assertNull(remoteImage["data"])
+        assertEquals("https://images.test/a.png", remoteImage.stringField("data"))
+        assertNull(remoteImage["url"])
     }
 
     @Test
