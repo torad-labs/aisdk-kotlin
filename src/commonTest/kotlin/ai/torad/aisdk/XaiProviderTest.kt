@@ -226,6 +226,79 @@ class XaiProviderTest {
     }
 
     @Test
+    fun `chat stream surfaces citations as source events`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"id":"chat-cite","choices":[{"delta":{"content":"hello"}}]}
+
+                            data: {"id":"chat-cite","choices":[{"finish_reason":"stop"}],"citations":["https://example.com/source1","https://example.com/source2"]}
+
+                            data: [DONE]
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
+
+        val events = drainAllItems(
+            provider.chat(ModelId("grok-3")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
+
+        val sources = events.filterIsInstance<StreamEvent.SourcePart>()
+        assertEquals(2, sources.size)
+        assertEquals(StreamEvent.SourcePart.SourceType.Url, sources[0].sourceType)
+        assertEquals("https://example.com/source1", sources[0].url)
+        assertEquals("https://example.com/source2", sources[1].url)
+    }
+
+    @Test
+    fun `chat streamResult surfaces citations as source events`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"id":"chat-cite","choices":[{"delta":{"content":"hello"}}]}
+
+                            data: {"id":"chat-cite","choices":[{"finish_reason":"stop"}],"citations":["https://example.com/source1"]}
+
+                            data: [DONE]
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
+
+        val events = drainAllItems(
+            provider.chat(ModelId("grok-3")).streamResult(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).stream
+        )
+
+        val source = events.filterIsInstance<StreamEvent.SourcePart>().single()
+        assertEquals("https://example.com/source1", source.url)
+    }
+
+    @Test
     fun `chat stream requests include usage stream option`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

@@ -16,7 +16,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.readLine
+import io.ktor.utils.io.readLineTo
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -72,6 +72,15 @@ private const val HTTP_METHOD_NOT_ALLOWED = 405
 private const val DEFAULT_MCP_CLIENT_NAME = "ai-sdk-mcp-client"
 private const val DEFAULT_MCP_CLIENT_VERSION = "1.0.0"
 private const val MCP_SSE_MAX_DATA_LINES = 1_000
+
+/**
+ * Maximum characters in a single SSE line. The remote analogue of the stdio transport's
+ * `STDIO_MAX_LINE_CHARS`: SSE bodies are read off a live channel that bypasses Ktor's `SaveBody`,
+ * so the line accumulator is the only buffer in the path and a newline-free stream from a
+ * malicious or malfunctioning server would grow it until OOM. [MCP_SSE_MAX_DATA_LINES] caps the
+ * NUMBER of data lines per frame, not their length.
+ */
+internal const val MCP_SSE_MAX_LINE_CHARS: Int = 1_048_576
 private const val MCP_LAST_EVENT_ID_HEADER = "Last-Event-ID"
 
 /** Default ceiling for the MCP connect handshake (initialize round-trip, SSE endpoint event). */
@@ -1535,12 +1544,13 @@ public class HttpMCPTransport(
         val (connectionScope, _) = lifecycle.close() ?: return
         var cancellation: CancellationException? = null
         try {
-            sessionId.load()?.let { session ->
+            sessionId.load()?.let {
                 withTimeoutOrNull(MCP_CLOSE_DELETE_TIMEOUT_MS) {
                     client.request(url) {
                         method = HttpMethod.Delete
+                        // mcpCommonHeaders is the single source of mcp-session-id; Ktor's header()
+                        // appends rather than sets, so re-adding it here sent the id twice.
                         mcpCommonHeaders(emptyMap()).forEach { (name, value) -> header(name, value) }
-                        header("mcp-session-id", session)
                     }
                 }
             }
@@ -2106,10 +2116,45 @@ public class SseMCPTransport(
     }
 }
 
+/**
+ * [Appendable] that refuses to grow past [limit]. `ByteReadChannel.readLine` accumulates into an
+ * unbounded `StringBuilder`, which is the whole memory exposure the cap removes — the check has to
+ * happen while the line is being built, not after it is already resident.
+ */
+private class CappedLineBuilder(private val limit: Int) : Appendable {
+    private val builder = StringBuilder()
+
+    override fun append(value: Char): Appendable = apply {
+        requireCapacity(1)
+        builder.append(value)
+    }
+
+    override fun append(value: CharSequence?): Appendable = append(value, 0, value?.length ?: 0)
+
+    override fun append(value: CharSequence?, startIndex: Int, endIndex: Int): Appendable = apply {
+        requireCapacity(endIndex - startIndex)
+        builder.append(value, startIndex, endIndex)
+    }
+
+    override fun toString(): String = builder.toString()
+
+    private fun requireCapacity(additional: Int) {
+        if (builder.length + additional > limit) {
+            throw MCPClientError(
+                "MCP SSE Transport Error: SSE line exceeded " +
+                    "$limit characters; possible malformed stream"
+            )
+        }
+    }
+}
+
 internal suspend fun ParseSseStream(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
     val frame = McpSseFrame.FrameBuffer()
     while (true) {
-        val line = channel.readLine() ?: break
+        // Bounded read (not channel.readLine(), which buffers a line of any length).
+        val buffer = CappedLineBuilder(MCP_SSE_MAX_LINE_CHARS)
+        if (channel.readLineTo(buffer) < 0) break
+        val line = buffer.toString()
         when {
             line.isEmpty() -> frame.flush(onEvent)
             line.startsWith("event:") -> frame.setEvent(line.removePrefix("event:").trimStart())

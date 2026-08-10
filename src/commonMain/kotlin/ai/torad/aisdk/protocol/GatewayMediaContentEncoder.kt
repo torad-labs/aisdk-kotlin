@@ -23,16 +23,21 @@ internal object GatewayMediaContentEncoder {
             part.filename?.let { put("filename", it) }
         }
 
+    // v3's LanguageModelV3FilePart is {type, filename?, data, mediaType}: the URL travels IN
+    // `data` (base64 string OR URL string), so there is no sibling `url` key on the wire.
     fun encodeFile(part: ContentPart.File): JsonObject = contentJson("file", part) {
         put("mediaType", part.mediaType)
-        if (part.base64.isNotEmpty()) put("data", part.base64)
-        part.url?.let { put("url", it) }
+        put("data", fileData(part.base64, part.url))
         part.filename?.let { put("filename", it) }
     }
 
-    fun encodeImage(part: ContentPart.Image): JsonObject = contentJson("image", part) {
+    // v3's prompt content unions have no `image` part — upstream collapses an image into a
+    // file part carrying the image media type, so the gateway prompt does the same.
+    fun encodeImage(part: ContentPart.Image): JsonObject = contentJson("file", part) {
         put("mediaType", part.mediaType)
-        if (part.base64.isNotEmpty()) put("data", part.base64)
-        part.url?.let { put("url", it) }
+        put("data", fileData(part.base64, part.url))
     }
+
+    private fun fileData(base64: String, url: String?): String =
+        if (base64.isNotEmpty()) base64 else url.orEmpty()
 }

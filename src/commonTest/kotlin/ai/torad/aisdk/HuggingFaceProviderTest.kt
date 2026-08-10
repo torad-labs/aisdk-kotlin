@@ -25,6 +25,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
 class HuggingFaceProviderTest {
     @Test
     fun `responses model sends Hugging Face request and maps output parts`() = runTest {
@@ -620,6 +621,41 @@ class HuggingFaceProviderTest {
 
         val finish = events.filterIsInstance<StreamEvent.Finish>().single()
         assertEquals(FinishReason.ToolCalls, finish.finishReason)
+    }
+
+    @Test
+    fun `non-2xx APICallError carries the request body rather than the parsed response`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://hf.test/v1/responses" to UrlHandler(
+                    UrlResponse.Error(
+                        status = 400,
+                        body = """{"error":{"message":"bad request"}}""",
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = HuggingFace(
+            fixture.httpClient(),
+            HuggingFaceProviderSettings(block = {
+                baseURL("https://hf.test/v1")
+            }),
+        )
+
+        val error = assertFailsWith<APICallError> {
+            provider(ModelId("Qwen/Qwen3-32B")).generate(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
+            )
+        }
+
+        // responseBody already carries the response; requestBodyValues is documented as the
+        // REQUEST body, so a debugger reading it must see what we sent.
+        val requestBody = assertNotNull(error.requestBodyValues).jsonObject
+        assertEquals("Qwen/Qwen3-32B", requestBody["model"]?.jsonPrimitive?.contentOrNull)
+        assertTrue("error" !in requestBody)
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {

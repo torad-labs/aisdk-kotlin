@@ -49,10 +49,21 @@ internal class GoogleGenerativeAIEmbeddingModel(
             parseJson = true,
         )
         val embeddings = if (single) {
-            val embedding = JsonAccess.obj(response.value.jsonObject, "embedding")
-            val values = (embedding?.get("values") as? JsonArray).orEmpty()
+            // Strict, like the batch branch below and the image/video paths in this file: a
+            // missing or misshapen container used to degrade to an empty vector, so a caller got a
+            // count-matching success carrying meaningless zero-dimension data.
+            val embedding = WireDecoder.objectValue(
+                WireDecoder.required(response.value.jsonObject, "embedding", provider, "embedding response"),
+                provider,
+                "embedding response",
+                "$.embedding",
+            )
             listOf(
-                values.map { WireDecoder.embeddingFloat(it, provider) },
+                WireDecoder.embeddingVector(
+                    WireDecoder.required(embedding, "values", provider, "embedding response", "$.embedding"),
+                    provider,
+                    path = "$.embedding.values",
+                ),
             )
         } else {
             (JsonAccess.arr(response.value.jsonObject, "embeddings")).orEmpty().map { item ->

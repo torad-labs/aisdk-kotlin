@@ -37,20 +37,21 @@
  * `VERIFY_SNAPSHOT_READ=1`-style attestation flags lack entirely: those are satisfied by the very
  * party the gate distrusts.
  *
- * IN THIS REPO THERE IS NO ISSUER, AND THAT IS DELIBERATE.
- * aisdk-kotlin vendors this store as a leaf dependency of the ledger and matrix CLIs only; it does
- * NOT vendor the bun hook runtime (`runner.ts`, `registry.ts`, `modules/20-grant-issue.ts`) that
- * upstream issues through, because this repo's hooks are the Python orchestrator under
- * `modules/pretooluse/`. Nothing here handles `/grant`, so `liveGrant()` always returns null and
- * the two grant-gated ledger commands — `add-law` and `amend` — are CLOSED, not merely guarded.
+ * IN THIS REPO THE ISSUER IS PYTHON, NOT THIS MODULE'S SIBLING.
+ * aisdk-kotlin vendors this store as a leaf dependency of the ledger and matrix CLIs, but it does
+ * NOT vendor the bun hook runtime upstream issues through (`runner.ts`, `registry.ts`,
+ * `modules/20-grant-issue.ts`), because this repo's hooks are the Python orchestrator. Issuance
+ * lives at `.claude/hooks/modules/userpromptsubmit/grant_issue_policy.py`, wired through
+ * `.claude/hooks/orchestrator/userpromptsubmit.py` in settings.json.
  *
- * That is a usable state rather than a broken one: campaign laws are written when the ledger is
- * authored, and a dispatch field that turns out wrong is corrected by appending a `note` (the
- * append-only channel this ledger is built around) rather than by rewriting history. Do NOT
- * "fix" this by giving some script an `issue()` mode — that is precisely the escape the paragraph
- * below is about, and it would trade the one property this design actually buys for convenience.
- * If issuance is genuinely wanted here, vendor the upstream hook runtime and its UserPromptSubmit
- * wiring, so authorisation keeps originating from a typed human prompt.
+ * The security property is unchanged, which is the whole point of siting it on that event:
+ * UserPromptSubmit fires only on text a human typed, so authorisation still originates from a
+ * principal the assistant cannot act as. The Python module writes exactly the `Grant` shape this
+ * file reads and re-clamps, so this module stays the single source of truth for how a token is
+ * INTERPRETED while the hook owns only how one is CREATED.
+ *
+ * Do NOT add an `issue()` mode to any script or CLI. That is the escape the paragraph below is
+ * about, and it would trade the one property this design actually buys for convenience.
  *
  * WHAT THIS DOES NOT CLAIM. An assistant holding unrestricted Bash on this machine could import
  * this module and call `issue()` directly. Nothing in a filesystem can prevent that. What the
@@ -106,6 +107,25 @@ const GUARDED: readonly {
   { pattern: /(^|\/)\.claude\/hooks\/selftest\.ts$/, label: ".claude/hooks/selftest.ts" },
   { pattern: /(^|\/)\.claude\/hooks\/grant-store\.ts$/, label: ".claude/hooks/grant-store.ts" },
   { pattern: /(^|\/)\.claude\/hooks\/modules\/03-grant-gate\.ts$/, label: ".claude/hooks/modules/03-grant-gate.ts" },
+  /**
+   * This repo's issuance path, which upstream reaches through `modules/20-grant-issue.ts`. Listed
+   * by the same criterion as everything else here: breaking it produces no failure elsewhere.
+   *
+   * Honest scope note — the list is INFORMATIONAL in aisdk-kotlin, because `isLoadBearing` and
+   * `guardedLabels` have no local callers (the PreToolUse consumer is not vendored). The teeth for
+   * these two files are `.claude/hooks/tests/test_grant_issue_policy.py`, which ci-gate.sh runs and
+   * which fails if the reason requirement, the read-only subcommands, the token shape, or the
+   * MAX_HOURS clamp is weakened. The entries are here so the set stays true if the consumer is
+   * ever vendored.
+   */
+  {
+    pattern: /(^|\/)\.claude\/hooks\/modules\/userpromptsubmit\/grant_issue_policy\.py$/,
+    label: ".claude/hooks/modules/userpromptsubmit/grant_issue_policy.py",
+  },
+  {
+    pattern: /(^|\/)\.claude\/hooks\/orchestrator\/userpromptsubmit\.py$/,
+    label: ".claude/hooks/orchestrator/userpromptsubmit.py",
+  },
   /**
    * EVERY GATE, not an enumerated subset.
    *

@@ -391,7 +391,7 @@ public class AnthropicMessagesLanguageModel(
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val prepared = PreparedAnthropicRequest(settings, modelId, params, stream = false)
-        val response = anthropicPost(prepared.body, prepared.betas, params.headers)
+        val response = anthropicPost(prepared.body, prepared.betas, params.headers, params.abortSignal)
         return anthropicGenerateResult(
             response = response.value.jsonObject,
             requestBody = prepared.body,
@@ -404,6 +404,10 @@ public class AnthropicMessagesLanguageModel(
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+        // Pre-flight, then per-event: an abort that fires after the request is away must end the
+        // stream at the next chunk rather than run it to completion (params.abortSignal was
+        // previously never consulted on either path here, nor on the AnthropicAws delegate).
+        params.abortSignal.throwIfAborted()
         val prepared = PreparedAnthropicRequest(settings, modelId, params, stream = true)
         val state = AnthropicStreamState(settings, aiSdkJson)
         var sseHeaders: Map<String, String> = emptyMap()
@@ -430,6 +434,7 @@ public class AnthropicMessagesLanguageModel(
         }
 
         parsedEvents.collect { result ->
+            params.abortSignal.throwIfAborted()
             if (firstProviderEvent[0] && result is ParseResult.Success) {
                 val obj = result.value as? JsonObject
                 if ((obj?.get("type") as? JsonPrimitive)?.contentOrNull == "error") {
@@ -465,11 +470,15 @@ public class AnthropicMessagesLanguageModel(
         return LanguageModelStreamResult(stream = stream(params), request = LanguageModelRequestMetadata(prepared.body))
     }
 
+    // Wrapped in withAbortCancellation (the googlePostJson idiom) so an abort fired mid-flight
+    // actually cancels the request: this path hand-rolls client.request instead of going through
+    // HttpTransport.requestJson, so without it params.abortSignal was inert on generate.
     private suspend fun anthropicPost(
         body: JsonObject,
         betas: Set<String>,
         extraHeaders: Map<String, String>,
-    ): HttpJsonResponse {
+        abortSignal: AbortSignal,
+    ): HttpJsonResponse = AbortSignalRuntime.withAbortCancellation(abortSignal) {
         val baseURL = settings.baseURL.trimEnd('/')
         val url = settings.buildRequestUrl?.invoke(baseURL, modelId, false) ?: "$baseURL/messages"
         val requestBody = settings.transformRequestBody?.invoke(modelId, body, false) ?: body
@@ -482,7 +491,7 @@ public class AnthropicMessagesLanguageModel(
             requestHeaders.forEach { (name, value) -> header(name, value) }
             setBody(encodedBody)
         }
-        return with(HttpTransport) {
+        with(HttpTransport) {
             response.toJsonResponse(
                 url = url,
                 parseJson = true,
@@ -832,34 +841,7 @@ private class AnthropicStreamState(
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }
-                when (WireDecoder.optionalString(delta, "type", "anthropic", "stream event", "$.delta")) {
-                    "text_delta" -> events += StreamEvent.TextDelta(block.id, WireDecoder.requiredString(delta, "text", "anthropic", "stream event", "$.delta"))
-                    "thinking_delta" -> events += StreamEvent.ReasoningDelta(block.id, WireDecoder.requiredString(delta, "thinking", "anthropic", "stream event", "$.delta"))
-                    // Capture the streamed thinking signature onto the block; it surfaces on the
-                    // eventual ReasoningEnd providerMetadata (content_block_stop) for replay parity
-                    // with the non-streaming `signature` capture. Not a fatal stream error.
-                    "signature_delta" ->
-                        (delta["signature"] as? JsonPrimitive)?.contentOrNull?.let { block.signature = it }
-                    // Mid-stream citation: emit a Source, mirroring the non-streaming citation path.
-                    "citations_delta" -> citationSourceEvent(delta)?.let { events += it }
-                    "input_json_delta" -> {
-                        val text = WireDecoder.requiredString(
-                            delta,
-                            "partial_json",
-                            "anthropic",
-                            "stream event",
-                            "$.delta"
-                        )
-                        block.input += text
-                        events += StreamEvent.ToolInputDelta(block.id, text)
-                    }
-                    null -> return listOf(
-                        StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing delta.type.")
-                    )
-                    // Forward-compatible: ignore unknown delta subtypes (matches upstream Vercel AI
-                    // SDK) rather than aborting generation on a delta Anthropic adds later.
-                    else -> return emptyList()
-                }
+                return deltaEvents(block, delta)
             }
             "content_block_stop" -> {
                 val index = try {
@@ -950,10 +932,71 @@ private class AnthropicStreamState(
                 // Merge onto the message_start usage (delta usually has only output_tokens).
                 usage = UsageMergeAnthropic(usage, obj["usage"])
             }
-            "error" -> events += StreamEvent.Error(AnthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
+            "error" -> {
+                events += StreamEvent.Error(AnthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
+                // The terminal Finish still has to say WHY the stream ended. Leaving the default
+                // `Other` here reported a mid-stream server error as an ordinary completion, so a
+                // consumer branching on finishReason — or IsLoopFinished, which treats Error as
+                // terminal — could not tell the two apart. Matches the sibling providers
+                // (OpenAICompatibleStreaming, CohereStreamState) which already mark Error.
+                finishReason = FinishReason.Error
+            }
         }
         return events
     }
+
+    /**
+     * Decode one `content_block_delta` payload. Every read is guarded, like the sibling decodes in
+     * [accept]: the payload fields (`delta.type`/`text`/`thinking`/`partial_json`) used to throw a
+     * [WireDecodeException] straight out of the Flow, killing the stream and discarding both the
+     * already-emitted partial content and the terminal Finish, instead of surfacing a
+     * [StreamEvent.Error].
+     */
+    private fun deltaEvents(block: AnthropicStreamBlock, delta: JsonObject): List<StreamEvent> =
+        try {
+            when (WireDecoder.optionalString(delta, "type", "anthropic", "stream event", "$.delta")) {
+                "text_delta" -> listOf(
+                    StreamEvent.TextDelta(
+                        block.id,
+                        WireDecoder.requiredString(delta, "text", "anthropic", "stream event", "$.delta"),
+                    ),
+                )
+                "thinking_delta" -> listOf(
+                    StreamEvent.ReasoningDelta(
+                        block.id,
+                        WireDecoder.requiredString(delta, "thinking", "anthropic", "stream event", "$.delta"),
+                    ),
+                )
+                // Capture the streamed thinking signature onto the block; it surfaces on the
+                // eventual ReasoningEnd providerMetadata (content_block_stop) for replay parity
+                // with the non-streaming `signature` capture. Not a fatal stream error.
+                "signature_delta" -> {
+                    (delta["signature"] as? JsonPrimitive)?.contentOrNull?.let { block.signature = it }
+                    emptyList()
+                }
+                // Mid-stream citation: emit a Source, mirroring the non-streaming citation path.
+                "citations_delta" -> listOfNotNull(citationSourceEvent(delta))
+                "input_json_delta" -> {
+                    val text = WireDecoder.requiredString(
+                        delta,
+                        "partial_json",
+                        "anthropic",
+                        "stream event",
+                        "$.delta"
+                    )
+                    block.input += text
+                    listOf(StreamEvent.ToolInputDelta(block.id, text))
+                }
+                null -> listOf(
+                    StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing delta.type."),
+                )
+                // Forward-compatible: ignore unknown delta subtypes (matches upstream Vercel AI
+                // SDK) rather than aborting generation on a delta Anthropic adds later.
+                else -> emptyList()
+            }
+        } catch (error: WireDecodeException) {
+            listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
+        }
 
     private fun anthropicInitialStreamInput(input: JsonElement?): String = when (input) {
         null -> ""
