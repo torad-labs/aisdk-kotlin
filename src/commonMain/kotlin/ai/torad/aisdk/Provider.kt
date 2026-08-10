@@ -470,4 +470,26 @@ public fun WrapProvider(provider: Provider, middleware: ProviderMiddleware): Pro
         override fun transcriptionModel(modelId: String): TranscriptionModel = provider.transcriptionModel(modelId)
         override fun rerankingModel(modelId: String): RerankingModel = provider.rerankingModel(modelId)
         override fun videoModel(modelId: String): VideoModel = provider.videoModel(modelId)
+
+        // The typed paths MUST delegate too. Left to the [Provider] defaults they resolved
+        // against the wrapper — whose providerId for a wrapped [ProviderRegistry] is the
+        // literal "registry" — so [resolveModelRef] rejected every ref naming a real
+        // registered provider, and `provider(ProviderId)` took the non-registry branch
+        // because the anonymous wrapper is not a ProviderRegistry. Both threw
+        // NoSuchProviderError on input the unwrapped registry resolves fine.
+        override fun provider(providerId: ProviderId): Provider = provider.provider(providerId)
+
+        override fun languageModel(ref: ModelRef): LanguageModel =
+            WrapLanguageModel(provider.languageModel(ref), middleware.languageModelMiddlewares)
+
+        override fun embeddingModel(ref: ModelRef): EmbeddingModel =
+            WrapEmbeddingModel(provider.embeddingModel(ref), middleware.embeddingModelMiddlewares)
+
+        override fun imageModel(ref: ModelRef): ImageModel =
+            WrapImageModel(provider.imageModel(ref), middleware.imageModelMiddlewares)
+
+        override fun speechModel(ref: ModelRef): SpeechModel = provider.speechModel(ref)
+        override fun transcriptionModel(ref: ModelRef): TranscriptionModel = provider.transcriptionModel(ref)
+        override fun rerankingModel(ref: ModelRef): RerankingModel = provider.rerankingModel(ref)
+        override fun videoModel(ref: ModelRef): VideoModel = provider.videoModel(ref)
     }

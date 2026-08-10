@@ -5,13 +5,28 @@ package ai.torad.aisdk.providers
 import ai.torad.aisdk.*
 import io.ktor.client.request.request
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+
+/**
+ * xAI carries Live-Search citations as a top-level `citations` array on the chunk (per its
+ * docs, on the last one). The OpenAI chat shape has no field for it, so the streaming path
+ * needs this mapper to reach the same `source` parts the buffered path appends.
+ */
+internal fun XaiCitationStreamEvents(chunk: JsonObject): List<StreamEvent> =
+    JsonAccess.arr(chunk, "citations").orEmpty()
+        .mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+        .map { url ->
+            StreamEvent.SourcePart(
+                id = GenerateId(),
+                sourceType = StreamEvent.SourcePart.SourceType.Url,
+                url = url,
+            )
+        }
 
 internal class XaiChatLanguageModel(
     private val delegate: LanguageModel,
@@ -32,13 +47,7 @@ internal class XaiChatLanguageModel(
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
         delegate.streamResult(
             params.toBuilder().providerOptions(transformXaiChatProviderOptions(params.providerOptions)).build()
-        ).let {
-            LanguageModelStreamResult(
-                stream = it.stream.map { event -> event },
-                request = it.request,
-                response = it.response,
-            )
-        }
+        )
 
     private fun transformXaiChatProviderOptions(options: ProviderOptions): ProviderOptions {
         val map = options.toMap()

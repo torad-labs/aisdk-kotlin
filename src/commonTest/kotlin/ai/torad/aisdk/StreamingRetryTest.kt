@@ -104,7 +104,7 @@ class StreamingRetryTest {
         val result = StreamObjectResult(
             model = model,
             output = OutputObj<Answer>(serializer()),
-            prompt = "json",
+            input = GenerationInput.Prompt("json"),
         ).finish()
 
         assertEquals(Answer("ok"), result.value)

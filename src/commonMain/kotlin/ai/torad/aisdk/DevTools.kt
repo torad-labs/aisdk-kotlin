@@ -10,6 +10,9 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.update
 import kotlin.jvm.JvmOverloads
 import kotlin.time.TimeSource
 
@@ -68,32 +71,38 @@ public interface DevToolsRecorder {
     public suspend fun updateStepResult(stepId: String, result: DevToolsStepResult)
 }
 
+@OptIn(ExperimentalAtomicApi::class)
 @ExperimentalAiSdkApi
 /** @since 0.3.0-beta01 */
 public class InMemoryDevToolsRecorder : DevToolsRecorder {
-    private val _runs: MutableList<String> = mutableListOf()
-    private val _steps: MutableList<DevToolsStep> = mutableListOf()
-    private val _results: MutableMap<String, DevToolsStepResult> = linkedMapOf()
+    // One middleware-wrapped model is routinely shared across concurrent generate/stream calls — the
+    // middleware guards its own runCreated/stepCounter with a Mutex for exactly that — but the recorder
+    // is written outside that lock. State is therefore held as immutable snapshots behind atomics:
+    // concurrent writers cannot lose a step, and the plain (non-suspend) getters below hand back a
+    // stable collection that a landing step cannot mutate under the reader.
+    private val _runs = AtomicReference<List<String>>(emptyList())
+    private val _steps = AtomicReference<List<DevToolsStep>>(emptyList())
+    private val _results = AtomicReference<Map<String, DevToolsStepResult>>(emptyMap())
 
     /** @since 0.3.0-beta01 */
-    public val runs: List<String> get() = _runs
+    public val runs: List<String> get() = _runs.load()
 
     /** @since 0.3.0-beta01 */
-    public val steps: List<DevToolsStep> get() = _steps
+    public val steps: List<DevToolsStep> get() = _steps.load()
 
     /** @since 0.3.0-beta01 */
-    public val results: Map<String, DevToolsStepResult> get() = _results
+    public val results: Map<String, DevToolsStepResult> get() = _results.load()
 
     override suspend fun createRun(runId: String) {
-        _runs += runId
+        _runs.update { it + runId }
     }
 
     override suspend fun createStep(step: DevToolsStep) {
-        _steps += step
+        _steps.update { it + step }
     }
 
     override suspend fun updateStepResult(stepId: String, result: DevToolsStepResult) {
-        _results[stepId] = result
+        _results.update { it + (stepId to result) }
     }
 }
 

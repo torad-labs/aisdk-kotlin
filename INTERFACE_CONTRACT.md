@@ -97,7 +97,7 @@
 ### Tool definition
 
 - `abstract class Tool<TInput, TOutput, TContext>` — extend it for named tools, or construct via PascalCase factories:
-  - `val schema: ToolSchema` where `strict: Boolean? = null` means provider-default tool strictness; explicit `true` / `false` is forwarded only by providers that support tool strict mode. `ToolSchema` is an `@Poko class` value-semantics type; field access remains, but public `copy()` / `componentN()` ABI is intentionally absent.
+  - `val schema: ToolSchema` where `strict: Boolean? = null` means provider-default tool strictness; explicit `true` / `false` is forwarded only by providers that support tool strict mode. `ToolSchema` is an `@Poko class` value-semantics type; field access remains, but public `copy()` / `componentN()` ABI is intentionally absent. Build one with the DSL factory — `ToolSchema { name("searchDocs"); description("…") }` — or with `ToolSchemaBuilder` directly from Java. **Breaking in Unreleased:** the positional constructor is now `internal`, because every `Tool` subclass authors a schema and a frozen parameter list could never grow.
   - `fun Tool(...): Tool<...>` — single-value executor `suspend ToolExecutionContext<TContext>.(TInput) -> TOutput`. Factory wraps in a one-emission flow. Use for the common case where the tool produces exactly one result.
   - `fun StreamingTool(...): Tool<...>` — `Flow<TOutput>`-returning executor. Each emission becomes a `StreamEvent.ToolResult`; the LAST emission is final (feeds the model on subsequent turns), earlier emissions are `preliminary = true` (UI-only progress). Empty flow → `StreamEvent.ToolError("tool emitted no values")`. Use when a tool can produce a useful early snapshot before the full result is ready.
   - `fun DynamicTool(...): Tool<JsonElement, JsonElement, TContext>` — runtime-typed JSON tool.
@@ -337,6 +337,7 @@ of producing a normal abort completion for the step.
 - `MCPReconnectionOptions { initialReconnectionDelayMillis(1000); reconnectionDelayGrowFactor(1.5); maxReconnectionDelayMillis(30000); maxRetries(2) }` — `@Poko` HTTP inbound SSE reconnect policy; `maxRetries = 0` disables automatic error reconnects. The positional constructor, `copy()`, and `componentN()` are not public.
 - `MCPTransportConfig { reconnectionOptions(MCPReconnectionOptions { ... }) }`, `@InternalAiSdkApi HttpMCPTransport(..., reconnectionOptions = MCPReconnectionOptions { ... })`, `@InternalAiSdkApi SseMCPTransport(...)`, and `StdioConfig { command("..."); args([...]) }`. The concrete HTTP/SSE transports stay public for advanced custom transport work but are internal, unstable SDK surface that requires explicit opt-in. `StdioConfig` remains `@Serializable` and is an `@Poko` value-semantics class with no public positional constructor, `copy()`, or `componentN()`.
 - `MCPClient` resource/tool APIs: `tools`, `toolsFromDefinitions`, `listTools`, `listResources`, `readResource`, `listResourceTemplates`, `onElicitationRequest`, `close`.
+- `MCPClientConfig { requestTimeoutMillis(120_000) }` — ceiling for non-handshake JSON-RPC requests that carry no per-request timeout. Defaults to `null`, which leaves the built-in default unchanged. This is the only way to raise the ceiling on `tools/call`: the executor built by `tools()` / `toolsFromDefinitions()` takes no `MCPRequestOptions`, so a legitimately long-running MCP tool is otherwise unusable through the `ToolSet` path.
 - MCP protocol result/capability holders are `@Serializable @Poko class`
   value-semantics types; JSON field names and `_meta` wire names remain
   unchanged, while public `copy()` / `componentN()` ABI is intentionally
@@ -367,6 +368,14 @@ of producing a normal abort completion for the step.
   `GoogleTools`, `XaiTools`, `AzureOpenAITools`, and `GroqTools` are
   `@Poko class` value-semantics types; field access remains, but public
   `copy()` / `componentN()` ABI is intentionally absent.
+- **Closure-holding provider settings are plain classes, not `@Poko`.**
+  `GoogleGenerativeAIProviderSettings` holds a `generateId` lambda, so it keeps
+  Kotlin's identity equality rather than a value equality that would compare
+  closures. **Breaking in Unreleased:** it loses the generated `equals` /
+  `hashCode` / `toString` from the ABI dump; nothing else about the type
+  changes. Its `generateId` is `@Transient`, so the type serialises instead of
+  throwing on the `Function0` polymorphic fallback. The same law applies to any
+  settings type that grows a function-typed field.
 - Provider settings on the construct-type builder track
   (`CohereProviderSettings`, `DeepgramProviderSettings`,
   `AssemblyAIProviderSettings`, `GladiaProviderSettings`,
@@ -564,7 +573,7 @@ object was removed under `no-companion-objects`), `RetryAttemptDetail`,
   - `fun <T> generate(input: GenerationInput, output: Output<T>): Flow<GenerateTextResult<T>>`
   - `fun stream(input: GenerationInput): Flow<StreamEvent>`
   - `fun streamResult(input: GenerationInput): StreamTextResult` — terminal stream runs are memoized for replay. If all collectors leave before terminal completion, the upstream producer is cancelled and a later collector starts a fresh run. Upstream collection uses the first collector's coroutine context; `warnings` and `response` flows drain `fullStream` to terminal completion before emitting metadata.
-- `fun <TOutput> StreamObjectResult(model, output, prompt?, messages = emptyList(), system?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries = 2): StreamObjectResult<TOutput>` — routes object/text/element accessors through the same memoized stream lifecycle as `StreamTextResult`.
+- `fun <TOutput> StreamObjectResult(model, output, input: GenerationInput, config: CallConfig = CallConfig(), repairText? = null): StreamObjectResult<TOutput>` — routes object/text/element accessors through the same memoized stream lifecycle as `StreamTextResult`. Call settings travel as one `CallConfig`, the same shape `TextGenerator` and `StructuredObjectGenerator` take, so a setting added to `CallConfig` never changes this signature; when `config` leaves `responseFormat` at `ResponseFormat.Text` the format is derived from `output`. **Breaking in Unreleased:** this replaces a flattened 17-parameter positional list, which froze both the full-arity static and its `$default` bridge into the ABI.
 - `class StructuredObjectGenerator<RESULT>(model, schema, config = CallConfig(), schemaName = "object", schemaDescription? = null)` — `stream(input)` emits structured phases whose `warnings` mirror the model stream's `StreamStart.warnings`; `generate(input)` returns `StructuredObjectFinish` with the same warnings.
 - `@Poko class GenerateObjectResult<TOutput>` remains the structured-output result holder; there are no loose top-level object-generation shims.
 - Completion helper state: `CompletionState` remains a data class for state

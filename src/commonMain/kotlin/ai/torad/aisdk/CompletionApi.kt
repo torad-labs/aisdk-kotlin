@@ -443,6 +443,11 @@ public object CompletionApi {
         val builder = StringBuilder()
         options.setLoading(true)
         options.setError(null)
+        // The accumulator restarts empty, so the observable completion has to restart with it.
+        // Without this, a host that relabels the loading transition as "streaming the current
+        // text" surfaces the PREVIOUS run's answer as this run's streaming text for the whole
+        // connect window, until the first delta replaces it wholesale.
+        options.setCompletion("")
         return try {
             options.transport.complete(request).collect { delta ->
                 options.abortSignal.throwIfAborted()

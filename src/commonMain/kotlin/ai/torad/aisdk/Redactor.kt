@@ -190,8 +190,14 @@ internal object RedactionPredicates {
         // in exchange for a live hole. Same trade as isSensitiveKey: redacting one string too many
         // costs a debugging hint, one too few discloses a credential.
         if (trimmed.length < minLength) return false
+        // ASCII-only on purpose: base64 and base64url are ASCII alphabets (RFC 4648), so a
+        // Unicode-aware isLetterOrDigit() accepts characters no credential can contain while
+        // swallowing scriptio-continua prose — a 75-char CJK sentence has no space or punctuation
+        // to fail on, sits under maxStringLength, and was summarized away as a blob. Narrowing
+        // here loses no credential coverage.
         return trimmed.all {
-            it.isLetterOrDigit() || it == '+' || it == '/' || it == '=' || it == '-' || it == '_'
+            it in 'A'..'Z' || it in 'a'..'z' || it in '0'..'9' ||
+                it == '+' || it == '/' || it == '=' || it == '-' || it == '_'
         }
     }
 

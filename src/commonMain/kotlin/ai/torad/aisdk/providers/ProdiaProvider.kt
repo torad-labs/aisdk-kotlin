@@ -53,21 +53,27 @@ public class ProdiaProviderSettings internal constructor(
         return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/prodia/$PRODIA_VERSION")
     }
 
-    internal suspend fun prodiaPostJsonForMultipart(
+    /**
+     * A JSON `body` is POSTed; without one this is the GET used by the async job endpoints
+     * (`job.state.current`, `job.json`, `output`, `output/:filename`).
+     */
+    internal suspend fun prodiaRequest(
         client: HttpClient,
         url: String,
-        body: JsonObject,
-        accept: String,
         headers: Map<String, String>,
-    ): ProdiaMultipartResult {
+        body: JsonObject? = null,
+        accept: String? = null,
+    ): ProdiaRawResponse {
         val response = client.request(url) {
-            method = HttpMethod.Post
-            contentType(ContentType.Application.Json)
-            header(HttpHeaders.Accept, accept)
+            method = if (body == null) HttpMethod.Get else HttpMethod.Post
+            accept?.let { header(HttpHeaders.Accept, it) }
             headers.forEach { (name, value) -> header(name, value) }
-            setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
+            if (body != null) {
+                contentType(ContentType.Application.Json)
+                setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
+            }
         }
-        return prodiaParseMultipartResponse(response, url)
+        return prodiaRawResponse(response, url)
     }
 
     internal suspend fun prodiaPostMultipart(
@@ -77,7 +83,7 @@ public class ProdiaProviderSettings internal constructor(
         input: ProdiaInputFile?,
         accept: String,
         headers: Map<String, String>,
-    ): ProdiaMultipartResult {
+    ): ProdiaRawResponse {
         val response = client.request(url) {
             method = HttpMethod.Post
             header(HttpHeaders.Accept, accept)
@@ -107,14 +113,13 @@ public class ProdiaProviderSettings internal constructor(
                 ),
             )
         }
-        return prodiaParseMultipartResponse(response, url)
+        return prodiaRawResponse(response, url)
     }
 
-    private suspend fun prodiaParseMultipartResponse(response: HttpResponse, url: String): ProdiaMultipartResult {
-        val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
-        val rawContentType = response.headers[HttpHeaders.ContentType].orEmpty()
-        val bytes = with(HttpTransport) { response.bodyAsBytesCapped(url) }
-        prodiaThrowIfNotSuccess(response, url, bytes, responseHeaders)
+    internal fun prodiaMultipart(raw: ProdiaRawResponse): ProdiaMultipartResult {
+        val responseHeaders = raw.headers
+        val rawContentType = raw.contentType
+        val bytes = raw.bytes
         val boundary = Regex("""boundary=([^;\s]+)""").find(rawContentType)?.groupValues?.get(1)
             ?: throw InvalidResponseDataError(null, "Prodia response missing multipart boundary in content-type: $rawContentType")
         val parts = prodiaSplitMultipart(bytes, boundary)
@@ -146,20 +151,23 @@ public class ProdiaProviderSettings internal constructor(
         )
     }
 
-    private fun prodiaThrowIfNotSuccess(
-        response: HttpResponse,
-        url: String,
-        bytes: ByteArray,
-        responseHeaders: Map<String, String>,
-    ) {
-        if (response.status.isSuccess()) return
-        val raw = bytes.decodeToString()
-        throw ApiCallError(
-            url = url,
-            statusCode = response.status.value,
-            rawBody = raw,
+    private suspend fun prodiaRawResponse(response: HttpResponse, url: String): ProdiaRawResponse {
+        val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
+        val bytes = with(HttpTransport) { response.bodyAsBytesCapped(url) }
+        if (!response.status.isSuccess()) {
+            val raw = bytes.decodeToString()
+            throw ApiCallError(
+                url = url,
+                statusCode = response.status.value,
+                rawBody = raw,
+                headers = responseHeaders,
+                message = "Prodia request failed (${response.status.value}): ${prodiaErrorMessage(raw)}",
+            )
+        }
+        return ProdiaRawResponse(
+            bytes = bytes,
+            contentType = response.headers[HttpHeaders.ContentType].orEmpty(),
             headers = responseHeaders,
-            message = "Prodia request failed (${response.status.value}): ${prodiaErrorMessage(raw)}",
         )
     }
 
@@ -496,13 +504,25 @@ private class ProdiaMultipartPart(
     val body: ByteArray,
 )
 
+internal class ProdiaRawResponse(
+    val bytes: ByteArray,
+    val contentType: String,
+    val headers: Map<String, String>,
+) {
+    internal fun json(): JsonElement = aiSdkJson.parseToJsonElement(bytes.decodeToString())
+}
+
 internal data class ProdiaMultipartResult(
     val job: JsonObject,
     val text: String?,
     val files: List<GeneratedFile>,
     val headers: Map<String, String>,
 ) {
-    internal fun jobMetadata(): JsonObject = buildJsonObject {
+    internal fun jobMetadata(): JsonObject = ProdiaJob.metadata(job)
+}
+
+internal object ProdiaJob {
+    fun metadata(job: JsonObject): JsonObject = buildJsonObject {
         (job["id"] as? JsonPrimitive)?.contentOrNull?.let { put("jobId", JsonPrimitive(it)) }
         ((JsonAccess.obj(job, "config"))?.get("seed") as? JsonPrimitive)?.intOrNull?.let {
             put("seed", JsonPrimitive(it))

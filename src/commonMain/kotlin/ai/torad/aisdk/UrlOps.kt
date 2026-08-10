@@ -14,6 +14,13 @@ public class DownloadError(
 
 internal object UrlOps {
 
+    private const val IPV4_PARTS = 4
+    private const val OCTET_BITS = 8
+    private const val OCTET_MASK = 0xff
+    private const val MAX_OCTET = 255
+    private const val HEX_RADIX = 16
+    private const val MAX_IPV6_GROUP = 0xffff
+
     fun withoutTrailingSlash(url: String?): String? = url?.removeSuffix("/")
 
     fun encode(value: String): String =
@@ -46,7 +53,8 @@ internal object UrlOps {
         if (host == "localhost" || host.endsWith(".local") || host.endsWith(".localhost")) {
             throw DownloadError(url, "URL with hostname ${parsed.hostname} is not allowed")
         }
-        if (isIPv4(host) && isPrivateIPv4(host)) {
+        val ipv4 = normalizeIPv4(host)
+        if (ipv4 != null && isPrivateIPv4(ipv4)) {
             throw DownloadError(url, "URL with IP address $host is not allowed")
         }
         if (isPrivateIPv6(host)) {
@@ -76,13 +84,45 @@ internal object UrlOps {
         return ParsedUrl(scheme, host)
     }
 
-    private fun isIPv4(hostname: String): Boolean {
+    // Resolvers accept the BSD shorthand IPv4 spellings `d`, `d.d` and `d.d.d`, where the LAST part
+    // fills the remaining low-order bytes — `127.1` and `2130706433` both resolve to 127.0.0.1. The
+    // private-range check therefore has to run on the expanded dotted quad, not on the literal as
+    // written, or those spellings walk straight past the guard. Returns null for anything that is not
+    // a numeric IPv4 literal (a normal hostname).
+    private fun normalizeIPv4(hostname: String): String? {
         val parts = hostname.split('.')
-        return parts.size == 4 && parts.all { part ->
-            val number = part.toIntOrNull()
-            number != null && number in 0..255 && number.toString() == part
+        val numbers = parts.mapNotNull(::decimalOrNull)
+        if (parts.size > IPV4_PARTS || numbers.size != parts.size) return null
+        val leading = numbers.dropLast(1)
+        val tailBytes = IPV4_PARTS - leading.size
+        val tail = numbers.last()
+        return if (leading.any { it > MAX_OCTET } || tail >= (1L shl (OCTET_BITS * tailBytes))) {
+            null
+        } else {
+            val expanded = leading.map { it.toInt() } +
+                (tailBytes - 1 downTo 0).map { byte -> (tail shr (OCTET_BITS * byte)).toInt() and OCTET_MASK }
+            expanded.joinToString(".")
         }
     }
+
+    private fun decimalOrNull(part: String): Long? =
+        part.takeIf { it.isNotEmpty() && it.all { char -> char in '0'..'9' } }?.toLongOrNull()
+
+    // `::ffff:7f00:1` is the pure-hex spelling of the IPv4-mapped `::ffff:127.0.0.1`.
+    private fun hexMappedIPv4(mapped: String): String? {
+        val groups = mapped.split(':')
+        if (groups.size != 2) return null
+        val high = hexGroupOrNull(groups[0])
+        val low = hexGroupOrNull(groups[1])
+        return if (high == null || low == null) {
+            null
+        } else {
+            "${high shr OCTET_BITS}.${high and OCTET_MASK}.${low shr OCTET_BITS}.${low and OCTET_MASK}"
+        }
+    }
+
+    private fun hexGroupOrNull(group: String): Int? =
+        group.toIntOrNull(radix = HEX_RADIX)?.takeIf { it in 0..MAX_IPV6_GROUP }
 
     private fun isPrivateIPv4(ip: String): Boolean {
         val parts = ip.split('.').map { it.toInt() }
@@ -103,7 +143,8 @@ internal object UrlOps {
         if (normalized.startsWith("fe80")) return true
         if (normalized.startsWith("::ffff:")) {
             val mapped = normalized.removePrefix("::ffff:")
-            if (isIPv4(mapped)) return isPrivateIPv4(mapped)
+            normalizeIPv4(mapped)?.let { return isPrivateIPv4(it) }
+            hexMappedIPv4(mapped)?.let { return isPrivateIPv4(it) }
         }
         return false
     }

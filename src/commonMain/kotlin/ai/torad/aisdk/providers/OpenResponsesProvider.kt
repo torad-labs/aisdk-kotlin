@@ -117,7 +117,17 @@ public class OpenResponsesProviderSettingsBuilder {
         return this
     }
 
-    /** @since 0.3.0-beta01 */
+    /**
+     * Prefixes that mark a file-content string as a server-side file id rather than inline data.
+     *
+     * A prefixed value is treated as a file id only when it does NOT also decode as base64, so an
+     * id whose characters happen to form valid base64 (any length divisible by four, over the
+     * base64 or base64url alphabet) is sent inline instead. That ambiguity is deliberate and
+     * pinned by test: the two cases are mechanically indistinguishable from the string alone.
+     * Pass the id through `openai.file_id` provider metadata when it must be treated as an id —
+     * that path always wins and is unaffected by the shape of the value.
+     * @since 0.3.0-beta01
+     */
     public fun fileIdPrefixes(value: List<String>): OpenResponsesProviderSettingsBuilder {
         fileIdPrefixes = value
         return this
@@ -541,15 +551,19 @@ private class OpenResponsesLanguageModel(
     private suspend fun postJson(
         body: JsonElement,
         headers: Map<String, String> = emptyMap(),
-    ): OpenResponsesHttpResponse {
-        val response = client.request(settings.url) {
-            method = HttpMethod.Post
-            contentType(ContentType.Application.Json)
-            requestHeaders(headers).forEach { (name, value) -> header(name, value) }
-            setBody(json.encodeToString(JsonElement.serializer(), body))
+    ): OpenResponsesHttpResponse =
+        // Bound the whole non-streaming round-trip like every other non-streaming path
+        // (`HttpTransport.requestJson`, `postMultipart`, `postBytes`): a stalled server must not
+        // hang the caller forever. Streaming keeps its own unbounded path on purpose.
+        HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+            val response = client.request(settings.url) {
+                method = HttpMethod.Post
+                contentType(ContentType.Application.Json)
+                requestHeaders(headers).forEach { (name, value) -> header(name, value) }
+                setBody(json.encodeToString(JsonElement.serializer(), body))
+            }
+            parseResponse(response, parseJson = true)
         }
-        return parseResponse(response, parseJson = true)
-    }
 
     /** Streaming counterpart of [postJson]: reads the SSE body incrementally,
      *  surfacing non-2xx as the same rich [APICallError] as [parseResponse]. */

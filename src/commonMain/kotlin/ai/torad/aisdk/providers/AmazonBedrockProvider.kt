@@ -7,6 +7,7 @@ import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -585,19 +586,19 @@ private class BedrockMantleChatLanguageModel(
                     put("stop", JsonArray(params.stopSequences.map(::JsonPrimitive)))
                 }
                 if (params.tools.isNotEmpty()) {
-                    put("tools", JsonArray(params.tools.map { BedrockRequest.bedrockMantleResponsesTool(it) }))
+                    put("tools", JsonArray(params.tools.map { BedrockMantleRequest.bedrockMantleResponsesTool(it) }))
                 }
             }
         } else {
             buildJsonObject {
                 put("model", JsonPrimitive(modelId))
-                put("messages", JsonArray(params.messages.map { BedrockRequest.bedrockMantleMessage(it) }))
+                put("messages", JsonArray(params.messages.flatMap { BedrockMantleRequest.bedrockMantleMessages(it) }))
                 params.temperature?.let { put("temperature", JsonPrimitive(it)) }
                 params.topP?.let { put("top_p", JsonPrimitive(it)) }
                 params.maxOutputTokens?.let { put("max_tokens", JsonPrimitive(it)) }
                 if (params.stopSequences.isNotEmpty()) put("stop", JsonArray(params.stopSequences.map(::JsonPrimitive)))
                 if (params.tools.isNotEmpty()) {
-                    put("tools", JsonArray(params.tools.map { BedrockRequest.bedrockMantleTool(it) }))
+                    put("tools", JsonArray(params.tools.map { BedrockMantleRequest.bedrockMantleTool(it) }))
                 }
             }
         }
@@ -722,35 +723,15 @@ private class BedrockMantleChatLanguageModel(
                 }
             }
         }
-        return JsonArray(messages.map { BedrockRequest.bedrockMantleMessage(it) })
+        return JsonArray(messages.flatMap { BedrockMantleRequest.bedrockMantleResponsesItems(it) })
     }
 
+    // Mantle has no streaming endpoint, so this replays the buffered result. It must go
+    // through the canonical converter: hand-rolling text-only events dropped result.toolCalls
+    // while Finish still carried FinishReason.ToolCalls, so a tool loop driven off the stream
+    // saw "tool calls pending" with no ToolCall event and silently executed nothing.
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        val result = generate(params)
-        emit(StreamEvent.StreamStart(result.warnings))
-        emit(
-            StreamEvent.ResponseMetadata(
-                result.response.id,
-                result.response.timestampMillis,
-                result.response.modelId,
-                result.response.headers,
-                result.response.body
-            )
-        )
-        if (result.text.isNotEmpty()) {
-            emit(StreamEvent.TextStart("0"))
-            emit(StreamEvent.TextDelta("0", result.text))
-            emit(StreamEvent.TextEnd("0"))
-        }
-        emit(
-            StreamEvent.Finish(
-                1,
-                result.finishReason,
-                result.usage,
-                result.providerMetadata,
-                rawFinishReason = result.rawFinishReason,
-            ),
-        )
+        emitAll(LanguageModelResultStreamEvents.from(generate(params)))
     }
 
     private fun bedrockOpenAILikeUsage(element: JsonElement?): Usage {
