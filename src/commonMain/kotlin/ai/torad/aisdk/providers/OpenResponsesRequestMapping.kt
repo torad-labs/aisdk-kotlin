@@ -309,7 +309,14 @@ private fun OpenResponsesProviderToolJson(tool: LanguageModelTool): JsonObject =
             PutOpenResponsesField("description", args["description"] ?: JsonPrimitive(tool.description))
             PutOpenResponsesField("format", args["format"])
         }
-        else -> put("type", JsonPrimitive(type))
+        // Forward-compat passthrough covers the whole tool, not just its type: an unmapped type
+        // (xAI's x_search / view_image / view_x_video, a server tool newer than this mapping)
+        // carries its entire configuration in args, and dropping it silently ignores the
+        // caller's constraints on an otherwise-successful request. The resolved type wins.
+        else -> {
+            args.forEach { (name, value) -> PutOpenResponsesField(name, value) }
+            put("type", JsonPrimitive(type))
+        }
     }
 }
 

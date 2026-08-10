@@ -147,6 +147,23 @@ class OutputTest {
     }
 
     @Test
+    fun `array Output default schema name matches the provider-enforced json_schema name pattern`() {
+        // GIVEN — OpenAI (chat completions and Responses) rejects a json_schema.name that does not
+        // match ^[a-zA-Z0-9_-]+$ with a 400 before any generation happens, so a bracketed default
+        // makes the default OutputArray path unusable against the most common provider.
+        val namePattern = Regex("^[a-zA-Z0-9_-]+$")
+
+        // WHEN
+        val fromClass = Output.Arr(serializer<Recipe>()).schemaName
+        val fromFactory = (OutputArray(serializer<Recipe>()) as Output.Arr).schemaName
+
+        // THEN
+        assertTrue(namePattern.matches(fromClass), "Output.Arr default name `$fromClass` is not wire-legal")
+        assertTrue(namePattern.matches(fromFactory), "OutputArray default name `$fromFactory` is not wire-legal")
+        assertEquals(fromClass, fromFactory)
+    }
+
+    @Test
     fun `typed-object Output schemaJson describes the properties not a property-less stub`() {
         // GIVEN
         val output = OutputObj<Recipe>(serializer())

@@ -429,13 +429,16 @@ private class ByteDanceVideoModel(
         abortSignal: AbortSignal,
     ): HttpJsonResponse {
         abortSignal.throwIfAborted()
-        return HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = ::byteDanceErrorMessage,
-        )
+        return AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = headers,
+                errorMessage = ::byteDanceErrorMessage,
+                abortSignal = abortSignal,
+            )
+        }
     }
 
     private suspend fun byteDancePoll(

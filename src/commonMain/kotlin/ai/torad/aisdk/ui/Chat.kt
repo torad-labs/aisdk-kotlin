@@ -2,15 +2,22 @@ package ai.torad.aisdk.ui
 
 import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.concurrent.atomics.AtomicReference
@@ -274,11 +281,7 @@ public class Chat(
     private fun sendInternal(
         body: Map<String, JsonElement>,
         transformMessages: (List<UIMessage>) -> List<UIMessage>,
-    ): Flow<UIMessage> = flow {
-        val op = Any()
-        val opJob = currentCoroutineContext()[Job]
-        currentOpJobRef.store(opJob)
-        currentOpRef.store(op)
+    ): Flow<UIMessage> = operationFlow {
         val request = applyState {
             copy(messages = transformMessages(messages), status = ChatStatus.Submitted, error = null)
         }.let {
@@ -287,12 +290,68 @@ public class Chat(
                 body(body)
             }
         }
+        transport.sendMessages(request)
+    }
+
+    // A resumed stream is a live turn like any other: its emissions must land in chat state
+    // (otherwise the next send's request omits the turn the user just read) and it must drive
+    // status so isStreaming-driven UI is correct for the whole resumption.
+    private fun resumeInternal(source: Flow<UIMessage>): Flow<UIMessage> = operationFlow {
+        applyState { copy(status = ChatStatus.Submitted, error = null) }
+        source
+    }
+
+    /**
+     * Runs one turn with the upstream collection in a coroutine this class OWNS, so [stop]
+     * aborts the request without cancelling the consumer's coroutine. The turn used to run
+     * directly in the collector's coroutine and [stop] cancelled that Job — tearing down
+     * everything the caller had sequenced after `collect` and leaving that coroutine unable
+     * to run another turn. Upstream `chat.ts` only aborts its AbortController, and the sibling
+     * stop() APIs (CompletionApi, StructuredObjectApi) likewise never touch a caller's Job.
+     *
+     * UNDISPATCHED so the operation is claimed and the Submitted state published synchronously
+     * on subscription, exactly as before. RENDEZVOUS keeps the turn in lockstep with the
+     * consumer, so emissions and state updates stay ordered as they were.
+     */
+    private fun operationFlow(startTurn: () -> Flow<UIMessage>): Flow<UIMessage> = channelFlow {
+        val op = Any()
+        // A child's CancellationException never reaches its parent, so a cancellation the
+        // TRANSPORT raised (a real outcome the caller must see) is carried out by hand.
+        // stop()-driven cancellation of this turn is not carried out — that is the point.
+        val transportCancellation = CompletableDeferred<CancellationException?>()
+        val turn = launch(start = CoroutineStart.UNDISPATCHED) {
+            try {
+                val opJob = startOperation(op)
+                collectIntoState(startTurn(), op, opJob)
+                transportCancellation.complete(null)
+            } catch (t: CancellationException) {
+                transportCancellation.complete(t.takeIf { currentCoroutineContext().isActive })
+                throw t
+            }
+        }
+        turn.invokeOnCompletion { transportCancellation.complete(null) }
+        turn.join()
+        transportCancellation.await()?.let { throw it }
+    }.buffer(Channel.RENDEZVOUS)
+
+    private suspend fun startOperation(op: Any): Job? {
+        val opJob = currentCoroutineContext()[Job]
+        currentOpJobRef.store(opJob)
+        currentOpRef.store(op)
+        return opJob
+    }
+
+    private suspend fun ProducerScope<UIMessage>.collectIntoState(
+        source: Flow<UIMessage>,
+        op: Any,
+        opJob: Job?,
+    ) {
         try {
-            transport.sendMessages(request).collect { response ->
+            source.collect { response ->
                 if (currentOpRef.load() === op) {
                     applyState { copy(status = ChatStatus.Streaming).withUpsert(response) }
                 }
-                emit(response)
+                send(response)
             }
             if (currentOpRef.load() === op) {
                 applyState { copy(status = ChatStatus.Ready) }
@@ -324,7 +383,7 @@ public class Chat(
 
     /** @since 0.3.0-beta01 */
     public fun reconnectToStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage>? =
-        transport.reconnectToStream(id, headers)
+        transport.reconnectToStream(id, headers)?.let(::resumeInternal)
 
     /** @since 0.3.0-beta01 */
     @JvmSynthetic public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =

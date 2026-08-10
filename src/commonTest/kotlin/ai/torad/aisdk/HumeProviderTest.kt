@@ -87,6 +87,49 @@ class HumeProviderTest {
     }
 
     @Test
+    fun `speech model sends the fallback library voice with the HUME_AI provider`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.hume.ai/v0/tts/file" to UrlHandler(
+                    UrlResponse.Binary(byteArrayOf(7, 8), headers = mapOf(HttpHeaders.ContentType to "audio/mpeg")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Hume(fixture.httpClient(), HumeProviderSettings { apiKey("key") }).speech()
+
+        model.generate(SpeechGenerationParams { text("hi") })
+        model.generate(
+            SpeechGenerationParams {
+                text("hi")
+                voice("saved-voice")
+            },
+        )
+        model.generate(
+            SpeechGenerationParams {
+                text("hi")
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "hume" to buildJsonObject { put("voiceProvider", JsonPrimitive("CUSTOM_VOICE")) },
+                            )
+                        )
+                    )
+                )
+            },
+        )
+
+        assertEquals(
+            listOf("HUME_AI", "CUSTOM_VOICE", "CUSTOM_VOICE"),
+            fixture.calls.map {
+                it.requestBodyJson.jsonObject["utterances"]?.jsonArray?.single()?.jsonObject
+                    ?.get("voice")?.jsonObject?.get("provider")?.jsonPrimitive?.contentOrNull
+            },
+        )
+    }
+
+    @Test
     fun `speech model warns and falls back to mp3 for unsupported format`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

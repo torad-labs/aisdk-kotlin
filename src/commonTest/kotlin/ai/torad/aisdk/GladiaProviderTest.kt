@@ -267,6 +267,58 @@ class GladiaProviderTest {
     }
 
     @Test
+    fun `context_prompt and display_mode reach the pre-recorded body`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.gladia.io/v2/upload" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"audio_url":"https://cdn.example/audio"}""")),
+                ),
+                "https://api.gladia.io/v2/pre-recorded" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"result_url":"https://api.gladia.io/v2/pre-recorded/job"}""")),
+                ),
+                "https://api.gladia.io/v2/pre-recorded/job" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"done","result":{"transcription":{"full_transcript":"hi","utterances":[]}}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Gladia(
+            fixture.httpClient(),
+            GladiaProviderSettings {
+                apiKey("key")
+                pollingIntervalMillis(0)
+            },
+        ).transcription()
+
+        model.transcribe(
+            TranscriptionParams {
+                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                providerOptions(
+                    ProviderOptions.Raw(
+                        JsonObject(
+                            mapOf(
+                                "gladia" to buildJsonObject {
+                                    put("contextPrompt", JsonPrimitive("a call about KMP"))
+                                    put("displayMode", JsonPrimitive(true))
+                                },
+                            ),
+                        ),
+                    ),
+                )
+            },
+        )
+
+        val body = fixture.calls.first { it.requestUrl.contains("pre-recorded") && it.requestMethod == "POST" }
+            .requestBodyJson.jsonObject
+        assertEquals("a call about KMP", body["context_prompt"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(true, body["display_mode"]?.jsonPrimitive?.booleanOrNull)
+    }
+
+    @Test
     fun `transcription model throws when job fails`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

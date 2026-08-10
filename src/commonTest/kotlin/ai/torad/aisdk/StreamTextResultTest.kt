@@ -9,6 +9,7 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
@@ -185,6 +186,29 @@ class StreamTextResultTest {
         assertEquals(1, collections)
         assertEquals(3, replay.size)
         assertTrue(replay.last() is StreamEvent.Error)
+    }
+
+    @Test
+    fun `an in-band upstream cancellation terminates collectors instead of hanging them`() = runTest {
+        // AbortError IS a CancellationException, and providers throw it in-band (per-chunk
+        // throwIfAborted) while collectors are still attached. Recording no terminal for it left
+        // every collector parked on a terminal the dead producer would never publish.
+        val upstream = flow {
+            emit(StreamEvent.TextStart("t"))
+            emit(StreamEvent.TextDelta("t", "hello"))
+            throw AbortError()
+        }
+        val result = StreamTextResult(sourceStream = upstream)
+
+        val collected = mutableListOf<String>()
+        assertFailsWith<AbortError> {
+            withTimeout(5_000) { result.textStream.collect { collected += it } }
+        }
+        assertEquals(listOf("hello"), collected)
+
+        assertFailsWith<AbortError> {
+            withTimeout(5_000) { result.warnings.first() }
+        }
     }
 
     @Test
