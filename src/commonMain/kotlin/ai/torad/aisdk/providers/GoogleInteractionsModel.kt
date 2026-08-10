@@ -50,12 +50,17 @@ internal class GoogleInteractionsLanguageModel(
             abortSignal = params.abortSignal,
             parseJson = true,
         )
-        var body = response.value.jsonObject
+        // Held as a var (not just its parsed body) so the result metadata describes the
+        // response the result was actually built from: upstream reassigns response,
+        // rawResponse AND responseHeaders from the poll, and reporting the pre-poll POST
+        // envelope leaves `response.body`/`headers` contradicting the text we shipped.
+        var httpResponse = response
+        var body = httpResponse.value.jsonObject
         // Poll any non-terminal interaction — including background *model* runs (Deep Research
         // etc.). Previously only agent/managed-agent paths polled, so background model
         // generate() returned a half-done interaction.
         if (!googleInteractionsTerminal((body["status"] as? JsonPrimitive)?.contentOrNull)) {
-            body = googlePollInteraction(
+            httpResponse = googlePollInteraction(
                 client = client,
                 settings = settings,
                 interactionId = (body["id"] as? JsonPrimitive)?.contentOrNull
@@ -63,13 +68,14 @@ internal class GoogleInteractionsLanguageModel(
                 headers = settings.googleInteractionsHeaders(params.headers),
                 abortSignal = params.abortSignal,
                 timeoutMillis = prepared.pollingTimeoutMillis,
-            ).value.jsonObject
+            )
+            body = httpResponse.value.jsonObject
         }
         return googleInteractionsResult(
             body,
             prepared.body,
-            response.headers,
-            response.value,
+            httpResponse.headers,
+            httpResponse.value,
             prepared.warnings,
             settings
         )

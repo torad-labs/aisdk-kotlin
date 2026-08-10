@@ -5,6 +5,7 @@ import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -45,8 +46,16 @@ public sealed class GoogleInteractionsModelInput {
 }
 
 @Serializable
-@Poko
-/** @since 0.3.0-beta01 */
+// The parameter count is unchanged; annotating `generateId` only re-keys the detekt
+// baseline entry that already grandfathered this constructor.
+@Suppress("LongParameterList")
+/**
+ * Closure-holder: `generateId` makes this a non-value construct-type, so it is a plain
+ * class (CLAUDE.md — NOT `@Poko`, NOT `data class`) with Kotlin's identity equality. The
+ * closure is `@Transient` because a `Function0` has no wire shape: leaving it in the
+ * generated serializer made every `encodeToString` throw on the polymorphic fallback.
+ * @since 0.3.0-beta01
+ */
 public class GoogleGenerativeAIProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://generativelanguage.googleapis.com/v1beta",
@@ -54,6 +63,7 @@ public class GoogleGenerativeAIProviderSettings internal constructor(
     public val apiKey: String? = null,
     /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    @Transient
     /** @since 0.3.0-beta01 */
     public val generateId: () -> String = { GenerateId() },
     /** @since 0.3.0-beta01 */

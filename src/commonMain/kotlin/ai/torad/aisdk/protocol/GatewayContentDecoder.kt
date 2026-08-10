@@ -11,15 +11,18 @@ import kotlinx.serialization.json.JsonObject
 internal object GatewayContentDecoder {
     fun decode(value: JsonElement): ContentPart? {
         val obj = WireDecoder.objectValue(value, "gateway", "content part")
-        return when (WireDecoder.requiredString(obj, "type", "gateway", "content part")) {
+        val type = WireDecoder.requiredString(obj, "type", "gateway", "content part")
+        return when (type) {
             "text" -> decodeText(obj)
             "reasoning" -> decodeReasoning(obj)
             "tool-call" -> decodeToolCall(obj)
             "tool-result" -> decodeToolResult(obj)
             "tool-approval-request" -> decodeApprovalRequest(obj)
             "tool-approval-response" -> decodeApprovalResponse(obj)
-            "source-url" -> decodeSource(obj, StreamEvent.SourcePart.SourceType.Url)
-            "source-document" -> decodeSource(obj, StreamEvent.SourcePart.SourceType.Document)
+            // v3 emits BOTH source variants as `type: "source"`, discriminated by `sourceType`;
+            // `source-url`/`source-document` are the UI-layer names and stay accepted as aliases.
+            "source", "source-url", "source-document" ->
+                ProtocolJson.sourceType(type, obj)?.let { decodeSource(obj, it) } ?: ContentPart.Raw(value)
             "file" -> decodeFile(obj)
             "image" -> decodeImage(obj)
             else -> ContentPart.Raw(value)
@@ -123,7 +126,8 @@ internal object GatewayContentDecoder {
     ): ContentPart.Source =
         ContentPart.Source(
             sourceType = sourceType,
-            sourceId = WireDecoder.optionalString(obj, "sourceId", "gateway", "content part"),
+            sourceId = WireDecoder.optionalString(obj, "sourceId", "gateway", "content part")
+                ?: WireDecoder.optionalString(obj, "id", "gateway", "content part"),
             url = WireDecoder.optionalString(obj, "url", "gateway", "content part"),
             title = WireDecoder.optionalString(obj, "title", "gateway", "content part"),
             mediaType = WireDecoder.optionalString(obj, "mediaType", "gateway", "content part"),

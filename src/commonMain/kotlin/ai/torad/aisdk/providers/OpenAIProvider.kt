@@ -13,6 +13,9 @@ public const val VERSION: String = "3.0.67"
 public val OPENAI_RESPONSES_SUPPORTED_URLS: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS +
     ("application/pdf" to listOf("^https?://.*$"))
 
+/** What the OpenAI CHAT model accepts as a URL — images only, mirroring upstream's chat model. */
+internal val OPENAI_CHAT_SUPPORTED_URLS = mapOf("image/*" to listOf("^https?://.*$"))
+
 @Poko
 /** @since 0.3.0-beta01 */
 public class OpenAIProviderSettings internal constructor(
@@ -33,7 +36,9 @@ public class OpenAIProviderSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val includeUsage: Boolean = false,
 ) {
-    internal fun toCompatibleSettings(): OpenAICompatibleProviderSettings {
+    internal fun toCompatibleSettings(
+        extra: OpenAICompatibleProviderSettingsBuilder.() -> Unit = {},
+    ): OpenAICompatibleProviderSettings {
         val headersWithUserAgent = ProviderHeaders.withUserAgentSuffix(openAIHeaders(), "ai-sdk/openai/$VERSION")
         return OpenAICompatibleProviderSettings {
             name(name)
@@ -46,6 +51,7 @@ public class OpenAIProviderSettings internal constructor(
             queryParams(queryParams)
             includeUsage(includeUsage)
             supportsStructuredOutputs(true)
+            extra()
         }
     }
 
@@ -155,6 +161,11 @@ public class OpenAIProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(client, settings.toCompatibleSettings())
 
+    // Only the CHAT model advertises image URLs upstream — the completion model deliberately
+    // advertises none — so this cannot ride on the shared compatible settings.
+    private val chatCompatible =
+        OpenAICompatible(client, settings.toCompatibleSettings { supportedUrls(OPENAI_CHAT_SUPPORTED_URLS) })
+
     override val providerId: String = settings.name
 
     /** @since 0.3.0-beta01 */
@@ -166,7 +177,7 @@ public class OpenAIProvider(
 
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: String): LanguageModel =
-        compatible.chatModel(modelId)
+        chatCompatible.chatModel(modelId)
 
     /** @since 0.3.0-beta01 */
     public fun responses(modelId: String): LanguageModel =

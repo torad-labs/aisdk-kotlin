@@ -142,13 +142,16 @@ public class XaiProviderSettings internal constructor(
         abortSignal: AbortSignal,
     ): HttpJsonResponse {
         abortSignal.throwIfAborted()
-        return HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = ::xaiErrorMessage,
-        )
+        return AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = headers,
+                errorMessage = ::xaiErrorMessage,
+                abortSignal = abortSignal,
+            )
+        }
     }
 
     private fun xaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
@@ -479,7 +482,7 @@ public class XaiProvider(
     /** @since 0.3.0-beta01 */
     public val settings: XaiProviderSettings,
 ) : Provider {
-    private val compatible = OpenAICompatible(client, xaiCompatibleSettings())
+    private val compatibleSettings = xaiCompatibleSettings()
 
     override val providerId: String = "xai"
 
@@ -490,7 +493,17 @@ public class XaiProvider(
 
     /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel =
-        XaiChatLanguageModel(compatible.chatModel(modelId.value))
+        XaiChatLanguageModel(
+            // Built directly (not via compatible.chatModel) so the streaming path gets the
+            // citations mapper the buffered path already has — see XaiCitationStreamEvents.
+            OpenAICompatibleChatLanguageModel(
+                client = client,
+                settings = compatibleSettings,
+                json = aiSdkJson,
+                modelId = modelId.value,
+                chunkStreamEvents = ::XaiCitationStreamEvents,
+            )
+        )
 
     /** @since 0.3.0-beta01 */
     public fun responses(modelId: ModelId): LanguageModel =

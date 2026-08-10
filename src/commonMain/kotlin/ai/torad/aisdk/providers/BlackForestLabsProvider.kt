@@ -611,13 +611,16 @@ private class BlackForestLabsImageModel(
         abortSignal: AbortSignal,
     ): HttpJsonResponse {
         abortSignal.throwIfAborted()
-        return HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = ::bflErrorMessage,
-        )
+        return AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = headers,
+                errorMessage = ::bflErrorMessage,
+                abortSignal = abortSignal,
+            )
+        }
     }
 
     private suspend fun bflPollForImage(

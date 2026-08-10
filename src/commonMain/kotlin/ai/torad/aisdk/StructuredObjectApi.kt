@@ -464,7 +464,7 @@ public class StructuredObject<RESULT, INPUT>(
                     p
                 }
             }
-            abortController = null
+            if (abortController === controller) abortController = null // don't clear a newer submit's slot
         }
     }
 

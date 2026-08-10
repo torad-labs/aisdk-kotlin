@@ -138,7 +138,7 @@ class OpenAICompatibleProviderTest {
         assertEquals(7, result.usage.completionTokens)
         assertEquals(2, result.usage.inputTokens.cacheRead)
         assertEquals(3, result.usage.outputTokens.reasoning)
-        val providerMetadata = result.providerMetadata.toMap()["openaiCompatible"]?.jsonObject
+        val providerMetadata = result.providerMetadata.toMap()["openai"]?.jsonObject
         assertEquals(4, providerMetadata?.get("acceptedPredictionTokens")?.jsonPrimitive?.intOrNull)
         assertEquals(1, providerMetadata?.get("rejectedPredictionTokens")?.jsonPrimitive?.intOrNull)
         assertEquals("chatcmpl_1", result.response.id)

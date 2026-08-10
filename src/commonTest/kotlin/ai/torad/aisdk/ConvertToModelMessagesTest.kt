@@ -359,4 +359,65 @@ class ConvertToModelMessagesTest {
         assertEquals("getWeather", toolResult.toolName)
         assertEquals(JsonPrimitive("sunny"), toolResult.output)
     }
+
+    @Test
+    fun `given an errored tool part when converted then the failed call and its error result survive`() {
+        val ui = listOf(
+            UIMessage(
+                id = "a1",
+                role = UIMessageRole.Assistant,
+                parts = listOf(
+                    UIMessagePart.StepStart(stepNumber = 0),
+                    UIMessagePart.ToolUI(
+                        toolCallId = "call_1",
+                        toolName = "getWeather",
+                        state = ToolCallState.OutputError,
+                        input = buildJsonObject { put("city", JsonPrimitive("Lisbon")) },
+                        error = "upstream 503",
+                    ),
+                ),
+            ),
+        )
+
+        val result = convertToModelMessages(ui)
+
+        assertEquals(2, result.size, "a failed tool must replay as assistant ToolCall + Tool ToolResult")
+        assertEquals(MessageRole.Assistant, result[0].role)
+        val call = result[0].content.single() as ContentPart.ToolCall
+        assertEquals("call_1", call.toolCallId)
+        assertEquals("getWeather", call.toolName)
+        assertEquals(buildJsonObject { put("city", JsonPrimitive("Lisbon")) }, call.input)
+        assertEquals(MessageRole.Tool, result[1].role)
+        val toolResult = result[1].content.single() as ContentPart.ToolResult
+        assertEquals("call_1", toolResult.toolCallId)
+        assertEquals("getWeather", toolResult.toolName)
+        assertEquals(true, toolResult.isError)
+        assertEquals(JsonPrimitive("upstream 503"), toolResult.output)
+    }
+
+    @Test
+    fun `given an errored tool part without input when converted then it replays without throwing`() {
+        val ui = listOf(
+            UIMessage(
+                id = "a1",
+                role = UIMessageRole.Assistant,
+                parts = listOf(
+                    UIMessagePart.DynamicToolUI(
+                        toolCallId = "call_2",
+                        toolName = "search",
+                        state = ToolCallState.OutputError,
+                    ),
+                ),
+            ),
+        )
+
+        val result = convertToModelMessages(ui)
+
+        assertEquals(2, result.size)
+        val call = result[0].content.single() as ContentPart.ToolCall
+        assertEquals(buildJsonObject { }, call.input)
+        val toolResult = result[1].content.single() as ContentPart.ToolResult
+        assertEquals(true, toolResult.isError)
+        assertEquals(JsonPrimitive("unknown error"), toolResult.output)
+    }
 }

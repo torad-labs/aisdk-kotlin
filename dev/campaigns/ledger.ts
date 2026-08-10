@@ -340,15 +340,14 @@ async function main(): Promise<number> {
           : `writes the law header, which is injected into every future session as binding law`;
       throw new LedgerError(
         `"${command}" ${what}. That needs a grant.\n\n` +
-          `THIS REPO HAS NO GRANT ISSUER, so this command is closed rather than merely guarded.\n` +
-          `aisdk-kotlin vendors .claude/hooks/grant-store.ts for the read side only; the upstream\n` +
-          `UserPromptSubmit issuer is not vendored (see the "IN THIS REPO" note in that file).\n\n` +
-          `Instead of amending in place:\n` +
-          `  · a wrong dispatch field  -> append the correction with "note <ID>", which is the\n` +
-          `    append-only channel this ledger is built around; history is never rewritten\n` +
-          `  · a law that must change  -> author it into the header when the ledger is created,\n` +
-          `    or open a successor campaign\n\n` +
-          `Do not work around this by giving a script an issue() mode.`,
+          `Ask the operator to type:  /grant <why this is changing>\n` +
+          `  (optionally with a window: /grant 30m <why>; /grant status; /grant revoke)\n\n` +
+          `That is handled here by .claude/hooks/modules/userpromptsubmit/grant_issue_policy.py.\n` +
+          `It fires ONLY on text a human typed, which is what keeps issuance operator-only — an\n` +
+          `assistant cannot emit a user prompt. Do not work around this by writing the token\n` +
+          `directly or giving a script an issue() mode.\n\n` +
+          `Often you do not need a grant at all: a wrong dispatch field can be corrected by\n` +
+          `appending "note <ID>", the append-only channel this ledger is built around.`,
       );
     }
     /**

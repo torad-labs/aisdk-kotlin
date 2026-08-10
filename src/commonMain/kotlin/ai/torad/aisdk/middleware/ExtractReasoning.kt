@@ -4,6 +4,7 @@ import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.LanguageModelMiddleware
 import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.MiddlewareCallContext
+import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.StreamEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -80,6 +81,14 @@ public fun ExtractReasoningMiddleware(
         var reasoningId: String? = null
         var nextReasoningIdx = 0
         var lastTextId: String? = null
+        // The separator is a conditional PREFIX on the next published chunk, not a
+        // standalone delta after every close tag — matching v6's `publish()`. It only
+        // appears when a switch just happened AND text of that kind was already
+        // published, so a reasoning block that opens or closes the stream leaves no
+        // stray leading/trailing separator in the visible text.
+        var isFirstText = true
+        var isFirstReasoning = true
+        var afterSwitch = false
 
         // startWithReasoning: begin already inside a reasoning section (the model
         // streams reasoning tokens before any open tag), looking for the close tag.
@@ -90,15 +99,45 @@ public fun ExtractReasoningMiddleware(
             emit(StreamEvent.ReasoningStart(rid))
         }
 
+        suspend fun publish(
+            id: String?,
+            text: String,
+            providerMetadata: ProviderMetadata = ProviderMetadata.None,
+        ) {
+            if (text.isEmpty()) return
+            val rid = reasoningId
+            if (inReasoning && rid != null) {
+                val prefix = if (afterSwitch && !isFirstReasoning) separator else ""
+                emit(StreamEvent.ReasoningDelta(rid, prefix + text, providerMetadata))
+                isFirstReasoning = false
+                afterSwitch = false
+            } else if (id != null) {
+                val prefix = if (afterSwitch && !isFirstText) separator else ""
+                emit(StreamEvent.TextDelta(id, prefix + text, providerMetadata))
+                isFirstText = false
+                afterSwitch = false
+            }
+        }
+
         suspend fun emitBufferedText(id: String?) {
             if (buffer.isEmpty()) return
             val text = buffer.toString()
             buffer.clear()
+            publish(id, text)
+        }
+
+        // A section left open at the end of the text block (or of the whole stream) must
+        // still be terminated: every other reasoning producer in this SDK closes an open
+        // section at stream end, and downstream consumers materialise the reasoning part
+        // only on ReasoningEnd. A truncated or malformed `<reasoning>` would otherwise
+        // leave the part open forever.
+        suspend fun closeOpenReasoning() {
             val rid = reasoningId
             if (inReasoning && rid != null) {
-                emit(StreamEvent.ReasoningDelta(rid, text))
-            } else if (id != null) {
-                emit(StreamEvent.TextDelta(id, text))
+                emit(StreamEvent.ReasoningEnd(rid))
+                inReasoning = false
+                reasoningId = null
+                afterSwitch = true
             }
         }
 
@@ -113,31 +152,20 @@ public fun ExtractReasoningMiddleware(
                             if (openIdx < 0) {
                                 val emitLength = buffer.length - ReasoningScan.longestSuffixPrefixOf(buffer, openTag)
                                 if (emitLength > 0) {
-                                    emit(
-                                        StreamEvent.TextDelta(
-                                            event.id,
-                                            buffer.substring(0, emitLength),
-                                            event.providerMetadata
-                                        )
-                                    )
+                                    publish(event.id, buffer.substring(0, emitLength), event.providerMetadata)
                                     buffer.deleteRange(0, emitLength)
                                 }
                                 break
                             }
                             if (openIdx > 0) {
-                                emit(
-                                    StreamEvent.TextDelta(
-                                        event.id,
-                                        buffer.substring(0, openIdx),
-                                        event.providerMetadata
-                                    )
-                                )
+                                publish(event.id, buffer.substring(0, openIdx), event.providerMetadata)
                             }
                             buffer.deleteRange(0, openIdx + openTag.length)
                             val newReasoningId = "reasoning_${++nextReasoningIdx}"
                             reasoningId = newReasoningId
                             emit(StreamEvent.ReasoningStart(newReasoningId, event.providerMetadata))
                             inReasoning = true
+                            afterSwitch = true
                         } else {
                             // Invariant: reasoningId is non-null whenever inReasoning.
                             val rid = requireNotNull(reasoningId) {
@@ -147,40 +175,25 @@ public fun ExtractReasoningMiddleware(
                             if (closeIdx < 0) {
                                 val emitLength = buffer.length - ReasoningScan.longestSuffixPrefixOf(buffer, closeTag)
                                 if (emitLength > 0) {
-                                    emit(
-                                        StreamEvent.ReasoningDelta(
-                                            rid,
-                                            buffer.substring(0, emitLength),
-                                            event.providerMetadata
-                                        )
-                                    )
+                                    publish(event.id, buffer.substring(0, emitLength), event.providerMetadata)
                                     buffer.deleteRange(0, emitLength)
                                 }
                                 break
                             }
                             if (closeIdx > 0) {
-                                emit(
-                                    StreamEvent.ReasoningDelta(
-                                        rid,
-                                        buffer.substring(0, closeIdx),
-                                        event.providerMetadata
-                                    )
-                                )
+                                publish(event.id, buffer.substring(0, closeIdx), event.providerMetadata)
                             }
                             emit(StreamEvent.ReasoningEnd(rid, event.providerMetadata))
                             buffer.deleteRange(0, closeIdx + closeTag.length)
-                            if (separator.isNotEmpty()) {
-                                emit(
-                                    StreamEvent.TextDelta(event.id, separator, event.providerMetadata)
-                                )
-                            }
                             inReasoning = false
                             reasoningId = null
+                            afterSwitch = true
                         }
                     }
                 }
                 is StreamEvent.TextEnd -> {
                     emitBufferedText(event.id)
+                    closeOpenReasoning()
                     emit(event)
                 }
                 is StreamEvent.StreamStart,
@@ -213,6 +226,7 @@ public fun ExtractReasoningMiddleware(
             }
         }
         emitBufferedText(lastTextId)
+        closeOpenReasoning()
     }
 
     private fun extractReasoning(text: String): Pair<String, String> {

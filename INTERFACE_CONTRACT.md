@@ -368,6 +368,14 @@ of producing a normal abort completion for the step.
   `GoogleTools`, `XaiTools`, `AzureOpenAITools`, and `GroqTools` are
   `@Poko class` value-semantics types; field access remains, but public
   `copy()` / `componentN()` ABI is intentionally absent.
+- **Closure-holding provider settings are plain classes, not `@Poko`.**
+  `GoogleGenerativeAIProviderSettings` holds a `generateId` lambda, so it keeps
+  Kotlin's identity equality rather than a value equality that would compare
+  closures. **Breaking in Unreleased:** it loses the generated `equals` /
+  `hashCode` / `toString` from the ABI dump; nothing else about the type
+  changes. Its `generateId` is `@Transient`, so the type serialises instead of
+  throwing on the `Function0` polymorphic fallback. The same law applies to any
+  settings type that grows a function-typed field.
 - Provider settings on the construct-type builder track
   (`CohereProviderSettings`, `DeepgramProviderSettings`,
   `AssemblyAIProviderSettings`, `GladiaProviderSettings`,

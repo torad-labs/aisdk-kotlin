@@ -112,6 +112,19 @@ public class AgentSession<TContext, TOutput>(
         lastCallRef.store(CallState(options, abortSignal, streaming))
     }
 
+    /**
+     * Writes only while [active] still holds. The ownership check runs INSIDE the CAS block,
+     * so a job superseded between check and write loses the compare-and-set, re-evaluates
+     * [active] on the retry, and yields to the newer submit instead of clobbering it.
+     * Checking outside the block leaves that window open on a multithreaded dispatcher.
+     */
+    private fun updateIfActive(
+        active: () -> Boolean,
+        block: (AgentSessionState<TOutput>) -> AgentSessionState<TOutput>,
+    ) {
+        mutableState.update { if (active()) block(it) else it }
+    }
+
     /** @since 0.3.0-beta01 */
     public fun submit(
         prompt: String? = null,
@@ -120,6 +133,11 @@ public class AgentSession<TContext, TOutput>(
         abortSignal: AbortSignal = AbortSignalNever,
     ): Job {
         currentJobRef.load()?.cancel()
+        // Disown the superseded job BEFORE publishing this submit's state (mirroring
+        // cancel()/reset()): until launchSession claims ownership its `active` guard would
+        // still read true, and cancellation cannot stop its check→write run — that run has
+        // no suspension point.
+        currentJobRef.store(null)
         rememberCall(options, abortSignal, streaming = false)
         val visibleMessages = visibleMessages(messages, prompt)
         mutableState.update {
@@ -141,14 +159,14 @@ public class AgentSession<TContext, TOutput>(
                 options = options,
                 abortSignal = effectiveAbortSignal,
             ).first()
-            if (active()) {
+            updateIfActive(active) { current ->
                 // An abort that surfaces as a returned (partial) result rather than a
                 // thrown CancellationException must still settle Cancelled — mirroring
                 // submitStreaming's StreamEvent.Abort handling — not commit it as Ready.
                 if (effectiveAbortSignal.isAborted) {
-                    mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
+                    current.copy(status = AgentSessionStatus.Cancelled)
                 } else {
-                    mutableState.value = AgentSessionState(
+                    AgentSessionState(
                         messages = result.messages,
                         status = if (result.pendingApprovals.isEmpty()) {
                             AgentSessionStatus.Ready
@@ -173,6 +191,8 @@ public class AgentSession<TContext, TOutput>(
         abortSignal: AbortSignal = AbortSignalNever,
     ): Job {
         currentJobRef.load()?.cancel()
+        // See submit(): disown before publishing, so a superseded job cannot clobber.
+        currentJobRef.store(null)
         rememberCall(options, abortSignal, streaming = true)
         val visibleMessages = visibleMessages(messages, prompt)
         mutableState.update {
@@ -254,8 +274,7 @@ public class AgentSession<TContext, TOutput>(
             }
 
             fun render(newStatus: AgentSessionStatus) {
-                if (!active()) return
-                mutableState.update {
+                updateIfActive(active) {
                     it.copy(
                         status = newStatus,
                         text = text.toString(),
@@ -403,20 +422,16 @@ public class AgentSession<TContext, TOutput>(
                         )
                     }
                     StreamEvent.Abort -> {
-                        if (active()) {
-                            mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
-                        }
+                        updateIfActive(active) { it.copy(status = AgentSessionStatus.Cancelled) }
                     }
                     is StreamEvent.Error -> {
-                        if (active()) {
-                            mutableState.update {
-                                it.copy(
-                                    status = AgentSessionStatus.Error,
-                                    // Chain event.cause (matches the generate() path) so the host
-                                    // keeps the root exception, not just the message string.
-                                    error = UiMessageStreamError(event.message, event.cause),
-                                )
-                            }
+                        updateIfActive(active) {
+                            it.copy(
+                                status = AgentSessionStatus.Error,
+                                // Chain event.cause (matches the generate() path) so the host
+                                // keeps the root exception, not just the message string.
+                                error = UiMessageStreamError(event.message, event.cause),
+                            )
                         }
                     }
                     // A new step begins: everything accumulated so far belongs to the step that
@@ -537,14 +552,14 @@ public class AgentSession<TContext, TOutput>(
             try {
                 block(controller.signal) { job === currentJobRef.load() }
             } catch (error: CancellationException) {
-                if (job === currentJobRef.load()) {
-                    mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
+                updateIfActive({ job === currentJobRef.load() }) {
+                    it.copy(status = AgentSessionStatus.Cancelled)
                 }
                 throw error
             } catch (error: Throwable) {
                 CancellationExceptions.asCancellationExceptionOrNull(error)?.let { throw it }
-                if (job === currentJobRef.load()) {
-                    mutableState.update { it.copy(status = AgentSessionStatus.Error, error = error) }
+                updateIfActive({ job === currentJobRef.load() }) {
+                    it.copy(status = AgentSessionStatus.Error, error = error)
                 }
             }
         }

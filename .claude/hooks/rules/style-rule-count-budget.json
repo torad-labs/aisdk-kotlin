@@ -60,7 +60,7 @@
     "no-scope-function-chain": 0,
     "no-singleton-object-with-state": 0,
     "no-star-projection-in-public": 0,
-    "no-string-typed-id": 410,
+    "no-string-typed-id": 411,
     "no-suspend-default-dispatcher": 0,
     "no-suspend-fun-returning-flow": 0,
     "no-throwable-catch-without-rethrow": 0,

@@ -1,6 +1,7 @@
 package ai.torad.aisdk.protocol
 
 import ai.torad.aisdk.ParseOpenAIToolInput
+import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.WireDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -30,4 +31,20 @@ internal object ProtocolJson {
      */
     fun toolInput(value: JsonElement): JsonElement =
         (value as? JsonPrimitive)?.takeIf { it.isString }?.let { ParseOpenAIToolInput(it.content) } ?: value
+
+    /**
+     * v3 splices BOTH source variants into a single `type: "source"` part discriminated by
+     * `sourceType` (`url` | `document`); `source-url`/`source-document` are the UI-layer names,
+     * accepted here as aliases. Returns null for an unrecognized discriminator so the caller
+     * falls through to its raw passthrough rather than guessing a variant.
+     */
+    fun sourceType(type: String, obj: JsonObject): StreamEvent.SourcePart.SourceType? = when (type) {
+        "source-url" -> StreamEvent.SourcePart.SourceType.Url
+        "source-document" -> StreamEvent.SourcePart.SourceType.Document
+        else -> when ((obj["sourceType"] as? JsonPrimitive)?.contentOrNull) {
+            "url" -> StreamEvent.SourcePart.SourceType.Url
+            "document" -> StreamEvent.SourcePart.SourceType.Document
+            else -> null
+        }
+    }
 }

@@ -38,6 +38,7 @@ class SimulateStreamingTest {
     private class GenerateOnlyModel(
         private val text: String,
         private val toolCalls: List<ContentPart.ToolCall> = emptyList(),
+        private val mediaParts: List<ContentPart> = emptyList(),
     ) : LanguageModel {
         override val modelId: String = "test/generate-only"
 
@@ -47,6 +48,11 @@ class SimulateStreamingTest {
                 toolCalls = toolCalls,
                 finishReason = FinishReason.Stop,
                 usage = Usage(promptTokens = PROMPT_TOK_FIXTURE, completionTokens = text.length),
+                content = buildList {
+                    if (text.isNotEmpty()) add(ContentPart.Text(text))
+                    addAll(mediaParts)
+                    addAll(toolCalls)
+                },
             )
 
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
@@ -153,6 +159,57 @@ class SimulateStreamingTest {
             assertTrue(events.none { it is StreamEvent.TextEnd }, "no TextEnd for empty text")
             assertTrue(events.any { it is StreamEvent.StepFinish }, "StepFinish still emits")
             assertTrue(events.any { it is StreamEvent.Finish }, "Finish still emits")
+        }
+
+    @Test
+    fun `given a generate-only model producing files sources and images when wrapped then they replay on the stream`() =
+        runTest {
+            // GIVEN — v6 forwards every non-text, non-reasoning content part verbatim
+            // (`simulate-streaming-middleware.ts` default branch); v3's prompt shape has no
+            // image part, so an image replays as the stream's file event.
+            val model = GenerateOnlyModel(
+                text = "here you go",
+                mediaParts = listOf(
+                    ContentPart.File(mediaType = "application/pdf", base64 = "cGRm"),
+                    ContentPart.Source(
+                        sourceType = StreamEvent.SourcePart.SourceType.Url,
+                        sourceId = "src_1",
+                        url = "https://example.test/cite",
+                        title = "Citation",
+                    ),
+                    ContentPart.Image(mediaType = "image/png", base64 = "aW1n"),
+                ),
+            )
+            val wrapped = WrapLanguageModel(model, listOf(SimulateStreamingMiddleware()))
+
+            // WHEN
+            val events = drainAllItems(
+                wrapped.stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    }
+                ),
+            )
+
+            // THEN
+            val files = events.filterIsInstance<StreamEvent.FilePart>()
+            assertEquals(2, files.size, "both the file part and the image part replay as file events")
+            assertEquals("application/pdf", files[0].mediaType)
+            assertEquals("cGRm", files[0].base64)
+            assertEquals("image/png", files[1].mediaType)
+            assertEquals("aW1n", files[1].base64)
+
+            val source = events.filterIsInstance<StreamEvent.SourcePart>().single()
+            assertEquals("src_1", source.id)
+            assertEquals("https://example.test/cite", source.url)
+            assertEquals("Citation", source.title)
+
+            // media replays before the terminal events
+            val stepFinishIdx = events.indexOfFirst { it is StreamEvent.StepFinish }
+            assertTrue(
+                events.indexOf(source) < stepFinishIdx,
+                "media events must land before StepFinish",
+            )
         }
 }
 

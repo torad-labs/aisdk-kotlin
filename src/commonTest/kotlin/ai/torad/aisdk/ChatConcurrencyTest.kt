@@ -153,6 +153,46 @@ class ChatConcurrencyTest {
     }
 
     @Test
+    fun `stop aborts the request without tearing down the collecting coroutine`() = runTest {
+        val entered = CompletableDeferred<Unit>()
+        var calls = 0
+        val chat = Chat(
+            transport = DirectChatTransport {
+                val n = ++calls
+                flow {
+                    if (n == 1) {
+                        entered.complete(Unit)
+                        CompletableDeferred<Unit>().await() // parks until stop() aborts it
+                    } else {
+                        emit(assistant("a2", "reply2"))
+                    }
+                }
+            },
+        )
+
+        var reachedAfterCollect = false
+        var secondSendCompleted = false
+        val job = launch {
+            chat.sendMessage(user("u1", "ping")).collect {}
+            reachedAfterCollect = true
+            chat.sendMessage(user("u2", "again")).collect {}
+            secondSendCompleted = true
+        }
+
+        entered.await()
+        chat.stop()
+        job.join()
+
+        // stop() is a request abort (upstream aborts an AbortController), not a teardown
+        // of a coroutine the library does not own: everything the caller sequenced after
+        // collect must still run, and the same coroutine must be able to send again.
+        assertTrue(reachedAfterCollect, "stop() must not cancel the caller's coroutine")
+        assertTrue(secondSendCompleted, "the collecting coroutine must still be able to send")
+        assertTrue(!job.isCancelled, "the caller's coroutine must complete normally")
+        assertEquals(ChatStatus.Ready, chat.status)
+    }
+
+    @Test
     fun `cancelled send rethrows cancellation without entering error state`() = runTest {
         val chat = Chat(
             transport = DirectChatTransport {

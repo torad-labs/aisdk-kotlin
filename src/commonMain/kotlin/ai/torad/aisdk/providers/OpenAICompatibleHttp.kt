@@ -204,6 +204,7 @@ internal abstract class OpenAICompatibleHttpModel(
     protected fun chatResultFromJson(
         value: JsonElement,
         provider: String,
+        providerKey: String,
         requestBody: JsonElement,
         responseHeaders: Map<String, String>,
         responseBody: JsonElement,
@@ -272,13 +273,13 @@ internal abstract class OpenAICompatibleHttpModel(
                         )
                     ),
                     providerMetadata = ThoughtSignatureMetadata(callObj)?.let {
-                        ProviderMetadata.Raw(JsonObject(it))
+                        ProviderMetadata.Raw(JsonObject(mapOf(providerKey to JsonObject(it))))
                     } ?: ProviderMetadata.None,
                 )
             }
         content += toolCalls
         val finishReason = FinishReasonFromOpenAI((choice["finish_reason"] as? JsonPrimitive)?.contentOrNull)
-        val providerMetadata = JsonObject(openAIProviderMetadata(obj["providerMetadata"], "openaiCompatible"))
+        val providerMetadata = JsonObject(openAIProviderMetadata(obj["providerMetadata"], providerKey))
             .let { metadata ->
                 val details = JsonAccess.obj(obj, "usage")?.let { JsonAccess.obj(it, "completion_tokens_details") }
                 val tokenMetadata = buildJsonObject {
@@ -292,7 +293,7 @@ internal abstract class OpenAICompatibleHttpModel(
                 if (tokenMetadata.isEmpty()) {
                     metadata
                 } else {
-                    metadata.deepMergedWith(JsonObject(mapOf("openaiCompatible" to tokenMetadata)))
+                    metadata.deepMergedWith(JsonObject(mapOf(providerKey to tokenMetadata)))
                 }
             }
         return LanguageModelResult(

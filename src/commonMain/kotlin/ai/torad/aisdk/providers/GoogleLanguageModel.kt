@@ -695,6 +695,10 @@ private class GoogleStreamState(
         candidate["safetyRatings"]?.let { providerMetadata["safetyRatings"] = it }
         candidate["finishMessage"]?.let { providerMetadata["finishMessage"] = it }
         val parts = ((JsonAccess.obj(candidate, "content"))?.get("parts") as? JsonArray).orEmpty()
+        // Each wire-decode failure below returns `events + Error`, never a bare `listOf(Error)`:
+        // discarding this chunk's already-built events did NOT roll back the state that produced
+        // them (textId/reasoningId/blockCounter/hasToolCalls survive) and the caller keeps
+        // collecting past an Error, so textId outlived a TextStart the consumer never received.
         for ((index, part) in parts.withIndex()) {
             val obj = try {
                 WireDecoder.objectValue(
@@ -704,7 +708,7 @@ private class GoogleStreamState(
                     "$.candidates[0].content.parts[$index]"
                 )
             } catch (error: WireDecodeException) {
-                return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
             }
             // Mirrors googleLanguageResult: the code_execution provider tool arrives as
             // executableCode + codeExecutionResult parts. They matched none of the branches
@@ -738,7 +742,7 @@ private class GoogleStreamState(
                     "$.candidates[0].content.parts[$index]"
                 )
             } catch (error: WireDecodeException) {
-                return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
             }
             text?.let {
                 if ((obj["thought"] as? JsonPrimitive)?.booleanOrNull == true) {
@@ -772,7 +776,7 @@ private class GoogleStreamState(
                         "$.candidates[0].content.parts[$index].functionCall"
                     )
                 } catch (error: WireDecodeException) {
-                    return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                    return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
                 }
                 val id = (call["id"] as? JsonPrimitive)?.contentOrNull ?: idGenerator()
                 val name = try {
@@ -784,7 +788,7 @@ private class GoogleStreamState(
                         "$.candidates[0].content.parts[$index].functionCall"
                     )
                 } catch (error: WireDecodeException) {
-                    return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                    return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
                 }
                 val input = call["args"] ?: JsonObject(emptyMap())
                 hasToolCalls = true
@@ -805,7 +809,7 @@ private class GoogleStreamState(
                         "$.candidates[0].content.parts[$index].inlineData"
                     )
                 } catch (error: WireDecodeException) {
-                    return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                    return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
                 }
                 events += StreamEvent.FilePart(
                     id = generateId(),
@@ -813,7 +817,7 @@ private class GoogleStreamState(
                     base64 = try {
                         WireDecoder.requiredString(data, "data", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")
                     } catch (error: WireDecodeException) {
-                        return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                        return events + StreamEvent.Error(error.message ?: "Google stream protocol error")
                     },
                     providerMetadata = GooglePartMetadata(obj)?.let {
                         ProviderMetadata.Raw(JsonObject(it))

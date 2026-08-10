@@ -92,6 +92,17 @@ class RedactorTest {
     }
 
     @Test
+    fun `non-ascii prose is not mistaken for base64`() {
+        // Base64 and base64url are ASCII-only alphabets (RFC 4648), so a Unicode-aware charset
+        // test buys no credential coverage and costs diagnostics: this 75-char Japanese sentence
+        // sits in the (minBase64Length, maxStringLength] window and has no space or punctuation
+        // to fail the charset check, so it was summarized away as a base64 blob.
+        val prose = "このモデルは長い文章を生成しますが診断のために本文をそのまま残すことが" +
+            "非常に有用ですユーザーの入力内容を確認する必要がありますので削除しないでください"
+        assertEquals(prose, redactor.redactText(prose))
+    }
+
+    @Test
     fun `non-sensitive primitives pass through`() {
         assertEquals(JsonPrimitive("hello"), redactor.redactJson(JsonPrimitive("hello")))
         assertEquals(JsonPrimitive(42), redactor.redactJson(JsonPrimitive(42)))
