@@ -2,6 +2,7 @@
 
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.XAI_VERSION
+import ai.torad.aisdk.providers.XSearch
 import ai.torad.aisdk.providers.Xai
 import ai.torad.aisdk.providers.XaiProviderSettings
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
@@ -222,6 +223,79 @@ class XaiProviderTest {
             assertEquals(254, usage.outputTokens.text)
             assertEquals(10, usage.outputTokens.reasoning)
         }
+    }
+
+    @Test
+    fun `chat stream surfaces citations as source events`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"id":"chat-cite","choices":[{"delta":{"content":"hello"}}]}
+
+                            data: {"id":"chat-cite","choices":[{"finish_reason":"stop"}],"citations":["https://example.com/source1","https://example.com/source2"]}
+
+                            data: [DONE]
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
+
+        val events = drainAllItems(
+            provider.chat(ModelId("grok-3")).stream(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            )
+        )
+
+        val sources = events.filterIsInstance<StreamEvent.SourcePart>()
+        assertEquals(2, sources.size)
+        assertEquals(StreamEvent.SourcePart.SourceType.Url, sources[0].sourceType)
+        assertEquals("https://example.com/source1", sources[0].url)
+        assertEquals("https://example.com/source2", sources[1].url)
+    }
+
+    @Test
+    fun `chat streamResult surfaces citations as source events`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"id":"chat-cite","choices":[{"delta":{"content":"hello"}}]}
+
+                            data: {"id":"chat-cite","choices":[{"finish_reason":"stop"}],"citations":["https://example.com/source1"]}
+
+                            data: [DONE]
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
+
+        val events = drainAllItems(
+            provider.chat(ModelId("grok-3")).streamResult(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                }
+            ).stream
+        )
+
+        val source = events.filterIsInstance<StreamEvent.SourcePart>().single()
+        assertEquals("https://example.com/source1", source.url)
     }
 
     @Test
@@ -773,6 +847,56 @@ class XaiProviderTest {
         assertProviderTool(provider.tools.xSearch, "x_search", "xai.x_search")
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }
+    }
+
+    @Test
+    fun `responses path keeps args of xAI provider tools the mapping does not model`() = runTest {
+        // x_search / view_image / view_x_video are vended by this SDK but have no field-by-field
+        // branch in the Open Responses mapping. Passing the type through without the caller's args
+        // silently drops constraints like allowed_x_handles: the request still succeeds and the
+        // model searches everything the caller asked it not to.
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/responses" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"resp-1",
+                              "created_at":1780000001,
+                              "model":"grok-4",
+                              "output":[
+                                {"type":"message","id":"msg-1","role":"assistant","content":[{"type":"output_text","text":"ok"}]}
+                              ],
+                              "usage":{"input_tokens":3,"output_tokens":4}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
+        val xSearch = XSearch(
+            buildJsonObject {
+                put("allowed_x_handles", buildJsonArray { add(JsonPrimitive("grok")) })
+            },
+        )
+        provider.responses(ModelId("grok-4")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hi")))
+                tools(ToolSet<Any?>(mapOf(xSearch.name to xSearch)).descriptors)
+            },
+        )
+
+        val tool = fixture.calls.single().requestBodyJson.jsonObject["tools"]?.jsonArray?.single()?.jsonObject
+        assertEquals("x_search", tool?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            listOf("grok"),
+            tool?.get("allowed_x_handles")?.jsonArray?.map { it.jsonPrimitive.content },
+            "x_search args must reach the wire, not be dropped: $tool",
+        )
     }
 
     private fun assertProviderTool(tool: Tool<JsonElement, JsonElement, Any?>, name: String, providerToolId: String) {

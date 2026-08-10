@@ -4,6 +4,7 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import io.ktor.client.HttpClient
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonArray
@@ -35,13 +36,15 @@ internal class ProdiaLanguageModel(
                 }
             )
         }
-        val response = settings.prodiaPostMultipart(
-            client = client,
-            url = "${settings.baseURL.trimEnd('/')}/job?price=true",
-            body = body,
-            input = image,
-            accept = "multipart/form-data",
-            headers = settings.prodiaHeaders(params.headers),
+        val response = settings.prodiaMultipart(
+            settings.prodiaPostMultipart(
+                client = client,
+                url = "${settings.baseURL.trimEnd('/')}/job?price=true",
+                body = body,
+                input = image,
+                accept = "multipart/form-data",
+                headers = settings.prodiaHeaders(params.headers),
+            )
         )
         val content = buildList {
             response.text?.takeIf { it.isNotEmpty() }?.let { add(ContentPart.Text(it)) }
@@ -162,12 +165,14 @@ internal class ProdiaImageModel(
                 }
             )
         }
-        val response = settings.prodiaPostJsonForMultipart(
-            client = client,
-            url = "${settings.baseURL.trimEnd('/')}/job?price=true",
-            body = body,
-            accept = "multipart/form-data; image/png",
-            headers = settings.prodiaHeaders(params.headers),
+        val response = settings.prodiaMultipart(
+            settings.prodiaRequest(
+                client = client,
+                url = "${settings.baseURL.trimEnd('/')}/job?price=true",
+                headers = settings.prodiaHeaders(params.headers),
+                body = body,
+                accept = "multipart/form-data; image/png",
+            )
         )
         val image = response.files.firstOrNull { it.mediaType.startsWith("image/") }
             ?: throw NoImageGeneratedError("Prodia multipart response missing output image")
@@ -223,41 +228,127 @@ internal class ProdiaVideoModel(
             )
         }
         val input = params.image?.let { FromGeneratedFile(client, it) }
+        val headers = settings.prodiaHeaders(params.headers)
         // Docs offer /job/async for long-running video jobs; sync /job can time out.
         val useAsync = (options["async"] as? JsonPrimitive)?.contentOrNull?.lowercase() != "false"
-        val jobPath = if (useAsync) "/job/async" else "/job"
-        val response = if (input == null) {
-            settings.prodiaPostJsonForMultipart(
-                client = client,
-                url = "${settings.baseURL.trimEnd('/')}$jobPath?price=true",
-                body = body,
-                accept = "multipart/form-data; video/mp4",
-                headers = settings.prodiaHeaders(params.headers),
-            )
-        } else {
-            settings.prodiaPostMultipart(
-                client = client,
-                url = "${settings.baseURL.trimEnd('/')}$jobPath?price=true",
+        if (useAsync) return generateAsync(body, input, headers)
+        val response = settings.prodiaMultipart(
+            submitJob(
+                url = "${settings.baseURL.trimEnd('/')}/job?price=true",
                 body = body,
                 input = input,
                 accept = "multipart/form-data; video/mp4",
-                headers = settings.prodiaHeaders(params.headers),
+                headers = headers,
             )
-        }
+        )
         val video = response.files.firstOrNull { it.mediaType.startsWith("video/") }
             ?: throw NoVideoGeneratedError("Prodia multipart response missing output video")
-        return VideoModelResult(
+        return videoResult(video, response.headers, response.job)
+    }
+
+    /**
+     * Async jobs answer the POST with `201 Created` and the job JSON while they are still
+     * processing; the caller polls `job.state.current` and then downloads the output file.
+     */
+    private suspend fun generateAsync(
+        body: JsonObject,
+        input: ProdiaInputFile?,
+        headers: Map<String, String>,
+    ): VideoModelResult {
+        val asyncBase = "${settings.baseURL.trimEnd('/')}/job/async"
+        val submitted = submitJob(
+            url = "$asyncBase?price=true",
+            body = body,
+            input = input,
+            accept = "application/json",
+            headers = headers,
+        ).json() as? JsonObject ?: JsonObject(emptyMap())
+        val jobId = (submitted["id"] as? JsonPrimitive)?.contentOrNull
+            ?: throw InvalidResponseDataError(submitted, "Prodia async job response is missing id")
+        val jobUrl = "$asyncBase/$jobId"
+        val state = awaitJobState(
+            jobUrl = jobUrl,
+            headers = headers,
+            initialState = (JsonAccess.obj(submitted, "state")?.get("current") as? JsonPrimitive)?.contentOrNull,
+        )
+        if (state != "processed") throw NoVideoGeneratedError("Prodia async job $jobId ended in state: $state")
+        val job = settings.prodiaRequest(client, "$jobUrl/job.json", headers).json() as? JsonObject
+            ?: JsonObject(emptyMap())
+        val output = downloadOutput(jobUrl, headers)
+        val video = GeneratedFile(
+            mediaType = output.contentType.substringBefore(';').trim().takeIf { it.startsWith("video/") }
+                ?: "video/mp4",
+            base64 = Base64Codec.encode(output.bytes),
+        )
+        return videoResult(video, output.headers, job)
+    }
+
+    private suspend fun submitJob(
+        url: String,
+        body: JsonObject,
+        input: ProdiaInputFile?,
+        accept: String,
+        headers: Map<String, String>,
+    ): ProdiaRawResponse =
+        if (input == null) {
+            settings.prodiaRequest(client = client, url = url, headers = headers, body = body, accept = accept)
+        } else {
+            settings.prodiaPostMultipart(
+                client = client,
+                url = url,
+                body = body,
+                input = input,
+                accept = accept,
+                headers = headers,
+            )
+        }
+
+    private suspend fun downloadOutput(jobUrl: String, headers: Map<String, String>): ProdiaRawResponse {
+        val filename = (settings.prodiaRequest(client, "$jobUrl/output", headers).json() as? JsonArray)
+            ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+            ?.firstOrNull { isProdiaVideoOutputName(it) }
+            ?: throw NoVideoGeneratedError("Prodia async job produced no video output")
+        return settings.prodiaRequest(client, "$jobUrl/output/$filename", headers)
+    }
+
+    /**
+     * The output listing is server-controlled and its entries are interpolated into a request path
+     * that carries the caller's credentials, so a bare extension check is not enough: `..` or a
+     * separator would walk the request off the job namespace and send the auth headers to whatever
+     * the normalized path resolves to. Require a plain filename that also looks like a video.
+     */
+    private fun isProdiaVideoOutputName(candidate: String): Boolean {
+        val isPlainFilename = '/' !in candidate && '\\' !in candidate && candidate != "." && candidate != ".."
+        return isPlainFilename && MediaTypes.detect(filename = candidate)?.startsWith("video/") == true
+    }
+
+    private suspend fun awaitJobState(jobUrl: String, headers: Map<String, String>, initialState: String?): String {
+        var state = initialState.orEmpty()
+        repeat(PRODIA_ASYNC_MAX_POLL_ATTEMPTS) {
+            if (state == "processed" || state == "failed") return state
+            delay(PRODIA_ASYNC_POLL_INTERVAL_MILLIS)
+            state = settings.prodiaRequest(client, "$jobUrl/job.state.current", headers).bytes.decodeToString().trim()
+        }
+        throw NoVideoGeneratedError("Prodia async job polling timed out while the job was still $state")
+    }
+
+    private fun videoResult(video: GeneratedFile, headers: Map<String, String>, job: JsonObject): VideoModelResult =
+        VideoModelResult(
             videos = listOf(video),
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
+            response = LanguageModelResponseMetadata(modelId = modelId, headers = headers),
             providerMetadata = ProviderMetadata.Raw(
                 JsonObject(
                     mapOf(
                         "prodia" to buildJsonObject {
-                            put("videos", JsonArray(listOf(response.jobMetadata())))
+                            put("videos", JsonArray(listOf(ProdiaJob.metadata(job))))
                         },
                     )
                 )
             ),
         )
-    }
 }
+
+// The plain-text job.state.current poll is cheap; the docs recommend a 1-2s cadence and
+// async results expire an hour after completion, so cap the wait well below that.
+private const val PRODIA_ASYNC_POLL_INTERVAL_MILLIS: Long = 2_000L
+private const val PRODIA_ASYNC_MAX_POLL_ATTEMPTS: Int = 450

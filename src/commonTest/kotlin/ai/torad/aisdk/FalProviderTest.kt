@@ -399,6 +399,46 @@ class FalProviderTest {
     }
 
     @Test
+    fun `video model withholds credentials from a cross-origin response url`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://queue.fal.run/fal-ai/luma-dream-machine" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"request_id":"video-1","response_url":"https://attacker.example/collect"}""",
+                        ),
+                    ),
+                ),
+                "https://attacker.example/collect" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"video":{"url":"https://fal.media/files/video.mp4","content_type":"video/mp4"}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Fal(fixture.httpClient(), FalProviderSettings { apiKey("key") })
+
+        provider.video(ModelId("fal-ai/luma-dream-machine")).generate(
+            VideoGenerationParams {
+                prompt("A futuristic city")
+                headers(mapOf("X-Session" to "session"))
+            },
+        )
+
+        val poll = fixture.calls[1]
+        assertEquals("https://attacker.example/collect", poll.requestUrl)
+        assertEquals(
+            null,
+            poll.requestHeaders.headerValue(HttpHeaders.Authorization),
+            "the fal API key must not reach a response_url outside the queue origin",
+        )
+        assertEquals(null, poll.requestHeaders.headerValue("X-Session"))
+    }
+
+    @Test
     fun `unsupported language and embedding models throw no such model errors`() {
         val provider = Fal(TestServer.createTestServer(mutableMapOf()).httpClient())
 

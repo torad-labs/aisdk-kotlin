@@ -5,6 +5,8 @@ import ai.torad.aisdk.MessageRole
 import ai.torad.aisdk.ModelMessage
 import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.StreamEvent
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * UI-to-model message conversion. Groups [convertToModelMessages] and its
@@ -36,9 +38,12 @@ public object ModelMessageConversion {
      *     - `ApprovalRequired` → `ContentPart.ToolApprovalRequest`
      *     - `InputStreaming` / `InputAvailable` are INCOMPLETE — drop
      *       silently if [ignoreIncompleteToolCalls], otherwise throw.
-     *     - `Error` → drop. The tool failed; the model already saw a
-     *       `ContentPart.ToolResult` with `isError=true` at the time
-     *       (encoded by the agent loop), no useful re-send shape.
+     *     - `OutputError` → assistant carries `ContentPart.ToolCall`; a
+     *       SEPARATE `Tool`-role message carries a `ContentPart.ToolResult`
+     *       with `isError=true` and the recorded error text, so a resumed
+     *       model still sees that the attempt failed.
+     *     - `OutputDenied` → drop. The denial already replays as the
+     *       `ContentPart.ToolApprovalResponse` of the user-role marker.
      * - [UIMessagePart.StepStart], `Source`, `File`, `Error` → drop.
      *   No useful model-side representation, or out-of-scope for v0.
      *
@@ -60,9 +65,9 @@ public object ModelMessageConversion {
     ): List<ModelMessage> {
         val result = mutableListOf<ModelMessage>()
         for (uiMsg in messages) {
-            val approvalResponse = approvalResponseMessage(uiMsg)
-            if (approvalResponse != null) {
-                result.add(approvalResponse)
+            val toolResponse = approvalResponseMessage(uiMsg) ?: toolOutputMessage(uiMsg)
+            if (toolResponse != null) {
+                result.add(toolResponse)
                 continue
             }
             val role = when (uiMsg.role) {
@@ -135,6 +140,38 @@ public object ModelMessageConversion {
     }
 
     /**
+     * A client-executed tool's output as [Chat.addToolOutput] records it: a lone
+     * [UIMessagePart.ToolUI] with an output but NO input and no approval identity, appended
+     * as its own message. It replays as the `Tool`-role [ContentPart.ToolResult] the model
+     * expects — the generic path would demand the absent input and throw.
+     */
+    private fun toolOutputMessage(uiMsg: UIMessage): ModelMessage? {
+        val part = (uiMsg.parts.singleOrNull() as? UIMessagePart.ToolUI)?.takeIf {
+            uiMsg.role == UIMessageRole.User &&
+                it.approvalId == null &&
+                it.input == null &&
+                !it.preliminary &&
+                it.state == ToolCallState.OutputAvailable
+        }
+        val output = part?.output
+        return if (part == null || output == null) {
+            null
+        } else {
+            ModelMessage(
+                role = MessageRole.Tool,
+                content = listOf(
+                    ContentPart.ToolResult(
+                        toolCallId = part.toolCallId,
+                        toolName = part.toolName,
+                        output = output,
+                        providerMetadata = part.providerMetadata,
+                    ),
+                ),
+            )
+        }
+    }
+
+    /**
      * Per-part conversion. Extracted as a helper so
      * [convertToModelMessages] stays readable + so the static / dynamic
      * tool branches share one body. Returns nothing — emits via the
@@ -161,6 +198,7 @@ public object ModelMessageConversion {
                 state = part.state,
                 input = part.input,
                 output = part.output,
+                error = part.error,
                 flags = ToolConversionFlags(part.preliminary, ignoreIncompleteToolCalls),
                 approvalId = part.approvalId,
                 signature = part.signature,
@@ -175,6 +213,7 @@ public object ModelMessageConversion {
                 state = part.state,
                 input = part.input,
                 output = part.output,
+                error = part.error,
                 flags = ToolConversionFlags(part.preliminary, ignoreIncompleteToolCalls),
                 // Dynamic tool parts carry no approval identity (server-defined tools only).
                 approvalId = null,
@@ -231,6 +270,31 @@ public object ModelMessageConversion {
         -> null
     }
 
+    /**
+     * The tool-call plus `isError` tool-result an `OutputError` part replays as. The input can
+     * be absent when the failure predated a matching input event; an empty object keeps the
+     * pair well-formed instead of throwing.
+     */
+    private fun failedToolCallParts(
+        toolCallId: String,
+        toolName: String,
+        input: kotlinx.serialization.json.JsonElement?,
+        error: String?,
+        providerMetadata: ProviderMetadata,
+    ): Pair<ContentPart.ToolCall, ContentPart.ToolResult> =
+        ContentPart.ToolCall(
+            toolCallId = toolCallId,
+            toolName = toolName,
+            input = input ?: JsonObject(emptyMap()),
+            providerMetadata = providerMetadata,
+        ) to ContentPart.ToolResult(
+            toolCallId = toolCallId,
+            toolName = toolName,
+            output = JsonPrimitive(error ?: "unknown error"),
+            isError = true,
+            providerMetadata = providerMetadata,
+        )
+
     private data class ToolConversionFlags(
         val preliminary: Boolean,
         val ignoreIncompleteToolCalls: Boolean,
@@ -243,6 +307,7 @@ public object ModelMessageConversion {
         state: ToolCallState,
         input: kotlinx.serialization.json.JsonElement?,
         output: kotlinx.serialization.json.JsonElement?,
+        error: String?,
         flags: ToolConversionFlags,
         approvalId: String?,
         signature: String?,
@@ -297,10 +362,17 @@ public object ModelMessageConversion {
                         "set ignoreIncompleteToolCalls=true to drop these silently",
                 )
             }
-            // OutputError / OutputDenied don't re-flow to the model on
-            // resume — the original ToolResult / approval-denial outcome
-            // already landed in the persisted message log.
-            ToolCallState.OutputError, ToolCallState.OutputDenied -> Unit
+            // A failed tool MUST re-flow: on resume the UI history is the only record, so
+            // dropping the pair leaves the model free to re-issue the same failing call.
+            // Upstream emits tool-call + an `error-text` tool-result for `output-error`.
+            ToolCallState.OutputError -> {
+                val (call, failure) = failedToolCallParts(toolCallId, toolName, input, error, providerMetadata)
+                onContentPart(call)
+                onDeferredToolResult(failure)
+            }
+            // OutputDenied doesn't re-flow to the model on resume — the approval-denial
+            // outcome already landed in the persisted message log as a ToolApprovalResponse.
+            ToolCallState.OutputDenied -> Unit
         }
     }
 }

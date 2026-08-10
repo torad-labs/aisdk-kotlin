@@ -117,8 +117,16 @@ public class ChatSession(
     }
 
     /** @since 0.3.0-beta01 */
-    @JvmSynthetic public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
-        chat.resumeStream(headers)
+    @JvmSynthetic public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> = flow {
+        try {
+            chat.resumeStream(headers).collect { response ->
+                syncState()
+                emit(response)
+            }
+        } finally {
+            syncState()
+        }
+    }
 
     private fun syncState() {
         mutableState.value = chat.toState()

@@ -82,6 +82,44 @@ class ToolApprovalTest {
         experimental_toolApprovalSecret = "approval-secret".encodeToByteArray(),
     )
 
+    private fun twoGatedCallsAgent(executed: MutableList<String>) = TestToolLoopAgent<Unit, String>(
+        model = MockLanguageModel(
+            responses = listOf(
+                ai.torad.aisdk.providers.ScriptedResponse {
+                    events(
+                        listOf(
+                            StreamEvent.ToolCall("call_A", "send", buildJsonObject { put("message", "first") }),
+                            StreamEvent.ToolCall("call_B", "send", buildJsonObject { put("message", "second") }),
+                        ),
+                    )
+                    finishReason(FinishReason.ToolCalls)
+                },
+                ai.torad.aisdk.providers.ScriptedResponse {
+                    events(
+                        listOf(
+                            StreamEvent.TextStart("t1"),
+                            StreamEvent.TextDelta("t1", "done"),
+                            StreamEvent.TextEnd("t1"),
+                        ),
+                    )
+                },
+            ),
+        ),
+        instructions = "use send",
+        tools = ToolSet(
+            Tool<SendInput, SendResult, Unit>(
+                name = "send",
+                description = "send message",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+                needsApproval = { _, _ -> true },
+            ) { input ->
+                executed += input.message
+                SendResult(sent = true)
+            },
+        ),
+    )
+
     @Test
     fun `needsApproval_returns_pending_then_resumes_on_approval_response`() = runTest {
         var executed = false
@@ -121,6 +159,69 @@ class ToolApprovalTest {
         assertEquals("sent", resumed.text)
         assertEquals(FinishReason.Stop, resumed.finishReason)
         assertTrue(resumed.pendingApprovals.isEmpty())
+    }
+
+    @Test
+    fun `approval carrying the documented effective approval id executes the tool`() = runTest {
+        var executed = false
+        val sendTool = Tool<SendInput, SendResult, Unit>(
+            name = "send",
+            description = "send message",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+            needsApproval = { _, _ -> true },
+        ) { _ ->
+            executed = true
+            SendResult(sent = true)
+        }
+
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = MockLanguageModelToolThenText(
+                toolName = "send",
+                toolInput = MockToolInput("message" to "hey friend"),
+                finalText = "sent",
+            ),
+            instructions = "use send",
+            tools = ToolSet(sendTool),
+        )
+
+        val first = agent.generate(prompt = "trigger").first()
+        val pending = first.pendingApprovals.single()
+
+        // The SDK's own guidance (PendingApproval KDoc + ApprovalIds.effectiveApprovalId) says the
+        // host treats approvalId = toolCallId when the request carried none — so replaying THAT id
+        // must resolve the occurrence, exactly as the denial branch already does.
+        val approval = ToolApprovalResponseMessage(
+            toolCallId = pending.toolCallId,
+            approved = true,
+            approvalId = ApprovalIds.effectiveApprovalId(pending),
+        )
+        val resumed = agent.generate(messages = first.messages + approval).first()
+
+        assertEquals(true, executed, "tool executed after approval by effective approval id")
+        assertEquals("sent", resumed.text)
+    }
+
+    @Test
+    fun `approval responses appended as separate tool messages all apply`() = runTest {
+        val executed = mutableListOf<String>()
+        val agent = twoGatedCallsAgent(executed)
+
+        val first = agent.generate(prompt = "trigger").first()
+        assertEquals(2, first.pendingApprovals.size, "two gated calls in one step")
+
+        // The documented resume shape, built with the only public helper: one
+        // ToolApprovalResponseMessage per pending approval.
+        val resumeMessages = first.messages + first.pendingApprovals.map {
+            ToolApprovalResponseMessage(
+                toolCallId = it.toolCallId,
+                approved = true,
+                approvalId = it.approvalId,
+            )
+        }
+        agent.generate(messages = resumeMessages).first()
+
+        assertEquals(listOf("first", "second"), executed)
     }
 
     @Test

@@ -462,6 +462,9 @@ private const val GLADIA_BASE_URL: String = "https://api.gladia.io"
 private val gladiaDirectOptionMap: Map<String, String> = linkedMapOf(
     // language_config owns languages[] + code_switching (see putLanguageConfig). Do not emit
     // top-level detect_language / enable_code_switching — they are not on the current schema.
+    // Top-level per the docs' initiate-request schema — NOT under language_config.
+    "contextPrompt" to "context_prompt",
+    "displayMode" to "display_mode",
     "customVocabulary" to "custom_vocabulary",
     "callback" to "callback",
     "subtitles" to "subtitles",
@@ -598,14 +601,18 @@ private class GladiaTranscriptionModel(
     private suspend fun getJson(
         url: String,
         requestHeaders: Map<String, String>,
+        abortSignal: AbortSignal,
     ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = requestHeaders,
-            errorMessage = ::errorMessage,
-        )
+        AbortSignalRuntime.withAbortCancellation(abortSignal) {
+            HttpTransport.requestJson(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = requestHeaders,
+                errorMessage = ::errorMessage,
+                abortSignal = abortSignal,
+            )
+        }
 
     private suspend fun pollResult(
         resultUrl: String,
@@ -623,6 +630,7 @@ private class GladiaTranscriptionModel(
             val response = getJson(
                 url = resultUrl,
                 requestHeaders = pollHeaders,
+                abortSignal = abortSignal,
             )
             when ((response.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull) {
                 "done" -> return response

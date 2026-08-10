@@ -210,8 +210,12 @@ public class ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext>(
         defaultDescription = defaultDescription,
         supportsDeferredResults = supportsDeferredResults,
         options = ProviderToolFactoryOptions<TInput, TOutput, TContext> {
-            outputSerializer(outputSerializer)
-            outputSchema(outputSchema)
+            // The options builder REQUIRES an outputSerializer, so a caller who has to build
+            // options at all (to set execute, needsApproval, …) is forced to supply one — silently
+            // replacing it with the factory's would discard a serializer they had to write. The
+            // output SCHEMA is optional, so the factory's own stays the fallback, not an override.
+            outputSerializer(options.outputSerializer)
+            outputSchema(options.outputSchema ?: outputSchema)
             args(options.args)
             name(options.name)
             description(options.description)

@@ -1,7 +1,6 @@
 package ai.torad.aisdk
 
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -92,7 +91,7 @@ class MCPProtocolChaosTest {
             }
         )
 
-        assertFailsWith<TimeoutCancellationException> {
+        assertFailsWith<CallTimeoutError> {
             client.listTools(
                 options = MCPRequestOptions {
                     timeoutMillis(50)

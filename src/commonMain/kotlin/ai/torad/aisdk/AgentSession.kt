@@ -91,6 +91,16 @@ public class AgentSession<TContext, TOutput>(
         val tools: StreamingToolProjection,
     )
 
+    /** How much of each streaming accumulator has already been committed to a finished step's
+     *  messages, so the live projection only renders the CURRENT step. */
+    private data class StreamingStepBoundary(
+        val textLength: Int,
+        val extraAssistantParts: Int,
+        val toolCalls: Int,
+        val toolResults: Int,
+        val approvals: Int,
+    )
+
     private val lastCallRef = AtomicReference<CallState<TContext>>(
         CallState(null, AbortSignalNever, false),
     )
@@ -102,6 +112,19 @@ public class AgentSession<TContext, TOutput>(
         lastCallRef.store(CallState(options, abortSignal, streaming))
     }
 
+    /**
+     * Writes only while [active] still holds. The ownership check runs INSIDE the CAS block,
+     * so a job superseded between check and write loses the compare-and-set, re-evaluates
+     * [active] on the retry, and yields to the newer submit instead of clobbering it.
+     * Checking outside the block leaves that window open on a multithreaded dispatcher.
+     */
+    private fun updateIfActive(
+        active: () -> Boolean,
+        block: (AgentSessionState<TOutput>) -> AgentSessionState<TOutput>,
+    ) {
+        mutableState.update { if (active()) block(it) else it }
+    }
+
     /** @since 0.3.0-beta01 */
     public fun submit(
         prompt: String? = null,
@@ -110,6 +133,11 @@ public class AgentSession<TContext, TOutput>(
         abortSignal: AbortSignal = AbortSignalNever,
     ): Job {
         currentJobRef.load()?.cancel()
+        // Disown the superseded job BEFORE publishing this submit's state (mirroring
+        // cancel()/reset()): until launchSession claims ownership its `active` guard would
+        // still read true, and cancellation cannot stop its check→write run — that run has
+        // no suspension point.
+        currentJobRef.store(null)
         rememberCall(options, abortSignal, streaming = false)
         val visibleMessages = visibleMessages(messages, prompt)
         mutableState.update {
@@ -131,14 +159,14 @@ public class AgentSession<TContext, TOutput>(
                 options = options,
                 abortSignal = effectiveAbortSignal,
             ).first()
-            if (active()) {
+            updateIfActive(active) { current ->
                 // An abort that surfaces as a returned (partial) result rather than a
                 // thrown CancellationException must still settle Cancelled — mirroring
                 // submitStreaming's StreamEvent.Abort handling — not commit it as Ready.
                 if (effectiveAbortSignal.isAborted) {
-                    mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
+                    current.copy(status = AgentSessionStatus.Cancelled)
                 } else {
-                    mutableState.value = AgentSessionState(
+                    AgentSessionState(
                         messages = result.messages,
                         status = if (result.pendingApprovals.isEmpty()) {
                             AgentSessionStatus.Ready
@@ -163,6 +191,8 @@ public class AgentSession<TContext, TOutput>(
         abortSignal: AbortSignal = AbortSignalNever,
     ): Job {
         currentJobRef.load()?.cancel()
+        // See submit(): disown before publishing, so a superseded job cannot clobber.
+        currentJobRef.store(null)
         rememberCall(options, abortSignal, streaming = true)
         val visibleMessages = visibleMessages(messages, prompt)
         mutableState.update {
@@ -186,6 +216,14 @@ public class AgentSession<TContext, TOutput>(
             val toolCalls = mutableListOf<ContentPart.ToolCall>()
             val toolResults = mutableListOf<StreamingToolResultRecord>()
             val pendingApprovalRecords = mutableListOf<StreamingApprovalRecord>()
+            val committedMessages = mutableListOf<ModelMessage>()
+            var stepBoundary = StreamingStepBoundary(
+                textLength = 0,
+                extraAssistantParts = 0,
+                toolCalls = 0,
+                toolResults = 0,
+                approvals = 0,
+            )
 
             fun recordFinalToolResult(result: ContentPart.ToolResult) {
                 val provisionalIndex = toolResults.indexOfLast {
@@ -200,29 +238,50 @@ public class AgentSession<TContext, TOutput>(
                 }
             }
 
+            fun stepProjection(): StreamingMessageProjection = StreamingMessageProjection(
+                text = StreamingTextProjection(
+                    value = text.substring(stepBoundary.textLength),
+                    metadata = textMetadata,
+                ),
+                extraAssistantParts = extraAssistantParts.drop(stepBoundary.extraAssistantParts),
+                tools = StreamingToolProjection(
+                    calls = toolCalls.drop(stepBoundary.toolCalls),
+                    results = toolResults.drop(stepBoundary.toolResults).map { record -> record.result },
+                    approvals = StreamingApprovalProjection(
+                        records = pendingApprovalRecords.drop(stepBoundary.approvals),
+                    ),
+                ),
+            )
+
+            // Close off the finished step. A multi-step turn is one assistant/tool message pair PER
+            // STEP, in step order; without this boundary the whole turn collapsed into a single
+            // assistant message whose text concatenated every step and whose tool calls preceded the
+            // later step's answer — a reordered, lossy history that the next submit()/approve() feeds
+            // straight back to the model.
+            fun commitStep() {
+                committedMessages += streamingMessages(
+                    messages = emptyList(),
+                    projection = stepProjection(),
+                )
+                stepBoundary = StreamingStepBoundary(
+                    textLength = text.length,
+                    extraAssistantParts = extraAssistantParts.size,
+                    toolCalls = toolCalls.size,
+                    toolResults = toolResults.size,
+                    approvals = pendingApprovalRecords.size,
+                )
+                textMetadata = ProviderMetadata.None
+            }
+
             fun render(newStatus: AgentSessionStatus) {
-                if (!active()) return
-                mutableState.update {
+                updateIfActive(active) {
                     it.copy(
                         status = newStatus,
                         text = text.toString(),
                         pendingApprovals = pendingApprovalRecords.map { record -> record.approval },
                         messages = streamingMessages(
-                            messages = visibleMessages,
-                            projection = StreamingMessageProjection(
-                                text = StreamingTextProjection(
-                                    value = text.toString(),
-                                    metadata = textMetadata,
-                                ),
-                                extraAssistantParts = extraAssistantParts,
-                                tools = StreamingToolProjection(
-                                    calls = toolCalls.toList(),
-                                    results = toolResults.map { record -> record.result },
-                                    approvals = StreamingApprovalProjection(
-                                        records = pendingApprovalRecords.toList(),
-                                    ),
-                                ),
-                            ),
+                            messages = visibleMessages + committedMessages,
+                            projection = stepProjection(),
                         ),
                     )
                 }
@@ -363,25 +422,24 @@ public class AgentSession<TContext, TOutput>(
                         )
                     }
                     StreamEvent.Abort -> {
-                        if (active()) {
-                            mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
-                        }
+                        updateIfActive(active) { it.copy(status = AgentSessionStatus.Cancelled) }
                     }
                     is StreamEvent.Error -> {
-                        if (active()) {
-                            mutableState.update {
-                                it.copy(
-                                    status = AgentSessionStatus.Error,
-                                    // Chain event.cause (matches the generate() path) so the host
-                                    // keeps the root exception, not just the message string.
-                                    error = UiMessageStreamError(event.message, event.cause),
-                                )
-                            }
+                        updateIfActive(active) {
+                            it.copy(
+                                status = AgentSessionStatus.Error,
+                                // Chain event.cause (matches the generate() path) so the host
+                                // keeps the root exception, not just the message string.
+                                error = UiMessageStreamError(event.message, event.cause),
+                            )
                         }
                     }
+                    // A new step begins: everything accumulated so far belongs to the step that
+                    // just ended (or, on a resumed turn, to the approved tool executed before
+                    // step 1) and is committed as its own message(s).
+                    is StreamEvent.StepStart -> commitStep()
                     is StreamEvent.StreamStart,
                     is StreamEvent.ResponseMetadata,
-                    is StreamEvent.StepStart,
                     is StreamEvent.TextStart,
                     is StreamEvent.TextEnd,
                     is StreamEvent.Data,
@@ -452,6 +510,23 @@ public class AgentSession<TContext, TOutput>(
         val cs = lastCallRef.load()
         val resumeMessages = state.value.messages + response
         val resumeOptions = options ?: cs.options
+        val remaining = state.value.pendingApprovals.filterNot {
+            ApprovalIds.effectiveApprovalId(it) == ApprovalIds.effectiveApprovalId(approval)
+        }
+        // A step can gate several tools. Relaunching the loop after ONE answer would replay the
+        // still-unanswered tool calls to the provider with no tool_result (a 400 that wedges the
+        // conversation) and clear pendingApprovals, losing the handles to answer them. Record this
+        // response and stay paused until every pending approval has been answered.
+        if (remaining.isNotEmpty()) {
+            mutableState.update {
+                it.copy(
+                    messages = resumeMessages,
+                    pendingApprovals = remaining,
+                    status = AgentSessionStatus.AwaitingApproval,
+                )
+            }
+            return Job().apply { complete() }
+        }
         return if (cs.streaming) {
             submitStreaming(
                 messages = resumeMessages,
@@ -477,14 +552,14 @@ public class AgentSession<TContext, TOutput>(
             try {
                 block(controller.signal) { job === currentJobRef.load() }
             } catch (error: CancellationException) {
-                if (job === currentJobRef.load()) {
-                    mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
+                updateIfActive({ job === currentJobRef.load() }) {
+                    it.copy(status = AgentSessionStatus.Cancelled)
                 }
                 throw error
             } catch (error: Throwable) {
                 CancellationExceptions.asCancellationExceptionOrNull(error)?.let { throw it }
-                if (job === currentJobRef.load()) {
-                    mutableState.update { it.copy(status = AgentSessionStatus.Error, error = error) }
+                updateIfActive({ job === currentJobRef.load() }) {
+                    it.copy(status = AgentSessionStatus.Error, error = error)
                 }
             }
         }

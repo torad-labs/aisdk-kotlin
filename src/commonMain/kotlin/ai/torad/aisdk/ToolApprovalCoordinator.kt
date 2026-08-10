@@ -49,12 +49,20 @@ internal class ToolApprovalCoordinator<TContext>(
             preResolved: Pair<Tool<*, *, TContext>, Any?>?,
         ) -> ToolExecutionResult,
     ): Unit? {
-        val lastToolMsg = messages.lastOrNull { it.role == MessageRole.Tool } ?: return null
-        val approvals = lastToolMsg.content.filterIsInstance<ContentPart.ToolApprovalResponse>()
-        if (approvals.isEmpty()) return null
-
         val priorAssistantIndex = messages.indexOfLast { it.role == MessageRole.Assistant }
         if (priorAssistantIndex == -1) return null
+        // Every Tool message of THIS turn can carry approval responses: the only public helper
+        // (ToolApprovalResponseMessage) emits ONE single-part message per approval, so a host
+        // answering two gated calls appends two Tool messages. Reading just the last one silently
+        // dropped every earlier answer, leaving its tool call dangling for the next model turn.
+        val approvals = messages.asSequence()
+            .drop(priorAssistantIndex + 1)
+            .filter { it.role == MessageRole.Tool }
+            .flatMap { it.content.asSequence() }
+            .filterIsInstance<ContentPart.ToolApprovalResponse>()
+            .toList()
+        if (approvals.isEmpty()) return null
+
         val priorAssistantMsg = messages[priorAssistantIndex]
         val priorToolCalls = priorAssistantMsg.content.filterIsInstance<ContentPart.ToolCall>()
         if (priorToolCalls.isEmpty()) return null
@@ -225,8 +233,14 @@ internal class ToolApprovalCoordinator<TContext>(
     ): Int =
         if (approval.approvalId != null) {
             val approvalIdIndex = indexOfFirst { it.request?.approvalId == approval.approvalId }
-            if (approvalIdIndex != -1 || approval.approved) {
+            if (approvalIdIndex != -1) {
                 approvalIdIndex
+            } else if (approval.approved) {
+                // A request issued with approvalId = null has no explicit id to match, and the SDK
+                // documents the host's key for it as the EFFECTIVE id (approvalId ?: toolCallId,
+                // ApprovalIds.effectiveApprovalId) — the id it also signed at issuance. Replaying
+                // that id must resolve; anything else still fails closed at the caller.
+                indexOfFirst { (it.request?.approvalId ?: it.call.toolCallId) == approval.approvalId }
             } else {
                 indexOfFirst { it.call.toolCallId == approval.toolCallId }
             }

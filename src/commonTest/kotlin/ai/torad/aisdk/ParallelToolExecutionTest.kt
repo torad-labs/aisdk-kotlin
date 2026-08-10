@@ -192,6 +192,51 @@ class ParallelToolExecutionTest {
     }
 
     @Test
+    fun `queued tool calls never start once the abort signal has fired`() = runTest {
+        val controller = AbortController()
+        val firstWaveStarted = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val startedIds = mutableListOf<String>()
+        // A tool that does NOT poll ctx.abortSignal — the realistic case (an HTTP POST). On the
+        // plain stream() + AbortController path abort is signal-only (no structural cancellation),
+        // so nothing else stops the workers from draining the queue after the user hit stop.
+        val nonPollingTool = Tool<Empty, String, Unit>(
+            name = "tool",
+            description = "non-polling tool",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            startedIds += toolCallId
+            if (startedIds.size == 2) firstWaveStarted.complete(Unit)
+            release.await()
+            "ok-$toolCallId"
+        }
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = ManyToolsThenText(toolCallCount = 3),
+            instructions = "x",
+            tools = ToolSet(nonPollingTool),
+            maxParallelToolCalls = 2,
+        )
+
+        val eventsDeferred = async {
+            withTimeout(10_000) {
+                agent.stream(prompt = "go", abortSignal = controller.signal).toList()
+            }
+        }
+        firstWaveStarted.await()
+        controller.abort()
+        release.complete(Unit)
+
+        val events = eventsDeferred.await()
+        assertEquals(
+            setOf("c_0", "c_1"),
+            startedIds.toSet(),
+            "a call still queued when abort fired must never run its executor",
+        )
+        assertEquals(1, events.count { it == StreamEvent.Abort }, "aborted step emits one terminal Abort")
+    }
+
+    @Test
     fun `abort with queued tool calls over default parallel cap does not hang`() = runTest {
         val controller = AbortController()
         val firstWaveStarted = CompletableDeferred<Unit>()
