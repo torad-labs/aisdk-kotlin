@@ -83,6 +83,7 @@ configurations.all {
             libs.commons.lang3,
             libs.httpclient,
             libs.opentelemetry.api,
+            libs.jsoup,
         )
     }
 }

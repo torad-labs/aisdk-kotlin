@@ -29,6 +29,12 @@ jackson = "2.22.1"          # PolymorphicTypeValidator + allowlist bypasses, asy
 jose4j = "0.9.6"            # DoS via compressed JWE content
 jdom2 = "2.0.6.1"           # XXE injection
 commons-lang3 = "3.20.0"    # uncontrolled recursion
+# Enters ONLY through org.jetbrains.dokka:templating-plugin, i.e. the doc-generator runtime;
+# jvmRuntimeClasspath carries no jsoup, so nothing ships it. Listed here anyway because an
+# advisory stays open while any vulnerable version remains anywhere in the submitted graph,
+# and Dependabot cannot bump a dependency no manifest declares — its security update failed
+# with `security_update_dependency_not_found` until this pin existed.
+jsoup = "1.23.1"            # stack-overflow / DoS in the HTML parser
 # 4.5.14 (the last 4.5.x), not the advisory's minimum 4.5.13 — max-patched rule again.
 # This one was missed for three rounds because the buildscript classpath already resolved
 # 4.5.14 on its own, so it LOOKED fixed; androidLintTool still requested 4.5.6 unforced.
@@ -51,6 +57,7 @@ jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", ver
 jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "jose4j" }
 jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "httpclient" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
