@@ -159,7 +159,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           # Release produces signed artifacts, so no mutable cache may feed a publish —
           # read OR write. cache-read-only stopped this path WRITING a cache but it still
@@ -205,7 +205,7 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
-      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           # Release produces signed artifacts, so no mutable cache may feed a publish —
           # read OR write. cache-read-only stopped this path WRITING a cache but it still
@@ -331,7 +331,7 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
-      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           # Release produces signed artifacts, so no mutable cache may feed a publish —
           # read OR write. cache-read-only stopped this path WRITING a cache but it still
@@ -415,12 +415,12 @@ jobs:
           upload-release-assets: false
       - name: Attest Maven Central bundle provenance
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
-        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: bundle.zip
       - name: Attest release SBOM provenance
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
-        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: torad-aisdk-sbom.spdx.json
       - name: Publish to Maven Central
