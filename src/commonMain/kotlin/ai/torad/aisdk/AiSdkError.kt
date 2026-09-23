@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
+import kotlin.jvm.JvmSynthetic
 import kotlin.time.Duration
 
 /** @since 0.3.0-beta01 */
@@ -72,6 +73,9 @@ public class EmptyResponseBodyError(message: String = "Empty response body") : A
 
 // internal, not private: a private helper used by the constructor's default argument compiles to a
 // public synthetic `access$` method on the file facade, which is noise in the ABI dump.
+// @JvmSynthetic: -Xjvm-expose-boxed gives every non-private function with a value-class parameter a
+// JVM-public boxed copy, internal ones included; JvmSynthetic is the compiler's opt-out.
+@JvmSynthetic
 internal fun CallTimeoutMessage(timeout: Duration): String = "Call timed out after $timeout."
 
 /** Bit of the legacy default-arguments mask that marks `message` as omitted (parameter index 1). */
