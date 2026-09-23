@@ -123,10 +123,13 @@ public sealed class AgentError(
     ) : AgentError(
         "Tool '$toolName' (callId=$toolCallId) timed out after $timeout",
     ) {
-        /** Keeps the 0.3.0-beta01 JVM descriptor `(String, String, long, DefaultConstructorMarker)`; see [LegacyConstructorMarker]. */
+        /**
+         * Keeps the 0.3.0-beta01 JVM descriptor `(String, String, long, DefaultConstructorMarker)`;
+         * see [LegacyConstructorMarker].
+         */
         @PublishedApi
         @Deprecated("Binary compatibility with 0.3.0-beta01.", level = DeprecationLevel.HIDDEN)
-        @Suppress("UnusedParameter")
+        @Suppress("UnusedPrivateProperty")
         internal constructor(
             toolName: String,
             toolCallId: String,

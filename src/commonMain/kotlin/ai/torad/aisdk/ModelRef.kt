@@ -64,10 +64,13 @@ public data class ModelRef(
     val qualifiedName: String
         get() = providerId?.let { "${it.value}:${modelId.value}" } ?: modelId.value
 
-    /** Keeps the 0.3.0-beta01 JVM descriptor `(String, String, DefaultConstructorMarker)`; see [LegacyConstructorMarker]. */
+    /**
+     * Keeps the 0.3.0-beta01 JVM descriptor `(String, String, DefaultConstructorMarker)`;
+     * see [LegacyConstructorMarker].
+     */
     @PublishedApi
     @Deprecated("Binary compatibility with 0.3.0-beta01.", level = DeprecationLevel.HIDDEN)
-    @Suppress("UnusedParameter")
+    @Suppress("UnusedPrivateProperty")
     internal constructor(modelId: String, providerId: String?, marker: LegacyConstructorMarker?) :
         this(ModelId(modelId), providerId?.let(::ProviderId))
 
@@ -77,7 +80,7 @@ public data class ModelRef(
      */
     @PublishedApi
     @Deprecated("Binary compatibility with 0.3.0-beta01.", level = DeprecationLevel.HIDDEN)
-    @Suppress("UnusedParameter")
+    @Suppress("UnusedPrivateProperty")
     internal constructor(modelId: String, providerId: String?, mask: Int, marker: LegacyConstructorMarker?) :
         this(
             ModelId(modelId),

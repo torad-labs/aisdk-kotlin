@@ -87,10 +87,13 @@ public class CallTimeoutError(
     public val timeout: Duration,
     message: String = CallTimeoutMessage(timeout),
 ) : AiSdkException(message) {
-    /** Keeps the 0.3.0-beta01 JVM descriptor `(long, String, DefaultConstructorMarker)`; see [LegacyConstructorMarker]. */
+    /**
+     * Keeps the 0.3.0-beta01 JVM descriptor `(long, String, DefaultConstructorMarker)`;
+     * see [LegacyConstructorMarker].
+     */
     @PublishedApi
     @Deprecated("Binary compatibility with 0.3.0-beta01.", level = DeprecationLevel.HIDDEN)
-    @Suppress("UnusedParameter")
+    @Suppress("UnusedPrivateProperty")
     internal constructor(timeout: Long, message: String, marker: LegacyConstructorMarker?) :
         this(DurationFromRawValue(timeout), message)
 
@@ -100,7 +103,7 @@ public class CallTimeoutError(
      */
     @PublishedApi
     @Deprecated("Binary compatibility with 0.3.0-beta01.", level = DeprecationLevel.HIDDEN)
-    @Suppress("UnusedParameter")
+    @Suppress("UnusedPrivateProperty")
     internal constructor(timeout: Long, message: String?, mask: Int, marker: LegacyConstructorMarker?) :
         this(
             DurationFromRawValue(timeout),
