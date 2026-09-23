@@ -21,7 +21,8 @@
 #      generation is INCREMENTAL and preserves existing entries (Gradle docs,
 #      "Verifying Dependencies"), so running Linux-then-macOS accumulates both
 #      platforms into one file. Two parallel jobs would instead produce two partial
-#      files that something would then have to merge by hand.
+#      files that something would then have to merge by hand. It then prunes the
+#      versions a security pin superseded, which the append-only generation keeps.
 #   3. publish-verification-metadata — push the regenerated file onto the Dependabot
 #      branch. Holds `contents: write` but executes no build.
 #   4. automerge — enable auto-merge for patch/minor; GitHub merges only after
@@ -141,6 +142,14 @@ jobs:
           set -euo pipefail
           ./gradlew --write-verification-metadata sha256 \
             compileKotlinIosArm64 compileKotlinIosSimulatorArm64
+          # Generation only APPENDS, so bumping a security-pinned module leaves the version
+          # it superseded recorded here, and the pin gate that verify runs
+          # (tools/check-verification-metadata-pins, via ci-gate.sh) rejects the file.
+          # #44 and #78 each needed that prune run by hand after this job had pushed.
+          # Doing it here, in the read-only leg that already runs PR-head code, lets the
+          # published file pass the gate by construction. It is fail-closed: if the build
+          # still resolved a pruned version, verification would fail loudly on it.
+          python3 tools/check-verification-metadata-pins --prune
           if git diff --quiet -- gradle/verification-metadata.xml; then
             echo "verification-metadata.xml unchanged on both platforms"
             echo "changed=false" >> "$GITHUB_OUTPUT"
