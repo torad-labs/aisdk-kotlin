@@ -143,7 +143,22 @@ hook_suite_count=0
 for hook_test in .claude/hooks/tests/test_*.py; do
   [ -f "$hook_test" ] || continue
   hook_suite_count=$((hook_suite_count + 1))
-  if ! output=$(python3 "$hook_test" 2>&1); then
+  # Same scrub as tools/run-gate-fixtures.mjs, for the same reason: under pre-commit, git exports
+  # GIT_INDEX_FILE (and friends) to the hook, and these suites build scratch repos with plain
+  # `git -C <tmp>` calls. From a linked worktree that index path is absolute, so the scratch
+  # repo's `git commit` ran against the LIVE worktree's index and failed — the gate was red for
+  # every commit made from a worktree and green from the primary checkout (relative path). The
+  # unset happens inside the command substitution's subshell, so the gate's own git calls keep
+  # the hook context.
+  if ! output=$(
+    for var in $(compgen -e); do
+      case "$var" in
+        GIT_DIR | GIT_WORK_TREE | GIT_INDEX_FILE | GIT_PREFIX | GIT_OBJECT_DIRECTORY | \
+          GIT_ALTERNATE_OBJECT_DIRECTORIES | GIT_AUTHOR_* | GIT_COMMITTER_*) unset "$var" ;;
+      esac
+    done
+    python3 "$hook_test" 2>&1
+  ); then
     echo "  FAIL $(basename "$hook_test")"
     echo "$output" | tail -5
     hook_suite_fail=1
