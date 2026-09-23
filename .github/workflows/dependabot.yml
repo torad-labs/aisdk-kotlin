@@ -28,8 +28,20 @@
 #   4. automerge — enable auto-merge for patch/minor; GitHub merges only after
 #      required checks pass (verify, verify-apple, dependency-review).
 #
-# automerge needs the publish job so checksum regen finishes before we arm merge
-# (a push from regen re-triggers checks on the updated tip).
+# automerge needs the publish job so checksum regen finishes before we arm merge.
+#
+# The push from regen does NOT start the checks on the updated tip by itself. It is
+# made with GITHUB_TOKEN, and GitHub creates the resulting `pull_request` (synchronize)
+# runs in an approval-required state: they show as `action_required` with zero jobs
+# until a user with write access selects "Approve workflows to run" on the PR (GitHub
+# Docs, "Triggering a workflow from a workflow"). No regen push here has ever started
+# its checks by itself: each one's runs either ran after a maintainer started them by
+# hand or never ran (0928bc6 on #78 is still action_required). Auto-merge still waits
+# on the required checks (verify, verify-apple, dependency-review), so a regenerated
+# PR merges only after that approval. The documented way around it is to push with a
+# GitHub App installation token or a PAT instead of GITHUB_TOKEN; runs triggered by
+# Dependabot only see Dependabot secrets, so that credential would have to be stored
+# there too, and none is provisioned for this job today.
 name: dependabot
 
 on: pull_request
@@ -168,6 +180,8 @@ jobs:
   # Holds the writable token, runs no build: checkout + download + commit only. The file
   # it pushes was produced by PR-controlled code, but it lands as a reviewable commit on
   # the PR branch and still has to clear the required checks before automerge can merge.
+  # Those checks wait for a human to approve them, because the push uses GITHUB_TOKEN
+  # (see the header).
   publish-verification-metadata:
     # `github.event.pull_request.user.login`, not `github.actor`: actor is whoever triggered
     # the run and is spoofable (a re-run or a synchronize by someone else carries their name,
