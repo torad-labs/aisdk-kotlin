@@ -53,6 +53,14 @@
   compatibility and are not the Java source API. Low-level coroutine bridge
   methods may still expose compiler bridge names; prefer the public boxed
   factories, provider/facade entrypoints, and high-level helpers from Java.
+- Constructors that take a value class keep their 0.3.0-beta01 Kotlin-facing JVM
+  descriptors (`…, DefaultConstructorMarker`) as hidden `@PublishedApi` bridges
+  alongside the `…, BoxingConstructorMarker, DefaultConstructorMarker` form that
+  Kotlin 2.4.20 compiles: `AgentError.ToolExecutionTimedOut`, `CallTimeoutError`,
+  `ModelRef`. Kotlin call sites in other modules link to the former, so it must not
+  be dropped while the build uses 2.4.20; the ABI dump lists both. Kotlin 2.5.0
+  compiles the former natively again, and the bridges go with that upgrade
+  (`LegacyConstructorMarker.kt`).
 - Headline construction factories expose Java-callable `@JvmOverloads`
   telescoping overloads where Java cannot use Kotlin default parameters:
   `Tool`, `StreamingTool`, `DynamicTool`, `TextGenerator`, `Provider`,

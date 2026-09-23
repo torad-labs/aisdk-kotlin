@@ -64,8 +64,31 @@ public data class ModelRef(
     val qualifiedName: String
         get() = providerId?.let { "${it.value}:${modelId.value}" } ?: modelId.value
 
+    /** Keeps the 0.3.0-beta01 JVM descriptor `(String, String, DefaultConstructorMarker)`; see [LegacyConstructorMarker]. */
+    @PublishedApi
+    @Deprecated("Binary compatibility with 0.3.0-beta01.", level = DeprecationLevel.HIDDEN)
+    @Suppress("UnusedParameter")
+    internal constructor(modelId: String, providerId: String?, marker: LegacyConstructorMarker?) :
+        this(ModelId(modelId), providerId?.let(::ProviderId))
+
+    /**
+     * Keeps the 0.3.0-beta01 default-arguments descriptor `(String, String, int, DefaultConstructorMarker)`:
+     * bit 1 of [mask] set means the caller omitted `providerId`. See [LegacyConstructorMarker].
+     */
+    @PublishedApi
+    @Deprecated("Binary compatibility with 0.3.0-beta01.", level = DeprecationLevel.HIDDEN)
+    @Suppress("UnusedParameter")
+    internal constructor(modelId: String, providerId: String?, mask: Int, marker: LegacyConstructorMarker?) :
+        this(
+            ModelId(modelId),
+            providerId.takeIf { (mask and MODEL_REF_PROVIDER_ID_OMITTED) == 0 }?.let(::ProviderId),
+        )
+
     override fun toString(): String = qualifiedName
 }
+
+/** Bit of the legacy default-arguments mask that marks `providerId` as omitted (parameter index 1). */
+private const val MODEL_REF_PROVIDER_ID_OMITTED = 1 shl 1
 
 /**
  * Factory helpers for the value-class identifiers. These cannot be expressed as

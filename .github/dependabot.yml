@@ -11,8 +11,8 @@ version: 2
 #
 # Unlike splice, org.jetbrains.kotlin* is NOT ignored here. Splice pinned it because
 # CodeQL's Kotlin extractor rejected 2.4.x (KotlinVersionTooRecentError, splice #18/#37);
-# that limit was lifted in CodeQL 2.26.0 and the extractor now supports Kotlin 1.8.0
-# through 2.4.1x. A Kotlin bump still needs the ABI dumps regenerated
+# that limit was lifted in CodeQL 2.26.0; Kotlin 2.4.20 needs the 2.27.1 bundle, which
+# codeql.yml pins. A Kotlin bump still needs the ABI dumps regenerated
 # (./gradlew updateKotlinAbi) when it changes the public surface.
 # The root build declares GitHub Packages as a PUBLISH target (build.gradle.kts
 # `publishing` block), and Dependabot's Gradle updater probes every repository URL it can

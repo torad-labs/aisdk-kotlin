@@ -122,5 +122,16 @@ public sealed class AgentError(
         public val timeout: Duration,
     ) : AgentError(
         "Tool '$toolName' (callId=$toolCallId) timed out after $timeout",
-    )
+    ) {
+        /** Keeps the 0.3.0-beta01 JVM descriptor `(String, String, long, DefaultConstructorMarker)`; see [LegacyConstructorMarker]. */
+        @PublishedApi
+        @Deprecated("Binary compatibility with 0.3.0-beta01.", level = DeprecationLevel.HIDDEN)
+        @Suppress("UnusedParameter")
+        internal constructor(
+            toolName: String,
+            toolCallId: String,
+            timeout: Long,
+            marker: LegacyConstructorMarker?,
+        ) : this(toolName, toolCallId, DurationFromRawValue(timeout))
+    }
 }
