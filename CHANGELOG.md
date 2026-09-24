@@ -6,6 +6,26 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## Unreleased
 
+### Built with Kotlin 2.4.20 — 0.3.0-beta01 binaries keep linking
+
+The library now compiles with Kotlin 2.4.20, which closes CVE-2026-53914 (unsafe deserialization
+in the Kotlin build cache, fixed in the 2.4.20 Gradle plugin).
+
+Kotlin 2.4.20 changes how `-Xjvm-expose-boxed` compiles a class constructor that takes a value
+class: the synthetic Kotlin-facing constructor gains a `BoxingConstructorMarker` parameter
+(JetBrains/kotlin 4a7a6f8, KT-85955). Three public constructors take one — `AgentError.ToolExecutionTimedOut`
+and `CallTimeoutError` (a `Duration`), and `ModelRef` (a `ModelId`). Left alone, every Kotlin caller
+compiled in another module would throw `NoSuchMethodError`: binaries built against 0.3.0-beta01, and
+also fresh builds, because Kotlin 2.4.20's own call sites still link to the old descriptor. The
+0.3.0-beta01 descriptors are therefore kept as hidden bridges, so **no consumer change and no
+recompile is needed**. The ABI dump only gains lines: the new 2.4.20 synthetic constructors sit next
+to the unchanged 0.3.0-beta01 ones. Kotlin 2.5.0 reverts the compiler change (KT-87664), and the
+bridges are removed with that upgrade.
+- JVM descriptors kept: `ToolExecutionTimedOut(String, String, long, DefaultConstructorMarker)`,
+  `CallTimeoutError(long, String, DefaultConstructorMarker)` and its default-arguments form
+  `(long, String, int, DefaultConstructorMarker)`, and `ModelRef(String, String, DefaultConstructorMarker)`
+  and `(String, String, int, DefaultConstructorMarker)`.
+
 ### Full-SDK review campaign — 53 verified defects fixed
 
 A section-by-section adversarial review of the whole SDK produced 54 findings that survived
