@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
+import kotlin.jvm.JvmSynthetic
 import kotlin.time.Duration
 
 /** @since 0.3.0-beta01 */
@@ -70,12 +71,46 @@ public class APICallError(
 /** @since 0.3.0-beta01 */
 public class EmptyResponseBodyError(message: String = "Empty response body") : AiSdkException(message)
 
+// internal, not private: a private helper used by the constructor's default argument compiles to a
+// public synthetic `access$` method on the file facade, which is noise in the ABI dump.
+// @JvmSynthetic: -Xjvm-expose-boxed gives every non-private function with a value-class parameter a
+// JVM-public boxed copy, internal ones included; JvmSynthetic is the compiler's opt-out.
+@JvmSynthetic
+internal fun CallTimeoutMessage(timeout: Duration): String = "Call timed out after $timeout."
+
+/** Bit of the legacy default-arguments mask that marks `message` as omitted (parameter index 1). */
+private const val CALL_TIMEOUT_MESSAGE_OMITTED = 1 shl 1
+
 /** @since 0.3.0-beta01 */
 public class CallTimeoutError(
     /** @since 0.3.0-beta01 */
     public val timeout: Duration,
-    message: String = "Call timed out after $timeout.",
-) : AiSdkException(message)
+    message: String = CallTimeoutMessage(timeout),
+) : AiSdkException(message) {
+    /**
+     * Keeps the 0.3.0-beta01 JVM descriptor `(long, String, DefaultConstructorMarker)`;
+     * see [LegacyConstructorMarker].
+     */
+    @PublishedApi
+    @Deprecated("Binary compatibility with 0.3.0-beta01.", level = DeprecationLevel.HIDDEN)
+    @Suppress("UnusedPrivateProperty")
+    internal constructor(timeout: Long, message: String, marker: LegacyConstructorMarker?) :
+        this(DurationFromRawValue(timeout), message)
+
+    /**
+     * Keeps the 0.3.0-beta01 default-arguments descriptor `(long, String, int, DefaultConstructorMarker)`:
+     * bit 1 of [mask] set means the caller omitted `message`. See [LegacyConstructorMarker].
+     */
+    @PublishedApi
+    @Deprecated("Binary compatibility with 0.3.0-beta01.", level = DeprecationLevel.HIDDEN)
+    @Suppress("UnusedPrivateProperty")
+    internal constructor(timeout: Long, message: String?, mask: Int, marker: LegacyConstructorMarker?) :
+        this(
+            DurationFromRawValue(timeout),
+            message.takeIf { (mask and CALL_TIMEOUT_MESSAGE_OMITTED) == 0 }
+                ?: CallTimeoutMessage(DurationFromRawValue(timeout)),
+        )
+}
 
 /** The platform cryptographic entropy source could not be read (native CSPRNG seam). */
 internal class SecureRandomUnavailableError(

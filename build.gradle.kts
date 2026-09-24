@@ -141,9 +141,11 @@ kotlin {
     // Phase 3 (Kotlin modernization): built-in KGP binary-compatibility (ABI)
     // validation. Now that explicitApi() + `internal`-ization make the public
     // surface intentional, freeze it against a committed golden dump. The dump
-    // (`api/jvm/torad-aisdk.api` for the JVM ABI + `api/torad-aisdk.klib.api`
-    // for the merged klib ABI) is the supported 1.0 contract; `checkKotlinAbi`
-    // (wired under `check`) fails the build on any unreviewed surface change,
+    // (`api/jvm/torad-aisdk.api` for the JVM ABI, `api/android/torad-aisdk.api`
+    // for the Android ABI — dumped since Kotlin 2.4.20, KT-85950 — and
+    // `api/torad-aisdk.klib.api` for the merged klib ABI) is the supported 1.0
+    // contract; `checkKotlinAbi` (wired under `check`) fails the build on any
+    // unreviewed surface change,
     // `updateKotlinAbi` regenerates the dump after an intentional change. (The
     // `*LegacyAbi` task aliases work too but are deprecated in 2.3.x.)
     //
