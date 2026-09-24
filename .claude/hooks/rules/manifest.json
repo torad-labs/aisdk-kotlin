@@ -447,9 +447,9 @@
   {
     "id": "no-secondary-constructor",
     "severity": "error",
-    "yaml": "id: no-secondary-constructor\nlanguage: kotlin\nseverity: error\nrule:\n  kind: secondary_constructor\n",
-    "badExample": "class Client {\n    constructor(name: String)\n}\n",
-    "goodExample": "class Client(val name: String)\n"
+    "yaml": "id: no-secondary-constructor\nlanguage: kotlin\nseverity: error\n# Tenet: secondary constructors fragment initialization logic; use the primary\n# constructor with defaults, or a PascalCase factory.\n#\n# One carve-out, because it is not API design and has no other spelling: a hidden\n# binary-compatibility bridge. A JVM constructor descriptor that already-compiled\n# callers link against can only be kept by declaring a constructor with that shape\n# (see LegacyConstructorMarker.kt). It is exempt only when ALL of these hold, so the\n# exemption cannot be reused for an ordinary secondary constructor:\n#   - @PublishedApi internal: part of the binary API (listed in the ABI dump, so the\n#     ABI check fails if it is dropped) and invisible to source callers;\n#   - @Deprecated(level = DeprecationLevel.HIDDEN): unresolvable from Kotlin, and\n#     ACC_SYNTHETIC on the JVM, so Java cannot see it either;\n#   - it delegates to this(...) and has no body, so it adds no initialization logic.\nrule:\n  kind: secondary_constructor\n  not:\n    all:\n      - has:\n          kind: modifiers\n          all:\n            - has: { kind: annotation, regex: '^@PublishedApi$' }\n            - has:\n                kind: annotation\n                regex: '^@Deprecated\\b'\n                has:\n                  kind: value_argument\n                  stopBy: end\n                  all:\n                    - has: { kind: simple_identifier, regex: '^level$' }\n                    - has: { kind: navigation_expression, regex: '^DeprecationLevel\\.HIDDEN$' }\n            - has: { kind: visibility_modifier, regex: '^internal$' }\n      - has:\n          kind: constructor_delegation_call\n          regex: '^this\\s*\\('\n      - not:\n          has: { kind: statements }\n",
+    "badExample": "class Client(val name: String) {\n    @PublishedApi\n    @Deprecated(\"Use the primary constructor.\", level = DeprecationLevel.WARNING)\n    internal constructor(id: Long) : this(id.toString())\n}\n",
+    "goodExample": "class Client(val name: String) {\n    @PublishedApi\n    @Deprecated(\"Binary compatibility.\", level = DeprecationLevel.HIDDEN)\n    internal constructor(id: Long, marker: LegacyConstructorMarker?) : this(id.toString())\n}\n"
   },
   {
     "id": "no-throw-in-stream-error-fn",
@@ -701,9 +701,9 @@
   {
     "id": "no-deprecated-without-replacewith",
     "severity": "warning",
-    "yaml": "id: no-deprecated-without-replacewith\nlanguage: kotlin\nseverity: warning\nmessage: \"@Deprecated is missing ReplaceWith — add ReplaceWith(\\\"...\\\") so IDEs can auto-migrate callers, or explain why no mechanical replacement exists.\"\nrule:\n  kind: annotation\n  all:\n    - has: { kind: type_identifier, regex: '^Deprecated$', stopBy: end }\n    - not:\n        has: { kind: simple_identifier, regex: '^ReplaceWith$', stopBy: end }\n",
-    "badExample": "@Deprecated(\"Gone in 2.0.0\")\npublic fun old(): Int = 1\n",
-    "goodExample": "@Deprecated(\"Gone in 2.0.0\", ReplaceWith(\"newer()\"))\npublic fun old(): Int = 1\n"
+    "yaml": "id: no-deprecated-without-replacewith\nlanguage: kotlin\nseverity: warning\nmessage: \"@Deprecated is missing ReplaceWith — add ReplaceWith(\\\"...\\\") so IDEs can auto-migrate callers, or explain why no mechanical replacement exists.\"\n# level = DeprecationLevel.HIDDEN is exempt: a hidden declaration cannot be resolved from\n# source, so there is no call site for an IDE to migrate. That level is how a binary-only\n# compatibility bridge is spelled (see LegacyConstructorMarker.kt).\nrule:\n  kind: annotation\n  all:\n    - has: { kind: type_identifier, regex: '^Deprecated$', stopBy: end }\n    - not:\n        has: { kind: simple_identifier, regex: '^ReplaceWith$', stopBy: end }\n    - not:\n        has:\n          kind: value_argument\n          stopBy: end\n          all:\n            - has: { kind: simple_identifier, regex: '^level$' }\n            - has: { kind: navigation_expression, regex: '^DeprecationLevel\\.HIDDEN$' }\n",
+    "badExample": "@Deprecated(\"Gone in 2.0.0\", level = DeprecationLevel.ERROR)\npublic fun old(): Int = 1\n",
+    "goodExample": "@Deprecated(\"Gone in 2.0.0\", ReplaceWith(\"newer()\"))\npublic fun old(): Int = 1\n\n@Deprecated(\"Binary compatibility.\", level = DeprecationLevel.HIDDEN)\npublic fun older(): Int = 1\n"
   },
   {
     "id": "no-direct-koin-get-in-class",
@@ -905,9 +905,10 @@
   {
     "id": "no-string-typed-id",
     "severity": "warning",
-    "yaml": "id: no-string-typed-id\nlanguage: kotlin\nseverity: warning\nmessage: \"Parameter named like an id (`id`, `...Id`) is typed as raw `String`. A bare String accepts any string, so callers can pass the wrong id (or a display name) and the compiler won't catch it. Wrap it in a value class (e.g. `@JvmInline value class UserId(val value: String)`) so mismatched ids become a compile error.\"\nrule:\n  kind: parameter\n  all:\n    - has: { kind: simple_identifier, regex: '(^id$|Id$)' }\n    - has:\n        kind: user_type\n        has: { kind: type_identifier, regex: '^String$' }\n",
-    "badExample": "internal fun load(userId: String) { }\n",
-    "goodExample": "internal fun load(userId: UserId) { }\n"
+    "yaml": "id: no-string-typed-id\nlanguage: kotlin\nseverity: warning\nmessage: \"Parameter named like an id (`id`, `...Id`) is typed as raw `String`. A bare String accepts any string, so callers can pass the wrong id (or a display name) and the compiler won't catch it. Wrap it in a value class (e.g. `@JvmInline value class UserId(val value: String)`) so mismatched ids become a compile error.\"\n# Parameters of a function or constructor deprecated at level = DeprecationLevel.HIDDEN are\n# exempt: nothing in source can call it, and such a declaration exists to keep a JVM\n# descriptor, where the raw String IS the value class's compiled form (see\n# LegacyConstructorMarker.kt).\nrule:\n  kind: parameter\n  all:\n    - has: { kind: simple_identifier, regex: '(^id$|Id$)' }\n    - has:\n        kind: user_type\n        has: { kind: type_identifier, regex: '^String$' }\n    - not:\n        inside:\n          kind: function_value_parameters\n          inside:\n            all:\n              - any:\n                  - kind: secondary_constructor\n                  - kind: function_declaration\n              - has:\n                  kind: modifiers\n                  has:\n                    kind: annotation\n                    regex: '^@Deprecated\\b'\n                    has:\n                      kind: value_argument\n                      stopBy: end\n                      all:\n                        - has: { kind: simple_identifier, regex: '^level$' }\n                        - has: { kind: navigation_expression, regex: '^DeprecationLevel\\.HIDDEN$' }\n",
+    "badExample": "@Deprecated(\"Use the typed overload.\", level = DeprecationLevel.WARNING)\ninternal fun load(userId: String) { }\n",
+    "goodExample": "internal fun load(userId: UserId) { }\n\npublic class Ref(public val id: RefId) {\n    @PublishedApi\n    @Deprecated(\"Binary compatibility.\", level = DeprecationLevel.HIDDEN)\n    internal constructor(refId: String, marker: LegacyConstructorMarker?) : this(RefId(refId))\n}\n",
+    "hunkExpectation": "same"
   },
   {
     "id": "no-suspend-default-dispatcher",

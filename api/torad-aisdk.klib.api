@@ -7702,6 +7702,8 @@ final class ai.torad.aisdk/CallSettingsBuilder { // ai.torad.aisdk/CallSettingsB
 
 final class ai.torad.aisdk/CallTimeoutError : ai.torad.aisdk/AiSdkException { // ai.torad.aisdk/CallTimeoutError|null[0]
     constructor <init>(kotlin.time/Duration, kotlin/String = ...) // ai.torad.aisdk/CallTimeoutError.<init>|<init>(kotlin.time.Duration;kotlin.String){}[0]
+    constructor <init>(kotlin/Long, kotlin/String, ai.torad.aisdk/LegacyConstructorMarker?) // ai.torad.aisdk/CallTimeoutError.<init>|<init>(kotlin.Long;kotlin.String;ai.torad.aisdk.LegacyConstructorMarker?){}[0]
+    constructor <init>(kotlin/Long, kotlin/String?, kotlin/Int, ai.torad.aisdk/LegacyConstructorMarker?) // ai.torad.aisdk/CallTimeoutError.<init>|<init>(kotlin.Long;kotlin.String?;kotlin.Int;ai.torad.aisdk.LegacyConstructorMarker?){}[0]
 
     final val timeout // ai.torad.aisdk/CallTimeoutError.timeout|{}timeout[0]
         final fun <get-timeout>(): kotlin.time/Duration // ai.torad.aisdk/CallTimeoutError.timeout.<get-timeout>|<get-timeout>(){}[0]
@@ -9918,6 +9920,8 @@ final class ai.torad.aisdk/ModelMessage { // ai.torad.aisdk/ModelMessage|null[0]
 
 final class ai.torad.aisdk/ModelRef { // ai.torad.aisdk/ModelRef|null[0]
     constructor <init>(ai.torad.aisdk/ModelId, ai.torad.aisdk/ProviderId? = ...) // ai.torad.aisdk/ModelRef.<init>|<init>(ai.torad.aisdk.ModelId;ai.torad.aisdk.ProviderId?){}[0]
+    constructor <init>(kotlin/String, kotlin/String?, ai.torad.aisdk/LegacyConstructorMarker?) // ai.torad.aisdk/ModelRef.<init>|<init>(kotlin.String;kotlin.String?;ai.torad.aisdk.LegacyConstructorMarker?){}[0]
+    constructor <init>(kotlin/String, kotlin/String?, kotlin/Int, ai.torad.aisdk/LegacyConstructorMarker?) // ai.torad.aisdk/ModelRef.<init>|<init>(kotlin.String;kotlin.String?;kotlin.Int;ai.torad.aisdk.LegacyConstructorMarker?){}[0]
 
     final val modelId // ai.torad.aisdk/ModelRef.modelId|{}modelId[0]
         final fun <get-modelId>(): ai.torad.aisdk/ModelId // ai.torad.aisdk/ModelRef.modelId.<get-modelId>|<get-modelId>(){}[0]
@@ -12024,6 +12028,7 @@ sealed class ai.torad.aisdk/AgentError : ai.torad.aisdk/AiSdkException { // ai.t
 
     final class ToolExecutionTimedOut : ai.torad.aisdk/AgentError { // ai.torad.aisdk/AgentError.ToolExecutionTimedOut|null[0]
         constructor <init>(kotlin/String, kotlin/String, kotlin.time/Duration) // ai.torad.aisdk/AgentError.ToolExecutionTimedOut.<init>|<init>(kotlin.String;kotlin.String;kotlin.time.Duration){}[0]
+        constructor <init>(kotlin/String, kotlin/String, kotlin/Long, ai.torad.aisdk/LegacyConstructorMarker?) // ai.torad.aisdk/AgentError.ToolExecutionTimedOut.<init>|<init>(kotlin.String;kotlin.String;kotlin.Long;ai.torad.aisdk.LegacyConstructorMarker?){}[0]
 
         final val timeout // ai.torad.aisdk/AgentError.ToolExecutionTimedOut.timeout|{}timeout[0]
             final fun <get-timeout>(): kotlin.time/Duration // ai.torad.aisdk/AgentError.ToolExecutionTimedOut.timeout.<get-timeout>|<get-timeout>(){}[0]
