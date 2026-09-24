@@ -2,6 +2,10 @@ id: no-string-typed-id
 language: kotlin
 severity: warning
 message: "Parameter named like an id (`id`, `...Id`) is typed as raw `String`. A bare String accepts any string, so callers can pass the wrong id (or a display name) and the compiler won't catch it. Wrap it in a value class (e.g. `@JvmInline value class UserId(val value: String)`) so mismatched ids become a compile error."
+# Parameters of a function or constructor deprecated at level = DeprecationLevel.HIDDEN are
+# exempt: nothing in source can call it, and such a declaration exists to keep a JVM
+# descriptor, where the raw String IS the value class's compiled form (see
+# LegacyConstructorMarker.kt).
 rule:
   kind: parameter
   all:
@@ -9,3 +13,22 @@ rule:
     - has:
         kind: user_type
         has: { kind: type_identifier, regex: '^String$' }
+    - not:
+        inside:
+          kind: function_value_parameters
+          inside:
+            all:
+              - any:
+                  - kind: secondary_constructor
+                  - kind: function_declaration
+              - has:
+                  kind: modifiers
+                  has:
+                    kind: annotation
+                    regex: '^@Deprecated\b'
+                    has:
+                      kind: value_argument
+                      stopBy: end
+                      all:
+                        - has: { kind: simple_identifier, regex: '^level$' }
+                        - has: { kind: navigation_expression, regex: '^DeprecationLevel\.HIDDEN$' }

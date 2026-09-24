@@ -7,11 +7,11 @@
 # surface, WITHOUT needing the Android SDK or the Kotlin/Native toolchain that a full
 # `check` would pull in. Apple/Linux targets carry no CodeQL-supported language.
 #
-# Kotlin 2.4.0 is analysable as of CodeQL 2.26.0 (supported range is now 1.8.0-2.4.1x).
-# If a future Kotlin bump outruns the extractor again the symptom is
+# Kotlin 2.4.20 is analysable as of CodeQL 2.27.1 (supported range 1.8.0-2.4.20); 2.27.0
+# stopped below 2.4.20. When a Kotlin bump outruns the extractor the symptom is
 # KotlinVersionTooRecentError and the job fails repo-wide on every PR regardless of the
-# diff — in that case pin `tools:` on init to a newer bundle rather than deleting the
-# job, so the signal is not silently lost.
+# diff — pin `tools:` on init to a newer bundle rather than deleting the job, so the
+# signal is not silently lost. That pin is live now; see the init step.
 name: codeql
 
 on:
@@ -73,6 +73,11 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          # Pinned because the bundle the action picks by default (2.27.0, from the runner
+          # toolcache) rejects Kotlin 2.4.20 with KotlinVersionTooRecentError; 2.27.1 is the
+          # first bundle whose supported range reaches 2.4.20. Drop this pin once
+          # codeql-action's default bundle is >= 2.27.1.
+          tools: https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.27.1/codeql-bundle-linux64.tar.gz
       - name: build Kotlin (JVM source sets)
         if: matrix.language == 'java-kotlin'
         # --no-build-cache is REQUIRED, not tuning. With build-mode: manual the

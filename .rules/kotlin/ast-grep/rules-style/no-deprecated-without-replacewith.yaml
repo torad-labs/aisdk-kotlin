@@ -2,9 +2,19 @@ id: no-deprecated-without-replacewith
 language: kotlin
 severity: warning
 message: "@Deprecated is missing ReplaceWith — add ReplaceWith(\"...\") so IDEs can auto-migrate callers, or explain why no mechanical replacement exists."
+# level = DeprecationLevel.HIDDEN is exempt: a hidden declaration cannot be resolved from
+# source, so there is no call site for an IDE to migrate. That level is how a binary-only
+# compatibility bridge is spelled (see LegacyConstructorMarker.kt).
 rule:
   kind: annotation
   all:
     - has: { kind: type_identifier, regex: '^Deprecated$', stopBy: end }
     - not:
         has: { kind: simple_identifier, regex: '^ReplaceWith$', stopBy: end }
+    - not:
+        has:
+          kind: value_argument
+          stopBy: end
+          all:
+            - has: { kind: simple_identifier, regex: '^level$' }
+            - has: { kind: navigation_expression, regex: '^DeprecationLevel\.HIDDEN$' }

@@ -409,10 +409,12 @@ private class KlingAIVideoModel(
             ?: ceil(pollTimeoutMs.toDouble() / pollIntervalMs.coerceAtLeast(1L).toDouble()).toInt().coerceAtLeast(1)
         val started = clock.now().toEpochMilliseconds()
         var headers = create.headers
-        repeat(maxPollAttempts.coerceAtLeast(1)) {
+        repeat(maxPollAttempts.coerceAtLeast(1)) { attempt ->
             params.abortSignal.throwIfAborted()
             if (pollIntervalMs > 0) delay(pollIntervalMs)
-            if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
+            // The first status poll always runs. The deadline is wall-clock, so without this guard a
+            // scheduler pause after submission could end the job before its status was ever read.
+            if (attempt > 0 && clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
                 throw NoVideoGeneratedError("Video generation timed out after ${pollTimeoutMs}ms")
             }
             val status = klingAIRequestJson(

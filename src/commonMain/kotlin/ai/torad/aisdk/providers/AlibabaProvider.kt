@@ -541,12 +541,16 @@ private class AlibabaVideoModel(
         val pollTimeoutMs = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 600_000L
         val started = clock.now().toEpochMilliseconds()
         var headers = create.headers
+        var polled = false
         while (true) {
             params.abortSignal.throwIfAborted()
             if (pollIntervalMs > 0) delay(pollIntervalMs)
-            if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
+            // The first status poll always runs. The deadline is wall-clock, so without this guard a
+            // scheduler pause after submission could end the job before its status was ever read.
+            if (polled && clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
                 throw NoVideoGeneratedError("Video generation timed out after ${pollTimeoutMs}ms")
             }
+            polled = true
             val status = settings.alibabaGetJson(
                 client = client,
                 url = "${settings.videoBaseURL.trimEnd('/')}/api/v1/tasks/$taskId",
