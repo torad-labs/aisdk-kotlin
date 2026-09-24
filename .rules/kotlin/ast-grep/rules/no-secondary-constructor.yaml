@@ -1,5 +1,39 @@
 id: no-secondary-constructor
 language: kotlin
 severity: error
+# Tenet: secondary constructors fragment initialization logic; use the primary
+# constructor with defaults, or a PascalCase factory.
+#
+# One carve-out, because it is not API design and has no other spelling: a hidden
+# binary-compatibility bridge. A JVM constructor descriptor that already-compiled
+# callers link against can only be kept by declaring a constructor with that shape
+# (see LegacyConstructorMarker.kt). It is exempt only when ALL of these hold, so the
+# exemption cannot be reused for an ordinary secondary constructor:
+#   - @PublishedApi internal: part of the binary API (listed in the ABI dump, so the
+#     ABI check fails if it is dropped) and invisible to source callers;
+#   - @Deprecated(level = DeprecationLevel.HIDDEN): unresolvable from Kotlin, and
+#     ACC_SYNTHETIC on the JVM, so Java cannot see it either;
+#   - it delegates to this(...) and has no body, so it adds no initialization logic.
 rule:
   kind: secondary_constructor
+  not:
+    all:
+      - has:
+          kind: modifiers
+          all:
+            - has: { kind: annotation, regex: '^@PublishedApi$' }
+            - has:
+                kind: annotation
+                regex: '^@Deprecated\b'
+                has:
+                  kind: value_argument
+                  stopBy: end
+                  all:
+                    - has: { kind: simple_identifier, regex: '^level$' }
+                    - has: { kind: navigation_expression, regex: '^DeprecationLevel\.HIDDEN$' }
+            - has: { kind: visibility_modifier, regex: '^internal$' }
+      - has:
+          kind: constructor_delegation_call
+          regex: '^this\s*\('
+      - not:
+          has: { kind: statements }
