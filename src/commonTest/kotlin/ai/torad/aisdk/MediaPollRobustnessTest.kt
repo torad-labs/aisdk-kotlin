@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.providers.Alibaba
+import ai.torad.aisdk.providers.AlibabaProviderSettings
 import ai.torad.aisdk.providers.AssemblyAI
 import ai.torad.aisdk.providers.AssemblyAIProviderSettings
 import ai.torad.aisdk.providers.BlackForestLabs
@@ -37,6 +39,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeSource
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MediaPollRobustnessTest {
@@ -452,6 +457,9 @@ class MediaPollRobustnessTest {
             model.generate(
                 VideoGenerationParams {
                     prompt("x")
+                    // The 0 ms timeout is coerced to 1 ms of wall clock. The stall makes that deadline
+                    // expire before the first poll every time, as a loaded CI runner sometimes did.
+                    abortSignal(StallingAbortSignal(DEADLINE_STALL))
                     providerOptions(
                         ProviderOptions(
                             "klingai" to buildJsonObject {
@@ -464,8 +472,69 @@ class MediaPollRobustnessTest {
             )
         }
 
-        assertTrue(error.message.orEmpty().contains("1 poll attempts"))
+        assertTrue(error.message.orEmpty().contains("1 poll attempts"), error.message)
         assertEquals(1, pollCalls)
+    }
+
+    @Test
+    fun `alibaba first status poll runs even when the deadline elapsed during submission`() = runTest {
+        var pollCalls = 0
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://dash.test/api/v1/services/aigc/video-generation/video-synthesis" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement("""{"output":{"task_status":"PENDING","task_id":"task-1"}}"""),
+                    ),
+                ),
+                "https://dash.test/api/v1/tasks/task-1" to UrlHandler {
+                    pollCalls++
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"output":{"task_status":"SUCCEEDED","video_url":"https://cdn.alibaba.test/v.mp4"}}""",
+                        ),
+                    )
+                },
+            ),
+        )
+        fixture.server.start()
+        val model = Alibaba(
+            fixture.httpClient(),
+            AlibabaProviderSettings {
+                apiKey("key")
+                videoBaseURL("https://dash.test")
+            },
+        ).video(ModelId("wan2.6-t2v"))
+
+        val result = model.generate(
+            VideoGenerationParams {
+                prompt("x")
+                abortSignal(StallingAbortSignal(DEADLINE_STALL))
+                providerOptions(
+                    ProviderOptions(
+                        "alibaba" to buildJsonObject {
+                            put("pollIntervalMs", JsonPrimitive(0))
+                            put("pollTimeoutMs", JsonPrimitive(1))
+                        },
+                    )
+                )
+            }
+        )
+
+        assertEquals(1, pollCalls)
+        assertEquals("https://cdn.alibaba.test/v.mp4", result.videos.single().url)
+    }
+
+    /**
+     * Never aborts, but every check spends [stall] of real time: a deterministic stand-in for the
+     * scheduler pause between a provider starting its wall-clock deadline and its first poll.
+     */
+    private class StallingAbortSignal(private val stall: Duration) : AbortSignal by AbortSignalNever {
+        override fun throwIfAborted() {
+            val start = TimeSource.Monotonic.markNow()
+            while (start.elapsedNow() < stall) {
+                // Busy-wait: the deadlines read Clock.System, which runTest's virtual time does not move.
+            }
+        }
     }
 
     @Test
@@ -567,3 +636,6 @@ class MediaPollRobustnessTest {
         headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
     )
 }
+
+/** Several times the 1 ms deadlines under test, so the pre-first-poll check always sees them expired. */
+private val DEADLINE_STALL: Duration = 5.milliseconds
