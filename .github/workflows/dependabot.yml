@@ -24,24 +24,26 @@
 #      files that something would then have to merge by hand. It then prunes the
 #      versions a security pin superseded, which the append-only generation keeps.
 #   3. publish-verification-metadata — push the regenerated file onto the Dependabot
-#      branch. Holds `contents: write` but executes no build.
+#      branch. Holds a contents:write App token but executes no build.
 #   4. automerge — enable auto-merge for patch/minor; GitHub merges only after
 #      required checks pass (verify, verify-apple, dependency-review).
 #
 # automerge needs the publish job so checksum regen finishes before we arm merge.
 #
-# The push from regen does NOT start the checks on the updated tip by itself. It is
-# made with GITHUB_TOKEN, and GitHub creates the resulting `pull_request` (synchronize)
-# runs in an approval-required state: they show as `action_required` with zero jobs
-# until a user with write access selects "Approve workflows to run" on the PR (GitHub
-# Docs, "Triggering a workflow from a workflow"). No regen push here has ever started
-# its checks by itself: each one's runs either ran after a maintainer started them by
-# hand or never ran (0928bc6 on #78 is still action_required). Auto-merge still waits
-# on the required checks (verify, verify-apple, dependency-review), so a regenerated
-# PR merges only after that approval. The documented way around it is to push with a
-# GitHub App installation token or a PAT instead of GITHUB_TOKEN; runs triggered by
-# Dependabot only see Dependabot secrets, so that credential would have to be stored
-# there too, and none is provisioned for this job today.
+# The regen push is made with the org App's installation token (torad-review), not
+# GITHUB_TOKEN. A GITHUB_TOKEN push starts no checks by itself: GitHub creates the
+# resulting `pull_request` (synchronize) runs as `action_required` with zero jobs until
+# someone with write access approves them (GitHub Docs, "Triggering a workflow from a
+# workflow"). No regen push here ever started its checks unaided (0928bc6 on #78 is
+# still action_required), so every regenerated PR sat until a maintainer clicked. An App
+# token push triggers them like any other push. Runs Dependabot triggers see only
+# Dependabot secrets, so REVIEW_APP_ID and REVIEW_APP_PRIVATE_KEY are org Dependabot
+# secrets as well as Actions secrets.
+#
+# That push starts this workflow again on the new tip, and `concurrency` cancels the run
+# that pushed before its automerge job starts. The second run regenerates, finds the
+# file unchanged, pushes nothing, and arms automerge. So the regen is proven idempotent
+# before anything merges, and one cancelled run per regenerated PR is expected.
 name: dependabot
 
 on: pull_request
@@ -180,8 +182,7 @@ jobs:
   # Holds the writable token, runs no build: checkout + download + commit only. The file
   # it pushes was produced by PR-controlled code, but it lands as a reviewable commit on
   # the PR branch and still has to clear the required checks before automerge can merge.
-  # Those checks wait for a human to approve them, because the push uses GITHUB_TOKEN
-  # (see the header).
+  # It pushes with an App token so those checks start on their own (see the header).
   publish-verification-metadata:
     # `github.event.pull_request.user.login`, not `github.actor`: actor is whoever triggered
     # the run and is spoofable (a re-run or a synchronize by someone else carries their name,
@@ -194,8 +195,9 @@ jobs:
     needs: verification-metadata-apple
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # The push uses the App token below, so GITHUB_TOKEN needs nothing beyond checkout.
     permissions:
-      contents: write # push regenerated metadata onto the Dependabot branch
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: needs.verification-metadata-apple.outputs.changed == 'true'
@@ -207,10 +209,21 @@ jobs:
         with:
           name: verification-metadata-${{ github.run_id }}
           path: gradle
+      # Scoped to this repository and to contents:write, the one permission the push needs.
+      # The commit touches only gradle/verification-metadata.xml, so no `workflows` grant.
+      - name: Mint the push token
+        id: app
+        if: needs.verification-metadata-apple.outputs.changed == 'true'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.REVIEW_APP_ID }}
+          private-key: ${{ secrets.REVIEW_APP_PRIVATE_KEY }}
+          permission-contents: write
       - name: Commit and push
         if: needs.verification-metadata-apple.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
           BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
@@ -218,8 +231,10 @@ jobs:
             echo "verification-metadata.xml unchanged after download"
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Commit as the App's bot user, the identity that actually pushes.
+          bot_id="$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
           git add gradle/verification-metadata.xml
           git commit -m "chore(deps): regenerate verification-metadata.xml for Dependabot"
           # Push with the token on the remote URL rather than persisted in .git/config, so it
