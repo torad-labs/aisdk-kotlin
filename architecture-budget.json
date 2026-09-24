@@ -35,14 +35,14 @@
     "src/commonMain/kotlin/ai/torad/aisdk/Streaming.kt": 608,
     "src/commonMain/kotlin/ai/torad/aisdk/StructuredObjectApi.kt": 628,
     "src/commonMain/kotlin/ai/torad/aisdk/Telemetry.kt": 692,
-    "src/commonMain/kotlin/ai/torad/aisdk/providers/AlibabaProvider.kt": 814,
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/AlibabaProvider.kt": 818,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt": 780,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/AssemblyAIProvider.kt": 760,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/BlackForestLabsProvider.kt": 832,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/ByteDanceProvider.kt": 567,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/ElevenLabsProvider.kt": 543,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/GladiaProvider.kt": 808,
-    "src/commonMain/kotlin/ai/torad/aisdk/providers/KlingAIProvider.kt": 692,
+    "src/commonMain/kotlin/ai/torad/aisdk/providers/KlingAIProvider.kt": 694,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/LiteRTLanguageModel.kt": 1294,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/ReplicateProvider.kt": 788,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/RevaiProvider.kt": 690,
@@ -66,6 +66,6 @@
     "src/commonTest/kotlin/ai/torad/aisdk/AnthropicProviderStreamingTest.kt": 571,
     "src/commonTest/kotlin/ai/torad/aisdk/OpenAICompatibleMediaAndErrorsTest.kt": 501,
     "src/commonTest/kotlin/ai/torad/aisdk/ToolApprovalTest.kt": 528,
-    "src/commonTest/kotlin/ai/torad/aisdk/MediaPollRobustnessTest.kt": 570
+    "src/commonTest/kotlin/ai/torad/aisdk/MediaPollRobustnessTest.kt": 642
   }
 }
