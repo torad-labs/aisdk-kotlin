@@ -1,3 +1,8 @@
+# ---
+# MANAGED FILE — do not edit here.
+# Source: torad-labs/github-operator policy/gitleaks/aisdk-kotlin.toml
+# Synced by `operator sync`; local edits are overwritten on the next sync.
+# ---
 # Repo-local gitleaks config, auto-loaded from the scan root.
 #
 # Generated 2026-07-31 from a full-history scan of every torad-labs repo.
