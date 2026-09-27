@@ -35,11 +35,14 @@ commons-lang3 = "3.20.0"    # uncontrolled recursion
 # and Dependabot cannot bump a dependency no manifest declares — its security update failed
 # with `security_update_dependency_not_found` until this pin existed.
 jsoup = "1.23.2"            # stack-overflow / DoS in the HTML parser
-# Enters ONLY through Dokka, twice: the plugin on the root buildscript classpath and the
-# generator runtime (dokkaHtmlGeneratorRuntime), both 2.3.32 unpinned. The settings
-# classpath carries none. So it is forced in BOTH of build.gradle.kts's blocks; the
-# buildscript force alone left the generator runtime on 2.3.32. 2.3.35 is the patched
-# and the latest; jvmRuntimeClasspath carries none, so nothing ships it.
+# Enters twice, from two unrelated plugins, both 2.3.32 unpinned: Kover on the root
+# buildscript classpath (kover-features-jvm -> intellij-coverage-reporter -> coverage-report)
+# and Dokka's generator runtime (dokkaHtmlGeneratorRuntime, via dokka-base). Removing
+# either plugin does not remove the other exposure. So it is forced in BOTH of
+# build.gradle.kts's blocks; the buildscript force alone left the generator runtime on
+# 2.3.32. The settings classpath resolves no dependencies at all (probed with an init
+# script at settingsEvaluated), and jvmRuntimeClasspath carries none, so nothing ships it.
+# 2.3.35 is the patched and the latest.
 freemarker = "2.3.35"       # path traversal in the template loading mechanism (critical)
 # 4.5.14 (the last 4.5.x), not the advisory's minimum 4.5.13 — max-patched rule again.
 # This one was missed for three rounds because the buildscript classpath already resolved
