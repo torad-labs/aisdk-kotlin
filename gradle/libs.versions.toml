@@ -35,6 +35,12 @@ commons-lang3 = "3.20.0"    # uncontrolled recursion
 # and Dependabot cannot bump a dependency no manifest declares — its security update failed
 # with `security_update_dependency_not_found` until this pin existed.
 jsoup = "1.23.2"            # stack-overflow / DoS in the HTML parser
+# Enters ONLY through Dokka, twice: the plugin on the root buildscript classpath and the
+# generator runtime (dokkaHtmlGeneratorRuntime), both 2.3.32 unpinned. The settings
+# classpath carries none. So it is forced in BOTH of build.gradle.kts's blocks; the
+# buildscript force alone left the generator runtime on 2.3.32. 2.3.35 is the patched
+# and the latest; jvmRuntimeClasspath carries none, so nothing ships it.
+freemarker = "2.3.35"       # path traversal in the template loading mechanism (critical)
 # 4.5.14 (the last 4.5.x), not the advisory's minimum 4.5.13 — max-patched rule again.
 # This one was missed for three rounds because the buildscript classpath already resolved
 # 4.5.14 on its own, so it LOOKED fixed; androidLintTool still requested 4.5.6 unforced.
@@ -58,6 +64,7 @@ jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "jose4j" }
 jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+freemarker = { module = "org.freemarker:freemarker", version.ref = "freemarker" }
 httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "httpclient" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
