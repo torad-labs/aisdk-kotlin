@@ -34,6 +34,7 @@ buildscript {
                 libs.jdom2,
                 libs.commons.lang3,
                 libs.httpclient,
+                libs.freemarker,
                 // opentelemetry-api is NOT here: it does not resolve onto this classpath at
                 // all (`buildEnvironment` shows zero matches). It enters through project
                 // configurations, which the configurations.all block below covers. A force
@@ -84,6 +85,7 @@ configurations.all {
             libs.httpclient,
             libs.opentelemetry.api,
             libs.jsoup,
+            libs.freemarker,
         )
     }
 }
