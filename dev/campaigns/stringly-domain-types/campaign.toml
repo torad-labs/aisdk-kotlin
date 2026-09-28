@@ -6,6 +6,7 @@
 
 # LAW [2026-07-25]: WORKTREES ARE FORBIDDEN for this campaign. Workflow calls carry no isolation option; every mutating or testing role uses a unique ordinary local clone under dev/campaigns/stringly-domain-types/sandboxes and never writes the source checkout.
 # LAW [2026-07-26]: Because v0.3.0-beta01 is already published, public APIs and deprecations introduced by this campaign target 0.3.0-beta02; use @since/deprecation wording for beta02, and V1 bumps VERSION_NAME accordingly while the branch name remains unchanged.
+# LAW [2026-09-28]: The operator's one-checkout rule (~/.claude/CLAUDE.md §18, 2026-09-26, extended 2026-09-28) supersedes the clone clause of the 2026-07-25 worktree law above: no role makes a local clone, a copy or an export of this repository, in sandboxes or anywhere else. Every role works in this checkout, on its shared branch, splits by file with the seat-lock, and commits by explicit path; a detached `git worktree add --detach` build tree is the only other tree. The 15_one_checkout hook blocks the old clone step, so a resumed campaign rewrites its roles to this rule first.
 [campaign]
 name = "campaign"
 created = "2026-07-25"
