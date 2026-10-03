@@ -141,7 +141,7 @@ check(
     "ledger CLI path via Bash is untouched",
     not blocked(run_target({
         "tool_name": "Bash",
-        "tool_input": {"command": "python3 dev/campaigns/manifest.py get HD-10"},
+        "tool_input": {"command": "bun dev/campaigns/ledger.ts dev/campaigns/gate-hardening.toml get HD-10"},
     })),
 )
 

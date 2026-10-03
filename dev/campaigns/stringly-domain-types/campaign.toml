@@ -1,12 +1,8 @@
-# LAW [2026-07-25]: All campaign work stays on release/v0.3.0-beta01 and preserves every pre-existing dirty-tree change; agents never commit.
-# LAW [2026-07-25]: The mechanical adjudicators are focused JVM tests during each item, ./gradlew check after each wave, and bash .claude/hooks/rules/ci-gate.sh at campaign close; no bypasses.
-# LAW [2026-07-25]: Public construct-types remain ABI-evolvable: @Poko or regular classes with internal constructors plus builders; no new public data classes; explicit wire values and one canonical raw representation.
-# LAW [2026-07-25]: Provider-open outbound vocabularies keep custom(nonblank) escapes; inbound parsing preserves Unknown(raw) where policy is forward-compatible; closed types are reserved for SDK-owned routing and lifecycle domains.
-# LAW [2026-07-25]: Public API changes require ./gradlew updateKotlinAbi plus CHANGELOG.md and INTERFACE_CONTRACT.md updates, all reconciled against the combined dirty tree.
-
-# LAW [2026-07-25]: WORKTREES ARE FORBIDDEN for this campaign. Workflow calls carry no isolation option; every mutating or testing role uses a unique ordinary local clone under dev/campaigns/stringly-domain-types/sandboxes and never writes the source checkout.
-# LAW [2026-07-26]: Because v0.3.0-beta01 is already published, public APIs and deprecations introduced by this campaign target 0.3.0-beta02; use @since/deprecation wording for beta02, and V1 bumps VERSION_NAME accordingly while the branch name remains unchanged.
-# LAW [2026-09-28]: The operator's one-checkout rule (~/.claude/CLAUDE.md §18, 2026-09-26, extended 2026-09-28) supersedes the clone clause of the 2026-07-25 worktree law above: no role makes a local clone, a copy or an export of this repository, in sandboxes or anywhere else. Every role works in this checkout, on its shared branch, splits by file with the seat-lock, and commits by explicit path; a detached `git worktree add --detach` build tree is the only other tree. The 15_one_checkout hook blocks the old clone step, so a resumed campaign rewrites its roles to this rule first.
+# LAW [2026-07-25]: Public construct-types stay ABI-evolvable: @Poko or classes with internal constructors plus builders; no new public data classes; explicit wire values, one canonical raw form.
+# LAW [2026-07-25]: Provider-open outbound vocabularies keep custom(nonblank); forward-compatible inbound parsing keeps Unknown(raw); closed types only for SDK-owned routing and lifecycle domains.
+# LAW [2026-07-25]: Public API changes require ./gradlew updateKotlinAbi plus CHANGELOG.md and INTERFACE_CONTRACT.md updates.
+# LAW [2026-07-26]: v0.3.0-beta01 is published, so public APIs and deprecations added by this campaign target 0.3.0-beta02 in @since and deprecation text; row V1 bumps VERSION_NAME.
+# LAW [2026-09-28]: Operator one-checkout rule (~/.claude/CLAUDE.md §18): no clone, copy, export or worktree; every role works in this checkout on the shared branch and commits by explicit path.
 [campaign]
 name = "campaign"
 created = "2026-07-25"

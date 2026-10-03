@@ -48,5 +48,7 @@ regexes = [
   '''\.api"\s*:\s*"[0-9a-f]{32,64}"''',
   # The campaign-proof PUBLIC key's SHA-256 fingerprint, pinned as a LITERAL.
   # A key identifier, not a secret; the PEM sits beside it in manifest.py.
+  # manifest.py left the tree on 2026-10-03, but secret-scan.yml scans the full
+  # history, which still holds it: without this entry gitleaks v8.21.2 reports it.
   '''7d212c67f2a1d27bee8abede500a9e25984bc52bf52dfde50990a6ee1fe1807b''',
 ]
