@@ -20,29 +20,8 @@
 # orchestrator commits ALWAYS name pathspecs (git commit <paths> -m ...) —
 # bare `git commit` sweeps the shared index (learned 978502d, both roles now).
 #
-# TOOLING LAW (operator directive, 2026-07-03): ast-grep is the standard
-# instrument for ALL code work, BOTH roles, MCP + CLI. Find code with
-# find_code / `ast-grep run --pattern`; audit with find_code_by_rule / YAML
-# rules; EDIT with `--rewrite` / `fix:` — single-file, multi-file, and mass
-# rewrites alike. For large or many-file edits: PLAN THE RULES CAREFULLY
-# FIRST — dump_syntax_tree to learn the node kinds, test_match_code_rule to
-# prove the rule matches the violation AND skips the compliant form — then
-# rewrite. Structural rewrites over regex/sed on code, always; grep/rg stays
-# only for non-code text. More effective and more correct: that is the point.
-#
-# VERIFY LAW LP-6 (2026-07-03): fixture-green is not live-green. Every item
-# that adds or changes a guard/rule/check MUST verify it against the NAMED
-# real site it protects (the actual file/artifact in this repo), or state
-# that no real site exists and synthesize one in scratch. Proven twice in one
-# day: HD-11 (dump guard green-tested yet inert for api/jvm/...) and HD-13
-# (matcher green-tested yet blind to the annotated AbortSignal catch).
-#
-# CODEMOD LAW LP-9 (2026-07-03): fix-rule-first adjudication. When a sweep
-# reveals a uniform mechanical fix shape across N sites, author the fix rule
-# (with fixExamples) BEFORE touching sites; the prepass applies the mechanical
-# majority and hand-work shrinks to the exceptions, which become structural
-# carve-outs per LP-7. Proven by inversion cost: HD-06 hand-fixed 21 sites,
-# then HD-13 built the codemod that would have fixed about 20 of them.
+# LAW TOOLING (operator directive, 2026-07-03): ast-grep for ALL code search, audit and edits, MCP and CLI; many-file rewrites first prove the rule matches the violation and skips the compliant form.
+# LAW LP-6 (verify, 2026-07-03): fixture-green is not live-green; an item that adds or changes a guard, rule or check verifies it against the named real site it protects, or synthesizes one.
 
 
 

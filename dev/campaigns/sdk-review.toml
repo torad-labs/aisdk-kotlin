@@ -10,17 +10,10 @@
 #
 # CLI: bun dev/campaigns/ledger.ts dev/campaigns/sdk-review.toml <command>   (raw edits hook-blocked)
 #
-# LAW: every fix lands with a regression test that FAILS on unmodified HEAD (red proof noted in
-#      the item) and passes after — a fix without a red test is unvalidated.
-# LAW: every commit passes bash .claude/hooks/rules/ci-gate.sh — never --no-verify, never a
-#      skip env; a misfiring gate gets fixed, not bypassed.
-# LAW: public API changes regenerate ABI dumps (./gradlew updateKotlinAbi) and update
-#      CHANGELOG.md + INTERFACE_CONTRACT.md in the same commit.
-# LAW: done = builder claims landed; verified = orchestrator independently re-ran the gates and
-#      read the diff. Only the orchestrator sets verified.
-# LAW: wire-format claims (codecs, provider request/response mapping) are verified against the
-#      REAL wire — a captured payload or the provider's documented schema cited in the note —
-#      never against the code's own mirror types.
+# LAW: every fix lands with a regression test that FAILS on unmodified HEAD and passes after; a fix without a red test is unvalidated.
+# LAW: every commit passes bash .claude/hooks/rules/ci-gate.sh; never --no-verify, never a skip env; a misfiring gate gets fixed, not bypassed.
+# LAW: public API changes regenerate ABI dumps (./gradlew updateKotlinAbi) and update CHANGELOG.md + INTERFACE_CONTRACT.md in the same commit.
+# LAW: wire-format claims (codecs, provider request/response mapping) are checked against the REAL wire: a captured payload or the provider's documented schema, cited in the note, never mirror types.
 # ═════════════════════════════════════════════════════════════════════════════════════════════
 
 [[items]]

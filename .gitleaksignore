@@ -1,8 +1,8 @@
 # Vetted false positives (2026-07-30 triage, PR #15). Every fingerprint was
-# inspected: an Ed25519 PUBLIC key used to verify campaign transitions, and
-# sha256 content digests recorded in campaign baselines. No credential has ever
-# been committed to this repo. A NEW finding must be triaged, not appended here.
-6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/manifest.py:generic-api-key:133
+# inspected: sha256 content digests recorded in campaign baselines. (The Ed25519
+# PUBLIC key in manifest.py is covered by the literal in .gitleaks.toml.) No
+# credential has ever been committed to this repo. A NEW finding must be
+# triaged, not appended here.
 6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/wave-R2-baseline.json:generic-api-key:15
 6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/wave-R2-baseline.json:generic-api-key:16
 6a5473d37afda126f5ff14202cf2c163ee539463:dev/campaigns/stringly-domain-types/current-working-tree-I1.patch:generic-api-key:206
