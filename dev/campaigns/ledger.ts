@@ -12,7 +12,6 @@
  * number of campaigns.
  */
 
-import { liveGrant } from "../../.claude/hooks/grant-store.ts";
 import {
   findBlock,
   headerLines,
@@ -29,15 +28,6 @@ import {
   type ItemBlock,
   type ItemStatus,
 } from "./ledger-core.ts";
-import {
-  assertItemMandates,
-  handleLedgerEarn,
-} from "./ledger-earn.ts";
-import {
-  parseDepends,
-  parseRequires,
-  parseReviews,
-} from "./earn-core.ts";
 
 const USAGE = `usage: bun dev/campaigns/ledger.ts <ledger.toml> <command> [args]
 
@@ -46,22 +36,16 @@ read
   get <ID>                          one item with its notes (~15 lines, not the whole file)
   next                              the next actionable item
   laws                              the law sheet from the ledger header
-  packet <ID>                       a self-contained dispatch brief with computed fences
+  packet <ID>                       a self-contained dispatch brief with the four-step finish
 
 write
   add --id I --phase P --title T [--files a,b] [--verify V] [--status S]
   set-status <ID> <status>          ${ITEM_STATUSES.join(" | ")}
   note <ID> "text"                  append a dated note (never rewrites history)
-  depends <ID> <dep[,…]>
-  require <ID> <done|verified> <slug[,…]>
-  remedy <ID>
-  (hydrate closed items: bun dev/campaigns/hydrate.ts <ledger> <ID>)
-  claim <ID> <seat>                 record ownership with a liveness stamp
-  release-stale [--minutes N]       release claims older than N minutes (default 60)
   add-law "text"                    append a law to the header
   amend-header <old> <new>          replace a line in the header
   amend <ID> [--title T] [--verify V] [--files a,b]
-                                    rewrite dispatch fields (grant-gated; old values auto-noted)
+                                    rewrite dispatch fields (old values auto-noted)
 
 check
   validate                          parse the ledger and report item counts
@@ -133,19 +117,6 @@ function renderItem(lines: readonly string[], block: ItemBlock): string {
   if (item.claimedBy !== undefined) {
     body.push(`  claim  : ${item.claimedBy} since ${item.claimedAt ?? "unknown"}`);
   }
-  const depends = parseDepends(notes);
-  const req = parseRequires(notes);
-  const reviews = parseReviews(notes);
-  if (depends.length > 0) body.push(``, `  depends: ${depends.join(", ")}`);
-  if (req.ready.length || req.verified.length) {
-    body.push(``, `  mandates:`);
-    if (req.ready.length) body.push(`    done/ready : ${req.ready.join(", ")}`);
-    if (req.verified.length) body.push(`    verified   : ${req.verified.join(", ")}`);
-  }
-  if (reviews.length > 0) {
-    body.push(``, `  reviews: ${reviews.length}/3`);
-    for (const r of reviews) body.push(`    · #${r.n} ${r.verdict} ${r.artifact}`);
-  }
   if (notes.length > 0) {
     body.push(``, `  notes (append-only — the construction diary):`);
     for (const note of notes) body.push(`    ${note}`);
@@ -165,63 +136,51 @@ function pickNext(blocks: readonly ItemBlock[]): ItemBlock | null {
   );
 }
 
+/** A law is a header line starting `# LAW`: `# LAW:`, `# LAW [date]:`, `# LAW LP-6 …`. */
+function lawLines(lines: readonly string[]): string[] {
+  return headerLines(lines).filter((line) => /^#\s*LAW\b/.test(line));
+}
+
 /**
- * A dispatch packet. Self-contained by construction (concept #945 §5): laws, the item text, the
- * writable fence, the verify gate, and the reply contract. A packet that makes the reader open
- * the ledger to understand it has already failed — the point is that a fresh context can act.
+ * A dispatch packet. Self-contained by construction (concept #945 §5): laws, the item text, its
+ * files, the verify line, and the four-step finish. A packet that makes the reader open the ledger
+ * to understand it has already failed — the point is that a fresh context can act.
  */
-function renderPacket(lines: readonly string[], block: ItemBlock): string {
+function renderPacket(ledgerPath: string, lines: readonly string[], block: ItemBlock): string {
   const { item } = block;
-  const laws = headerLines(lines)
-    .filter((line) => line.trimStart().startsWith("# LAW:"))
-    .map((line) => `  ${line.replace(/^\s*#\s*/, "")}`);
+  const laws = lawLines(lines).map((line) => `  ${line.replace(/^\s*#\s*/, "")}`);
+  const cli = `bun dev/campaigns/ledger.ts ${ledgerPath}`;
 
   return [
     `ITEM ${item.id} — ${item.phase}`,
     ``,
     item.title,
     ``,
-    `WRITABLE FENCE (do not write outside this list):`,
+    `FILES (take a file lock only on a file another open row also names):`,
     item.files.length === 0
-      ? `  (none declared — declare files before dispatching, or the fence is meaningless)`
+      ? `  (none declared)`
       : item.files.map((file) => `  ${file}`).join("\n"),
     ``,
-    `VERIFY GATE (this is the definition of done for this item):`,
-    `  ${item.verify === "" ? "(none declared — do not dispatch without one)" : item.verify}`,
+    `VERIFY (scoped tests for what the row touched, plus the typecheck, until green):`,
+    `  ${item.verify === "" ? "(none declared)" : item.verify}`,
     ``,
-    ...(() => {
-      const notes = notesOf(lines, block);
-      const depends = parseDepends(notes);
-      const req = parseRequires(notes);
-      const parts: string[] = [];
-      if (depends.length) {
-        parts.push(`DEPENDS (finish these first):`, ...depends.map((d) => `  ${d}`), ``);
-      }
-      if (req.ready.length || req.verified.length) {
-        parts.push(`MANDATES (earned-row; status refused without receipts):`);
-        if (req.ready.length) parts.push(`  done     : ${req.ready.join(", ")}`);
-        if (req.verified.length) parts.push(`  verified : ${req.verified.join(", ")}`);
-        parts.push(
-          `  review-clean → subagents: bun dev/campaigns/review.ts prepare ${item.id} --diff <range>`,
-          ``,
-        );
-      }
-      return parts;
-    })(),
     `LAWS IN FORCE:`,
     laws.length === 0 ? `  (none in header)` : laws.join("\n"),
     ``,
-    `REPORTING:`,
-    `  Write landing details as ledger notes:`,
-    `    bun dev/campaigns/ledger.ts <ledger> note ${item.id} "..."`,
-    `  Then send exactly one line: "${item.id} done — see ledger".`,
-    `  Long prose over the channel is the anti-pattern; the note IS the report.`,
+    `FINISH (these four steps and nothing else):`,
+    `  1. ${cli} set-status ${item.id} in_flight`,
+    `  2. Edit the row's files.`,
+    `  3. Run the verify line until green.`,
+    `  4. ${cli} note ${item.id} "<command> exit=<code> tests=<count>"`,
+    `     ${cli} set-status ${item.id} done`,
+    `     Then ONE commit of the row's files plus the ledger, by explicit path, message starting`,
+    `     with the row id:  git commit -m "${item.id}: <what changed>" -- <files> ${ledgerPath}`,
+    `     (a new file: git add <file> && git commit ... in one command).`,
+    `  The orchestrator sets verified once the milestone's PR lands green.`,
     ``,
     `PREMISE CHECK:`,
     `  If anything in this packet contradicts the repo, REPORT it — do not obey it. A wrong`,
     `  premise from the orchestrator is still a wrong premise.`,
-    ``,
-    `DO NOT COMMIT. The orchestrator holds the single gated commit point.`,
   ].join("\n");
 }
 
@@ -245,19 +204,15 @@ function withNote(lines: readonly string[], block: ItemBlock, text: string): str
   return next;
 }
 
-function withField(lines: readonly string[], block: ItemBlock, key: string, value: string | null): string[] {
+function withField(lines: readonly string[], block: ItemBlock, key: string, value: string): string[] {
   const next = [...lines];
   for (let index = block.start; index < block.end; index += 1) {
     if (new RegExp(`^\\s*${key}\\s*=`).test(next[index] ?? "")) {
-      if (value === null) {
-        next.splice(index, 1);
-        return next;
-      }
       next[index] = `${key} = ${toml(value)}`;
       return next;
     }
   }
-  if (value !== null) next.splice(block.end, 0, `${key} = ${toml(value)}`);
+  next.splice(block.end, 0, `${key} = ${toml(value)}`);
   return next;
 }
 
@@ -278,15 +233,10 @@ async function main(): Promise<number> {
   const rest = argv.slice(2);
 
   /**
-   * `verified` IS THE ORCHESTRATOR'S WORD ON THIS PLANE TOO.
+   * `verified` IS THE ORCHESTRATOR'S WORD.
    *
-   * The matrix got this control in round 3 and the ledger did not, which was backwards: "only the
-   * orchestrator sets verified" is the CAMPAIGN law, so the ledger is the plane where it matters
-   * most and it was the plane without the gate. Any seat could close its own item as verified.
-   *
-   *   done      a builder claims it landed
-   *   verified  the orchestrator independently re-ran the gates, read the diff, and confirmed
-   *             against the packet
+   *   done      a builder finished the row: note written, status set, one commit
+   *   verified  the orchestrator sets it once the milestone's PR lands green
    *
    * Same honest limit as everywhere else: on a NOPASSWD host a builder that wants to set this can.
    * What the check buys is that doing so becomes deliberate and self-incriminating rather than the
@@ -300,72 +250,12 @@ async function main(): Promise<number> {
   if (claimsVerified && (process.env[ORCHESTRATOR_ENV] ?? "") !== "1") {
     throw new LedgerError(
       `"verified" is the orchestrator's word, not a builder's.\n\n` +
-        `  done      a builder claims it landed\n` +
-        `  verified  the orchestrator independently re-ran the gates, read the diff, and\n` +
-        `            confirmed against the packet\n\n` +
-        `Set it to "done" and report; the orchestrator verifies. If you ARE the orchestrator,\n` +
+        `  done      a builder finished the row: note written, status set, one commit\n` +
+        `  verified  the orchestrator sets it once the milestone's PR lands green\n\n` +
+        `Set it to "done"; the orchestrator verifies. If you ARE the orchestrator,\n` +
         `re-run with ${ORCHESTRATOR_ENV}=1 set inline.\n\n` +
         `Stated plainly: on a NOPASSWD host a builder that wants to set this can. What the check\n` +
         `buys is that doing so is deliberate rather than the default path.`,
-    );
-  }
-
-  /**
-   * THE LAW CHANNEL IS GRANT-GATED.
-   *
-   * `10-law-injection` splices every `# LAW:` line from the header into every future session,
-   * introduced there as "not advice". Left open, `add-law` is an unauthenticated cross-session
-   * prompt-injection channel: any seat appends a line, and every later session — the
-   * orchestrator's included — ingests it as binding law. `book-laws` only checks name parity, and
-   * only when someone runs it.
-   *
-   * The file wall cannot cover this, because the CLI is the SANCTIONED writer. So the check lives
-   * at the one door that is allowed through.
-   *
-   * What it buys, precisely: on a NOPASSWD host the header stays writable by other means. This
-   * stops the law channel from being the CONVENIENT path, and makes a law change something the
-   * operator authorised rather than something that simply appeared.
-   */
-  if (command === "add-law" || command === "amend-header" || command === "amend") {
-    const repoRoot = (await Bun.$`git rev-parse --show-toplevel`.quiet().nothrow().text()).trim();
-    const grant = await liveGrant(repoRoot === "" ? "." : repoRoot);
-    if (grant === null) {
-      // `amend` sits behind the same gate for the same reason in a different plane: the packet
-      // renders title/verify/files verbatim as the brief and the definition of done, so an open
-      // amend lets a seat weaken its own done-bar — the self-grant shape with a field for a wall.
-      const what =
-        command === "amend"
-          ? `rewrites dispatch fields the packet renders verbatim — the writable fence and the ` +
-            `definition of done`
-          : `writes the law header, which is injected into every future session as binding law`;
-      throw new LedgerError(
-        `"${command}" ${what}. That needs a grant.\n\n` +
-          `Ask the operator to type:  /grant <why this is changing>\n` +
-          `  (optionally with a window: /grant 30m <why>; /grant status; /grant revoke)\n\n` +
-          `That is handled here by .claude/hooks/modules/userpromptsubmit/grant_issue_policy.py.\n` +
-          `It fires ONLY on text a human typed, which is what keeps issuance operator-only — an\n` +
-          `assistant cannot emit a user prompt. Do not work around this by writing the token\n` +
-          `directly or giving a script an issue() mode.\n\n` +
-          `Often you do not need a grant at all: a wrong dispatch field can be corrected by\n` +
-          `appending "note <ID>", the append-only channel this ledger is built around.`,
-      );
-    }
-    /**
-     * THIS CHECK IS NOT SESSION-BOUND, AND CANNOT BE.
-     *
-     * The PreToolUse grant gate compares `payload.session_id`, so a grant issued to one seat does
-     * not open another. This door has no equivalent: the CLI runs under Bash, and a Bash process
-     * carries no session identity for the check to compare against. So while a grant is open, ANY
-     * seat's `add-law` is authorised by it — including a concurrent builder the operator was not
-     * thinking about when they typed it.
-     *
-     * That is a real weakening of the session-binding property, and it is announced on every use
-     * rather than left for someone to discover in the source. Keep law-changing windows short.
-     */
-    console.error(
-      `note: this grant is NOT session-bound. The CLI runs under Bash, which carries no session\n` +
-        `      id, so while the grant is open any concurrent seat's add-law/amend-header is also\n` +
-        `      authorised by it. Grant expires ${grant.expiresAt}. Keep the window short.`,
     );
   }
 
@@ -388,13 +278,13 @@ async function main(): Promise<number> {
     }
 
     case "laws": {
-      const laws = headerLines(lines).filter((line) => line.trimStart().startsWith("# LAW:"));
+      const laws = lawLines(lines);
       console.log(laws.length === 0 ? "no laws in header" : laws.join("\n"));
       return 0;
     }
 
     case "packet":
-      console.log(renderPacket(lines, findBlock(blocks, positional(rest, 0, "an item id"))));
+      console.log(renderPacket(ledgerPath, lines, findBlock(blocks, positional(rest, 0, "an item id"))));
       return 0;
 
     case "validate": {
@@ -414,11 +304,9 @@ async function main(): Promise<number> {
       const id = positional(rest, 0, "an item id");
       const status = positional(rest, 1, `a status (${ITEM_STATUSES.join("|")})`);
       if (!isItemStatus(status)) throw new LedgerError(`"${status}" is not a status`);
-      await mutate(ledgerPath, (current) => {
-        const block = findBlock(locateItems(current), id);
-        assertItemMandates(id, status, notesOf(current, block));
-        return withStatus(current, block, status);
-      });
+      await mutate(ledgerPath, (current) =>
+        withStatus(current, findBlock(locateItems(current), id), status),
+      );
       console.log(`${id} → ${status}`);
       return 0;
     }
@@ -430,49 +318,6 @@ async function main(): Promise<number> {
         withNote(current, findBlock(locateItems(current), id), text),
       );
       console.log(`${id}: note appended`);
-      return 0;
-    }
-
-    case "claim": {
-      const id = positional(rest, 0, "an item id");
-      const seat = positional(rest, 1, "a seat name");
-      await mutate(ledgerPath, (current) => {
-        const block = findBlock(locateItems(current), id);
-        if (block.item.claimedBy !== undefined && block.item.claimedBy !== seat) {
-          throw new LedgerError(
-            `${id} is already claimed by ${block.item.claimedBy} since ${block.item.claimedAt} — ` +
-              `use release-stale if that seat is dead`,
-          );
-        }
-        const withSeat = withField(current, block, "claimed_by", seat);
-        const relocated = findBlock(locateItems(withSeat), id);
-        return withField(withSeat, relocated, "claimed_at", new Date().toISOString());
-      });
-      console.log(`${id} claimed by ${seat}`);
-      return 0;
-    }
-
-    case "release-stale": {
-      const minutes = Number.parseInt(flag(rest, "minutes") ?? "60", 10);
-      const cutoff = Date.now() - minutes * 60_000;
-      const stale = blocks.filter((block) => {
-        if (block.item.claimedAt === undefined) return false;
-        return Date.parse(block.item.claimedAt) < cutoff;
-      });
-
-      for (const block of stale) {
-        await mutate(ledgerPath, (current) => {
-          const located = findBlock(locateItems(current), block.item.id);
-          const cleared = withField(current, located, "claimed_by", null);
-          const relocated = findBlock(locateItems(cleared), block.item.id);
-          return withField(cleared, relocated, "claimed_at", null);
-        });
-      }
-      console.log(
-        stale.length === 0
-          ? `no claims older than ${minutes}m`
-          : `released ${stale.map((block) => block.item.id).join(", ")}`,
-      );
       return 0;
     }
 
@@ -549,7 +394,7 @@ async function main(): Promise<number> {
         }
         // The old values are the audit trail: an amend that leaves no trace of what it replaced
         // is a rewrite of history, which is exactly what this CLI exists to prevent.
-        return withNote(next, block, `amend (grant window): ${audit.join("; ")}`);
+        return withNote(next, block, `amend: ${audit.join("; ")}`);
       });
       console.log(`${id}: amended — old values preserved as a dated note`);
       return 0;
@@ -584,16 +429,9 @@ async function main(): Promise<number> {
       return 0;
     }
 
-    default: {
-      const handled = await handleLedgerEarn(ledgerPath, command, rest, {
-        locateItems,
-        findBlock,
-        flag,
-      });
-      if (handled) return 0;
+    default:
       console.error(`unknown command "${command}"\n\n${USAGE}`);
       return 1;
-    }
   }
 }
 
@@ -620,7 +458,9 @@ async function selftest(): Promise<number> {
     [
       `# selftest ledger`,
       `# LAW: manifest-is-memory — an item must be resumable from the ledger alone`,
-      `# LAW: verified-commits-immediately`,
+      `# LAW [2026-10-03]: dated-law-form-reads`,
+      `# LAW LP-6 (2026-07-03): id-law-form-reads`,
+      `# a header line that mentions a LAW mid-sentence is not-a-law`,
       ``,
       `[[items]]`,
       `id = "H1"`,
@@ -630,6 +470,7 @@ async function selftest(): Promise<number> {
       `status = "todo"`,
       `verify = "bun run gate"`,
       `# 2026-07-26 a pre-existing note that must survive every write`,
+      `# require:ready:unit`,
       ``,
       `[[items]]`,
       `id = "H2"`,
@@ -638,35 +479,55 @@ async function selftest(): Promise<number> {
       `files = []`,
       `status = "verified"`,
       `verify = ""`,
+      `claimed_by = "old-seat"`,
+      `claimed_at = "2026-07-01T00:00:00Z"`,
       ``,
     ].join("\n"),
   );
 
-  const run = async (...args: string[]): Promise<string> => {
+  // Every spawn runs as a builder unless asked otherwise, so an orchestrator running the selftest
+  // with LEDGER_ORCHESTRATOR=1 exported still exercises the builder's view.
+  const runAs = async (orchestrator: boolean, ...args: string[]): Promise<string> => {
     const proc = Bun.spawn(["bun", import.meta.path, path, ...args], {
       stdout: "pipe",
       stderr: "pipe",
+      env: { ...process.env, LEDGER_ORCHESTRATOR: orchestrator ? "1" : "" },
     });
     const out = await new Response(proc.stdout).text();
     const err = await new Response(proc.stderr).text();
     await proc.exited;
     return out + err;
   };
+  const run = (...args: string[]): Promise<string> => runAs(false, ...args);
 
   console.log("ledger selftest");
 
   check("list shows both items", (await run("list")).includes("H1") && (await run("list")).includes("H2"));
   check("list --status filters", !(await run("list", "--status", "todo")).includes("H2"));
   check("get returns the item", (await run("get", "H1")).includes("first item"));
+  check("get returns the item, not the file", !(await run("get", "H1")).includes("manifest-is-memory"));
   check("get surfaces existing notes", (await run("get", "H1")).includes("must survive"));
   check("next prefers an open item", (await run("next")).includes("H1"));
-  check("laws reads the header", (await run("laws")).includes("manifest-is-memory"));
-  check("packet is self-contained", (await run("packet", "H1")).includes("WRITABLE FENCE"));
-  check("packet carries the laws", (await run("packet", "H1")).includes("manifest-is-memory"));
+
+  const laws = await run("laws");
+  check("laws reads `# LAW:`", laws.includes("manifest-is-memory"));
+  check("laws reads `# LAW [date]:`", laws.includes("dated-law-form-reads"));
+  check("laws reads `# LAW <id>`", laws.includes("id-law-form-reads"));
+  check("laws skips a header line that only mentions LAW", !laws.includes("not-a-law"));
+
+  const packet = await run("packet", "H1");
+  check("packet carries the laws", packet.includes("manifest-is-memory") && packet.includes("dated-law-form-reads"));
+  check("packet names the row's files", packet.includes("dev/a.ts"));
+  check("packet carries the four-step finish", packet.includes("ONE commit") && packet.includes("set-status H1 done"));
+  check("packet says when verified is set", packet.includes("milestone's PR lands green"));
+  check("packet has no commit ban or fence", !packet.includes("DO NOT COMMIT") && !packet.includes("FENCE"));
+
+  check("an old claim still reads", (await run("get", "H2")).includes("old-seat"));
+  check("claim is no longer a verb", (await run("claim", "H1", "builder-1")).includes("unknown command"));
+  check("release-stale is no longer a verb", (await run("release-stale")).includes("unknown command"));
 
   await run("set-status", "H1", "in_flight");
   await run("note", "H1", "a note added by the selftest");
-  await run("claim", "H1", "builder-1");
 
   const afterWrites = await Bun.file(path).text();
 
@@ -677,57 +538,42 @@ async function selftest(): Promise<number> {
   check("pre-existing item notes survive writes", afterWrites.includes("must survive every write"));
   check("the new note landed", afterWrites.includes("a note added by the selftest"));
   check("the note is dated", new RegExp(`# ${today()} a note added`).test(afterWrites));
-
   check("set-status took effect", (await run("get", "H1")).includes("[in_flight]"));
-  check("claim recorded the seat", (await run("get", "H1")).includes("builder-1"));
-  check("a second claim by another seat is refused", (await run("claim", "H1", "builder-2")).includes("already claimed"));
-  check("release-stale spares a fresh claim", (await run("release-stale", "--minutes", "60")).includes("no claims older"));
-  check("release-stale releases an old one", (await run("release-stale", "--minutes", "0")).includes("H1"));
+
+  // A row finishes with a note, set-status done and one commit: no receipt, proof or review.
+  // H1 carries a legacy `# require:` note, which the earned-row plane used to enforce.
+  check("set-status done needs no receipt", (await run("set-status", "H1", "done")).includes("H1 → done"));
+  check("done took effect", (await run("get", "H1")).includes("[done]"));
+
+  // `verified` stays the orchestrator's word.
+  const beforeVerified = await Bun.file(path).text();
+  check("a builder cannot set verified", (await run("set-status", "H1", "verified")).includes("orchestrator's word"));
+  check("the refused verified wrote nothing", (await Bun.file(path).text()) === beforeVerified);
+  check("the orchestrator can set verified", (await runAs(true, "set-status", "H1", "verified")).includes("H1 → verified"));
 
   await run("add", "--id", "H3", "--phase", "harness", "--title", "third", "--verify", "bun run gate");
   check("add created the item", (await run("get", "H3")).includes("third"));
   check("duplicate ids are refused", (await run("add", "--id", "H3", "--phase", "p", "--title", "t")).includes("already exists"));
 
-  // THE LAW CHANNEL. `10-law-injection` splices every `# LAW:` line into every future session as
-  // binding law, so `add-law` is a cross-session injection channel and now requires a grant.
-  //
-  // The assertion is written against the ACTUAL grant state rather than assuming one. Hardcoding
-  // "add-law is refused" would pass or fail depending on whether a grant happened to be open when
-  // the suite ran — a test whose verdict depends on ambient state is not a test. Both branches
-  // exercise the real code path; neither is a skip.
-  const repoRoot = (await Bun.$`git rev-parse --show-toplevel`.quiet().nothrow().text()).trim();
-  const grantOpen = (await liveGrant(repoRoot === "" ? "." : repoRoot)) !== null;
-  const lawAttempt = await run("add-law", "silence-is-a-system-bug");
+  // The law and amend channels are plain ledger writes: no grant, and the old value is kept.
+  check("add-law appends to the header", (await run("add-law", "silence-is-a-system-bug")).includes("law appended"));
+  check("the new law reads", (await run("laws")).includes("silence-is-a-system-bug"));
+  check("add-law kept the existing laws", (await run("laws")).includes("dated-law-form-reads"));
+  check("amend-header replaces a header line", (await run("amend-header", "id-law-form-reads", "id-law-amended")).includes("header amended"));
+  check("the amended law reads", (await run("laws")).includes("id-law-amended"));
 
-  if (grantOpen) {
-    check("with a grant live, add-law appends to the header", (await run("laws")).includes("silence-is-a-system-bug"));
-    check("add-law did not disturb existing laws", (await run("laws")).includes("verified-commits-immediately"));
-  } else {
-    check("without a grant, add-law is REFUSED", lawAttempt.includes("needs a grant"));
-    check(
-      "the refusal wrote nothing — fails closed, not half-applied",
-      !(await run("laws")).includes("silence-is-a-system-bug"),
-    );
-    check(
-      "amend-header is gated by the same rule",
-      (await run("amend-header", "manifest-is-memory", "tampered")).includes("needs a grant"),
-    );
-    check("existing laws are untouched by a refused attempt", (await run("laws")).includes("verified-commits-immediately"));
-  }
+  check("amend replaces a field", (await run("amend", "H3", "--verify", "a brand new verify")).includes("amended"));
+  const amended = await run("get", "H3");
+  check("amend took effect", amended.includes("verify : a brand new verify"));
+  check("amend preserved the old value as a dated note", amended.includes("amend: verify was"));
+  check("amend with no field flags is refused", (await run("amend", "H3")).includes("at least one of"));
 
-  // THE AMEND CHANNEL. `amend` rewrites what a packet renders verbatim — the fence and the
-  // definition of done — so it sits behind the same grant as the law channel, and every use must
-  // preserve the old value as a dated note. Same both-branches pattern as add-law above.
-  const amendAttempt = await run("amend", "H1", "--verify", "a brand new verify gate");
-  if (grantOpen) {
-    check("with a grant live, amend replaces the verify field", (await run("get", "H1")).includes("a brand new verify gate"));
-    check("amend preserved the old value as a dated note", (await run("get", "H1")).includes("verify was"));
-    check("amend did not eat prior notes", (await run("get", "H1")).includes("must survive"));
-    check("amend with no field flags is refused", (await run("amend", "H1")).includes("at least one of"));
-  } else {
-    check("without a grant, amend is REFUSED", amendAttempt.includes("needs a grant"));
-    check("the refused amend wrote nothing", !(await run("get", "H1")).includes("a brand new verify gate"));
-  }
+  // A FAILED MUTATION rolls back: `note NOPE` throws inside mutate's transform, after the lock is
+  // taken, which is the path that has to leave the file byte-identical and release the lock.
+  const beforeFailed = await Bun.file(path).text();
+  check("a failed mutation is reported", (await run("note", "NOPE", "no such item")).includes("no item with id"));
+  check("a failed mutation leaves the file byte-identical", (await Bun.file(path).text()) === beforeFailed);
+  check("a failed mutation releases its lock", !(await Bun.file(`${path}.lock`).exists()));
 
   check("validate passes", (await run("validate")).includes("valid"));
   check("unknown ids are refused", (await run("get", "NOPE")).includes("no item with id"));
