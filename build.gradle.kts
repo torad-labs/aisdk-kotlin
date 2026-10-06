@@ -264,6 +264,19 @@ tasks.withType<org.gradle.api.tasks.compile.JavaCompile>().configureEach {
     options.release.set(17)
 }
 
+// A failed test prints its assertion message and stack, not Gradle's default one-line
+// "AssertionError at File.kt:46". On 2026-10-03 CappedDownloadIsStreamingTest failed once
+// on Windows (aisdk-kotlin#106) and passed on the next run; the run kept no report, so which
+// of its assertions failed was lost. CI logs are the only record a red run leaves.
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    testLogging {
+        events(org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED)
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showCauses = true
+        showStackTraces = true
+    }
+}
+
 dependencies {
     detektCliRuntime(libs.detekt.cli)
     detektPluginClasspath(libs.detekt.formatting)
