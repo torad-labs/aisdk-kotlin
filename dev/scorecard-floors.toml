@@ -25,9 +25,9 @@ signal = "weekly score-floor gate → workflow failure → auto-filed issue"
 
 [[check]]
 id = "CodeReviewID"
-floor = 3
-recorded = "2026-08-02"
-cap = "Solo-maintainer ceiling: approved changesets require a second human reviewer and GitHub forbids self-approval. The maintainer's own merge discipline is the control; the required-approval rule still walls off everyone else from merging."
+floor = 1
+recorded = "2026-10-05"
+cap = "Solo-maintainer ceiling: approved changesets require a second human reviewer and GitHub forbids self-approval. The maintainer's own merge discipline is the control; the required-approval rule still walls off everyone else from merging. The 2026-08-02 floor of 3 counted human PRs merged by github-actions[bot] auto-merge as implicitly reviewed (merger != committer); since 2026-09-28 the maintainer merges them, so the score reflects merge identity, not review practice, and 1 is the structural level."
 signal = "weekly score-floor gate → workflow failure → auto-filed issue"
 
 [[check]]
