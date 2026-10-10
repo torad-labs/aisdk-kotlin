@@ -28,7 +28,7 @@ bouncycastle = "1.86"       # GOST CTR keystream reuse (critical) + LDAP injecti
 jackson = "2.22.3"          # PolymorphicTypeValidator + allowlist bypasses, async parser
 jose4j = "0.9.7"            # DoS via compressed JWE content
 jdom2 = "2.0.6.1"           # XXE injection
-commons-lang3 = "3.20.0"    # uncontrolled recursion
+commons-lang3 = "3.21.0"    # uncontrolled recursion
 # Enters ONLY through org.jetbrains.dokka:templating-plugin, i.e. the doc-generator runtime;
 # jvmRuntimeClasspath carries no jsoup, so nothing ships it. Listed here anyway because an
 # advisory stays open while any vulnerable version remains anywhere in the submitted graph,
@@ -51,7 +51,7 @@ freemarker = "2.3.35"       # path traversal in the template loading mechanism (
 httpclient = "4.5.14"       # cross-site scripting in Apache HttpClient (< 4.5.13)
 opentelemetry = "1.66.0"    # unbounded memory allocation parsing W3C baggage
 konsist = "0.17.3"
-kover = "0.9.9"
+kover = "0.9.11"
 dokka = "2.2.0"
 junit = "6.1.3"
 
