@@ -1,10 +1,8 @@
 # Gate-hardening backlog (post-remediation)
 
-> **Execution state lives in `dev/campaigns/gate-hardening.toml`** (concept #942:
-> the manifest is the memory and the ONLY completion record — statuses
-> todo/in_flight/done/verified, resume pointers, verify commands). This document
-> is the narrative record: rationale, provenance, leverage points, rejected
-> items. Do not track statuses here.
+> This document is the narrative record: rationale, provenance, leverage points,
+> rejected items. Execution state was kept in `dev/campaigns/gate-hardening.toml`,
+> which was removed from the tree and survives in git history.
 
 Derived from the three leverage points of the 2026-07-02 remediation campaign, via a
 three-phase model sweep (Haiku ×3: gate inventory, execution topology, self-test

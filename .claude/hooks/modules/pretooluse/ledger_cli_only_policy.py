@@ -1,9 +1,8 @@
-"""Block raw edits to shared ledgers; require the ledger CLIs instead.
+"""Block raw edits to the measurements ledger; require its CLI instead.
 
-The campaign and measurements ledgers are cross-session shared memory. Their
-CLIs provide locking, TOML validation, and history-preserving semantics; direct
-Write/Edit/MultiEdit tool calls bypass those protections. The Bash CLI path is
-left untouched by design.
+The measurements ledger is cross-session shared memory. Its CLI provides locking,
+TOML validation, and history-preserving semantics; direct Write/Edit/MultiEdit
+tool calls bypass those protections. The Bash CLI path is left untouched by design.
 """
 from __future__ import annotations
 
@@ -19,8 +18,8 @@ MODULE_NAME = "ledger_cli_only_policy"
 WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 OVERRIDE_ENV = "AISDK_LEDGER_RAW_OK"
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_CAMPAIGNS_DIR = _REPO_ROOT / "dev" / "campaigns"
 _MEASUREMENTS = _REPO_ROOT / "dev" / "measurements.toml"
+_CLI_HINT = "python3 dev/measurements_ledger.py <command> ..."
 
 
 def applies(data: dict[str, Any]) -> bool:
@@ -54,7 +53,7 @@ def run(data: dict[str, Any]) -> HookResult | None:
             f"LEDGER POLICY: raw tool writes to `{_display(target)}` are blocked.\n"
             "Use the ledger CLI through Bash so updates keep the flock, TOML "
             "validation, and append-only measurement history:\n"
-            f"  { _cli_hint(target) }\n"
+            f"  {_CLI_HINT}\n"
             f"Operator-only emergency override: {OVERRIDE_ENV}=1."
         ),
     )
@@ -88,9 +87,7 @@ def _raw_file_paths(tool_input: object) -> list[str]:
 
 
 def _is_ledger(path: Path) -> bool:
-    if path == _MEASUREMENTS:
-        return True
-    return _CAMPAIGNS_DIR in path.parents and path.suffix == ".toml"
+    return path == _MEASUREMENTS
 
 
 def _resolve(raw: str, cwd: Path) -> Path:
@@ -109,9 +106,3 @@ def _display(path: Path) -> str:
         return path.relative_to(_REPO_ROOT).as_posix()
     except ValueError:
         return str(path)
-
-
-def _cli_hint(path: Path) -> str:
-    if path == _MEASUREMENTS:
-        return "python3 dev/measurements_ledger.py <command> ..."
-    return "bun dev/campaigns/ledger.ts <ledger.toml> <command> ..."

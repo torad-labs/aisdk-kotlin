@@ -13,9 +13,7 @@ ROOT = Path(__file__).resolve().parents[3]
 TARGET = ROOT / ".claude" / "hooks" / "orchestrator" / "pretooluse.py"
 ADAPTER = ROOT / ".codex" / "hooks" / "claude_compat.py"
 OWNED = ROOT / "docs" / "audit-remediation-backlog.md"
-CAMPAIGN_LEDGER = ROOT / "dev" / "campaigns" / "gate-hardening.toml"
 MEASUREMENTS_LEDGER = ROOT / "dev" / "measurements.toml"
-NEW_CAMPAIGN_LEDGER = ROOT / "dev" / "campaigns" / "seed-once-test.toml"
 API_KLIB_DUMP = ROOT / "api" / "torad-aisdk.klib.api"
 API_JVM_DUMP = ROOT / "api" / "jvm" / "torad-aisdk.api"
 KOTLIN_TARGET = ROOT / "src" / "commonMain" / "kotlin" / "ai" / "torad" / "aisdk" / "ShellWriteTarget.kt"
@@ -67,14 +65,7 @@ check("builder write to owned ledger is blocked", blocked(run_target(builder_wri
 orch_write = {k: v for k, v in builder_write.items() if k != "fleet_role"}
 check("orchestrator write to owned ledger is allowed", not blocked(run_target(orch_write)))
 
-# 2 — cross-session ledgers are CLI-only, with a seed-new-file carve-out.
-check(
-    "raw campaign ledger Write is blocked",
-    blocked(run_target({
-        "tool_name": "Write",
-        "tool_input": {"file_path": str(CAMPAIGN_LEDGER), "content": "status = 'bad'"},
-    })),
-)
+# 2 — the measurements ledger is CLI-only.
 check(
     "raw measurements ledger Edit is blocked",
     blocked(run_target({
@@ -91,47 +82,15 @@ check(
     blocked(run_target({
         "tool_name": "MultiEdit",
         "tool_input": {
-            "file_path": str(CAMPAIGN_LEDGER),
+            "file_path": str(MEASUREMENTS_LEDGER),
             "edits": [{"old_string": "x", "new_string": "y"}],
         },
     })),
 )
-check("ledger seed Write fixture path does not exist", not NEW_CAMPAIGN_LEDGER.exists())
-check(
-    "seed-new campaign ledger Write is allowed once",
-    not blocked(run_target({
-        "tool_name": "Write",
-        "tool_input": {"file_path": str(NEW_CAMPAIGN_LEDGER), "content": "[[items]]\n"},
-    })),
-)
-with tempfile.TemporaryDirectory(dir=ROOT / "dev" / "campaigns") as tmp:
-    nested_existing = Path(tmp) / "nested" / "x.toml"
-    nested_existing.parent.mkdir()
-    nested_existing.write_text("[[items]]\n", encoding="utf-8")
-    check(
-        "nested existing campaign ledger Edit is blocked",
-        blocked(run_target({
-            "tool_name": "Edit",
-            "tool_input": {
-                "file_path": str(nested_existing),
-                "old_string": "x",
-                "new_string": "y",
-            },
-        })),
-    )
-    nested_seed = Path(tmp) / "nested" / "seed-once.toml"
-    check("nested seed Write fixture path does not exist", not nested_seed.exists())
-    check(
-        "nested seed-new campaign ledger Write is allowed once",
-        not blocked(run_target({
-            "tool_name": "Write",
-            "tool_input": {"file_path": str(nested_seed), "content": "[[items]]\n"},
-        })),
-    )
 override_result = run_target(
     {
         "tool_name": "Write",
-        "tool_input": {"file_path": str(CAMPAIGN_LEDGER), "content": "status = 'override'"},
+        "tool_input": {"file_path": str(MEASUREMENTS_LEDGER), "content": "status = 'override'"},
     },
     extra_env={"AISDK_LEDGER_RAW_OK": "1"},
 )
@@ -141,7 +100,7 @@ check(
     "ledger CLI path via Bash is untouched",
     not blocked(run_target({
         "tool_name": "Bash",
-        "tool_input": {"command": "bun dev/campaigns/ledger.ts dev/campaigns/gate-hardening.toml get HD-10"},
+        "tool_input": {"command": "python3 dev/measurements_ledger.py list"},
     })),
 )
 
