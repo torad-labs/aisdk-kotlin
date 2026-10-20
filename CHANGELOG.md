@@ -31,7 +31,8 @@ bridges are removed with that upgrade.
 A section-by-section adversarial review of the whole SDK produced 54 findings that survived
 independent verification; 53 are fixed here and one was rejected on evidence (below). Every fix
 landed with a regression test proven to FAIL before it and pass after. The campaign ledger with
-per-item repro, verifier evidence, and rulings is `dev/campaigns/sdk-review.toml`.
+per-item repro, verifier evidence, and rulings was `dev/campaigns/sdk-review.toml`. That file was
+removed from the tree and survives in git history.
 
 **Breaking public API changes**
 

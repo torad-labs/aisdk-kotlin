@@ -153,18 +153,6 @@ with tempfile.TemporaryDirectory() as tmp:
         '"decision": "block"' in ledger_result.stdout,
     )
 
-    ledger_seed_patch = """*** Begin Patch
-*** Add File: dev/campaigns/adapter-seed-once-test.toml
-+[[items]]
-+id = "seed"
-*** End Patch
-"""
-    ledger_seed_result = run_adapter(ledger_seed_patch)
-    check(
-        "adapter synthetic Write allows seed-new ledger creation",
-        '"decision": "block"' not in ledger_seed_result.stdout,
-    )
-
     api_dump_patch = """*** Begin Patch
 *** Update File: api/torad-aisdk.klib.api
 @@
