@@ -50,7 +50,7 @@ freemarker = "2.3.35"       # path traversal in the template loading mechanism (
 # "Already resolves high enough somewhere" is not the same as "pinned everywhere".
 httpclient = "4.5.14"       # cross-site scripting in Apache HttpClient (< 4.5.13)
 opentelemetry = "1.67.0"    # unbounded memory allocation parsing W3C baggage
-konsist = "0.18.0"
+konsist = "0.18.1"
 kover = "0.9.11"
 dokka = "2.2.0"
 junit = "6.1.3"
