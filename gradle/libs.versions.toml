@@ -1,11 +1,11 @@
 [versions]
 kotlin = "2.4.21"
 poko = "0.23.2"
-agp = "9.2.0"
+agp = "9.5.0"
 android-min-sdk = "26"
 android-compile-sdk = "36"
 coroutines = "1.11.0"
-serialization = "1.11.0"
+serialization = "1.12.0"
 turbine = "1.2.1"
 ktor = "3.6.0"
 detekt = "1.23.8"
@@ -25,7 +25,7 @@ bouncycastle = "1.86"       # GOST CTR keystream reuse (critical) + LDAP injecti
 # jackson-core's older one needs only 2.18.6. Pinning the modal version leaves the
 # outlier open. Same trap as the bouncycastle pin below: pick the MAXIMUM patched
 # version across every advisory for the module, never the one the first alert names.
-jackson = "2.22.3"          # PolymorphicTypeValidator + allowlist bypasses, async parser
+jackson = "2.22.4"          # PolymorphicTypeValidator + allowlist bypasses, async parser
 jose4j = "0.9.7"            # DoS via compressed JWE content
 jdom2 = "2.0.6.1"           # XXE injection
 commons-lang3 = "3.21.0"    # uncontrolled recursion
@@ -50,7 +50,7 @@ freemarker = "2.3.35"       # path traversal in the template loading mechanism (
 # "Already resolves high enough somewhere" is not the same as "pinned everywhere".
 httpclient = "4.5.14"       # cross-site scripting in Apache HttpClient (< 4.5.13)
 opentelemetry = "1.67.0"    # unbounded memory allocation parsing W3C baggage
-konsist = "0.18.0"
+konsist = "0.18.1"
 kover = "0.9.11"
 dokka = "2.2.0"
 junit = "6.1.3"
