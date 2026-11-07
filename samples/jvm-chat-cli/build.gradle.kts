@@ -9,7 +9,7 @@ val aisdkVersion = providers.gradleProperty("aisdkVersion").orElse("0.3.0-beta01
 
 dependencies {
     implementation("ai.torad:torad-aisdk:${aisdkVersion.get()}")
-    implementation("io.ktor:ktor-client-cio:3.6.0")
+    implementation("io.ktor:ktor-client-cio:3.6.1")
 }
 
 java {
