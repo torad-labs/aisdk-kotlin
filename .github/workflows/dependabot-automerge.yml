@@ -128,7 +128,7 @@ jobs:
     steps:
       - name: Mint the App token that arms the merge
         id: app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.REVIEW_APP_ID }}
           private-key: ${{ secrets.REVIEW_APP_PRIVATE_KEY }}
@@ -149,7 +149,7 @@ jobs:
           echo "Auto-merge armed; GitHub merges once required checks pass." >> "$GITHUB_STEP_SUMMARY"
 
       # Private repos run CI when a PR opens and when a label is added, never on
-      # a push (Marcos, 2026-11-02). A person re-adds `ci` when ready to merge;
+      # a push. A person re-adds `ci` when ready to merge;
       # nobody does for an automated PR, so a push to one (the template sync
       # onto its open PR) would leave the armed merge without its required
       # checks. The App adds the label: GitHub starts no workflow for a label
@@ -316,7 +316,7 @@ jobs:
 
       - name: Mint the App token that arms the merge
         id: app
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.REVIEW_APP_ID }}
           private-key: ${{ secrets.REVIEW_APP_PRIVATE_KEY }}
