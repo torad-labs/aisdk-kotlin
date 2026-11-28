@@ -17,7 +17,7 @@
 # hope. Bumped by Dependabot's `docker` ecosystem, added to .github/dependabot.yml in the
 # same change: a pin with nothing to move it forward is a base image that silently stops
 # receiving security updates, which is worse than the tag it replaced.
-FROM gcr.io/oss-fuzz-base/base-builder-jvm@sha256:bd13a763de1a0fb22099442094e7e0049657a8c47f01e9d7af8bb849e0ad4699
+FROM gcr.io/oss-fuzz-base/base-builder-jvm@sha256:f29cd555a1b61a843f6a4aa339f6031d7676089282778fb8ba94e30f692febd8
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends openjdk-21-jdk && \
